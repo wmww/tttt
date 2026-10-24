@@ -1,0 +1,75 @@
+//// [test/cases/ttttDestructuredNarrowedThenNarrowable.ts] ////
+
+=== ttttDestructuredNarrowedThenNarrowable.ts ===
+// A destructured element the pattern's narrowing leaves generic (`T & Exclude<T, "c">`, the parent narrowed by its
+// discriminant) is made narrowable after that, like a declared type (tsc's checkIdentifier: getNarrowedTypeOfSymbol, then
+// getNarrowableTypeForReference): passed to `never` in a switch's default it's its constraint narrowed to never (coop)
+type K = 'a' | 'b' | 'c';
+>K : Symbol(K, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 0, 0))
+
+type Q<T extends K> = { h: T; u: string } & ({ h: Exclude<T, 'c'> } | { h: 'c' });
+>Q : Symbol(Q, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 3, 25))
+>T : Symbol(T, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 4, 7))
+>K : Symbol(K, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 0, 0))
+>h : Symbol(h, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 4, 23))
+>T : Symbol(T, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 4, 7))
+>u : Symbol(u, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 4, 29))
+>h : Symbol(h, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 4, 46))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 4, 7))
+>h : Symbol(h, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 4, 71))
+
+declare function never_(x: never): never;
+>never_ : Symbol(never_, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 4, 82))
+>x : Symbol(x, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 5, 24))
+
+function f<T extends K>(q: Q<T>) {
+>f : Symbol(f, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 5, 41))
+>T : Symbol(T, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 6, 11))
+>K : Symbol(K, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 0, 0))
+>q : Symbol(q, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 6, 24))
+>Q : Symbol(Q, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 3, 25))
+>T : Symbol(T, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 6, 11))
+
+  const { h, u } = q;
+>h : Symbol(h, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 7, 9))
+>u : Symbol(u, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 7, 12))
+>q : Symbol(q, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 6, 24))
+
+  switch (h) {
+>h : Symbol(h, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 7, 9))
+
+    case 'a': return 1;
+    case 'b': return 2;
+    case 'c': return 3;
+    default: never_(h);
+>never_ : Symbol(never_, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 4, 82))
+>h : Symbol(h, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 7, 9))
+  }
+}
+function g<T extends K>(q: Q<T>) {
+>g : Symbol(g, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 14, 1))
+>T : Symbol(T, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 15, 11))
+>K : Symbol(K, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 0, 0))
+>q : Symbol(q, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 15, 24))
+>Q : Symbol(Q, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 3, 25))
+>T : Symbol(T, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 15, 11))
+
+  const h = q.h;
+>h : Symbol(h, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 16, 7))
+>q.h : Symbol(h, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 4, 23), Decl(ttttDestructuredNarrowedThenNarrowable.ts, 4, 46), Decl(ttttDestructuredNarrowedThenNarrowable.ts, 4, 71))
+>q : Symbol(q, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 15, 24))
+>h : Symbol(h, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 4, 23), Decl(ttttDestructuredNarrowedThenNarrowable.ts, 4, 46), Decl(ttttDestructuredNarrowedThenNarrowable.ts, 4, 71))
+
+  switch (h) {
+>h : Symbol(h, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 16, 7))
+
+    case 'a': return 1;
+    case 'b': return 2;
+    case 'c': return 3;
+    default: never_(h);
+>never_ : Symbol(never_, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 4, 82))
+>h : Symbol(h, Decl(ttttDestructuredNarrowedThenNarrowable.ts, 16, 7))
+  }
+}
+

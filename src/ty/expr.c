@@ -2725,12 +2725,21 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
     bool assume_initialized = tsc_assumes_initialized || includes_undefined(type);
     if (issue_only && assume_initialized) return nullptr;
     // What the pattern's other elements say about the value destructured (tsc's getNarrowedTypeOfSymbol)
+    // (Then made narrowable like the declared type: tsc's checkIdentifier asks getNarrowedTypeOfSymbol before
+    // getNarrowableTypeForReference, so a generic element the pattern's narrowing leaves, `T & Exclude<T, "c">`, is its
+    // constraint in a constraint position or under a contextual type without generics, and narrows to never)
     if (binding && binding->parent && !in_own_root_initializer(binding, expr)) {
         Ty const* narrowed = ty_destructured_narrowed_type(me, binding, identifier->flow);
-        if (narrowed) type = narrowed;
+        if (narrowed) {
+            type = narrowable_type(me, identifier->constraint_position, identifier_element_index(identifier), narrowed, contextual);
+            substituted |= type != narrowed;
+        }
     } else if (binding && symbol->is_parameter) {
         Ty const* narrowed = ty_parameter_narrowed_type(me, binding, identifier->flow);
-        if (narrowed) type = narrowed;
+        if (narrowed) {
+            type = narrowable_type(me, identifier->constraint_position, identifier_element_index(identifier), narrowed, contextual);
+            substituted |= type != narrowed;
+        }
     }
     Ty const* initial = symbol->is_parameter ? parameter_initial_type(me, binding, type) : type;
     // (tsc's getOptionalType of a declared type whose undefined is noUncheckedIndexedAccess's missing type, `const x =
