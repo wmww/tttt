@@ -1,0 +1,62 @@
+//// [test/cases/npm_BigWhaleLabs-seal-hub-memorabilia-token-contracts_TS2344.ts] ////
+
+=== node_modules/@ethereum-waffle/provider/dist/esm/src/index.d.ts ===
+
+export * from './revertString';
+=== node_modules/@ethereum-waffle/provider/dist/esm/src/revertString.d.ts ===
+import { Provider } from 'ganache';
+>Provider : any
+
+/**
+ */
+=== node_modules/@nomiclabs/hardhat-waffle/dist/src/index.d.ts ===
+
+import "./type-extensions";
+=== node_modules/@nomiclabs/hardhat-waffle/dist/src/type-extensions.d.ts ===
+import type { createFixtureLoader, link, loadFixture, MockContract, MockProvider, solidity } from "ethereum-waffle";
+>createFixtureLoader : any
+>link : any
+>loadFixture : any
+>MockContract : any
+>MockProvider : any
+>solidity : any
+
+=== node_modules/ethereum-waffle/dist/esm/src/index.d.ts ===
+
+export * from '@ethereum-waffle/provider';
+=== node_modules/ganache/dist/ganache.d.ts ===
+declare namespace Base {
+    type Config = {
+>Config : Config
+
+        exclusiveGroups?: ExclusiveGroup[];
+>exclusiveGroups : any[] | undefined
+
+    };
+}
+/**
+ */
+declare type ExclusiveGroup<C extends Base.Config, K extends ExclusiveGroupIndex<C> = ExclusiveGroupIndex<C>> = ExclusiveGroups<C>[K];
+>ExclusiveGroup : ExclusiveGroup<C, K>
+>Base : any
+
+declare type ExclusiveGroupIndex<C extends Base.Config> = number & keyof ExclusiveGroups<C>;
+>ExclusiveGroupIndex : ExclusiveGroupIndex<C>
+>Base : any
+
+declare type ExclusiveGroupOptionPairs<C extends Base.Config, G extends unknown[]> = G extends [] ? [] : G extends [infer N, ...infer R] ? [
+>ExclusiveGroupOptionPairs : ExclusiveGroupOptionPairs<C, G>
+>Base : any
+
+] : never;
+declare type ExclusiveGroupOptionsByGroup<C extends Base.Config, G extends ExclusiveGroup<C>> = PairsToMapping<ExclusiveGroupOptionPairs<C, G>>;
+>ExclusiveGroupOptionsByGroup : PairsToMapping<ExclusiveGroupOptionPairs<C, G>>
+>Base : any
+
+declare type ExclusiveGroups<C extends Base.Config> = C["exclusiveGroups"];
+>ExclusiveGroups : ExclusiveGroups<C>
+>Base : any
+
+/**
+ */
+

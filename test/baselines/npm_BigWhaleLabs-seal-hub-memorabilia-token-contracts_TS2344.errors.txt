@@ -1,0 +1,75 @@
+node_modules/@ethereum-waffle/provider/dist/esm/src/revertString.d.ts(1,26): error TS2306: File 'node_modules/ganache/dist/ganache.d.ts' is not a module.
+node_modules/@nomiclabs/hardhat-waffle/dist/src/type-extensions.d.ts(1,15): error TS2305: Module '"ethereum-waffle"' has no exported member 'createFixtureLoader'.
+node_modules/@nomiclabs/hardhat-waffle/dist/src/type-extensions.d.ts(1,36): error TS2305: Module '"ethereum-waffle"' has no exported member 'link'.
+node_modules/@nomiclabs/hardhat-waffle/dist/src/type-extensions.d.ts(1,42): error TS2305: Module '"ethereum-waffle"' has no exported member 'loadFixture'.
+node_modules/@nomiclabs/hardhat-waffle/dist/src/type-extensions.d.ts(1,55): error TS2305: Module '"ethereum-waffle"' has no exported member 'MockContract'.
+node_modules/@nomiclabs/hardhat-waffle/dist/src/type-extensions.d.ts(1,69): error TS2305: Module '"ethereum-waffle"' has no exported member 'MockProvider'.
+node_modules/@nomiclabs/hardhat-waffle/dist/src/type-extensions.d.ts(1,83): error TS2305: Module '"ethereum-waffle"' has no exported member 'solidity'.
+node_modules/ganache/dist/ganache.d.ts(3,27): error TS2707: Generic type 'ExclusiveGroup' requires between 1 and 2 type arguments.
+node_modules/ganache/dist/ganache.d.ts(12,97): error TS2304: Cannot find name 'PairsToMapping'.
+node_modules/ganache/dist/ganache.d.ts(12,141): error TS2344: Type 'G' does not satisfy the constraint 'unknown[]'.
+  Type 'ExclusiveGroup<C, ExclusiveGroupIndex<C>>' is not assignable to type 'unknown[]'.
+    Type 'ExclusiveGroups<C>[number]' is not assignable to type 'unknown[]'.
+
+
+==== node_modules/@ethereum-waffle/provider/package.json (0 errors) ====
+    {"name": "@ethereum-waffle/provider", "version": "4.0.5", "main": "dist/cjs/src/index.js", "module": "dist/esm/src/index.ts", "types": "dist/esm/src/index.d.ts"}
+==== node_modules/@nomiclabs/hardhat-waffle/package.json (0 errors) ====
+    {"name": "@nomiclabs/hardhat-waffle", "version": "2.0.6", "main": "dist/src/index.js", "types": "dist/src/index.d.ts"}
+==== node_modules/ethereum-waffle/package.json (0 errors) ====
+    {"name": "ethereum-waffle", "version": "4.0.10", "main": "dist/cjs/src/index.js", "module": "dist/esm/src/index.ts", "types": "dist/esm/src/index.d.ts"}
+==== node_modules/ganache/package.json (0 errors) ====
+    {"name": "ganache", "version": "7.4.3", "main": "dist/node/core.js", "typings": "dist/ganache.d.ts"}
+==== package.json (0 errors) ====
+    {"name": "@big-whale-labs/seal-hub-memorabilia-token-contracts", "version": "0.0.4", "main": "dist/typechain/index.js", "types": "dist/typechain/index.d.ts"}
+==== node_modules/@ethereum-waffle/provider/dist/esm/src/index.d.ts (0 errors) ====
+    export * from './revertString';
+==== node_modules/@ethereum-waffle/provider/dist/esm/src/revertString.d.ts (1 errors) ====
+    import { Provider } from 'ganache';
+                             ~~~~~~~~~
+!!! error TS2306: File 'node_modules/ganache/dist/ganache.d.ts' is not a module.
+    /**
+     */
+==== node_modules/@nomiclabs/hardhat-waffle/dist/src/index.d.ts (0 errors) ====
+    import "./type-extensions";
+==== node_modules/@nomiclabs/hardhat-waffle/dist/src/type-extensions.d.ts (6 errors) ====
+    import type { createFixtureLoader, link, loadFixture, MockContract, MockProvider, solidity } from "ethereum-waffle";
+                  ~~~~~~~~~~~~~~~~~~~
+!!! error TS2305: Module '"ethereum-waffle"' has no exported member 'createFixtureLoader'.
+                                       ~~~~
+!!! error TS2305: Module '"ethereum-waffle"' has no exported member 'link'.
+                                             ~~~~~~~~~~~
+!!! error TS2305: Module '"ethereum-waffle"' has no exported member 'loadFixture'.
+                                                          ~~~~~~~~~~~~
+!!! error TS2305: Module '"ethereum-waffle"' has no exported member 'MockContract'.
+                                                                        ~~~~~~~~~~~~
+!!! error TS2305: Module '"ethereum-waffle"' has no exported member 'MockProvider'.
+                                                                                      ~~~~~~~~
+!!! error TS2305: Module '"ethereum-waffle"' has no exported member 'solidity'.
+==== node_modules/ethereum-waffle/dist/esm/src/index.d.ts (0 errors) ====
+    export * from '@ethereum-waffle/provider';
+==== node_modules/ganache/dist/ganache.d.ts (3 errors) ====
+    declare namespace Base {
+        type Config = {
+            exclusiveGroups?: ExclusiveGroup[];
+                              ~~~~~~~~~~~~~~
+!!! error TS2707: Generic type 'ExclusiveGroup' requires between 1 and 2 type arguments.
+        };
+    }
+    /**
+     */
+    declare type ExclusiveGroup<C extends Base.Config, K extends ExclusiveGroupIndex<C> = ExclusiveGroupIndex<C>> = ExclusiveGroups<C>[K];
+    declare type ExclusiveGroupIndex<C extends Base.Config> = number & keyof ExclusiveGroups<C>;
+    declare type ExclusiveGroupOptionPairs<C extends Base.Config, G extends unknown[]> = G extends [] ? [] : G extends [infer N, ...infer R] ? [
+    ] : never;
+    declare type ExclusiveGroupOptionsByGroup<C extends Base.Config, G extends ExclusiveGroup<C>> = PairsToMapping<ExclusiveGroupOptionPairs<C, G>>;
+                                                                                                    ~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'PairsToMapping'.
+                                                                                                                                                ~
+!!! error TS2344: Type 'G' does not satisfy the constraint 'unknown[]'.
+!!! error TS2344:   Type 'ExclusiveGroup<C, ExclusiveGroupIndex<C>>' is not assignable to type 'unknown[]'.
+!!! error TS2344:     Type 'ExclusiveGroups<C>[number]' is not assignable to type 'unknown[]'.
+    declare type ExclusiveGroups<C extends Base.Config> = C["exclusiveGroups"];
+    /**
+     */
+    
