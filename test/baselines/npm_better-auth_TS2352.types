@@ -1,0 +1,74 @@
+//// [test/cases/npm_better-auth_TS2352.ts] ////
+
+=== npm_better-auth_TS2352.ts ===
+// origin: npm better-auth@1.7.12 https://github.com/better-auth/better-auth packages/better-auth/tsconfig.bench.json seed 20261035
+// flip: no
+// src/plugins/organization/adapter.ts:234: `filterOutputFields(...) as InferOrganization<O>`, a cast between
+// InferOrganization<O, false> and InferOrganization<O, true>. Their alias type arguments differ only in a bivariant
+// `isClientSide` (false vs true are not comparable), but the alias's SchemaName parameter is a mapped type's key in the
+// conditional's extends type, and relating those identically reports it unreliable: the structural fallback relates the
+// branches, which are comparable. tttt measured SchemaName without the flag and reported TS2352.
+type DBField = { type: string; returned?: boolean };
+>DBField : DBField
+>type : string
+>returned : boolean | undefined
+
+type F2O<F extends Record<string, DBField>> = { [K in keyof F]: string };
+>F2O : F2O<F>
+
+type RemoveRet<F extends Record<string, DBField>> = { [K in keyof F as F[K]['returned'] extends false ? never : K]: F[K] };
+>RemoveRet : RemoveRet<F>
+>false : false
+
+type IAFO<N extends string, O extends { schema?: any }, C extends boolean> =
+>IAFO : IAFO<N, O, C>
+>schema : any
+
+  O['schema'] extends { [k in N]?: { additionalFields: infer F extends Record<string, DBField> } }
+>additionalFields : F
+
+    ? C extends true ? F2O<RemoveRet<F>> : F2O<F>
+>true : true
+
+    : {};
+type Prettify<T> = { [K in keyof T]: T[K] } & {};
+>Prettify : { [K in keyof T]: T[K]; }
+
+type InferOrg<O extends { schema?: any }, C extends boolean = true> = Prettify<{ id: string } & IAFO<'org', O, C>>;
+>InferOrg : { id: string; } & IAFO<"org", O, C> extends infer T ? { [K in keyof T]: T[K]; } : never
+>schema : any
+>true : true
+>id : string
+
+export function f<O extends { schema?: any }>(x: InferOrg<O, false>) { return x as InferOrg<O>; }
+>f : <O extends { schema?: any; }>(x: InferOrg<O, false>) => InferOrg<O>
+>schema : any
+>x : { id: string; } & IAFO<"org", O, false> extends infer T ? { [K in keyof T]: T[K]; } : never
+>false : false
+>x as InferOrg<O> : { id: string; } & IAFO<"org", O, true> extends infer T ? { [K in keyof T]: T[K]; } : never
+>x : { id: string; } & IAFO<"org", O, false> extends infer T ? { [K in keyof T]: T[K]; } : never
+
+export function g<O extends { schema?: any }>(x: IAFO<'org', O, false>) { return x as IAFO<'org', O, true>; }
+>g : <O extends { schema?: any; }>(x: IAFO<'org', O, false>) => IAFO<'org', O, true>
+>schema : any
+>x : IAFO<"org", O, false>
+>false : false
+>x as IAFO<'org', O, true> : IAFO<"org", O, true>
+>x : IAFO<"org", O, false>
+>true : true
+
+type C1<O extends { schema?: any }, C extends boolean> = O['schema'] extends { a: 1 } ? C extends true ? 1 : 2 : {};
+>C1 : C1<O, C>
+>schema : any
+>a : 1
+>true : true
+
+export function h<O extends { schema?: any }>(x: C1<O, false>) { return x as C1<O, true>; }
+>h : <O extends { schema?: any; }>(x: C1<O, false>) => C1<O, true>
+>schema : any
+>x : C1<O, false>
+>false : false
+>x as C1<O, true> : C1<O, true>
+>x : C1<O, false>
+>true : true
+

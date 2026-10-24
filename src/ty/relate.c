@@ -5431,6 +5431,10 @@ bool ty_props_identical(Checker* me, Prop const* source, Prop const* target) {
 // the source's key type parameter is the target's
 static Ternary mapped_identical(Checker* me, RelationState* st, MappedInfo const* source, MappedInfo const* target) {
     if (source->readonly != target->readonly || source->optional != target->optional) return TERNARY_FALSE;
+    // (The source's constraint through tsc's reporting mapper, as mappedTypeRelatedTo does under every relation: a
+    // variance measured through it allows the structural fallback, `{ [k in N]?: X } extends ...` in a conditional)
+    report_variance(me, source->constraint,
+        combined_mapped_info_optionality(me, source) < 0 ? VARIANCE_UNMEASURABLE : VARIANCE_UNRELIABLE);
     Ternary result = is_related_to(me, st, target->constraint, source->constraint, false);
     if (!result) return TERNARY_FALSE;
     TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = &source->type_param, .len = 1 },

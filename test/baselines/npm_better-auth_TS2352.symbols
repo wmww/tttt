@@ -1,0 +1,122 @@
+//// [test/cases/npm_better-auth_TS2352.ts] ////
+
+=== npm_better-auth_TS2352.ts ===
+// origin: npm better-auth@1.7.12 https://github.com/better-auth/better-auth packages/better-auth/tsconfig.bench.json seed 20261035
+// flip: no
+// src/plugins/organization/adapter.ts:234: `filterOutputFields(...) as InferOrganization<O>`, a cast between
+// InferOrganization<O, false> and InferOrganization<O, true>. Their alias type arguments differ only in a bivariant
+// `isClientSide` (false vs true are not comparable), but the alias's SchemaName parameter is a mapped type's key in the
+// conditional's extends type, and relating those identically reports it unreliable: the structural fallback relates the
+// branches, which are comparable. tttt measured SchemaName without the flag and reported TS2352.
+type DBField = { type: string; returned?: boolean };
+>DBField : Symbol(DBField, Decl(npm_better-auth_TS2352.ts, 0, 0))
+>type : Symbol(type, Decl(npm_better-auth_TS2352.ts, 7, 16))
+>returned : Symbol(returned, Decl(npm_better-auth_TS2352.ts, 7, 30))
+
+type F2O<F extends Record<string, DBField>> = { [K in keyof F]: string };
+>F2O : Symbol(F2O, Decl(npm_better-auth_TS2352.ts, 7, 52))
+>F : Symbol(F, Decl(npm_better-auth_TS2352.ts, 8, 9))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>DBField : Symbol(DBField, Decl(npm_better-auth_TS2352.ts, 0, 0))
+>K : Symbol(K, Decl(npm_better-auth_TS2352.ts, 8, 49))
+>F : Symbol(F, Decl(npm_better-auth_TS2352.ts, 8, 9))
+
+type RemoveRet<F extends Record<string, DBField>> = { [K in keyof F as F[K]['returned'] extends false ? never : K]: F[K] };
+>RemoveRet : Symbol(RemoveRet, Decl(npm_better-auth_TS2352.ts, 8, 73))
+>F : Symbol(F, Decl(npm_better-auth_TS2352.ts, 9, 15))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>DBField : Symbol(DBField, Decl(npm_better-auth_TS2352.ts, 0, 0))
+>K : Symbol(K, Decl(npm_better-auth_TS2352.ts, 9, 55))
+>F : Symbol(F, Decl(npm_better-auth_TS2352.ts, 9, 15))
+>F : Symbol(F, Decl(npm_better-auth_TS2352.ts, 9, 15))
+>K : Symbol(K, Decl(npm_better-auth_TS2352.ts, 9, 55))
+>K : Symbol(K, Decl(npm_better-auth_TS2352.ts, 9, 55))
+>F : Symbol(F, Decl(npm_better-auth_TS2352.ts, 9, 15))
+>K : Symbol(K, Decl(npm_better-auth_TS2352.ts, 9, 55))
+
+type IAFO<N extends string, O extends { schema?: any }, C extends boolean> =
+>IAFO : Symbol(IAFO, Decl(npm_better-auth_TS2352.ts, 9, 123))
+>N : Symbol(N, Decl(npm_better-auth_TS2352.ts, 10, 10))
+>O : Symbol(O, Decl(npm_better-auth_TS2352.ts, 10, 27))
+>schema : Symbol(schema, Decl(npm_better-auth_TS2352.ts, 10, 39))
+>C : Symbol(C, Decl(npm_better-auth_TS2352.ts, 10, 55))
+
+  O['schema'] extends { [k in N]?: { additionalFields: infer F extends Record<string, DBField> } }
+>O : Symbol(O, Decl(npm_better-auth_TS2352.ts, 10, 27))
+>k : Symbol(k, Decl(npm_better-auth_TS2352.ts, 11, 25))
+>N : Symbol(N, Decl(npm_better-auth_TS2352.ts, 10, 10))
+>additionalFields : Symbol(additionalFields, Decl(npm_better-auth_TS2352.ts, 11, 36))
+>F : Symbol(F, Decl(npm_better-auth_TS2352.ts, 11, 60))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>DBField : Symbol(DBField, Decl(npm_better-auth_TS2352.ts, 0, 0))
+
+    ? C extends true ? F2O<RemoveRet<F>> : F2O<F>
+>C : Symbol(C, Decl(npm_better-auth_TS2352.ts, 10, 55))
+>F2O : Symbol(F2O, Decl(npm_better-auth_TS2352.ts, 7, 52))
+>RemoveRet : Symbol(RemoveRet, Decl(npm_better-auth_TS2352.ts, 8, 73))
+>F : Symbol(F, Decl(npm_better-auth_TS2352.ts, 11, 60))
+>F2O : Symbol(F2O, Decl(npm_better-auth_TS2352.ts, 7, 52))
+>F : Symbol(F, Decl(npm_better-auth_TS2352.ts, 11, 60))
+
+    : {};
+type Prettify<T> = { [K in keyof T]: T[K] } & {};
+>Prettify : Symbol(Prettify, Decl(npm_better-auth_TS2352.ts, 13, 9))
+>T : Symbol(T, Decl(npm_better-auth_TS2352.ts, 14, 14))
+>K : Symbol(K, Decl(npm_better-auth_TS2352.ts, 14, 22))
+>T : Symbol(T, Decl(npm_better-auth_TS2352.ts, 14, 14))
+>T : Symbol(T, Decl(npm_better-auth_TS2352.ts, 14, 14))
+>K : Symbol(K, Decl(npm_better-auth_TS2352.ts, 14, 22))
+
+type InferOrg<O extends { schema?: any }, C extends boolean = true> = Prettify<{ id: string } & IAFO<'org', O, C>>;
+>InferOrg : Symbol(InferOrg, Decl(npm_better-auth_TS2352.ts, 14, 49))
+>O : Symbol(O, Decl(npm_better-auth_TS2352.ts, 15, 14))
+>schema : Symbol(schema, Decl(npm_better-auth_TS2352.ts, 15, 25))
+>C : Symbol(C, Decl(npm_better-auth_TS2352.ts, 15, 41))
+>Prettify : Symbol(Prettify, Decl(npm_better-auth_TS2352.ts, 13, 9))
+>id : Symbol(id, Decl(npm_better-auth_TS2352.ts, 15, 80))
+>IAFO : Symbol(IAFO, Decl(npm_better-auth_TS2352.ts, 9, 123))
+>O : Symbol(O, Decl(npm_better-auth_TS2352.ts, 15, 14))
+>C : Symbol(C, Decl(npm_better-auth_TS2352.ts, 15, 41))
+
+export function f<O extends { schema?: any }>(x: InferOrg<O, false>) { return x as InferOrg<O>; }
+>f : Symbol(f, Decl(npm_better-auth_TS2352.ts, 15, 115))
+>O : Symbol(O, Decl(npm_better-auth_TS2352.ts, 16, 18))
+>schema : Symbol(schema, Decl(npm_better-auth_TS2352.ts, 16, 29))
+>x : Symbol(x, Decl(npm_better-auth_TS2352.ts, 16, 46))
+>InferOrg : Symbol(InferOrg, Decl(npm_better-auth_TS2352.ts, 14, 49))
+>O : Symbol(O, Decl(npm_better-auth_TS2352.ts, 16, 18))
+>x : Symbol(x, Decl(npm_better-auth_TS2352.ts, 16, 46))
+>InferOrg : Symbol(InferOrg, Decl(npm_better-auth_TS2352.ts, 14, 49))
+>O : Symbol(O, Decl(npm_better-auth_TS2352.ts, 16, 18))
+
+export function g<O extends { schema?: any }>(x: IAFO<'org', O, false>) { return x as IAFO<'org', O, true>; }
+>g : Symbol(g, Decl(npm_better-auth_TS2352.ts, 16, 97))
+>O : Symbol(O, Decl(npm_better-auth_TS2352.ts, 17, 18))
+>schema : Symbol(schema, Decl(npm_better-auth_TS2352.ts, 17, 29))
+>x : Symbol(x, Decl(npm_better-auth_TS2352.ts, 17, 46))
+>IAFO : Symbol(IAFO, Decl(npm_better-auth_TS2352.ts, 9, 123))
+>O : Symbol(O, Decl(npm_better-auth_TS2352.ts, 17, 18))
+>x : Symbol(x, Decl(npm_better-auth_TS2352.ts, 17, 46))
+>IAFO : Symbol(IAFO, Decl(npm_better-auth_TS2352.ts, 9, 123))
+>O : Symbol(O, Decl(npm_better-auth_TS2352.ts, 17, 18))
+
+type C1<O extends { schema?: any }, C extends boolean> = O['schema'] extends { a: 1 } ? C extends true ? 1 : 2 : {};
+>C1 : Symbol(C1, Decl(npm_better-auth_TS2352.ts, 17, 109))
+>O : Symbol(O, Decl(npm_better-auth_TS2352.ts, 18, 8))
+>schema : Symbol(schema, Decl(npm_better-auth_TS2352.ts, 18, 19))
+>C : Symbol(C, Decl(npm_better-auth_TS2352.ts, 18, 35))
+>O : Symbol(O, Decl(npm_better-auth_TS2352.ts, 18, 8))
+>a : Symbol(a, Decl(npm_better-auth_TS2352.ts, 18, 78))
+>C : Symbol(C, Decl(npm_better-auth_TS2352.ts, 18, 35))
+
+export function h<O extends { schema?: any }>(x: C1<O, false>) { return x as C1<O, true>; }
+>h : Symbol(h, Decl(npm_better-auth_TS2352.ts, 18, 116))
+>O : Symbol(O, Decl(npm_better-auth_TS2352.ts, 19, 18))
+>schema : Symbol(schema, Decl(npm_better-auth_TS2352.ts, 19, 29))
+>x : Symbol(x, Decl(npm_better-auth_TS2352.ts, 19, 46))
+>C1 : Symbol(C1, Decl(npm_better-auth_TS2352.ts, 17, 109))
+>O : Symbol(O, Decl(npm_better-auth_TS2352.ts, 19, 18))
+>x : Symbol(x, Decl(npm_better-auth_TS2352.ts, 19, 46))
+>C1 : Symbol(C1, Decl(npm_better-auth_TS2352.ts, 17, 109))
+>O : Symbol(O, Decl(npm_better-auth_TS2352.ts, 19, 18))
+
