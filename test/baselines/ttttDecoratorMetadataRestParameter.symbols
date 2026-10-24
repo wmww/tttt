@@ -1,0 +1,80 @@
+//// [test/cases/ttttDecoratorMetadataRestParameter.ts] ////
+
+=== types.ts ===
+export type ArgsOf<T extends string> = [T, number];
+>ArgsOf : Symbol(ArgsOf, Decl(types.ts, 0, 0))
+>T : Symbol(T, Decl(types.ts, 0, 19))
+>T : Symbol(T, Decl(types.ts, 0, 19))
+
+export interface Item { a: number }
+>Item : Symbol(Item, Decl(types.ts, 0, 51))
+>a : Symbol(Item.a, Decl(types.ts, 1, 23))
+
+export type Plain = string[];
+>Plain : Symbol(Plain, Decl(types.ts, 1, 35))
+
+=== main.ts ===
+import { ArgsOf, Item, Plain } from "./types";
+>ArgsOf : Symbol(ArgsOf, Decl(main.ts, 0, 8))
+>Item : Symbol(Item, Decl(main.ts, 0, 16))
+>Plain : Symbol(Plain, Decl(main.ts, 0, 22))
+
+declare function dec(...a: any[]): any;
+>dec : Symbol(dec, Decl(main.ts, 0, 46))
+>a : Symbol(a, Decl(main.ts, 1, 21))
+
+export class C {
+>C : Symbol(C, Decl(main.ts, 1, 39))
+
+  @dec m1(...[name, n]: ArgsOf<"x">) {}
+>dec : Symbol(dec, Decl(main.ts, 0, 46))
+>m1 : Symbol(C.m1, Decl(main.ts, 2, 16))
+>name : Symbol(name, Decl(main.ts, 3, 14))
+>n : Symbol(n, Decl(main.ts, 3, 19))
+>ArgsOf : Symbol(ArgsOf, Decl(main.ts, 0, 8))
+
+  @dec m2(...items: Item[]) {}
+>dec : Symbol(dec, Decl(main.ts, 0, 46))
+>m2 : Symbol(C.m2, Decl(main.ts, 3, 39))
+>items : Symbol(items, Decl(main.ts, 4, 10))
+>Item : Symbol(Item, Decl(main.ts, 0, 16))
+
+  @dec m3(...items: Array<Item>) {}
+>dec : Symbol(dec, Decl(main.ts, 0, 46))
+>m3 : Symbol(C.m3, Decl(main.ts, 4, 30))
+>items : Symbol(items, Decl(main.ts, 5, 10))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 3 more)
+>Item : Symbol(Item, Decl(main.ts, 0, 16))
+
+  @dec m4(...items: Plain) {}
+>dec : Symbol(dec, Decl(main.ts, 0, 46))
+>m4 : Symbol(C.m4, Decl(main.ts, 5, 35))
+>items : Symbol(items, Decl(main.ts, 6, 10))
+>Plain : Symbol(Plain, Decl(main.ts, 0, 22))
+
+  @dec m5(item: Item) {}
+>dec : Symbol(dec, Decl(main.ts, 0, 46))
+>m5 : Symbol(C.m5, Decl(main.ts, 6, 29))
+>item : Symbol(item, Decl(main.ts, 7, 10))
+>Item : Symbol(Item, Decl(main.ts, 0, 16))
+
+  @dec m6(...items: readonly Item[]) {}
+>dec : Symbol(dec, Decl(main.ts, 0, 46))
+>m6 : Symbol(C.m6, Decl(main.ts, 7, 24))
+>items : Symbol(items, Decl(main.ts, 8, 10))
+>Item : Symbol(Item, Decl(main.ts, 0, 16))
+
+  @dec m7(...items: ReadonlyArray<Item>) {}
+>dec : Symbol(dec, Decl(main.ts, 0, 46))
+>m7 : Symbol(C.m7, Decl(main.ts, 8, 39))
+>items : Symbol(items, Decl(main.ts, 9, 10))
+>ReadonlyArray : Symbol(ReadonlyArray, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 2 more)
+>Item : Symbol(Item, Decl(main.ts, 0, 16))
+
+  @dec m8(...items: (Item[])) {}
+>dec : Symbol(dec, Decl(main.ts, 0, 46))
+>m8 : Symbol(C.m8, Decl(main.ts, 9, 43))
+>items : Symbol(items, Decl(main.ts, 10, 10))
+>Item : Symbol(Item, Decl(main.ts, 0, 16))
+}
+

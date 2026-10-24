@@ -1,0 +1,36 @@
+main.ts(5,21): error TS1272: A type referenced in a decorated signature must be imported with 'import type' or a namespace import when 'isolatedModules' and 'emitDecoratorMetadata' are enabled.
+main.ts(6,27): error TS1272: A type referenced in a decorated signature must be imported with 'import type' or a namespace import when 'isolatedModules' and 'emitDecoratorMetadata' are enabled.
+main.ts(8,17): error TS1272: A type referenced in a decorated signature must be imported with 'import type' or a namespace import when 'isolatedModules' and 'emitDecoratorMetadata' are enabled.
+main.ts(10,35): error TS1272: A type referenced in a decorated signature must be imported with 'import type' or a namespace import when 'isolatedModules' and 'emitDecoratorMetadata' are enabled.
+
+
+==== types.ts (0 errors) ====
+    export type ArgsOf<T extends string> = [T, number];
+    export interface Item { a: number }
+    export type Plain = string[];
+==== main.ts (4 errors) ====
+    import { ArgsOf, Item, Plain } from "./types";
+    declare function dec(...a: any[]): any;
+    export class C {
+      @dec m1(...[name, n]: ArgsOf<"x">) {}
+      @dec m2(...items: Item[]) {}
+                        ~~~~
+!!! error TS1272: A type referenced in a decorated signature must be imported with 'import type' or a namespace import when 'isolatedModules' and 'emitDecoratorMetadata' are enabled.
+!!! related TS1376 main.ts:1:18: 'Item' was imported here.
+      @dec m3(...items: Array<Item>) {}
+                              ~~~~
+!!! error TS1272: A type referenced in a decorated signature must be imported with 'import type' or a namespace import when 'isolatedModules' and 'emitDecoratorMetadata' are enabled.
+!!! related TS1376 main.ts:1:18: 'Item' was imported here.
+      @dec m4(...items: Plain) {}
+      @dec m5(item: Item) {}
+                    ~~~~
+!!! error TS1272: A type referenced in a decorated signature must be imported with 'import type' or a namespace import when 'isolatedModules' and 'emitDecoratorMetadata' are enabled.
+!!! related TS1376 main.ts:1:18: 'Item' was imported here.
+      @dec m6(...items: readonly Item[]) {}
+      @dec m7(...items: ReadonlyArray<Item>) {}
+                                      ~~~~
+!!! error TS1272: A type referenced in a decorated signature must be imported with 'import type' or a namespace import when 'isolatedModules' and 'emitDecoratorMetadata' are enabled.
+!!! related TS1376 main.ts:1:18: 'Item' was imported here.
+      @dec m8(...items: (Item[])) {}
+    }
+    

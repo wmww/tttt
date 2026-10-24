@@ -1,0 +1,51 @@
+//// [test/cases/rw_immich-server_TS1272.ts] ////
+
+=== src/repositories/event.repository.ts ===
+type EventMap = { JobRun: [string, { name: string }]; JobStart: [string] };
+>EventMap : EventMap
+>JobRun : [string, { name: string; }]
+>name : string
+>JobStart : [string]
+
+export type ArgsOf<T extends keyof EventMap> = EventMap[T];
+>ArgsOf : ArgsOf<T>
+
+=== src/decorators.ts ===
+export const OnEvent = (options: { name: string }): MethodDecorator => () => {};
+>OnEvent : (options: { name: string; }) => MethodDecorator
+>(options: { name: string }): MethodDecorator => () => {} : (options: { name: string; }) => MethodDecorator
+>options : { name: string; }
+>name : string
+>() => {} : () => void
+
+=== src/services/job.service.ts ===
+import { OnEvent } from '../decorators.js';
+>OnEvent : (options: { name: string; }) => MethodDecorator
+
+import { ArgsOf } from '../repositories/event.repository.js';
+>ArgsOf : any
+
+export class JobService {
+>JobService : JobService
+
+  @OnEvent({ name: 'JobRun' })
+>OnEvent({ name: 'JobRun' }) : MethodDecorator
+>OnEvent : (options: { name: string; }) => MethodDecorator
+>{ name: 'JobRun' } : { name: string; }
+>name : string
+>'JobRun' : "JobRun"
+
+  async onJobRun(...[queueName, job]: ArgsOf<'JobRun'>) {
+>onJobRun : (queueName: string, job: { name: string; }) => Promise<string[]>
+>queueName : string
+>job : { name: string; }
+
+    return [queueName, job.name];
+>[queueName, job.name] : string[]
+>queueName : string
+>job.name : string
+>job : { name: string; }
+>name : string
+  }
+}
+

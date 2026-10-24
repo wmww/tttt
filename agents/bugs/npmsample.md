@@ -433,5 +433,8 @@ workspace packages). Not flips, not K-dependent.
   first. Test rw_firecrawl_TS2345; repro ttttIntersectionNullableConstraintMember. [fixed d70cb46ad]
 - immich-server (immich-app/immich d474ec96, server/): tsgo 12 / tttt 13. +TS1272 at src/services/job.service.ts(86):
   `@OnEvent(...) async onJobRun(...[queueName, job]: ArgsOf<'JobRun'>)` with `import { ArgsOf } from
-  'src/repositories/event.repository.js'` (a type-only export) under isolatedModules + emitDecoratorMetadata: tsc doesn't
-  report a rest parameter's binding pattern type here. (claimed: fixF) [open]
+  'src/repositories/event.repository.js'` (a type-only export) under isolatedModules + emitDecoratorMetadata. tsc checks
+  a rest parameter by getParameterTypeNodeForDecoratorCheck: GetRestParameterElementType gives `T[]`'s T or a type
+  reference's first type argument (here the literal `'JobRun'`), else nothing (a parenthesized type, `readonly T[]`).
+  tttt's check_decorator_metadata_signature checked the rest parameter's whole annotation. Test
+  rw_immich-server_TS1272; repro ttttDecoratorMetadataRestParameter. [fixed PENDING]

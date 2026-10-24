@@ -1,0 +1,51 @@
+//// [test/cases/rw_immich-server_TS1272.ts] ////
+
+=== src/repositories/event.repository.ts ===
+type EventMap = { JobRun: [string, { name: string }]; JobStart: [string] };
+>EventMap : Symbol(EventMap, Decl(event.repository.ts, 0, 0))
+>JobRun : Symbol(JobRun, Decl(event.repository.ts, 0, 17))
+>name : Symbol(name, Decl(event.repository.ts, 0, 36))
+>JobStart : Symbol(JobStart, Decl(event.repository.ts, 0, 53))
+
+export type ArgsOf<T extends keyof EventMap> = EventMap[T];
+>ArgsOf : Symbol(ArgsOf, Decl(event.repository.ts, 0, 75))
+>T : Symbol(T, Decl(event.repository.ts, 1, 19))
+>EventMap : Symbol(EventMap, Decl(event.repository.ts, 0, 0))
+>EventMap : Symbol(EventMap, Decl(event.repository.ts, 0, 0))
+>T : Symbol(T, Decl(event.repository.ts, 1, 19))
+
+=== src/decorators.ts ===
+export const OnEvent = (options: { name: string }): MethodDecorator => () => {};
+>OnEvent : Symbol(OnEvent, Decl(decorators.ts, 0, 12))
+>options : Symbol(options, Decl(decorators.ts, 0, 24))
+>name : Symbol(name, Decl(decorators.ts, 0, 34))
+>MethodDecorator : Symbol(MethodDecorator, Decl(lib.decorators.legacy.d.ts, --, --))
+
+=== src/services/job.service.ts ===
+import { OnEvent } from '../decorators.js';
+>OnEvent : Symbol(OnEvent, Decl(job.service.ts, 0, 8))
+
+import { ArgsOf } from '../repositories/event.repository.js';
+>ArgsOf : Symbol(ArgsOf, Decl(job.service.ts, 1, 8))
+
+export class JobService {
+>JobService : Symbol(JobService, Decl(job.service.ts, 1, 61))
+
+  @OnEvent({ name: 'JobRun' })
+>OnEvent : Symbol(OnEvent, Decl(job.service.ts, 0, 8))
+>name : Symbol(name, Decl(job.service.ts, 3, 12))
+
+  async onJobRun(...[queueName, job]: ArgsOf<'JobRun'>) {
+>onJobRun : Symbol(JobService.onJobRun, Decl(job.service.ts, 2, 25))
+>queueName : Symbol(queueName, Decl(job.service.ts, 4, 21))
+>job : Symbol(job, Decl(job.service.ts, 4, 31))
+>ArgsOf : Symbol(ArgsOf, Decl(job.service.ts, 1, 8))
+
+    return [queueName, job.name];
+>queueName : Symbol(queueName, Decl(job.service.ts, 4, 21))
+>job.name : Symbol(name, Decl(event.repository.ts, 0, 36))
+>job : Symbol(job, Decl(job.service.ts, 4, 31))
+>name : Symbol(name, Decl(event.repository.ts, 0, 36))
+  }
+}
+

@@ -2249,7 +2249,23 @@ static void check_decorator_metadata_type(TypeNode const* node, ErrorCtx* errs) 
 
 static void check_decorator_metadata_signature(FunctionImpl const* function, bool with_return, ErrorCtx* errs) {
     for_each (i, vec_function_arg, &function->args) {
-        if (i->initializer.binding.has_explicit_type) check_decorator_metadata_type(binding_type(&i->initializer.binding), errs);
+        if (!i->initializer.binding.has_explicit_type) continue;
+        TypeNode const* type = binding_type(&i->initializer.binding);
+        // A rest parameter's is its element type as written (tsc's getParameterTypeNodeForDecoratorCheck,
+        // GetRestParameterElementType): `T[]`'s T, a reference's first type argument, else none (`...[a, b]: Args<'x'>`
+        // is the `'x'`)
+        // (Written in parentheses it is neither: `...a: (A[])` has no element type there)
+        if (i->initializer.is_rest_parameter) {
+            // (Nor `readonly A[]`, a type operator there; `ReadonlyArray<A>` is a reference)
+            if (type->parenthesized || (type->tag == TYPE_ARRAY && type->array.readonly && span_valid(type->array.span))) continue;
+            if (type->tag == TYPE_ARRAY) type = type->array.element;
+            else if (type->tag == TYPE_IDENTIFIER && vec_spanned_type_size(&type->identifier->generic_params)) {
+                type = &vec_spanned_type_at(&type->identifier->generic_params, 0)->type;
+            } else {
+                continue;
+            }
+        }
+        check_decorator_metadata_type(type, errs);
     }
     if (with_return && function->ret_explicit) check_decorator_metadata_type(&function->ret, errs);
 }

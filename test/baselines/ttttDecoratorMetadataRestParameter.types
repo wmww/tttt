@@ -1,0 +1,67 @@
+//// [test/cases/ttttDecoratorMetadataRestParameter.ts] ////
+
+=== types.ts ===
+export type ArgsOf<T extends string> = [T, number];
+>ArgsOf : ArgsOf<T>
+
+export interface Item { a: number }
+>a : number
+
+export type Plain = string[];
+>Plain : Plain
+
+=== main.ts ===
+import { ArgsOf, Item, Plain } from "./types";
+>ArgsOf : any
+>Item : any
+>Plain : any
+
+declare function dec(...a: any[]): any;
+>dec : (...a: any[]) => any
+>a : any[]
+
+export class C {
+>C : C
+
+  @dec m1(...[name, n]: ArgsOf<"x">) {}
+>dec : (...a: any[]) => any
+>m1 : (name: "x", n: number) => void
+>name : "x"
+>n : number
+
+  @dec m2(...items: Item[]) {}
+>dec : (...a: any[]) => any
+>m2 : (...items: Item[]) => void
+>items : Item[]
+
+  @dec m3(...items: Array<Item>) {}
+>dec : (...a: any[]) => any
+>m3 : (...items: Array<Item>) => void
+>items : Item[]
+
+  @dec m4(...items: Plain) {}
+>dec : (...a: any[]) => any
+>m4 : (...items: Plain) => void
+>items : Plain
+
+  @dec m5(item: Item) {}
+>dec : (...a: any[]) => any
+>m5 : (item: Item) => void
+>item : Item
+
+  @dec m6(...items: readonly Item[]) {}
+>dec : (...a: any[]) => any
+>m6 : (...items: readonly Item[]) => void
+>items : readonly Item[]
+
+  @dec m7(...items: ReadonlyArray<Item>) {}
+>dec : (...a: any[]) => any
+>m7 : (...items: ReadonlyArray<Item>) => void
+>items : readonly Item[]
+
+  @dec m8(...items: (Item[])) {}
+>dec : (...a: any[]) => any
+>m8 : (...items: (Item[])) => void
+>items : Item[]
+}
+
