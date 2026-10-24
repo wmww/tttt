@@ -10,7 +10,10 @@ boxes' appends never conflict. One section per seed, one bullet per repro, statu
   npm_dmptranscripts_TS2344 (agents/bugs/npmsample.md, `APIPartialGuild extends ... Pick<APIGuild, ...>` while
   APIGuild extends APIPartialGuild): which file a checker reaches first decides whether the cycle shows as TS2310 or
   as a short member set (TS2344), so that fix likely fixes both; check this project's K-dependence with it. The clone is
-  kept in thirdparty/npmsample/20261107 (for det3 / whoever fixes dmptranscripts). [open]
+  kept on the second box. To reproduce on another box: discordjs-choice-selectmenu-builder@2.1.0,
+  https://github.com/LeCarbonator/discordjs-choice-selectmenu-builder at 63ad5355, candidate i=93 of
+  test/npmsample/20261107.candidates.jsonl (setup.jsonl has its install and bench-config changes); `scripts/projdiff.py`
+  on the clone shows both runs. [open]
 - Unreduced, non-flip (the clones are kept): vuejs-core packages/compiler-sfc/src/style/pluginScoped.ts(190) missing 2
   TS7006 (tsgo 5, tttt 3); renzosunico/adonis5-gigya adonis-typings/index.ts(48) 2 extra TS2308 "Module
   'gigya/dist/lib/gigya' has already exported a member named 'RequestParams'"; menglimu/ml-components 8 extra
