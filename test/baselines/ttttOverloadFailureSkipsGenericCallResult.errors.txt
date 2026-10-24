@@ -1,0 +1,45 @@
+ttttOverloadFailureSkipsGenericCallResult.ts(15,24): error TS2345: Argument of type '<A, R2 extends never>(e: Box<A, R2>) => Box<A, R2>' is not assignable to parameter of type '(_: Box<string, unknown>) => Box<string, never>'.
+  Types of parameters 'e' and '_' are incompatible.
+    Type 'Box<string, unknown>' is not assignable to type 'Box<string, never>'.
+      Type 'unknown' is not assignable to type 'never'.
+ttttOverloadFailureSkipsGenericCallResult.ts(19,12): error TS2488: Type 'never' must have a '[Symbol.iterator]()' method that returns an iterator.
+ttttOverloadFailureSkipsGenericCallResult.ts(19,19): error TS2345: Argument of type '<A, R2 extends never>(e: Box<A, R2>) => Box<A, R2>' is not assignable to parameter of type '(_: Box<string, unknown>) => Box<string, never>'.
+  Types of parameters 'e' and '_' are incompatible.
+    Type 'Box<string, unknown>' is not assignable to type 'Box<string, never>'.
+      Type 'unknown' is not assignable to type 'never'.
+
+
+==== ttttOverloadFailureSkipsGenericCallResult.ts (3 errors) ====
+    // An overload failure's fallback inference (SkipGenericFunctions) skips an argument that is a call returning a generic
+    // function, like any generic function argument (tsc's anyFunctionType): the failed pipe's C stays its default, never
+    interface Box<A, R> {
+        a: A;
+        r: () => R;
+        pipe<X, B = never, C = never>(this: X, ab: (_: X) => B, bc: (_: B) => C): C;
+        [Symbol.iterator](): Iterator<Box<A, R>, A, any>;
+    }
+    interface Ctx<R> { r: R }
+    declare function sat<R>(): <A, R2 extends R>(e: Box<A, R2>) => Box<A, R2>;
+    declare function provide<R>(ctx: Ctx<R>): <A>(self: Box<A, R>) => Box<A, never>;
+    declare const b: Box<string, unknown>;
+    declare const empty: Ctx<never>;
+    
+    const viaCall = b.pipe(sat<never>(), provide(empty));
+                           ~~~~~~~~~~~~
+!!! error TS2345: Argument of type '<A, R2 extends never>(e: Box<A, R2>) => Box<A, R2>' is not assignable to parameter of type '(_: Box<string, unknown>) => Box<string, never>'.
+!!! error TS2345:   Types of parameters 'e' and '_' are incompatible.
+!!! error TS2345:     Type 'Box<string, unknown>' is not assignable to type 'Box<string, never>'.
+!!! error TS2345:       Type 'unknown' is not assignable to type 'never'.
+    const n: number = viaCall;
+    
+    function* gen() {
+        yield* b.pipe(sat<never>(), provide(empty));
+               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2488: Type 'never' must have a '[Symbol.iterator]()' method that returns an iterator.
+                      ~~~~~~~~~~~~
+!!! error TS2345: Argument of type '<A, R2 extends never>(e: Box<A, R2>) => Box<A, R2>' is not assignable to parameter of type '(_: Box<string, unknown>) => Box<string, never>'.
+!!! error TS2345:   Types of parameters 'e' and '_' are incompatible.
+!!! error TS2345:     Type 'Box<string, unknown>' is not assignable to type 'Box<string, never>'.
+!!! error TS2345:       Type 'unknown' is not assignable to type 'never'.
+    }
+    

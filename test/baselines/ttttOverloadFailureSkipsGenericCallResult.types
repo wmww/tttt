@@ -1,0 +1,76 @@
+//// [test/cases/ttttOverloadFailureSkipsGenericCallResult.ts] ////
+
+=== ttttOverloadFailureSkipsGenericCallResult.ts ===
+// An overload failure's fallback inference (SkipGenericFunctions) skips an argument that is a call returning a generic
+// function, like any generic function argument (tsc's anyFunctionType): the failed pipe's C stays its default, never
+interface Box<A, R> {
+    a: A;
+>a : A
+
+    r: () => R;
+>r : () => R
+
+    pipe<X, B = never, C = never>(this: X, ab: (_: X) => B, bc: (_: B) => C): C;
+>pipe : <X, B = never, C = never>(this: X, ab: (_: X) => B, bc: (_: B) => C) => C
+>this : X
+>ab : (_: X) => B
+>_ : X
+>bc : (_: B) => C
+>_ : B
+
+    [Symbol.iterator](): Iterator<Box<A, R>, A, any>;
+>[Symbol.iterator] : () => Iterator<Box<A, R>, A, any>
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+}
+interface Ctx<R> { r: R }
+>r : R
+
+declare function sat<R>(): <A, R2 extends R>(e: Box<A, R2>) => Box<A, R2>;
+>sat : <R>() => <A, R2 extends R>(e: Box<A, R2>) => Box<A, R2>
+>e : Box<A, R2>
+
+declare function provide<R>(ctx: Ctx<R>): <A>(self: Box<A, R>) => Box<A, never>;
+>provide : <R>(ctx: Ctx<R>) => <A>(self: Box<A, R>) => Box<A, never>
+>ctx : Ctx<R>
+>self : Box<A, R>
+
+declare const b: Box<string, unknown>;
+>b : Box<string, unknown>
+
+declare const empty: Ctx<never>;
+>empty : Ctx<never>
+
+const viaCall = b.pipe(sat<never>(), provide(empty));
+>viaCall : never
+>b.pipe(sat<never>(), provide(empty)) : never
+>b.pipe : <X, B = never, C = never>(this: X, ab: (_: X) => B, bc: (_: B) => C) => C
+>b : Box<string, unknown>
+>pipe : <X, B = never, C = never>(this: X, ab: (_: X) => B, bc: (_: B) => C) => C
+>sat<never>() : <A, R2 extends never>(e: Box<A, R2>) => Box<A, R2>
+>sat : <R>() => <A, R2 extends R>(e: Box<A, R2>) => Box<A, R2>
+>provide(empty) : <A>(self: Box<A, never>) => Box<A, never>
+>provide : <R>(ctx: Ctx<R>) => <A>(self: Box<A, R>) => Box<A, never>
+>empty : Ctx<never>
+
+const n: number = viaCall;
+>n : number
+>viaCall : never
+
+function* gen() {
+>gen : () => Generator<any, void, unknown>
+
+    yield* b.pipe(sat<never>(), provide(empty));
+>yield* b.pipe(sat<never>(), provide(empty)) : any
+>b.pipe(sat<never>(), provide(empty)) : never
+>b.pipe : <X, B = never, C = never>(this: X, ab: (_: X) => B, bc: (_: B) => C) => C
+>b : Box<string, unknown>
+>pipe : <X, B = never, C = never>(this: X, ab: (_: X) => B, bc: (_: B) => C) => C
+>sat<never>() : <A, R2 extends never>(e: Box<A, R2>) => Box<A, R2>
+>sat : <R>() => <A, R2 extends R>(e: Box<A, R2>) => Box<A, R2>
+>provide(empty) : <A>(self: Box<A, never>) => Box<A, never>
+>provide : <R>(ctx: Ctx<R>) => <A>(self: Box<A, R>) => Box<A, never>
+>empty : Ctx<never>
+}
+

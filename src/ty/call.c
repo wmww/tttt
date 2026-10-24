@@ -1676,6 +1676,11 @@ static TyMapper const* infer_type_arguments(
             arg->generic_function = !arg->spread && !arg->part_of_spread &&
                 generic_function_argument(me, arg->type, literal_arg_context(me, shape_type_at(&shape, i), return_mapper), &contextual);
             if (arg->generic_function) {
+                // (Under SkipGenericFunctions, a first inference or an overload failure's fallback, it is tsc's
+                // anyFunctionType and nothing is inferred from it: checkExpression's
+                // instantiateTypeWithSingleGenericCallSignature, `e.pipe(sat<never>(), setContext(ctx))` failing keeps
+                // its result `never`, the default)
+                if (skip_generic || skip_generic_functions) continue;
                 infer_from_generic_function_arg(me, sig, &inf, shape_type_at(&shape, i), arg, return_mapper);
                 continue;
             }

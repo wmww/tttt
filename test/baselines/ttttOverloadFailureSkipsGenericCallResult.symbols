@@ -1,0 +1,113 @@
+//// [test/cases/ttttOverloadFailureSkipsGenericCallResult.ts] ////
+
+=== ttttOverloadFailureSkipsGenericCallResult.ts ===
+// An overload failure's fallback inference (SkipGenericFunctions) skips an argument that is a call returning a generic
+// function, like any generic function argument (tsc's anyFunctionType): the failed pipe's C stays its default, never
+interface Box<A, R> {
+>Box : Symbol(Box, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 0, 0))
+>A : Symbol(A, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 2, 14))
+>R : Symbol(R, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 2, 16))
+
+    a: A;
+>a : Symbol(Box.a, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 2, 21))
+>A : Symbol(A, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 2, 14))
+
+    r: () => R;
+>r : Symbol(Box.r, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 3, 9))
+>R : Symbol(R, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 2, 16))
+
+    pipe<X, B = never, C = never>(this: X, ab: (_: X) => B, bc: (_: B) => C): C;
+>pipe : Symbol(Box.pipe, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 4, 15))
+>X : Symbol(X, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 5, 9))
+>B : Symbol(B, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 5, 11))
+>C : Symbol(C, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 5, 22))
+>this : Symbol(this, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 5, 34))
+>X : Symbol(X, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 5, 9))
+>ab : Symbol(ab, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 5, 42))
+>_ : Symbol(_, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 5, 48))
+>X : Symbol(X, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 5, 9))
+>B : Symbol(B, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 5, 11))
+>bc : Symbol(bc, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 5, 59))
+>_ : Symbol(_, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 5, 65))
+>B : Symbol(B, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 5, 11))
+>C : Symbol(C, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 5, 22))
+>C : Symbol(C, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 5, 22))
+
+    [Symbol.iterator](): Iterator<Box<A, R>, A, any>;
+>[Symbol.iterator] : Symbol(Box[Symbol.iterator], Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 5, 80))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Iterator : Symbol(Iterator, Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2025.iterator.d.ts, --, --))
+>Box : Symbol(Box, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 0, 0))
+>A : Symbol(A, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 2, 14))
+>R : Symbol(R, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 2, 16))
+>A : Symbol(A, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 2, 14))
+}
+interface Ctx<R> { r: R }
+>Ctx : Symbol(Ctx, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 7, 1))
+>R : Symbol(R, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 8, 14))
+>r : Symbol(Ctx.r, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 8, 18))
+>R : Symbol(R, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 8, 14))
+
+declare function sat<R>(): <A, R2 extends R>(e: Box<A, R2>) => Box<A, R2>;
+>sat : Symbol(sat, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 8, 25))
+>R : Symbol(R, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 9, 21))
+>A : Symbol(A, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 9, 28))
+>R2 : Symbol(R2, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 9, 30))
+>R : Symbol(R, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 9, 21))
+>e : Symbol(e, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 9, 45))
+>Box : Symbol(Box, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 0, 0))
+>A : Symbol(A, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 9, 28))
+>R2 : Symbol(R2, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 9, 30))
+>Box : Symbol(Box, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 0, 0))
+>A : Symbol(A, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 9, 28))
+>R2 : Symbol(R2, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 9, 30))
+
+declare function provide<R>(ctx: Ctx<R>): <A>(self: Box<A, R>) => Box<A, never>;
+>provide : Symbol(provide, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 9, 74))
+>R : Symbol(R, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 10, 25))
+>ctx : Symbol(ctx, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 10, 28))
+>Ctx : Symbol(Ctx, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 7, 1))
+>R : Symbol(R, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 10, 25))
+>A : Symbol(A, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 10, 43))
+>self : Symbol(self, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 10, 46))
+>Box : Symbol(Box, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 0, 0))
+>A : Symbol(A, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 10, 43))
+>R : Symbol(R, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 10, 25))
+>Box : Symbol(Box, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 0, 0))
+>A : Symbol(A, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 10, 43))
+
+declare const b: Box<string, unknown>;
+>b : Symbol(b, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 11, 13))
+>Box : Symbol(Box, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 0, 0))
+
+declare const empty: Ctx<never>;
+>empty : Symbol(empty, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 12, 13))
+>Ctx : Symbol(Ctx, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 7, 1))
+
+const viaCall = b.pipe(sat<never>(), provide(empty));
+>viaCall : Symbol(viaCall, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 14, 5))
+>b.pipe : Symbol(Box.pipe, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 4, 15))
+>b : Symbol(b, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 11, 13))
+>pipe : Symbol(Box.pipe, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 4, 15))
+>sat : Symbol(sat, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 8, 25))
+>provide : Symbol(provide, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 9, 74))
+>empty : Symbol(empty, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 12, 13))
+
+const n: number = viaCall;
+>n : Symbol(n, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 15, 5))
+>viaCall : Symbol(viaCall, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 14, 5))
+
+function* gen() {
+>gen : Symbol(gen, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 15, 26))
+
+    yield* b.pipe(sat<never>(), provide(empty));
+>b.pipe : Symbol(Box.pipe, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 4, 15))
+>b : Symbol(b, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 11, 13))
+>pipe : Symbol(Box.pipe, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 4, 15))
+>sat : Symbol(sat, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 8, 25))
+>provide : Symbol(provide, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 9, 74))
+>empty : Symbol(empty, Decl(ttttOverloadFailureSkipsGenericCallResult.ts, 12, 13))
+}
+
