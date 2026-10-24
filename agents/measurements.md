@@ -1676,3 +1676,13 @@ quiet box: vue +265% wall (0.19 -> 0.70 s; its shown TS5115 still reruns: the le
 top), type-fest +5.9%, effect +11.4%, drizzle +2.1%, excalidraw +6.2% (user +1..+5%; callgrind zod +1.74%, drizzle
 +1.31%, excalidraw +1.70%, type-fest +1.52%, effect +1.72% over the same span: the 223 correctness commits' drift, no rerun involved). tsgo's caches have a limit code in 28 / 6990 source-sweep configs and a circularity code
 in 112: the ceiling for legitimate reruns. agents/notes/one_checker_rerun.md (det3) has the design discussion.
+
+## The d22d93ae..main per-file regressions, after the fixes (2026-10-25, this box, fast builds, interleaved best of 2, loaded box)
+Three commits had made single files 4-12x slower (no rerun involved): e01e80779 (identity relates normalized types:
+react-scan's babel file 28 -> 346 ms), 768a930c4 (union contextual type discriminated at any size: monkeytype
+setters.ts 30 -> 130 ms), d06134025 (identity keyed by the pair in id order leaking into variance measurements:
+renovate redis.ts 57k -> 76k types). Fixed by 0f65555de (memoized intersection-object/union-index accesses when
+clean), 802676432 (constraint of an indexed access by a union of keys cached), c65872cc0 (no shared identity key
+inside a variance measurement): 22 / 22 ms / 57k types. The 20 biggest sweep configs measured old vs main 99f68d63d:
+median wall ratio 1.05, p90 1.20, max 1.73 (soybean-admin, a legitimate rerun); the previous run before the fixes had
+react-scan 3.57x and three projects at 1.4-1.5x that were load noise (fixE's K1 re-measure: not slower).
