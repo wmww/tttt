@@ -166,7 +166,7 @@ for flips); a separate file so the three boxes never conflict.
   TS2349, TS2532, TS2722). An array destructuring of a tuple union, `const [tag] = change; switch (tag) { case
   'begin': change[2]... }`, narrows `change` by the destructured tuple discriminant in tsgo (the binding-element
   parent narrowing, for array binding patterns too), and tttt narrows only `tag`. Repro
-  test/cases/npm_rocicorp_mono_TS2339.ts (by hand, 18 lines). [flip] (claimed: corF) [open]
+  test/cases/npm_rocicorp_mono_TS2339.ts (by hand, 18 lines). [flip] Fixed (corF): destructured_alias_name (src/ty/flow.c, tsc getCandidateDiscriminantPropertyAccess for a destructured const) accepted only object patterns; now any top-level pattern, the element name from pattern_element_name (array index, numeric object keys too). Repro ttttArrayDestructuredDiscriminant. [fixed 54c72943d]
 - Large seed 20261401, matrix-org/matrix-js-sdk@develop: spurious TS2322 "Type 'unknown' is not assignable to type
   'SecretsBundleJson'". The wasm package's `class SecretsBundle { to_json(): unknown }` gets an overload
   `to_json(): Promise<SecretsBundleJson>` from the project's module augmentation (`declare module ... { interface
