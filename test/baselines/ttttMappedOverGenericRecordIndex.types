@@ -1,0 +1,44 @@
+//// [test/cases/ttttMappedOverGenericRecordIndex.ts] ////
+
+=== ttttMappedOverGenericRecordIndex.ts ===
+// A generic mapped type over a lone generic mapped modifiers type that isn't homomorphic (Record's `[P in K]` with
+// K = keyof T) has its index signatures, the template at their keys (tsc's resolveMappedTypeMembers over
+// forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType): Object.entries infers from the string one (cella)
+function f<T extends Record<string, string>>(o: Partial<Record<keyof T, string>>, r: Record<keyof T, string>, p: Partial<T>) {
+>f : <T extends Record<string, string>>(o: Partial<Record<keyof T, string>>, r: Record<keyof T, string>, p: Partial<T>) => void
+>o : Partial<Record<keyof T, string>>
+>r : Record<keyof T, string>
+>p : Partial<T>
+
+  const e1 = Object.entries(o);
+>e1 : [string, Record<keyof T, string>[string] | undefined][]
+>Object.entries(o) : [string, Record<keyof T, string>[string] | undefined][]
+>Object.entries : { <T_1>(o: { [s: string]: T_1; } | ArrayLike<T_1>): [string, T_1][]; (o: {}): [string, any][]; }
+>Object : ObjectConstructor
+>entries : { <T_1>(o: { [s: string]: T_1; } | ArrayLike<T_1>): [string, T_1][]; (o: {}): [string, any][]; }
+>o : Partial<Record<keyof T, string>>
+
+  const e2 = Object.entries(r);
+>e2 : [string, string][]
+>Object.entries(r) : [string, string][]
+>Object.entries : { <T_1>(o: { [s: string]: T_1; } | ArrayLike<T_1>): [string, T_1][]; (o: {}): [string, any][]; }
+>Object : ObjectConstructor
+>entries : { <T_1>(o: { [s: string]: T_1; } | ArrayLike<T_1>): [string, T_1][]; (o: {}): [string, any][]; }
+>r : Record<keyof T, string>
+
+  const e3 = Object.entries(p);
+>e3 : [string, any][]
+>Object.entries(p) : [string, any][]
+>Object.entries : { <T_1>(o: { [s: string]: T_1; } | ArrayLike<T_1>): [string, T_1][]; (o: {}): [string, any][]; }
+>Object : ObjectConstructor
+>entries : { <T_1>(o: { [s: string]: T_1; } | ArrayLike<T_1>): [string, T_1][]; (o: {}): [string, any][]; }
+>p : Partial<T>
+
+  type K1 = keyof Partial<Record<keyof T, string>>;
+>K1 : keyof T
+
+  const x: Partial<Record<keyof T, string>>[string] = null!;
+>x : Partial<Record<keyof T, string>>[string]
+>null! : never
+}
+

@@ -1,0 +1,55 @@
+//// [test/cases/ttttMappedOverGenericRecordIndex.ts] ////
+
+=== ttttMappedOverGenericRecordIndex.ts ===
+// A generic mapped type over a lone generic mapped modifiers type that isn't homomorphic (Record's `[P in K]` with
+// K = keyof T) has its index signatures, the template at their keys (tsc's resolveMappedTypeMembers over
+// forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType): Object.entries infers from the string one (cella)
+function f<T extends Record<string, string>>(o: Partial<Record<keyof T, string>>, r: Record<keyof T, string>, p: Partial<T>) {
+>f : Symbol(f, Decl(ttttMappedOverGenericRecordIndex.ts, 0, 0))
+>T : Symbol(T, Decl(ttttMappedOverGenericRecordIndex.ts, 3, 11))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>o : Symbol(o, Decl(ttttMappedOverGenericRecordIndex.ts, 3, 45))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttMappedOverGenericRecordIndex.ts, 3, 11))
+>r : Symbol(r, Decl(ttttMappedOverGenericRecordIndex.ts, 3, 81))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttMappedOverGenericRecordIndex.ts, 3, 11))
+>p : Symbol(p, Decl(ttttMappedOverGenericRecordIndex.ts, 3, 109))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttMappedOverGenericRecordIndex.ts, 3, 11))
+
+  const e1 = Object.entries(o);
+>e1 : Symbol(e1, Decl(ttttMappedOverGenericRecordIndex.ts, 4, 7))
+>Object.entries : Symbol(ObjectConstructor.entries, Decl(lib.es2017.object.d.ts, --, --), Decl(lib.es2017.object.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>entries : Symbol(ObjectConstructor.entries, Decl(lib.es2017.object.d.ts, --, --), Decl(lib.es2017.object.d.ts, --, --))
+>o : Symbol(o, Decl(ttttMappedOverGenericRecordIndex.ts, 3, 45))
+
+  const e2 = Object.entries(r);
+>e2 : Symbol(e2, Decl(ttttMappedOverGenericRecordIndex.ts, 5, 7))
+>Object.entries : Symbol(ObjectConstructor.entries, Decl(lib.es2017.object.d.ts, --, --), Decl(lib.es2017.object.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>entries : Symbol(ObjectConstructor.entries, Decl(lib.es2017.object.d.ts, --, --), Decl(lib.es2017.object.d.ts, --, --))
+>r : Symbol(r, Decl(ttttMappedOverGenericRecordIndex.ts, 3, 81))
+
+  const e3 = Object.entries(p);
+>e3 : Symbol(e3, Decl(ttttMappedOverGenericRecordIndex.ts, 6, 7))
+>Object.entries : Symbol(ObjectConstructor.entries, Decl(lib.es2017.object.d.ts, --, --), Decl(lib.es2017.object.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>entries : Symbol(ObjectConstructor.entries, Decl(lib.es2017.object.d.ts, --, --), Decl(lib.es2017.object.d.ts, --, --))
+>p : Symbol(p, Decl(ttttMappedOverGenericRecordIndex.ts, 3, 109))
+
+  type K1 = keyof Partial<Record<keyof T, string>>;
+>K1 : Symbol(K1, Decl(ttttMappedOverGenericRecordIndex.ts, 6, 31))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttMappedOverGenericRecordIndex.ts, 3, 11))
+
+  const x: Partial<Record<keyof T, string>>[string] = null!;
+>x : Symbol(x, Decl(ttttMappedOverGenericRecordIndex.ts, 8, 7))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttMappedOverGenericRecordIndex.ts, 3, 11))
+}
+

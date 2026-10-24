@@ -4335,9 +4335,12 @@ static Members const* expand_generic_intersection_homomorphic(Checker* me, Membe
             // A generic homomorphic mapped part's index signatures too, the template at their keys (tsc's
             // resolveMappedTypeMembers, forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType of the modifiers type):
             // `Nullable<Vals<K>>` with `Vals<K>` mapped over `keyof K`, K's constraint `Record<string, X>`, has a string
-            // index signature of `Vals<K>[string] | null`. (Only those: the other parts' would be tsc's too, but inferring
-            // from them changes localTypeParameterInferencePriority's candidates, unexplained)
-            bool homomorphic_part = source->mapped && source->mapped->keyof_constraint && !source->mapped->name_type;
+            // index signature of `Vals<K>[string] | null`. So does a lone generic mapped modifiers type that isn't
+            // homomorphic, `Partial<Record<keyof T, string>>` with `T extends Record<string, string>` has a string index
+            // of `Record<keyof T, string>[string] | undefined` (cella's Object.entries). (Not an intersection's other
+            // parts: they would be tsc's too, but inferring from them changes localTypeParameterInferencePriority's
+            // candidates, unexplained)
+            bool homomorphic_part = source->mapped && !source->mapped->name_type && (source->mapped->keyof_constraint || parts.len == 1);
             incomplete |= (source->index_count && (whole || !homomorphic_part)) || members_rare(source)->index_signatures_incomplete;
             for (u32 j = 0; !whole && homomorphic_part && j < source->index_count; j++) {
                 IndexInfo const* from = &source->index[j];

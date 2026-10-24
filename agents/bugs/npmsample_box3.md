@@ -183,7 +183,9 @@ for flips); a separate file so the three boxes never conflict.
   'string'". `Object.entries(o)` with `o: Partial<Record<keyof T, string>>` (T a type parameter) infers U for
   `{ [s: string]: U }` as `Record<keyof T, string>[string] | undefined` in tsgo (an index signature read off the
   generic mapped type) and as `unknown` in tttt. Repro test/cases/npm_cellajs_cella_TS2322.ts (by hand). [flip]
-  [open]
+  (claimed: fixF) Cause: expand_generic_intersection_homomorphic() (members.c) took a generic modifiers type's index
+  signatures only from a homomorphic mapped part; Record<keyof T, string> isn't one. Now a lone mapped modifiers type's
+  are taken too. Repro ttttMappedOverGenericRecordIndex. [fixed PENDING]
 - Large seed 20261402, marimo-team/marimohub@main (commit 2139c26c5), packages/core and packages/api
   (tsconfig.json; api reaches core's file): spurious TS2322 at packages/core/src/services/runtime/SandboxProvisioner.ts:852
   "Type 'Promise<unknown> | Promise<ReturnType<T[string]>>' is not assignable to type 'Promise<void>'", in `await
