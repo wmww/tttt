@@ -1145,6 +1145,13 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                 Symbol const* decl = index < ast_symbols_size(identifier_type_namespace_symbols(my identifier)) ?
                     *ast_symbols_at(identifier_type_namespace_symbols(my identifier), index) :
                     nullptr;
+                // (A missing property of what `export =` names is the import itself, tsc's alias of unknownSymbol)
+                IdentifierTypeRare const* rare = my identifier->rare;
+                if (!decl && index == 0 && rare && rare->export_equals_namespace &&
+                    ty_export_equals_property_missing(current_checker, symbol_resolve_alias((Symbol*)rare->export_equals_namespace))
+                ) {
+                    decl = rare->export_equals_namespace;
+                }
                 ctx->any_keeps_rendering = true; // Part of a qualified name (any in a heritage clause too, see above)
                 baseline_test_case_add_type_node(ctx, *i, &type_any);
                 // (After an unresolved name of a heritage clause, the rest are expressions of no symbol)

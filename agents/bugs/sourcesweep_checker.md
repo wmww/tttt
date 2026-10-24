@@ -248,7 +248,10 @@ full sweep: pixijs (binder merge unit), better-auth (lynx-store), es-toolkit (en
   later). Only in programs that already have an error at the import. Repro: test/cases/ttttImportExportEqualsPropertyUmdNamespace.ts
   with the `{ dbg: ... }` intersection dropped and the import renamed. (2026-10-18: the TS2503 comes from
   the scope pass's not-found report (scope_report_not_found / its deferred event); fixing it needs a diagnostic the
-  checker confirms later, "only if the property exists", which nothing in tttt does yet. Left.) (claimed: fixF) [open]
+  checker confirms later, "only if the property exists", which nothing in tttt does yet. Left.) Fixed (fixF): the scope
+  pass records such an import as IdentifierTypeRare.export_equals_namespace instead of reporting, and the type's check says
+  TS2503 only when the property exists (the symbols baseline shows the import for a missing one). Repro
+  test/cases/ttttImportExportEqualsMissingPropertyNamespace.ts. [fixed PENDING]
 
 ## clidiff `diagnostics` verdicts, 2026-10-18 
 Fixed: rocket (+TS7031: a callback parameter asked for before its call statement is checked, through a JS

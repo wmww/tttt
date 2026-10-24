@@ -1,0 +1,30 @@
+//// [test/cases/ttttImportExportEqualsMissingPropertyNamespace.ts] ////
+
+=== /node_modules/@types/dbg/index.d.ts ===
+declare var dbg: dbg.Debug & { yes: dbg.Debug };
+>dbg : import("dbg").Debug & { yes: dbg.Debug; }
+>dbg : any
+>yes : import("dbg").Debug
+>dbg : any
+
+export = dbg;
+>dbg : import("dbg").Debug & { yes: dbg.Debug; }
+
+declare namespace dbg {
+    interface Debug { (ns: string): Debugger; }
+>ns : string
+
+    interface Debugger { enabled: boolean; }
+>enabled : boolean
+}
+=== /a.ts ===
+import type { nope, yes } from "dbg";
+>nope : any
+>yes : any
+
+export interface I { d?: nope.Debugger; e?: yes.Debugger }
+>d : any
+>nope : any
+>e : any
+>yes : any
+

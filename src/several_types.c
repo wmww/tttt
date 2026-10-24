@@ -336,8 +336,14 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
                 if (!decl) {
                     Symbol const* type_symbol = nullptr;
                     Symbol const* type = scope_get_type(names, span_sv(*i), &type_symbol);
+                    Symbol const* property = !type && type_symbol && (type_symbol->flags & SYMBOL_ALIAS) ?
+                        symbol_resolve_alias((Symbol*)type_symbol) : nullptr;
                     if (type && !(type->flags & SYMBOL_NAMESPACE) && !type->is_placeholder) {
                         rare->type_as_namespace = type;
+                    } else if (property && property != type_symbol && property->decl_count &&
+                        property->decls[0].kind == SYMBOL_DECL_EXPORT_EQUALS_PROPERTY
+                    ) {
+                        rare->export_equals_namespace = type_symbol;
                     } else if (i->size) { // (A missing name: tsc's resolveEntityName says nothing)
                         scope_report_namespace_not_found(names, *i, errs);
                     }
@@ -790,6 +796,13 @@ static void identifier_type_typecheck_inner(IdentifierType const* me, bool resol
         } else {
             error_ctx_error_d(errs, left, 2702, "'", left, "' only refers to a type, but is being used as a namespace here.");
         }
+    }
+    // (Without the spelling suggestion the scope pass would have made: the names it would offer aren't known here)
+    if (rare && rare->export_equals_namespace && ast_spans_size(&rare->namespaces) &&
+        !ty_export_equals_property_missing(current_checker, symbol_resolve_alias((Symbol*)rare->export_equals_namespace))
+    ) {
+        Span left = rare->namespaces.data[0];
+        error_ctx_error_d(errs, left, 2503, "Cannot find namespace '", left, "'.");
     }
     if (rare && (rare->value_member || rare->value_missing)) {
         Checker* checker = current_checker;

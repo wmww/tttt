@@ -1,0 +1,21 @@
+/a.ts(1,15): error TS2305: Module '"dbg"' has no exported member 'nope'.
+/a.ts(2,45): error TS2503: Cannot find namespace 'yes'.
+
+
+==== /node_modules/@types/dbg/index.d.ts (0 errors) ====
+    declare var dbg: dbg.Debug & { yes: dbg.Debug };
+    export = dbg;
+    declare namespace dbg {
+        interface Debug { (ns: string): Debugger; }
+        interface Debugger { enabled: boolean; }
+    }
+==== /node_modules/@types/dbg/package.json (0 errors) ====
+    { "name": "@types/dbg", "version": "1.0.0", "types": "index.d.ts" }
+==== /a.ts (2 errors) ====
+    import type { nope, yes } from "dbg";
+                  ~~~~
+!!! error TS2305: Module '"dbg"' has no exported member 'nope'.
+    export interface I { d?: nope.Debugger; e?: yes.Debugger }
+                                                ~~~
+!!! error TS2503: Cannot find namespace 'yes'.
+    

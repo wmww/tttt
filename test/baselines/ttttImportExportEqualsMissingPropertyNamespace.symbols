@@ -1,0 +1,40 @@
+//// [test/cases/ttttImportExportEqualsMissingPropertyNamespace.ts] ////
+
+=== /node_modules/@types/dbg/index.d.ts ===
+declare var dbg: dbg.Debug & { yes: dbg.Debug };
+>dbg : Symbol(dbg, Decl(index.d.ts, 0, 11), Decl(index.d.ts, 1, 13))
+>dbg : Symbol(dbg, Decl(index.d.ts, 0, 11), Decl(index.d.ts, 1, 13))
+>Debug : Symbol(dbg.Debug, Decl(index.d.ts, 2, 23))
+>yes : Symbol(yes, Decl(index.d.ts, 0, 30))
+>dbg : Symbol(dbg, Decl(index.d.ts, 0, 11), Decl(index.d.ts, 1, 13))
+>Debug : Symbol(dbg.Debug, Decl(index.d.ts, 2, 23))
+
+export = dbg;
+>dbg : Symbol(dbg, Decl(index.d.ts, 0, 11), Decl(index.d.ts, 1, 13))
+
+declare namespace dbg {
+>dbg : Symbol(dbg, Decl(index.d.ts, 0, 11), Decl(index.d.ts, 1, 13))
+
+    interface Debug { (ns: string): Debugger; }
+>Debug : Symbol(Debug, Decl(index.d.ts, 2, 23))
+>ns : Symbol(ns, Decl(index.d.ts, 3, 23))
+>Debugger : Symbol(Debugger, Decl(index.d.ts, 3, 47))
+
+    interface Debugger { enabled: boolean; }
+>Debugger : Symbol(Debugger, Decl(index.d.ts, 3, 47))
+>enabled : Symbol(Debugger.enabled, Decl(index.d.ts, 4, 24))
+}
+=== /a.ts ===
+import type { nope, yes } from "dbg";
+>nope : Symbol(nope, Decl(a.ts, 0, 13))
+>yes : Symbol(yes, Decl(a.ts, 0, 19))
+
+export interface I { d?: nope.Debugger; e?: yes.Debugger }
+>I : Symbol(I, Decl(a.ts, 0, 37))
+>d : Symbol(I.d, Decl(a.ts, 1, 20))
+>nope : Symbol(nope, Decl(a.ts, 0, 13))
+>Debugger : Symbol(nope.Debugger)
+>e : Symbol(I.e, Decl(a.ts, 1, 39))
+>yes : Symbol(yes)
+>Debugger : Symbol(yes.Debugger)
+
