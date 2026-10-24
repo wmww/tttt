@@ -1,0 +1,36 @@
+//// [test/cases/ttttDeclarationPathsPatternParentDirs.ts] ////
+
+=== /packages/ui/webc/src/a.ts ===
+import { D } from "@x/setup";
+>D : Symbol(D, Decl(a.ts, 0, 8))
+
+export const use = D;
+>use : Symbol(use, Decl(a.ts, 1, 12))
+>D : Symbol(D, Decl(a.ts, 0, 8))
+
+=== /packages/plugins/src/index.ts ===
+
+export * from "./ready";
+=== /packages/plugins/src/ready.ts ===
+export class TReadyPlugin { x = 1; }
+>TReadyPlugin : Symbol(TReadyPlugin, Decl(ready.ts, 0, 0))
+>x : Symbol(TReadyPlugin.x, Decl(ready.ts, 0, 27))
+
+=== /packages/setup/define.ts ===
+import { TReadyPlugin } from "@x/plugins";
+>TReadyPlugin : Symbol(TReadyPlugin, Decl(define.ts, 0, 8))
+
+export function make(): { get: () => { plugin: TReadyPlugin } } { return null!; }
+>make : Symbol(make, Decl(define.ts, 0, 42))
+>get : Symbol(get, Decl(define.ts, 1, 25))
+>plugin : Symbol(plugin, Decl(define.ts, 1, 38))
+>TReadyPlugin : Symbol(TReadyPlugin, Decl(define.ts, 0, 8))
+
+=== /packages/setup/index.ts ===
+import { make } from "./define";
+>make : Symbol(make, Decl(index.ts, 0, 8))
+
+export const D = make();
+>D : Symbol(D, Decl(index.ts, 1, 12))
+>make : Symbol(make, Decl(index.ts, 0, 8))
+

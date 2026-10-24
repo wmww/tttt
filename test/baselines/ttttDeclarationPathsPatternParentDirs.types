@@ -1,0 +1,38 @@
+//// [test/cases/ttttDeclarationPathsPatternParentDirs.ts] ////
+
+=== /packages/ui/webc/src/a.ts ===
+import { D } from "@x/setup";
+>D : { get: () => { plugin: import("@x/plugins").TReadyPlugin; }; }
+
+export const use = D;
+>use : { get: () => { plugin: import("@x/plugins").TReadyPlugin; }; }
+>D : { get: () => { plugin: import("@x/plugins").TReadyPlugin; }; }
+
+=== /packages/plugins/src/index.ts ===
+
+export * from "./ready";
+=== /packages/plugins/src/ready.ts ===
+export class TReadyPlugin { x = 1; }
+>TReadyPlugin : TReadyPlugin
+>x : number
+>1 : 1
+
+=== /packages/setup/define.ts ===
+import { TReadyPlugin } from "@x/plugins";
+>TReadyPlugin : typeof TReadyPlugin
+
+export function make(): { get: () => { plugin: TReadyPlugin } } { return null!; }
+>make : () => { get: () => { plugin: TReadyPlugin; }; }
+>get : () => { plugin: TReadyPlugin; }
+>plugin : TReadyPlugin
+>null! : never
+
+=== /packages/setup/index.ts ===
+import { make } from "./define";
+>make : () => { get: () => { plugin: import("@x/plugins").TReadyPlugin; }; }
+
+export const D = make();
+>D : { get: () => { plugin: import("@x/plugins").TReadyPlugin; }; }
+>make() : { get: () => { plugin: import("@x/plugins").TReadyPlugin; }; }
+>make : () => { get: () => { plugin: import("@x/plugins").TReadyPlugin; }; }
+

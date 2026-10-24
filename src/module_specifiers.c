@@ -195,11 +195,29 @@ static cstr non_module_name(cstr path) {
     return ret;
 }
 
-// getNormalizedAbsolutePath without a current directory: `.` and `..` resolved, a relative path stays relative
+// tsc's normalizePath: `.` and `..` resolved, a relative path stays relative, its leading `..`s kept (`../../core/src`,
+// a `paths` pattern relative to its config: they used to be dropped, so no such pattern ever matched)
 static cstr normalize(csview path) {
     if (path.size && path.buf[0] == '/') return absolute_path_of(c_sv("/"), path);
+    isize ups = 0;
+    while (path.size >= 2 && path.buf[0] == '.' && path.buf[1] == '.' && (path.size == 2 || path.buf[2] == '/')) {
+        ups++;
+        path = csview_slice(path, path.size == 2 ? 2 : 3, path.size);
+    }
     cstr absolute = absolute_path_of(c_sv("/"), path);
-    cstr ret = cstr_from_sv(csview_slice(cstr_sv(&absolute), 1, cstr_size(&absolute)));
+    // (The rest's own `..`s that climb out of it are leading ones too: `a/../../b` is `../b`)
+    csview rest = csview_slice(cstr_sv(&absolute), 1, cstr_size(&absolute));
+    isize depth = 0;
+    for (csview p = path; p.size;) {
+        isize slash = csview_find_sv(p, c_sv("/"));
+        csview segment = slash == c_NPOS ? p : csview_slice(p, 0, slash);
+        if (csview_equals(segment, "..")) { if (depth) depth--; else ups++; }
+        else if (segment.size && !csview_equals(segment, ".")) depth++;
+        p = slash == c_NPOS ? c_sv("") : csview_slice(p, slash + 1, p.size);
+    }
+    cstr ret = cstr_null;
+    for (isize i = 0; i < ups; i++) cstr_append_sv(&ret, i + 1 < ups || rest.size ? c_sv("../") : c_sv(".."));
+    cstr_append_sv(&ret, rest);
     cstr_drop(&absolute);
     return ret;
 }

@@ -129,11 +129,12 @@ boxes' appends never conflict. One section per seed, one bullet per repro, statu
   with a symlinked workspace package, paths, a deep re-export and a declaration-emitting inferred type did not reproduce it
   (the real call goes through `defineDescriptor`/`defineComponent` generics). The clone is kept on the second box at
   thirdparty/npmsample/20261115/0004-youra-h-soldy; `scripts/projdiff.py <clone>/packages/ui/webc/tsconfig.bench.json`
-  shows it. [open] [flip]
+  shows it. Fixed: module_specifiers.c's normalize() dropped a `paths` pattern's leading `..`s, so `../../plugins/src` never matched and the only name left was the node_modules link's relative path; test ttttDeclarationPathsPatternParentDirs. [fixed corF 2026-10-24] [flip]
 - soldy TS2883, second try with `// @link:` (test/cases-style, root /tsconfig.json with `paths` and `declaration`, a workspace
   package /packages/plugins linked at /node_modules/@s/plugins with `exports`/`types` into an unbuilt dist, a setup package
   depending on it via package.json `workspace:*`, TReadyPlugin deep re-exported, imported in one file and reaching the
   exported descriptor's inferred type as `{ plugins: [{ ctor: typeof TReadyPlugin }] }` through a generic `defineDescriptor`,
   with and without noEmit): tsgo and tttt agree (no error) in every variant, so no repro was committed. What the real project
   has that these lack: webc's tsconfig sits at packages/ui/webc with the checked files in ../../setup (outside it), and
-  `defineComponent`'s generics carry TReadyPlugin through more layers (plugin bundles). The clone stays. [open] [flip]
+  `defineComponent`'s generics carry TReadyPlugin through more layers (plugin bundles). The clone stays. (The missing
+  ingredient was a `paths` pattern starting with `../`, see the entry above.) [fixed corF 2026-10-24] [flip]
