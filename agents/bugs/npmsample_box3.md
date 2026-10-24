@@ -209,7 +209,7 @@ for flips); a separate file so the three boxes never conflict.
 - Large seed 20261402, latitude-dev/latitude-llm@development (commit 4914acc6c), apps/web (tsconfig.json): spurious
   TS2877 at src/domains/annotations/annotations.functions.ts:7 "This import uses a '.ts' extension to resolve to an
   input TypeScript file, but will not be rewritten during emit because it is not a relative path". tsgo 4 errors,
-  tttt 5, not a flip. Same as akash console-api's tsup.config.ts:1 (npmsample.md): a workspace package's .ts through its node_modules link; repro test/cases/ttttTsExtensionImportOfLinkedPackage.ts. (claimed: corF) [open]
+  tttt 5, not a flip. Same as akash console-api's tsup.config.ts:1 (npmsample.md): a workspace package's .ts through its node_modules link; repro test/cases/ttttTsExtensionImportOfLinkedPackage.ts. Fixed (corF): report_unsafe_rewrite (src/source_file.c) looked for node_modules in the imported file's real path; now the file's found_searching_node_modules flag, as emit_source_may_be_emitted and tsc's IsSourceFileFromExternalLibrary. [fixed ee1a75319]
 - Large seed 20261401, Bitterbot-AI/bitterbot-desktop@main (commit 733b74195), root tsconfig.json (declaration
   emit): missing TS5088 at src/telegram/bot.ts:471 "The inferred type of 'createTelegramWebhookCallback' references
   a type with a cyclic structure which cannot be trivially serialized". tsgo 1, tttt 0, so a flip. Not
