@@ -554,12 +554,12 @@ from there; tsgo's verdicts in test/sourcesweep/tsc.jsonl.gz.
   - fixE (2026-10-25): HttpRouter.ts:1219/:1245: a generic function argument against an intersection parameter `F &
     (unhandled extends E ? unknown : "...")` found no single contextual signature (the conditional member); tsc's
     getSignaturesOfType goes through the members' apparent types, so F's. generic_function_argument() (call.c) now
-    takes the apparent type of a generic intersection member. Test rw_effect_HttpRouter_TS2322. [fixed PENDING]
+    takes the apparent type of a generic intersection member. Test rw_effect_HttpRouter_TS2322. [fixed 75c2c3c61]
   - fixE: RpcClient.ts:417/:481/:504: `x.pipe(span ? Effect.withParentSpan(span, ...) : identity, ...)`: tsc's
     checkExpression instantiates each conditional branch that is a generic function in the parameter's context; tttt's
     ternary_has_generic_call() only routed a conditional with generic *calls* through the generic mode, so a union of
     two different generic signatures inferred nothing. Branch identifiers/properties of generic function type count now
-    (branch_is_generic_function). Test rw_effect_RpcClient_TS2345. [fixed PENDING]
+    (branch_is_generic_function). Test rw_effect_RpcClient_TS2345. [fixed 75c2c3c61]
   - fixE, parked: HttpApiEndpoint.ts:1151 (TS2322 '"~Payload"' / Top): makeProto's uninferable type parameters take their
     candidates from the declared return type (return-type inference), e.g. `Params extends Fields ? Struct<Params> :
     Params`; the candidate is checked against the constraint instantiated with `this` = the candidate
