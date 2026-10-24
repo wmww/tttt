@@ -1,0 +1,23 @@
+// @strict: true
+// @target: esnext
+// An argument's const context is decided by its parameter type as written (tsc's isConstContext asks getContextualType):
+// `initial: U` of reduce isn't one, although `as P` with `const P` makes the return mapper instantiate it to P. So
+// `{ amount: 0n }` is `{ amount: bigint }`, not `{ readonly amount: 0n }`
+interface PriceEth { currency: "ETH"; amount: bigint }
+interface PriceDai { currency: "DAI"; amount: bigint }
+type Price = PriceEth | PriceDai;
+export function b<P extends Price>(prices: P[]) {
+  return prices.reduce((acc, price) => ({ amount: acc.amount + price.amount }), { amount: 0n }) as P;
+}
+export function b2<const P extends Price>(prices: P[]) {
+  return prices.reduce((acc, price) => ({ amount: acc.amount + price.amount }), { amount: 0n }) as P;
+}
+export function b3<const P extends Price>(...prices: [P, ...P[]]) {
+  return prices.reduce((acc, price) => ({ amount: acc.amount + price.amount }), { amount: 0n }) as P;
+}
+export function c2<const P extends Price>(prices: P[]) {
+  return prices.reduce((acc, price) => { const z: number = acc; return acc; }, { amount: 0n }) as P;
+}
+export function c1<P extends Price>(prices: P[]) {
+  return prices.reduce((acc, price) => { const z: number = acc; return acc; }, { amount: 0n }) as P;
+}

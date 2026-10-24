@@ -1580,7 +1580,7 @@ static TyMapper const* infer_type_arguments(
                 self.fixing = true;
                 Ty const* context = literal_arg_context(me, param_type, return_mapper);
                 GenericFunctionMode mode = {0};
-                Ty const* type = ty_check_literal_argument(me, arg->expr, context, ty_is_const_type_variable(me, param_type, 0),
+                Ty const* type = ty_check_literal_argument_const_given(me, arg->expr, context, ty_is_const_type_variable(me, param_type, 0),
                     true, &mode);
                 arg->nested_generic = mode.skipped;
                 self.fixing = false;
@@ -1596,7 +1596,7 @@ static TyMapper const* infer_type_arguments(
         if (is_literal_arg(me, arg)) {
             GenericFunctionMode mode = {0};
             Ty const* param_type = shape_type_at(&shape, i);
-            arg->type = ty_check_literal_argument(me, arg->expr, literal_arg_context(me, param_type, return_mapper),
+            arg->type = ty_check_literal_argument_const_given(me, arg->expr, literal_arg_context(me, param_type, return_mapper),
                 param_type && ty_is_const_type_variable(me, param_type, 0), false, &mode);
             arg->nested_generic = mode.skipped;
             any_sensitive |= mode.skipped;
@@ -1653,7 +1653,7 @@ static TyMapper const* infer_type_arguments(
             GenericFunctionMode mode = { .sig = sig, .inf = &inf };
             Ty const* param_type = shape_type_at(&shape, i);
             my outer_inference = &self;
-            arg->type = ty_check_literal_argument(me, arg->expr, literal_arg_context(me, param_type, return_mapper),
+            arg->type = ty_check_literal_argument_const_given(me, arg->expr, literal_arg_context(me, param_type, return_mapper),
                 param_type && ty_is_const_type_variable(me, param_type, 0), false, &mode);
             my outer_inference = nullptr;
             infer_from_arg(me, &inf, &shape, args, i);

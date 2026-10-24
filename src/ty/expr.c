@@ -47,6 +47,10 @@ typedef struct ExprCtx {
     // While a call infers: `contextual` before its top-level instantiation (what a nested call resolves with: tsc's
     // resolveCall takes getContextualType(), and instantiates it with the outer mappers itself)
     Ty const* raw_contextual;
+    // `is_const` was decided by the caller from the contextual type as written (a call's argument against its parameter
+    // type, before the return mapper instantiated it): tsc's isConstContext asks getContextualType, `U` in
+    // `reduce<U>(..., initial: U)`, not the `const P` that `as P` makes of it. For this expression only
+    bool const_given;
 } ExprCtx;
 
 static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx);
@@ -301,7 +305,8 @@ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
         ctx.sig_contextual = nullptr;
         ctx.raw_contextual = ctx.contextual;
     }
-    ctx.is_const = in_const_context(me, expr, ctx);
+    if (!ctx.const_given) ctx.is_const = in_const_context(me, expr, ctx);
+    ctx.const_given = false;
     if (ctx.skip_sensitive) {
         if (ty_expr_is_context_sensitive(expr)) {
             if (expr->tag == EXPR_FUNCTION) return return_only_type(me, expr->function, ctx.contextual);
@@ -386,14 +391,29 @@ Ty const* ty_check_expr_in_const(Checker* me, Expr const* expr, Ty const* contex
     return check_with(me, expr, (ExprCtx){ .contextual = contextual, .is_const = is_const && ty_is_const_context_kind(expr) });
 }
 
-Ty const* ty_check_literal_argument(
-    Checker* me, Expr const* expr, Ty const* contextual, bool is_const, bool skip_sensitive, GenericFunctionMode* mode
+static Ty const* check_literal_argument(
+    Checker* me, Expr const* expr, Ty const* contextual, bool is_const, bool const_given, bool skip_sensitive, GenericFunctionMode* mode
 ) {
     return check_with(me, expr, (ExprCtx){
-        .contextual = contextual, .is_const = is_const && ty_is_const_context_kind(expr), .skip_sensitive = skip_sensitive,
+        .contextual = contextual, .is_const = is_const && ty_is_const_context_kind(expr), .const_given = const_given,
+        .skip_sensitive = skip_sensitive,
         .generic_mode = expr->tag == EXPR_OBJECT || expr->tag == EXPR_ARRAY || expr->tag == EXPR_TERNARY ||
             expr->tag == EXPR_JSX_ATTRIBUTES || expr->tag == EXPR_BINARY_OP ? mode : nullptr,
     });
+}
+
+Ty const* ty_check_literal_argument(
+    Checker* me, Expr const* expr, Ty const* contextual, bool is_const, bool skip_sensitive, GenericFunctionMode* mode
+) {
+    return check_literal_argument(me, expr, contextual, is_const, false, skip_sensitive, mode);
+}
+
+// An argument whose contextual type the return mapper instantiated: `is_const` says what the parameter type as written
+// makes of it (see ExprCtx.const_given)
+Ty const* ty_check_literal_argument_const_given(
+    Checker* me, Expr const* expr, Ty const* contextual, bool is_const, bool skip_sensitive, GenericFunctionMode* mode
+) {
+    return check_literal_argument(me, expr, contextual, is_const, true, skip_sensitive, mode);
 }
 
 // Checked with the context-sensitive functions in it left out: see ExprCtx.skip_sensitive

@@ -72,10 +72,10 @@ boxes' appends never conflict. One section per seed, one bullet per repro, statu
 ## Seed 20261110
 - 59 accepted, 57 byte-identical, 57/59 same (file, line, code), clean agreement 58/59, no K-dependence (no varies).
 - **npm_ensnode_ensnode-sdk_TS2769** (seed 20261110, @ensnode/ensnode-sdk@1.16.0, namehash/ensnode at 566cab2 packages/ensnode-sdk/src/shared/currencies.ts(206); tsgo 0,
-  tttt 1) **[flip]** (test: test/cases/npm__ensnode_ensnode-sdk_TS2769.ts, 22 lines): `prices.reduce((acc, price) => ({amount: acc.amount + price.amount, currency}), {amount: 0n, currency: firstPrice.currency}) as PriceType`
+  tttt 1) **[flip]** (claimed: corB) (test: test/cases/npm__ensnode_ensnode-sdk_TS2769.ts, 22 lines): `prices.reduce((acc, price) => ({amount: acc.amount + price.amount, currency}), {amount: 0n, currency: firstPrice.currency}) as PriceType`
   with `prices: [PriceType, PriceType, ...PriceType[]]`, `<const PriceType extends Price>` (Price a union of interfaces with literal `currency`): tttt reports
   TS2769 "No overload matches this call". Guess: reduce's overload choice with the initial value's `currency` (a `const`-type-parameter-constrained literal) is
-  widened or compared against the `U` inference differently (tsgo picks the `U` overload and then the assertion; tttt fails every overload). [open]
+  widened or compared against the `U` inference differently (tsgo picks the `U` overload and then the assertion; tttt fails every overload). Root cause: `as PriceType` gives the call a contextual type, so the return mapper instantiates `initial: U` to the `const` PriceType, and tttt took the argument for a const context (`{ readonly amount: 0n; ... }`, which then failed against the callback's bigint). tsc's isConstContext asks getContextualType, which is the raw `U`. The first-pass argument checks (ty_check_literal_argument_const_given) now decide const-ness from the parameter type as written. Repro ttttConstContextFromRawParameter. [fixed PENDING]
 - **npm_elysia_TS2307** (seed 20261110, elysia@1.4.30, elysiajs/elysia at e037eca example/video.ts(1); no flip, tsgo's TS2345 on line 4 is the knock-on): the package's own
   package.json (name `elysia`, `exports` pointing at a `./dist/index.d.ts` that doesn't exist, nothing built) and a dev dependency `node_modules/elysia` (another
   version): tsgo resolves `import 'elysia'` to node_modules after the self-reference fails, tttt reports TS2307. tttt's self-name resolution returned

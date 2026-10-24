@@ -1,0 +1,139 @@
+//// [test/cases/ttttConstContextFromRawParameter.ts] ////
+
+=== ttttConstContextFromRawParameter.ts ===
+// An argument's const context is decided by its parameter type as written (tsc's isConstContext asks getContextualType):
+// `initial: U` of reduce isn't one, although `as P` with `const P` makes the return mapper instantiate it to P. So
+// `{ amount: 0n }` is `{ amount: bigint }`, not `{ readonly amount: 0n }`
+interface PriceEth { currency: "ETH"; amount: bigint }
+>currency : "ETH"
+>amount : bigint
+
+interface PriceDai { currency: "DAI"; amount: bigint }
+>currency : "DAI"
+>amount : bigint
+
+type Price = PriceEth | PriceDai;
+>Price : Price
+
+export function b<P extends Price>(prices: P[]) {
+>b : <P extends Price>(prices: P[]) => P
+>prices : P[]
+
+  return prices.reduce((acc, price) => ({ amount: acc.amount + price.amount }), { amount: 0n }) as P;
+>prices.reduce((acc, price) => ({ amount: acc.amount + price.amount }), { amount: 0n }) as P : P
+>prices.reduce((acc, price) => ({ amount: acc.amount + price.amount }), { amount: 0n }) : { amount: bigint; }
+>prices.reduce : { (callbackfn: (previousValue: P, currentValue: P, currentIndex: number, array: P[]) => P): P; (callbackfn: (previousValue: P, currentValue: P, currentIndex: number, array: P[]) => P, initialValue: P): P; <U>(callbackfn: (previousValue: U, currentValue: P, currentIndex: number, array: P[]) => U, initialValue: U): U; }
+>prices : P[]
+>reduce : { (callbackfn: (previousValue: P, currentValue: P, currentIndex: number, array: P[]) => P): P; (callbackfn: (previousValue: P, currentValue: P, currentIndex: number, array: P[]) => P, initialValue: P): P; <U>(callbackfn: (previousValue: U, currentValue: P, currentIndex: number, array: P[]) => U, initialValue: U): U; }
+>(acc, price) => ({ amount: acc.amount + price.amount }) : (acc: { amount: bigint; }, price: P) => { amount: bigint; }
+>acc : { amount: bigint; }
+>price : P
+>({ amount: acc.amount + price.amount }) : { amount: bigint; }
+>{ amount: acc.amount + price.amount } : { amount: bigint; }
+>amount : bigint
+>acc.amount + price.amount : bigint
+>acc.amount : bigint
+>acc : { amount: bigint; }
+>amount : bigint
+>price.amount : bigint
+>price : Price
+>amount : bigint
+>{ amount: 0n } : { amount: bigint; }
+>amount : bigint
+>0n : 0n
+}
+export function b2<const P extends Price>(prices: P[]) {
+>b2 : <const P extends Price>(prices: P[]) => P
+>prices : P[]
+
+  return prices.reduce((acc, price) => ({ amount: acc.amount + price.amount }), { amount: 0n }) as P;
+>prices.reduce((acc, price) => ({ amount: acc.amount + price.amount }), { amount: 0n }) as P : P
+>prices.reduce((acc, price) => ({ amount: acc.amount + price.amount }), { amount: 0n }) : { amount: bigint; }
+>prices.reduce : { (callbackfn: (previousValue: P, currentValue: P, currentIndex: number, array: P[]) => P): P; (callbackfn: (previousValue: P, currentValue: P, currentIndex: number, array: P[]) => P, initialValue: P): P; <U>(callbackfn: (previousValue: U, currentValue: P, currentIndex: number, array: P[]) => U, initialValue: U): U; }
+>prices : P[]
+>reduce : { (callbackfn: (previousValue: P, currentValue: P, currentIndex: number, array: P[]) => P): P; (callbackfn: (previousValue: P, currentValue: P, currentIndex: number, array: P[]) => P, initialValue: P): P; <U>(callbackfn: (previousValue: U, currentValue: P, currentIndex: number, array: P[]) => U, initialValue: U): U; }
+>(acc, price) => ({ amount: acc.amount + price.amount }) : (acc: { amount: bigint; }, price: P) => { amount: bigint; }
+>acc : { amount: bigint; }
+>price : P
+>({ amount: acc.amount + price.amount }) : { amount: bigint; }
+>{ amount: acc.amount + price.amount } : { amount: bigint; }
+>amount : bigint
+>acc.amount + price.amount : bigint
+>acc.amount : bigint
+>acc : { amount: bigint; }
+>amount : bigint
+>price.amount : bigint
+>price : Price
+>amount : bigint
+>{ amount: 0n } : { amount: bigint; }
+>amount : bigint
+>0n : 0n
+}
+export function b3<const P extends Price>(...prices: [P, ...P[]]) {
+>b3 : <const P extends Price>(prices_0: P, ...prices: P[]) => P
+>prices : [P, ...P[]]
+
+  return prices.reduce((acc, price) => ({ amount: acc.amount + price.amount }), { amount: 0n }) as P;
+>prices.reduce((acc, price) => ({ amount: acc.amount + price.amount }), { amount: 0n }) as P : P
+>prices.reduce((acc, price) => ({ amount: acc.amount + price.amount }), { amount: 0n }) : { amount: bigint; }
+>prices.reduce : { (callbackfn: (previousValue: P, currentValue: P, currentIndex: number, array: P[]) => P): P; (callbackfn: (previousValue: P, currentValue: P, currentIndex: number, array: P[]) => P, initialValue: P): P; <U>(callbackfn: (previousValue: U, currentValue: P, currentIndex: number, array: P[]) => U, initialValue: U): U; }
+>prices : [P, ...P[]]
+>reduce : { (callbackfn: (previousValue: P, currentValue: P, currentIndex: number, array: P[]) => P): P; (callbackfn: (previousValue: P, currentValue: P, currentIndex: number, array: P[]) => P, initialValue: P): P; <U>(callbackfn: (previousValue: U, currentValue: P, currentIndex: number, array: P[]) => U, initialValue: U): U; }
+>(acc, price) => ({ amount: acc.amount + price.amount }) : (acc: { amount: bigint; }, price: P) => { amount: bigint; }
+>acc : { amount: bigint; }
+>price : P
+>({ amount: acc.amount + price.amount }) : { amount: bigint; }
+>{ amount: acc.amount + price.amount } : { amount: bigint; }
+>amount : bigint
+>acc.amount + price.amount : bigint
+>acc.amount : bigint
+>acc : { amount: bigint; }
+>amount : bigint
+>price.amount : bigint
+>price : Price
+>amount : bigint
+>{ amount: 0n } : { amount: bigint; }
+>amount : bigint
+>0n : 0n
+}
+export function c2<const P extends Price>(prices: P[]) {
+>c2 : <const P extends Price>(prices: P[]) => P
+>prices : P[]
+
+  return prices.reduce((acc, price) => { const z: number = acc; return acc; }, { amount: 0n }) as P;
+>prices.reduce((acc, price) => { const z: number = acc; return acc; }, { amount: 0n }) as P : P
+>prices.reduce((acc, price) => { const z: number = acc; return acc; }, { amount: 0n }) : { amount: bigint; }
+>prices.reduce : { (callbackfn: (previousValue: P, currentValue: P, currentIndex: number, array: P[]) => P): P; (callbackfn: (previousValue: P, currentValue: P, currentIndex: number, array: P[]) => P, initialValue: P): P; <U>(callbackfn: (previousValue: U, currentValue: P, currentIndex: number, array: P[]) => U, initialValue: U): U; }
+>prices : P[]
+>reduce : { (callbackfn: (previousValue: P, currentValue: P, currentIndex: number, array: P[]) => P): P; (callbackfn: (previousValue: P, currentValue: P, currentIndex: number, array: P[]) => P, initialValue: P): P; <U>(callbackfn: (previousValue: U, currentValue: P, currentIndex: number, array: P[]) => U, initialValue: U): U; }
+>(acc, price) => { const z: number = acc; return acc; } : (acc: { amount: bigint; }, price: P) => { amount: bigint; }
+>acc : { amount: bigint; }
+>price : P
+>z : number
+>acc : { amount: bigint; }
+>acc : { amount: bigint; }
+>{ amount: 0n } : { amount: bigint; }
+>amount : bigint
+>0n : 0n
+}
+export function c1<P extends Price>(prices: P[]) {
+>c1 : <P extends Price>(prices: P[]) => P
+>prices : P[]
+
+  return prices.reduce((acc, price) => { const z: number = acc; return acc; }, { amount: 0n }) as P;
+>prices.reduce((acc, price) => { const z: number = acc; return acc; }, { amount: 0n }) as P : P
+>prices.reduce((acc, price) => { const z: number = acc; return acc; }, { amount: 0n }) : { amount: bigint; }
+>prices.reduce : { (callbackfn: (previousValue: P, currentValue: P, currentIndex: number, array: P[]) => P): P; (callbackfn: (previousValue: P, currentValue: P, currentIndex: number, array: P[]) => P, initialValue: P): P; <U>(callbackfn: (previousValue: U, currentValue: P, currentIndex: number, array: P[]) => U, initialValue: U): U; }
+>prices : P[]
+>reduce : { (callbackfn: (previousValue: P, currentValue: P, currentIndex: number, array: P[]) => P): P; (callbackfn: (previousValue: P, currentValue: P, currentIndex: number, array: P[]) => P, initialValue: P): P; <U>(callbackfn: (previousValue: U, currentValue: P, currentIndex: number, array: P[]) => U, initialValue: U): U; }
+>(acc, price) => { const z: number = acc; return acc; } : (acc: { amount: bigint; }, price: P) => { amount: bigint; }
+>acc : { amount: bigint; }
+>price : P
+>z : number
+>acc : { amount: bigint; }
+>acc : { amount: bigint; }
+>{ amount: 0n } : { amount: bigint; }
+>amount : bigint
+>0n : 0n
+}
+
