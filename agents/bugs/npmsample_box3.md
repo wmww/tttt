@@ -144,7 +144,7 @@ for flips); a separate file so the three boxes never conflict.
   the symbol tracker's errorLocation is nil and ReportLikelyUnsafeImportRequiredError reports nothing; the type is
   emitted as `any` (encounteredError). tttt's error_name_node() fell back to the declaration; now no location there
   outside classes and export assignments, and the printed type is `any`. Repro
-  ttttDeclarationAnonymousDefaultUnsafeImport. [flip] [fixed 2bbc00040]
+  ttttDeclarationAnonymousDefaultUnsafeImport. [flip] [fixed 2d30c3eeb]
 - Large seed 20261400, ChatbotXIO/ChatbotX@main apps/builder: two spurious TS7006 "Parameter 'template' implicitly
   has an 'any' type" on `fkMatcher: (template) => ...` in the second branch of a conditional initializer of a
   destructuring annotated `{ fkMatcher: (template: TemplateCandidate) => boolean }`, inside a useMemo callback.
