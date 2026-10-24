@@ -116,7 +116,7 @@ boxes' appends never conflict. One section per seed, one bullet per repro, statu
   index signature in whole (`{ [x: string]: true }`); tsc's getSpreadType makes a new object for null/undefined (only the other primitives
   return the left side), so getUnionIndexInfos keeps none and that alternative is `{}`. spread_acc_type (ty/expr.c) now pushes a non-empty
   part for it, and after a generic left side intersects it (`T & undefined` never for `T extends object`, the alternative dropped). Repro
-  ttttSpreadNullableUnionMemberIndex. [flip] [fixed PENDING]
+  ttttSpreadNullableUnionMemberIndex. [flip] [fixed 14a39a40d]
 
 ## Seed 20261115 (--prefer-large)
 53 accepted, 52 byte-identical, clean agreement 52/53, no K-dependence.
