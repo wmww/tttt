@@ -1744,6 +1744,7 @@ struct ContextAnchor {
 
 
 static void record_anchors_in(Checker* me, Expr const* expr, ContextAnchor const* anchor, u32 depth);
+static bool anchors_may_reach(Expr const* expr);
 
 static void record_anchors_in_block(Checker* me, Block const* block, ContextAnchor const* anchor, u32 depth) {
     for_each (s, vec_statement, &block->statements) {
@@ -1776,8 +1777,7 @@ static void record_anchors_in(Checker* me, Expr const* expr, ContextAnchor const
             for_each (i, vec_object_expr_item, &expr->object) {
                 if (i->tag != OBJECT_ITEM_PROPERTY && i->tag != OBJECT_ITEM_METHOD) continue;
                 if (object_item_is_private_name(i)) continue;
-                if (i->value.tag != EXPR_FUNCTION && i->value.tag != EXPR_OBJECT && i->value.tag != EXPR_ARRAY &&
-                    i->value.tag != EXPR_TERNARY) continue;
+                if (!anchors_may_reach(&i->value)) continue;
                 record_anchors_in(me, &i->value, new_anchor(me, (ContextAnchor){ .kind = ANCHOR_PROP, .literal = expr, .item = i,
                     .parent = anchor }), depth + 1);
             }
@@ -1785,7 +1785,7 @@ static void record_anchors_in(Checker* me, Expr const* expr, ContextAnchor const
         }
         case EXPR_ARRAY:
             for_each (i, vec_expr, &expr->array) {
-                if (i->tag != EXPR_FUNCTION && i->tag != EXPR_OBJECT && i->tag != EXPR_ARRAY) continue;
+                if (i->tag == EXPR_TERNARY || !anchors_may_reach(i)) continue;
                 record_anchors_in(me, i, new_anchor(me, (ContextAnchor){ .kind = ANCHOR_ELEM, .literal = expr,
                     .index = (u32)i_index, .parent = anchor }), depth + 1);
             }
@@ -1794,14 +1794,25 @@ static void record_anchors_in(Checker* me, Expr const* expr, ContextAnchor const
             record_anchors_in(me, &expr->ternary->yes, anchor, depth + 1);
             record_anchors_in(me, &expr->ternary->no, anchor, depth + 1);
             return;
+        case EXPR_AS_TYPE:
+            // (A const assertion's operand has the assertion's contextual type: tsc's getContextualType of an
+            // AsExpression with a `const` type, tryFindWhenConstTypeReference)
+            if (as_type_is_const(expr->as_type)) record_anchors_in(me, &expr->as_type->expr, anchor, depth + 1);
+            return;
         default: return;
     }
+}
+
+// What record_anchors_in() goes into (a const assertion: its operand)
+static bool anchors_may_reach(Expr const* expr) {
+    return expr->tag == EXPR_FUNCTION || expr->tag == EXPR_OBJECT || expr->tag == EXPR_ARRAY || expr->tag == EXPR_TERNARY ||
+        (expr->tag == EXPR_AS_TYPE && as_type_is_const(expr->as_type));
 }
 
 void ty_record_call_anchors(Checker* me, CallExpr const* call) {
     for_each (i, vec_expr, &call->args) {
         if (i->tag == EXPR_SPREAD) break;
-        if (i->tag != EXPR_FUNCTION && i->tag != EXPR_OBJECT && i->tag != EXPR_ARRAY && i->tag != EXPR_TERNARY) continue;
+        if (!anchors_may_reach(i)) continue;
         record_anchors_in(me, i, new_anchor(me, (ContextAnchor){ .kind = ANCHOR_ARG, .call = call, .index = (u32)i_index }), 0);
     }
 }
