@@ -456,7 +456,7 @@ not committed), a bench config next to each of its 4 tsconfigs. Not K-dependent.
   with `as T[k] extends OptionalOutSchema ? never : k`; with one generic shape member its `as` clause is generic, which
   makes the mapped type generic (isGenericMappedType), but tsc's resolveMappedTypeMembers still gives it the properties
   of the keys whose names resolve. tttt's mapped members gave up on all of them, so `provider` was missing. Members.c
-  now marks it generic and goes on key by key. A flip (tsgo clean). Test test/cases/rw_rea_TS2345.ts. [fixed corF 2026-10-25]
+  now marks it generic and goes on key by key. A flip (tsgo clean). Test test/cases/rw_rea_TS2345.ts. [fixed fc76fdebc]
 
 ## Seed 20261301
 
