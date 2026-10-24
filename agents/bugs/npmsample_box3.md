@@ -115,7 +115,10 @@ for flips); a separate file so the three boxes never conflict.
   a number-indexed `{ [id: number]: IParent }`. tsgo types the element `[never, IParent]` (the indexed access through
   the conditional index keeps the index signature's type) and tttt `[never, never]`. Guess: instantiating
   `O[Extract<keyof O, string>]` reduces the index to never first and then indexes, where tsgo keeps the
-  index-signature lookup. Repro test/cases/npm_amcharts_amcharts5_TS2339.ts (by hand, 18 lines). (claimed: fixF) [open]
+  index-signature lookup. Repro test/cases/npm_amcharts_amcharts5_TS2339.ts (by hand, 18 lines). (claimed: fixF) Cause: never_index_read()'s
+  HACK made any non-mapped anonymous object indexed by never `never`; tsc's getPropertyTypeForIndexType reads the index
+  signature never is assignable to. Now a type literal as written (no instantiation) goes to ty_access(); instantiated
+  ones keep the hack (xstate's TS5115, hacks.md). Repro ttttNeverIndexTypeLiteral. [fixed PENDING]
 - Large seed 20261400, sixb-ai/sixb@main packages/core: missing TS2339 `item.account` on DatasetWriteValue. A type
   parameter inferred from `readValues: async () => (async function* () { try { yield {...} } finally {} })()`
   (Promise<Iterable<T> | AsyncIterable<T>>) next to a context-sensitive method that uses T. tsgo gets no inference

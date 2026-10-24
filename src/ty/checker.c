@@ -4268,7 +4268,8 @@ static bool mapped_keys_have_index_signature(Ty const* constraint) {
     // xstate's recursive StateId into TS5115 without strictNullChecks (flagflip)
     // (Nor a mapped type over no keys, `{ [K in never]: StateId<...> }`: tsc never instantiates its template, which
     // resolving its members here would, xstate's recursive StateId then ran into TS5115 without strictNullChecks)
-    // HACK: an anonymous object indexed by never is never, its members unresolved. tsc reads an index signature there
+    // HACK: an instantiated anonymous object indexed by never is never, its members unresolved (a type literal as written
+    // reads its index signatures, below). tsc reads an index signature there
     // (`{ [k: string]: X }[never]` is X), but resolving the members of xstate's `{ [K in never]: StateId<...> }` (and
     // the other `{}`s on the way) instantiated enough to push its recursive StateId into TS5115 without
     // strictNullChecks (flagflip nosnc/sloppy: +7); tsc never instantiates a keyless mapped type's template. Only a
@@ -4278,6 +4279,9 @@ static bool mapped_keys_have_index_signature(Ty const* constraint) {
     // getPropertyTypeForIndexType returns neverType, which infers)
     Ty const* never = my intrinsics[TY_NEVER];
     if (object->kind == TY_ANONYMOUS) {
+        // (Not an instantiation, a type literal as written: its members cost nothing to resolve, and its index signature
+        // is read, `{ [id: number]: P }[never]` is P (amcharts' `O[Extract<keyof O, string>]` over a number-indexed O))
+        if (!object->anonymous.mapped && !object->anonymous.target) return nullptr;
         if (!object->anonymous.mapped) return never;
         MappedInfo const* mapped = ty_mapped_info_unexpanded(me, object);
         if (!mapped || mapped->name_type || (mapped->constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return never;

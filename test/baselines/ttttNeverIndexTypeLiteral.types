@@ -1,0 +1,58 @@
+//// [test/cases/ttttNeverIndexTypeLiteral.ts] ////
+
+=== ttttNeverIndexTypeLiteral.ts ===
+// A never index reads the index signature that never is assignable to (tsc's getPropertyTypeForIndexType with
+// getApplicableIndexInfo): `{ [id: number]: P }[never]` is P, like `O[Extract<keyof O, string>]` over a number-indexed
+// O (amcharts5's $object.entries)
+type R = { [id: number]: string };
+>R : R
+>id : number
+
+type S = { [k: string]: boolean; a: number };
+>S : S
+>k : string
+>a : number
+
+type P = { a: number };
+>P : P
+>a : number
+
+declare const a1: R[never];
+>a1 : string
+
+declare const a2: S[never];
+>a2 : boolean
+
+declare const a3: P[never];
+>a3 : never
+
+type Keyof<T> = Extract<keyof T, string>;
+>Keyof : Keyof<T>
+
+declare function entries<O>(object: O): Array<[Keyof<O>, O[Keyof<O>]]>;
+>entries : <O>(object: O) => Array<[Keyof<O>, O[Keyof<O>]]>
+>object : O
+
+declare const parents: { [id: number]: P };
+>parents : { [id: number]: P; }
+>id : number
+
+export const firstUid = entries(parents)[0][1].a;
+>firstUid : number
+>entries(parents)[0][1].a : number
+>entries(parents)[0][1] : P
+>entries(parents)[0] : [never, P]
+>entries(parents) : [never, P][]
+>entries : <O>(object: O) => Array<[Keyof<O>, O[Keyof<O>]]>
+>parents : { [id: number]: P; }
+>0 : 0
+>1 : 1
+>a : number
+
+export const all = [a1, a2, a3];
+>all : (string | boolean)[]
+>[a1, a2, a3] : (string | boolean)[]
+>a1 : string
+>a2 : boolean
+>a3 : never
+

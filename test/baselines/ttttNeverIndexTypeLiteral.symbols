@@ -1,0 +1,68 @@
+//// [test/cases/ttttNeverIndexTypeLiteral.ts] ////
+
+=== ttttNeverIndexTypeLiteral.ts ===
+// A never index reads the index signature that never is assignable to (tsc's getPropertyTypeForIndexType with
+// getApplicableIndexInfo): `{ [id: number]: P }[never]` is P, like `O[Extract<keyof O, string>]` over a number-indexed
+// O (amcharts5's $object.entries)
+type R = { [id: number]: string };
+>R : Symbol(R, Decl(ttttNeverIndexTypeLiteral.ts, 0, 0))
+>id : Symbol(id, Decl(ttttNeverIndexTypeLiteral.ts, 3, 12))
+
+type S = { [k: string]: boolean; a: number };
+>S : Symbol(S, Decl(ttttNeverIndexTypeLiteral.ts, 3, 34))
+>k : Symbol(k, Decl(ttttNeverIndexTypeLiteral.ts, 4, 12))
+>a : Symbol(a, Decl(ttttNeverIndexTypeLiteral.ts, 4, 32))
+
+type P = { a: number };
+>P : Symbol(P, Decl(ttttNeverIndexTypeLiteral.ts, 4, 45))
+>a : Symbol(a, Decl(ttttNeverIndexTypeLiteral.ts, 5, 10))
+
+declare const a1: R[never];
+>a1 : Symbol(a1, Decl(ttttNeverIndexTypeLiteral.ts, 6, 13))
+>R : Symbol(R, Decl(ttttNeverIndexTypeLiteral.ts, 0, 0))
+
+declare const a2: S[never];
+>a2 : Symbol(a2, Decl(ttttNeverIndexTypeLiteral.ts, 7, 13))
+>S : Symbol(S, Decl(ttttNeverIndexTypeLiteral.ts, 3, 34))
+
+declare const a3: P[never];
+>a3 : Symbol(a3, Decl(ttttNeverIndexTypeLiteral.ts, 8, 13))
+>P : Symbol(P, Decl(ttttNeverIndexTypeLiteral.ts, 4, 45))
+
+type Keyof<T> = Extract<keyof T, string>;
+>Keyof : Symbol(Keyof, Decl(ttttNeverIndexTypeLiteral.ts, 8, 27))
+>T : Symbol(T, Decl(ttttNeverIndexTypeLiteral.ts, 9, 11))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttNeverIndexTypeLiteral.ts, 9, 11))
+
+declare function entries<O>(object: O): Array<[Keyof<O>, O[Keyof<O>]]>;
+>entries : Symbol(entries, Decl(ttttNeverIndexTypeLiteral.ts, 9, 41))
+>O : Symbol(O, Decl(ttttNeverIndexTypeLiteral.ts, 10, 25))
+>object : Symbol(object, Decl(ttttNeverIndexTypeLiteral.ts, 10, 28))
+>O : Symbol(O, Decl(ttttNeverIndexTypeLiteral.ts, 10, 25))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>Keyof : Symbol(Keyof, Decl(ttttNeverIndexTypeLiteral.ts, 8, 27))
+>O : Symbol(O, Decl(ttttNeverIndexTypeLiteral.ts, 10, 25))
+>O : Symbol(O, Decl(ttttNeverIndexTypeLiteral.ts, 10, 25))
+>Keyof : Symbol(Keyof, Decl(ttttNeverIndexTypeLiteral.ts, 8, 27))
+>O : Symbol(O, Decl(ttttNeverIndexTypeLiteral.ts, 10, 25))
+
+declare const parents: { [id: number]: P };
+>parents : Symbol(parents, Decl(ttttNeverIndexTypeLiteral.ts, 11, 13))
+>id : Symbol(id, Decl(ttttNeverIndexTypeLiteral.ts, 11, 26))
+>P : Symbol(P, Decl(ttttNeverIndexTypeLiteral.ts, 4, 45))
+
+export const firstUid = entries(parents)[0][1].a;
+>firstUid : Symbol(firstUid, Decl(ttttNeverIndexTypeLiteral.ts, 12, 12))
+>entries(parents)[0][1].a : Symbol(a, Decl(ttttNeverIndexTypeLiteral.ts, 5, 10))
+>entries : Symbol(entries, Decl(ttttNeverIndexTypeLiteral.ts, 9, 41))
+>parents : Symbol(parents, Decl(ttttNeverIndexTypeLiteral.ts, 11, 13))
+>1 : Symbol(1)
+>a : Symbol(a, Decl(ttttNeverIndexTypeLiteral.ts, 5, 10))
+
+export const all = [a1, a2, a3];
+>all : Symbol(all, Decl(ttttNeverIndexTypeLiteral.ts, 13, 12))
+>a1 : Symbol(a1, Decl(ttttNeverIndexTypeLiteral.ts, 6, 13))
+>a2 : Symbol(a2, Decl(ttttNeverIndexTypeLiteral.ts, 7, 13))
+>a3 : Symbol(a3, Decl(ttttNeverIndexTypeLiteral.ts, 8, 13))
+
