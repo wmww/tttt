@@ -3085,6 +3085,12 @@ static SymbolTable const* export_star_visit(ExportStarWalk* walk, Symbol* module
             if (dups[d].entry != e || !span_valid(dups[d].star->full_span)) continue;
             Span at = span_with_semicolon(dups[d].star->full_span);
             if (!span_source(at) || span_source(at)->is_stdlib) continue;
+            // (An ambient module's: only if asked for by its own file's check, an `export =`, or a file before it)
+            if (module->is_module && module->module && !module->module->file && !module->module->has_export_assignment &&
+                !(module->module->first_ref_order_plus1 && module->module->first_ref_order_plus1 - 1 <= span_source(at)->program_order)
+            ) {
+                continue;
+            }
             error_ctx_error_d(walk->errs, at, 2308, "Module ", first_star[e]->module_ref->span,
                 " has already exported a member named '", symbol_entry_name(entry),
                 "'. Consider explicitly re-exporting to resolve the ambiguity.");

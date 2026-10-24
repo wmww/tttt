@@ -249,6 +249,11 @@ typedef struct SymbolModule {
     // An ambient module (of a script) with an `export =` or `export default x`, where tsc checks its exports
     // (checkExportAssignment -> checkExternalModuleExports)
     bool has_export_assignment;
+    // An ambient module: 1 + the program order of the first file with a module name resolving to it, 0 if none does
+    // (program.c, before binder_check_export_star_conflicts()). tsc finds an ambient module's `export *` conflicts only
+    // when something asks for its exports (getExportsOfModule), and one checker in program order has already collected
+    // the declaring file's diagnostics when a later file asks
+    u32 first_ref_order_plus1;
     // Of the resolved exports, those only an `export type *` brings (tsc's typeOnlyExportStarMap), and that star,
     // parallel to the table's entries. Null if there are none
     SymbolTable* type_only_exports;

@@ -1,0 +1,54 @@
+//// [test/cases/ttttAmbientExportStarConflictAsked.ts] ////
+
+=== node_modules/ga/index.d.ts ===
+// tsc finds an ambient module's `export *` conflicts (TS2308) only when something asks for its exports, and with one
+// checker in program order the declaring file's diagnostics are already collected when a later file asks: 'ioc' is
+// asked for by before.ts, ahead of its declaration (TS2308), 'ioc2' only by after.ts, behind its declaration (none)
+export type RequestParams = { a: string } & Partial<{ b: string }>
+>RequestParams : Symbol(RequestParams, Decl(index.d.ts, 0, 0))
+>a : Symbol(a, Decl(index.d.ts, 3, 29))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>b : Symbol(b, Decl(index.d.ts, 3, 53))
+
+export declare class Gigya {}
+>Gigya : Symbol(Gigya, Decl(index.d.ts, 3, 66))
+
+=== node_modules/gb/index.d.ts ===
+export type RequestParams<P = {}> = { a: string } & P
+>RequestParams : Symbol(RequestParams, Decl(index.d.ts, 0, 0))
+>P : Symbol(P, Decl(index.d.ts, 0, 26))
+>a : Symbol(a, Decl(index.d.ts, 0, 37))
+>P : Symbol(P, Decl(index.d.ts, 0, 26))
+
+export declare class Factory {}
+>Factory : Symbol(Factory, Decl(index.d.ts, 0, 53))
+
+=== before.ts ===
+import { Gigya } from 'ioc';
+>Gigya : Symbol(Gigya, Decl(before.ts, 0, 8))
+
+export const g: Gigya = null!;
+>g : Symbol(g, Decl(before.ts, 1, 12))
+>Gigya : Symbol(Gigya, Decl(before.ts, 0, 8))
+
+=== declare.ts ===
+declare module 'ioc' {
+>'ioc' : Symbol("ioc", Decl(declare.ts, 0, 0))
+
+  export * from 'ga'
+  export * from 'gb'
+}
+declare module 'ioc2' {
+>'ioc2' : Symbol("ioc2", Decl(declare.ts, 3, 1))
+
+  export * from 'ga'
+  export * from 'gb'
+}
+=== after.ts ===
+import { Factory } from 'ioc2';
+>Factory : Symbol(Factory, Decl(after.ts, 0, 8))
+
+export const f: Factory = null!;
+>f : Symbol(f, Decl(after.ts, 1, 12))
+>Factory : Symbol(Factory, Decl(after.ts, 0, 8))
+

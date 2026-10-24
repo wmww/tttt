@@ -1,0 +1,30 @@
+declare.ts(3,3): error TS2308: Module 'ga' has already exported a member named 'RequestParams'. Consider explicitly re-exporting to resolve the ambiguity.
+
+
+==== node_modules/ga/index.d.ts (0 errors) ====
+    // tsc finds an ambient module's `export *` conflicts (TS2308) only when something asks for its exports, and with one
+    // checker in program order the declaring file's diagnostics are already collected when a later file asks: 'ioc' is
+    // asked for by before.ts, ahead of its declaration (TS2308), 'ioc2' only by after.ts, behind its declaration (none)
+    export type RequestParams = { a: string } & Partial<{ b: string }>
+    export declare class Gigya {}
+==== node_modules/gb/index.d.ts (0 errors) ====
+    export type RequestParams<P = {}> = { a: string } & P
+    export declare class Factory {}
+==== before.ts (0 errors) ====
+    import { Gigya } from 'ioc';
+    export const g: Gigya = null!;
+==== declare.ts (1 errors) ====
+    declare module 'ioc' {
+      export * from 'ga'
+      export * from 'gb'
+      ~~~~~~~~~~~~~~~~~~
+!!! error TS2308: Module 'ga' has already exported a member named 'RequestParams'. Consider explicitly re-exporting to resolve the ambiguity.
+    }
+    declare module 'ioc2' {
+      export * from 'ga'
+      export * from 'gb'
+    }
+==== after.ts (0 errors) ====
+    import { Factory } from 'ioc2';
+    export const f: Factory = null!;
+    

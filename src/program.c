@@ -4736,6 +4736,16 @@ void program_resolve_names(Program* me) {
     resolve_step_done("link: module refs", &last);
     binder_link(my binder);
     resolve_step_done("link", &last);
+    // (Which ambient modules a file asks for, first: binder_check_export_star_conflicts())
+    for_each (f, vec_source_file_ptr, &my source_files_ordered) {
+        SourceFile* file = *f;
+        for (u32 r = 0; r < file->module_ref_count; r++) {
+            if (file->module_refs[r]->is_declaration) continue; // (`declare module "m" {}` itself asks nothing)
+            Symbol* target = binder_module_of_ref(my binder, file->module_refs[r]);
+            if (!target || !target->is_module || !target->module || target->module->file) continue;
+            if (!target->module->first_ref_order_plus1) target->module->first_ref_order_plus1 = file->program_order + 1;
+        }
+    }
     binder_check_export_star_conflicts(my binder, my errs);
     resolve_step_done("link: export star conflicts", &last);
 

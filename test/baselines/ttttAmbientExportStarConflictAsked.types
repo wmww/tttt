@@ -1,0 +1,51 @@
+//// [test/cases/ttttAmbientExportStarConflictAsked.ts] ////
+
+=== node_modules/ga/index.d.ts ===
+// tsc finds an ambient module's `export *` conflicts (TS2308) only when something asks for its exports, and with one
+// checker in program order the declaring file's diagnostics are already collected when a later file asks: 'ioc' is
+// asked for by before.ts, ahead of its declaration (TS2308), 'ioc2' only by after.ts, behind its declaration (none)
+export type RequestParams = { a: string } & Partial<{ b: string }>
+>RequestParams : RequestParams
+>a : string
+>b : string
+
+export declare class Gigya {}
+>Gigya : Gigya
+
+=== node_modules/gb/index.d.ts ===
+export type RequestParams<P = {}> = { a: string } & P
+>RequestParams : RequestParams<P>
+>a : string
+
+export declare class Factory {}
+>Factory : Factory
+
+=== before.ts ===
+import { Gigya } from 'ioc';
+>Gigya : typeof Gigya
+
+export const g: Gigya = null!;
+>g : Gigya
+>null! : never
+
+=== declare.ts ===
+declare module 'ioc' {
+>'ioc' : typeof import("ioc")
+
+  export * from 'ga'
+  export * from 'gb'
+}
+declare module 'ioc2' {
+>'ioc2' : typeof import("ioc2")
+
+  export * from 'ga'
+  export * from 'gb'
+}
+=== after.ts ===
+import { Factory } from 'ioc2';
+>Factory : typeof Factory
+
+export const f: Factory = null!;
+>f : Factory
+>null! : never
+

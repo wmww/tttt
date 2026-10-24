@@ -26,7 +26,7 @@ boxes' appends never conflict. One section per seed, one bullet per repro, statu
   67, +2 TS2308) (no flip): `declare module 'ioc' { export * from 'ga'; export * from 'gb' }` where both packages export a type
   alias `RequestParams` (one generic): tttt reports "has already exported a member named" TS2308, tsgo nothing. Guess: tsgo
   reports the export-star conflict only for a module file / non-ambient module (or when the two aliases are identical in kind),
-  tttt checks it inside an ambient module declaration too. 15 lines. [open]
+  tttt checks it inside an ambient module declaration too. 15 lines. Cause (det3): tsc reports `export *` conflicts where getExportsOfModule computes the exports. For a module file that's checkExternalModuleExports when the file is checked. For an ambient module it's only when something asks for its exports (an import from it, an `export =` in it), and with one checker in program order the declaring file's diagnostics are already collected when a later file asks (tsgo at several checkers drops a later file's report too, the owner rule). tttt reported every conflict in name resolution. Now an ambient module's conflicts are kept only with an `export =` or a module name resolving to it in a file no later than the `export *`'s (SymbolModule.first_ref_order_plus1). Test: also ttttAmbientExportStarConflictAsked. [fixed det3]
 - **npm_ml-component_TS2551** (seed 20261107, ml-component@1.0.8, menglimu/ml-components src/components/BaseInfo/index.tsx; tsgo 15,
   tttt 23, +8 TS2339/TS2551) (no flip): `Vue.extend({ data() { return { data_: {} } }, methods: { m() { this.data_ } } })`
   with Vue 2's types (reduced to 176 lines, mostly vue/types): tttt reports "Property 'data_' does not exist on type 'Vue'"
