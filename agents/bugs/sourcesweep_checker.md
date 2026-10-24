@@ -364,7 +364,7 @@ rest element; a spread instantiated to `undefined`). Left:
   (742, `PluginInterceptContext`-like context) where `--checkers 1` doesn't: which cycle is entered first depends on
   the files a checker saw (scripts/kdiff.py territory, plan 62). Fixed by acb8dfe7f (an any/unknown target property
   no longer asks for the source property's type, tsc's isPropertySymbolTypeRelated): the same at K1-K16. Remaining: TS2578 at
-  tests/types/order-by-relations.ts:24,26 (uninvestigated). (claimed: fixE) [open]
+  tests/types/order-by-relations.ts:24,26, closed by 2236c911d (intersection targets' combined-properties check uses isGenericObjectType); projdiff 2026-10-24: tsconfig.json and tsconfig.build.json byte-identical, K1-K16 identical. [fixed 2236c911d]
 
 ## Refresh 6 leftovers (2026-10-23, corG: tanstack-ai, node-pg-migrate, portabase)
 - **tanstack-ai/packages/ai-harness -TS2615** (`Type of property 'agents' circularly references itself in mapped type
@@ -485,7 +485,8 @@ from there; tsgo's verdicts in test/sourcesweep/tsc.jsonl.gz.
   src/components/notch-controls.tsx:38 (`Type '{ ref?: Ref<HTMLDivElement> | undefined; variants?: Variants | undefined;
   ... 338 more ...}' is not assignable ...`), src/features/chat/kit/message-actions.tsx:1249, permissions/notch-list.tsx:216
   (`IntrinsicAttributes & Omit<HTMLMotionProps<"div">, "ref"> & RefAttributes<HT...`); plus one +TS2551. Guess: a
-  spread of motion's HTMLMotionProps against an Omit/intersection target (relation of a big mapped/intersection). [open]
+  spread of motion's HTMLMotionProps against an Omit/intersection target (relation of a big mapped/intersection). Fixed by
+  corB's union-inference fix (landed as 24e649c77, f88e06da7 on its branch); projdiff 2026-10-24: 1529 diagnostics, byte-identical. [fixed 24e649c77]
 - **crowd-dev/services/libs/connectors: TS7022 on the wrong declarations** (refresh 8). Two causes, neither order
   dependent (K1, K16 and TTTT_CHECK_ONLY agree):
   - tttt's spurious TS7022 on `nodes` (prWalk.ts:198, syncs/discussions.ts:124, issueComments.ts:86, issues.ts:33):
@@ -517,7 +518,8 @@ from there; tsgo's verdicts in test/sourcesweep/tsc.jsonl.gz.
   like tsc's getPropertiesOfType; plus the printer's parentheses around a mapped type printed as a conditional in a
   check type or `keyof` operand. Repro test/cases/ttttKeyofRemappedGenericOmit.ts. [fixed 2026-10-23]
 - **papra/apps/papra-client: +TS7006** at src/modules/tags/components/tag.component.tsx:28 (`Parameter 'e' implicitly
-  has an 'any' type`): a contextual type tsgo finds for a Solid JSX event handler. [open]
+  has an 'any' type`): a contextual type tsgo finds for a Solid JSX event handler. Fixed by corF's JSX children/spread
+  order fix (landed as 734367af7, 4d6af3e00 on its branch); projdiff 2026-10-24: 7 diagnostics, byte-identical. [fixed 734367af7]
 - **genkit/js/testapps/dev-ui-gallery: -TS7022/-TS7024** at src/genkit.ts:78, src/main/middleware.ts:91 and :108: tsgo
   finds a circularity tttt resolves. corF's reduce.py run (2026-10-24) keeps all three in 3 files, with every
   package cut away (genkit, generateMiddleware, annotateSchema and z are all undeclared then):
