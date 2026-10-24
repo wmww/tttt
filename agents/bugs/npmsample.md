@@ -392,3 +392,19 @@ K-dependent.
     in the 'this' context's signature, tttt `body?: any`. [open]
   - TS2353 x5 (FormTriggerV2.node.test.ts:308, 437, 540, 597, 638): where the long target type is truncated, tsgo
     `{ [EventEmitter.captureRejectionSymbol]?: ...; ... 105 more ...`, tttt names `off?: ...` instead. [open]
+
+Seed 20269002 (fixF): vue (vuejs/core head, packages/vue) tsgo 5 / tttt 3, only the known pluginScoped.ts TS7006
+[design]; firecrawl and immich-server set up by hand (npmsample's trial rejected them on TS2307 counts from unbuilt
+workspace packages). Not flips, not K-dependent.
+- firecrawl (firecrawl/firecrawl e1dc7a43, apps/api): tsgo 63 / tttt 69. +TS2345 at src/controllers/v2/types.ts(974)
+  and 5 +TS2353 at 979-1004: `liftCheckPromptInjection(applyScrapeOptionsDefaults(obj))` with obj a `T extends
+  ScrapeOptionsBase | undefined`. The inferred `T & { skipTlsVerification: boolean }` failed the constraint check
+  against the weak `{ formats?: unknown[]; checkPromptInjection?: unknown }`, so the inference fell back to the
+  constraint. relate.c intersection_apparent_is_union() returned true for any member whose apparent type is a union.
+  tsc's getApparentTypeOfIntersectionType intersects the members' apparent types, and `undefined & { skip }` is never,
+  so the source is `Base & { skip }`, compared property by property. Now the members' apparent types are intersected
+  first. Test rw_firecrawl_TS2345; repro ttttIntersectionNullableConstraintMember. [fixed PENDING]
+- immich-server (immich-app/immich d474ec96, server/): tsgo 12 / tttt 13. +TS1272 at src/services/job.service.ts(86):
+  `@OnEvent(...) async onJobRun(...[queueName, job]: ArgsOf<'JobRun'>)` with `import { ArgsOf } from
+  'src/repositories/event.repository.js'` (a type-only export) under isolatedModules + emitDecoratorMetadata: tsc doesn't
+  report a rest parameter's binding pattern type here. (claimed: fixF) [open]

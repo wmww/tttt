@@ -1,0 +1,65 @@
+//// [test/cases/rw_firecrawl_TS2345.ts] ////
+
+=== rw_firecrawl_TS2345.ts ===
+// origin: npm firecrawl (named) https://github.com/firecrawl/firecrawl apps/api/tsconfig.bench.json seed 20269002 (commit e1dc7a43)
+// flip: no
+// Cut by hand from apps/api/src/controllers/v2/types.ts (extractTransformImpl): `liftCheckPromptInjection(applyScrapeOptionsDefaults(obj))`
+// with obj a T extends Base | undefined: tsc infers the intersection T & { skip }, tttt fell back to the constraint
+type Base = { formats: ({ type: "json" } | "markdown")[]; timeout: number; skip?: boolean };
+>Base : Symbol(Base, Decl(rw_firecrawl_TS2345.ts, 0, 0))
+>formats : Symbol(formats, Decl(rw_firecrawl_TS2345.ts, 4, 13))
+>type : Symbol(type, Decl(rw_firecrawl_TS2345.ts, 4, 25))
+>timeout : Symbol(timeout, Decl(rw_firecrawl_TS2345.ts, 4, 57))
+>skip : Symbol(skip, Decl(rw_firecrawl_TS2345.ts, 4, 74))
+
+declare const applyDefaults: <T extends Base>(obj: T) => T & { skip: boolean };
+>applyDefaults : Symbol(applyDefaults, Decl(rw_firecrawl_TS2345.ts, 5, 13))
+>T : Symbol(T, Decl(rw_firecrawl_TS2345.ts, 5, 30))
+>Base : Symbol(Base, Decl(rw_firecrawl_TS2345.ts, 0, 0))
+>obj : Symbol(obj, Decl(rw_firecrawl_TS2345.ts, 5, 46))
+>T : Symbol(T, Decl(rw_firecrawl_TS2345.ts, 5, 30))
+>T : Symbol(T, Decl(rw_firecrawl_TS2345.ts, 5, 30))
+>skip : Symbol(skip, Decl(rw_firecrawl_TS2345.ts, 5, 62))
+
+declare function lift<T extends { formats?: unknown[]; check?: unknown }>(options: T): T;
+>lift : Symbol(lift, Decl(rw_firecrawl_TS2345.ts, 5, 79))
+>T : Symbol(T, Decl(rw_firecrawl_TS2345.ts, 6, 22))
+>formats : Symbol(formats, Decl(rw_firecrawl_TS2345.ts, 6, 33))
+>check : Symbol(check, Decl(rw_firecrawl_TS2345.ts, 6, 54))
+>options : Symbol(options, Decl(rw_firecrawl_TS2345.ts, 6, 74))
+>T : Symbol(T, Decl(rw_firecrawl_TS2345.ts, 6, 22))
+>T : Symbol(T, Decl(rw_firecrawl_TS2345.ts, 6, 22))
+
+const impl = <T extends Base | undefined>(obj: T): T extends undefined ? undefined : T => {
+>impl : Symbol(impl, Decl(rw_firecrawl_TS2345.ts, 7, 5))
+>T : Symbol(T, Decl(rw_firecrawl_TS2345.ts, 7, 14))
+>Base : Symbol(Base, Decl(rw_firecrawl_TS2345.ts, 0, 0))
+>obj : Symbol(obj, Decl(rw_firecrawl_TS2345.ts, 7, 42))
+>T : Symbol(T, Decl(rw_firecrawl_TS2345.ts, 7, 14))
+>T : Symbol(T, Decl(rw_firecrawl_TS2345.ts, 7, 14))
+>T : Symbol(T, Decl(rw_firecrawl_TS2345.ts, 7, 14))
+
+  if (!obj) return obj as T extends undefined ? undefined : T;
+>obj : Symbol(obj, Decl(rw_firecrawl_TS2345.ts, 7, 42))
+>obj : Symbol(obj, Decl(rw_firecrawl_TS2345.ts, 7, 42))
+>T : Symbol(T, Decl(rw_firecrawl_TS2345.ts, 7, 14))
+>T : Symbol(T, Decl(rw_firecrawl_TS2345.ts, 7, 14))
+
+  let result = lift(applyDefaults(obj));
+>result : Symbol(result, Decl(rw_firecrawl_TS2345.ts, 9, 5))
+>lift : Symbol(lift, Decl(rw_firecrawl_TS2345.ts, 5, 79))
+>applyDefaults : Symbol(applyDefaults, Decl(rw_firecrawl_TS2345.ts, 5, 13))
+>obj : Symbol(obj, Decl(rw_firecrawl_TS2345.ts, 7, 42))
+
+  result = { ...result, timeout: 60000 };
+>result : Symbol(result, Decl(rw_firecrawl_TS2345.ts, 9, 5))
+>result : Symbol(result, Decl(rw_firecrawl_TS2345.ts, 9, 5))
+>timeout : Symbol(timeout, Decl(rw_firecrawl_TS2345.ts, 10, 23))
+
+  return result as T extends undefined ? undefined : T;
+>result : Symbol(result, Decl(rw_firecrawl_TS2345.ts, 9, 5))
+>T : Symbol(T, Decl(rw_firecrawl_TS2345.ts, 7, 14))
+>T : Symbol(T, Decl(rw_firecrawl_TS2345.ts, 7, 14))
+
+};
+

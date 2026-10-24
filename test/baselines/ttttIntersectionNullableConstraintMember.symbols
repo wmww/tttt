@@ -1,0 +1,43 @@
+//// [test/cases/ttttIntersectionNullableConstraintMember.ts] ////
+
+=== ttttIntersectionNullableConstraintMember.ts ===
+// An intersection with a type parameter whose constraint is a union is a union once apparent, which isn't compared
+// with an object target property by property; unless the union's other members intersect to never with the rest:
+// `T & { skip: boolean }` with `T extends Base | undefined` is `Base & { skip: boolean }`, assignable to a weak
+// `{ formats?: unknown[] }` (an inference whose candidate is it keeps it, not the constraint)
+type Base = { formats: string[] };
+>Base : Symbol(Base, Decl(ttttIntersectionNullableConstraintMember.ts, 0, 0))
+>formats : Symbol(formats, Decl(ttttIntersectionNullableConstraintMember.ts, 4, 13))
+
+declare function lift<U extends { formats?: unknown[] }>(options: U): U;
+>lift : Symbol(lift, Decl(ttttIntersectionNullableConstraintMember.ts, 4, 34))
+>U : Symbol(U, Decl(ttttIntersectionNullableConstraintMember.ts, 5, 22))
+>formats : Symbol(formats, Decl(ttttIntersectionNullableConstraintMember.ts, 5, 33))
+>options : Symbol(options, Decl(ttttIntersectionNullableConstraintMember.ts, 5, 57))
+>U : Symbol(U, Decl(ttttIntersectionNullableConstraintMember.ts, 5, 22))
+>U : Symbol(U, Decl(ttttIntersectionNullableConstraintMember.ts, 5, 22))
+
+function impl<T extends Base | undefined>(y: T & { skip: boolean }) {
+>impl : Symbol(impl, Decl(ttttIntersectionNullableConstraintMember.ts, 5, 72))
+>T : Symbol(T, Decl(ttttIntersectionNullableConstraintMember.ts, 6, 14))
+>Base : Symbol(Base, Decl(ttttIntersectionNullableConstraintMember.ts, 0, 0))
+>y : Symbol(y, Decl(ttttIntersectionNullableConstraintMember.ts, 6, 42))
+>T : Symbol(T, Decl(ttttIntersectionNullableConstraintMember.ts, 6, 14))
+>skip : Symbol(skip, Decl(ttttIntersectionNullableConstraintMember.ts, 6, 50))
+
+  const r = lift(y);
+>r : Symbol(r, Decl(ttttIntersectionNullableConstraintMember.ts, 7, 7))
+>lift : Symbol(lift, Decl(ttttIntersectionNullableConstraintMember.ts, 4, 34))
+>y : Symbol(y, Decl(ttttIntersectionNullableConstraintMember.ts, 6, 42))
+
+  const s: { formats?: unknown[] } = r;
+>s : Symbol(s, Decl(ttttIntersectionNullableConstraintMember.ts, 8, 7))
+>formats : Symbol(formats, Decl(ttttIntersectionNullableConstraintMember.ts, 8, 12))
+>r : Symbol(r, Decl(ttttIntersectionNullableConstraintMember.ts, 7, 7))
+
+  return r.skip;
+>r.skip : Symbol(skip, Decl(ttttIntersectionNullableConstraintMember.ts, 6, 50))
+>r : Symbol(r, Decl(ttttIntersectionNullableConstraintMember.ts, 7, 7))
+>skip : Symbol(skip, Decl(ttttIntersectionNullableConstraintMember.ts, 6, 50))
+}
+

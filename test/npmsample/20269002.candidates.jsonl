@@ -1,0 +1,3 @@
+{"i": 0, "name": "firecrawl", "version": "main", "repo": "https://github.com/firecrawl/firecrawl", "directory": "apps/api"}
+{"i": 1, "name": "immich-server", "version": "main", "repo": "https://github.com/immich-app/immich", "directory": "server"}
+{"i": 2, "name": "vue", "version": "main", "repo": "https://github.com/vuejs/core", "directory": "packages/vue"}

@@ -1,0 +1,58 @@
+//// [test/cases/rw_firecrawl_TS2345.ts] ////
+
+=== rw_firecrawl_TS2345.ts ===
+// origin: npm firecrawl (named) https://github.com/firecrawl/firecrawl apps/api/tsconfig.bench.json seed 20269002 (commit e1dc7a43)
+// flip: no
+// Cut by hand from apps/api/src/controllers/v2/types.ts (extractTransformImpl): `liftCheckPromptInjection(applyScrapeOptionsDefaults(obj))`
+// with obj a T extends Base | undefined: tsc infers the intersection T & { skip }, tttt fell back to the constraint
+type Base = { formats: ({ type: "json" } | "markdown")[]; timeout: number; skip?: boolean };
+>Base : Base
+>formats : ("markdown" | { type: "json"; })[]
+>type : "json"
+>timeout : number
+>skip : boolean | undefined
+
+declare const applyDefaults: <T extends Base>(obj: T) => T & { skip: boolean };
+>applyDefaults : <T extends Base>(obj: T) => T & { skip: boolean; }
+>obj : T
+>skip : boolean
+
+declare function lift<T extends { formats?: unknown[]; check?: unknown }>(options: T): T;
+>lift : <T extends { formats?: unknown[]; check?: unknown; }>(options: T) => T
+>formats : unknown[] | undefined
+>check : unknown
+>options : T
+
+const impl = <T extends Base | undefined>(obj: T): T extends undefined ? undefined : T => {
+>impl : <T extends Base | undefined>(obj: T) => T extends undefined ? undefined : T
+><T extends Base | undefined>(obj: T): T extends undefined ? undefined : T => {  if (!obj) return obj as T extends undefined ? undefined : T;  let result = lift(applyDefaults(obj));  result = { ...result, timeout: 60000 };  return result as T extends undefined ? undefined : T;} : <T extends Base | undefined>(obj: T) => T extends undefined ? undefined : T
+>obj : T
+
+  if (!obj) return obj as T extends undefined ? undefined : T;
+>!obj : boolean
+>obj : T
+>obj as T extends undefined ? undefined : T : T extends undefined ? undefined : T
+>obj : T
+
+  let result = lift(applyDefaults(obj));
+>result : T & { skip: boolean; }
+>lift(applyDefaults(obj)) : T & { skip: boolean; }
+>lift : <T_1 extends { formats?: unknown[]; check?: unknown; }>(options: T_1) => T_1
+>applyDefaults(obj) : T & { skip: boolean; }
+>applyDefaults : <T_1 extends Base>(obj: T_1) => T_1 & { skip: boolean; }
+>obj : NonNullable<T>
+
+  result = { ...result, timeout: 60000 };
+>result = { ...result, timeout: 60000 } : T & { skip: boolean; timeout: number; }
+>result : T & { skip: boolean; }
+>{ ...result, timeout: 60000 } : T & { skip: boolean; timeout: number; }
+>result : T & { skip: boolean; }
+>timeout : number
+>60000 : 60000
+
+  return result as T extends undefined ? undefined : T;
+>result as T extends undefined ? undefined : T : T extends undefined ? undefined : T
+>result : T & { skip: boolean; }
+
+};
+

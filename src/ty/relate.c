@@ -5769,7 +5769,18 @@ static bool intersection_apparent_is_union(Checker* me, Ty const* source) {
     for (u32 i = 0; i < source->composite.types.len; i++) {
         Ty const* member = source->composite.types.data[i];
         if (member->kind != TY_TYPE_PARAM && !(member->flags & TYF_DEFERRED)) continue;
-        if (apparent_type(me, member)->kind == TY_UNION) return true;
+        if (apparent_type(me, member)->kind == TY_UNION) {
+            // Once distributed, the members that intersect to never drop out (tsc's getApparentTypeOfIntersectionType:
+            // the intersection of every member's apparent type): `T & { skip: boolean }` with `T extends Base |
+            // undefined` is `Base & { skip: boolean }`, an object, compared property by property. `T & string` with
+            // `T extends string | number` stays `(string & String) | (number & String)`
+            Ty const** parts = malloc(sizeof(Ty const*) * source->composite.types.len);
+            panic_if(!parts, "out of memory");
+            for (u32 j = 0; j < source->composite.types.len; j++) parts[j] = apparent_type(me, source->composite.types.data[j]);
+            Ty const* apparent = ty_intersection(me, parts, source->composite.types.len, nullptr, (TyList){0});
+            free(parts);
+            return apparent->kind == TY_UNION;
+        }
     }
     return false;
 }

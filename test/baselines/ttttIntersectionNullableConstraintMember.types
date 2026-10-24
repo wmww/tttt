@@ -1,0 +1,38 @@
+//// [test/cases/ttttIntersectionNullableConstraintMember.ts] ////
+
+=== ttttIntersectionNullableConstraintMember.ts ===
+// An intersection with a type parameter whose constraint is a union is a union once apparent, which isn't compared
+// with an object target property by property; unless the union's other members intersect to never with the rest:
+// `T & { skip: boolean }` with `T extends Base | undefined` is `Base & { skip: boolean }`, assignable to a weak
+// `{ formats?: unknown[] }` (an inference whose candidate is it keeps it, not the constraint)
+type Base = { formats: string[] };
+>Base : Base
+>formats : string[]
+
+declare function lift<U extends { formats?: unknown[] }>(options: U): U;
+>lift : <U extends { formats?: unknown[]; }>(options: U) => U
+>formats : unknown[] | undefined
+>options : U
+
+function impl<T extends Base | undefined>(y: T & { skip: boolean }) {
+>impl : <T extends Base | undefined>(y: T & { skip: boolean; }) => boolean
+>y : T & { skip: boolean; }
+>skip : boolean
+
+  const r = lift(y);
+>r : T & { skip: boolean; }
+>lift(y) : T & { skip: boolean; }
+>lift : <U extends { formats?: unknown[]; }>(options: U) => U
+>y : T & { skip: boolean; }
+
+  const s: { formats?: unknown[] } = r;
+>s : { formats?: unknown[]; }
+>formats : unknown[] | undefined
+>r : Base & { skip: boolean; }
+
+  return r.skip;
+>r.skip : boolean
+>r : Base & { skip: boolean; }
+>skip : boolean
+}
+
