@@ -68,7 +68,12 @@ for flips); a separate file so the three boxes never conflict.
   function returning `Params<T> | undefined`. tsgo accepts the same code put in one file, so the layout matters:
   Params comes through the package's `export type { Params } from "./utils"` and the record interface through
   `export *`. Guess: the alias's variance for Key (a mapped type's key) is measured in a different state or order.
-  Repro test/cases/npm__vkontakte_vk-mini-apps-router_TS2322.ts. [open]
+  Repro test/cases/npm__vkontakte_vk-mini-apps-router_TS2322.ts. Cause (det3): no variance at all. An import's bare
+  reference to a generic alias has alias type arguments `[]` (getTypeFromTypeAliasReference), and tsgo relates two
+  instantiations of one alias by its variances only when `len(source.alias.typeArguments) != 0`, so `Params` (imported,
+  bare) to `Params<T>` goes structurally and fails against the generic mapped target; in one file `Params` has `[string]`
+  and the variances accept it. alias_variance_applies() had TS 6's rule (`[]` truthy, 13d21d1b7). Also fixes coop
+  server's missing TS2416 (PluginSignalAdapter.ts:112). [fixed 2026-10-24]
 - Seed 20261208, taiyakihitotsu/foxp (@taiyakihitotsu/foxp@0.5.11): tsgo 0 errors, tttt 97 (TS2344, TS2345, TS7006).
   foxp is a type-level Lisp over @taiyakihitotsu/cion (a type-level evaluator built on template-literal inference and
   Peano/bit arithmetic). tttt takes `_MergePreStr`'s `countArgs<X> & countArgs<Y> extends never ? false` branch, so

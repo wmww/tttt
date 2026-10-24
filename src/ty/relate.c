@@ -5889,11 +5889,12 @@ static Ternary structured_related_passing(
 
 // Whether two instantiations of one generic type alias relate by its variances first (see structured_related_impl)
 static bool alias_variance_applies(Checker* me, RelationState const* st, Ty const* source, Ty const* target, bool use_variances) {
-    // (A generic alias with fewer arguments, an import's reference with those written, goes by its defaults:
-    // fillMissingTypeArguments pads both sides. See ty_alias_args_filled())
+    // (Only if the source has type arguments: tsgo's `len(source.alias.typeArguments) != 0`, so an import's bare
+    // reference to a generic alias, `[]` there (getTypeFromTypeAliasReference: getTypeArgumentsFromNode), relates
+    // structurally; TS 6's `source.aliasTypeArguments` took `[]` too. A target with fewer goes by its defaults:
+    // fillMissingTypeArguments pads both sides, see ty_alias_args_filled())
     return ((source->flags & TYF_OBJECT) || source->kind == TY_CONDITIONAL) && source->alias &&
-        source->alias == target->alias &&
-        (source->alias_args.len == target->alias_args.len ? source->alias_args.len != 0 : true) &&
+        source->alias == target->alias && source->alias_args.len != 0 &&
         source->kind != TY_REFERENCE && target->kind != TY_REFERENCE &&
         !is_alias_marker(me, source) && !is_alias_marker(me, target) && use_variances &&
         !(st->alias_fallback_source == source && st->alias_fallback_target == target);
