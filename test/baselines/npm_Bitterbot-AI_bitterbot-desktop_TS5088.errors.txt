@@ -1,0 +1,24 @@
+main.ts(3,17): error TS5088: The inferred type of 'f' references a type with a cyclic structure which cannot be trivially serialized. A type annotation is necessary.
+main.ts(9,17): error TS5088: The inferred type of 'k' references a type with a cyclic structure which cannot be trivially serialized. A type annotation is necessary.
+
+
+==== lib.d.ts (0 errors) ====
+    export type HttpAdapter = (req: {
+        on: (event: string) => typeof req;
+    }) => void;
+    export declare function cb<A extends HttpAdapter>(a: A): (...args: Parameters<A>) => void;
+==== main.ts (2 errors) ====
+    import { cb, type HttpAdapter } from "./lib";
+    declare const h: HttpAdapter;
+    export function f() {
+                    ~
+!!! error TS5088: The inferred type of 'f' references a type with a cyclic structure which cannot be trivially serialized. A type annotation is necessary.
+      return { handler: cb(h) };
+    }
+    export function g() { return h; }
+    type P = Parameters<HttpAdapter>;
+    declare const p: P;
+    export function k() { return p; }
+                    ~
+!!! error TS5088: The inferred type of 'k' references a type with a cyclic structure which cannot be trivially serialized. A type annotation is necessary.
+    

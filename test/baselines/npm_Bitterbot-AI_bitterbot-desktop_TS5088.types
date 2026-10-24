@@ -1,0 +1,50 @@
+//// [test/cases/npm_Bitterbot-AI_bitterbot-desktop_TS5088.ts] ////
+
+=== lib.d.ts ===
+export type HttpAdapter = (req: {
+>HttpAdapter : HttpAdapter
+>req : { on: (event: string) => typeof req; }
+
+    on: (event: string) => typeof req;
+>on : (event: string) => typeof req
+>event : string
+>req : { on: (event: string) => typeof req; }
+
+}) => void;
+export declare function cb<A extends HttpAdapter>(a: A): (...args: Parameters<A>) => void;
+>cb : <A extends HttpAdapter>(a: A) => (...args: Parameters<A>) => void
+>a : A
+>args : Parameters<A>
+
+=== main.ts ===
+import { cb, type HttpAdapter } from "./lib";
+>cb : <A extends HttpAdapter>(a: A) => (...args: Parameters<A>) => void
+>HttpAdapter : any
+
+declare const h: HttpAdapter;
+>h : HttpAdapter
+
+export function f() {
+>f : () => { handler: (req: { on: (event: string) => any; }) => void; }
+
+  return { handler: cb(h) };
+>{ handler: cb(h) } : { handler: (req: { on: (event: string) => any; }) => void; }
+>handler : (req: { on: (event: string) => any; }) => void
+>cb(h) : (req: { on: (event: string) => any; }) => void
+>cb : <A extends HttpAdapter>(a: A) => (...args: Parameters<A>) => void
+>h : HttpAdapter
+}
+export function g() { return h; }
+>g : () => HttpAdapter
+>h : HttpAdapter
+
+type P = Parameters<HttpAdapter>;
+>P : [req: { on: (event: string) => any; }]
+
+declare const p: P;
+>p : [req: { on: (event: string) => any; }]
+
+export function k() { return p; }
+>k : () => [req: { on: (event: string) => any; }]
+>p : [req: { on: (event: string) => any; }]
+

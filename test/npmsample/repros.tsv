@@ -77,3 +77,4 @@ npm_matrix-org_matrix-js-sdk_TS2322	yes	matrix-org/matrix-js-sdk@develop	https:/
 npm_cellajs_cella_TS2322	yes	cellajs/cella@main	https://github.com/cellajs/cella	0	1	+TS2322 +TS2345
 npm_blocksuite_TS6133	no	toeverything/blocksuite@main	https://github.com/toeverything/blocksuite	16	18	+TS6133
 npm_artsy_metaphysics_TS2741	no	artsy/metaphysics@main	https://github.com/artsy/metaphysics	18	21	+TS2322 +TS2345 +TS2551
+npm_Bitterbot-AI_bitterbot-desktop_TS5088	yes	Bitterbot-AI/bitterbot-desktop@main	https://github.com/Bitterbot-AI/bitterbot-desktop	1	0	-TS5088

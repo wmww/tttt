@@ -1754,8 +1754,11 @@ static bool name_accessible(Checker* me, TyDisplay d, Symbol const* symbol, csvi
         for (TyDisplayParams const* i = d.printed_params; i && !printed; i = i->outer) printed = i->function == function;
         // (An accessor's own name is in its declaration: its parameters are in scope there, the type of an interface's
         // `set x({ a: b }: T & { o: typeof b })` at `x`)
-        if (!printed && function && span_valid(function->full_span) && span_source(function->full_span) == span_source(d.at) &&
-            !span_contains_span(function->full_span, d.at) && !(function->accessor && span_eq(function_impl_member_name(function), d.at))
+        // (Printed in another file too: grammy's `HttpAdapter = (req: { on: (...) => typeof req }) => ...` printed for
+        // `Parameters<HttpAdapter>` in a declaration elsewhere expands the query, a cyclic structure, TS5088)
+        if (!printed && function && span_valid(function->full_span) &&
+            (span_source(function->full_span) != span_source(d.at) || !span_contains_span(function->full_span, d.at)) &&
+            !(function->accessor && span_eq(function_impl_member_name(function), d.at))
         ) {
             return false;
         }
