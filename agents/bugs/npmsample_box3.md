@@ -8,4 +8,4 @@ for flips); a separate file so the three boxes never conflict.
   loadModuleFromSelfNameReference result is continueSearching when the export target doesn't resolve, so the
   lookup goes on into node_modules; tttt's load_from_self_name gets SEARCH_STOP from load_from_exports (which
   turns an unresolved target into a stop) and resolve_non_relative returns it. Repro
-  test/cases/npm__augu_utils_TS2307.ts. [open]
+  test/cases/npm__augu_utils_TS2307.ts. Fixed (det3): load_from_self_name() now turns load_from_exports()' SEARCH_STOP into SEARCH_CONTINUE, as tsc's loadModuleFromSelfNameReference returns loadModuleFromExports' continueSearching (the node_modules walk already did). [fixed det3]

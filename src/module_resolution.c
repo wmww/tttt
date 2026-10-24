@@ -1423,6 +1423,10 @@ static Search load_from_self_name(State* me, csview name, csview from_dir, int e
             // tsc: types first, then whatever else the caller accepts
             result = load_from_exports(me, scope, cstr_sv(&scope_dir), cstr_sv(&subpath), extensions, out);
             cstr_drop(&subpath);
+            // (An export that resolves to nothing goes on to node_modules: tsc's loadModuleFromSelfNameReference
+            // returns loadModuleFromExports' continueSearching, a project whose own dist/ isn't built finds its
+            // published copy)
+            if (result == SEARCH_STOP) result = SEARCH_CONTINUE;
         }
     }
     cstr_drop(&scope_dir);
