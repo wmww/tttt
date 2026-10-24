@@ -34,3 +34,4 @@ npm_BigWhaleLabs-seal-hub-memorabilia-token-contracts_TS2344	no	@big-whale-labs/
 npm_adonis5-gigya_TS2308	no	adonis5-gigya@2.0.0	https://github.com/renzosunico/adonis5-gigya	65	67	+TS2308
 npm_ml-component_TS2551	no	ml-component@1.0.8	https://github.com/menglimu/ml-components	15	23	+TS2339 +TS2551
 npm__augu_utils_TS2307	no	@augu/utils@1.5.6	https://github.com/auguwu/utils	12	15	+TS2307
+npm_ag-sockets_TS2345	no	ag-sockets@14.0.4	https://github.com/Agamnentzar/ag-sockets	19	18	-TS2345

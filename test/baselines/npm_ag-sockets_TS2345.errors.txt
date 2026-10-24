@@ -1,0 +1,30 @@
+src/serverSocket.ts(4,48): error TS2345: Argument of type 'import("node_modules/ws/index")' is not assignable to parameter of type 'WebSocket'.
+  The types returned by 'on(...)' are incompatible between these types.
+    Type 'WebSocket' is not assignable to type 'this'.
+      'WebSocket' is assignable to the constraint of type 'this', but 'this' could be instantiated with a different subtype of constraint 'WebSocket'.
+
+
+==== node_modules/ws/index.d.ts (0 errors) ====
+    declare class WebSocket {
+        on(event: "close", listener: (this: WebSocket, code: number) => void): this;
+        on(event: string | symbol, listener: (this: WebSocket, ...args: any[]) => void): this;
+    }
+    declare namespace WebSocket {
+        class Server<T extends WebSocket = WebSocket> {
+            handleUpgrade(callback: (client: T) => void): void;
+        }
+    }
+    export = WebSocket;
+==== src/serverSocket.ts (1 errors) ====
+    import * as ws from 'ws';
+    declare const wsLibrary: typeof ws;
+    const wsServer = new wsLibrary.Server();
+    wsServer.handleUpgrade(socket => connectSocket(socket));
+                                                   ~~~~~~
+!!! error TS2345: Argument of type 'import("node_modules/ws/index")' is not assignable to parameter of type 'WebSocket'.
+!!! error TS2345:   The types returned by 'on(...)' are incompatible between these types.
+!!! error TS2345:     Type 'WebSocket' is not assignable to type 'this'.
+!!! error TS2345:       'WebSocket' is assignable to the constraint of type 'this', but 'this' could be instantiated with a different subtype of constraint 'WebSocket'.
+    function connectSocket(socket: ws) {
+    }
+    

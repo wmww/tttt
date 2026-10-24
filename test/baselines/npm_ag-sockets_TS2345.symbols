@@ -1,0 +1,69 @@
+//// [test/cases/npm_ag-sockets_TS2345.ts] ////
+
+=== node_modules/ws/index.d.ts ===
+declare class WebSocket {
+>WebSocket : Symbol(WebSocket, Decl(index.d.ts, 0, 0), Decl(index.d.ts, 3, 1))
+
+    on(event: "close", listener: (this: WebSocket, code: number) => void): this;
+>on : Symbol(WebSocket.on, Decl(index.d.ts, 0, 25), Decl(index.d.ts, 1, 80))
+>event : Symbol(event, Decl(index.d.ts, 1, 7))
+>listener : Symbol(listener, Decl(index.d.ts, 1, 22))
+>this : Symbol(this, Decl(index.d.ts, 1, 34))
+>WebSocket : Symbol(WebSocket, Decl(index.d.ts, 0, 0), Decl(index.d.ts, 3, 1))
+>code : Symbol(code, Decl(index.d.ts, 1, 50))
+
+    on(event: string | symbol, listener: (this: WebSocket, ...args: any[]) => void): this;
+>on : Symbol(WebSocket.on, Decl(index.d.ts, 0, 25), Decl(index.d.ts, 1, 80))
+>event : Symbol(event, Decl(index.d.ts, 2, 7))
+>listener : Symbol(listener, Decl(index.d.ts, 2, 30))
+>this : Symbol(this, Decl(index.d.ts, 2, 42))
+>WebSocket : Symbol(WebSocket, Decl(index.d.ts, 0, 0), Decl(index.d.ts, 3, 1))
+>args : Symbol(args, Decl(index.d.ts, 2, 58))
+}
+declare namespace WebSocket {
+>WebSocket : Symbol(WebSocket, Decl(index.d.ts, 0, 0), Decl(index.d.ts, 3, 1))
+
+    class Server<T extends WebSocket = WebSocket> {
+>Server : Symbol(Server, Decl(index.d.ts, 4, 29))
+>T : Symbol(T, Decl(index.d.ts, 5, 17))
+>WebSocket : Symbol(WebSocket, Decl(index.d.ts, 0, 0), Decl(index.d.ts, 3, 1))
+>WebSocket : Symbol(WebSocket, Decl(index.d.ts, 0, 0), Decl(index.d.ts, 3, 1))
+
+        handleUpgrade(callback: (client: T) => void): void;
+>handleUpgrade : Symbol(Server.handleUpgrade, Decl(index.d.ts, 5, 51))
+>callback : Symbol(callback, Decl(index.d.ts, 6, 22))
+>client : Symbol(client, Decl(index.d.ts, 6, 33))
+>T : Symbol(T, Decl(index.d.ts, 5, 17))
+    }
+}
+export = WebSocket;
+>WebSocket : Symbol(WebSocket, Decl(index.d.ts, 0, 0), Decl(index.d.ts, 3, 1))
+
+=== src/serverSocket.ts ===
+import * as ws from 'ws';
+>ws : Symbol(ws, Decl(serverSocket.ts, 0, 6))
+
+declare const wsLibrary: typeof ws;
+>wsLibrary : Symbol(wsLibrary, Decl(serverSocket.ts, 1, 13))
+>ws : Symbol(ws, Decl(serverSocket.ts, 0, 6))
+
+const wsServer = new wsLibrary.Server();
+>wsServer : Symbol(wsServer, Decl(serverSocket.ts, 2, 5))
+>wsLibrary.Server : Symbol(ws.Server, Decl(index.d.ts, 4, 29))
+>wsLibrary : Symbol(wsLibrary, Decl(serverSocket.ts, 1, 13))
+>Server : Symbol(ws.Server, Decl(index.d.ts, 4, 29))
+
+wsServer.handleUpgrade(socket => connectSocket(socket));
+>wsServer.handleUpgrade : Symbol(ws.Server.handleUpgrade, Decl(index.d.ts, 5, 51))
+>wsServer : Symbol(wsServer, Decl(serverSocket.ts, 2, 5))
+>handleUpgrade : Symbol(ws.Server.handleUpgrade, Decl(index.d.ts, 5, 51))
+>socket : Symbol(socket, Decl(serverSocket.ts, 3, 23))
+>connectSocket : Symbol(connectSocket, Decl(serverSocket.ts, 3, 56))
+>socket : Symbol(socket, Decl(serverSocket.ts, 3, 23))
+
+function connectSocket(socket: ws) {
+>connectSocket : Symbol(connectSocket, Decl(serverSocket.ts, 3, 56))
+>socket : Symbol(socket, Decl(serverSocket.ts, 4, 23))
+>ws : Symbol(ws, Decl(serverSocket.ts, 0, 6))
+}
+

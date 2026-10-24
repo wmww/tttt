@@ -1,0 +1,66 @@
+//// [test/cases/npm_ag-sockets_TS2345.ts] ////
+
+=== node_modules/ws/index.d.ts ===
+declare class WebSocket {
+>WebSocket : WebSocket
+
+    on(event: "close", listener: (this: WebSocket, code: number) => void): this;
+>on : { (event: "close", listener: (this: WebSocket, code: number) => void): this; (event: string | symbol, listener: (this: WebSocket, ...args: any[]) => void): this; }
+>event : "close"
+>listener : (this: WebSocket, code: number) => void
+>this : WebSocket
+>code : number
+
+    on(event: string | symbol, listener: (this: WebSocket, ...args: any[]) => void): this;
+>on : { (event: "close", listener: (this: WebSocket, code: number) => void): this; (event: string | symbol, listener: (this: WebSocket, ...args: any[]) => void): this; }
+>event : string | symbol
+>listener : (this: WebSocket, ...args: any[]) => void
+>this : WebSocket
+>args : any[]
+}
+declare namespace WebSocket {
+>WebSocket : typeof WebSocket
+
+    class Server<T extends WebSocket = WebSocket> {
+>Server : Server<T>
+
+        handleUpgrade(callback: (client: T) => void): void;
+>handleUpgrade : (callback: (client: T) => void) => void
+>callback : (client: T) => void
+>client : T
+    }
+}
+export = WebSocket;
+>WebSocket : WebSocket
+
+=== src/serverSocket.ts ===
+import * as ws from 'ws';
+>ws : typeof ws
+
+declare const wsLibrary: typeof ws;
+>wsLibrary : typeof ws
+>ws : typeof ws
+
+const wsServer = new wsLibrary.Server();
+>wsServer : ws.Server<import("ws")>
+>new wsLibrary.Server() : ws.Server<import("ws")>
+>wsLibrary.Server : typeof ws.Server
+>wsLibrary : typeof ws
+>Server : typeof ws.Server
+
+wsServer.handleUpgrade(socket => connectSocket(socket));
+>wsServer.handleUpgrade(socket => connectSocket(socket)) : void
+>wsServer.handleUpgrade : (callback: (client: import("ws")) => void) => void
+>wsServer : ws.Server<import("ws")>
+>handleUpgrade : (callback: (client: import("ws")) => void) => void
+>socket => connectSocket(socket) : (socket: import("ws")) => void
+>socket : import("ws")
+>connectSocket(socket) : void
+>connectSocket : (socket: ws) => void
+>socket : import("ws")
+
+function connectSocket(socket: ws) {
+>connectSocket : (socket: ws) => void
+>socket : ws
+}
+
