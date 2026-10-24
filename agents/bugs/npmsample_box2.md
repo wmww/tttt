@@ -115,3 +115,10 @@ boxes' appends never conflict. One section per seed, one bullet per repro, statu
   (the real call goes through `defineDescriptor`/`defineComponent` generics). The clone is kept on the second box at
   thirdparty/npmsample/20261115/0004-youra-h-soldy; `scripts/projdiff.py <clone>/packages/ui/webc/tsconfig.bench.json`
   shows it. [open] [flip]
+- soldy TS2883, second try with `// @link:` (test/cases-style, root /tsconfig.json with `paths` and `declaration`, a workspace
+  package /packages/plugins linked at /node_modules/@s/plugins with `exports`/`types` into an unbuilt dist, a setup package
+  depending on it via package.json `workspace:*`, TReadyPlugin deep re-exported, imported in one file and reaching the
+  exported descriptor's inferred type as `{ plugins: [{ ctor: typeof TReadyPlugin }] }` through a generic `defineDescriptor`,
+  with and without noEmit): tsgo and tttt agree (no error) in every variant, so no repro was committed. What the real project
+  has that these lack: webc's tsconfig sits at packages/ui/webc with the checked files in ../../setup (outside it), and
+  `defineComponent`'s generics carry TReadyPlugin through more layers (plugin bundles). The clone stays. [open] [flip]
