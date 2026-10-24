@@ -1,0 +1,78 @@
+//// [test/cases/ttttSpreadNullableUnionMemberIndex.ts] ////
+
+=== ttttSpreadNullableUnionMemberIndex.ts ===
+// A null or undefined member of a spread union is spread like an object without members (tsc's getSpreadType makes a
+// new object for it, keeping the index signatures both sides have): after nothing it is no longer the empty object
+// type, so a later spread's index signatures aren't copied into it whole
+type A = { [k: string]: number };
+>A : Symbol(A, Decl(ttttSpreadNullableUnionMemberIndex.ts, 0, 0))
+>k : Symbol(k, Decl(ttttSpreadNullableUnionMemberIndex.ts, 3, 12))
+
+type B = { [k: string]: string };
+>B : Symbol(B, Decl(ttttSpreadNullableUnionMemberIndex.ts, 3, 33))
+>k : Symbol(k, Decl(ttttSpreadNullableUnionMemberIndex.ts, 4, 12))
+
+declare const ab: A | B | undefined;
+>ab : Symbol(ab, Decl(ttttSpreadNullableUnionMemberIndex.ts, 5, 13))
+>A : Symbol(A, Decl(ttttSpreadNullableUnionMemberIndex.ts, 0, 0))
+>B : Symbol(B, Decl(ttttSpreadNullableUnionMemberIndex.ts, 3, 33))
+
+declare const abn: A | B | null;
+>abn : Symbol(abn, Decl(ttttSpreadNullableUnionMemberIndex.ts, 6, 13))
+>A : Symbol(A, Decl(ttttSpreadNullableUnionMemberIndex.ts, 0, 0))
+>B : Symbol(B, Decl(ttttSpreadNullableUnionMemberIndex.ts, 3, 33))
+
+declare const rec: Record<string, true>;
+>rec : Symbol(rec, Decl(ttttSpreadNullableUnionMemberIndex.ts, 7, 13))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+declare const r0: { [k: string]: boolean };
+>r0 : Symbol(r0, Decl(ttttSpreadNullableUnionMemberIndex.ts, 8, 13))
+>k : Symbol(k, Decl(ttttSpreadNullableUnionMemberIndex.ts, 8, 21))
+
+const s1 = { ...ab, ...rec };
+>s1 : Symbol(s1, Decl(ttttSpreadNullableUnionMemberIndex.ts, 9, 5))
+>ab : Symbol(ab, Decl(ttttSpreadNullableUnionMemberIndex.ts, 5, 13))
+>rec : Symbol(rec, Decl(ttttSpreadNullableUnionMemberIndex.ts, 7, 13))
+
+const s2 = { ...r0, ...ab };
+>s2 : Symbol(s2, Decl(ttttSpreadNullableUnionMemberIndex.ts, 10, 5))
+>r0 : Symbol(r0, Decl(ttttSpreadNullableUnionMemberIndex.ts, 8, 13))
+>ab : Symbol(ab, Decl(ttttSpreadNullableUnionMemberIndex.ts, 5, 13))
+
+const s3 = { ...abn, x: 1 };
+>s3 : Symbol(s3, Decl(ttttSpreadNullableUnionMemberIndex.ts, 11, 5))
+>abn : Symbol(abn, Decl(ttttSpreadNullableUnionMemberIndex.ts, 6, 13))
+>x : Symbol(x, Decl(ttttSpreadNullableUnionMemberIndex.ts, 11, 20))
+
+const s4 = { ...ab, ...rec, y: "" };
+>s4 : Symbol(s4, Decl(ttttSpreadNullableUnionMemberIndex.ts, 12, 5))
+>ab : Symbol(ab, Decl(ttttSpreadNullableUnionMemberIndex.ts, 5, 13))
+>rec : Symbol(rec, Decl(ttttSpreadNullableUnionMemberIndex.ts, 7, 13))
+>y : Symbol(y, Decl(ttttSpreadNullableUnionMemberIndex.ts, 12, 27))
+
+const s5 = { ...ab };
+>s5 : Symbol(s5, Decl(ttttSpreadNullableUnionMemberIndex.ts, 13, 5))
+>ab : Symbol(ab, Decl(ttttSpreadNullableUnionMemberIndex.ts, 5, 13))
+
+function g<T extends object>(t: T) {
+>g : Symbol(g, Decl(ttttSpreadNullableUnionMemberIndex.ts, 13, 21))
+>T : Symbol(T, Decl(ttttSpreadNullableUnionMemberIndex.ts, 14, 11))
+>t : Symbol(t, Decl(ttttSpreadNullableUnionMemberIndex.ts, 14, 29))
+>T : Symbol(T, Decl(ttttSpreadNullableUnionMemberIndex.ts, 14, 11))
+
+  const s6 = { ...t, ...ab };
+>s6 : Symbol(s6, Decl(ttttSpreadNullableUnionMemberIndex.ts, 15, 7))
+>t : Symbol(t, Decl(ttttSpreadNullableUnionMemberIndex.ts, 14, 29))
+>ab : Symbol(ab, Decl(ttttSpreadNullableUnionMemberIndex.ts, 5, 13))
+
+  const s7 = { ...ab, ...t };
+>s7 : Symbol(s7, Decl(ttttSpreadNullableUnionMemberIndex.ts, 16, 7))
+>ab : Symbol(ab, Decl(ttttSpreadNullableUnionMemberIndex.ts, 5, 13))
+>t : Symbol(t, Decl(ttttSpreadNullableUnionMemberIndex.ts, 14, 29))
+
+  return [s6, s7];
+>s6 : Symbol(s6, Decl(ttttSpreadNullableUnionMemberIndex.ts, 15, 7))
+>s7 : Symbol(s7, Decl(ttttSpreadNullableUnionMemberIndex.ts, 16, 7))
+}
+

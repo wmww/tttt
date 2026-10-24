@@ -111,7 +111,12 @@ boxes' appends never conflict. One section per seed, one bullet per repro, statu
   `true | SelectIncludeType`) and `f(): Record<string, true>`: tttt reports the spread's type `{[x: string]: true} | {[x: string]: boolean | SelectExcludeType} | {...}` not assignable to
   `SelectType | undefined`. Guess: spreading a union with an index-signature member into another object produces the cross-product, and tttt's member `{[x:string]: boolean | SelectExcludeType}`
   (the exclude member merged with `true`) is kept where tsgo's spread (getSpreadType over unions, index-signature union of the right side) yields a type that is assignable, e.g. it
-  drops or keeps the string index differently; compare the two printed spread types. [open]
+  drops or keeps the string index differently; compare the two printed spread types. (claimed: fixF) Cause: the `undefined` member of
+  `forceSelect`'s union, spread first, left tttt's alternative as tsc's emptyObjectType, so the later `...Record<string, true>` copied its
+  index signature in whole (`{ [x: string]: true }`); tsc's getSpreadType makes a new object for null/undefined (only the other primitives
+  return the left side), so getUnionIndexInfos keeps none and that alternative is `{}`. spread_acc_type (ty/expr.c) now pushes a non-empty
+  part for it, and after a generic left side intersects it (`T & undefined` never for `T extends object`, the alternative dropped). Repro
+  ttttSpreadNullableUnionMemberIndex. [flip] [fixed PENDING]
 
 ## Seed 20261115 (--prefer-large)
 53 accepted, 52 byte-identical, clean agreement 52/53, no K-dependence.

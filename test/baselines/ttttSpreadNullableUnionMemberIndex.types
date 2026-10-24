@@ -1,0 +1,82 @@
+//// [test/cases/ttttSpreadNullableUnionMemberIndex.ts] ////
+
+=== ttttSpreadNullableUnionMemberIndex.ts ===
+// A null or undefined member of a spread union is spread like an object without members (tsc's getSpreadType makes a
+// new object for it, keeping the index signatures both sides have): after nothing it is no longer the empty object
+// type, so a later spread's index signatures aren't copied into it whole
+type A = { [k: string]: number };
+>A : A
+>k : string
+
+type B = { [k: string]: string };
+>B : B
+>k : string
+
+declare const ab: A | B | undefined;
+>ab : A | B | undefined
+
+declare const abn: A | B | null;
+>abn : A | B | null
+
+declare const rec: Record<string, true>;
+>rec : Record<string, true>
+>true : true
+
+declare const r0: { [k: string]: boolean };
+>r0 : { [k: string]: boolean; }
+>k : string
+
+const s1 = { ...ab, ...rec };
+>s1 : {}
+>{ ...ab, ...rec } : {} | { [x: string]: number | true; } | { [x: string]: string | true; }
+>ab : A | B | undefined
+>rec : Record<string, true>
+
+const s2 = { ...r0, ...ab };
+>s2 : {}
+>{ ...r0, ...ab } : {} | { [x: string]: number | boolean; } | { [x: string]: string | boolean; }
+>r0 : { [k: string]: boolean; }
+>ab : A | B | undefined
+
+const s3 = { ...abn, x: 1 };
+>s3 : { x: number; } | { x: number; } | { x: number; }
+>{ ...abn, x: 1 } : { x: number; } | { x: number; } | { x: number; }
+>abn : A | B | null
+>x : number
+>1 : 1
+
+const s4 = { ...ab, ...rec, y: "" };
+>s4 : { y: string; } | { y: string; } | { y: string; }
+>{ ...ab, ...rec, y: "" } : { y: string; } | { y: string; } | { y: string; }
+>ab : A | B | undefined
+>rec : Record<string, true>
+>y : string
+>"" : ""
+
+const s5 = { ...ab };
+>s5 : {}
+>{ ...ab } : {} | { [k: string]: number; } | { [k: string]: string; }
+>ab : A | B | undefined
+
+function g<T extends object>(t: T) {
+>g : <T extends object>(t: T) => T[]
+>t : T
+
+  const s6 = { ...t, ...ab };
+>s6 : (T & A) | (T & B)
+>{ ...t, ...ab } : (T & A) | (T & B)
+>t : T
+>ab : A | B | undefined
+
+  const s7 = { ...ab, ...t };
+>s7 : T | ({ [k: string]: number; } & T) | ({ [k: string]: string; } & T)
+>{ ...ab, ...t } : T | ({ [k: string]: number; } & T) | ({ [k: string]: string; } & T)
+>ab : A | B | undefined
+>t : T
+
+  return [s6, s7];
+>[s6, s7] : T[]
+>s6 : (T & A) | (T & B)
+>s7 : T | ({ [k: string]: number; } & T) | ({ [k: string]: string; } & T)
+}
+

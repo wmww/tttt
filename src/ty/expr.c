@@ -4217,8 +4217,26 @@ static void spread_acc_type(Checker* me, SpreadAcc* acc, Ty const* type) {
             else if (member->flags & (TYF_NULLABLE | TYF_VOID)) {
                 alt.nullable_spread = true;
                 // (tsc's getSpreadType merges null or undefined like an object, getUnionIndexInfos keeping the index
-                // signatures it has too: none. A generic left side is intersected with it instead, left alone here)
-                if (alt.part_count == 1 && !alt.parts[0].generic) alt.parts[0].object.index_count = 0;
+                // signatures it has too: none. A generic left side is intersected with it instead)
+                if (alt.part_count == 1 && !alt.parts[0].generic) {
+                    alt.parts[0].object.index_count = 0;
+                    alt.parts[0].object.empty_object = false;
+                } else if (!alt.part_count) {
+                    // (Nothing spread before: tsc's left side is emptyObjectType, so the new object takes the null's index
+                    // signatures, none, and is no longer emptyObjectType, which a later spread's index signatures would
+                    // be copied into whole: `{ ...(A | B | undefined), ...Record<string, true> }` is `{}` there)
+                    spread_alt_push(&alt, (SpreadPart){ .object = { .empty_object = false } });
+                } else if (alt.parts[alt.part_count - 1].generic) {
+                    // (After a generic object it is intersected with it, tsc's getIntersectionType([left, right]):
+                    // `T & undefined` is never for `T extends object`, and that alternative drops out)
+                    Ty const* pair[2] = { alt.parts[alt.part_count - 1].generic, member };
+                    Ty const* intersection = ty_intersection(me, pair, 2, nullptr, (TyList){0});
+                    if (intersection->flags & TYF_NEVER) {
+                        spread_alt_drop(&alt);
+                        continue;
+                    }
+                    alt.parts[alt.part_count - 1].generic = intersection;
+                }
             }
             spread_acc_add_alt(&next, alt);
         }
