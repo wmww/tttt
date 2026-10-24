@@ -353,6 +353,13 @@ static u64 relation_key_of(Checker* me, Ty const* source, Ty const* target, bool
     return relation_key(source, target);
 }
 
+// The cache key of a pair under `relation`: identity's is the pair in id order (see recursive_related()), so a lookup
+// outside it must swap them the same way or it misses every pair recursive_related() stored swapped
+static u64 relation_cache_key(Checker* me, TyRelation relation, Ty const* source, Ty const* target, bool* constrained) {
+    if (relation == TY_RELATION_IDENTITY && source->id > target->id && !my variance_depth) return relation_key_of(me, target, source, constrained);
+    return relation_key_of(me, source, target, constrained);
+}
+
 // Globals
 
 [[gnu::noinline, gnu::cold]] static Ty const* resolve_global_type(Checker* me, GlobalType which) {
@@ -7245,10 +7252,12 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     bool constrained;
     // (Identity is keyed by the pair in id order, so one direction's result answers the other: tsc's getRelationKey
     // swaps them. Which direction is computed first is observable where identity isn't symmetric, a written
-    // distributive conditional type against an instantiated one: expect-type's toEqualTypeOf, es-toolkit)
+    // distributive conditional type against an instantiated one: expect-type's toEqualTypeOf, es-toolkit. Not inside a
+    // variance measurement: the marker instantiations compared there by identity (an unmeasurable argument) answering
+    // each other's direction changed measured variances, and renovate's redis.ts made a third more types, d06134025)
     Ty const* key_source = source;
     Ty const* key_target = target;
-    if (st->relation == TY_RELATION_IDENTITY && source->id > target->id) {
+    if (st->relation == TY_RELATION_IDENTITY && source->id > target->id && !my variance_depth) {
         key_source = target;
         key_target = source;
     }
@@ -8462,7 +8471,7 @@ static bool check_related(
     // unreliable again lets every later failed comparison of QueryBuilder fall back to structure (4x the types)
     if (!st->reporting && (source->flags & TYF_OBJECT) && (target->flags & TYF_OBJECT)) {
         bool constrained;
-        unsigned cached = relation_cache_get(&my relations[relation], relation_key_of(me, source, target, &constrained));
+        unsigned cached = relation_cache_get(&my relations[relation], relation_cache_key(me, relation, source, target, &constrained));
         if (__builtin_expect(cached & CACHE_DEEP, 0)) {
             my relation_deep_seen = true;
             if (!debug_env.deep_hit_no_taint) TAINT_EVENT(TAINT_READ_TAINTED);
@@ -8497,7 +8506,7 @@ static bool check_related(
         bool complexity = st->relation_count <= 0;
         if (complexity) {
             bool constrained;
-            relation_cache_put(&my relations[relation], relation_key_of(me, source, target, &constrained), CACHE_FAILED | CACHE_OVERFLOW);
+            relation_cache_put(&my relations[relation], relation_cache_key(me, relation, source, target, &constrained), CACHE_FAILED | CACHE_OVERFLOW);
         }
         cstr source_str = ty_to_cstr(me, source);
         cstr target_str = ty_to_cstr(me, target);
@@ -8565,7 +8574,7 @@ bool ty_is_related_within(Checker* me, Ty const* source, Ty const* target) {
 // Whether the pair ran out of budget before and is cached as that (tsc's RelationComparisonResultComplexityOverflow)
 bool ty_relation_overflowed(Checker* me, Ty const* source, Ty const* target, TyRelation relation) {
     bool constrained;
-    return relation_cache_get(&my relations[relation], relation_key_of(me, source, target, &constrained)) & CACHE_OVERFLOW;
+    return relation_cache_get(&my relations[relation], relation_cache_key(me, relation, source, target, &constrained)) & CACHE_OVERFLOW;
 }
 
 bool ty_is_related(Checker* me, Ty const* source, Ty const* target, TyRelation relation) {
