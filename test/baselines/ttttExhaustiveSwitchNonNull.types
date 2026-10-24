@@ -1,0 +1,88 @@
+//// [test/cases/ttttExhaustiveSwitchNonNull.ts] ////
+
+=== ttttExhaustiveSwitchNonNull.ts ===
+// A switch is exhaustive by the type of its expression as written: `switch (k!)` over `K | undefined` covers K (tsc's
+// computeExhaustiveSwitchStatement checks node.Expression() itself), so the end isn't reachable
+type K = 'a' | 'b';
+>K : K
+
+declare const p: { kind?: K };
+>p : { kind?: K; }
+>kind : K | undefined
+
+const { kind } = p;
+>kind : K | undefined
+>p : { kind?: K; }
+
+function f1(): number { switch (kind!) { case 'a': case 'b': return 1; } }
+>f1 : () => number
+>kind! : K
+>kind : K | undefined
+>'a' : "a"
+>'b' : "b"
+>1 : 1
+
+declare const k2: K | undefined;
+>k2 : K | undefined
+
+function f2(): number { switch (k2!) { case 'a': case 'b': return 1; } }
+>f2 : () => number
+>k2! : K
+>k2 : K | undefined
+>'a' : "a"
+>'b' : "b"
+>1 : 1
+
+function f3(): number { const k = p.kind; switch (k!) { case 'a': case 'b': return 1; } }
+>f3 : () => number
+>k : K | undefined
+>p.kind : K | undefined
+>p : { kind?: K; }
+>kind : K | undefined
+>k! : K
+>k : K | undefined
+>'a' : "a"
+>'b' : "b"
+>1 : 1
+
+function f4(): number { switch (p.kind!) { case 'a': case 'b': return 1; } }
+>f4 : () => number
+>p.kind! : K
+>p.kind : K | undefined
+>p : { kind?: K; }
+>kind : K | undefined
+>'a' : "a"
+>'b' : "b"
+>1 : 1
+
+function f5(): number { switch ((k2)!) { case 'a': case 'b': return 1; } }
+>f5 : () => number
+>(k2)! : K
+>(k2) : K | undefined
+>k2 : K | undefined
+>'a' : "a"
+>'b' : "b"
+>1 : 1
+
+function f6(): number { switch (k2) { case 'a': case 'b': return 1; } }
+>f6 : () => number
+>k2 : K | undefined
+>'a' : "a"
+>'b' : "b"
+>1 : 1
+
+const g = () => { switch (k2!) { case 'a': return 1; case 'b': return 2; } };
+>g : () => 1 | 2
+>() => { switch (k2!) { case 'a': return 1; case 'b': return 2; } } : () => 1 | 2
+>k2! : K
+>k2 : K | undefined
+>'a' : "a"
+>1 : 1
+>'b' : "b"
+>2 : 2
+
+const n: number = g();
+>n : number
+>g() : 1 | 2
+>g : () => 1 | 2
+

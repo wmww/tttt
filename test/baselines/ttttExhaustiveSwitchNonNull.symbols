@@ -1,0 +1,59 @@
+//// [test/cases/ttttExhaustiveSwitchNonNull.ts] ////
+
+=== ttttExhaustiveSwitchNonNull.ts ===
+// A switch is exhaustive by the type of its expression as written: `switch (k!)` over `K | undefined` covers K (tsc's
+// computeExhaustiveSwitchStatement checks node.Expression() itself), so the end isn't reachable
+type K = 'a' | 'b';
+>K : Symbol(K, Decl(ttttExhaustiveSwitchNonNull.ts, 0, 0))
+
+declare const p: { kind?: K };
+>p : Symbol(p, Decl(ttttExhaustiveSwitchNonNull.ts, 3, 13))
+>kind : Symbol(kind, Decl(ttttExhaustiveSwitchNonNull.ts, 3, 18))
+>K : Symbol(K, Decl(ttttExhaustiveSwitchNonNull.ts, 0, 0))
+
+const { kind } = p;
+>kind : Symbol(kind, Decl(ttttExhaustiveSwitchNonNull.ts, 4, 7))
+>p : Symbol(p, Decl(ttttExhaustiveSwitchNonNull.ts, 3, 13))
+
+function f1(): number { switch (kind!) { case 'a': case 'b': return 1; } }
+>f1 : Symbol(f1, Decl(ttttExhaustiveSwitchNonNull.ts, 4, 19))
+>kind : Symbol(kind, Decl(ttttExhaustiveSwitchNonNull.ts, 4, 7))
+
+declare const k2: K | undefined;
+>k2 : Symbol(k2, Decl(ttttExhaustiveSwitchNonNull.ts, 6, 13))
+>K : Symbol(K, Decl(ttttExhaustiveSwitchNonNull.ts, 0, 0))
+
+function f2(): number { switch (k2!) { case 'a': case 'b': return 1; } }
+>f2 : Symbol(f2, Decl(ttttExhaustiveSwitchNonNull.ts, 6, 32))
+>k2 : Symbol(k2, Decl(ttttExhaustiveSwitchNonNull.ts, 6, 13))
+
+function f3(): number { const k = p.kind; switch (k!) { case 'a': case 'b': return 1; } }
+>f3 : Symbol(f3, Decl(ttttExhaustiveSwitchNonNull.ts, 7, 72))
+>k : Symbol(k, Decl(ttttExhaustiveSwitchNonNull.ts, 8, 29))
+>p.kind : Symbol(kind, Decl(ttttExhaustiveSwitchNonNull.ts, 3, 18))
+>p : Symbol(p, Decl(ttttExhaustiveSwitchNonNull.ts, 3, 13))
+>kind : Symbol(kind, Decl(ttttExhaustiveSwitchNonNull.ts, 3, 18))
+>k : Symbol(k, Decl(ttttExhaustiveSwitchNonNull.ts, 8, 29))
+
+function f4(): number { switch (p.kind!) { case 'a': case 'b': return 1; } }
+>f4 : Symbol(f4, Decl(ttttExhaustiveSwitchNonNull.ts, 8, 89))
+>p.kind : Symbol(kind, Decl(ttttExhaustiveSwitchNonNull.ts, 3, 18))
+>p : Symbol(p, Decl(ttttExhaustiveSwitchNonNull.ts, 3, 13))
+>kind : Symbol(kind, Decl(ttttExhaustiveSwitchNonNull.ts, 3, 18))
+
+function f5(): number { switch ((k2)!) { case 'a': case 'b': return 1; } }
+>f5 : Symbol(f5, Decl(ttttExhaustiveSwitchNonNull.ts, 9, 76))
+>k2 : Symbol(k2, Decl(ttttExhaustiveSwitchNonNull.ts, 6, 13))
+
+function f6(): number { switch (k2) { case 'a': case 'b': return 1; } }
+>f6 : Symbol(f6, Decl(ttttExhaustiveSwitchNonNull.ts, 10, 74))
+>k2 : Symbol(k2, Decl(ttttExhaustiveSwitchNonNull.ts, 6, 13))
+
+const g = () => { switch (k2!) { case 'a': return 1; case 'b': return 2; } };
+>g : Symbol(g, Decl(ttttExhaustiveSwitchNonNull.ts, 12, 5))
+>k2 : Symbol(k2, Decl(ttttExhaustiveSwitchNonNull.ts, 6, 13))
+
+const n: number = g();
+>n : Symbol(n, Decl(ttttExhaustiveSwitchNonNull.ts, 13, 5))
+>g : Symbol(g, Decl(ttttExhaustiveSwitchNonNull.ts, 12, 5))
+

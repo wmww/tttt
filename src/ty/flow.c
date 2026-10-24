@@ -3456,7 +3456,9 @@ static bool is_exhaustive_switch(Checker* me, SwitchStatement const* switch_) {
         }
     } else {
         // (Of a type parameter its constraint's: tsgo 7.1's getBaseConstraintOrType, `T extends keyof X`)
-        Ty const* type = ty_flow_expr_type(me, needle);
+        // (Of the expression as written: `switch (kind!)` is over the non-null type, tsc's checkExpressionCached of
+        // node.Expression())
+        Ty const* type = ty_flow_expr_type(me, &switch_->needle);
         if (type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
             if (type->kind == TY_UNION) {
                 TyBuf parts = {0};
