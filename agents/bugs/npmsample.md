@@ -348,3 +348,15 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
 ## Seed 20261044
 
 - fui-fancyui@0.6.12 (tsconfig.bench.json), src/components/atoms/AlignedLabel/AlignedLabel.style.tsx:8, TS7053 (65x, plus TS7006): tttt types the destructured `$align` of a styled-components interpolation function (`styled.label<Props>`) as any, so indexing `Record<TTextAlignLRC,...>` errors; tsgo infers the prop type. Test npm_fui-fancyui_TS7053. (claimed: cor10) Cause: the parameter's type is `ExecutionContext & NoInfer<Props>`, and `NoInfer` of an object stays a substitution type (tsc's isNoInferTargetType); tttt's type facts took the intersection as generic with no base constraint, so it could be nullish and the destructuring read gave the error type. A substitution type now has the facts of its base intersection, and one of a non-generic type doesn't make an intersection generic (type_facts, ty/flow.c); repro test/cases/ttttNoInferIntersectionDestructure.ts. [fixed 2026-10-24]
+
+## Seed 20261300 (large)
+
+- lklynet/aurral at 4f5e4757 (root project, tsconfig.bench.json; tsgo 9, tttt 10): spurious TS2345 at
+  frontend/src/pages/useDiscoverData.ts(87,51), `queryClient.setQueryData(discoveryQueryKey, updater)` with an untagged
+  `QueryKey` and `updater: (current: DiscoverData | undefined) => DiscoverData | undefined` (@tanstack/query-core
+  5.104.5). tttt inferred `TInferredQueryFnData = DiscoverData` through `NoInfer<TInferredQueryFnData> | undefined`:
+  after the union's matched `undefined` came off, the leftover `NoInfer<T>` target went to infer_from_reduced(), whose
+  getActualTypeVariable step stripped the NoInfer (tsc's inferFromTypes asks isNoInferType right before it). With
+  `TInferred` its default `unknown`, the updater's `current` parameter fits like tsgo's. Repro
+  test/cases/ttttNoInferUnionRemainder.ts (recreated from a sandboxed install; projdiff byte-identical after the fix).
+  [fixed PENDING]

@@ -51,3 +51,4 @@ npm__nbholleweger_eva-icons_TS1110	no	@nbholleweger/eva-icons@0.0.5	https://gith
 npm__gatsby-project-kb_transformer-wiki-references_TS2339	no	@gatsby-project-kb/transformer-wiki-references@0.3.1	https://github.com/hikerpig/gatsby-project-kb	57	58	+TS2339
 npm_fui-fancyui_TS7053	no	fui-fancyui@0.6.12	https://github.com/TobiTRy/fui-fancyui	8	73	TS7006,TS7053
 npm_payload-storage-cloudinary_TS2322	yes	payload-storage-cloudinary@1.3.0	https://github.com/nick-vogel/payload-storage-cloudinary	0	1	TS2322
+ttttNoInferUnionRemainder	no	lklynet/aurral@main	https://github.com/lklynet/aurral	9	10	+TS2345

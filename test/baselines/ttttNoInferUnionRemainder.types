@@ -1,0 +1,84 @@
+//// [test/cases/ttttNoInferUnionRemainder.ts] ////
+
+=== ttttNoInferUnionRemainder.ts ===
+// A NoInfer target left over once a union's matched members come off (`D | undefined` to `NoInfer<T> | undefined`)
+// infers nothing: T keeps its default. From @tanstack/query-core's setQueryData (lklynet/aurral)
+interface D { a: number }
+>a : number
+
+declare const updater: (current: D | undefined) => D | undefined;
+>updater : (current: D | undefined) => D | undefined
+>current : D | undefined
+
+declare function f1<T = unknown>(u: NoInfer<T> | undefined | ((i: unknown) => NoInfer<T> | undefined)): T;
+>f1 : <T = unknown>(u: NoInfer<T> | undefined | ((i: unknown) => NoInfer<T> | undefined)) => T
+>u : ((i: unknown) => NoInfer<T> | undefined) | NoInfer<T> | undefined
+>i : unknown
+
+const r1 = f1(updater);
+>r1 : unknown
+>f1(updater) : unknown
+>f1 : <T = unknown>(u: NoInfer<T> | undefined | ((i: unknown) => NoInfer<T> | undefined)) => T
+>updater : (current: D | undefined) => D | undefined
+
+declare function f3<T = unknown>(u: (i: unknown) => NoInfer<T> | undefined): T;
+>f3 : <T = unknown>(u: (i: unknown) => NoInfer<T> | undefined) => T
+>u : (i: unknown) => NoInfer<T> | undefined
+>i : unknown
+
+const r3 = f3(updater);
+>r3 : unknown
+>f3(updater) : unknown
+>f3 : <T = unknown>(u: (i: unknown) => NoInfer<T> | undefined) => T
+>updater : (current: D | undefined) => D | undefined
+
+declare function f4<T = string>(u: NoInfer<T> | null | undefined, v: T | undefined): T;
+>f4 : <T = string>(u: NoInfer<T> | null | undefined, v: T | undefined) => T
+>u : NoInfer<T> | null | undefined
+>v : T | undefined
+
+const r4 = f4(1 as number | undefined, undefined);
+>r4 : undefined
+>f4(1 as number | undefined, undefined) : undefined
+>f4 : <T = string>(u: NoInfer<T> | null | undefined, v: T | undefined) => T
+>1 as number | undefined : number | undefined
+>1 : 1
+>undefined : undefined
+
+type Updater<TInput, TOutput> = TOutput | ((input: TInput) => TOutput);
+>Updater : Updater<TInput, TOutput>
+>input : TInput
+
+declare const tag: unique symbol;
+>tag : unique symbol
+
+type DataTag<TType, TValue> = TType & { [tag]: TValue };
+>DataTag : DataTag<TType, TValue>
+>[tag] : TValue
+>tag : unique symbol
+
+type InferDataFromTag<TQueryFnData, TTaggedQueryKey extends readonly unknown[]> =
+>InferDataFromTag : InferDataFromTag<TQueryFnData, TTaggedQueryKey>
+
+    TTaggedQueryKey extends DataTag<unknown, infer TaggedValue> ? TaggedValue : TQueryFnData;
+declare function setQueryData<TQueryFnData = unknown, TTaggedQueryKey extends readonly unknown[] = readonly unknown[],
+>setQueryData : <TQueryFnData = unknown, TTaggedQueryKey extends readonly unknown[] = readonly unknown[], TInferredQueryFnData = InferDataFromTag<TQueryFnData, TTaggedQueryKey>>(queryKey: TTaggedQueryKey, updater: Updater<InferDataFromTag<NoInfer<TQueryFnData>, TTaggedQueryKey> | undefined, NoInfer<TInferredQueryFnData> | undefined>) => NoInfer<TInferredQueryFnData> | undefined
+
+    TInferredQueryFnData = InferDataFromTag<TQueryFnData, TTaggedQueryKey>>(
+    queryKey: TTaggedQueryKey,
+>queryKey : TTaggedQueryKey
+
+    updater: Updater<InferDataFromTag<NoInfer<TQueryFnData>, TTaggedQueryKey> | undefined, NoInfer<TInferredQueryFnData> | undefined>,
+>updater : Updater<InferDataFromTag<NoInfer<TQueryFnData>, TTaggedQueryKey> | undefined, NoInfer<TInferredQueryFnData> | undefined>
+
+): NoInfer<TInferredQueryFnData> | undefined;
+declare const key: readonly unknown[];
+>key : readonly unknown[]
+
+const r = setQueryData(key, updater);
+>r : unknown
+>setQueryData(key, updater) : unknown
+>setQueryData : <TQueryFnData = unknown, TTaggedQueryKey extends readonly unknown[] = readonly unknown[], TInferredQueryFnData = InferDataFromTag<TQueryFnData, TTaggedQueryKey>>(queryKey: TTaggedQueryKey, updater: Updater<InferDataFromTag<NoInfer<TQueryFnData>, TTaggedQueryKey> | undefined, NoInfer<TInferredQueryFnData> | undefined>) => NoInfer<TInferredQueryFnData> | undefined
+>key : readonly unknown[]
+>updater : (current: D | undefined) => D | undefined
+

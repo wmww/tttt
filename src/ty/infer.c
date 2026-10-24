@@ -1849,7 +1849,12 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
 // The rest of tsc's inferFromTypes, once the matching members of a union or an intersection target are taken out: a
 // union target's rest goes on here, without the intersection target's (an else branch in tsc)
 [[gnu::always_inline]] static inline void infer_from_reduced(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
-    if (target->kind == TY_SUBSTITUTION || target->kind == TY_INDEXED) target = ty_actual_type_variable(me, target);
+    if (target->kind == TY_SUBSTITUTION || target->kind == TY_INDEXED) {
+        // (A NoInfer target left after the union's matched members came off, `D | undefined` to `NoInfer<T> | undefined`,
+        // infers nothing either: tsc's inferFromTypes asks isNoInferType right before getActualTypeVariable)
+        if (ty_is_no_infer(target)) return;
+        target = ty_actual_type_variable(me, target);
+    }
     if (target->kind == TY_TYPE_PARAM || (target->kind == TY_INDEXED && inference_param(inf, target))) {
         InferParam* param = inference_param(inf, target);
         if (!param || param->fixed || (source->flags & TYF_NON_INFERRABLE) || source == ty_intrinsic(me, TY_NON_INFERRABLE_ANY)) return;

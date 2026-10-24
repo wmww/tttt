@@ -1,0 +1,131 @@
+//// [test/cases/ttttNoInferUnionRemainder.ts] ////
+
+=== ttttNoInferUnionRemainder.ts ===
+// A NoInfer target left over once a union's matched members come off (`D | undefined` to `NoInfer<T> | undefined`)
+// infers nothing: T keeps its default. From @tanstack/query-core's setQueryData (lklynet/aurral)
+interface D { a: number }
+>D : Symbol(D, Decl(ttttNoInferUnionRemainder.ts, 0, 0))
+>a : Symbol(D.a, Decl(ttttNoInferUnionRemainder.ts, 2, 13))
+
+declare const updater: (current: D | undefined) => D | undefined;
+>updater : Symbol(updater, Decl(ttttNoInferUnionRemainder.ts, 3, 13))
+>current : Symbol(current, Decl(ttttNoInferUnionRemainder.ts, 3, 24))
+>D : Symbol(D, Decl(ttttNoInferUnionRemainder.ts, 0, 0))
+>D : Symbol(D, Decl(ttttNoInferUnionRemainder.ts, 0, 0))
+
+declare function f1<T = unknown>(u: NoInfer<T> | undefined | ((i: unknown) => NoInfer<T> | undefined)): T;
+>f1 : Symbol(f1, Decl(ttttNoInferUnionRemainder.ts, 3, 65))
+>T : Symbol(T, Decl(ttttNoInferUnionRemainder.ts, 5, 20))
+>u : Symbol(u, Decl(ttttNoInferUnionRemainder.ts, 5, 33))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttNoInferUnionRemainder.ts, 5, 20))
+>i : Symbol(i, Decl(ttttNoInferUnionRemainder.ts, 5, 63))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttNoInferUnionRemainder.ts, 5, 20))
+>T : Symbol(T, Decl(ttttNoInferUnionRemainder.ts, 5, 20))
+
+const r1 = f1(updater);
+>r1 : Symbol(r1, Decl(ttttNoInferUnionRemainder.ts, 6, 5))
+>f1 : Symbol(f1, Decl(ttttNoInferUnionRemainder.ts, 3, 65))
+>updater : Symbol(updater, Decl(ttttNoInferUnionRemainder.ts, 3, 13))
+
+declare function f3<T = unknown>(u: (i: unknown) => NoInfer<T> | undefined): T;
+>f3 : Symbol(f3, Decl(ttttNoInferUnionRemainder.ts, 6, 23))
+>T : Symbol(T, Decl(ttttNoInferUnionRemainder.ts, 7, 20))
+>u : Symbol(u, Decl(ttttNoInferUnionRemainder.ts, 7, 33))
+>i : Symbol(i, Decl(ttttNoInferUnionRemainder.ts, 7, 37))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttNoInferUnionRemainder.ts, 7, 20))
+>T : Symbol(T, Decl(ttttNoInferUnionRemainder.ts, 7, 20))
+
+const r3 = f3(updater);
+>r3 : Symbol(r3, Decl(ttttNoInferUnionRemainder.ts, 8, 5))
+>f3 : Symbol(f3, Decl(ttttNoInferUnionRemainder.ts, 6, 23))
+>updater : Symbol(updater, Decl(ttttNoInferUnionRemainder.ts, 3, 13))
+
+declare function f4<T = string>(u: NoInfer<T> | null | undefined, v: T | undefined): T;
+>f4 : Symbol(f4, Decl(ttttNoInferUnionRemainder.ts, 8, 23))
+>T : Symbol(T, Decl(ttttNoInferUnionRemainder.ts, 9, 20))
+>u : Symbol(u, Decl(ttttNoInferUnionRemainder.ts, 9, 32))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttNoInferUnionRemainder.ts, 9, 20))
+>v : Symbol(v, Decl(ttttNoInferUnionRemainder.ts, 9, 65))
+>T : Symbol(T, Decl(ttttNoInferUnionRemainder.ts, 9, 20))
+>T : Symbol(T, Decl(ttttNoInferUnionRemainder.ts, 9, 20))
+
+const r4 = f4(1 as number | undefined, undefined);
+>r4 : Symbol(r4, Decl(ttttNoInferUnionRemainder.ts, 10, 5))
+>f4 : Symbol(f4, Decl(ttttNoInferUnionRemainder.ts, 8, 23))
+>undefined : Symbol(undefined)
+
+type Updater<TInput, TOutput> = TOutput | ((input: TInput) => TOutput);
+>Updater : Symbol(Updater, Decl(ttttNoInferUnionRemainder.ts, 10, 50))
+>TInput : Symbol(TInput, Decl(ttttNoInferUnionRemainder.ts, 12, 13))
+>TOutput : Symbol(TOutput, Decl(ttttNoInferUnionRemainder.ts, 12, 20))
+>TOutput : Symbol(TOutput, Decl(ttttNoInferUnionRemainder.ts, 12, 20))
+>input : Symbol(input, Decl(ttttNoInferUnionRemainder.ts, 12, 44))
+>TInput : Symbol(TInput, Decl(ttttNoInferUnionRemainder.ts, 12, 13))
+>TOutput : Symbol(TOutput, Decl(ttttNoInferUnionRemainder.ts, 12, 20))
+
+declare const tag: unique symbol;
+>tag : Symbol(tag, Decl(ttttNoInferUnionRemainder.ts, 13, 13))
+
+type DataTag<TType, TValue> = TType & { [tag]: TValue };
+>DataTag : Symbol(DataTag, Decl(ttttNoInferUnionRemainder.ts, 13, 33))
+>TType : Symbol(TType, Decl(ttttNoInferUnionRemainder.ts, 14, 13))
+>TValue : Symbol(TValue, Decl(ttttNoInferUnionRemainder.ts, 14, 19))
+>TType : Symbol(TType, Decl(ttttNoInferUnionRemainder.ts, 14, 13))
+>[tag] : Symbol([tag], Decl(ttttNoInferUnionRemainder.ts, 14, 39))
+>tag : Symbol(tag, Decl(ttttNoInferUnionRemainder.ts, 13, 13))
+>TValue : Symbol(TValue, Decl(ttttNoInferUnionRemainder.ts, 14, 19))
+
+type InferDataFromTag<TQueryFnData, TTaggedQueryKey extends readonly unknown[]> =
+>InferDataFromTag : Symbol(InferDataFromTag, Decl(ttttNoInferUnionRemainder.ts, 14, 56))
+>TQueryFnData : Symbol(TQueryFnData, Decl(ttttNoInferUnionRemainder.ts, 15, 22))
+>TTaggedQueryKey : Symbol(TTaggedQueryKey, Decl(ttttNoInferUnionRemainder.ts, 15, 35))
+
+    TTaggedQueryKey extends DataTag<unknown, infer TaggedValue> ? TaggedValue : TQueryFnData;
+>TTaggedQueryKey : Symbol(TTaggedQueryKey, Decl(ttttNoInferUnionRemainder.ts, 15, 35))
+>DataTag : Symbol(DataTag, Decl(ttttNoInferUnionRemainder.ts, 13, 33))
+>TaggedValue : Symbol(TaggedValue, Decl(ttttNoInferUnionRemainder.ts, 16, 50))
+>TaggedValue : Symbol(TaggedValue, Decl(ttttNoInferUnionRemainder.ts, 16, 50))
+>TQueryFnData : Symbol(TQueryFnData, Decl(ttttNoInferUnionRemainder.ts, 15, 22))
+
+declare function setQueryData<TQueryFnData = unknown, TTaggedQueryKey extends readonly unknown[] = readonly unknown[],
+>setQueryData : Symbol(setQueryData, Decl(ttttNoInferUnionRemainder.ts, 16, 93))
+>TQueryFnData : Symbol(TQueryFnData, Decl(ttttNoInferUnionRemainder.ts, 17, 30))
+>TTaggedQueryKey : Symbol(TTaggedQueryKey, Decl(ttttNoInferUnionRemainder.ts, 17, 53))
+
+    TInferredQueryFnData = InferDataFromTag<TQueryFnData, TTaggedQueryKey>>(
+>TInferredQueryFnData : Symbol(TInferredQueryFnData, Decl(ttttNoInferUnionRemainder.ts, 17, 118))
+>InferDataFromTag : Symbol(InferDataFromTag, Decl(ttttNoInferUnionRemainder.ts, 14, 56))
+>TQueryFnData : Symbol(TQueryFnData, Decl(ttttNoInferUnionRemainder.ts, 17, 30))
+>TTaggedQueryKey : Symbol(TTaggedQueryKey, Decl(ttttNoInferUnionRemainder.ts, 17, 53))
+
+    queryKey: TTaggedQueryKey,
+>queryKey : Symbol(queryKey, Decl(ttttNoInferUnionRemainder.ts, 18, 76))
+>TTaggedQueryKey : Symbol(TTaggedQueryKey, Decl(ttttNoInferUnionRemainder.ts, 17, 53))
+
+    updater: Updater<InferDataFromTag<NoInfer<TQueryFnData>, TTaggedQueryKey> | undefined, NoInfer<TInferredQueryFnData> | undefined>,
+>updater : Symbol(updater, Decl(ttttNoInferUnionRemainder.ts, 19, 30))
+>Updater : Symbol(Updater, Decl(ttttNoInferUnionRemainder.ts, 10, 50))
+>InferDataFromTag : Symbol(InferDataFromTag, Decl(ttttNoInferUnionRemainder.ts, 14, 56))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>TQueryFnData : Symbol(TQueryFnData, Decl(ttttNoInferUnionRemainder.ts, 17, 30))
+>TTaggedQueryKey : Symbol(TTaggedQueryKey, Decl(ttttNoInferUnionRemainder.ts, 17, 53))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>TInferredQueryFnData : Symbol(TInferredQueryFnData, Decl(ttttNoInferUnionRemainder.ts, 17, 118))
+
+): NoInfer<TInferredQueryFnData> | undefined;
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>TInferredQueryFnData : Symbol(TInferredQueryFnData, Decl(ttttNoInferUnionRemainder.ts, 17, 118))
+
+declare const key: readonly unknown[];
+>key : Symbol(key, Decl(ttttNoInferUnionRemainder.ts, 22, 13))
+
+const r = setQueryData(key, updater);
+>r : Symbol(r, Decl(ttttNoInferUnionRemainder.ts, 23, 5))
+>setQueryData : Symbol(setQueryData, Decl(ttttNoInferUnionRemainder.ts, 16, 93))
+>key : Symbol(key, Decl(ttttNoInferUnionRemainder.ts, 22, 13))
+>updater : Symbol(updater, Decl(ttttNoInferUnionRemainder.ts, 3, 13))
+

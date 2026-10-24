@@ -1,0 +1,40 @@
+ttttNoInferUnionRemainder.ts(9,15): error TS2345: Argument of type '(current: D | undefined) => D | undefined' is not assignable to parameter of type '(i: unknown) => unknown'.
+  Types of parameters 'current' and 'i' are incompatible.
+    Type 'unknown' is not assignable to type 'D | undefined'.
+ttttNoInferUnionRemainder.ts(11,15): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'null | undefined'.
+  Type 'number' is not assignable to type 'null | undefined'.
+
+
+==== ttttNoInferUnionRemainder.ts (2 errors) ====
+    // A NoInfer target left over once a union's matched members come off (`D | undefined` to `NoInfer<T> | undefined`)
+    // infers nothing: T keeps its default. From @tanstack/query-core's setQueryData (lklynet/aurral)
+    interface D { a: number }
+    declare const updater: (current: D | undefined) => D | undefined;
+    
+    declare function f1<T = unknown>(u: NoInfer<T> | undefined | ((i: unknown) => NoInfer<T> | undefined)): T;
+    const r1 = f1(updater);
+    declare function f3<T = unknown>(u: (i: unknown) => NoInfer<T> | undefined): T;
+    const r3 = f3(updater);
+                  ~~~~~~~
+!!! error TS2345: Argument of type '(current: D | undefined) => D | undefined' is not assignable to parameter of type '(i: unknown) => unknown'.
+!!! error TS2345:   Types of parameters 'current' and 'i' are incompatible.
+!!! error TS2345:     Type 'unknown' is not assignable to type 'D | undefined'.
+    declare function f4<T = string>(u: NoInfer<T> | null | undefined, v: T | undefined): T;
+    const r4 = f4(1 as number | undefined, undefined);
+                  ~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'null | undefined'.
+!!! error TS2345:   Type 'number' is not assignable to type 'null | undefined'.
+    
+    type Updater<TInput, TOutput> = TOutput | ((input: TInput) => TOutput);
+    declare const tag: unique symbol;
+    type DataTag<TType, TValue> = TType & { [tag]: TValue };
+    type InferDataFromTag<TQueryFnData, TTaggedQueryKey extends readonly unknown[]> =
+        TTaggedQueryKey extends DataTag<unknown, infer TaggedValue> ? TaggedValue : TQueryFnData;
+    declare function setQueryData<TQueryFnData = unknown, TTaggedQueryKey extends readonly unknown[] = readonly unknown[],
+        TInferredQueryFnData = InferDataFromTag<TQueryFnData, TTaggedQueryKey>>(
+        queryKey: TTaggedQueryKey,
+        updater: Updater<InferDataFromTag<NoInfer<TQueryFnData>, TTaggedQueryKey> | undefined, NoInfer<TInferredQueryFnData> | undefined>,
+    ): NoInfer<TInferredQueryFnData> | undefined;
+    declare const key: readonly unknown[];
+    const r = setQueryData(key, updater);
+    
