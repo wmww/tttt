@@ -444,7 +444,7 @@ which the sweep's cache no longer lists (its 62 configs are the packages'), so n
   - 2026-10-24 at 10941157b: still, projdiff core/tsconfig.tests.json tsgo 5315 / tttt 5312: -TS2322 node-build.test.ts:49 (and the
     two -TS2488 below). [open]
 - **opencode/packages/core/tsconfig.tests.json: -TS2488 at test/session-owned.test.ts:197 and :845** ("Type 'never'
-  must have a '[Symbol.iterator]()' method", tsgo only), found by the 2026-10-24 at 10941157b recheck, uninvestigated. [open]
+  must have a '[Symbol.iterator]()' method", tsgo only), found by the 2026-10-24 at 10941157b recheck, uninvestigated. (claimed: fixE) [open]
 - **JSX children elaboration under a generic target** (typewriter.tsx:52, root project). tsgo reports TS2746
   (several children for `(IntrinsicAttributes & DynamicProps<"p" | T, ...>)["children"]`); tttt took the elementwise
   path (is_iterable_like of the deferred indexed access) and reported TS2322. In the root project, JSX is React's while
