@@ -337,7 +337,11 @@ for flips); a separate file so the three boxes never conflict.
   inner `container.applyAxiosInterceptors(...)` aren't TS7006 in tsgo, is the re-entry model's stage C/D question.
   Two self-contained mimics (createContainer + a self-referencing factory with a generic `typeof withInterceptors`
   member) agree with tsgo, so the trigger needs more of the real types; reduce.py on the project was started and
-  stopped (slow: 1876 own files). [open]
+  stopped (slow: 1876 own files). Final state (2026-10-25, stopped for budget): a second reduce.py run (--keep
+  "app-di-container.ts.*TS7006" --tttt-has --tsgo-clean) reproduced (0 tsgo-only, 57 tttt-only lines; 7253 program
+  files, 1732 reducible) and was killed before cutting anything; no repro test exists. The clone (akash-network/console
+  at aa01c146993b6e7e00d2fb5fd292296b40b94476) and the reduce copy are deleted. Next step: re-create the clone, run
+  the same reduce.py to the end (expect hours), then scripts/reentrytrace.py on the cut. [open]
 - Large seed 20261403, akash-network/console@main, apps/api: spurious TS2877 at tsup.config.ts:1 ("This import uses
   a '.ts' extension ... not a relative path"), the same as latitude-llm's apps/web entry above. Not a flip. Re-checked at 7a1056d63 (seed 20261490, the same commit aa01c1469): byte-identical. [fixed ee1a75319]
 - Seed 20261218, wakaztahir/solid-staggered-grid (solid-staggered-grid@1.0.22, commit 4bf293019, root tsconfig.json):
