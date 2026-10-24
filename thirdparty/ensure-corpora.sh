@@ -162,6 +162,16 @@ CORPORA=(
     "DefinitelyTyped https://github.com/DefinitelyTyped/DefinitelyTyped.git ac3977d854a671215b8d3e2d5e4ced9c345bf00b . alias:@types=../types"
 )
 
+# Copies SRC to DST unless DST already says the same, through a temporary file renamed into place: scripts run this
+# before every corpus run while other workers' tttt and tsc read the same checkouts, and a plain `cp` truncates the
+# file first (a drizzle run once read an empty tsconfig.corpus.json mid-copy: no `extends`, no `lib`, no skipLibCheck,
+# 6410 diagnostics instead of 41)
+install_same() {
+    if cmp -s "$1" "$2"; then return 0; fi
+    mkdir -p "$(dirname "$2")"
+    cp "$1" "$2.tmp.$$" && mv -f "$2.tmp.$$" "$2"
+}
+
 mkdir -p corpora
 for ENTRY in "${CORPORA[@]}"; do
     read -r NAME URL COMMIT DIR LINK <<<"$ENTRY"
@@ -179,8 +189,12 @@ for ENTRY in "${CORPORA[@]}"; do
     fi
     PROJECT="corpora/$NAME/$DIR"
     LOCK="corpora-locks/$NAME.package-lock.json"
-    if test -e "corpora-locks/$NAME.package.json"; then cp "corpora-locks/$NAME.package.json" "$PROJECT/package.json"; fi
-    if test -d "corpora-locks/$NAME.overlay"; then cp -r "corpora-locks/$NAME.overlay/." "corpora/$NAME/"; fi
+    if test -e "corpora-locks/$NAME.package.json"; then install_same "corpora-locks/$NAME.package.json" "$PROJECT/package.json"; fi
+    if test -d "corpora-locks/$NAME.overlay"; then
+        (cd "corpora-locks/$NAME.overlay" && find . -type f) | while read -r FILE; do
+            install_same "corpora-locks/$NAME.overlay/$FILE" "corpora/$NAME/$FILE"
+        done
+    fi
     if test $RELOCK = 1; then
         rm -rf "$PROJECT/node_modules" "$PROJECT/package-lock.json"
         (cd "$PROJECT" && npm install --package-lock-only --ignore-scripts --legacy-peer-deps --no-audit --no-fund)
