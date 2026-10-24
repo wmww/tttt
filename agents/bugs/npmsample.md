@@ -128,3 +128,7 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   import referenced; tttt's name resolution found only the global Record and reported TS6133. Fixed: the reference
   remembers such an import alias (IdentifierTypeRare.args_alias) and lowering marks it under tsc's condition
   (src/ty/lower.c). (claimed: cor10) [flip] [fixed 2026-10-23]
+
+## Seed 20261100 (second box)
+- npm_ciceksepeti_cui-listbox_TS7006 (@ciceksepeti/cui-listbox, cactus-ui packages/listbox): tsgo reports TS7006 on the unannotated second parameter of a generic arrow passed to a generic `forwardRef(render: (props: P, ref: Ref<T>) => ...)` when the arrow's first parameter type is erroneous (here `Poly<C, {}>` with a value used as a type, in the real project an unresolved import); tttt gives the parameter a contextual type and reports nothing. Guess: tttt contextually types a parameter of a generic function expression through an instantiated contextual signature even when the sibling parameter is erroneous, where tsgo leaves it implicit any. Not a flip (29 vs 23 errors). [open]
+- decentraland-builder-assets: text-only; tsconfig `"diagnostics": true` makes tsgo print timing stats (`Bind time: ...`), tttt ignores the option; same 6 errors and exit code. [text]

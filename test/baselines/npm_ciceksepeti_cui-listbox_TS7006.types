@@ -1,0 +1,30 @@
+//// [test/cases/npm_ciceksepeti_cui-listbox_TS7006.ts] ////
+
+=== npm_ciceksepeti_cui-listbox_TS7006.ts ===
+// origin: npm @ciceksepeti/cui-listbox (0142-ciceksepetitech-cactus-ui) https://github.com/ciceksepetitech/cactus-ui packages/listbox/tsconfig.bench.json seed 20261100
+// flip: no
+interface Ref<T> { current: T }
+>current : T
+
+interface Render<T, P = {}> { (props: P, ref: Ref<T>): void }
+>props : P
+>ref : Ref<T>
+
+declare function forwardRef<T, P = {}>(render: Render<T, P>): void;
+>forwardRef : <T, P = {}>(render: Render<T, P>) => void
+>render : Render<T, P>
+
+declare const Poly: any;
+>Poly : any
+
+forwardRef(
+>forwardRef(  <C extends string>(props: Poly<C, {}>, forwardedRef) => {  }) : void
+>forwardRef : <T, P = {}>(render: Render<T, P>) => void
+
+  <C extends string>(props: Poly<C, {}>, forwardedRef) => {
+><C extends string>(props: Poly<C, {}>, forwardedRef) => {  } : <C extends string>(props: Poly<C, {}>, forwardedRef: any) => void
+>props : Poly<C, {}>
+>forwardedRef : any
+  }
+);
+

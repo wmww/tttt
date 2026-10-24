@@ -1,0 +1,45 @@
+//// [test/cases/npm_ciceksepeti_cui-listbox_TS7006.ts] ////
+
+=== npm_ciceksepeti_cui-listbox_TS7006.ts ===
+// origin: npm @ciceksepeti/cui-listbox (0142-ciceksepetitech-cactus-ui) https://github.com/ciceksepetitech/cactus-ui packages/listbox/tsconfig.bench.json seed 20261100
+// flip: no
+interface Ref<T> { current: T }
+>Ref : Symbol(Ref, Decl(npm_ciceksepeti_cui-listbox_TS7006.ts, 0, 0))
+>T : Symbol(T, Decl(npm_ciceksepeti_cui-listbox_TS7006.ts, 2, 14))
+>current : Symbol(Ref.current, Decl(npm_ciceksepeti_cui-listbox_TS7006.ts, 2, 18))
+>T : Symbol(T, Decl(npm_ciceksepeti_cui-listbox_TS7006.ts, 2, 14))
+
+interface Render<T, P = {}> { (props: P, ref: Ref<T>): void }
+>Render : Symbol(Render, Decl(npm_ciceksepeti_cui-listbox_TS7006.ts, 2, 31))
+>T : Symbol(T, Decl(npm_ciceksepeti_cui-listbox_TS7006.ts, 3, 17))
+>P : Symbol(P, Decl(npm_ciceksepeti_cui-listbox_TS7006.ts, 3, 19))
+>props : Symbol(props, Decl(npm_ciceksepeti_cui-listbox_TS7006.ts, 3, 31))
+>P : Symbol(P, Decl(npm_ciceksepeti_cui-listbox_TS7006.ts, 3, 19))
+>ref : Symbol(ref, Decl(npm_ciceksepeti_cui-listbox_TS7006.ts, 3, 40))
+>Ref : Symbol(Ref, Decl(npm_ciceksepeti_cui-listbox_TS7006.ts, 0, 0))
+>T : Symbol(T, Decl(npm_ciceksepeti_cui-listbox_TS7006.ts, 3, 17))
+
+declare function forwardRef<T, P = {}>(render: Render<T, P>): void;
+>forwardRef : Symbol(forwardRef, Decl(npm_ciceksepeti_cui-listbox_TS7006.ts, 3, 61))
+>T : Symbol(T, Decl(npm_ciceksepeti_cui-listbox_TS7006.ts, 4, 28))
+>P : Symbol(P, Decl(npm_ciceksepeti_cui-listbox_TS7006.ts, 4, 30))
+>render : Symbol(render, Decl(npm_ciceksepeti_cui-listbox_TS7006.ts, 4, 39))
+>Render : Symbol(Render, Decl(npm_ciceksepeti_cui-listbox_TS7006.ts, 2, 31))
+>T : Symbol(T, Decl(npm_ciceksepeti_cui-listbox_TS7006.ts, 4, 28))
+>P : Symbol(P, Decl(npm_ciceksepeti_cui-listbox_TS7006.ts, 4, 30))
+
+declare const Poly: any;
+>Poly : Symbol(Poly, Decl(npm_ciceksepeti_cui-listbox_TS7006.ts, 5, 13))
+
+forwardRef(
+>forwardRef : Symbol(forwardRef, Decl(npm_ciceksepeti_cui-listbox_TS7006.ts, 3, 61))
+
+  <C extends string>(props: Poly<C, {}>, forwardedRef) => {
+>C : Symbol(C, Decl(npm_ciceksepeti_cui-listbox_TS7006.ts, 8, 3))
+>props : Symbol(props, Decl(npm_ciceksepeti_cui-listbox_TS7006.ts, 8, 21))
+>Poly : Symbol(Poly)
+>C : Symbol(C, Decl(npm_ciceksepeti_cui-listbox_TS7006.ts, 8, 3))
+>forwardedRef : Symbol(forwardedRef, Decl(npm_ciceksepeti_cui-listbox_TS7006.ts, 8, 40))
+  }
+);
+

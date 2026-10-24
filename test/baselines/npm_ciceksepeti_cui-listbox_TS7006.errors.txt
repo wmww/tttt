@@ -1,0 +1,21 @@
+npm_ciceksepeti_cui-listbox_TS7006.ts(9,29): error TS2749: 'Poly' refers to a value, but is being used as a type here. Did you mean 'typeof Poly'?
+npm_ciceksepeti_cui-listbox_TS7006.ts(9,42): error TS7006: Parameter 'forwardedRef' implicitly has an 'any' type.
+
+
+==== npm_ciceksepeti_cui-listbox_TS7006.ts (2 errors) ====
+    // origin: npm @ciceksepeti/cui-listbox (0142-ciceksepetitech-cactus-ui) https://github.com/ciceksepetitech/cactus-ui packages/listbox/tsconfig.bench.json seed 20261100
+    // flip: no
+    interface Ref<T> { current: T }
+    interface Render<T, P = {}> { (props: P, ref: Ref<T>): void }
+    declare function forwardRef<T, P = {}>(render: Render<T, P>): void;
+    declare const Poly: any;
+    
+    forwardRef(
+      <C extends string>(props: Poly<C, {}>, forwardedRef) => {
+                                ~~~~
+!!! error TS2749: 'Poly' refers to a value, but is being used as a type here. Did you mean 'typeof Poly'?
+                                             ~~~~~~~~~~~~
+!!! error TS7006: Parameter 'forwardedRef' implicitly has an 'any' type.
+      }
+    );
+    
