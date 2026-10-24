@@ -1423,7 +1423,8 @@ static inline void hop_whitespace_full(Parser* parent, bool hop_comments, bool h
                     parse_error_inner(parent, span_make(parent->shared->source, file_start, file_start), 1490,
                         cstr_lit("File appears to be binary."), true);
                     if (!parent->shared->binary_marker) parent->shared->binary_marker = parent->pos;
-                    parent->pos += strlen(parent->pos);
+                    // (To the end of the file, not the next NUL byte: binary content has them, MPEG-TS chunks named .ts)
+                    parent->pos = file_start + cstr_size(&parent->shared->source->contents);
                     break;
                 }
                 if (!size) goto ws_end;

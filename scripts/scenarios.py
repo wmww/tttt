@@ -13,7 +13,7 @@ the (file, line, code) of the diagnostics are compared with tsc's.
 Known divergences are listed in SKIP with why (plan 41: under -b tttt reads referenced projects' sources, never
 outputs; no emit nor incremental state). tsc's tiny fake lib is replaced by tttt's real libraries.
 """
-import argparse, os, re, shutil, subprocess, sys, tempfile
+import argparse, base64, os, re, shutil, subprocess, sys, tempfile
 from collections import Counter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -55,6 +55,7 @@ def parse(path):
         return None
     cwd = m.group(1)
     files, symlinks = {}, {}
+    binary = set()  # (tttt's own scenarios: `//// [PATH] *base64*`, the content base64 (a binary file, NUL bytes))
     i = 0
     while i < len(lines) and lines[i] != "Input::":
         i += 1
@@ -75,6 +76,8 @@ def parse(path):
             else:
                 current = m.group(1)
                 files[current] = []
+                if m.group(4) and m.group(4).strip() == "*base64*":
+                    binary.add(current)
         elif current is not None:
             files[current].append(line)
         i += 1
@@ -94,7 +97,7 @@ def parse(path):
             not re.match(r"^(Change|exitCode|Program root files|Edit \[)", lines[i]):
         output.append(ANSI.sub("", lines[i]))
         i += 1
-    files = {k: "\n".join(v).rstrip("\n") + "\n" for k, v in files.items()}
+    files = {k: base64.b64decode("".join(v)) if k in binary else "\n".join(v).rstrip("\n") + "\n" for k, v in files.items()}
     return cwd, files, symlinks, command, output, status
 
 
@@ -162,7 +165,7 @@ def run(name, scenario, tttt, keep, verbose):
         for path, content in files.items():
             full = root + path
             os.makedirs(os.path.dirname(full), exist_ok=True)
-            with open(full, "w", encoding="utf-8") as f:
+            with (open(full, "wb") if isinstance(content, bytes) else open(full, "w", encoding="utf-8")) as f:
                 f.write(content)
         for link, target in symlinks.items():
             full = root + link
