@@ -469,7 +469,7 @@ not committed), a bench config next to each of its 4 tsconfigs. Not K-dependent.
     reference's flow query a second time for the unassigned-variable issue, which cached that junction complete, and the
     later reference got a plain never. The issue is now remembered from the type's own query. Repro
     test/cases/ttttFlowIssueSingleQuery.ts (hand-cut, 15 lines; reduce.py on the 6481-file program was too slow and was
-    stopped). Its types component still differs (tsgo prints `r.previous : error`, tttt `never`). [fixed PENDING]
+    stopped). Its types component still differs (tsgo prints `r.previous : error`, tttt `never`). [fixed 63514446a]
 
 ## Seed 20261301
 
