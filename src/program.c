@@ -3683,6 +3683,23 @@ static void program_verify_project_files(Program* me) {
     cstr_drop(&root_dir);
 }
 
+// The @ts-expect-error/@ts-ignore that suppresses a semantic diagnostic at `span` of `source`, else null: starting from
+// the line before the diagnostic's, lines that are blank or only a `//` comment are passed over on the way up
+static CommentDirective* preceding_comment_directive(SourceFile* source, Span span) {
+    if (!source || !source->comment_directive_count || source->unchecked) return nullptr;
+    const char* text = source_file_start(source);
+    const char* text_end = text + cstr_size(&source->contents);
+    for (intptr_t line = (intptr_t)source_file_line_index(source, span.buf) - 1; line >= 0; line--) {
+        CommentDirective* directive = source_file_comment_directive_at_line(source, (u32)line);
+        if (directive) return directive;
+        const char* c = text + source->line_starts[line];
+        const char* end = line + 1 < source->line_count ? text + source->line_starts[line + 1] : text_end;
+        while (c < end && (*c == ' ' || *c == '\t' || *c == '\r' || *c == '\n' || *c == '\v' || *c == '\f')) c++;
+        if (c < end && !(c + 1 < end && c[0] == '/' && c[1] == '/')) break;
+    }
+    return nullptr;
+}
+
 // tsc's getDiagnosticsWithPrecedingDirectives: a semantic diagnostic (of `phase`, resolving names or typechecking) that
 // a @ts-expect-error/@ts-ignore precedes isn't reported. Starting from the line before the diagnostic's, lines that
 // are blank or only a `//` comment are passed over on the way up to the directive. Parse errors stay
@@ -3705,20 +3722,11 @@ static void program_apply_comment_directives(Program* me, ErrorPhase phase) {
         // (And the grammar errors the parser finds for tsc's checker, checkGrammar*: semantic diagnostics there)
         bool applies = error->phase == phase ||
             (phase == ERROR_PHASE_RESOLVE_NAMES && error->phase == ERROR_PHASE_PARSE && error->grammar);
-        if (applies && source && source->comment_directive_count && !source->unchecked) {
-            const char* text = source_file_start(source);
-            const char* text_end = text + cstr_size(&source->contents);
-            for (intptr_t line = (intptr_t)source_file_line_index(source, error->span.buf) - 1; line >= 0; line--) {
-                CommentDirective* directive = source_file_comment_directive_at_line(source, (u32)line);
-                if (directive) {
-                    directive->used = true;
-                    suppressed = true;
-                    break;
-                }
-                const char* c = text + source->line_starts[line];
-                const char* end = line + 1 < source->line_count ? text + source->line_starts[line + 1] : text_end;
-                while (c < end && (*c == ' ' || *c == '\t' || *c == '\r' || *c == '\n' || *c == '\v' || *c == '\f')) c++;
-                if (c < end && !(c + 1 < end && c[0] == '/' && c[1] == '/')) break;
+        if (applies) {
+            CommentDirective* directive = preceding_comment_directive(source, error->span);
+            if (directive) {
+                directive->used = true;
+                suppressed = true;
             }
         }
         if (suppressed) {
@@ -5042,6 +5050,24 @@ bool program_recycled(Program const* me) {
 
 bool program_limit_history_dependent(Program const* me) {
     return atomic_load(&my history_reported) && (my checker_count > 1 || program_recycled(me));
+}
+
+// Whether the checkers' errors hold a history-dependent diagnostic (error_is_history_dependent()) that the output will
+// show: not in an unchecked or excluded file (error_ctx_remove_unchecked()), not under a @ts-expect-error/@ts-ignore
+// (program_apply_comment_directives()). type-fest's and effect's `// @ts-expect-error` over a type that runs into
+// TS2589/TS2590 reran their programs in one checker for a diagnostic nobody sees (2.5-6x their wall)
+static bool history_dependent_shown(ErrorCtx const* checker_errs, u32 count) {
+    for (u32 c = 0; c < count; c++) {
+        for_each (e, vec_error, &checker_errs[c].errors) {
+            if (!error_is_history_dependent(e->ts_code) || e->suggestion) continue;
+            SourceFile* source = (SourceFile*)span_source(e->span);
+            if (!span_valid(e->span) || !source) return true;
+            if (source->excluded || source->unchecked) continue;
+            if (preceding_comment_directive(source, e->span)) continue;
+            return true;
+        }
+    }
+    return false;
 }
 
 Binder const* program_get_binder(Program const* me) {
@@ -6714,7 +6740,7 @@ again:
     // what the error type it caches silences, is that history's (error_is_history_dependent()). Checked again in one
     // fresh checker, in program order, never recycled but by the memory pool: tsgo --singleThreaded's output, at any
     // checker count
-    if (!limit_rerun && !my graph && program_limit_history_dependent(me)) {
+    if (!limit_rerun && !my graph && program_limit_history_dependent(me) && history_dependent_shown(checker_errs, count)) {
         if (getenv("TTTT_DEBUG_LIMIT_RERUN")) eprintln("tttt: limit rerun in one checker");
         typecheck_pass_drop(me, checker_errs, count);
         member_refs_clear(me);
