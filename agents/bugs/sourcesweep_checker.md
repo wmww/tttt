@@ -440,11 +440,16 @@ which the sweep's cache no longer lists (its 62 configs are the packages'), so n
     effect's overloaded `Layer.effect`, `Exclude<R, Scope>`, Identity/TagInput/DistributiveOmit/CheckDependencies and
     const type parameters, infer the Layer and don't fail at all.
   - So the inference that yields Layer.Any depends on something in effect's Layer or Context.Service types that hasn't
-    been isolated (Pipeable/Unify members, Context.Key variance), and the return difference comes after it. [open]
+    been isolated (Pipeable/Unify members, Context.Key variance), and the return difference comes after it.
+  - 2026-10-24 at 10941157b: still, projdiff core/tsconfig.tests.json tsgo 5315 / tttt 5312: -TS2322 node-build.test.ts:49 (and the
+    two -TS2488 below). [open]
+- **opencode/packages/core/tsconfig.tests.json: -TS2488 at test/session-owned.test.ts:197 and :845** ("Type 'never'
+  must have a '[Symbol.iterator]()' method", tsgo only), found by the 2026-10-24 at 10941157b recheck, uninvestigated. [open]
 - **JSX children elaboration under a generic target** (typewriter.tsx:52, root project). tsgo reports TS2746
   (several children for `(IntrinsicAttributes & DynamicProps<"p" | T, ...>)["children"]`); tttt took the elementwise
   path (is_iterable_like of the deferred indexed access) and reported TS2322. In the root project, JSX is React's while
-  the components are solid's. [open]
+  the components are solid's. 2026-10-24 at 10941157b: tttt reports the TS2746 at typewriter.tsx(52,6) on the root project
+  (opencode/tsconfig.json). Fixed by b5dd411e6 (children aren't elaborated against a generic props type's `P["children"]`). [fixed b5dd411e6]
 - **starlight schema.ts:119**: tsgo TS5114 ("Instantiations of type 'ZodType' appear infinitely circular"), tttt
   TS2589 next to it. This is the instantiation-limit family (bugs/tsgo_divergences.md, MEMBERS nesting). Cut down
   (scripts/reduce.py, then by hand) to test/cases/ttttRecursiveBaseArgumentLimit.ts, which is known failing:
@@ -457,9 +462,12 @@ which the sweep's cache no longer lists (its 62 configs are the packages'), so n
     members_reentered_unguarded() synthesizes (hacks.md). Then a real TS2589 from the instantiated property's re-entry
     (prop_type_slow, up to 200 levels), whose stack of indexed accesses names nothing.
   - Two divergences: where the alias's constraint check goes, and a second limit hit after the synthesized one. The
-    first is the members stage E of agents/notes/reentrancy.md. [open]
+    first is the members stage E of agents/notes/reentrancy.md.
+  - 2026-10-24 at 10941157b: still, projdiff opencode/packages/web tsgo 44 / tttt 45: +TS2589 at schema.ts:119 (the TS5114 matches). [open]
 - A union member a non-generic alias names prints as the alias in tttt's error heads (`S` for `S | undefined`, `type S
-  = readonly {...}[]`) and expanded in tsgo's. [open]
+  = readonly {...}[]`) and expanded in tsgo's. 2026-10-24 at 10941157b: the root project opencode/tsconfig.json has the same (file, line,
+  code) as tsgo but for starlight's +TS2589 (17337 / 17338); by text, 363 tsgo-only and 281 tttt-only distinct
+  diagnostics of ~17.3k (union member order, truncation, chains...); the alias instance wasn't isolated among them. [open]
 
 ## Refresh 8: random large repositories (2026-10-23, cor10)
 Day one at 57c517455 (measurements.md "Fresh repositories, seventh rule"); checkouts in thirdparty/sources/REPO, commands
@@ -480,7 +488,9 @@ from there; tsgo's verdicts in test/sourcesweep/tsc.jsonl.gz.
   artifact.ts(144,30) and `=wrangler-config-inline.ts` (174,9): which file a checker saw first decides the site. 10
   configs (apps/docs, apps/installer, apps/manager, apps/manager/screenshots, apps/sandbox, packages/cli, packages/pack,
   packages/schema, packages/schema/tsconfig.build.json, scripts) match at K1 and fail at the defaults. Unchecked:
-  whether tsgo moves it too at its own default checkers. [open]
+  whether tsgo moves it too at its own default checkers. 2026-10-24 at 10941157b: `sourcesweep.py -f '^appflare/'` 15 / 15 match at
+  the defaults, `kdiff.py -f '^appflare/'` 0 / 11 differ (K1 vs K16): a limit hit with several checkers reruns the program
+  in one checker (a75f0080c; tsgo itself moves the site with K). [fixed a75f0080c]
 - **abacusai-bot/apps/web: +TS2322 on motion components' props** (to corB): 23 spurious, e.g.
   src/components/notch-controls.tsx:38 (`Type '{ ref?: Ref<HTMLDivElement> | undefined; variants?: Variants | undefined;
   ... 338 more ...}' is not assignable ...`), src/features/chat/kit/message-actions.tsx:1249, permissions/notch-list.tsx:216
@@ -541,16 +551,18 @@ ensure-sources.sh). At --threads 1: 74 / 79 projects, 4 / 6 repos; checkouts in 
   getUninstantiatedJsxSignaturesOfType (jsx.go) takes getApparentType of the tag type: an instantiable type's base
   constraint, here "h1" | ... | "h6", whose members each give an intrinsic signature. tttt finds no signature for
   `h${T}` (a type parameter T extends "h1" | "h2" works). Repro test/cases/ttttJsxTemplateLiteralTag.tsx (known
-  failing). [open]
+  failing). 2026-10-24 at 10941157b: still, `sourcesweep.py -f '^comp/'` 18 / 21, the 3 are this +TS2604 (one each). [open]
 - **parabol: -TS7006 on kysely expression-builder callbacks** (packages/embedder, packages/server: 19 missing), e.g.
   packages/embedder/EmbeddingsJobQueueStream.ts:47 `.where('id', '=', (eb) => eb...)` and
   server/graphql/public/mutations/helpers/movePageToNewTeam.ts:19-36: tsgo reports the parameter implicitly any
-  (the contextual type there gives `eb` none), tttt types it from context. Not reduced. [open]
+  (the contextual type there gives `eb` none), tttt types it from context. Not reduced. 2026-10-24 at 10941157b: still, projdiff
+  packages/server tsgo 6061 / tttt 6043 (18 -TS7006, nothing else), packages/embedder 1 -TS7006. [open]
 - **parabol/packages/embedder: +TS2322 and +TS2344 at mergeAsyncIterators.ts:52**: `AsyncIterableIterator<{[P in
   keyof T]: [ParseInt<\`${P}\`>, Result<T[P]>]}[number]>` with T a tuple of async iterators: tttt says "Type 'P' is
   not assignable to type 'string | number | bigint | boolean | null | undefined'" (the template literal's placeholder)
   and "Type 'T[P]' does not satisfy the constraint 'AsyncIterator<any, any, any>'": a homomorphic mapped type over a
-  tuple, whose P tsc keeps to the numeric-string keys (and T[P] to the element types). Not reduced. [open]
+  tuple, whose P tsc keeps to the numeric-string keys (and T[P] to the element types). Not reduced. 2026-10-24 at 10941157b: still,
+  projdiff packages/embedder tsgo 318 / tttt 319 (+TS2322, +TS2344 at :52, plus the -TS7006 above). [open]
 
 ## hono tsconfig.build.json: spurious TS2769 at src/request.ts:214 (2026-10-24, corB)
 `parseBody(this, options)` in HonoRequest's `parseBody` method: tttt reports TS2769 (`HonoRequest<P, I>` not
