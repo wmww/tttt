@@ -727,34 +727,86 @@ void error_ctx_sort_and_dedupe(ErrorCtx* me) {
     my errors.size = kept;
 }
 
-// One diagnostic of error_vec_sort_and_dedupe(): its file's path to sort by, its index for a stable order
+// One diagnostic of error_vec_sort_and_dedupe(): its file's place in the order of paths, its index for a stable order
 typedef struct SortedError {
     Error error;
-    cstr path;
+    u32 rank;
     isize index;
 } SortedError;
 
 static int sorted_error_cmp(void const* a_, void const* b_) {
     SortedError const* a = a_;
     SortedError const* b = b_;
-    int ret = cstr_cmp(&a->path, &b->path);
+    int ret = a->rank < b->rank ? -1 : a->rank > b->rank;
     if (!ret) ret = error_full_cmp(&a->error, &b->error);
     if (!ret) ret = a->index < b->index ? -1 : a->index > b->index;
     return ret;
 }
 
+// A file of error_vec_sort_and_dedupe()'s errors (null: none) and its path
+typedef struct SortedSource {
+    SourceFile const* source;
+    cstr path;
+    u32 rank;
+} SortedSource;
+
+static int sorted_source_by_pointer(void const* a_, void const* b_) {
+    uintptr_t a = (uintptr_t)((SortedSource const*)a_)->source, b = (uintptr_t)((SortedSource const*)b_)->source;
+    return a < b ? -1 : a > b;
+}
+
+static int sorted_source_by_path(void const* a_, void const* b_) {
+    SortedSource const* const* a = a_;
+    SortedSource const* const* b = b_;
+    return cstr_cmp(&(*a)->path, &(*b)->path);
+}
+
+static SourceFile const* error_source(Error const* e) {
+    return span_valid(e->span) ? span_source(e->span) : nullptr;
+}
+
 void error_vec_sort_and_dedupe(VecError* errors, cstr (*path)(SourceFile const* source)) {
     isize n = vec_error_size(errors);
     if (n < 2) return;
+    // (By rank, the place of the file's path among the distinct files' paths, equal paths one rank: each path is made
+    // and compared once per file, not per error and comparison, 35 ms of openclaw's 69k diagnostics before)
+    SortedSource* sources = c_new_n(SortedSource, n);
+    for (isize i = 0; i < n; i++) sources[i] = (SortedSource){ error_source(&errors->data[i]), cstr_null, 0 };
+    qsort(sources, (size_t)n, sizeof(SortedSource), sorted_source_by_pointer);
+    isize m = 0;
+    for (isize i = 0; i < n; i++) {
+        if (m && sources[m - 1].source == sources[i].source) continue;
+        sources[m++] = sources[i];
+    }
+    SortedSource** by_path = c_new_n(SortedSource*, m);
+    for (isize i = 0; i < m; i++) {
+        if (sources[i].source) sources[i].path = path(sources[i].source);
+        by_path[i] = &sources[i];
+    }
+    qsort(by_path, (size_t)m, sizeof(SortedSource*), sorted_source_by_path);
+    for (isize i = 0, rank = 0; i < m; i++) {
+        if (i && cstr_cmp(&by_path[i]->path, &by_path[i - 1]->path)) rank++;
+        by_path[i]->rank = (u32)rank;
+    }
+    c_free_n(by_path, m);
     SortedError* sorted = c_new_n(SortedError, n);
     for (isize i = 0; i < n; i++) {
         Error* e = &errors->data[i];
-        sorted[i] = (SortedError){ *e, span_valid(e->span) && span_source(e->span) ? path(span_source(e->span)) : cstr_null, i };
+        SourceFile const* source = error_source(e);
+        isize lo = 0, hi = m - 1;
+        while (lo < hi) {
+            isize mid = (lo + hi) / 2;
+            if ((uintptr_t)sources[mid].source < (uintptr_t)source) lo = mid + 1;
+            else hi = mid;
+        }
+        sorted[i] = (SortedError){ *e, sources[lo].rank, i };
     }
+    for (isize i = 0; i < m; i++) cstr_drop(&sources[i].path);
+    c_free_n(sources, n);
     qsort(sorted, (size_t)n, sizeof(SortedError), sorted_error_cmp);
     isize kept = 0;
     for (isize i = 0; i < n; i++) {
-        if (kept && cstr_eq(&sorted[i].path, &sorted[i - 1].path) && error_same_head(&errors->data[kept - 1], &sorted[i].error) &&
+        if (kept && sorted[i].rank == sorted[i - 1].rank && error_same_head(&errors->data[kept - 1], &sorted[i].error) &&
             same_message_chain(&errors->data[kept - 1], &sorted[i].error)) {
             merge_related_info(&errors->data[kept - 1], &sorted[i].error);
             error_drop(&sorted[i].error);
@@ -762,7 +814,6 @@ void error_vec_sort_and_dedupe(VecError* errors, cstr (*path)(SourceFile const* 
             errors->data[kept++] = sorted[i].error;
         }
     }
-    for (isize i = 0; i < n; i++) cstr_drop(&sorted[i].path);
     c_free_n(sorted, n);
     errors->size = kept;
 }
