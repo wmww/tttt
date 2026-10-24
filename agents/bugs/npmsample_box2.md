@@ -93,3 +93,7 @@ boxes' appends never conflict. One section per seed, one bullet per repro, statu
 - No divergence: 63 accepted, 62 byte-identical, 63/63 same (file, line, code), clean agreement 63/63, no K-dependence. The one text-only difference (0088-coinset-liquid:
   a TS7016 "There are types at ..." message naming a path under node_modules/.pnpm) is not a divergence here. No repros. (Set up without `--prefer-large`: the flag
   arrived after this seed's setup had started.)
+
+## Seed 20261113
+- No divergence (set up with --prefer-large): 56 accepted, 56 byte-identical modulo lib paths, 56/56 same (file, line, code),
+  clean agreement 56/56, no K-dependence, no flips. No repros.
