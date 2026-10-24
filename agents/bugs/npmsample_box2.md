@@ -55,5 +55,5 @@ boxes' appends never conflict. One section per seed, one bullet per repro, statu
   widened or compared against the `U` inference differently (tsgo picks the `U` overload and then the assertion; tttt fails every overload). [open]
 - **npm_elysia_TS2307** (seed 20261110, elysia@1.4.30, elysiajs/elysia at e037eca example/video.ts(1); no flip, tsgo's TS2345 on line 4 is the knock-on): the package's own
   package.json (name `elysia`, `exports` pointing at a `./dist/index.d.ts` that doesn't exist, nothing built) and a dev dependency `node_modules/elysia` (another
-  version): tsgo resolves `import 'elysia'` to node_modules after the self-reference fails, tttt reports TS2307. Guess: tttt's self-name resolution returns
-  "not found" definitively instead of falling through to the node_modules lookup when the exports target is missing (bundler). 8 lines. [open]
+  version): tsgo resolves `import 'elysia'` to node_modules after the self-reference fails, tttt reports TS2307. tttt's self-name resolution returned
+  "not found" definitively instead of falling through to the node_modules lookup when the exports target is missing. 8 lines. The same cause as augu/utils: the test passes since 667f403ca (det3). [fixed 667f403ca]
