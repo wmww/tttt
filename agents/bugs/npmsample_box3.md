@@ -62,3 +62,10 @@ for flips); a separate file so the three boxes never conflict.
   tsgo's aliased-condition narrowing applies only to a constant reference (isConstantReference: a const variable,
   a readonly property, an unassigned parameter), and a var isn't one. tttt narrows the var too. Repro
   test/cases/npm__gatsby-project-kb_transformer-wiki-references_TS2339.ts (also a plain `declare var w`). Cause: tttt's constant_reference_type took any unassigned symbol as constant; tsc's isConstantReference takes a const, or an unassigned parameter, catch variable or local (non-exported, non-global) `let`, or a named function expression's name. Repro of the rule: ttttAliasedConditionConstantReference. [fixed 2d7dcb490]
+- Seed 20261207, VKCOM/vk-mini-apps-router (@vkontakte/vk-mini-apps-router@1.8.6): missing TS2322 "Type 'Params' is
+  not assignable to type 'Params<T>'" (@remix-run/router's `Params<Key extends string = string> = { readonly [key in
+  Key]: string | undefined }`) on `return cond ? previousRecord.params : undefined` in a `<T extends string>`
+  function returning `Params<T> | undefined`. tsgo accepts the same code put in one file, so the layout matters:
+  Params comes through the package's `export type { Params } from "./utils"` and the record interface through
+  `export *`. Guess: the alias's variance for Key (a mapped type's key) is measured in a different state or order.
+  Repro test/cases/npm__vkontakte_vk-mini-apps-router_TS2322.ts. [open]

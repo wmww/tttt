@@ -53,3 +53,4 @@ npm_fui-fancyui_TS7053	no	fui-fancyui@0.6.12	https://github.com/TobiTRy/fui-fanc
 npm_payload-storage-cloudinary_TS2322	yes	payload-storage-cloudinary@1.3.0	https://github.com/nick-vogel/payload-storage-cloudinary	0	1	TS2322
 ttttNoInferUnionRemainder	no	lklynet/aurral@main	https://github.com/lklynet/aurral	9	10	+TS2345
 npm_Zoo-Code-Org_Zoo-Code_TS2322	yes	Zoo-Code-Org/Zoo-Code@main	https://github.com/Zoo-Code-Org/Zoo-Code	0	2	TS2322,TS2345
+npm__vkontakte_vk-mini-apps-router_TS2322	no	@vkontakte/vk-mini-apps-router@1.8.6	https://github.com/VKCOM/vk-mini-apps-router	5	4	-TS2322

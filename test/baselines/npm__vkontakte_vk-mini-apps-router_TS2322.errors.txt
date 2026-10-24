@@ -1,0 +1,35 @@
+src/hooks/useParams.ts(6,10): error TS2304: Cannot find name 'currentRouteDoesNotMatchId'.
+src/hooks/useParams.ts(6,39): error TS18048: 'previousRecord' is possibly 'undefined'.
+src/hooks/useParams.ts(6,39): error TS2322: Type 'Params' is not assignable to type 'Params<T>'.
+
+
+==== node_modules/@remix-run/router/package.json (0 errors) ====
+    {"name": "@remix-run/router", "version": "1.23.2", "types": "./dist/index.d.ts"}
+==== node_modules/@remix-run/router/dist/index.d.ts (0 errors) ====
+    export type { Params } from "./utils";
+==== node_modules/@remix-run/router/dist/utils.d.ts (0 errors) ====
+    export type Params<Key extends string = string> = {
+        readonly [key in Key]: string | undefined;
+    };
+==== src/hooks/useParams.ts (3 errors) ====
+    import { Params } from '@remix-run/router';
+    import { ViewNavigationRecord } from '../services';
+    function getActualRecordParams<T extends string>(
+      previousRecord: ViewNavigationRecord | undefined,
+    ): Params<T> | undefined {
+      return currentRouteDoesNotMatchId ? previousRecord.params : undefined;
+             ~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'currentRouteDoesNotMatchId'.
+                                          ~~~~~~~~~~~~~~
+!!! error TS18048: 'previousRecord' is possibly 'undefined'.
+                                          ~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'Params' is not assignable to type 'Params<T>'.
+    }
+==== src/services/ViewNavigationRecord.type.ts (0 errors) ====
+    import { Params } from '@remix-run/router';
+    export interface ViewNavigationRecord {
+      params: Params;
+    }
+==== src/services/index.ts (0 errors) ====
+    export * from './ViewNavigationRecord.type';
+    

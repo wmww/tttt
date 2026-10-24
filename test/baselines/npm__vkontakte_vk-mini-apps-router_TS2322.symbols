@@ -1,0 +1,56 @@
+//// [test/cases/npm__vkontakte_vk-mini-apps-router_TS2322.ts] ////
+
+=== node_modules/@remix-run/router/dist/index.d.ts ===
+export type { Params } from "./utils";
+>Params : Symbol(Params, Decl(index.d.ts, 0, 13))
+
+=== node_modules/@remix-run/router/dist/utils.d.ts ===
+export type Params<Key extends string = string> = {
+>Params : Symbol(Params, Decl(utils.d.ts, 0, 0))
+>Key : Symbol(Key, Decl(utils.d.ts, 0, 19))
+
+    readonly [key in Key]: string | undefined;
+>key : Symbol(key, Decl(utils.d.ts, 1, 14))
+>Key : Symbol(Key, Decl(utils.d.ts, 0, 19))
+
+};
+=== src/hooks/useParams.ts ===
+import { Params } from '@remix-run/router';
+>Params : Symbol(Params, Decl(useParams.ts, 0, 8))
+
+import { ViewNavigationRecord } from '../services';
+>ViewNavigationRecord : Symbol(ViewNavigationRecord, Decl(useParams.ts, 1, 8))
+
+function getActualRecordParams<T extends string>(
+>getActualRecordParams : Symbol(getActualRecordParams, Decl(useParams.ts, 1, 51))
+>T : Symbol(T, Decl(useParams.ts, 2, 31))
+
+  previousRecord: ViewNavigationRecord | undefined,
+>previousRecord : Symbol(previousRecord, Decl(useParams.ts, 2, 49))
+>ViewNavigationRecord : Symbol(ViewNavigationRecord, Decl(useParams.ts, 1, 8))
+
+): Params<T> | undefined {
+>Params : Symbol(Params, Decl(useParams.ts, 0, 8))
+>T : Symbol(T, Decl(useParams.ts, 2, 31))
+
+  return currentRouteDoesNotMatchId ? previousRecord.params : undefined;
+>previousRecord.params : Symbol(ViewNavigationRecord.params, Decl(ViewNavigationRecord.type.ts, 1, 39))
+>previousRecord : Symbol(previousRecord, Decl(useParams.ts, 2, 49))
+>params : Symbol(ViewNavigationRecord.params, Decl(ViewNavigationRecord.type.ts, 1, 39))
+>undefined : Symbol(undefined)
+}
+=== src/services/ViewNavigationRecord.type.ts ===
+import { Params } from '@remix-run/router';
+>Params : Symbol(Params, Decl(ViewNavigationRecord.type.ts, 0, 8))
+
+export interface ViewNavigationRecord {
+>ViewNavigationRecord : Symbol(ViewNavigationRecord, Decl(ViewNavigationRecord.type.ts, 0, 43))
+
+  params: Params;
+>params : Symbol(ViewNavigationRecord.params, Decl(ViewNavigationRecord.type.ts, 1, 39))
+>Params : Symbol(Params, Decl(ViewNavigationRecord.type.ts, 0, 8))
+}
+=== src/services/index.ts ===
+
+export * from './ViewNavigationRecord.type';
+
