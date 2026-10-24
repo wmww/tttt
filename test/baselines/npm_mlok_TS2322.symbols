@@ -1,0 +1,97 @@
+//// [test/cases/npm_mlok_TS2322.ts] ////
+
+=== npm_mlok_TS2322.ts ===
+// origin: npm mlok@0.1.5 https://github.com/smolijar/mlok tsconfig.json seed 20261042
+// flip: no
+type AllowedOverride = Record<any, any>
+>AllowedOverride : Symbol(AllowedOverride, Decl(npm_mlok_TS2322.ts, 0, 0))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+declare const mlokNode: <T>(o: AllowedOverride) => MlokRoot<T>
+>mlokNode : Symbol(mlokNode, Decl(npm_mlok_TS2322.ts, 3, 13))
+>T : Symbol(T, Decl(npm_mlok_TS2322.ts, 3, 25))
+>o : Symbol(o, Decl(npm_mlok_TS2322.ts, 3, 28))
+>AllowedOverride : Symbol(AllowedOverride, Decl(npm_mlok_TS2322.ts, 0, 0))
+>MlokRoot : Symbol(MlokRoot, Decl(npm_mlok_TS2322.ts, 12, 12))
+>T : Symbol(T, Decl(npm_mlok_TS2322.ts, 3, 25))
+
+type Mlok<
+>Mlok : Symbol(Mlok, Decl(npm_mlok_TS2322.ts, 3, 62))
+
+  MlokedInterface,
+>MlokedInterface : Symbol(MlokedInterface, Decl(npm_mlok_TS2322.ts, 4, 10))
+
+  Override extends AllowedOverride = {},
+>Override : Symbol(Override, Decl(npm_mlok_TS2322.ts, 5, 18))
+>AllowedOverride : Symbol(AllowedOverride, Decl(npm_mlok_TS2322.ts, 0, 0))
+
+  MlokResultType = MlokedInterface extends (...args: infer A) => infer R
+>MlokResultType : Symbol(MlokResultType, Decl(npm_mlok_TS2322.ts, 6, 40))
+>MlokedInterface : Symbol(MlokedInterface, Decl(npm_mlok_TS2322.ts, 4, 10))
+>args : Symbol(args, Decl(npm_mlok_TS2322.ts, 7, 44))
+>A : Symbol(A, Decl(npm_mlok_TS2322.ts, 7, 58))
+>R : Symbol(R, Decl(npm_mlok_TS2322.ts, 7, 70))
+
+    ? (...args: A) => Mlok<Exclude<R, undefined>, Override>
+>args : Symbol(args, Decl(npm_mlok_TS2322.ts, 8, 7))
+>A : Symbol(A, Decl(npm_mlok_TS2322.ts, 7, 58))
+>Mlok : Symbol(Mlok, Decl(npm_mlok_TS2322.ts, 3, 62))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>R : Symbol(R, Decl(npm_mlok_TS2322.ts, 7, 70))
+>Override : Symbol(Override, Decl(npm_mlok_TS2322.ts, 5, 18))
+
+    : {}
+> = Override extends Function | object
+>Override : Symbol(Override, Decl(npm_mlok_TS2322.ts, 5, 18))
+>Function : Symbol(Function, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+
+  ? Override & MlokResultType & MlokedInterface
+>Override : Symbol(Override, Decl(npm_mlok_TS2322.ts, 5, 18))
+>MlokResultType : Symbol(MlokResultType, Decl(npm_mlok_TS2322.ts, 6, 40))
+>MlokedInterface : Symbol(MlokedInterface, Decl(npm_mlok_TS2322.ts, 4, 10))
+
+  : Override
+>Override : Symbol(Override, Decl(npm_mlok_TS2322.ts, 5, 18))
+
+type MlokRoot<MlokedInterface, ResultType = Mlok<MlokedInterface>> = ResultType & {
+>MlokRoot : Symbol(MlokRoot, Decl(npm_mlok_TS2322.ts, 12, 12))
+>MlokedInterface : Symbol(MlokedInterface, Decl(npm_mlok_TS2322.ts, 13, 14))
+>ResultType : Symbol(ResultType, Decl(npm_mlok_TS2322.ts, 13, 30))
+>Mlok : Symbol(Mlok, Decl(npm_mlok_TS2322.ts, 3, 62))
+>MlokedInterface : Symbol(MlokedInterface, Decl(npm_mlok_TS2322.ts, 13, 14))
+>ResultType : Symbol(ResultType, Decl(npm_mlok_TS2322.ts, 13, 30))
+
+  override: <O extends AllowedOverride>(overridesMap: O) => Mlok<MlokedInterface, O>
+>override : Symbol(override, Decl(npm_mlok_TS2322.ts, 13, 83))
+>O : Symbol(O, Decl(npm_mlok_TS2322.ts, 14, 13))
+>AllowedOverride : Symbol(AllowedOverride, Decl(npm_mlok_TS2322.ts, 0, 0))
+>overridesMap : Symbol(overridesMap, Decl(npm_mlok_TS2322.ts, 14, 40))
+>O : Symbol(O, Decl(npm_mlok_TS2322.ts, 14, 13))
+>Mlok : Symbol(Mlok, Decl(npm_mlok_TS2322.ts, 3, 62))
+>MlokedInterface : Symbol(MlokedInterface, Decl(npm_mlok_TS2322.ts, 13, 14))
+>O : Symbol(O, Decl(npm_mlok_TS2322.ts, 14, 13))
+}
+interface Req { getHeaders(): { [k: string]: string | undefined } }
+>Req : Symbol(Req, Decl(npm_mlok_TS2322.ts, 15, 1))
+>getHeaders : Symbol(Req.getHeaders, Decl(npm_mlok_TS2322.ts, 16, 15))
+>k : Symbol(k, Decl(npm_mlok_TS2322.ts, 16, 33))
+
+const reqMock = mlokNode<Req>({}).override({
+>reqMock : Symbol(reqMock, Decl(npm_mlok_TS2322.ts, 17, 5))
+>mlokNode<Req>({}).override : Symbol(override, Decl(npm_mlok_TS2322.ts, 13, 83))
+>mlokNode : Symbol(mlokNode, Decl(npm_mlok_TS2322.ts, 3, 13))
+>Req : Symbol(Req, Decl(npm_mlok_TS2322.ts, 15, 1))
+>override : Symbol(override, Decl(npm_mlok_TS2322.ts, 13, 83))
+
+  getHeaders: () => 'foo',
+>getHeaders : Symbol(getHeaders, Decl(npm_mlok_TS2322.ts, 17, 44))
+
+} as const)
+>const : Symbol(const)
+
+const foo: 'foo' = reqMock.getHeaders()
+>foo : Symbol(foo, Decl(npm_mlok_TS2322.ts, 20, 5))
+>reqMock.getHeaders : Symbol(getHeaders, Decl(npm_mlok_TS2322.ts, 17, 44), Decl(npm_mlok_TS2322.ts, 16, 15))
+>reqMock : Symbol(reqMock, Decl(npm_mlok_TS2322.ts, 17, 5))
+>getHeaders : Symbol(getHeaders, Decl(npm_mlok_TS2322.ts, 17, 44), Decl(npm_mlok_TS2322.ts, 16, 15))
+

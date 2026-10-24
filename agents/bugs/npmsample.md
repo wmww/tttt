@@ -311,3 +311,7 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   limit), never a 100-deep chain, so no member of Pseudo becomes the error type and `ss` gets `Pseudo | Root`. Matching
   it means tttt's instantiation sequence reaching tsgo's depth-100 point on the same type (the order members, bases
   and conditional types are instantiated in), not a local rule. Repro test/cases/rw_vue_TS7006.ts (fails). [design]
+- ag-sockets@14.0.4 (Agamnentzar/ag-sockets, tsconfig.bench.json, src/serverSocket.ts:149, reduced to a 20-line case): tsgo reports TS2345 when a `import * as ws from 'ws'` (an `export =` class merged with a namespace, @types/ws) is used as a type, `socket: ws`, and a `Server<T extends WebSocket>` callback's `client: T` is passed to it (the type is the module's namespace type whose `on(): this` returns are incompatible with `this`); tttt reports nothing (tsgo 19, tttt 18 errors). `test/cases/npm_ag-sockets_TS2345.ts`. [open]
+## Seed 20261042
+
+- mlok@0.1.5 (smolijar/mlok, tsconfig.bench.json, src/index.spec.ts:77, reduced to a 20-line self-contained case): tttt reports TS2322 "Type 'string' is not assignable to type '"foo"'" on `const foo: 'foo' = mlokNode<Req>({}).override({ getHeaders: () => 'foo' } as const).getHeaders()`; tsgo accepts (the recursive conditional `Mlok<..., O>` intersection with a `as const` override should give a return type whose call yields `"foo"`; tttt picks the base `string`). tsgo 24, tttt 25 errors. `test/cases/npm_mlok_TS2322.ts`. [open]

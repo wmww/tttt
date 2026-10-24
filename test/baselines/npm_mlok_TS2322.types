@@ -1,0 +1,62 @@
+//// [test/cases/npm_mlok_TS2322.ts] ////
+
+=== npm_mlok_TS2322.ts ===
+// origin: npm mlok@0.1.5 https://github.com/smolijar/mlok tsconfig.json seed 20261042
+// flip: no
+type AllowedOverride = Record<any, any>
+>AllowedOverride : AllowedOverride
+
+declare const mlokNode: <T>(o: AllowedOverride) => MlokRoot<T>
+>mlokNode : <T>(o: AllowedOverride) => MlokRoot<T>
+>o : AllowedOverride
+
+type Mlok<
+>Mlok : Mlok<MlokedInterface, Override, MlokResultType>
+
+  MlokedInterface,
+  Override extends AllowedOverride = {},
+  MlokResultType = MlokedInterface extends (...args: infer A) => infer R
+>args : A
+
+    ? (...args: A) => Mlok<Exclude<R, undefined>, Override>
+>args : A
+
+    : {}
+> = Override extends Function | object
+  ? Override & MlokResultType & MlokedInterface
+  : Override
+type MlokRoot<MlokedInterface, ResultType = Mlok<MlokedInterface>> = ResultType & {
+>MlokRoot : MlokRoot<MlokedInterface, ResultType>
+
+  override: <O extends AllowedOverride>(overridesMap: O) => Mlok<MlokedInterface, O>
+>override : <O extends AllowedOverride>(overridesMap: O) => Mlok<MlokedInterface, O>
+>overridesMap : O
+}
+interface Req { getHeaders(): { [k: string]: string | undefined } }
+>getHeaders : () => { [k: string]: string | undefined; }
+>k : string
+
+const reqMock = mlokNode<Req>({}).override({
+>reqMock : { readonly getHeaders: () => "foo"; } & Req
+>mlokNode<Req>({}).override({  getHeaders: () => 'foo',} as const) : { readonly getHeaders: () => "foo"; } & Req
+>mlokNode<Req>({}).override : <O extends AllowedOverride>(overridesMap: O) => Mlok<Req, O, {}>
+>mlokNode<Req>({}) : MlokRoot<Req, Req>
+>mlokNode : <T>(o: AllowedOverride) => MlokRoot<T>
+>{} : {}
+>override : <O extends AllowedOverride>(overridesMap: O) => Mlok<Req, O, {}>
+>{  getHeaders: () => 'foo',} as const : { readonly getHeaders: () => "foo"; }
+>{  getHeaders: () => 'foo',} : { readonly getHeaders: () => "foo"; }
+
+  getHeaders: () => 'foo',
+>getHeaders : () => "foo"
+>() => 'foo' : () => "foo"
+>'foo' : "foo"
+
+} as const)
+const foo: 'foo' = reqMock.getHeaders()
+>foo : "foo"
+>reqMock.getHeaders() : "foo"
+>reqMock.getHeaders : (() => "foo") & (() => { [k: string]: string | undefined; })
+>reqMock : { readonly getHeaders: () => "foo"; } & Req
+>getHeaders : (() => "foo") & (() => { [k: string]: string | undefined; })
+
