@@ -1,0 +1,46 @@
+//// [test/cases/ttttInstantiationExpressionConstraintThis.ts] ////
+
+=== ttttInstantiationExpressionConstraintThis.ts ===
+// A signature's type arguments (an instantiation expression's, a call's) are related to their constraints with `this`
+// the argument (tsc's checkTypeArguments), a type reference's without (checkTypeArgumentConstraints)
+declare class A { m(): this; }
+>A : A
+>m : () => this
+
+declare class B { m(): this; }
+>B : B
+>m : () => this
+
+declare class Box<T extends A> { t: T }
+>Box : Box<T>
+>t : T
+
+type Ref<RQ extends typeof B> = Box<InstanceType<RQ>>;
+>Ref : Ref<RQ>
+>B : typeof B
+
+declare function k<RQ extends typeof B>(): typeof Box<InstanceType<RQ>>;
+>k : <RQ extends typeof B>() => typeof Box<InstanceType<RQ>>
+>B : typeof B
+>Box : typeof Box
+
+declare function k2<RQ extends typeof B, S extends typeof Box<InstanceType<RQ>> = typeof Box>(): S;
+>k2 : <RQ extends typeof B, S extends typeof Box<InstanceType<RQ>> = typeof Box>() => S
+>B : typeof B
+>Box : typeof Box
+>Box : typeof Box
+
+declare const box: typeof Box;
+>box : typeof Box
+>Box : typeof Box
+
+function use<RQ extends typeof B>() {
+>use : <RQ extends typeof B>() => void
+>B : typeof B
+
+    const b = box<InstanceType<RQ>>;
+>b : typeof Box
+>box<InstanceType<RQ>> : typeof Box
+>box : typeof Box
+}
+

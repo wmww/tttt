@@ -1,0 +1,43 @@
+ttttInstantiationExpressionConstraintThis.ts(7,55): error TS2344: Type 'InstanceType<RQ>' does not satisfy the constraint 'A'.
+  Type 'B' is not assignable to type 'A'.
+    The types returned by 'm()' are incompatible between these types.
+      Type 'B' is not assignable to type 'InstanceType<RQ>'.
+ttttInstantiationExpressionConstraintThis.ts(8,63): error TS2344: Type 'InstanceType<RQ>' does not satisfy the constraint 'A'.
+  Type 'B' is not assignable to type 'A'.
+    The types returned by 'm()' are incompatible between these types.
+      Type 'B' is not assignable to type 'InstanceType<RQ>'.
+ttttInstantiationExpressionConstraintThis.ts(11,19): error TS2344: Type 'InstanceType<RQ>' does not satisfy the constraint 'A'.
+  Type 'B' is not assignable to type 'A'.
+    The types returned by 'm()' are incompatible between these types.
+      Type 'B' is not assignable to type 'InstanceType<RQ>'.
+
+
+==== ttttInstantiationExpressionConstraintThis.ts (3 errors) ====
+    // A signature's type arguments (an instantiation expression's, a call's) are related to their constraints with `this`
+    // the argument (tsc's checkTypeArguments), a type reference's without (checkTypeArgumentConstraints)
+    declare class A { m(): this; }
+    declare class B { m(): this; }
+    declare class Box<T extends A> { t: T }
+    type Ref<RQ extends typeof B> = Box<InstanceType<RQ>>;
+    declare function k<RQ extends typeof B>(): typeof Box<InstanceType<RQ>>;
+                                                          ~~~~~~~~~~~~~~~~
+!!! error TS2344: Type 'InstanceType<RQ>' does not satisfy the constraint 'A'.
+!!! error TS2344:   Type 'B' is not assignable to type 'A'.
+!!! error TS2344:     The types returned by 'm()' are incompatible between these types.
+!!! error TS2344:       Type 'B' is not assignable to type 'InstanceType<RQ>'.
+    declare function k2<RQ extends typeof B, S extends typeof Box<InstanceType<RQ>> = typeof Box>(): S;
+                                                                  ~~~~~~~~~~~~~~~~
+!!! error TS2344: Type 'InstanceType<RQ>' does not satisfy the constraint 'A'.
+!!! error TS2344:   Type 'B' is not assignable to type 'A'.
+!!! error TS2344:     The types returned by 'm()' are incompatible between these types.
+!!! error TS2344:       Type 'B' is not assignable to type 'InstanceType<RQ>'.
+    declare const box: typeof Box;
+    function use<RQ extends typeof B>() {
+        const b = box<InstanceType<RQ>>;
+                      ~~~~~~~~~~~~~~~~
+!!! error TS2344: Type 'InstanceType<RQ>' does not satisfy the constraint 'A'.
+!!! error TS2344:   Type 'B' is not assignable to type 'A'.
+!!! error TS2344:     The types returned by 'm()' are incompatible between these types.
+!!! error TS2344:       Type 'B' is not assignable to type 'InstanceType<RQ>'.
+    }
+    

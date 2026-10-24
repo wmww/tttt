@@ -5863,9 +5863,11 @@ static Ty const* apply_type_arguments_part(Checker* me, Ty const* ty, TyList arg
                 own_mapper = ty_mapper_new(me, params, (TyList){ .data = own, .len = params.len });
             }
             bool fits = true;
-            for (u32 j = 0; j < params.len && fits; j++) {
+            // (Only the arguments written, each against its constraint with `this` the argument: checkTypeArguments)
+            for (u32 j = 0; j < args.len && j < params.len && fits; j++) {
                 Ty const* constraint = ty_param_constraint(me, params.data[j]);
-                fits = !constraint || ty_is_related(me, own[j], ty_instantiate(me, constraint, own_mapper), TY_RELATION_ASSIGNABLE);
+                fits = !constraint || ty_is_related(me, own[j],
+                    ty_with_this_arg(me, ty_instantiate(me, constraint, own_mapper), own[j]), TY_RELATION_ASSIGNABLE);
             }
             if (!fits) {
                 // (Kept as it is, see ty_instantiation_keeps_signature())

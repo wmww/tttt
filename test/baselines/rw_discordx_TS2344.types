@@ -1,0 +1,47 @@
+//// [test/cases/rw_discordx_TS2344.ts] ////
+
+=== a.d.ts ===
+declare module "m" {
+>"m" : typeof import("m")
+
+    class Req { on(): this; }
+>Req : Req
+>on : () => this
+
+    class Resp<R extends Req = Req> { readonly req: R; }
+>Resp : Resp<R>
+>req : R
+}
+=== b.d.ts ===
+declare module "m" {
+>"m" : typeof import("m")
+
+    class Req { on(): this; }
+>Req : import("m").Req
+>on : () => this
+
+    class Resp<R extends Req = Req> { readonly req: R; }
+>Resp : import("m").Resp<R>
+>req : R
+
+    type T1<RQ extends typeof Req> = Resp<InstanceType<RQ>>;
+>T1 : T1<RQ>
+>Req : typeof import("m").Req
+
+    type T2<RQ extends Req> = Resp<RQ>;
+>T2 : T2<RQ>
+
+    function g<RQ extends typeof Req>(): typeof Resp<InstanceType<RQ>>;
+>g : <RQ extends typeof Req>() => typeof Resp<InstanceType<RQ>>
+>Req : typeof import("m").Req
+>Resp : typeof import("m").Resp
+}
+=== c.ts ===
+import { Req, Resp } from "m";
+>Req : typeof Req
+>Resp : typeof Resp
+
+type T3<RQ extends typeof Req> = Resp<InstanceType<RQ>>;
+>T3 : T3<RQ>
+>Req : typeof Req
+

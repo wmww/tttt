@@ -1,0 +1,63 @@
+//// [test/cases/ttttInstantiationExpressionConstraintThis.ts] ////
+
+=== ttttInstantiationExpressionConstraintThis.ts ===
+// A signature's type arguments (an instantiation expression's, a call's) are related to their constraints with `this`
+// the argument (tsc's checkTypeArguments), a type reference's without (checkTypeArgumentConstraints)
+declare class A { m(): this; }
+>A : Symbol(A, Decl(ttttInstantiationExpressionConstraintThis.ts, 0, 0))
+>m : Symbol(A.m, Decl(ttttInstantiationExpressionConstraintThis.ts, 2, 17))
+
+declare class B { m(): this; }
+>B : Symbol(B, Decl(ttttInstantiationExpressionConstraintThis.ts, 2, 30))
+>m : Symbol(B.m, Decl(ttttInstantiationExpressionConstraintThis.ts, 3, 17))
+
+declare class Box<T extends A> { t: T }
+>Box : Symbol(Box, Decl(ttttInstantiationExpressionConstraintThis.ts, 3, 30))
+>T : Symbol(T, Decl(ttttInstantiationExpressionConstraintThis.ts, 4, 18))
+>A : Symbol(A, Decl(ttttInstantiationExpressionConstraintThis.ts, 0, 0))
+>t : Symbol(Box.t, Decl(ttttInstantiationExpressionConstraintThis.ts, 4, 32))
+>T : Symbol(T, Decl(ttttInstantiationExpressionConstraintThis.ts, 4, 18))
+
+type Ref<RQ extends typeof B> = Box<InstanceType<RQ>>;
+>Ref : Symbol(Ref, Decl(ttttInstantiationExpressionConstraintThis.ts, 4, 39))
+>RQ : Symbol(RQ, Decl(ttttInstantiationExpressionConstraintThis.ts, 5, 9))
+>B : Symbol(B, Decl(ttttInstantiationExpressionConstraintThis.ts, 2, 30))
+>Box : Symbol(Box, Decl(ttttInstantiationExpressionConstraintThis.ts, 3, 30))
+>InstanceType : Symbol(InstanceType, Decl(lib.es5.d.ts, --, --))
+>RQ : Symbol(RQ, Decl(ttttInstantiationExpressionConstraintThis.ts, 5, 9))
+
+declare function k<RQ extends typeof B>(): typeof Box<InstanceType<RQ>>;
+>k : Symbol(k, Decl(ttttInstantiationExpressionConstraintThis.ts, 5, 54))
+>RQ : Symbol(RQ, Decl(ttttInstantiationExpressionConstraintThis.ts, 6, 19))
+>B : Symbol(B, Decl(ttttInstantiationExpressionConstraintThis.ts, 2, 30))
+>Box : Symbol(Box, Decl(ttttInstantiationExpressionConstraintThis.ts, 3, 30))
+>InstanceType : Symbol(InstanceType, Decl(lib.es5.d.ts, --, --))
+>RQ : Symbol(RQ, Decl(ttttInstantiationExpressionConstraintThis.ts, 6, 19))
+
+declare function k2<RQ extends typeof B, S extends typeof Box<InstanceType<RQ>> = typeof Box>(): S;
+>k2 : Symbol(k2, Decl(ttttInstantiationExpressionConstraintThis.ts, 6, 72))
+>RQ : Symbol(RQ, Decl(ttttInstantiationExpressionConstraintThis.ts, 7, 20))
+>B : Symbol(B, Decl(ttttInstantiationExpressionConstraintThis.ts, 2, 30))
+>S : Symbol(S, Decl(ttttInstantiationExpressionConstraintThis.ts, 7, 40))
+>Box : Symbol(Box, Decl(ttttInstantiationExpressionConstraintThis.ts, 3, 30))
+>InstanceType : Symbol(InstanceType, Decl(lib.es5.d.ts, --, --))
+>RQ : Symbol(RQ, Decl(ttttInstantiationExpressionConstraintThis.ts, 7, 20))
+>Box : Symbol(Box, Decl(ttttInstantiationExpressionConstraintThis.ts, 3, 30))
+>S : Symbol(S, Decl(ttttInstantiationExpressionConstraintThis.ts, 7, 40))
+
+declare const box: typeof Box;
+>box : Symbol(box, Decl(ttttInstantiationExpressionConstraintThis.ts, 8, 13))
+>Box : Symbol(Box, Decl(ttttInstantiationExpressionConstraintThis.ts, 3, 30))
+
+function use<RQ extends typeof B>() {
+>use : Symbol(use, Decl(ttttInstantiationExpressionConstraintThis.ts, 8, 30))
+>RQ : Symbol(RQ, Decl(ttttInstantiationExpressionConstraintThis.ts, 9, 13))
+>B : Symbol(B, Decl(ttttInstantiationExpressionConstraintThis.ts, 2, 30))
+
+    const b = box<InstanceType<RQ>>;
+>b : Symbol(b, Decl(ttttInstantiationExpressionConstraintThis.ts, 10, 9))
+>box : Symbol(box, Decl(ttttInstantiationExpressionConstraintThis.ts, 8, 13))
+>InstanceType : Symbol(InstanceType, Decl(lib.es5.d.ts, --, --))
+>RQ : Symbol(RQ, Decl(ttttInstantiationExpressionConstraintThis.ts, 9, 13))
+}
+

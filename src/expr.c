@@ -977,6 +977,8 @@ static bool check_type_argument_constraints(Checker* checker, GenericParamsExpr 
         SpannedType const* arg = vec_spanned_type_at(&my params, i);
         // (Explained like any unassignable pair: tsc's checkTypeArgumentConstraints -> checkTypeAssignableTo, one run)
         Ty const* arg_type = ty_of_node(&arg->type);
+        // (With `this` the argument, unlike a type reference's: checkTypeArguments' getTypeWithThisArgument)
+        constraint = ty_with_this_arg(checker, constraint, arg_type);
         VecTyReportLine lines = {0};
         bool overflowed = false;
         if (ty_relate_explaining_at(checker, arg_type, constraint, 2344, &lines, errs, arg->span, &overflowed)) continue;

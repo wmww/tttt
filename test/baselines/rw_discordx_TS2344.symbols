@@ -1,0 +1,70 @@
+//// [test/cases/rw_discordx_TS2344.ts] ////
+
+=== a.d.ts ===
+declare module "m" {
+>"m" : Symbol("m", Decl(a.d.ts, 0, 0), Decl(b.d.ts, 0, 0))
+
+    class Req { on(): this; }
+>Req : Symbol(Req, Decl(a.d.ts, 0, 20))
+>on : Symbol(Req.on, Decl(a.d.ts, 1, 15))
+
+    class Resp<R extends Req = Req> { readonly req: R; }
+>Resp : Symbol(Resp, Decl(a.d.ts, 1, 29))
+>R : Symbol(R, Decl(a.d.ts, 2, 15))
+>Req : Symbol(Req, Decl(a.d.ts, 0, 20))
+>Req : Symbol(Req, Decl(a.d.ts, 0, 20))
+>req : Symbol(Resp.req, Decl(a.d.ts, 2, 37))
+>R : Symbol(R, Decl(a.d.ts, 2, 15))
+}
+=== b.d.ts ===
+declare module "m" {
+>"m" : Symbol("m", Decl(a.d.ts, 0, 0), Decl(b.d.ts, 0, 0))
+
+    class Req { on(): this; }
+>Req : Symbol(Req, Decl(b.d.ts, 0, 20))
+>on : Symbol(Req.on, Decl(b.d.ts, 1, 15))
+
+    class Resp<R extends Req = Req> { readonly req: R; }
+>Resp : Symbol(Resp, Decl(b.d.ts, 1, 29))
+>R : Symbol(R, Decl(b.d.ts, 2, 15))
+>Req : Symbol(Req, Decl(a.d.ts, 0, 20))
+>Req : Symbol(Req, Decl(a.d.ts, 0, 20))
+>req : Symbol(Resp.req, Decl(b.d.ts, 2, 37))
+>R : Symbol(R, Decl(b.d.ts, 2, 15))
+
+    type T1<RQ extends typeof Req> = Resp<InstanceType<RQ>>;
+>T1 : Symbol(T1, Decl(b.d.ts, 2, 56))
+>RQ : Symbol(RQ, Decl(b.d.ts, 3, 12))
+>Req : Symbol(Req, Decl(a.d.ts, 0, 20))
+>Resp : Symbol(Resp, Decl(a.d.ts, 1, 29))
+>InstanceType : Symbol(InstanceType, Decl(lib.es5.d.ts, --, --))
+>RQ : Symbol(RQ, Decl(b.d.ts, 3, 12))
+
+    type T2<RQ extends Req> = Resp<RQ>;
+>T2 : Symbol(T2, Decl(b.d.ts, 3, 60))
+>RQ : Symbol(RQ, Decl(b.d.ts, 4, 12))
+>Req : Symbol(Req, Decl(a.d.ts, 0, 20))
+>Resp : Symbol(Resp, Decl(a.d.ts, 1, 29))
+>RQ : Symbol(RQ, Decl(b.d.ts, 4, 12))
+
+    function g<RQ extends typeof Req>(): typeof Resp<InstanceType<RQ>>;
+>g : Symbol(g, Decl(b.d.ts, 4, 39))
+>RQ : Symbol(RQ, Decl(b.d.ts, 5, 15))
+>Req : Symbol(Req, Decl(a.d.ts, 0, 20))
+>Resp : Symbol(Resp, Decl(a.d.ts, 1, 29))
+>InstanceType : Symbol(InstanceType, Decl(lib.es5.d.ts, --, --))
+>RQ : Symbol(RQ, Decl(b.d.ts, 5, 15))
+}
+=== c.ts ===
+import { Req, Resp } from "m";
+>Req : Symbol(Req, Decl(c.ts, 0, 8))
+>Resp : Symbol(Resp, Decl(c.ts, 0, 13))
+
+type T3<RQ extends typeof Req> = Resp<InstanceType<RQ>>;
+>T3 : Symbol(T3, Decl(c.ts, 0, 30))
+>RQ : Symbol(RQ, Decl(c.ts, 1, 8))
+>Req : Symbol(Req, Decl(c.ts, 0, 8))
+>Resp : Symbol(Resp, Decl(c.ts, 0, 13))
+>InstanceType : Symbol(InstanceType, Decl(lib.es5.d.ts, --, --))
+>RQ : Symbol(RQ, Decl(c.ts, 1, 8))
+

@@ -229,3 +229,6 @@ intersection's property symbol to bugs/type_core.md.
   access node: nothing found on `string[][] | undefined`, unknownType) and likely `string[]` in tttt
   (ty_access_without_node skips nullable members; only the constraint path uses ACCESS_NULLABLE_FAILS since the
   seal-hub TS2344 fix). Unverified on real code. [open]
+- A failed instantiation expression in a constraint, printed out of its file (an overload merged from another file's
+  `declare module`), is `typeof Resp` in tsgo's types baseline and `typeof Resp<InstanceType<RQ>>` in tttt's (the
+  annotation reused): the discordx cut-down with `f` declared in both files (det3, 2026-10-24). [text]

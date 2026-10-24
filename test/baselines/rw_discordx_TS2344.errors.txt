@@ -1,0 +1,44 @@
+a.d.ts(2,11): error TS2300: Duplicate identifier 'Req'.
+a.d.ts(3,11): error TS2300: Duplicate identifier 'Resp'.
+b.d.ts(2,11): error TS2300: Duplicate identifier 'Req'.
+b.d.ts(3,11): error TS2300: Duplicate identifier 'Resp'.
+b.d.ts(6,54): error TS2344: Type 'InstanceType<RQ>' does not satisfy the constraint 'Req'.
+  Type 'import("m").Req' is not assignable to type 'import("m").Req'. Two different types with this name exist, but they are unrelated.
+    The types returned by 'on()' are incompatible between these types.
+      Type 'Req' is not assignable to type 'InstanceType<RQ>'.
+
+
+==== a.d.ts (2 errors) ====
+    declare module "m" {
+        class Req { on(): this; }
+              ~~~
+!!! error TS2300: Duplicate identifier 'Req'.
+!!! related TS6203 b.d.ts:2:11: 'Req' was also declared here.
+        class Resp<R extends Req = Req> { readonly req: R; }
+              ~~~~
+!!! error TS2300: Duplicate identifier 'Resp'.
+!!! related TS6203 b.d.ts:3:11: 'Resp' was also declared here.
+    }
+==== b.d.ts (3 errors) ====
+    declare module "m" {
+        class Req { on(): this; }
+              ~~~
+!!! error TS2300: Duplicate identifier 'Req'.
+!!! related TS6203 a.d.ts:2:11: 'Req' was also declared here.
+        class Resp<R extends Req = Req> { readonly req: R; }
+              ~~~~
+!!! error TS2300: Duplicate identifier 'Resp'.
+!!! related TS6203 a.d.ts:3:11: 'Resp' was also declared here.
+        type T1<RQ extends typeof Req> = Resp<InstanceType<RQ>>;
+        type T2<RQ extends Req> = Resp<RQ>;
+        function g<RQ extends typeof Req>(): typeof Resp<InstanceType<RQ>>;
+                                                         ~~~~~~~~~~~~~~~~
+!!! error TS2344: Type 'InstanceType<RQ>' does not satisfy the constraint 'Req'.
+!!! error TS2344:   Type 'import("m").Req' is not assignable to type 'import("m").Req'. Two different types with this name exist, but they are unrelated.
+!!! error TS2344:     The types returned by 'on()' are incompatible between these types.
+!!! error TS2344:       Type 'Req' is not assignable to type 'InstanceType<RQ>'.
+    }
+==== c.ts (0 errors) ====
+    import { Req, Resp } from "m";
+    type T3<RQ extends typeof Req> = Resp<InstanceType<RQ>>;
+    
