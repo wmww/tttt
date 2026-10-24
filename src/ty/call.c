@@ -373,6 +373,15 @@ static void check_arg(Checker* me, ParamShape const* shape, Args* args, u32 i) {
         }
     }
     arg->type = ty_check_expr(me, arg->expr, contextual);
+    // A function argument with a contextual signature has its return type inferred as it is checked, before it is
+    // related to the parameter (tsc's contextuallyCheckFunctionExpressionOrObjectLiteralMethod: getReturnTypeFromBody,
+    // no pushTypeResolution). The relation's request then re-enters it, nested, below the call's barrier: genkit's
+    // `lazyToolNames(() => ai)` closing the cycle through `ai`'s re-entered evaluation (TS7022/TS7024)
+    if (arg->expr->tag == EXPR_FUNCTION && ty_function_assigned_contextual_signature(me, arg->expr->function) &&
+        !ty_function_return_in_flight(me, arg->expr->function)
+    ) {
+        ty_argument_return_type(me, arg->expr->function);
+    }
     // A literal its contextual type has room for is regular, so it isn't widened as a candidate (tsc's
     // checkExpressionWithContextualType, which asks instantiateContextualType: what the return type says helps type it,
     // `Promise.resolve('notReady')` returning into `Promise<Result>`): "event1" against `K | keyof T` infers K = "event1"

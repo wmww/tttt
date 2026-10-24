@@ -528,7 +528,7 @@ from there; tsgo's verdicts in test/sourcesweep/tsc.jsonl.gz.
   type while `ai` is being resolved, and the cycle closes. tttt never types those arguments while resolving the
   declaration's type (likely its error-callee path, or a quick non-generic return type for `lazyToolNames(...)`), so
   it has no cycle. Next step: those 3 files as a test/cases repro (an undeclared callee alone may reproduce it). Not continued: the npm workflow comes
-  first. [open]
+  first. Fixed: the cause was the order, not the unresolved callees. tsc infers a function argument's return type during its contextual check, before relating it, and tttt did that only for inferring calls; check_arg() now does it for every call (test/cases/ttttArgumentReturnReentersCycle.ts). [fixed corF 2026-10-24]
 
 ## Refresh 7: application monorepos on generic libraries (2026-10-23, cor9)
 Six repos installed before the installs were stopped (repos.txt "Refresh 7"; the rest pending a sandboxed

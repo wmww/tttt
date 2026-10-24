@@ -1,0 +1,22 @@
+//// [test/cases/ttttArgumentReturnReentersCycle.ts] ////
+
+=== ttttArgumentReturnReentersCycle.ts ===
+// A function argument's return type is inferred by its contextual check before the argument is related (tsc's
+// contextuallyCheckFunctionExpressionOrObjectLiteralMethod, no pushTypeResolution): the relation's request in the
+// nested re-resolution of the call then finds c's re-entered evaluation in flight, TS7022 x2 and TS7024 (genkit's
+// dev-ui-gallery, `lazyToolNames(() => ai)` with unresolved callees around it)
+declare function lazy(f: () => { r?: unknown }): string[];
+>lazy : Symbol(lazy, Decl(ttttArgumentReturnReentersCycle.ts, 0, 0))
+>f : Symbol(f, Decl(ttttArgumentReturnReentersCycle.ts, 4, 22))
+>r : Symbol(r, Decl(ttttArgumentReturnReentersCycle.ts, 4, 32))
+
+const c = undeclared(c2.plugin());
+>c : Symbol(c, Decl(ttttArgumentReturnReentersCycle.ts, 5, 5))
+>c2 : Symbol(c2, Decl(ttttArgumentReturnReentersCycle.ts, 6, 5))
+
+const c2 = undeclared({ e: lazy(() => c) });
+>c2 : Symbol(c2, Decl(ttttArgumentReturnReentersCycle.ts, 6, 5))
+>e : Symbol(e, Decl(ttttArgumentReturnReentersCycle.ts, 6, 23))
+>lazy : Symbol(lazy, Decl(ttttArgumentReturnReentersCycle.ts, 0, 0))
+>c : Symbol(c, Decl(ttttArgumentReturnReentersCycle.ts, 5, 5))
+
