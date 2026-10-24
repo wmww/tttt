@@ -1,0 +1,54 @@
+//// [test/cases/npm_payload-storage-cloudinary_TS2322.ts] ////
+
+=== npm_payload-storage-cloudinary_TS2322.ts ===
+// origin: npm payload-storage-cloudinary@1.3.0 https://github.com/nick-vogel/payload-storage-cloudinary tsconfig.bench.json seed 20261114
+// flip: yes
+type SelectIncludeType = { [k: string]: SelectIncludeType | true };
+>SelectIncludeType : Symbol(SelectIncludeType, Decl(npm_payload-storage-cloudinary_TS2322.ts, 0, 0))
+>k : Symbol(k, Decl(npm_payload-storage-cloudinary_TS2322.ts, 2, 28))
+>SelectIncludeType : Symbol(SelectIncludeType, Decl(npm_payload-storage-cloudinary_TS2322.ts, 0, 0))
+
+type SelectExcludeType = { [k: string]: false | SelectExcludeType };
+>SelectExcludeType : Symbol(SelectExcludeType, Decl(npm_payload-storage-cloudinary_TS2322.ts, 2, 67))
+>k : Symbol(k, Decl(npm_payload-storage-cloudinary_TS2322.ts, 3, 28))
+>SelectExcludeType : Symbol(SelectExcludeType, Decl(npm_payload-storage-cloudinary_TS2322.ts, 2, 67))
+
+type SelectType = SelectExcludeType | SelectIncludeType;
+>SelectType : Symbol(SelectType, Decl(npm_payload-storage-cloudinary_TS2322.ts, 3, 68))
+>SelectExcludeType : Symbol(SelectExcludeType, Decl(npm_payload-storage-cloudinary_TS2322.ts, 2, 67))
+>SelectIncludeType : Symbol(SelectIncludeType, Decl(npm_payload-storage-cloudinary_TS2322.ts, 0, 0))
+
+interface Coll { slug: string; forceSelect?: SelectType }
+>Coll : Symbol(Coll, Decl(npm_payload-storage-cloudinary_TS2322.ts, 4, 56))
+>slug : Symbol(Coll.slug, Decl(npm_payload-storage-cloudinary_TS2322.ts, 5, 16))
+>forceSelect : Symbol(Coll.forceSelect, Decl(npm_payload-storage-cloudinary_TS2322.ts, 5, 30))
+>SelectType : Symbol(SelectType, Decl(npm_payload-storage-cloudinary_TS2322.ts, 3, 68))
+
+declare function pluginReadSelect(): Record<string, true>;
+>pluginReadSelect : Symbol(pluginReadSelect, Decl(npm_payload-storage-cloudinary_TS2322.ts, 5, 57))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+declare const colls: Coll[];
+>colls : Symbol(colls, Decl(npm_payload-storage-cloudinary_TS2322.ts, 7, 13))
+>Coll : Symbol(Coll, Decl(npm_payload-storage-cloudinary_TS2322.ts, 4, 56))
+
+export const out: Coll[] = colls.map((collection) => ({
+>out : Symbol(out, Decl(npm_payload-storage-cloudinary_TS2322.ts, 8, 12))
+>Coll : Symbol(Coll, Decl(npm_payload-storage-cloudinary_TS2322.ts, 4, 56))
+>colls.map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>colls : Symbol(colls, Decl(npm_payload-storage-cloudinary_TS2322.ts, 7, 13))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>collection : Symbol(collection, Decl(npm_payload-storage-cloudinary_TS2322.ts, 8, 38))
+
+  ...collection,
+>collection : Symbol(collection, Decl(npm_payload-storage-cloudinary_TS2322.ts, 8, 38))
+
+  forceSelect: { ...collection.forceSelect, ...pluginReadSelect() },
+>forceSelect : Symbol(forceSelect, Decl(npm_payload-storage-cloudinary_TS2322.ts, 9, 16))
+>collection.forceSelect : Symbol(Coll.forceSelect, Decl(npm_payload-storage-cloudinary_TS2322.ts, 5, 30))
+>collection : Symbol(collection, Decl(npm_payload-storage-cloudinary_TS2322.ts, 8, 38))
+>forceSelect : Symbol(Coll.forceSelect, Decl(npm_payload-storage-cloudinary_TS2322.ts, 5, 30))
+>pluginReadSelect : Symbol(pluginReadSelect, Decl(npm_payload-storage-cloudinary_TS2322.ts, 5, 57))
+
+}));
+

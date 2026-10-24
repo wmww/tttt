@@ -103,6 +103,16 @@ boxes' appends never conflict. One section per seed, one bullet per repro, statu
 - No divergence (set up with --prefer-large): 56 accepted, 56 byte-identical modulo lib paths, 56/56 same (file, line, code),
   clean agreement 56/56, no K-dependence, no flips. No repros.
 
+## Seed 20261114 (setup with --prefer-large)
+- 68 accepted, 67 byte-identical, 67/68 same (file, line, code), clean agreement 67/68, no K-dependence (no varies).
+- **npm_payload-storage-cloudinary_TS2322** (seed 20261114, payload-storage-cloudinary@1.3.0, nick-vogel/payload-storage-cloudinary at 2086612 src/index.ts(377); tsgo 0, tttt 1) **[flip]**
+  (test: test/cases/npm_payload-storage-cloudinary_TS2322.ts, 12 lines, found without reduce.py from the message): `colls.map(c => ({...c, forceSelect: {...c.forceSelect, ...f()}}))`
+  assigned to `Coll[]`, where `forceSelect?: SelectType` = `SelectExcludeType | SelectIncludeType` (recursive index-signature objects, `[k]: false | SelectExcludeType` /
+  `true | SelectIncludeType`) and `f(): Record<string, true>`: tttt reports the spread's type `{[x: string]: true} | {[x: string]: boolean | SelectExcludeType} | {...}` not assignable to
+  `SelectType | undefined`. Guess: spreading a union with an index-signature member into another object produces the cross-product, and tttt's member `{[x:string]: boolean | SelectExcludeType}`
+  (the exclude member merged with `true`) is kept where tsgo's spread (getSpreadType over unions, index-signature union of the right side) yields a type that is assignable, e.g. it
+  drops or keeps the string index differently; compare the two printed spread types. [open]
+
 ## Seed 20261115 (--prefer-large)
 53 accepted, 52 byte-identical, clean agreement 52/53, no K-dependence.
 - **FLIP, unreduced**, 0004-youra-h-soldy (@soldy-ui/webc 0.3.0-alpha.2, https://github.com/youra-h/soldy at a399d8d3,
