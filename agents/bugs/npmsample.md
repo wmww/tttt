@@ -403,7 +403,7 @@ workspace packages). Not flips, not K-dependent.
   constraint. relate.c intersection_apparent_is_union() returned true for any member whose apparent type is a union.
   tsc's getApparentTypeOfIntersectionType intersects the members' apparent types, and `undefined & { skip }` is never,
   so the source is `Base & { skip }`, compared property by property. Now the members' apparent types are intersected
-  first. Test rw_firecrawl_TS2345; repro ttttIntersectionNullableConstraintMember. [fixed PENDING]
+  first. Test rw_firecrawl_TS2345; repro ttttIntersectionNullableConstraintMember. [fixed d70cb46ad]
 - immich-server (immich-app/immich d474ec96, server/): tsgo 12 / tttt 13. +TS1272 at src/services/job.service.ts(86):
   `@OnEvent(...) async onJobRun(...[queueName, job]: ArgsOf<'JobRun'>)` with `import { ArgsOf } from
   'src/repositories/event.repository.js'` (a type-only export) under isolatedModules + emitDecoratorMetadata: tsc doesn't
