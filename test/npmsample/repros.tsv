@@ -22,3 +22,4 @@ npm__xneog_dsh-anonymous-user-id_TS2344	no	@xneog/dsh-anonymous-user-id@0.1.0	ht
 npm_skilltrace_TS2322	yes	skilltrace@0.3.3	https://github.com/hideya/skilltrace	0	1	+TS2322
 npm_kirka_TS7006	yes	kirka@6.1.0	https://github.com/numfin/kirka	0	2	+TS7006
 npm_slotsmith_TS7006	yes	slotsmith@1.10.0	https://github.com/tmzm/slotsmith	0	2	+TS7006
+npm_znicholasbrown-graphql-tools_TS2345	yes	znicholasbrown-graphql-tools@4.0.6	https://github.com/apollographql/graphql-tools	0	2	+TS2345

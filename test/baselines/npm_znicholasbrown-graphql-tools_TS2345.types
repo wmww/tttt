@@ -1,0 +1,32 @@
+//// [test/cases/npm_znicholasbrown-graphql-tools_TS2345.ts] ////
+
+=== npm_znicholasbrown-graphql-tools_TS2345.ts ===
+// origin: npm znicholasbrown-graphql-tools@4.0.6 https://github.com/apollographql/graphql-tools tsconfig.bench.json seed 20261104
+// flip: yes
+export function f<
+>f : <TArgs extends any[], TSync extends (...args: TArgs) => any, TAsync extends (...args: TArgs) => Promise<any>>(executeSync: TSync, executeAsync: TAsync) => (...args: Parameters<TSync | TAsync>) => void
+
+  TArgs extends any[],
+  TSync extends (...args: TArgs) => any,
+>args : TArgs
+
+  TAsync extends (...args: TArgs) => Promise<any>,
+>args : TArgs
+
+>(executeSync: TSync, executeAsync: TAsync) {
+>executeSync : TSync
+>executeAsync : TAsync
+
+  return (...args: Parameters<TSync | TAsync>) => {
+>(...args: Parameters<TSync | TAsync>) => {    executeSync(...args);  } : (...args: Parameters<TSync | TAsync>) => void
+>args : Parameters<TAsync> | Parameters<TSync>
+
+    executeSync(...args);
+>executeSync(...args) : any
+>executeSync : TSync
+>...args : any
+>args : Parameters<TAsync> | Parameters<TSync>
+
+  };
+}
+
