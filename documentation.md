@@ -627,9 +627,10 @@ cstr's out-of-line text into the arena), the resolve walk's lists and boxes are 
 AST strings are dropped with `ast_cstr_drop()` (`value_drop()` too) and taken out of the AST with `ast_cstr_take()`. During the parse freed blocks are reused (exact size classes up to 1 KB, best fit with splitting above:
 speculation's dead nodes and outgrown lists); the blocks still free when the file ends are lost (~3% on vscode).
 Threads bump files end to end through 64 MB slabs, prefaulting 2 MB ahead (`MADV_POPULATE_WRITE`: a trap per page was
-a tenth of the parse; the checker and binder arenas prefault a MB ahead too), each 2 MB as a huge page while
-`huge_pages_take()`'s budget (the free blocks of order >= 9 in `/proc/buddyinfo`) lasts: past it, a madvised fault
-compacts memory synchronously, which cost vscode a third of its wall time on a machine with fragmented memory; `ast_arena_drop()` gives a file's whole pages back (`TTTT_AST_POISON=1` makes them fault instead,
+a tenth of the parse; the checker and binder arenas prefault a MB ahead too), on 4 KB pages by default (with `--huge-pages`, each 2 MB as a huge page while
+`huge_pages_take()`'s budget lasts: the free blocks of order >= 9 in `/proc/buddyinfo` at startup, lowered when a read
+every 20 ms finds fewer free; past it, a madvised fault compacts memory synchronously, which cost vscode a third of its
+wall time on a machine with fragmented memory, agents/notes/kernel_time.md); `ast_arena_drop()` gives a file's whole pages back (`TTTT_AST_POISON=1` makes them fault instead,
 to find readers of a dropped AST) and its addresses are never reused. `TTTT_AST_STATS=1` prints the arenas' churn at
 exit; `TTTT_AST_MALLOC=1` turns them off (the AST in malloc, which `scripts/memtrack.sh` sees: it sets it).
 `scripts/arenasites.sh` shows the binder and checker arenas. Invariants of the compact layout:

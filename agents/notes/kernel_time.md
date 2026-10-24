@@ -78,3 +78,33 @@ At the defaults, f903d2e0e against 3a77c827: kernel cycles 21-28% of user -> 6-9
 TLB shootdowns per run -95 to -99% (drizzle 428k -> 8.8k), faults -79 to -96%, walls -13 to -23%; perf c2c on drizzle:
 the shootdown HITMs 217 -> 2 in 10 runs, no hot user line. **Peak RSS rose more than expected: +4 to +15%** (nest +44 MB,
 drizzle +116, vscode +190), not split by commit yet.
+
+## Huge pages off by default; the pool by the memory available now (det3, 2026-10-24, release builds, this box)
+The human: "some large projects typecheck up to 50% faster when less memory is being used by other stuff on the
+system, even though the amount of free memory is multiples of the max tttt uses". Two mechanisms made the wall depend
+on the rest of the machine:
+- **Huge pages** (`huge_pages_take()`): arena chunks, AST slabs and big tables were madvised (MADV_HUGEPAGE) while a
+  budget lasted: the free blocks of order >= 9 in /proc/buddyinfo, read once at startup. Under THP defrag=madvise (this
+  box, the common default) a madvised fault that finds no free 2 MB block compacts memory synchronously. The budget
+  went stale while other processes churned memory, so faults stalled. Forcing huge pages past the budget
+  (TTTT_HUGEPAGES=1) with ~2 GB of free 2 MB blocks took openclaw from 7 s to 35-41 s and vscode from 1.6 s to 5.3 s
+  (the coordinator's measurement).
+  - Tried first: re-read buddyinfo every 20 ms and take at most half of what is free, populating arena chunks at once.
+    It was slower: openclaw 16 s against 8 s, vscode 2.8-3.3 s against 1.9 s. Re-reading raised the budget again,
+    and our own 16 threads drained the blocks it counted.
+  - Now: off by default. `--huge-pages` (TTTT_HUGEPAGES=budget) is the budget, which a read every 20 ms can only
+    lower: to half of what is free when other processes took blocks. TTTT_HUGEPAGES=1 still forces. The hot text's
+    single 2 MB page (main.c huge_text()) keeps the startup budget: one page, faulted at once, collapsed if missed.
+  - Cost of off, 5 interleaved runs, load ~15, few free 2 MB blocks on this box: openclaw root 7.16 against 7.07 s
+    (+1%), vscode 1.71 against 1.69 s (+1%), drizzle 0.24-0.26 against 0.22-0.24 s (+5%: sys 0.19 against 0.08 s,
+    the 4 KB faults of a short run). `--huge-pages`: within noise of the old default on all three. On a machine with
+    many free blocks huge pages helped more (measurements.md "2 MB-aligned huge"): `--huge-pages` there.
+- **The memory pool** (program_set_memory_pool()): a checker recycles once the process's resident set passes
+  startup's resident set + 80% of MemAvailable. With other jobs holding memory at startup, openclaw root (22.8 GB peak)
+  got an 18.5 GB pool, recycled 15-16 times and ran ~15% slower, while 40 GB was available by then. Now, past the pool,
+  a checker recycles only while the memory available now (/proc/meminfo and the cgroups, read at most every 20 ms) is
+  under a fifth of startup's (pool_recycle_due(), program_set_memory_pool_basis()). Without other processes that is
+  the same point. With TTTT_MEM_AVAILABLE_MB the available memory is the override less the process's growth, so the
+  pool binds as before: openclaw at 20000 MB recycled 16 times (main 16), peak 16.4 GB; at 12000 MB 57 times (main
+  64), peak 9.8 GB. At the defaults with 38-47 GB available: 0 recycles, peak 22.8 GB, 7.8 s.
+Output: openclaw root byte-identical to main and to --checkers 1; vscode checkerdiff -k 16 identical.

@@ -153,6 +153,9 @@ void program_set_checker_memory_shared(Program* me, u64 bytes);
 // the process is below it again. The whole process counts (the AST, the binder, mapped text, materialized bodies), so
 // the checkers get what the program leaves. The CLI's default (main.c memory_pool_default()). Call it while loading
 void program_set_memory_pool(Program* me, u64 bytes);
+// What the pool was made of (memory_pool_default()): the resident set and the memory available then. Past the pool a
+// checker recycles only while the memory available now is under a fifth of that (pool_recycle_due())
+void program_set_memory_pool_basis(Program* me, u64 resident, u64 available);
 // The bytes of the files the checkers check, the default library's aside (what the default checker count follows)
 u64 program_checked_source_bytes(Program const* me);
 

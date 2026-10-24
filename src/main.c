@@ -51,6 +51,8 @@ enum { MAX_COMPILER_OPTION_ARGS = 64 };
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x)
 
+static u64 memory_pool_resident0, memory_pool_available0; // What memory_pool_default() was made of
+
 typedef struct Options {
     bool quiet;   // -q: don't print diagnostics (tsgo's), only the summary
     int pretty; // --pretty: 1 or 0, -1 when not given (the config's, else whether stdout is a terminal)
@@ -864,7 +866,10 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     // 1.6 GB against 3.0 without it, for 6-20% more CPU; the human takes speed over memory, 2026-10-21)
     if (!opts->expect_types && !opts->checker_memory_given) {
         // The default: the memory pool (memory_pool_default()), else (unknown) the old quarter of the memory
-        if (opts->memory_pool) program_set_memory_pool(program, opts->memory_pool);
+        if (opts->memory_pool) {
+            program_set_memory_pool(program, opts->memory_pool);
+            program_set_memory_pool_basis(program, memory_pool_resident0, memory_pool_available0);
+        }
         else {
             program_set_checker_memory(program, opts->checker_memory);
             program_set_checker_memory_cap(program, opts->checker_memory);
@@ -1632,12 +1637,15 @@ static void print_help(void) {
         "                circularity, keep their output instead of checking everything again in one checker\n"
         "                (faster; where such a diagnostic lands may then depend on the checkers). --rerun: the\n"
         "                default, tsc --singleThreaded's output at any K; TTTT_NO_RERUN=1 is --no-rerun\n"
+        "  --huge-pages  madvise the checkers' arenas and the AST for transparent huge pages while the system has\n"
+        "                free 2 MB blocks (counted at startup): a few percent faster on an unfragmented machine, but\n"
+        "                a fault that finds no free block compacts memory (TTTT_HUGEPAGES=budget is the same)\n"
         "  --first-touch-stamps  deep nesting orders types by when each checker met them first, not by id\n"
         "                The output doesn't depend on it\n"
         "  --threads N   parse, bind and check on N threads (default: the number of cores; checking uses at\n"
         "                most K of them)\n"
         "  --OPTION [VALUE]  a tsc compiler option: --target es2020, --lib es2015,dom, --strict false,\n"
-        "                --noImplicitAny... (strict is on by default, a boolean without a value means true)\n\n"
+        "                --noImplicitAny... (strict is on by default, a boolean without a value means true)\n\n",
         "tttt's own (debugging and oracles):\n"
         "  --time        print how long each phase took to stderr\n"
         "  --print-ast   print the parsed AST of the last file\n"
@@ -1701,7 +1709,9 @@ static u32 default_checker_cap(u32 threads) {
 static u64 memory_pool_default(void) {
     u64 available = memory_available_bytes();
     if (!available) return 0;
-    return process_resident_bytes() + available / 100 * MEMORY_POOL_PERCENT;
+    memory_pool_resident0 = process_resident_bytes();
+    memory_pool_available0 = available;
+    return memory_pool_resident0 + available / 100 * MEMORY_POOL_PERCENT;
 }
 
 // --checker-memory's old default, bytes (when memory_pool_default() is unknown)
@@ -1763,6 +1773,8 @@ static int run(int argc, const char** argv) {
             opts.keep_going = true;
         } else if (streq(argv[i], "--no-defer-bodies")) {
             opts.no_defer_bodies = true;
+        } else if (streq(argv[i], "--huge-pages")) {
+            huge_pages_set_budgeted();
         } else if (streq(argv[i], "--no-rerun")) {
             opts.rerun = 0;
         } else if (streq(argv[i], "--rerun")) {
@@ -1946,7 +1958,7 @@ static void huge_text(void) {
         HUGE_TEXT_SAY("no hot segment (not a BOLT build)");
         return;
     }
-    if (!huge_pages_take(huge)) {
+    if (!huge_text_take()) {
         HUGE_TEXT_SAY("not taken: no free 2 MB block");
         return;
     }

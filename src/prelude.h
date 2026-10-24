@@ -44,8 +44,8 @@ typedef struct DebugEnv {
     // TTTT_WALK_CHUNK_BYTES: every declaration file the chunked walk could take is walked in chunks of this many bytes
     // of statements (1: a statement each), whatever its size (program.c's chunked walk; its oracle)
     u32 walk_chunk_bytes;
-    // TTTT_HUGEPAGES: 1 madvises every arena chunk for huge pages, 0 none; unset, as many as the system has free
-    // (huge_pages_take())
+    // TTTT_HUGEPAGES: 1 madvises every arena chunk for huge pages; `budget` as many as the system has free (--huge-pages,
+    // -1 here); unset or 0 none (huge_pages_take())
     int8_t huge_pages;
     // TTTT_AST_SMALL_KB: a thread's first AST bytes on 4 KB pages (ast_alloc.c's populate()), its default when 0
     u32 ast_small_kb;
@@ -69,12 +69,19 @@ typedef struct DebugEnv {
 } DebugEnv;
 extern DebugEnv debug_env;
 
-// Whether an arena chunk of `bytes` may be madvise(MADV_HUGEPAGE)d. Huge pages take ~5-10% off a mid-size project's
-// wall time, but under the common THP setting (defrag=madvise) a madvised fault that finds no free 2 MB block compacts
-// memory synchronously: on a machine with fragmented memory (a long uptime, a big page cache) madvising all of vscode's
-// arenas took it from 5.9 to 9.4 s (14k compaction stalls a run). So chunks are madvised only while the free blocks of
-// order >= 9 that /proc/buddyinfo listed at the first call cover them (TTTT_HUGEPAGES overrides)
+// Whether an arena chunk (or an AST slab, a big table) of `bytes` may be madvise(MADV_HUGEPAGE)d. Off by default: under
+// the common THP setting (defrag=madvise) a madvised fault that finds no free 2 MB block compacts memory synchronously,
+// so a program's wall depended on the machine's fragmentation (agents/notes/kernel_time.md): madvising past the free
+// blocks took openclaw from 7 s to 35-41 s and vscode from 1.6 to 5.3 s, and the budget below, read once, went stale
+// while other processes churned memory (a budget re-read every 20 ms was slower still: our own 16 threads drain the
+// blocks it counts). Off costs within noise to +5% (2026-10-24). --huge-pages (TTTT_HUGEPAGES=budget) madvises while
+// the free blocks of order >= 9 /proc/buddyinfo listed at the first call cover them; TTTT_HUGEPAGES=1 every chunk
 bool huge_pages_take(size_t bytes);
+// The hot text's one 2 MB page (main.c's huge_text()): from the budget whatever --huge-pages says (one page at startup,
+// faulted at once and collapsed if it didn't get one)
+bool huge_text_take(void);
+// --huge-pages: huge_pages_take() goes by the budget (unless TTTT_HUGEPAGES said 1)
+void huge_pages_set_budgeted(void);
 // The process's resident set, bytes (/proc/self/statm; 0 if unreadable). A read of an fd kept open: cheap enough per file
 u64 process_resident_bytes(void);
 // The memory the system could give the process now, bytes: /proc/meminfo's MemAvailable, and when it runs in cgroups

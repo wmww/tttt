@@ -200,6 +200,8 @@ typedef struct Program {
     u64 checker_memory_shared; // program_set_checker_memory_shared(), bytes: UINT64_MAX none
     u64 memory_pool; // program_set_memory_pool(), bytes of the process's resident set: UINT64_MAX none
     _Atomic u64* pool_held; // malloc'd, per checker while typechecking under a memory pool: what it held after its last file
+    // program_set_memory_pool_basis(): the resident set and the available memory the pool was made of, 0 unknown
+    u64 pool_resident0, pool_available0;
     u64 checker_budget; // While typechecking: what each checker may hold (checker_memory split between them)
     u64 checker_start_budget; // While typechecking: what each holds before its first recycle (check_share())
     // program_declaration_diagnostics_cli(): earlier phases reported something
@@ -4892,6 +4894,31 @@ void program_set_memory_pool(Program* me, u64 bytes) {
     my memory_pool = bytes;
 }
 
+void program_set_memory_pool_basis(Program* me, u64 resident, u64 available) {
+    my pool_resident0 = resident;
+    my pool_available0 = available;
+}
+
+// The memory available now (memory_available_bytes(), read at most every 20 ms: it reads /proc/meminfo and the
+// cgroups), for pool_recycle_due(). With TTTT_MEM_AVAILABLE_MB (testing) what the override said less what the process
+// grew by since, so the pool binds like real memory would
+static u64 pool_available_now(Program* me, u64 resident) {
+    if (getenv("TTTT_MEM_AVAILABLE_MB")) {
+        u64 grown = resident > my pool_resident0 ? resident - my pool_resident0 : 0;
+        return my pool_available0 > grown ? my pool_available0 - grown : 0;
+    }
+    static _Atomic u64 cached, cached_ns;
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    u64 now_ns = (u64)now.tv_sec * 1000000000u + (u64)now.tv_nsec + 1;
+    u64 last = atomic_load_explicit(&cached_ns, memory_order_relaxed);
+    if (now_ns - last > 20000000u && atomic_compare_exchange_strong(&cached_ns, &last, now_ns)) {
+        atomic_store(&cached, memory_available_bytes());
+    }
+    u64 available = atomic_load(&cached);
+    return available ? available : UINT64_MAX;
+}
+
 void program_set_checker_memory_shared(Program* me, u64 bytes) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
     my checker_memory_shared = bytes;
@@ -5825,6 +5852,10 @@ static bool pool_recycle_due(Program* me, Checker* checker, u32 c, u32 count) {
     if (held < CHECKER_POOL_MIN_HELD) return false;
     u64 resident = process_resident_bytes();
     if (!resident || resident <= my memory_pool) return false;
+    // (Past the pool, only while memory is short now: the pool is what was available at startup, and other processes
+    // may have freed some since. openclaw (22 GB) recycled 15-16 times against an 18 GB pool made while other jobs held
+    // memory, with 40 GB available by then)
+    if (my pool_available0 && pool_available_now(me, resident) > my pool_available0 / 5) return false;
     u64 sum = 0;
     for (u32 i = 0; i < count; i++) sum += atomic_load_explicit(&my pool_held[i], memory_order_relaxed);
     if (held * count < sum) return false;
