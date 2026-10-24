@@ -211,3 +211,7 @@ intersection's property symbol to bugs/type_core.md.
   cycles the trace doesn't show (TS7023). kdiff -k 16 on those 18 repos' 1274 configs, twice: 0 differ. So no flake in
   the sweep from these codes yet; the known ones are bun 92-R16b and sequelize. Since det3's commit after
   ca2787123 the rerun triggers on these codes outright (documentation.md). [note]
+- A class type parameter's default isn't substituted in a printed method constraint (det3, 2026-10-24):
+  `declare class D<F, X = ETR<F>> { m<N, Z extends ByName<X, N>>(): void }` with `declare const d: D<typeof s>`.
+  tttt prints `d.m : <N_1, Z extends ByName<X, N_1>>() => void`, tsgo `ByName<ETR<{ ... }>, N_1>`. Types component
+  only. [open]

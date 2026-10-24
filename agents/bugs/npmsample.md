@@ -219,7 +219,17 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   spurious TS2322 at a generic helper returning a mapped type built from drizzle-orm's `ExtractTablesWithRelations<...>[T["_"]["name"]]["columns"]`
   (`{ [K in keyof ({} & ({ [K in keyof ...]?: boolean } ...))]: ...}` not assignable). Reduced to 40 files / 380 lines (drizzle's .d.ts
   cut down, `~/` paths made relative); not cut by hand further. Guess: assignability of a deferred mapped type over an intersection
-  with a conditional (`undefined extends Record<...> ? ...`) to another mapped type that tsgo relates via the template/modifiers. [open]
+  with a conditional (`undefined extends Record<...> ? ...`) to another mapped type that tsgo relates via the template/modifiers.
+  Root cause (det3): `findFirst`'s TSelection is inferred from the return context as `Omit<C, "where">`, but tttt
+  failed its constraint check and fell back to the constraint. The relation descends to drizzle's FindTableByDBName:
+  `keyof { [K in keyof ETR as ETR[K]["dbName"] extends N ? K : never]: ... }` against the same shape over another
+  ETR object. That is the same alias and arguments, but `type Schema = ExtractTablesWithRelations<...>` makes a twin
+  (ty_alias_body_mapped_instance()), so the `as` types aren't identical and mappedTypeRelatedTo fails, in tsgo too.
+  tsgo then relates the source to the target's keys: its `as` type and the apparent keys
+  (structuredTypeRelatedTo's generic-mapped `keyof` rule, under isGenericMappedType, whose `as` clause alone makes it
+  generic). tttt had that rule only for a generic constraint. Also found: in tttt alone the TS2322 came and went with
+  the root files (the test's 40 files as `files` vs `include: ["app"]`), at one checker. Which twin a reference
+  meets first decided whether the `as` types were identical. [fixed det3]
 - **npm__xneog_dsh-anonymous-user-id_TS2344** (seed 20261102, @xneog/dsh-anonymous-user-id@0.1.0, gomes007-alt/xneog-harness
   vendor/schemastery/src/index.ts:85; tsgo 89, tttt 91, +2 TS2344): `Dict<TypeS<X>, TypeS<Y>>` / `Dict<TypeT<X>, TypeT<Y>>` where
   `Y extends Schema<any, string>` and `From<Y>` is a distributive conditional with a `X extends string|number|boolean ? Schema<X>` branch:

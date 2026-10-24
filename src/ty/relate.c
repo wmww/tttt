@@ -6257,9 +6257,7 @@ static Ternary structured_related_members(
                     Ternary related = is_related_to_side(me, st, source, keys, report, 1);
                     if (related == TERNARY_TRUE) return related;
                 }
-            } else if (!constraint && operand->kind == TY_ANONYMOUS && ty_members(me, operand)->mapped &&
-                ty_is_generic_index(ty_members(me, operand)->mapped->constraint)
-            ) {
+            } else if (!constraint && operand->kind == TY_ANONYMOUS && ty_members(me, operand)->mapped) {
                 // A generic mapped type's keys are at least its `as` type, or else its constraint, and with `as` over
                 // `keyof X` the `as` type of X's apparent keys (tsc's getApparentMappedTypeKeys)
                 MappedInfo const* mapped = ty_members(me, operand)->mapped;
