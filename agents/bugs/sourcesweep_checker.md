@@ -251,7 +251,7 @@ full sweep: pixijs (binder merge unit), better-auth (lynx-store), es-toolkit (en
   checker confirms later, "only if the property exists", which nothing in tttt does yet. Left.) Fixed (fixF): the scope
   pass records such an import as IdentifierTypeRare.export_equals_namespace instead of reporting, and the type's check says
   TS2503 only when the property exists (the symbols baseline shows the import for a missing one). Repro
-  test/cases/ttttImportExportEqualsMissingPropertyNamespace.ts. [fixed PENDING]
+  test/cases/ttttImportExportEqualsMissingPropertyNamespace.ts. [fixed a004455e2]
 
 ## clidiff `diagnostics` verdicts, 2026-10-18 
 Fixed: rocket (+TS7031: a callback parameter asked for before its call statement is checked, through a JS
