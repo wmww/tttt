@@ -3470,6 +3470,17 @@ static void program_verify_emit_paths(Program* me) {
     hmap_source_file_ptr_drop(&seen);
 }
 
+// The synthesized import (`tslib` of importHelpers, the jsx runtime of a .tsx file) an import reason is, null if it's
+// one the file wrote: such a reason has no location (tsgo's referenceLocation.isSynthetic), its span is empty
+static ModuleRef const* include_reason_synthetic(SourceFile const* file, IncludeReason const* reason) {
+    if (reason->kind != INCLUDE_IMPORT || reason->at.size) return nullptr;
+    SourceFile const* from = span_source(reason->at);
+    if (!from) return nullptr;
+    if (from->helpers_ref && from->helpers_ref->file == file) return from->helpers_ref;
+    if (from->jsx_runtime_ref && from->jsx_runtime_ref->file == file) return from->jsx_runtime_ref;
+    return nullptr;
+}
+
 // One of tsc's file include reasons as its chain says it (FileIncludeReason.toDiagnostic, file names absolute)
 static cstr include_reason_text(Program* me, SourceFile const* file, IncludeReason const* reason) {
     switch (reason->kind) {
@@ -3485,6 +3496,18 @@ static cstr include_reason_text(Program* me, SourceFile const* file, IncludeReas
             SourceFile const* from = span_source(reason->at);
             cstr absolute = from ? absolute_path_of(program_cwd(me), cstr_sv(&from->canonical_path)) : cstr_null;
             cstr from_name = program_path_for_message(me, cstr_sv(&absolute));
+            ModuleRef const* synthetic = include_reason_synthetic(file, reason);
+            if (synthetic) {
+                // (Its text is the synthesized literal's, quoted: computeReferenceFileDiagnostic)
+                char const* why = synthetic == from->helpers_ref ? " to import 'importHelpers' as specified in compilerOptions" :
+                    " to import 'jsx' and 'jsxs' factory functions";
+                cstr ret = cstr_size(&reason->package_id) ?
+                    cstr_d("Imported via \"", synthetic->path, "\" from file '", from_name, "' with packageId '", reason->package_id,
+                        "'", why) :
+                    cstr_d("Imported via \"", synthetic->path, "\" from file '", from_name, "'", why);
+                c_drop(cstr, &absolute, &from_name);
+                return ret;
+            }
             cstr ret = reason->kind == INCLUDE_REFERENCE ?
                 cstr_d("Referenced via '", reason->at, "' from file '", from_name, "'") :
                 cstr_size(&reason->package_id) ?
@@ -3517,7 +3540,10 @@ static JsonValue const* config_spec_element(Program const* me, char const* key, 
 static void add_include_related_info(Program* me, Error* error, SourceFile const* file, IncludeReason const* reason) {
     switch (reason->kind) {
         case INCLUDE_IMPORT:
-            if (span_valid(reason->at)) error_add_related_d(error, reason->at, 1399, "File is included via import here.");
+            // (Not a synthesized import's: computeReferenceFileRelatedInfo)
+            if (span_valid(reason->at) && !include_reason_synthetic(file, reason)) {
+                error_add_related_d(error, reason->at, 1399, "File is included via import here.");
+            }
             return;
         case INCLUDE_REFERENCE:
             if (span_valid(reason->at)) error_add_related_d(error, reason->at, 1401, "File is included via reference here.");
@@ -3568,8 +3594,10 @@ static void explain_implied_format(Error* error, SourceFile const* file) {
 // what decides its module format
 static void program_error_explaining_file(Program* me, SourceFile const* file, unsigned code, cstr message) {
     IncludeReason const* preferred = nullptr;
+    // (Not a synthesized import, which has no location: tsgo's createDiagnosticExplainingFile)
     for (u32 i = 0; i < file->include_reason_count && !preferred; i++) {
-        if (file->include_reasons[i].kind != INCLUDE_ROOT) preferred = &file->include_reasons[i];
+        IncludeReason const* reason = &file->include_reasons[i];
+        if (reason->kind != INCLUDE_ROOT && !include_reason_synthetic(file, reason)) preferred = reason;
     }
     Error* error;
     if (preferred) {

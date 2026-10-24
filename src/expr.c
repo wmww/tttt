@@ -1620,6 +1620,11 @@ void jsx_report_runtime_module(SourceFile const* file, Span at, ErrorCtx* errs) 
         module_ref_report_implicit_any_at(ref, at, errs); // (tsc's resolveExternalModule)
         return;
     }
+    if (!ref->ambient_only && ref->failure == MODULE_REF_NOT_BUILT) {
+        // (A referenced project's unbuilt source, like an import's: tsc's resolveExternalModule finds the redirect)
+        module_ref_report_not_built_at(ref, at, errs);
+        return;
+    }
     if (!ref->ambient_only && ref->failure != MODULE_REF_NOT_FOUND) return;
     error_ctx_error_d(errs, at, 2875, "This JSX tag requires the module path '", ref->path, "' to exist, but none "
         "could be found. Make sure you have types for the appropriate package installed.");

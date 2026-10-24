@@ -536,6 +536,8 @@ void module_ref_report_unresolved_side_effect(ModuleRef const* me, struct ErrorC
 // TS7016 at `at` for a module that resolved to JavaScript (MODULE_REF_IS_JS), under noImplicitAny (tsc's
 // errorOnImplicitAnyModule)
 void module_ref_report_implicit_any_at(ModuleRef const* me, Span at, struct ErrorCtx* errs);
+// TS6305 at `at` for a referenced project's source whose output hasn't been built (MODULE_REF_NOT_BUILT)
+void module_ref_report_not_built_at(ModuleRef const* me, Span at, struct ErrorCtx* errs);
 
 // 0-based index of the line `pos` (which must point into the contents, or at their end) is on
 unsigned source_file_line_index(SourceFile const* me, const char* pos);

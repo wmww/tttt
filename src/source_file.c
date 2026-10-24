@@ -376,6 +376,11 @@ static bool is_node_core_module(csview path) {
     return false;
 }
 
+void module_ref_report_not_built_at(ModuleRef const* me, Span at, ErrorCtx* errs) {
+    error_ctx_error_d(errs, at, 6305, "Output file '", module_ref_rare(me)->unbuilt_output,
+        "' has not been built from source file '", module_ref_rare(me)->resolved_path, "'.");
+}
+
 static void report_unresolved(ModuleRef const* me, ErrorCtx* errs, bool side_effect) {
     CompilerOptions const* options = compiler_options();
     report_types_package(me, errs);
@@ -411,8 +416,7 @@ static void report_unresolved(ModuleRef const* me, ErrorCtx* errs, bool side_eff
             }
             return;
         case MODULE_REF_NOT_BUILT:
-            error_ctx_error_d(errs, my span, 6305, "Output file '", module_ref_rare(me)->unbuilt_output,
-                "' has not been built from source file '", module_ref_rare(me)->resolved_path, "'.");
+            module_ref_report_not_built_at(me, my span, errs);
             return;
         case MODULE_REF_NOT_FOUND:
             break;
