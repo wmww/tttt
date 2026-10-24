@@ -1291,7 +1291,7 @@ const baselines = {
         types: false,
     },
     'bun08-P2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -7381,7 +7381,7 @@ const baselines = {
         types: true,
     },
     'bun39-C11c': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11555,6 +11555,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'npm_Bitterbot-AI_bitterbot-desktop_TS5088': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'npm_My-first-stencil-project-001_TS2320': {
         errors: true,
         symbols: false,
@@ -11575,6 +11580,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'npm__agnes_host_TS2769': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'npm__augu_utils_TS2307': {
         errors: true,
         symbols: true,
@@ -11586,6 +11596,11 @@ const baselines = {
         types: true,
     },
     'npm__bunicorn_server_TS6196': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm__deepagent-code_TS2322': {
         errors: true,
         symbols: true,
         types: true,
@@ -11616,6 +11631,11 @@ const baselines = {
         types: true,
     },
     'npm__iwatakeshi_chakra-prose_TS2590': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm__lute-lang_player_crash': {
         errors: true,
         symbols: true,
         types: true,
@@ -11665,6 +11685,16 @@ const baselines = {
         symbols: true,
         types: false,
     },
+    'npm__pentest-harness_cordis_TS2313': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm__pixpilot_cost-calculator_TS6053': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'npm__point0_compiler_TS2345': {
         errors: true,
         symbols: true,
@@ -11680,8 +11710,18 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'npm__react-doctor_evals_TS2322': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
     'npm__rocket-slate_mentions_TS2615': {
         errors: false,
+        symbols: true,
+        types: true,
+    },
+    'npm__sanity_comlink_TS2589': {
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11745,7 +11785,42 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'npm_akashnetwork_console-api_TS2345': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_akashnetwork_console-web_TS7022': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_amcharts_amcharts5_TS2339': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_artsy_metaphysics_TS2741': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
     'npm_better-auth_TS2352': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_blocksuite_TS6133': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_bytecodealliance_jco_TS18046': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_cellajs_cella_TS2322': {
         errors: true,
         symbols: true,
         types: true,
@@ -11785,6 +11860,47 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'npm_lambda-direct_datalayer_TS2345': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_lightdash_TS2367': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_lighthouse_TS2339': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_lighthouse_TS7008': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_lumiverse_TS2322': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_marimo-team_marimohub_TS2322': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_matrix-org_matrix-js-sdk_TS2322': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_mcp-namecheap_TS2883': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'npm_ml-component_TS2551': {
         errors: true,
         symbols: true,
@@ -11810,7 +11926,22 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'npm_react-native-reanimated_TS2578': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'npm_react-native-screen-transitions_TS7022': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'npm_react-smooth-scroll-hook_TS7016': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_rocicorp_mono_TS2339': {
         errors: true,
         symbols: true,
         types: true,
@@ -11819,6 +11950,11 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
+    },
+    'npm_sixb-ai_sixb_TS2339': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
     'npm_skilltrace_TS2322': {
         errors: true,
@@ -11840,10 +11976,15 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'npm_voxel-three_TS2589': {
-        errors: false,
+    'npm_vinext_TS2345': {
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
+    },
+    'npm_voxel-three_TS2589': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'npm_znicholasbrown-graphql-tools_TS2345': {
         errors: true,
@@ -11851,6 +11992,21 @@ const baselines = {
         types: true,
     },
     'rw_discordx_TS2344': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'rw_effect_HttpApiEndpoint_TS2322': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'rw_effect_HttpRouter_TS2322': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'rw_effect_RpcClient_TS2345': {
         errors: true,
         symbols: true,
         types: true,
@@ -11896,6 +12052,11 @@ const baselines = {
         types: true,
     },
     'rw_n8n_nodes_base_TS2684': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'rw_rea_TS2345': {
         errors: true,
         symbols: true,
         types: true,
@@ -12007,6 +12168,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAnnotatedPatternQuickInitializer': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAnnotationReadsContextualParam': {
         errors: true,
         symbols: true,
@@ -12023,6 +12189,11 @@ const baselines = {
         types: true,
     },
     'ttttArgumentReturnReentersCycle': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttArrayDestructuredDiscriminant': {
         errors: true,
         symbols: true,
         types: true,
@@ -12251,6 +12422,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttClassInterfaceMergedOverloadOrder': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttClassMappedKeyIndexSignature': {
         errors: true,
         symbols: true,
@@ -12405,6 +12581,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttConstArrayLiteralCandidates': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttConstContextConditionalBranches': {
         errors: true,
         symbols: true,
@@ -12528,6 +12709,12 @@ const baselines = {
         dts: true,
     },
     'ttttDeclarationAmbientClassMethodMergedInterface': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttDeclarationAnonymousDefaultUnsafeImport': {
         errors: true,
         symbols: true,
         types: true,
@@ -13419,6 +13606,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttEnumMembersOfOtherEnumNotComparable': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttErasedSignatureCallbackParam': {
         errors: true,
         symbols: true,
@@ -13549,10 +13741,20 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttExtendsExportsExactBeforePattern': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttFileMergeConflict': {
         errors: true,
         symbols: true,
         types: true,
+    },
+    'ttttFlowIssueSingleQuery': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
     'ttttFlowTypeCastRecovery': {
         errors: false,
@@ -13745,6 +13947,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttImportExportEqualsMissingPropertyNamespace': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttImportExportEqualsPropertyUmdNamespace': {
         errors: true,
         symbols: true,
@@ -13815,6 +14022,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttIndexedIntersectionTemplateIndex': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttInferArrayToReadonlyArrayByElement': {
         errors: true,
         symbols: true,
@@ -13826,6 +14038,11 @@ const baselines = {
         types: true,
     },
     'ttttInferFromReadonlyRestTuple': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttInferImpliedErrorConstraint': {
         errors: true,
         symbols: true,
         types: true,
@@ -14442,6 +14659,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttManyTypeArguments': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttMappedAsClauseUnionModifiers': {
         errors: true,
         symbols: true,
@@ -14484,6 +14706,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttMappedMembersInFlightAccess': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttMappedNeverKeyAsClause': {
         errors: true,
         symbols: true,
@@ -14510,6 +14737,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttMappedOverGenericRecordIndex': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttMappedOverMappedConstraint': {
         errors: true,
         symbols: true,
@@ -14535,6 +14767,12 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
+    },
+    'ttttMergedClassInterfaceIsClass': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
     },
     'ttttMergedOwnerPossiblyReferenced': {
         errors: true,
@@ -14643,6 +14881,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttNeverIndexTypeLiteral': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttNeverPropertyInstantiationExpression': {
         errors: true,
         symbols: true,
@@ -14703,6 +14946,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttNonNullOperandNotInferential': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
     'ttttNullIdentifierName': {
         errors: true,
         symbols: true,
@@ -14755,6 +15003,11 @@ const baselines = {
         types: true,
     },
     'ttttOverloadExactOptionalElaboration': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttOverloadFailureBeforeErrorReport': {
         errors: true,
         symbols: true,
         types: true,
@@ -14874,6 +15127,11 @@ const baselines = {
         symbols: true,
         types: true,
         dts: true,
+    },
+    'ttttPickUnionIntersectionIndexOptional': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttPseudoInferredUnionOfLiterals': {
         errors: true,
@@ -15065,6 +15323,11 @@ const baselines = {
         types: true,
     },
     'ttttSilentNeverIndexedAccess': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttSkipRoundNestedSensitiveFunction': {
         errors: true,
         symbols: true,
         types: true,
@@ -15290,6 +15553,11 @@ const baselines = {
         types: true,
     },
     'ttttTruncationReusedConstraint': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttTsExtensionImportOfLinkedPackage': {
         errors: true,
         symbols: true,
         types: true,
@@ -15600,12 +15868,22 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttVoidReturnContextInference': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttWeakGenericMappedType': {
         errors: true,
         symbols: true,
         types: true,
     },
     'ttttWidenedNullableLiteralNotLiteral': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttWriteConstraintIntersectionProperty': {
         errors: true,
         symbols: true,
         types: true,
