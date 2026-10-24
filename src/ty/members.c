@@ -3200,6 +3200,16 @@ bool ty_declared_is_merged(Ty const* declared) {
 // symbols before late binding), so `[rI.x]` with `rI: RI<"a">` finds `x`. Published on the declared type's states in
 // flight, replaced by the full members when they are done. Made only when something asks for the members meanwhile
 // (ty_members() and declared_raw_members())
+// What a builder holds so far, as the early members of whichever of the states is in flight here with a claim
+static void publish_early_snapshot(Checker* me, TyObjectState* const states[2], MembersBuilder const* builder) {
+    Members const* members = nullptr;
+    for (u32 k = 0; k < 2; k++) {
+        if (!states[k] || !members_mine_in_flight(me, states[k]) || !members_claim_of(me, states[k])) continue;
+        if (!members) members = builder_snapshot(me, builder);
+        set_early_members(me, states[k], members);
+    }
+}
+
 static void early_declared_members(Checker* me, Ty const* ty) {
     if (ty->kind != TY_DECLARED || (ty->declared.kind != TY_DECLARED_INTERFACE && ty->declared.kind != TY_DECLARED_CLASS_INSTANCE) ||
         ty->declared.merged_value || !ty->declared.symbol) {
@@ -3331,6 +3341,21 @@ static void set_eager_bases(Checker* me, Members* members, TyBuf* eager) {
     ty_buf_drop(eager);
 }
 
+// The X of a mapped base `{ [K in keyof T]: ... }` instantiated with a T that isn't generic, from the declaration's
+// constraint only (nothing of the mapped type's members), null if the base is no such mapped type. tsc's isValidBaseType
+// asks isGenericMappedType of a mapped base, which gets `keyof X` while the bases are resolved (getIndexType: X's
+// properties): for `interface D extends Renamed<D>` that resolves D's members then, without bases, a base cycle
+// (TS2310), and the mapped base never sees D's own members later
+static Members const* declared_mapped_members(Checker* me, Ty const* target);
+static Ty const* mapped_base_keys(Checker* me, Ty const* base) {
+    if (base->kind != TY_ANONYMOUS || !base->anonymous.mapped || !base->anonymous.target || !base->anonymous.mapper) return nullptr;
+    Members const* declared = declared_mapped_members(me, base->anonymous.target);
+    MappedInfo const* info = declared ? declared->mapped : nullptr;
+    if (!info || !info->constraint || info->constraint->kind != TY_KEYOF) return nullptr;
+    Ty const* operand = ty_instantiate(me, info->constraint->keyof.operand, base->anonymous.mapper);
+    return operand->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES ? nullptr : operand;
+}
+
 static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
     Symbol const* decl = ty->declared.symbol;
     Ty const* this_param = ty->declared.this_param;
@@ -3441,7 +3466,8 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
             }
             if (any_base) builder_push_any_base_index(me, &builder);
             my bases_frames = frame.outer;
-            if (ty_resolving_pop(me)) {
+            bool bases_reentered = ty_resolving_pop(me);
+            if (bases_reentered) {
                 // Its members were asked for while its bases were lowered: TS2310 at its declarations (tsc's
                 // getBaseTypes when popTypeResolution fails). The bases that lead back to the type are dropped (tsc's
                 // hasBaseType in resolveBaseTypesOfClass/Interface), the others kept: a default type argument reading
@@ -3502,7 +3528,20 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
             // relating I to its base finds the very same signature)
             TyBuf thisless = {0};
             u32 own_props = builder.props_count;
+            // A base's members may ask for this type's (`interface P extends Pick<G, 'k'>` with `interface G extends
+            // P`: Pick reads G's modifiers while P's members are resolved, G inherits from P): they find what is known so
+            // far, the declared members and the bases added before (tsc's resolveObjectTypeMembers sets the members table
+            // before it adds the inherited ones into it). Not when they were asked for while the bases were lowered: tsc
+            // resolved them then, without bases, for good (see members_reentered()), which the re-entry stands for
+            TyObjectState* early_states[2] = { bases.len && !bases_reentered && ty->kind == TY_DECLARED ? ty->declared.raw : nullptr,
+                bases.len && !bases_reentered && ty->kind == TY_DECLARED ? object_state(ty) : nullptr };
             for (u32 i = 0; i < bases.len; i++) {
+                // (Not to a mapped base over this type's own keys, `interface D extends Renamed<D>`: tsc got `keyof D`
+                // while D's bases were resolved, from D's members without bases, see mapped_base_keys())
+                if (early_states[0] && !(written_bases.data[i]->kind == TY_ANONYMOUS && written_bases.data[i]->anonymous.mapped &&
+                        mapped_base_keys(me, written_bases.data[i]) == ty)) {
+                    publish_early_snapshot(me, early_states, &builder);
+                }
                 u32 calls = builder.call_count, constructs = builder.construct_count;
                 builder_add_inherited(me, &builder, bases.data[i]);
                 if (bases.data[i] == written_bases.data[i]) {

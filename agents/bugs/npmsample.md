@@ -144,7 +144,20 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   | ...>` then gets TS2344 in tttt ("'icon' is not assignable to type 'keyof APIGuild'"). A base type that reads its
   own derived interface through Pick (keyof APIGuild while APIGuild's bases resolve): tttt's keyof APIGuild lacks the
   members inherited from APIPartialGuild, likely a member set cached while the base list was in flight. tsgo gives no
-  error at all (no TS2310 either). Cut-down: 2 files, 10 lines. (claimed: cor10) [open]
+  error at all (no TS2310 either). Cut-down: 2 files, 10 lines. (claimed: cor10) Cause: Pick<APIGuild, 'welcome_screen'>
+  reads APIGuild's modifiers while APIPartialGuild's members are resolved; APIGuild then inherited nothing from the
+  in-flight APIPartialGuild (no early members) and kept that. tsc's resolveObjectTypeMembers sets the members table
+  (declared members, then each base's added into it) before it adds the inherited ones, so a reader meanwhile sees
+  what is there so far. Fixed in resolve_declared_members (src/ty/members.c): the members so far are published as
+  early members before each base is added, except after a re-entry while the bases were lowered and for a mapped base
+  over this type's own keys (`interface D extends Renamed<D>`, bun87-R18b: tsc got `keyof D` in isValidBaseType, from
+  D's members without bases). [fixed 2026-10-24]
+  - The other order, the Pick<APIGuild, ...> use before the declarations are checked: tttt reports TS2310 on APIGuild,
+    tsgo nothing. base_is_dynamic() asks for the base's members while APIGuild's bases are lowered (inside its
+    RESOLVING_BASES window), which reaches Pick and APIGuild's members there; tsc's getBaseTypes never resolves a base's
+    members (hasBaseType walks bases only). Moving it out of the window broke ttttCircularBaseDefaultArgument (the A/B
+    interface cycle is found through that re-entry): the cycle check needs a bases-only walk instead. Repro: put
+    `export type First = Pick<G2, 'id'>;` above the declarations of test/cases/ttttBaseReadsDerivedThroughPick.ts. [open]
 
 ## Seed 20261103 (second box)
 - npm_task-definition-ts_TS2339 (task-definition-ts@1.0.18, config tsconfig.bench.json, allowJs+checkJs, no include): tttt's default wildcard include adds `dist/index.mjs` although `dist/index.d.mts` sits beside it, and checks it (TS2339/TS7006 x6); tsgo drops the .mjs (same-basename extension priority: a declaration file beats the JS file), as tttt already does for `index.cjs` next to `index.d.cts`. Guess: the priority removal in tttt's wildcard expansion knows .d.cts/.cjs but not .d.mts/.mjs. [flip] [open]
