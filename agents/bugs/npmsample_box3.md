@@ -81,7 +81,7 @@ for flips); a separate file so the three boxes never conflict.
   number where tsgo gets 0-4. Then the `{ assoc: false }` premap fails `Record<string, string>` (TS2344), and
   resolveLambdaPre<S> is `string | false`. Guess: a template-literal inference or string-recursion step in cion's
   evaluator, or an instantiation depth limit, that differs. Repro test/cases/npm__taiyakihitotsu_foxp_TS2344.ts
-  (532 lines: reduce.py with --tsgo-clean, own files then the package's). [flip] [open]
+  (532 lines: reduce.py with --tsgo-clean, own files then the package's). [flip] [fixed 939dbc038] Fixed (corB): conditional.c branch_type_with() composed the branch mapper before the `infer` mapper, so an inner resolution's own inferred `restTape` replaced the outer one held in cion's _TapeEval Stack argument; tsc's combinedMapper is combineTypeMappers(context.mapper, mapper). Now ty_compose_mappers(infer, branch->mapper); repro ttttConditionalOwnInferInBranchArgs.
 - Seed 20261209, rs-pro/rocket-slate (@rocket-slate/mentions@0.2.26): missing TS2615 "Type of property
   'defaultProps' circularly references itself in mapped type 'ForwardRefExoticBase<...>'" on `styled(Toolbar)` with
   @types/styled-components (ts3.7) and @types/react 16. tsgo reports it twice at the same span, for the two
