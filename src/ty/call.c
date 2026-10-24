@@ -1662,8 +1662,9 @@ static TyMapper const* infer_type_arguments(
         if (arg->generic_call) {
             // (Skipped in a first inference unless it is resolved already, under another overload's full check: tsc's
             // resolveCallExpression skips under SkipGenericFunctions only when getResolvedSignature has nothing cached,
-            // so `tap(acquireRelease(a, f), g)` infers from it before typing `g` for good)
-            if (skip_generic || ((skip_sensitive || skip_generic_functions) && !ty_call_resolved_return(me, arg->expr->call))) continue;
+            // so `tap(acquireRelease(a, f), g)` infers from it before typing `g` for good; an overload failure's
+            // fallback too: `o.pipe(mergeMap((e: MouseEvent) => m))` failing on its argument still infers its result)
+            if ((skip_generic || skip_sensitive || skip_generic_functions) && !ty_call_resolved_return(me, arg->expr->call)) continue;
             // Checked like in the first pass, but now the calls in it see what the other arguments inferred
             my outer_inference = &self;
             check_arg(me, &shape, args, i);

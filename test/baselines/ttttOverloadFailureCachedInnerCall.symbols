@@ -1,0 +1,77 @@
+//// [test/cases/ttttOverloadFailureCachedInnerCall.ts] ////
+
+=== ttttOverloadFailureCachedInnerCall.ts ===
+// A call failing on its only argument, a call of a generic function returning a function: the fallback signature's
+// inference (tsc's inferSignatureInstantiationForOverloadFailure, under SkipGenericFunctions) still infers from that
+// argument, whose resolved signature getResolvedSignature has cached from the failed check
+interface Subscribable<T> {
+>Subscribable : Symbol(Subscribable, Decl(ttttOverloadFailureCachedInnerCall.ts, 0, 0))
+>T : Symbol(T, Decl(ttttOverloadFailureCachedInnerCall.ts, 3, 23))
+
+  subscribe(next?: (value: T) => void): void;
+>subscribe : Symbol(Subscribable.subscribe, Decl(ttttOverloadFailureCachedInnerCall.ts, 3, 27))
+>next : Symbol(next, Decl(ttttOverloadFailureCachedInnerCall.ts, 4, 12))
+>value : Symbol(value, Decl(ttttOverloadFailureCachedInnerCall.ts, 4, 20))
+>T : Symbol(T, Decl(ttttOverloadFailureCachedInnerCall.ts, 3, 23))
+}
+interface Observable<T> extends Subscribable<T> {
+>Observable : Symbol(Observable, Decl(ttttOverloadFailureCachedInnerCall.ts, 5, 1))
+>T : Symbol(T, Decl(ttttOverloadFailureCachedInnerCall.ts, 6, 21))
+>Subscribable : Symbol(Subscribable, Decl(ttttOverloadFailureCachedInnerCall.ts, 0, 0))
+>T : Symbol(T, Decl(ttttOverloadFailureCachedInnerCall.ts, 6, 21))
+
+  pipe<A>(op1: (s: Observable<T>) => Observable<A>): Observable<A>;
+>pipe : Symbol(Observable.pipe, Decl(ttttOverloadFailureCachedInnerCall.ts, 6, 49))
+>A : Symbol(A, Decl(ttttOverloadFailureCachedInnerCall.ts, 7, 7))
+>op1 : Symbol(op1, Decl(ttttOverloadFailureCachedInnerCall.ts, 7, 10))
+>s : Symbol(s, Decl(ttttOverloadFailureCachedInnerCall.ts, 7, 16))
+>Observable : Symbol(Observable, Decl(ttttOverloadFailureCachedInnerCall.ts, 5, 1))
+>T : Symbol(T, Decl(ttttOverloadFailureCachedInnerCall.ts, 6, 21))
+>Observable : Symbol(Observable, Decl(ttttOverloadFailureCachedInnerCall.ts, 5, 1))
+>A : Symbol(A, Decl(ttttOverloadFailureCachedInnerCall.ts, 7, 7))
+>Observable : Symbol(Observable, Decl(ttttOverloadFailureCachedInnerCall.ts, 5, 1))
+>A : Symbol(A, Decl(ttttOverloadFailureCachedInnerCall.ts, 7, 7))
+}
+declare function mergeMap<T, R>(project: (value: T) => Subscribable<R>): (s: Observable<T>) => Observable<R>;
+>mergeMap : Symbol(mergeMap, Decl(ttttOverloadFailureCachedInnerCall.ts, 8, 1))
+>T : Symbol(T, Decl(ttttOverloadFailureCachedInnerCall.ts, 9, 26))
+>R : Symbol(R, Decl(ttttOverloadFailureCachedInnerCall.ts, 9, 28))
+>project : Symbol(project, Decl(ttttOverloadFailureCachedInnerCall.ts, 9, 32))
+>value : Symbol(value, Decl(ttttOverloadFailureCachedInnerCall.ts, 9, 42))
+>T : Symbol(T, Decl(ttttOverloadFailureCachedInnerCall.ts, 9, 26))
+>Subscribable : Symbol(Subscribable, Decl(ttttOverloadFailureCachedInnerCall.ts, 0, 0))
+>R : Symbol(R, Decl(ttttOverloadFailureCachedInnerCall.ts, 9, 28))
+>s : Symbol(s, Decl(ttttOverloadFailureCachedInnerCall.ts, 9, 74))
+>Observable : Symbol(Observable, Decl(ttttOverloadFailureCachedInnerCall.ts, 5, 1))
+>T : Symbol(T, Decl(ttttOverloadFailureCachedInnerCall.ts, 9, 26))
+>Observable : Symbol(Observable, Decl(ttttOverloadFailureCachedInnerCall.ts, 5, 1))
+>R : Symbol(R, Decl(ttttOverloadFailureCachedInnerCall.ts, 9, 28))
+
+declare const moves: Observable<Event>;
+>moves : Symbol(moves, Decl(ttttOverloadFailureCachedInnerCall.ts, 10, 13))
+>Observable : Symbol(Observable, Decl(ttttOverloadFailureCachedInnerCall.ts, 5, 1))
+>Event : Symbol(Event, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+declare const downs: Observable<unknown>;
+>downs : Symbol(downs, Decl(ttttOverloadFailureCachedInnerCall.ts, 11, 13))
+>Observable : Symbol(Observable, Decl(ttttOverloadFailureCachedInnerCall.ts, 5, 1))
+
+const drag = downs.pipe(mergeMap((md: MouseEvent) => moves));
+>drag : Symbol(drag, Decl(ttttOverloadFailureCachedInnerCall.ts, 12, 5))
+>downs.pipe : Symbol(Observable.pipe, Decl(ttttOverloadFailureCachedInnerCall.ts, 6, 49))
+>downs : Symbol(downs, Decl(ttttOverloadFailureCachedInnerCall.ts, 11, 13))
+>pipe : Symbol(Observable.pipe, Decl(ttttOverloadFailureCachedInnerCall.ts, 6, 49))
+>mergeMap : Symbol(mergeMap, Decl(ttttOverloadFailureCachedInnerCall.ts, 8, 1))
+>md : Symbol(md, Decl(ttttOverloadFailureCachedInnerCall.ts, 12, 34))
+>MouseEvent : Symbol(MouseEvent, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>moves : Symbol(moves, Decl(ttttOverloadFailureCachedInnerCall.ts, 10, 13))
+
+drag.subscribe(e => e.timeStamp);
+>drag.subscribe : Symbol(Subscribable.subscribe, Decl(ttttOverloadFailureCachedInnerCall.ts, 3, 27))
+>drag : Symbol(drag, Decl(ttttOverloadFailureCachedInnerCall.ts, 12, 5))
+>subscribe : Symbol(Subscribable.subscribe, Decl(ttttOverloadFailureCachedInnerCall.ts, 3, 27))
+>e : Symbol(e, Decl(ttttOverloadFailureCachedInnerCall.ts, 13, 15))
+>e.timeStamp : Symbol(Event.timeStamp, Decl(lib.dom.d.ts, --, --))
+>e : Symbol(e, Decl(ttttOverloadFailureCachedInnerCall.ts, 13, 15))
+>timeStamp : Symbol(Event.timeStamp, Decl(lib.dom.d.ts, --, --))
+

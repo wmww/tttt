@@ -1,1021 +1,216 @@
 //// [test/cases/npm__bumblebee032_ng-feedback_TS2345.ts] ////
 
-=== node_modules/@angular/core/core.d.ts ===
+=== npm__bumblebee032_ng-feedback_TS2345.ts ===
+// origin: npm @bumblebee032/ng-feedback@2.0.97 https://github.com/DarrenLouw/feedback tsconfig.bench.json seed 20261109
+// flip: no
+// (cut by hand from rxjs 6.3.3's declarations and feedback-toolbar/feedback-dialog.component.ts: the outer pipe call
+// fails on its argument, whose callback parameter is narrower than the stream's type, and its result type still comes
+// from the inner mergeMap call resolved before: tsc's overload-failure fallback reuses the cached resolved signature)
+interface Unsubscribable { unsubscribe(): void; }
+>Unsubscribable : Symbol(Unsubscribable, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 0, 0))
+>unsubscribe : Symbol(Unsubscribable.unsubscribe, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 5, 26))
 
-export * from './index';
-=== node_modules/@angular/core/index.d.ts ===
+interface NextObserver<T> { closed?: boolean; next: (value: T) => void; error?: (err: any) => void; complete?: () => void; }
+>NextObserver : Symbol(NextObserver, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 5, 49))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 6, 23))
+>closed : Symbol(NextObserver.closed, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 6, 27))
+>next : Symbol(NextObserver.next, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 6, 45))
+>value : Symbol(value, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 6, 53))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 6, 23))
+>error : Symbol(NextObserver.error, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 6, 71))
+>err : Symbol(err, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 6, 81))
+>complete : Symbol(NextObserver.complete, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 6, 99))
 
-export * from './public_api';
-=== node_modules/@angular/core/public_api.d.ts ===
+interface ErrorObserver<T> { closed?: boolean; next?: (value: T) => void; error: (err: any) => void; complete?: () => void; }
+>ErrorObserver : Symbol(ErrorObserver, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 6, 124))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 7, 24))
+>closed : Symbol(ErrorObserver.closed, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 7, 28))
+>next : Symbol(ErrorObserver.next, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 7, 46))
+>value : Symbol(value, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 7, 55))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 7, 24))
+>error : Symbol(ErrorObserver.error, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 7, 73))
+>err : Symbol(err, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 7, 82))
+>complete : Symbol(ErrorObserver.complete, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 7, 100))
 
-export * from './src/core';
-=== node_modules/@angular/core/src/change_detection.d.ts ===
-export { ChangeDetectionStrategy, ChangeDetectorRef, CollectionChangeRecord, DefaultIterableDiffer, IterableChangeRecord, IterableChanges, IterableDiffer, IterableDifferFactory, IterableDiffers, KeyValueChangeRecord, KeyValueChanges, KeyValueDiffer, KeyValueDifferFactory, KeyValueDiffers, NgIterable, PipeTransform, SimpleChange, SimpleChanges, TrackByFunction, WrappedValue } from './change_detection/change_detection';
->ChangeDetectionStrategy : Symbol(ChangeDetectionStrategy, Decl(change_detection.d.ts, 0, 8))
->ChangeDetectorRef : Symbol(ChangeDetectorRef, Decl(change_detection.d.ts, 0, 33))
->CollectionChangeRecord : Symbol(CollectionChangeRecord, Decl(change_detection.d.ts, 0, 52))
->DefaultIterableDiffer : Symbol(DefaultIterableDiffer, Decl(change_detection.d.ts, 0, 76))
->IterableChangeRecord : Symbol(IterableChangeRecord, Decl(change_detection.d.ts, 0, 99))
->IterableChanges : Symbol(IterableChanges, Decl(change_detection.d.ts, 0, 121))
->IterableDiffer : Symbol(IterableDiffer, Decl(change_detection.d.ts, 0, 138))
->IterableDifferFactory : Symbol(IterableDifferFactory, Decl(change_detection.d.ts, 0, 154))
->IterableDiffers : Symbol(IterableDiffers, Decl(change_detection.d.ts, 0, 177))
->KeyValueChangeRecord : Symbol(KeyValueChangeRecord, Decl(change_detection.d.ts, 0, 194))
->KeyValueChanges : Symbol(KeyValueChanges, Decl(change_detection.d.ts, 0, 216))
->KeyValueDiffer : Symbol(KeyValueDiffer, Decl(change_detection.d.ts, 0, 233))
->KeyValueDifferFactory : Symbol(KeyValueDifferFactory, Decl(change_detection.d.ts, 0, 249))
->KeyValueDiffers : Symbol(KeyValueDiffers, Decl(change_detection.d.ts, 0, 272))
->NgIterable : Symbol(NgIterable, Decl(change_detection.d.ts, 0, 289))
->PipeTransform : Symbol(PipeTransform, Decl(change_detection.d.ts, 0, 301))
->SimpleChange : Symbol(SimpleChange, Decl(change_detection.d.ts, 0, 316))
->SimpleChanges : Symbol(SimpleChanges, Decl(change_detection.d.ts, 0, 330))
->TrackByFunction : Symbol(TrackByFunction, Decl(change_detection.d.ts, 0, 345))
->WrappedValue : Symbol(WrappedValue, Decl(change_detection.d.ts, 0, 362))
+type PartialObserver<T> = NextObserver<T> | ErrorObserver<T>;
+>PartialObserver : Symbol(PartialObserver, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 7, 125))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 8, 21))
+>NextObserver : Symbol(NextObserver, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 5, 49))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 8, 21))
+>ErrorObserver : Symbol(ErrorObserver, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 6, 124))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 8, 21))
 
-=== node_modules/@angular/core/src/change_detection/change_detection.d.ts ===
-export { SimpleChanges } from '../metadata/lifecycle_hooks';
->SimpleChanges : Symbol(SimpleChanges, Decl(change_detection.d.ts, 0, 8))
+interface Subscribable<T> {
+>Subscribable : Symbol(Subscribable, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 8, 61))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 9, 23))
 
-export { SimpleChange, WrappedValue, devModeEqual } from './change_detection_util';
->SimpleChange : Symbol(SimpleChange, Decl(change_detection.d.ts, 1, 8))
->WrappedValue : Symbol(WrappedValue, Decl(change_detection.d.ts, 1, 22))
->devModeEqual : Symbol(devModeEqual, Decl(change_detection.d.ts, 1, 36))
+  subscribe(observer?: PartialObserver<T>): Unsubscribable;
+>subscribe : Symbol(Subscribable.subscribe, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 9, 27), Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 10, 59))
+>observer : Symbol(observer, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 10, 12))
+>PartialObserver : Symbol(PartialObserver, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 7, 125))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 9, 23))
+>Unsubscribable : Symbol(Unsubscribable, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 0, 0))
 
-export { ChangeDetectorRef } from './change_detector_ref';
->ChangeDetectorRef : Symbol(ChangeDetectorRef, Decl(change_detection.d.ts, 2, 8))
-
-export { ChangeDetectionStrategy, ChangeDetectorStatus, isDefaultChangeDetectionStrategy } from './constants';
->ChangeDetectionStrategy : Symbol(ChangeDetectionStrategy, Decl(change_detection.d.ts, 3, 8))
->ChangeDetectorStatus : Symbol(ChangeDetectorStatus, Decl(change_detection.d.ts, 3, 33))
->isDefaultChangeDetectionStrategy : Symbol(isDefaultChangeDetectionStrategy, Decl(change_detection.d.ts, 3, 55))
-
-export { DefaultIterableDiffer } from './differs/default_iterable_differ';
->DefaultIterableDiffer : Symbol(DefaultIterableDiffer, Decl(change_detection.d.ts, 4, 8))
-
-export { CollectionChangeRecord, IterableChangeRecord, IterableChanges, IterableDiffer, IterableDifferFactory, IterableDiffers, NgIterable, TrackByFunction } from './differs/iterable_differs';
->CollectionChangeRecord : Symbol(CollectionChangeRecord, Decl(change_detection.d.ts, 5, 8))
->IterableChangeRecord : Symbol(IterableChangeRecord, Decl(change_detection.d.ts, 5, 32))
->IterableChanges : Symbol(IterableChanges, Decl(change_detection.d.ts, 5, 54))
->IterableDiffer : Symbol(IterableDiffer, Decl(change_detection.d.ts, 5, 71))
->IterableDifferFactory : Symbol(IterableDifferFactory, Decl(change_detection.d.ts, 5, 87))
->IterableDiffers : Symbol(IterableDiffers, Decl(change_detection.d.ts, 5, 110))
->NgIterable : Symbol(NgIterable, Decl(change_detection.d.ts, 5, 127))
->TrackByFunction : Symbol(TrackByFunction, Decl(change_detection.d.ts, 5, 139))
-
-export { KeyValueChangeRecord, KeyValueChanges, KeyValueDiffer, KeyValueDifferFactory, KeyValueDiffers } from './differs/keyvalue_differs';
->KeyValueChangeRecord : Symbol(KeyValueChangeRecord, Decl(change_detection.d.ts, 6, 8))
->KeyValueChanges : Symbol(KeyValueChanges, Decl(change_detection.d.ts, 6, 30))
->KeyValueDiffer : Symbol(KeyValueDiffer, Decl(change_detection.d.ts, 6, 47))
->KeyValueDifferFactory : Symbol(KeyValueDifferFactory, Decl(change_detection.d.ts, 6, 63))
->KeyValueDiffers : Symbol(KeyValueDiffers, Decl(change_detection.d.ts, 6, 86))
-
-export { PipeTransform } from './pipe_transform';
->PipeTransform : Symbol(PipeTransform, Decl(change_detection.d.ts, 7, 8))
-
-=== node_modules/@angular/core/src/change_detection/change_detection_util.d.ts ===
-export declare function devModeEqual(a: any, b: any): boolean;
->devModeEqual : Symbol(devModeEqual, Decl(change_detection_util.d.ts, 0, 0))
->a : Symbol(a, Decl(change_detection_util.d.ts, 0, 37))
->b : Symbol(b, Decl(change_detection_util.d.ts, 0, 44))
-
-/**
- */
-export declare class WrappedValue {
->WrappedValue : Symbol(WrappedValue, Decl(change_detection_util.d.ts, 0, 62))
+  subscribe(next?: (value: T) => void, error?: (error: any) => void, complete?: () => void): Unsubscribable;
+>subscribe : Symbol(Subscribable.subscribe, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 9, 27), Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 10, 59))
+>next : Symbol(next, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 11, 12))
+>value : Symbol(value, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 11, 20))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 9, 23))
+>error : Symbol(error, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 11, 38))
+>error : Symbol(error, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 11, 48))
+>complete : Symbol(complete, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 11, 68))
+>Unsubscribable : Symbol(Unsubscribable, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 0, 0))
 }
-/**
- */
-export declare class SimpleChange {
->SimpleChange : Symbol(SimpleChange, Decl(change_detection_util.d.ts, 4, 1))
-}
-=== node_modules/@angular/core/src/change_detection/change_detector_ref.d.ts ===
-/**
- */
-export declare abstract class ChangeDetectorRef {
->ChangeDetectorRef : Symbol(ChangeDetectorRef, Decl(change_detector_ref.d.ts, 0, 0))
-
-    /**
-     */
-}
-=== node_modules/@angular/core/src/change_detection/constants.d.ts ===
-export declare enum ChangeDetectionStrategy {
->ChangeDetectionStrategy : Symbol(ChangeDetectionStrategy, Decl(constants.d.ts, 0, 0))
-
-    /**
-     */
-}
-export declare enum ChangeDetectorStatus {
->ChangeDetectorStatus : Symbol(ChangeDetectorStatus, Decl(constants.d.ts, 3, 1))
-
-    /**
-     */
-}
-export declare function isDefaultChangeDetectionStrategy(changeDetectionStrategy: ChangeDetectionStrategy): boolean;
->isDefaultChangeDetectionStrategy : Symbol(isDefaultChangeDetectionStrategy, Decl(constants.d.ts, 7, 1))
->changeDetectionStrategy : Symbol(changeDetectionStrategy, Decl(constants.d.ts, 8, 57))
->ChangeDetectionStrategy : Symbol(ChangeDetectionStrategy, Decl(constants.d.ts, 0, 0))
-
-=== node_modules/@angular/core/src/change_detection/differs/default_iterable_differ.d.ts ===
-import { IterableChangeRecord, IterableChanges, IterableDiffer, IterableDifferFactory, NgIterable, TrackByFunction } from './iterable_differs';
->IterableChangeRecord : Symbol(IterableChangeRecord, Decl(default_iterable_differ.d.ts, 0, 8))
->IterableChanges : Symbol(IterableChanges, Decl(default_iterable_differ.d.ts, 0, 30))
->IterableDiffer : Symbol(IterableDiffer, Decl(default_iterable_differ.d.ts, 0, 47))
->IterableDifferFactory : Symbol(IterableDifferFactory, Decl(default_iterable_differ.d.ts, 0, 63))
->NgIterable : Symbol(NgIterable, Decl(default_iterable_differ.d.ts, 0, 86))
->TrackByFunction : Symbol(TrackByFunction, Decl(default_iterable_differ.d.ts, 0, 98))
-
-/**
- */
-export declare class DefaultIterableDiffer<V> implements IterableDiffer<V>, IterableChanges<V> {
->DefaultIterableDiffer : Symbol(DefaultIterableDiffer, Decl(default_iterable_differ.d.ts, 0, 143))
->V : Symbol(V, Decl(default_iterable_differ.d.ts, 3, 43))
->IterableDiffer : Symbol(IterableDiffer, Decl(default_iterable_differ.d.ts, 0, 47))
->V : Symbol(V, Decl(default_iterable_differ.d.ts, 3, 43))
->IterableChanges : Symbol(IterableChanges, Decl(default_iterable_differ.d.ts, 0, 30))
->V : Symbol(V, Decl(default_iterable_differ.d.ts, 3, 43))
-}
-=== node_modules/@angular/core/src/change_detection/differs/iterable_differs.d.ts ===
-export declare type NgIterable<T> = Array<T> | Iterable<T>;
->NgIterable : Symbol(NgIterable, Decl(iterable_differs.d.ts, 0, 0))
->T : Symbol(T, Decl(iterable_differs.d.ts, 0, 31))
->Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 1 more)
->T : Symbol(T, Decl(iterable_differs.d.ts, 0, 31))
->Iterable : Symbol(Iterable, Decl(lib.es2015.iterable.d.ts, --, --))
->T : Symbol(T, Decl(iterable_differs.d.ts, 0, 31))
-
-/**
- */
-export interface IterableDiffer<V> {
->IterableDiffer : Symbol(IterableDiffer, Decl(iterable_differs.d.ts, 0, 59))
->V : Symbol(V, Decl(iterable_differs.d.ts, 3, 32))
-}
-/**
- */
-export interface IterableChanges<V> {
->IterableChanges : Symbol(IterableChanges, Decl(iterable_differs.d.ts, 4, 1))
->V : Symbol(V, Decl(iterable_differs.d.ts, 7, 33))
-}
-/**
- */
-export interface IterableChangeRecord<V> {
->IterableChangeRecord : Symbol(IterableChangeRecord, Decl(iterable_differs.d.ts, 8, 1))
->V : Symbol(V, Decl(iterable_differs.d.ts, 11, 38))
-}
-/**
- */
-export interface CollectionChangeRecord<V> extends IterableChangeRecord<V> {
->CollectionChangeRecord : Symbol(CollectionChangeRecord, Decl(iterable_differs.d.ts, 12, 1))
->V : Symbol(V, Decl(iterable_differs.d.ts, 15, 40))
->IterableChangeRecord : Symbol(IterableChangeRecord, Decl(iterable_differs.d.ts, 8, 1))
->V : Symbol(V, Decl(iterable_differs.d.ts, 15, 40))
-}
-/**
- */
-export interface TrackByFunction<T> {
->TrackByFunction : Symbol(TrackByFunction, Decl(iterable_differs.d.ts, 16, 1))
->T : Symbol(T, Decl(iterable_differs.d.ts, 19, 33))
-}
-/**
- */
-export interface IterableDifferFactory {
->IterableDifferFactory : Symbol(IterableDifferFactory, Decl(iterable_differs.d.ts, 20, 1))
-}
-/**
- */
-export declare class IterableDiffers {
->IterableDiffers : Symbol(IterableDiffers, Decl(iterable_differs.d.ts, 24, 1))
-}
-=== node_modules/@angular/core/src/change_detection/differs/keyvalue_differs.d.ts ===
-/**
- */
-export interface KeyValueDiffer<K, V> {
->KeyValueDiffer : Symbol(KeyValueDiffer, Decl(keyvalue_differs.d.ts, 0, 0))
->K : Symbol(K, Decl(keyvalue_differs.d.ts, 2, 32))
->V : Symbol(V, Decl(keyvalue_differs.d.ts, 2, 34))
-
-    /**
-     */
-}
-/**
- */
-export interface KeyValueChanges<K, V> {
->KeyValueChanges : Symbol(KeyValueChanges, Decl(keyvalue_differs.d.ts, 5, 1))
->K : Symbol(K, Decl(keyvalue_differs.d.ts, 8, 33))
->V : Symbol(V, Decl(keyvalue_differs.d.ts, 8, 35))
-
-    /**
-     */
-}
-/**
- */
-export interface KeyValueChangeRecord<K, V> {
->KeyValueChangeRecord : Symbol(KeyValueChangeRecord, Decl(keyvalue_differs.d.ts, 11, 1))
->K : Symbol(K, Decl(keyvalue_differs.d.ts, 14, 38))
->V : Symbol(V, Decl(keyvalue_differs.d.ts, 14, 40))
-}
-/**
- */
-export interface KeyValueDifferFactory {
->KeyValueDifferFactory : Symbol(KeyValueDifferFactory, Decl(keyvalue_differs.d.ts, 15, 1))
-
-    /**
-     */
-}
-/**
- */
-export declare class KeyValueDiffers {
->KeyValueDiffers : Symbol(KeyValueDiffers, Decl(keyvalue_differs.d.ts, 21, 1))
-
-    /**
-     */
-}
-=== node_modules/@angular/core/src/change_detection/pipe_transform.d.ts ===
-export interface PipeTransform {
->PipeTransform : Symbol(PipeTransform, Decl(pipe_transform.d.ts, 0, 0))
-}
-=== node_modules/@angular/core/src/core.d.ts ===
-
-/**
- */
-export * from './metadata';
-export * from './render';
-export * from './linker';
-export * from './change_detection';
-=== node_modules/@angular/core/src/di/injection_token.d.ts ===
-export declare class InjectionToken<T> {
->InjectionToken : Symbol(InjectionToken, Decl(injection_token.d.ts, 0, 0))
->T : Symbol(T, Decl(injection_token.d.ts, 0, 36))
-}
-=== node_modules/@angular/core/src/linker.d.ts ===
-export { ElementRef } from './linker/element_ref';
->ElementRef : Symbol(ElementRef, Decl(linker.d.ts, 0, 8))
-
-=== node_modules/@angular/core/src/linker/element_ref.d.ts ===
-/**
- */
-export declare class ElementRef<T = any> {
->ElementRef : Symbol(ElementRef, Decl(element_ref.d.ts, 0, 0))
->T : Symbol(T, Decl(element_ref.d.ts, 2, 32))
-
-    /**
-     */
-}
-=== node_modules/@angular/core/src/metadata.d.ts ===
-export { ANALYZE_FOR_ENTRY_COMPONENTS, Attribute, ContentChild, ContentChildDecorator, ContentChildren, ContentChildrenDecorator, Query, ViewChild, ViewChildDecorator, ViewChildren, ViewChildrenDecorator } from './metadata/di';
->ANALYZE_FOR_ENTRY_COMPONENTS : Symbol(ANALYZE_FOR_ENTRY_COMPONENTS, Decl(metadata.d.ts, 0, 8))
->Attribute : Symbol(Attribute, Decl(metadata.d.ts, 0, 38))
->ContentChild : Symbol(ContentChild, Decl(metadata.d.ts, 0, 49))
->ContentChildDecorator : Symbol(ContentChildDecorator, Decl(metadata.d.ts, 0, 63))
->ContentChildren : Symbol(ContentChildren, Decl(metadata.d.ts, 0, 86))
->ContentChildrenDecorator : Symbol(ContentChildrenDecorator, Decl(metadata.d.ts, 0, 103))
->Query : Symbol(Query, Decl(metadata.d.ts, 0, 129))
->ViewChild : Symbol(ViewChild, Decl(metadata.d.ts, 0, 136))
->ViewChildDecorator : Symbol(ViewChildDecorator, Decl(metadata.d.ts, 0, 147))
->ViewChildren : Symbol(ViewChildren, Decl(metadata.d.ts, 0, 167))
->ViewChildrenDecorator : Symbol(ViewChildrenDecorator, Decl(metadata.d.ts, 0, 181))
-
-export { Component, ComponentDecorator, Directive, DirectiveDecorator, HostBinding, HostListener, Input, Output, Pipe } from './metadata/directives';
->Component : Symbol(Component, Decl(metadata.d.ts, 1, 8))
->ComponentDecorator : Symbol(ComponentDecorator, Decl(metadata.d.ts, 1, 19))
->Directive : Symbol(Directive, Decl(metadata.d.ts, 1, 39))
->DirectiveDecorator : Symbol(DirectiveDecorator, Decl(metadata.d.ts, 1, 50))
->HostBinding : Symbol(HostBinding, Decl(metadata.d.ts, 1, 70))
->HostListener : Symbol(HostListener, Decl(metadata.d.ts, 1, 83))
->Input : Symbol(Input, Decl(metadata.d.ts, 1, 97))
->Output : Symbol(Output, Decl(metadata.d.ts, 1, 104))
->Pipe : Symbol(Pipe, Decl(metadata.d.ts, 1, 112))
-
-export { AfterContentChecked, AfterContentInit, AfterViewChecked, AfterViewInit, DoCheck, OnChanges, OnDestroy, OnInit } from './metadata/lifecycle_hooks';
->AfterContentChecked : Symbol(AfterContentChecked, Decl(metadata.d.ts, 2, 8))
->AfterContentInit : Symbol(AfterContentInit, Decl(metadata.d.ts, 2, 29))
->AfterViewChecked : Symbol(AfterViewChecked, Decl(metadata.d.ts, 2, 47))
->AfterViewInit : Symbol(AfterViewInit, Decl(metadata.d.ts, 2, 65))
->DoCheck : Symbol(DoCheck, Decl(metadata.d.ts, 2, 80))
->OnChanges : Symbol(OnChanges, Decl(metadata.d.ts, 2, 89))
->OnDestroy : Symbol(OnDestroy, Decl(metadata.d.ts, 2, 100))
->OnInit : Symbol(OnInit, Decl(metadata.d.ts, 2, 111))
-
-=== node_modules/@angular/core/src/metadata/di.d.ts ===
-/**
- */
-import { InjectionToken } from '../di/injection_token';
->InjectionToken : Symbol(InjectionToken, Decl(di.d.ts, 2, 8))
-
-/**
- */
-export declare const ANALYZE_FOR_ENTRY_COMPONENTS: InjectionToken<any>;
->ANALYZE_FOR_ENTRY_COMPONENTS : Symbol(ANALYZE_FOR_ENTRY_COMPONENTS, Decl(di.d.ts, 5, 20))
->InjectionToken : Symbol(InjectionToken, Decl(di.d.ts, 2, 8))
-
-/**
- */
-export interface Attribute {
->Attribute : Symbol(Attribute, Decl(di.d.ts, 5, 71))
-}
-/**
- */
-export declare abstract class Query {
->Query : Symbol(Query, Decl(di.d.ts, 9, 1))
-}
-/**
- */
-export interface ContentChildrenDecorator {
->ContentChildrenDecorator : Symbol(ContentChildrenDecorator, Decl(di.d.ts, 13, 1))
-
-    /**
-     */
-}
-/**
- */
-export declare const ContentChildren: ContentChildrenDecorator;
->ContentChildren : Symbol(ContentChildren, Decl(di.d.ts, 22, 20))
->ContentChildrenDecorator : Symbol(ContentChildrenDecorator, Decl(di.d.ts, 13, 1))
-
-/**
- */
-export interface ContentChildDecorator {
->ContentChildDecorator : Symbol(ContentChildDecorator, Decl(di.d.ts, 22, 63))
-
-    /**
-     */
-}
-/**
- */
-export declare const ContentChild: ContentChildDecorator;
->ContentChild : Symbol(ContentChild, Decl(di.d.ts, 31, 20))
->ContentChildDecorator : Symbol(ContentChildDecorator, Decl(di.d.ts, 22, 63))
-
-/**
- */
-export interface ViewChildrenDecorator {
->ViewChildrenDecorator : Symbol(ViewChildrenDecorator, Decl(di.d.ts, 31, 57))
-
-    /**
-     */
-}
-/**
- */
-export declare type ViewChildren = Query;
->ViewChildren : Symbol(ViewChildren, Decl(di.d.ts, 37, 1))
->Query : Symbol(Query, Decl(di.d.ts, 9, 1))
-
-/**
- */
-export interface ViewChildDecorator {
->ViewChildDecorator : Symbol(ViewChildDecorator, Decl(di.d.ts, 40, 41))
-
-    /**
-     */
-}
-/**
- */
-export declare const ViewChild: ViewChildDecorator;
->ViewChild : Symbol(ViewChild, Decl(di.d.ts, 49, 20))
->ViewChildDecorator : Symbol(ViewChildDecorator, Decl(di.d.ts, 40, 41))
-
-=== node_modules/@angular/core/src/metadata/directives.d.ts ===
-/**
- */
-export interface DirectiveDecorator {
->DirectiveDecorator : Symbol(DirectiveDecorator, Decl(directives.d.ts, 0, 0))
-
-    /**
-     */
-}
-/**
- */
-export declare const Directive: DirectiveDecorator;
->Directive : Symbol(Directive, Decl(directives.d.ts, 8, 20))
->DirectiveDecorator : Symbol(DirectiveDecorator, Decl(directives.d.ts, 0, 0))
-
-export interface ComponentDecorator {
->ComponentDecorator : Symbol(ComponentDecorator, Decl(directives.d.ts, 8, 51))
-
-    /**
-     */
-}
-/**
- */
-export declare const Component: ComponentDecorator;
->Component : Symbol(Component, Decl(directives.d.ts, 15, 20))
->ComponentDecorator : Symbol(ComponentDecorator, Decl(directives.d.ts, 8, 51))
-
-/**
- */
-export interface Pipe {
->Pipe : Symbol(Pipe, Decl(directives.d.ts, 15, 51))
-
-    /**
-     */
-}
-/**
- */
-export interface InputDecorator {
->InputDecorator : Symbol(InputDecorator, Decl(directives.d.ts, 21, 1))
-
-    /**
-     */
-}
-/**
- */
-export declare const Input: InputDecorator;
->Input : Symbol(Input, Decl(directives.d.ts, 30, 20))
->InputDecorator : Symbol(InputDecorator, Decl(directives.d.ts, 21, 1))
-
-/**
- */
-export interface OutputDecorator {
->OutputDecorator : Symbol(OutputDecorator, Decl(directives.d.ts, 30, 43))
-
-    /**
-    */
-}
-/**
- */
-export declare const Output: OutputDecorator;
->Output : Symbol(Output, Decl(directives.d.ts, 39, 20))
->OutputDecorator : Symbol(OutputDecorator, Decl(directives.d.ts, 30, 43))
-
-/**
- */
-export interface HostBindingDecorator {
->HostBindingDecorator : Symbol(HostBindingDecorator, Decl(directives.d.ts, 39, 45))
-
-    /**
-     */
-}
-export declare const HostBinding: HostBindingDecorator;
->HostBinding : Symbol(HostBinding, Decl(directives.d.ts, 46, 20))
->HostBindingDecorator : Symbol(HostBindingDecorator, Decl(directives.d.ts, 39, 45))
-
-/**
- */
-export interface HostListenerDecorator {
->HostListenerDecorator : Symbol(HostListenerDecorator, Decl(directives.d.ts, 46, 55))
-}
-/**
- */
-export declare const HostListener: HostListenerDecorator;
->HostListener : Symbol(HostListener, Decl(directives.d.ts, 53, 20))
->HostListenerDecorator : Symbol(HostListenerDecorator, Decl(directives.d.ts, 46, 55))
-
-=== node_modules/@angular/core/src/metadata/lifecycle_hooks.d.ts ===
-/**
- */
-export interface SimpleChanges {
->SimpleChanges : Symbol(SimpleChanges, Decl(lifecycle_hooks.d.ts, 0, 0))
-}
-/**
- */
-export interface OnChanges {
->OnChanges : Symbol(OnChanges, Decl(lifecycle_hooks.d.ts, 3, 1))
-}
-/**
- */
-export interface OnInit {
->OnInit : Symbol(OnInit, Decl(lifecycle_hooks.d.ts, 7, 1))
-
-    /**
-     */
-}
-/**
- */
-export interface DoCheck {
->DoCheck : Symbol(DoCheck, Decl(lifecycle_hooks.d.ts, 13, 1))
-
-    /**
-       */
-}
-/**
- */
-export interface OnDestroy {
->OnDestroy : Symbol(OnDestroy, Decl(lifecycle_hooks.d.ts, 19, 1))
-
-    /**
-     */
-}
-/**
- */
-export interface AfterContentInit {
->AfterContentInit : Symbol(AfterContentInit, Decl(lifecycle_hooks.d.ts, 25, 1))
-
-    /**
-     */
-}
-/**
- */
-export interface AfterContentChecked {
->AfterContentChecked : Symbol(AfterContentChecked, Decl(lifecycle_hooks.d.ts, 31, 1))
-
-    /**
-     */
-}
-/**
- */
-export interface AfterViewInit {
->AfterViewInit : Symbol(AfterViewInit, Decl(lifecycle_hooks.d.ts, 37, 1))
-
-    /**
-     */
-}
-/**
- */
-export interface AfterViewChecked {
->AfterViewChecked : Symbol(AfterViewChecked, Decl(lifecycle_hooks.d.ts, 43, 1))
-
-    /**
-     */
-}
-=== node_modules/@angular/core/src/render.d.ts ===
-export { RenderComponentType, Renderer, Renderer2, RendererFactory2, RendererStyleFlags2, RendererType2, RootRenderer } from './render/api';
->RenderComponentType : Symbol(RenderComponentType, Decl(render.d.ts, 0, 8))
->Renderer : Symbol(Renderer, Decl(render.d.ts, 0, 29))
->Renderer2 : Symbol(Renderer2, Decl(render.d.ts, 0, 39))
->RendererFactory2 : Symbol(RendererFactory2, Decl(render.d.ts, 0, 50))
->RendererStyleFlags2 : Symbol(RendererStyleFlags2, Decl(render.d.ts, 0, 68))
->RendererType2 : Symbol(RendererType2, Decl(render.d.ts, 0, 89))
->RootRenderer : Symbol(RootRenderer, Decl(render.d.ts, 0, 104))
-
-=== node_modules/@angular/core/src/render/api.d.ts ===
-export declare class RenderComponentType {
->RenderComponentType : Symbol(RenderComponentType, Decl(api.d.ts, 0, 0))
-}
-export declare abstract class Renderer {
->Renderer : Symbol(Renderer, Decl(api.d.ts, 1, 1))
-}
-export declare abstract class RootRenderer {
->RootRenderer : Symbol(RootRenderer, Decl(api.d.ts, 3, 1))
-}
-export interface RendererType2 {
->RendererType2 : Symbol(RendererType2, Decl(api.d.ts, 5, 1))
-
-    /**
-     */
-}
-export declare abstract class RendererFactory2 {
->RendererFactory2 : Symbol(RendererFactory2, Decl(api.d.ts, 9, 1))
-}
-export declare enum RendererStyleFlags2 {
->RendererStyleFlags2 : Symbol(RendererStyleFlags2, Decl(api.d.ts, 11, 1))
-}
-export declare abstract class Renderer2 {
->Renderer2 : Symbol(Renderer2, Decl(api.d.ts, 13, 1))
-
-    /**
-     */
-}
-=== node_modules/rxjs/index.d.ts ===
-export { Observable } from './internal/Observable';
->Observable : Symbol(Observable, Decl(index.d.ts, 0, 8))
-
-export { Subscription } from './internal/Subscription';
->Subscription : Symbol(Subscription, Decl(index.d.ts, 1, 8))
-
-export { from } from './internal/observable/from';
->from : Symbol(from, Decl(index.d.ts, 2, 8))
-
-export { fromEvent } from './internal/observable/fromEvent';
->fromEvent : Symbol(fromEvent, Decl(index.d.ts, 3, 8))
-
-=== node_modules/rxjs/internal/Observable.d.ts ===
-import { Subscription } from './Subscription';
->Subscription : Symbol(Subscription, Decl(Observable.d.ts, 0, 8))
-
-import { TeardownLogic, OperatorFunction, PartialObserver, Subscribable } from './types';
->TeardownLogic : Symbol(TeardownLogic, Decl(Observable.d.ts, 1, 8))
->OperatorFunction : Symbol(OperatorFunction, Decl(Observable.d.ts, 1, 23))
->PartialObserver : Symbol(PartialObserver, Decl(Observable.d.ts, 1, 41))
->Subscribable : Symbol(Subscribable, Decl(Observable.d.ts, 1, 58))
-
-/**
- */
-export declare class Observable<T> implements Subscribable<T> {
->Observable : Symbol(Observable, Decl(Observable.d.ts, 1, 89))
->T : Symbol(T, Decl(Observable.d.ts, 4, 32))
->Subscribable : Symbol(Subscribable, Decl(Observable.d.ts, 1, 58))
->T : Symbol(T, Decl(Observable.d.ts, 4, 32))
-
-    /**
-     */
-    subscribe(next?: (value: T) => void, error?: (error: any) => void, complete?: () => void): Subscription;
->subscribe : Symbol(Observable.subscribe, Decl(Observable.d.ts, 4, 63))
->next : Symbol(next, Decl(Observable.d.ts, 7, 14))
->value : Symbol(value, Decl(Observable.d.ts, 7, 22))
->T : Symbol(T, Decl(Observable.d.ts, 4, 32))
->error : Symbol(error, Decl(Observable.d.ts, 7, 40))
->error : Symbol(error, Decl(Observable.d.ts, 7, 50))
->complete : Symbol(complete, Decl(Observable.d.ts, 7, 70))
->Subscription : Symbol(Subscription, Decl(Observable.d.ts, 0, 8))
-
-    /**
-     */
-    pipe<A>(op1: OperatorFunction<T, A>): Observable<A>;
->pipe : Symbol(Observable.pipe, Decl(Observable.d.ts, 7, 108), Decl(Observable.d.ts, 10, 56))
->A : Symbol(A, Decl(Observable.d.ts, 10, 9))
->op1 : Symbol(op1, Decl(Observable.d.ts, 10, 12))
->OperatorFunction : Symbol(OperatorFunction, Decl(Observable.d.ts, 1, 23))
->T : Symbol(T, Decl(Observable.d.ts, 4, 32))
->A : Symbol(A, Decl(Observable.d.ts, 10, 9))
->Observable : Symbol(Observable, Decl(Observable.d.ts, 1, 89))
->A : Symbol(A, Decl(Observable.d.ts, 10, 9))
-
-    pipe<A, B>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>): Observable<B>;
->pipe : Symbol(Observable.pipe, Decl(Observable.d.ts, 7, 108), Decl(Observable.d.ts, 10, 56))
->A : Symbol(A, Decl(Observable.d.ts, 11, 9))
->B : Symbol(B, Decl(Observable.d.ts, 11, 11))
->op1 : Symbol(op1, Decl(Observable.d.ts, 11, 15))
->OperatorFunction : Symbol(OperatorFunction, Decl(Observable.d.ts, 1, 23))
->T : Symbol(T, Decl(Observable.d.ts, 4, 32))
->A : Symbol(A, Decl(Observable.d.ts, 11, 9))
->op2 : Symbol(op2, Decl(Observable.d.ts, 11, 43))
->OperatorFunction : Symbol(OperatorFunction, Decl(Observable.d.ts, 1, 23))
->A : Symbol(A, Decl(Observable.d.ts, 11, 9))
->B : Symbol(B, Decl(Observable.d.ts, 11, 11))
->Observable : Symbol(Observable, Decl(Observable.d.ts, 1, 89))
->B : Symbol(B, Decl(Observable.d.ts, 11, 11))
-}
-=== node_modules/rxjs/internal/Subscription.d.ts ===
-import { SubscriptionLike, TeardownLogic } from './types';
->SubscriptionLike : Symbol(SubscriptionLike, Decl(Subscription.d.ts, 0, 8))
->TeardownLogic : Symbol(TeardownLogic, Decl(Subscription.d.ts, 0, 26))
-
-/**
- */
-export declare class Subscription implements SubscriptionLike {
->Subscription : Symbol(Subscription, Decl(Subscription.d.ts, 0, 58))
->SubscriptionLike : Symbol(SubscriptionLike, Decl(Subscription.d.ts, 0, 8))
-}
-=== node_modules/rxjs/internal/observable/from.d.ts ===
-import { Observable } from '../Observable';
->Observable : Symbol(Observable, Decl(from.d.ts, 0, 8))
-
-import { ObservableInput, SchedulerLike } from '../types';
->ObservableInput : Symbol(ObservableInput, Decl(from.d.ts, 1, 8))
->SchedulerLike : Symbol(SchedulerLike, Decl(from.d.ts, 1, 25))
-
-export declare function from<T>(input: ObservableInput<ObservableInput<T>>, scheduler?: SchedulerLike): Observable<Observable<T>>;
->from : Symbol(from, Decl(from.d.ts, 1, 58))
->T : Symbol(T, Decl(from.d.ts, 2, 29))
->input : Symbol(input, Decl(from.d.ts, 2, 32))
->ObservableInput : Symbol(ObservableInput, Decl(from.d.ts, 1, 8))
->ObservableInput : Symbol(ObservableInput, Decl(from.d.ts, 1, 8))
->T : Symbol(T, Decl(from.d.ts, 2, 29))
->scheduler : Symbol(scheduler, Decl(from.d.ts, 2, 75))
->SchedulerLike : Symbol(SchedulerLike, Decl(from.d.ts, 1, 25))
->Observable : Symbol(Observable, Decl(from.d.ts, 0, 8))
->Observable : Symbol(Observable, Decl(from.d.ts, 0, 8))
->T : Symbol(T, Decl(from.d.ts, 2, 29))
-
-=== node_modules/rxjs/internal/observable/fromEvent.d.ts ===
-import { Observable } from '../Observable';
->Observable : Symbol(Observable, Decl(fromEvent.d.ts, 0, 8))
-
-export interface NodeStyleEventEmitter {
->NodeStyleEventEmitter : Symbol(NodeStyleEventEmitter, Decl(fromEvent.d.ts, 0, 43))
-}
-export interface NodeCompatibleEventEmitter {
->NodeCompatibleEventEmitter : Symbol(NodeCompatibleEventEmitter, Decl(fromEvent.d.ts, 2, 1))
-}
-export interface JQueryStyleEventEmitter {
->JQueryStyleEventEmitter : Symbol(JQueryStyleEventEmitter, Decl(fromEvent.d.ts, 4, 1))
-}
-export interface HasEventTargetAddRemove<E> {
->HasEventTargetAddRemove : Symbol(HasEventTargetAddRemove, Decl(fromEvent.d.ts, 6, 1))
->E : Symbol(E, Decl(fromEvent.d.ts, 7, 41))
-}
-export declare type EventTargetLike<T> = HasEventTargetAddRemove<T> | NodeStyleEventEmitter | NodeCompatibleEventEmitter | JQueryStyleEventEmitter;
->EventTargetLike : Symbol(EventTargetLike, Decl(fromEvent.d.ts, 8, 1))
->T : Symbol(T, Decl(fromEvent.d.ts, 9, 36))
->HasEventTargetAddRemove : Symbol(HasEventTargetAddRemove, Decl(fromEvent.d.ts, 6, 1))
->T : Symbol(T, Decl(fromEvent.d.ts, 9, 36))
->NodeStyleEventEmitter : Symbol(NodeStyleEventEmitter, Decl(fromEvent.d.ts, 0, 43))
->NodeCompatibleEventEmitter : Symbol(NodeCompatibleEventEmitter, Decl(fromEvent.d.ts, 2, 1))
->JQueryStyleEventEmitter : Symbol(JQueryStyleEventEmitter, Decl(fromEvent.d.ts, 4, 1))
-
-export declare type FromEventTarget<T> = EventTargetLike<T> | ArrayLike<EventTargetLike<T>>;
->FromEventTarget : Symbol(FromEventTarget, Decl(fromEvent.d.ts, 9, 147))
->T : Symbol(T, Decl(fromEvent.d.ts, 10, 36))
->EventTargetLike : Symbol(EventTargetLike, Decl(fromEvent.d.ts, 8, 1))
->T : Symbol(T, Decl(fromEvent.d.ts, 10, 36))
->ArrayLike : Symbol(ArrayLike, Decl(lib.es5.d.ts, --, --))
->EventTargetLike : Symbol(EventTargetLike, Decl(fromEvent.d.ts, 8, 1))
->T : Symbol(T, Decl(fromEvent.d.ts, 10, 36))
-
-export declare function fromEvent<T>(target: FromEventTarget<T>, eventName: string): Observable<T>;
->fromEvent : Symbol(fromEvent, Decl(fromEvent.d.ts, 10, 92))
->T : Symbol(T, Decl(fromEvent.d.ts, 11, 34))
->target : Symbol(target, Decl(fromEvent.d.ts, 11, 37))
->FromEventTarget : Symbol(FromEventTarget, Decl(fromEvent.d.ts, 9, 147))
->T : Symbol(T, Decl(fromEvent.d.ts, 11, 34))
->eventName : Symbol(eventName, Decl(fromEvent.d.ts, 11, 64))
->Observable : Symbol(Observable, Decl(fromEvent.d.ts, 0, 8))
->T : Symbol(T, Decl(fromEvent.d.ts, 11, 34))
-
-=== node_modules/rxjs/internal/operators/filter.d.ts ===
-import { OperatorFunction, MonoTypeOperatorFunction } from '../types';
->OperatorFunction : Symbol(OperatorFunction, Decl(filter.d.ts, 0, 8))
->MonoTypeOperatorFunction : Symbol(MonoTypeOperatorFunction, Decl(filter.d.ts, 0, 26))
-
-export declare function filter<T, S extends T>(predicate: (value: T, index: number) => value is S, thisArg?: any): OperatorFunction<T, S>;
->filter : Symbol(filter, Decl(filter.d.ts, 0, 70))
->T : Symbol(T, Decl(filter.d.ts, 1, 31))
->S : Symbol(S, Decl(filter.d.ts, 1, 33))
->T : Symbol(T, Decl(filter.d.ts, 1, 31))
->predicate : Symbol(predicate, Decl(filter.d.ts, 1, 47))
->value : Symbol(value, Decl(filter.d.ts, 1, 59))
->T : Symbol(T, Decl(filter.d.ts, 1, 31))
->index : Symbol(index, Decl(filter.d.ts, 1, 68))
->value : Symbol(value, Decl(filter.d.ts, 1, 59))
->S : Symbol(S, Decl(filter.d.ts, 1, 33))
->thisArg : Symbol(thisArg, Decl(filter.d.ts, 1, 98))
->OperatorFunction : Symbol(OperatorFunction, Decl(filter.d.ts, 0, 8))
->T : Symbol(T, Decl(filter.d.ts, 1, 31))
->S : Symbol(S, Decl(filter.d.ts, 1, 33))
-
-=== node_modules/rxjs/internal/operators/finalize.d.ts ===
-import { MonoTypeOperatorFunction } from '../types';
->MonoTypeOperatorFunction : Symbol(MonoTypeOperatorFunction, Decl(finalize.d.ts, 0, 8))
-
-/**
- */
-export declare function finalize<T>(callback: () => void): MonoTypeOperatorFunction<T>;
->finalize : Symbol(finalize, Decl(finalize.d.ts, 0, 52))
->T : Symbol(T, Decl(finalize.d.ts, 3, 33))
->callback : Symbol(callback, Decl(finalize.d.ts, 3, 36))
->MonoTypeOperatorFunction : Symbol(MonoTypeOperatorFunction, Decl(finalize.d.ts, 0, 8))
->T : Symbol(T, Decl(finalize.d.ts, 3, 33))
-
-=== node_modules/rxjs/internal/operators/first.d.ts ===
-import { OperatorFunction } from '../../internal/types';
->OperatorFunction : Symbol(OperatorFunction, Decl(first.d.ts, 0, 8))
-
-export declare function first<T, D = T>(predicate?: null, defaultValue?: D): OperatorFunction<T, T | D>;
->first : Symbol(first, Decl(first.d.ts, 0, 56))
->T : Symbol(T, Decl(first.d.ts, 1, 30))
->D : Symbol(D, Decl(first.d.ts, 1, 32))
->T : Symbol(T, Decl(first.d.ts, 1, 30))
->predicate : Symbol(predicate, Decl(first.d.ts, 1, 40))
->defaultValue : Symbol(defaultValue, Decl(first.d.ts, 1, 57))
->D : Symbol(D, Decl(first.d.ts, 1, 32))
->OperatorFunction : Symbol(OperatorFunction, Decl(first.d.ts, 0, 8))
->T : Symbol(T, Decl(first.d.ts, 1, 30))
->T : Symbol(T, Decl(first.d.ts, 1, 30))
->D : Symbol(D, Decl(first.d.ts, 1, 32))
-
-=== node_modules/rxjs/internal/operators/map.d.ts ===
-import { OperatorFunction } from '../types';
->OperatorFunction : Symbol(OperatorFunction, Decl(map.d.ts, 0, 8))
-
-/**
- */
-export declare function map<T, R>(project: (value: T, index: number) => R, thisArg?: any): OperatorFunction<T, R>;
->map : Symbol(map, Decl(map.d.ts, 0, 44))
->T : Symbol(T, Decl(map.d.ts, 3, 28))
->R : Symbol(R, Decl(map.d.ts, 3, 30))
->project : Symbol(project, Decl(map.d.ts, 3, 34))
->value : Symbol(value, Decl(map.d.ts, 3, 44))
->T : Symbol(T, Decl(map.d.ts, 3, 28))
->index : Symbol(index, Decl(map.d.ts, 3, 53))
->R : Symbol(R, Decl(map.d.ts, 3, 30))
->thisArg : Symbol(thisArg, Decl(map.d.ts, 3, 74))
->OperatorFunction : Symbol(OperatorFunction, Decl(map.d.ts, 0, 8))
->T : Symbol(T, Decl(map.d.ts, 3, 28))
->R : Symbol(R, Decl(map.d.ts, 3, 30))
-
-=== node_modules/rxjs/internal/operators/mergeMap.d.ts ===
-import { ObservableInput, OperatorFunction } from '../types';
->ObservableInput : Symbol(ObservableInput, Decl(mergeMap.d.ts, 0, 8))
->OperatorFunction : Symbol(OperatorFunction, Decl(mergeMap.d.ts, 0, 25))
-
-export declare function mergeMap<T, R>(project: (value: T, index: number) => ObservableInput<R>, concurrent?: number): OperatorFunction<T, R>;
->mergeMap : Symbol(mergeMap, Decl(mergeMap.d.ts, 0, 61))
->T : Symbol(T, Decl(mergeMap.d.ts, 1, 33))
->R : Symbol(R, Decl(mergeMap.d.ts, 1, 35))
->project : Symbol(project, Decl(mergeMap.d.ts, 1, 39))
->value : Symbol(value, Decl(mergeMap.d.ts, 1, 49))
->T : Symbol(T, Decl(mergeMap.d.ts, 1, 33))
->index : Symbol(index, Decl(mergeMap.d.ts, 1, 58))
->ObservableInput : Symbol(ObservableInput, Decl(mergeMap.d.ts, 0, 8))
->R : Symbol(R, Decl(mergeMap.d.ts, 1, 35))
->concurrent : Symbol(concurrent, Decl(mergeMap.d.ts, 1, 96))
->OperatorFunction : Symbol(OperatorFunction, Decl(mergeMap.d.ts, 0, 25))
->T : Symbol(T, Decl(mergeMap.d.ts, 1, 33))
->R : Symbol(R, Decl(mergeMap.d.ts, 1, 35))
-
-=== node_modules/rxjs/internal/operators/scan.d.ts ===
-import { OperatorFunction, MonoTypeOperatorFunction } from '../types';
->OperatorFunction : Symbol(OperatorFunction, Decl(scan.d.ts, 0, 8))
->MonoTypeOperatorFunction : Symbol(MonoTypeOperatorFunction, Decl(scan.d.ts, 0, 26))
-
-export declare function scan<T>(accumulator: (acc: T, value: T, index: number) => T, seed?: T): MonoTypeOperatorFunction<T>;
->scan : Symbol(scan, Decl(scan.d.ts, 0, 70))
->T : Symbol(T, Decl(scan.d.ts, 1, 29))
->accumulator : Symbol(accumulator, Decl(scan.d.ts, 1, 32))
->acc : Symbol(acc, Decl(scan.d.ts, 1, 46))
->T : Symbol(T, Decl(scan.d.ts, 1, 29))
->value : Symbol(value, Decl(scan.d.ts, 1, 53))
->T : Symbol(T, Decl(scan.d.ts, 1, 29))
->index : Symbol(index, Decl(scan.d.ts, 1, 63))
->T : Symbol(T, Decl(scan.d.ts, 1, 29))
->seed : Symbol(seed, Decl(scan.d.ts, 1, 84))
->T : Symbol(T, Decl(scan.d.ts, 1, 29))
->MonoTypeOperatorFunction : Symbol(MonoTypeOperatorFunction, Decl(scan.d.ts, 0, 26))
->T : Symbol(T, Decl(scan.d.ts, 1, 29))
-
-=== node_modules/rxjs/internal/operators/skipWhile.d.ts ===
-import { MonoTypeOperatorFunction } from '../types';
->MonoTypeOperatorFunction : Symbol(MonoTypeOperatorFunction, Decl(skipWhile.d.ts, 0, 8))
-
-/**
- */
-export declare function skipWhile<T>(predicate: (value: T, index: number) => boolean): MonoTypeOperatorFunction<T>;
->skipWhile : Symbol(skipWhile, Decl(skipWhile.d.ts, 0, 52))
->T : Symbol(T, Decl(skipWhile.d.ts, 3, 34))
->predicate : Symbol(predicate, Decl(skipWhile.d.ts, 3, 37))
->value : Symbol(value, Decl(skipWhile.d.ts, 3, 49))
->T : Symbol(T, Decl(skipWhile.d.ts, 3, 34))
->index : Symbol(index, Decl(skipWhile.d.ts, 3, 58))
->MonoTypeOperatorFunction : Symbol(MonoTypeOperatorFunction, Decl(skipWhile.d.ts, 0, 8))
->T : Symbol(T, Decl(skipWhile.d.ts, 3, 34))
-
-=== node_modules/rxjs/internal/operators/takeUntil.d.ts ===
-import { Observable } from '../Observable';
->Observable : Symbol(Observable, Decl(takeUntil.d.ts, 0, 8))
-
-import { MonoTypeOperatorFunction } from '../types';
->MonoTypeOperatorFunction : Symbol(MonoTypeOperatorFunction, Decl(takeUntil.d.ts, 1, 8))
-
-export declare function takeUntil<T>(notifier: Observable<any>): MonoTypeOperatorFunction<T>;
->takeUntil : Symbol(takeUntil, Decl(takeUntil.d.ts, 1, 52))
->T : Symbol(T, Decl(takeUntil.d.ts, 2, 34))
->notifier : Symbol(notifier, Decl(takeUntil.d.ts, 2, 37))
->Observable : Symbol(Observable, Decl(takeUntil.d.ts, 0, 8))
->MonoTypeOperatorFunction : Symbol(MonoTypeOperatorFunction, Decl(takeUntil.d.ts, 1, 8))
->T : Symbol(T, Decl(takeUntil.d.ts, 2, 34))
-
-=== node_modules/rxjs/internal/operators/timeout.d.ts ===
-import { MonoTypeOperatorFunction, SchedulerLike } from '../types';
->MonoTypeOperatorFunction : Symbol(MonoTypeOperatorFunction, Decl(timeout.d.ts, 0, 8))
->SchedulerLike : Symbol(SchedulerLike, Decl(timeout.d.ts, 0, 34))
-
-/**
- */
-export declare function timeout<T>(due: number | Date, scheduler?: SchedulerLike): MonoTypeOperatorFunction<T>;
->timeout : Symbol(timeout, Decl(timeout.d.ts, 0, 67))
->T : Symbol(T, Decl(timeout.d.ts, 3, 32))
->due : Symbol(due, Decl(timeout.d.ts, 3, 35))
->Date : Symbol(Date, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
->scheduler : Symbol(scheduler, Decl(timeout.d.ts, 3, 54))
->SchedulerLike : Symbol(SchedulerLike, Decl(timeout.d.ts, 0, 34))
->MonoTypeOperatorFunction : Symbol(MonoTypeOperatorFunction, Decl(timeout.d.ts, 0, 8))
->T : Symbol(T, Decl(timeout.d.ts, 3, 32))
-
-=== node_modules/rxjs/internal/types.d.ts ===
-import { Observable } from './Observable';
->Observable : Symbol(Observable, Decl(types.d.ts, 0, 8))
-
-export interface UnaryFunction<T, R> {
->UnaryFunction : Symbol(UnaryFunction, Decl(types.d.ts, 0, 42))
->T : Symbol(T, Decl(types.d.ts, 1, 31))
->R : Symbol(R, Decl(types.d.ts, 1, 33))
-
-    (source: T): R;
->source : Symbol(source, Decl(types.d.ts, 2, 5))
->T : Symbol(T, Decl(types.d.ts, 1, 31))
->R : Symbol(R, Decl(types.d.ts, 1, 33))
-}
-export interface OperatorFunction<T, R> extends UnaryFunction<Observable<T>, Observable<R>> {
->OperatorFunction : Symbol(OperatorFunction, Decl(types.d.ts, 3, 1))
->T : Symbol(T, Decl(types.d.ts, 4, 34))
->R : Symbol(R, Decl(types.d.ts, 4, 36))
->UnaryFunction : Symbol(UnaryFunction, Decl(types.d.ts, 0, 42))
->Observable : Symbol(Observable, Decl(types.d.ts, 0, 8))
->T : Symbol(T, Decl(types.d.ts, 4, 34))
->Observable : Symbol(Observable, Decl(types.d.ts, 0, 8))
->R : Symbol(R, Decl(types.d.ts, 4, 36))
-}
-export interface MonoTypeOperatorFunction<T> extends OperatorFunction<T, T> {
->MonoTypeOperatorFunction : Symbol(MonoTypeOperatorFunction, Decl(types.d.ts, 5, 1))
->T : Symbol(T, Decl(types.d.ts, 6, 42))
->OperatorFunction : Symbol(OperatorFunction, Decl(types.d.ts, 3, 1))
->T : Symbol(T, Decl(types.d.ts, 6, 42))
->T : Symbol(T, Decl(types.d.ts, 6, 42))
-}
-export interface Unsubscribable {
->Unsubscribable : Symbol(Unsubscribable, Decl(types.d.ts, 7, 1))
-}
-export declare type TeardownLogic = Unsubscribable | Function | void;
->TeardownLogic : Symbol(TeardownLogic, Decl(types.d.ts, 9, 1))
->Unsubscribable : Symbol(Unsubscribable, Decl(types.d.ts, 7, 1))
->Function : Symbol(Function, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
-
-export interface SubscriptionLike extends Unsubscribable {
->SubscriptionLike : Symbol(SubscriptionLike, Decl(types.d.ts, 10, 69))
->Unsubscribable : Symbol(Unsubscribable, Decl(types.d.ts, 7, 1))
-}
-export declare type SubscribableOrPromise<T> = Subscribable<T> | Subscribable<never> | PromiseLike<T> | InteropObservable<T>;
->SubscribableOrPromise : Symbol(SubscribableOrPromise, Decl(types.d.ts, 12, 1))
->T : Symbol(T, Decl(types.d.ts, 13, 42))
->Subscribable : Symbol(Subscribable, Decl(types.d.ts, 13, 125))
->T : Symbol(T, Decl(types.d.ts, 13, 42))
->Subscribable : Symbol(Subscribable, Decl(types.d.ts, 13, 125))
+type ObservableInput<T> = Subscribable<T> | Subscribable<never> | PromiseLike<T> | ArrayLike<T> | Iterable<T>;
+>ObservableInput : Symbol(ObservableInput, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 12, 1))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 13, 21))
+>Subscribable : Symbol(Subscribable, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 8, 61))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 13, 21))
+>Subscribable : Symbol(Subscribable, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 8, 61))
 >PromiseLike : Symbol(PromiseLike, Decl(lib.es5.d.ts, --, --))
->T : Symbol(T, Decl(types.d.ts, 13, 42))
->InteropObservable : Symbol(InteropObservable, Decl(types.d.ts, 17, 95))
->T : Symbol(T, Decl(types.d.ts, 13, 42))
-
-export interface Subscribable<T> {
->Subscribable : Symbol(Subscribable, Decl(types.d.ts, 13, 125))
->T : Symbol(T, Decl(types.d.ts, 14, 30))
-
-    subscribe(next?: (value: T) => void, error?: (error: any) => void, complete?: () => void): Unsubscribable;
->subscribe : Symbol(Subscribable.subscribe, Decl(types.d.ts, 14, 34))
->next : Symbol(next, Decl(types.d.ts, 15, 14))
->value : Symbol(value, Decl(types.d.ts, 15, 22))
->T : Symbol(T, Decl(types.d.ts, 14, 30))
->error : Symbol(error, Decl(types.d.ts, 15, 40))
->error : Symbol(error, Decl(types.d.ts, 15, 50))
->complete : Symbol(complete, Decl(types.d.ts, 15, 70))
->Unsubscribable : Symbol(Unsubscribable, Decl(types.d.ts, 7, 1))
-}
-export declare type ObservableInput<T> = SubscribableOrPromise<T> | ArrayLike<T> | Iterable<T>;
->ObservableInput : Symbol(ObservableInput, Decl(types.d.ts, 16, 1))
->T : Symbol(T, Decl(types.d.ts, 17, 36))
->SubscribableOrPromise : Symbol(SubscribableOrPromise, Decl(types.d.ts, 12, 1))
->T : Symbol(T, Decl(types.d.ts, 17, 36))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 13, 21))
 >ArrayLike : Symbol(ArrayLike, Decl(lib.es5.d.ts, --, --))
->T : Symbol(T, Decl(types.d.ts, 17, 36))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 13, 21))
 >Iterable : Symbol(Iterable, Decl(lib.es2015.iterable.d.ts, --, --))
->T : Symbol(T, Decl(types.d.ts, 17, 36))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 13, 21))
 
-export declare type InteropObservable<T> = {
->InteropObservable : Symbol(InteropObservable, Decl(types.d.ts, 17, 95))
->T : Symbol(T, Decl(types.d.ts, 18, 38))
+interface UnaryFunction<T, R> { (source: T): R; }
+>UnaryFunction : Symbol(UnaryFunction, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 13, 110))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 14, 24))
+>R : Symbol(R, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 14, 26))
+>source : Symbol(source, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 14, 33))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 14, 24))
+>R : Symbol(R, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 14, 26))
 
-};
-export interface NextObserver<T> {
->NextObserver : Symbol(NextObserver, Decl(types.d.ts, 19, 2))
->T : Symbol(T, Decl(types.d.ts, 20, 30))
+interface OperatorFunction<T, R> extends UnaryFunction<Observable<T>, Observable<R>> {}
+>OperatorFunction : Symbol(OperatorFunction, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 14, 49))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 15, 27))
+>R : Symbol(R, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 15, 29))
+>UnaryFunction : Symbol(UnaryFunction, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 13, 110))
+>Observable : Symbol(Observable, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 16, 71))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 15, 27))
+>Observable : Symbol(Observable, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 16, 71))
+>R : Symbol(R, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 15, 29))
 
-    complete?: () => void;
->complete : Symbol(NextObserver.complete, Decl(types.d.ts, 20, 34))
+interface MonoTypeOperatorFunction<T> extends OperatorFunction<T, T> {}
+>MonoTypeOperatorFunction : Symbol(MonoTypeOperatorFunction, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 15, 87))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 16, 35))
+>OperatorFunction : Symbol(OperatorFunction, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 14, 49))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 16, 35))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 16, 35))
+
+declare class Observable<T> implements Subscribable<T> {
+>Observable : Symbol(Observable, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 16, 71))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 17, 25))
+>Subscribable : Symbol(Subscribable, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 8, 61))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 17, 25))
+
+  subscribe(observer?: PartialObserver<T>): Unsubscribable;
+>subscribe : Symbol(Observable.subscribe, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 17, 56), Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 18, 59))
+>observer : Symbol(observer, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 18, 12))
+>PartialObserver : Symbol(PartialObserver, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 7, 125))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 17, 25))
+>Unsubscribable : Symbol(Unsubscribable, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 0, 0))
+
+  subscribe(next?: (value: T) => void, error?: (error: any) => void, complete?: () => void): Unsubscribable;
+>subscribe : Symbol(Observable.subscribe, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 17, 56), Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 18, 59))
+>next : Symbol(next, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 19, 12))
+>value : Symbol(value, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 19, 20))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 17, 25))
+>error : Symbol(error, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 19, 38))
+>error : Symbol(error, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 19, 48))
+>complete : Symbol(complete, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 19, 68))
+>Unsubscribable : Symbol(Unsubscribable, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 0, 0))
+
+  pipe(): Observable<T>;
+>pipe : Symbol(Observable.pipe, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 19, 108), Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 20, 24))
+>Observable : Symbol(Observable, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 16, 71))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 17, 25))
+
+  pipe<A>(op1: OperatorFunction<T, A>): Observable<A>;
+>pipe : Symbol(Observable.pipe, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 19, 108), Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 20, 24))
+>A : Symbol(A, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 21, 7))
+>op1 : Symbol(op1, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 21, 10))
+>OperatorFunction : Symbol(OperatorFunction, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 14, 49))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 17, 25))
+>A : Symbol(A, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 21, 7))
+>Observable : Symbol(Observable, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 16, 71))
+>A : Symbol(A, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 21, 7))
 }
-export interface ErrorObserver<T> {
->ErrorObserver : Symbol(ErrorObserver, Decl(types.d.ts, 22, 1))
->T : Symbol(T, Decl(types.d.ts, 23, 31))
+declare function mergeMap<T, R>(project: (value: T, index: number) => ObservableInput<R>, concurrent?: number): OperatorFunction<T, R>;
+>mergeMap : Symbol(mergeMap, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 22, 1))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 23, 26))
+>R : Symbol(R, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 23, 28))
+>project : Symbol(project, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 23, 32))
+>value : Symbol(value, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 23, 42))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 23, 26))
+>index : Symbol(index, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 23, 51))
+>ObservableInput : Symbol(ObservableInput, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 12, 1))
+>R : Symbol(R, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 23, 28))
+>concurrent : Symbol(concurrent, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 23, 89))
+>OperatorFunction : Symbol(OperatorFunction, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 14, 49))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 23, 26))
+>R : Symbol(R, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 23, 28))
 
-    complete?: () => void;
->complete : Symbol(ErrorObserver.complete, Decl(types.d.ts, 23, 35))
-}
-export interface CompletionObserver<T> {
->CompletionObserver : Symbol(CompletionObserver, Decl(types.d.ts, 25, 1))
->T : Symbol(T, Decl(types.d.ts, 26, 36))
+declare function takeUntil<T>(notifier: Observable<any>): MonoTypeOperatorFunction<T>;
+>takeUntil : Symbol(takeUntil, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 23, 135))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 24, 27))
+>notifier : Symbol(notifier, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 24, 30))
+>Observable : Symbol(Observable, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 16, 71))
+>MonoTypeOperatorFunction : Symbol(MonoTypeOperatorFunction, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 15, 87))
+>T : Symbol(T, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 24, 27))
 
-    complete: () => void;
->complete : Symbol(CompletionObserver.complete, Decl(types.d.ts, 26, 40))
-}
-export declare type PartialObserver<T> = NextObserver<T> | ErrorObserver<T> | CompletionObserver<T>;
->PartialObserver : Symbol(PartialObserver, Decl(types.d.ts, 28, 1))
->T : Symbol(T, Decl(types.d.ts, 29, 36))
->NextObserver : Symbol(NextObserver, Decl(types.d.ts, 19, 2))
->T : Symbol(T, Decl(types.d.ts, 29, 36))
->ErrorObserver : Symbol(ErrorObserver, Decl(types.d.ts, 22, 1))
->T : Symbol(T, Decl(types.d.ts, 29, 36))
->CompletionObserver : Symbol(CompletionObserver, Decl(types.d.ts, 25, 1))
->T : Symbol(T, Decl(types.d.ts, 29, 36))
+declare const mouseMove: Observable<Event>;
+>mouseMove : Symbol(mouseMove, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 25, 13))
+>Observable : Symbol(Observable, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 16, 71))
+>Event : Symbol(Event, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
 
-export interface Observer<T> {
->Observer : Symbol(Observer, Decl(types.d.ts, 29, 100))
->T : Symbol(T, Decl(types.d.ts, 30, 26))
-}
-export interface SchedulerLike {
->SchedulerLike : Symbol(SchedulerLike, Decl(types.d.ts, 31, 1))
-}
-=== node_modules/rxjs/operators/index.d.ts ===
-export { filter } from '../internal/operators/filter';
->filter : Symbol(filter, Decl(index.d.ts, 0, 8))
+declare const mouseDown: Observable<unknown>;
+>mouseDown : Symbol(mouseDown, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 26, 13))
+>Observable : Symbol(Observable, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 16, 71))
 
-export { finalize } from '../internal/operators/finalize';
->finalize : Symbol(finalize, Decl(index.d.ts, 1, 8))
+declare const mouseUp: Observable<Event>;
+>mouseUp : Symbol(mouseUp, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 27, 13))
+>Observable : Symbol(Observable, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 16, 71))
+>Event : Symbol(Event, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
 
-export { first } from '../internal/operators/first';
->first : Symbol(first, Decl(index.d.ts, 2, 8))
+const mouseDrag = mouseDown.pipe(mergeMap((md: MouseEvent) => {
+>mouseDrag : Symbol(mouseDrag, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 28, 5))
+>mouseDown.pipe : Symbol(Observable.pipe, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 19, 108), Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 20, 24))
+>mouseDown : Symbol(mouseDown, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 26, 13))
+>pipe : Symbol(Observable.pipe, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 19, 108), Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 20, 24))
+>mergeMap : Symbol(mergeMap, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 22, 1))
+>md : Symbol(md, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 28, 43))
+>MouseEvent : Symbol(MouseEvent, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
 
-export { map } from '../internal/operators/map';
->map : Symbol(map, Decl(index.d.ts, 3, 8))
+  return mouseMove.pipe(takeUntil(mouseUp));
+>mouseMove.pipe : Symbol(Observable.pipe, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 19, 108), Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 20, 24))
+>mouseMove : Symbol(mouseMove, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 25, 13))
+>pipe : Symbol(Observable.pipe, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 19, 108), Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 20, 24))
+>takeUntil : Symbol(takeUntil, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 23, 135))
+>mouseUp : Symbol(mouseUp, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 27, 13))
 
-export { mergeMap } from '../internal/operators/mergeMap';
->mergeMap : Symbol(mergeMap, Decl(index.d.ts, 4, 8))
+}));
 
-export { scan } from '../internal/operators/scan';
->scan : Symbol(scan, Decl(index.d.ts, 5, 8))
+declare function drawRectangle(r: Event): void;
+>drawRectangle : Symbol(drawRectangle, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 30, 4))
+>r : Symbol(r, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 32, 31))
+>Event : Symbol(Event, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
 
-export { skipWhile } from '../internal/operators/skipWhile';
->skipWhile : Symbol(skipWhile, Decl(index.d.ts, 6, 8))
+mouseDrag.subscribe(pos => pos.timeStamp);
+>mouseDrag.subscribe : Symbol(Observable.subscribe, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 17, 56), Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 18, 59))
+>mouseDrag : Symbol(mouseDrag, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 28, 5))
+>subscribe : Symbol(Observable.subscribe, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 17, 56), Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 18, 59))
+>pos : Symbol(pos, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 33, 20))
+>pos.timeStamp : Symbol(Event.timeStamp, Decl(lib.dom.d.ts, --, --))
+>pos : Symbol(pos, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 33, 20))
+>timeStamp : Symbol(Event.timeStamp, Decl(lib.dom.d.ts, --, --))
 
-export { takeUntil } from '../internal/operators/takeUntil';
->takeUntil : Symbol(takeUntil, Decl(index.d.ts, 7, 8))
-
-export { timeout } from '../internal/operators/timeout';
->timeout : Symbol(timeout, Decl(index.d.ts, 8, 8))
+mouseDrag.subscribe(rec => drawRectangle(rec));
+>mouseDrag.subscribe : Symbol(Observable.subscribe, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 17, 56), Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 18, 59))
+>mouseDrag : Symbol(mouseDrag, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 28, 5))
+>subscribe : Symbol(Observable.subscribe, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 17, 56), Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 18, 59))
+>rec : Symbol(rec, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 34, 20))
+>drawRectangle : Symbol(drawRectangle, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 30, 4))
+>rec : Symbol(rec, Decl(npm__bumblebee032_ng-feedback_TS2345.ts, 34, 20))
 

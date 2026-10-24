@@ -1,761 +1,141 @@
 //// [test/cases/npm__bumblebee032_ng-feedback_TS2345.ts] ////
 
-=== node_modules/@angular/core/core.d.ts ===
+=== npm__bumblebee032_ng-feedback_TS2345.ts ===
+// origin: npm @bumblebee032/ng-feedback@2.0.97 https://github.com/DarrenLouw/feedback tsconfig.bench.json seed 20261109
+// flip: no
+// (cut by hand from rxjs 6.3.3's declarations and feedback-toolbar/feedback-dialog.component.ts: the outer pipe call
+// fails on its argument, whose callback parameter is narrower than the stream's type, and its result type still comes
+// from the inner mergeMap call resolved before: tsc's overload-failure fallback reuses the cached resolved signature)
+interface Unsubscribable { unsubscribe(): void; }
+>unsubscribe : () => void
 
-export * from './index';
-=== node_modules/@angular/core/index.d.ts ===
+interface NextObserver<T> { closed?: boolean; next: (value: T) => void; error?: (err: any) => void; complete?: () => void; }
+>closed : boolean | undefined
+>next : (value: T) => void
+>value : T
+>error : ((err: any) => void) | undefined
+>err : any
+>complete : (() => void) | undefined
 
-export * from './public_api';
-=== node_modules/@angular/core/public_api.d.ts ===
+interface ErrorObserver<T> { closed?: boolean; next?: (value: T) => void; error: (err: any) => void; complete?: () => void; }
+>closed : boolean | undefined
+>next : ((value: T) => void) | undefined
+>value : T
+>error : (err: any) => void
+>err : any
+>complete : (() => void) | undefined
 
-export * from './src/core';
-=== node_modules/@angular/core/src/change_detection.d.ts ===
-export { ChangeDetectionStrategy, ChangeDetectorRef, CollectionChangeRecord, DefaultIterableDiffer, IterableChangeRecord, IterableChanges, IterableDiffer, IterableDifferFactory, IterableDiffers, KeyValueChangeRecord, KeyValueChanges, KeyValueDiffer, KeyValueDifferFactory, KeyValueDiffers, NgIterable, PipeTransform, SimpleChange, SimpleChanges, TrackByFunction, WrappedValue } from './change_detection/change_detection';
->ChangeDetectionStrategy : typeof import("@angular/core/src/change_detection/constants.js").ChangeDetectionStrategy
->ChangeDetectorRef : typeof import("@angular/core/src/change_detection/change_detector_ref.js").ChangeDetectorRef
->CollectionChangeRecord : any
->DefaultIterableDiffer : typeof import("@angular/core/src/change_detection/differs/default_iterable_differ.js").DefaultIterableDiffer
->IterableChangeRecord : any
->IterableChanges : any
->IterableDiffer : any
->IterableDifferFactory : any
->IterableDiffers : typeof import("@angular/core/src/change_detection/differs/iterable_differs.js").IterableDiffers
->KeyValueChangeRecord : any
->KeyValueChanges : any
->KeyValueDiffer : any
->KeyValueDifferFactory : any
->KeyValueDiffers : typeof import("@angular/core/src/change_detection/differs/keyvalue_differs.js").KeyValueDiffers
->NgIterable : any
->PipeTransform : any
->SimpleChange : typeof import("@angular/core/src/change_detection/change_detection_util.js").SimpleChange
->SimpleChanges : any
->TrackByFunction : any
->WrappedValue : typeof import("@angular/core/src/change_detection/change_detection_util.js").WrappedValue
+type PartialObserver<T> = NextObserver<T> | ErrorObserver<T>;
+>PartialObserver : PartialObserver<T>
 
-=== node_modules/@angular/core/src/change_detection/change_detection.d.ts ===
-export { SimpleChanges } from '../metadata/lifecycle_hooks';
->SimpleChanges : any
+interface Subscribable<T> {
+  subscribe(observer?: PartialObserver<T>): Unsubscribable;
+>subscribe : { (observer?: PartialObserver<T>): Unsubscribable; (next?: (value: T) => void, error?: (error: any) => void, complete?: () => void): Unsubscribable; }
+>observer : PartialObserver<T> | undefined
 
-export { SimpleChange, WrappedValue, devModeEqual } from './change_detection_util';
->SimpleChange : typeof import("./change_detection_util").SimpleChange
->WrappedValue : typeof import("./change_detection_util").WrappedValue
->devModeEqual : (a: any, b: any) => boolean
+  subscribe(next?: (value: T) => void, error?: (error: any) => void, complete?: () => void): Unsubscribable;
+>subscribe : { (observer?: PartialObserver<T>): Unsubscribable; (next?: (value: T) => void, error?: (error: any) => void, complete?: () => void): Unsubscribable; }
+>next : ((value: T) => void) | undefined
+>value : T
+>error : ((error: any) => void) | undefined
+>error : any
+>complete : (() => void) | undefined
+}
+type ObservableInput<T> = Subscribable<T> | Subscribable<never> | PromiseLike<T> | ArrayLike<T> | Iterable<T>;
+>ObservableInput : ObservableInput<T>
 
-export { ChangeDetectorRef } from './change_detector_ref';
->ChangeDetectorRef : typeof import("./change_detector_ref").ChangeDetectorRef
+interface UnaryFunction<T, R> { (source: T): R; }
+>source : T
 
-export { ChangeDetectionStrategy, ChangeDetectorStatus, isDefaultChangeDetectionStrategy } from './constants';
->ChangeDetectionStrategy : typeof import("./constants").ChangeDetectionStrategy
->ChangeDetectorStatus : typeof import("./constants").ChangeDetectorStatus
->isDefaultChangeDetectionStrategy : (changeDetectionStrategy: import("./constants").ChangeDetectionStrategy) => boolean
-
-export { DefaultIterableDiffer } from './differs/default_iterable_differ';
->DefaultIterableDiffer : typeof import("./differs/default_iterable_differ").DefaultIterableDiffer
-
-export { CollectionChangeRecord, IterableChangeRecord, IterableChanges, IterableDiffer, IterableDifferFactory, IterableDiffers, NgIterable, TrackByFunction } from './differs/iterable_differs';
->CollectionChangeRecord : any
->IterableChangeRecord : any
->IterableChanges : any
->IterableDiffer : any
->IterableDifferFactory : any
->IterableDiffers : typeof import("./differs/iterable_differs").IterableDiffers
->NgIterable : any
->TrackByFunction : any
-
-export { KeyValueChangeRecord, KeyValueChanges, KeyValueDiffer, KeyValueDifferFactory, KeyValueDiffers } from './differs/keyvalue_differs';
->KeyValueChangeRecord : any
->KeyValueChanges : any
->KeyValueDiffer : any
->KeyValueDifferFactory : any
->KeyValueDiffers : typeof import("./differs/keyvalue_differs").KeyValueDiffers
-
-export { PipeTransform } from './pipe_transform';
->PipeTransform : any
-
-=== node_modules/@angular/core/src/change_detection/change_detection_util.d.ts ===
-export declare function devModeEqual(a: any, b: any): boolean;
->devModeEqual : (a: any, b: any) => boolean
->a : any
->b : any
-
-/**
- */
-export declare class WrappedValue {
->WrappedValue : WrappedValue
-}
-/**
- */
-export declare class SimpleChange {
->SimpleChange : SimpleChange
-}
-=== node_modules/@angular/core/src/change_detection/change_detector_ref.d.ts ===
-/**
- */
-export declare abstract class ChangeDetectorRef {
->ChangeDetectorRef : ChangeDetectorRef
-
-    /**
-     */
-}
-=== node_modules/@angular/core/src/change_detection/constants.d.ts ===
-export declare enum ChangeDetectionStrategy {
->ChangeDetectionStrategy : ChangeDetectionStrategy
-
-    /**
-     */
-}
-export declare enum ChangeDetectorStatus {
->ChangeDetectorStatus : ChangeDetectorStatus
-
-    /**
-     */
-}
-export declare function isDefaultChangeDetectionStrategy(changeDetectionStrategy: ChangeDetectionStrategy): boolean;
->isDefaultChangeDetectionStrategy : (changeDetectionStrategy: ChangeDetectionStrategy) => boolean
->changeDetectionStrategy : ChangeDetectionStrategy
-
-=== node_modules/@angular/core/src/change_detection/differs/default_iterable_differ.d.ts ===
-import { IterableChangeRecord, IterableChanges, IterableDiffer, IterableDifferFactory, NgIterable, TrackByFunction } from './iterable_differs';
->IterableChangeRecord : any
->IterableChanges : any
->IterableDiffer : any
->IterableDifferFactory : any
->NgIterable : any
->TrackByFunction : any
-
-/**
- */
-export declare class DefaultIterableDiffer<V> implements IterableDiffer<V>, IterableChanges<V> {
->DefaultIterableDiffer : DefaultIterableDiffer<V>
-}
-=== node_modules/@angular/core/src/change_detection/differs/iterable_differs.d.ts ===
-export declare type NgIterable<T> = Array<T> | Iterable<T>;
->NgIterable : NgIterable<T>
-
-/**
- */
-export interface IterableDiffer<V> {
-}
-/**
- */
-export interface IterableChanges<V> {
-}
-/**
- */
-export interface IterableChangeRecord<V> {
-}
-/**
- */
-export interface CollectionChangeRecord<V> extends IterableChangeRecord<V> {
-}
-/**
- */
-export interface TrackByFunction<T> {
-}
-/**
- */
-export interface IterableDifferFactory {
-}
-/**
- */
-export declare class IterableDiffers {
->IterableDiffers : IterableDiffers
-}
-=== node_modules/@angular/core/src/change_detection/differs/keyvalue_differs.d.ts ===
-/**
- */
-export interface KeyValueDiffer<K, V> {
-    /**
-     */
-}
-/**
- */
-export interface KeyValueChanges<K, V> {
-    /**
-     */
-}
-/**
- */
-export interface KeyValueChangeRecord<K, V> {
-}
-/**
- */
-export interface KeyValueDifferFactory {
-    /**
-     */
-}
-/**
- */
-export declare class KeyValueDiffers {
->KeyValueDiffers : KeyValueDiffers
-
-    /**
-     */
-}
-=== node_modules/@angular/core/src/change_detection/pipe_transform.d.ts ===
-
-export interface PipeTransform {
-}
-=== node_modules/@angular/core/src/core.d.ts ===
-
-/**
- */
-export * from './metadata';
-export * from './render';
-export * from './linker';
-export * from './change_detection';
-=== node_modules/@angular/core/src/di/injection_token.d.ts ===
-export declare class InjectionToken<T> {
->InjectionToken : InjectionToken<T>
-}
-=== node_modules/@angular/core/src/linker.d.ts ===
-export { ElementRef } from './linker/element_ref';
->ElementRef : typeof import("./linker/element_ref").ElementRef
-
-=== node_modules/@angular/core/src/linker/element_ref.d.ts ===
-/**
- */
-export declare class ElementRef<T = any> {
->ElementRef : ElementRef<T>
-
-    /**
-     */
-}
-=== node_modules/@angular/core/src/metadata.d.ts ===
-export { ANALYZE_FOR_ENTRY_COMPONENTS, Attribute, ContentChild, ContentChildDecorator, ContentChildren, ContentChildrenDecorator, Query, ViewChild, ViewChildDecorator, ViewChildren, ViewChildrenDecorator } from './metadata/di';
->ANALYZE_FOR_ENTRY_COMPONENTS : import("@angular/core/src/di/injection_token.js").InjectionToken<any>
->Attribute : any
->ContentChild : import("./metadata/di").ContentChildDecorator
->ContentChildDecorator : any
->ContentChildren : import("./metadata/di").ContentChildrenDecorator
->ContentChildrenDecorator : any
->Query : typeof import("./metadata/di").Query
->ViewChild : import("./metadata/di").ViewChildDecorator
->ViewChildDecorator : any
->ViewChildren : any
->ViewChildrenDecorator : any
-
-export { Component, ComponentDecorator, Directive, DirectiveDecorator, HostBinding, HostListener, Input, Output, Pipe } from './metadata/directives';
->Component : import("./metadata/directives").ComponentDecorator
->ComponentDecorator : any
->Directive : import("./metadata/directives").DirectiveDecorator
->DirectiveDecorator : any
->HostBinding : import("./metadata/directives").HostBindingDecorator
->HostListener : import("./metadata/directives").HostListenerDecorator
->Input : import("./metadata/directives").InputDecorator
->Output : import("./metadata/directives").OutputDecorator
->Pipe : any
-
-export { AfterContentChecked, AfterContentInit, AfterViewChecked, AfterViewInit, DoCheck, OnChanges, OnDestroy, OnInit } from './metadata/lifecycle_hooks';
->AfterContentChecked : any
->AfterContentInit : any
->AfterViewChecked : any
->AfterViewInit : any
->DoCheck : any
->OnChanges : any
->OnDestroy : any
->OnInit : any
-
-=== node_modules/@angular/core/src/metadata/di.d.ts ===
-/**
- */
-import { InjectionToken } from '../di/injection_token';
->InjectionToken : typeof InjectionToken
-
-/**
- */
-export declare const ANALYZE_FOR_ENTRY_COMPONENTS: InjectionToken<any>;
->ANALYZE_FOR_ENTRY_COMPONENTS : InjectionToken<any>
-
-/**
- */
-export interface Attribute {
-}
-/**
- */
-export declare abstract class Query {
->Query : Query
-}
-/**
- */
-export interface ContentChildrenDecorator {
-    /**
-     */
-}
-/**
- */
-export declare const ContentChildren: ContentChildrenDecorator;
->ContentChildren : ContentChildrenDecorator
-
-/**
- */
-export interface ContentChildDecorator {
-    /**
-     */
-}
-/**
- */
-export declare const ContentChild: ContentChildDecorator;
->ContentChild : ContentChildDecorator
-
-/**
- */
-export interface ViewChildrenDecorator {
-    /**
-     */
-}
-/**
- */
-export declare type ViewChildren = Query;
->ViewChildren : Query
-
-/**
- */
-export interface ViewChildDecorator {
-    /**
-     */
-}
-/**
- */
-export declare const ViewChild: ViewChildDecorator;
->ViewChild : ViewChildDecorator
-
-=== node_modules/@angular/core/src/metadata/directives.d.ts ===
-/**
- */
-export interface DirectiveDecorator {
-    /**
-     */
-}
-/**
- */
-export declare const Directive: DirectiveDecorator;
->Directive : DirectiveDecorator
-
-export interface ComponentDecorator {
-    /**
-     */
-}
-/**
- */
-export declare const Component: ComponentDecorator;
->Component : ComponentDecorator
-
-/**
- */
-export interface Pipe {
-    /**
-     */
-}
-/**
- */
-export interface InputDecorator {
-    /**
-     */
-}
-/**
- */
-export declare const Input: InputDecorator;
->Input : InputDecorator
-
-/**
- */
-export interface OutputDecorator {
-    /**
-    */
-}
-/**
- */
-export declare const Output: OutputDecorator;
->Output : OutputDecorator
-
-/**
- */
-export interface HostBindingDecorator {
-    /**
-     */
-}
-export declare const HostBinding: HostBindingDecorator;
->HostBinding : HostBindingDecorator
-
-/**
- */
-export interface HostListenerDecorator {
-}
-/**
- */
-export declare const HostListener: HostListenerDecorator;
->HostListener : HostListenerDecorator
-
-=== node_modules/@angular/core/src/metadata/lifecycle_hooks.d.ts ===
-
-/**
- */
-export interface SimpleChanges {
-}
-/**
- */
-export interface OnChanges {
-}
-/**
- */
-export interface OnInit {
-    /**
-     */
-}
-/**
- */
-export interface DoCheck {
-    /**
-       */
-}
-/**
- */
-export interface OnDestroy {
-    /**
-     */
-}
-/**
- */
-export interface AfterContentInit {
-    /**
-     */
-}
-/**
- */
-export interface AfterContentChecked {
-    /**
-     */
-}
-/**
- */
-export interface AfterViewInit {
-    /**
-     */
-}
-/**
- */
-export interface AfterViewChecked {
-    /**
-     */
-}
-=== node_modules/@angular/core/src/render.d.ts ===
-export { RenderComponentType, Renderer, Renderer2, RendererFactory2, RendererStyleFlags2, RendererType2, RootRenderer } from './render/api';
->RenderComponentType : typeof import("./render/api").RenderComponentType
->Renderer : typeof import("./render/api").Renderer
->Renderer2 : typeof import("./render/api").Renderer2
->RendererFactory2 : typeof import("./render/api").RendererFactory2
->RendererStyleFlags2 : typeof import("./render/api").RendererStyleFlags2
->RendererType2 : any
->RootRenderer : typeof import("./render/api").RootRenderer
-
-=== node_modules/@angular/core/src/render/api.d.ts ===
-export declare class RenderComponentType {
->RenderComponentType : RenderComponentType
-}
-export declare abstract class Renderer {
->Renderer : Renderer
-}
-export declare abstract class RootRenderer {
->RootRenderer : RootRenderer
-}
-export interface RendererType2 {
-    /**
-     */
-}
-export declare abstract class RendererFactory2 {
->RendererFactory2 : RendererFactory2
-}
-export declare enum RendererStyleFlags2 {
->RendererStyleFlags2 : RendererStyleFlags2
-}
-export declare abstract class Renderer2 {
->Renderer2 : Renderer2
-
-    /**
-     */
-}
-=== node_modules/rxjs/index.d.ts ===
-export { Observable } from './internal/Observable';
->Observable : typeof import("./internal/Observable").Observable
-
-export { Subscription } from './internal/Subscription';
->Subscription : typeof import("./internal/Subscription").Subscription
-
-export { from } from './internal/observable/from';
->from : <T>(input: import("rxjs/internal/types").ObservableInput<import("rxjs/internal/types").ObservableInput<T>>, scheduler?: import("rxjs/internal/types").SchedulerLike) => import("./internal/Observable").Observable<import("./internal/Observable").Observable<T>>
-
-export { fromEvent } from './internal/observable/fromEvent';
->fromEvent : <T>(target: import("./internal/observable/fromEvent").FromEventTarget<T>, eventName: string) => import("./internal/Observable").Observable<T>
-
-=== node_modules/rxjs/internal/Observable.d.ts ===
-import { Subscription } from './Subscription';
->Subscription : typeof Subscription
-
-import { TeardownLogic, OperatorFunction, PartialObserver, Subscribable } from './types';
->TeardownLogic : any
->OperatorFunction : any
->PartialObserver : any
->Subscribable : any
-
-/**
- */
-export declare class Observable<T> implements Subscribable<T> {
+interface OperatorFunction<T, R> extends UnaryFunction<Observable<T>, Observable<R>> {}
+interface MonoTypeOperatorFunction<T> extends OperatorFunction<T, T> {}
+declare class Observable<T> implements Subscribable<T> {
 >Observable : Observable<T>
 
-    /**
-     */
-    subscribe(next?: (value: T) => void, error?: (error: any) => void, complete?: () => void): Subscription;
->subscribe : (next?: (value: T) => void, error?: (error: any) => void, complete?: () => void) => Subscription
+  subscribe(observer?: PartialObserver<T>): Unsubscribable;
+>subscribe : { (observer?: PartialObserver<T>): Unsubscribable; (next?: (value: T) => void, error?: (error: any) => void, complete?: () => void): Unsubscribable; }
+>observer : PartialObserver<T> | undefined
+
+  subscribe(next?: (value: T) => void, error?: (error: any) => void, complete?: () => void): Unsubscribable;
+>subscribe : { (observer?: PartialObserver<T>): Unsubscribable; (next?: (value: T) => void, error?: (error: any) => void, complete?: () => void): Unsubscribable; }
 >next : ((value: T) => void) | undefined
 >value : T
 >error : ((error: any) => void) | undefined
 >error : any
 >complete : (() => void) | undefined
 
-    /**
-     */
-    pipe<A>(op1: OperatorFunction<T, A>): Observable<A>;
->pipe : { <A>(op1: OperatorFunction<T, A>): Observable<A>; <A_1, B>(op1: OperatorFunction<T, A_1>, op2: OperatorFunction<A_1, B>): Observable<B>; }
+  pipe(): Observable<T>;
+>pipe : { (): Observable<T>; <A>(op1: OperatorFunction<T, A>): Observable<A>; }
+
+  pipe<A>(op1: OperatorFunction<T, A>): Observable<A>;
+>pipe : { (): Observable<T>; <A>(op1: OperatorFunction<T, A>): Observable<A>; }
 >op1 : OperatorFunction<T, A>
-
-    pipe<A, B>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>): Observable<B>;
->pipe : { <A_1>(op1: OperatorFunction<T, A_1>): Observable<A_1>; <A, B>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>): Observable<B>; }
->op1 : OperatorFunction<T, A>
->op2 : OperatorFunction<A, B>
 }
-=== node_modules/rxjs/internal/Subscription.d.ts ===
-import { SubscriptionLike, TeardownLogic } from './types';
->SubscriptionLike : any
->TeardownLogic : any
-
-/**
- */
-export declare class Subscription implements SubscriptionLike {
->Subscription : Subscription
-}
-=== node_modules/rxjs/internal/observable/from.d.ts ===
-import { Observable } from '../Observable';
->Observable : typeof Observable
-
-import { ObservableInput, SchedulerLike } from '../types';
->ObservableInput : any
->SchedulerLike : any
-
-export declare function from<T>(input: ObservableInput<ObservableInput<T>>, scheduler?: SchedulerLike): Observable<Observable<T>>;
->from : <T>(input: ObservableInput<ObservableInput<T>>, scheduler?: SchedulerLike) => Observable<Observable<T>>
->input : ObservableInput<ObservableInput<T>>
->scheduler : SchedulerLike | undefined
-
-=== node_modules/rxjs/internal/observable/fromEvent.d.ts ===
-import { Observable } from '../Observable';
->Observable : typeof Observable
-
-export interface NodeStyleEventEmitter {
-}
-export interface NodeCompatibleEventEmitter {
-}
-export interface JQueryStyleEventEmitter {
-}
-export interface HasEventTargetAddRemove<E> {
-}
-export declare type EventTargetLike<T> = HasEventTargetAddRemove<T> | NodeStyleEventEmitter | NodeCompatibleEventEmitter | JQueryStyleEventEmitter;
->EventTargetLike : EventTargetLike<T>
-
-export declare type FromEventTarget<T> = EventTargetLike<T> | ArrayLike<EventTargetLike<T>>;
->FromEventTarget : FromEventTarget<T>
-
-export declare function fromEvent<T>(target: FromEventTarget<T>, eventName: string): Observable<T>;
->fromEvent : <T>(target: FromEventTarget<T>, eventName: string) => Observable<T>
->target : FromEventTarget<T>
->eventName : string
-
-=== node_modules/rxjs/internal/operators/filter.d.ts ===
-import { OperatorFunction, MonoTypeOperatorFunction } from '../types';
->OperatorFunction : any
->MonoTypeOperatorFunction : any
-
-export declare function filter<T, S extends T>(predicate: (value: T, index: number) => value is S, thisArg?: any): OperatorFunction<T, S>;
->filter : <T, S extends T>(predicate: (value: T, index: number) => value is S, thisArg?: any) => OperatorFunction<T, S>
->predicate : (value: T, index: number) => value is S
->value : T
->index : number
->thisArg : any
-
-=== node_modules/rxjs/internal/operators/finalize.d.ts ===
-import { MonoTypeOperatorFunction } from '../types';
->MonoTypeOperatorFunction : any
-
-/**
- */
-export declare function finalize<T>(callback: () => void): MonoTypeOperatorFunction<T>;
->finalize : <T>(callback: () => void) => MonoTypeOperatorFunction<T>
->callback : () => void
-
-=== node_modules/rxjs/internal/operators/first.d.ts ===
-import { OperatorFunction } from '../../internal/types';
->OperatorFunction : any
-
-export declare function first<T, D = T>(predicate?: null, defaultValue?: D): OperatorFunction<T, T | D>;
->first : <T, D = T>(predicate?: null, defaultValue?: D) => OperatorFunction<T, T | D>
->predicate : null | undefined
->defaultValue : D | undefined
-
-=== node_modules/rxjs/internal/operators/map.d.ts ===
-import { OperatorFunction } from '../types';
->OperatorFunction : any
-
-/**
- */
-export declare function map<T, R>(project: (value: T, index: number) => R, thisArg?: any): OperatorFunction<T, R>;
->map : <T, R>(project: (value: T, index: number) => R, thisArg?: any) => OperatorFunction<T, R>
->project : (value: T, index: number) => R
->value : T
->index : number
->thisArg : any
-
-=== node_modules/rxjs/internal/operators/mergeMap.d.ts ===
-import { ObservableInput, OperatorFunction } from '../types';
->ObservableInput : any
->OperatorFunction : any
-
-export declare function mergeMap<T, R>(project: (value: T, index: number) => ObservableInput<R>, concurrent?: number): OperatorFunction<T, R>;
+declare function mergeMap<T, R>(project: (value: T, index: number) => ObservableInput<R>, concurrent?: number): OperatorFunction<T, R>;
 >mergeMap : <T, R>(project: (value: T, index: number) => ObservableInput<R>, concurrent?: number) => OperatorFunction<T, R>
 >project : (value: T, index: number) => ObservableInput<R>
 >value : T
 >index : number
 >concurrent : number | undefined
 
-=== node_modules/rxjs/internal/operators/scan.d.ts ===
-import { OperatorFunction, MonoTypeOperatorFunction } from '../types';
->OperatorFunction : any
->MonoTypeOperatorFunction : any
-
-export declare function scan<T>(accumulator: (acc: T, value: T, index: number) => T, seed?: T): MonoTypeOperatorFunction<T>;
->scan : <T>(accumulator: (acc: T, value: T, index: number) => T, seed?: T) => MonoTypeOperatorFunction<T>
->accumulator : (acc: T, value: T, index: number) => T
->acc : T
->value : T
->index : number
->seed : T | undefined
-
-=== node_modules/rxjs/internal/operators/skipWhile.d.ts ===
-import { MonoTypeOperatorFunction } from '../types';
->MonoTypeOperatorFunction : any
-
-/**
- */
-export declare function skipWhile<T>(predicate: (value: T, index: number) => boolean): MonoTypeOperatorFunction<T>;
->skipWhile : <T>(predicate: (value: T, index: number) => boolean) => MonoTypeOperatorFunction<T>
->predicate : (value: T, index: number) => boolean
->value : T
->index : number
-
-=== node_modules/rxjs/internal/operators/takeUntil.d.ts ===
-import { Observable } from '../Observable';
->Observable : typeof Observable
-
-import { MonoTypeOperatorFunction } from '../types';
->MonoTypeOperatorFunction : any
-
-export declare function takeUntil<T>(notifier: Observable<any>): MonoTypeOperatorFunction<T>;
+declare function takeUntil<T>(notifier: Observable<any>): MonoTypeOperatorFunction<T>;
 >takeUntil : <T>(notifier: Observable<any>) => MonoTypeOperatorFunction<T>
 >notifier : Observable<any>
 
-=== node_modules/rxjs/internal/operators/timeout.d.ts ===
-import { MonoTypeOperatorFunction, SchedulerLike } from '../types';
->MonoTypeOperatorFunction : any
->SchedulerLike : any
+declare const mouseMove: Observable<Event>;
+>mouseMove : Observable<Event>
 
-/**
- */
-export declare function timeout<T>(due: number | Date, scheduler?: SchedulerLike): MonoTypeOperatorFunction<T>;
->timeout : <T>(due: number | Date, scheduler?: SchedulerLike) => MonoTypeOperatorFunction<T>
->due : number | Date
->scheduler : SchedulerLike | undefined
+declare const mouseDown: Observable<unknown>;
+>mouseDown : Observable<unknown>
 
-=== node_modules/rxjs/internal/types.d.ts ===
-import { Observable } from './Observable';
->Observable : typeof Observable
+declare const mouseUp: Observable<Event>;
+>mouseUp : Observable<Event>
 
-export interface UnaryFunction<T, R> {
-    (source: T): R;
->source : T
-}
-export interface OperatorFunction<T, R> extends UnaryFunction<Observable<T>, Observable<R>> {
-}
-export interface MonoTypeOperatorFunction<T> extends OperatorFunction<T, T> {
-}
-export interface Unsubscribable {
-}
-export declare type TeardownLogic = Unsubscribable | Function | void;
->TeardownLogic : TeardownLogic
+const mouseDrag = mouseDown.pipe(mergeMap((md: MouseEvent) => {
+>mouseDrag : Observable<Event>
+>mouseDown.pipe(mergeMap((md: MouseEvent) => {  return mouseMove.pipe(takeUntil(mouseUp));})) : Observable<Event>
+>mouseDown.pipe : { (): Observable<unknown>; <A>(op1: OperatorFunction<unknown, A>): Observable<A>; }
+>mouseDown : Observable<unknown>
+>pipe : { (): Observable<unknown>; <A>(op1: OperatorFunction<unknown, A>): Observable<A>; }
+>mergeMap((md: MouseEvent) => {  return mouseMove.pipe(takeUntil(mouseUp));}) : OperatorFunction<MouseEvent, Event>
+>mergeMap : <T, R>(project: (value: T, index: number) => ObservableInput<R>, concurrent?: number) => OperatorFunction<T, R>
+>(md: MouseEvent) => {  return mouseMove.pipe(takeUntil(mouseUp));} : (md: MouseEvent) => Observable<Event>
+>md : MouseEvent
 
-export interface SubscriptionLike extends Unsubscribable {
-}
-export declare type SubscribableOrPromise<T> = Subscribable<T> | Subscribable<never> | PromiseLike<T> | InteropObservable<T>;
->SubscribableOrPromise : SubscribableOrPromise<T>
+  return mouseMove.pipe(takeUntil(mouseUp));
+>mouseMove.pipe(takeUntil(mouseUp)) : Observable<Event>
+>mouseMove.pipe : { (): Observable<Event>; <A>(op1: OperatorFunction<Event, A>): Observable<A>; }
+>mouseMove : Observable<Event>
+>pipe : { (): Observable<Event>; <A>(op1: OperatorFunction<Event, A>): Observable<A>; }
+>takeUntil(mouseUp) : MonoTypeOperatorFunction<Event>
+>takeUntil : <T>(notifier: Observable<any>) => MonoTypeOperatorFunction<T>
+>mouseUp : Observable<Event>
 
-export interface Subscribable<T> {
-    subscribe(next?: (value: T) => void, error?: (error: any) => void, complete?: () => void): Unsubscribable;
->subscribe : (next?: (value: T) => void, error?: (error: any) => void, complete?: () => void) => Unsubscribable
->next : ((value: T) => void) | undefined
->value : T
->error : ((error: any) => void) | undefined
->error : any
->complete : (() => void) | undefined
-}
-export declare type ObservableInput<T> = SubscribableOrPromise<T> | ArrayLike<T> | Iterable<T>;
->ObservableInput : ObservableInput<T>
+}));
 
-export declare type InteropObservable<T> = {
->InteropObservable : InteropObservable<T>
+declare function drawRectangle(r: Event): void;
+>drawRectangle : (r: Event) => void
+>r : Event
 
-};
-export interface NextObserver<T> {
-    complete?: () => void;
->complete : (() => void) | undefined
-}
-export interface ErrorObserver<T> {
-    complete?: () => void;
->complete : (() => void) | undefined
-}
-export interface CompletionObserver<T> {
-    complete: () => void;
->complete : () => void
-}
-export declare type PartialObserver<T> = NextObserver<T> | ErrorObserver<T> | CompletionObserver<T>;
->PartialObserver : PartialObserver<T>
+mouseDrag.subscribe(pos => pos.timeStamp);
+>mouseDrag.subscribe(pos => pos.timeStamp) : Unsubscribable
+>mouseDrag.subscribe : { (observer?: PartialObserver<Event> | undefined): Unsubscribable; (next?: ((value: Event) => void) | undefined, error?: (error: any) => void, complete?: () => void): Unsubscribable; }
+>mouseDrag : Observable<Event>
+>subscribe : { (observer?: PartialObserver<Event> | undefined): Unsubscribable; (next?: ((value: Event) => void) | undefined, error?: (error: any) => void, complete?: () => void): Unsubscribable; }
+>pos => pos.timeStamp : (pos: Event) => number
+>pos : Event
+>pos.timeStamp : number
+>pos : Event
+>timeStamp : number
 
-export interface Observer<T> {
-}
-export interface SchedulerLike {
-}
-=== node_modules/rxjs/operators/index.d.ts ===
-export { filter } from '../internal/operators/filter';
->filter : <T, S extends T>(predicate: (value: T, index: number) => value is S, thisArg?: any) => import("rxjs/internal/types").OperatorFunction<T, S>
-
-export { finalize } from '../internal/operators/finalize';
->finalize : <T>(callback: () => void) => import("rxjs/internal/types").MonoTypeOperatorFunction<T>
-
-export { first } from '../internal/operators/first';
->first : <T, D = T>(predicate?: null, defaultValue?: D) => import("rxjs/internal/types").OperatorFunction<T, T | D>
-
-export { map } from '../internal/operators/map';
->map : <T, R>(project: (value: T, index: number) => R, thisArg?: any) => import("rxjs/internal/types").OperatorFunction<T, R>
-
-export { mergeMap } from '../internal/operators/mergeMap';
->mergeMap : <T, R>(project: (value: T, index: number) => import("rxjs/internal/types").ObservableInput<R>, concurrent?: number) => import("rxjs/internal/types").OperatorFunction<T, R>
-
-export { scan } from '../internal/operators/scan';
->scan : <T>(accumulator: (acc: T, value: T, index: number) => T, seed?: T) => import("rxjs/internal/types").MonoTypeOperatorFunction<T>
-
-export { skipWhile } from '../internal/operators/skipWhile';
->skipWhile : <T>(predicate: (value: T, index: number) => boolean) => import("rxjs/internal/types").MonoTypeOperatorFunction<T>
-
-export { takeUntil } from '../internal/operators/takeUntil';
->takeUntil : <T>(notifier: import("rxjs").Observable<any>) => import("rxjs/internal/types").MonoTypeOperatorFunction<T>
-
-export { timeout } from '../internal/operators/timeout';
->timeout : <T>(due: number | Date, scheduler?: import("rxjs/internal/types").SchedulerLike) => import("rxjs/internal/types").MonoTypeOperatorFunction<T>
+mouseDrag.subscribe(rec => drawRectangle(rec));
+>mouseDrag.subscribe(rec => drawRectangle(rec)) : Unsubscribable
+>mouseDrag.subscribe : { (observer?: PartialObserver<Event> | undefined): Unsubscribable; (next?: ((value: Event) => void) | undefined, error?: (error: any) => void, complete?: () => void): Unsubscribable; }
+>mouseDrag : Observable<Event>
+>subscribe : { (observer?: PartialObserver<Event> | undefined): Unsubscribable; (next?: ((value: Event) => void) | undefined, error?: (error: any) => void, complete?: () => void): Unsubscribable; }
+>rec => drawRectangle(rec) : (rec: Event) => void
+>rec : Event
+>drawRectangle(rec) : void
+>drawRectangle : (r: Event) => void
+>rec : Event
 

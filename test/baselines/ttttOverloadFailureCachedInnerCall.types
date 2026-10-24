@@ -1,0 +1,53 @@
+//// [test/cases/ttttOverloadFailureCachedInnerCall.ts] ////
+
+=== ttttOverloadFailureCachedInnerCall.ts ===
+// A call failing on its only argument, a call of a generic function returning a function: the fallback signature's
+// inference (tsc's inferSignatureInstantiationForOverloadFailure, under SkipGenericFunctions) still infers from that
+// argument, whose resolved signature getResolvedSignature has cached from the failed check
+interface Subscribable<T> {
+  subscribe(next?: (value: T) => void): void;
+>subscribe : (next?: (value: T) => void) => void
+>next : ((value: T) => void) | undefined
+>value : T
+}
+interface Observable<T> extends Subscribable<T> {
+  pipe<A>(op1: (s: Observable<T>) => Observable<A>): Observable<A>;
+>pipe : <A>(op1: (s: Observable<T>) => Observable<A>) => Observable<A>
+>op1 : (s: Observable<T>) => Observable<A>
+>s : Observable<T>
+}
+declare function mergeMap<T, R>(project: (value: T) => Subscribable<R>): (s: Observable<T>) => Observable<R>;
+>mergeMap : <T, R>(project: (value: T) => Subscribable<R>) => (s: Observable<T>) => Observable<R>
+>project : (value: T) => Subscribable<R>
+>value : T
+>s : Observable<T>
+
+declare const moves: Observable<Event>;
+>moves : Observable<Event>
+
+declare const downs: Observable<unknown>;
+>downs : Observable<unknown>
+
+const drag = downs.pipe(mergeMap((md: MouseEvent) => moves));
+>drag : Observable<Event>
+>downs.pipe(mergeMap((md: MouseEvent) => moves)) : Observable<Event>
+>downs.pipe : <A>(op1: (s: Observable<unknown>) => Observable<A>) => Observable<A>
+>downs : Observable<unknown>
+>pipe : <A>(op1: (s: Observable<unknown>) => Observable<A>) => Observable<A>
+>mergeMap((md: MouseEvent) => moves) : (s: Observable<MouseEvent>) => Observable<Event>
+>mergeMap : <T, R>(project: (value: T) => Subscribable<R>) => (s: Observable<T>) => Observable<R>
+>(md: MouseEvent) => moves : (md: MouseEvent) => Observable<Event>
+>md : MouseEvent
+>moves : Observable<Event>
+
+drag.subscribe(e => e.timeStamp);
+>drag.subscribe(e => e.timeStamp) : void
+>drag.subscribe : (next?: ((value: Event) => void) | undefined) => void
+>drag : Observable<Event>
+>subscribe : (next?: ((value: Event) => void) | undefined) => void
+>e => e.timeStamp : (e: Event) => number
+>e : Event
+>e.timeStamp : number
+>e : Event
+>timeStamp : number
+

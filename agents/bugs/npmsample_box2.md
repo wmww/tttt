@@ -59,7 +59,7 @@ boxes' appends never conflict. One section per seed, one bullet per repro, statu
   then `.subscribe(rec => this.drawRectangle(rec))`: tttt infers `unknown` for the pipe's output. Guess: inference
   through a callback whose parameter annotation (MouseEvent) is narrower than the source (Event) under bivariance, or an
   overload choice of `pipe`. The cut-down case is non-strict and fails only the types component in the harness (the
-  errors component agrees there: a mismatch of the shape of the project, not reproduced as a diagnostic). Flip: no. (claimed: fixF) [open]
+  errors component agrees there: a mismatch of the shape of the project, not reproduced as a diagnostic). Flip: no. Cause: the outer `pipe` call fails on its argument (the callback's `MouseEvent` against the stream's `unknown`), and tsc's failure fallback (inferSignatureInstantiationForOverloadFailure, under SkipGenericFunctions) still infers from the inner `mergeMap(...)` call because getResolvedSignature returns its cached signature; tttt's infer_type_arguments skipped generic calls under skip_generic even when resolved. Test redone by hand from rxjs 6.3.3's shapes. [fixed PENDING]
 - Unreduced, non-flip (reduce.py drops project references): berget-ai/r8s packages/eneo (tsconfig.bench.json, composite
   with `references` to packages/core): both report TS6059 "not under rootDir", tsgo at ../core/src/index.ts(1) naming
   core/src/jsx-runtime.ts, tttt at src/index.tsx(1) naming core/src/index.ts. The same area as the TS6059 entries in

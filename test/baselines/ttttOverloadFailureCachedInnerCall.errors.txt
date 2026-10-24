@@ -1,0 +1,27 @@
+ttttOverloadFailureCachedInnerCall.ts(13,25): error TS2345: Argument of type '(s: Observable<MouseEvent>) => Observable<Event>' is not assignable to parameter of type '(s: Observable<unknown>) => Observable<Event>'.
+  Types of parameters 's' and 's' are incompatible.
+    Type 'Observable<unknown>' is not assignable to type 'Observable<MouseEvent>'.
+      Type 'unknown' is not assignable to type 'MouseEvent'.
+
+
+==== ttttOverloadFailureCachedInnerCall.ts (1 errors) ====
+    // A call failing on its only argument, a call of a generic function returning a function: the fallback signature's
+    // inference (tsc's inferSignatureInstantiationForOverloadFailure, under SkipGenericFunctions) still infers from that
+    // argument, whose resolved signature getResolvedSignature has cached from the failed check
+    interface Subscribable<T> {
+      subscribe(next?: (value: T) => void): void;
+    }
+    interface Observable<T> extends Subscribable<T> {
+      pipe<A>(op1: (s: Observable<T>) => Observable<A>): Observable<A>;
+    }
+    declare function mergeMap<T, R>(project: (value: T) => Subscribable<R>): (s: Observable<T>) => Observable<R>;
+    declare const moves: Observable<Event>;
+    declare const downs: Observable<unknown>;
+    const drag = downs.pipe(mergeMap((md: MouseEvent) => moves));
+                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type '(s: Observable<MouseEvent>) => Observable<Event>' is not assignable to parameter of type '(s: Observable<unknown>) => Observable<Event>'.
+!!! error TS2345:   Types of parameters 's' and 's' are incompatible.
+!!! error TS2345:     Type 'Observable<unknown>' is not assignable to type 'Observable<MouseEvent>'.
+!!! error TS2345:       Type 'unknown' is not assignable to type 'MouseEvent'.
+    drag.subscribe(e => e.timeStamp);
+    

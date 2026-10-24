@@ -1,0 +1,46 @@
+npm__bumblebee032_ng-feedback_TS2345.ts(29,34): error TS2345: Argument of type 'OperatorFunction<MouseEvent, Event>' is not assignable to parameter of type 'OperatorFunction<unknown, Event>'.
+  Type 'unknown' is not assignable to type 'MouseEvent'.
+
+
+==== npm__bumblebee032_ng-feedback_TS2345.ts (1 errors) ====
+    // origin: npm @bumblebee032/ng-feedback@2.0.97 https://github.com/DarrenLouw/feedback tsconfig.bench.json seed 20261109
+    // flip: no
+    // (cut by hand from rxjs 6.3.3's declarations and feedback-toolbar/feedback-dialog.component.ts: the outer pipe call
+    // fails on its argument, whose callback parameter is narrower than the stream's type, and its result type still comes
+    // from the inner mergeMap call resolved before: tsc's overload-failure fallback reuses the cached resolved signature)
+    interface Unsubscribable { unsubscribe(): void; }
+    interface NextObserver<T> { closed?: boolean; next: (value: T) => void; error?: (err: any) => void; complete?: () => void; }
+    interface ErrorObserver<T> { closed?: boolean; next?: (value: T) => void; error: (err: any) => void; complete?: () => void; }
+    type PartialObserver<T> = NextObserver<T> | ErrorObserver<T>;
+    interface Subscribable<T> {
+      subscribe(observer?: PartialObserver<T>): Unsubscribable;
+      subscribe(next?: (value: T) => void, error?: (error: any) => void, complete?: () => void): Unsubscribable;
+    }
+    type ObservableInput<T> = Subscribable<T> | Subscribable<never> | PromiseLike<T> | ArrayLike<T> | Iterable<T>;
+    interface UnaryFunction<T, R> { (source: T): R; }
+    interface OperatorFunction<T, R> extends UnaryFunction<Observable<T>, Observable<R>> {}
+    interface MonoTypeOperatorFunction<T> extends OperatorFunction<T, T> {}
+    declare class Observable<T> implements Subscribable<T> {
+      subscribe(observer?: PartialObserver<T>): Unsubscribable;
+      subscribe(next?: (value: T) => void, error?: (error: any) => void, complete?: () => void): Unsubscribable;
+      pipe(): Observable<T>;
+      pipe<A>(op1: OperatorFunction<T, A>): Observable<A>;
+    }
+    declare function mergeMap<T, R>(project: (value: T, index: number) => ObservableInput<R>, concurrent?: number): OperatorFunction<T, R>;
+    declare function takeUntil<T>(notifier: Observable<any>): MonoTypeOperatorFunction<T>;
+    declare const mouseMove: Observable<Event>;
+    declare const mouseDown: Observable<unknown>;
+    declare const mouseUp: Observable<Event>;
+    const mouseDrag = mouseDown.pipe(mergeMap((md: MouseEvent) => {
+                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      return mouseMove.pipe(takeUntil(mouseUp));
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    }));
+    ~~
+!!! error TS2345: Argument of type 'OperatorFunction<MouseEvent, Event>' is not assignable to parameter of type 'OperatorFunction<unknown, Event>'.
+!!! error TS2345:   Type 'unknown' is not assignable to type 'MouseEvent'.
+    
+    declare function drawRectangle(r: Event): void;
+    mouseDrag.subscribe(pos => pos.timeStamp);
+    mouseDrag.subscribe(rec => drawRectangle(rec));
+    
