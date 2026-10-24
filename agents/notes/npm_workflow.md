@@ -65,3 +65,5 @@ mid-fix: it finishes what it's on, and the coordinator points the next free fixe
 ## Seed ranges
 - This box (the coordinator's): 20261023 upward, one per batch (20261035, 20261036, ... next).
 - A second box: 20261100-20261199, so records never collide; commit each seed's files under test/npmsample/ as here.
+
+Fixers take the top of `rank` when no flip is open; a finder checks `rank` before reducing a divergence whose key is already filed (`scripts/npmsample.py rank [--min N] [--json]`).

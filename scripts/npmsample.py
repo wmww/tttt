@@ -12,6 +12,8 @@ by tsgo and tttt, and every difference is a tttt bug (or a formatting-only one, 
                                                    # largest first; workspaces skipped (opt-in, see npm_sampling.md)
   scripts/npmsample.py compare --seed S [--last] [-k CODE] [--keep]   # tttt at the defaults twice and --threads 1:
                                                    # any two differing is verdict `varies`, priority 1; matches deleted
+  scripts/npmsample.py rank [--min N] [--json]     # every seed's results by (side, code, message skeleton): projects, seeds,
+                                                   # examples, status (open/repro/fixed); records' `diff` lists feed it
   scripts/npmsample.py clean --seed S [--all] [--except NAME...]   # delete the clones compare matched (--all: all)
 
 Files: test/npmsample/S.candidates.jsonl (sample order), S.setup.jsonl (one line per candidate looked at: accepted or
@@ -29,13 +31,14 @@ the clone's .yarnrc.yml and logged in the setup record), tsc 6's --showConfig, t
 Nothing from node_modules is ever run. Caches in thirdparty/npmsample/.cache/pm (the package managers' deleted after
 each setup run).
 """
-import argparse, collections, concurrent.futures, json, os, random, re, shutil, subprocess, sys, tarfile, threading, time
+import argparse, collections, concurrent.futures, glob, json, os, random, re, shutil, subprocess, sys, tarfile, threading, time
 import urllib.error, urllib.parse, urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import installsandbox as sb  # noqa: E402
 import tscformat  # noqa: E402
 import tttt_run  # noqa: E402
+import sweep  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NS = os.path.realpath(os.path.join(ROOT, 'thirdparty/npmsample'))  # (tsgo prints real paths)
@@ -913,6 +916,21 @@ def head_commit():
     return subprocess.run(['git', '-C', ROOT, 'rev-parse', '--short', 'HEAD'], capture_output=True, text=True).stdout.strip()
 
 
+def diff_entries(g_text, d_text, miss, extra, limit=30):
+    """The diagnostics only one side reports, as {side, code, key, file, line}: key is the message skeleton (quoted
+    parts elided, sweep.shape), so a deleted clone still leaves its fingerprint for `rank`"""
+    msgs = {}
+    for side, text in (('tsgo', g_text), ('tttt', d_text)):
+        for f, l, _, c, m in tscformat.parse(text):
+            msgs.setdefault((side, f, l, c), m)
+    out = []
+    for side, ks in (('tttt', extra), ('tsgo', miss)):
+        for f, l, c in sorted(ks):
+            out.append({'side': side, 'code': c, 'key': sweep.shape(msgs.get((side, f, l, c), '')),
+                        'file': os.path.basename(f), 'line': l})
+    return out[:limit]
+
+
 def compare_one(seed, name, config, tsc_cache, lock, delete_same):
     base = os.path.join(NS, str(seed))
     bench = os.path.join(base, config)
@@ -950,6 +968,9 @@ def compare_one(seed, name, config, tsc_cache, lock, delete_same):
                        'only_first': sorted(map(list, ka - kb))[:5], 'only_other': sorted(map(list, kb - ka))[:5],
                        'statuses': [x[2] for x in runs], 'exits': [x[1] for x in runs]}
     lines = {(f, l, c): f'{f}({l}): TS{c} {m[:200]}' for f, l, _, c, m in tscformat.parse(g_text + '\n' + d_text)}
+    r['diff'] = diff_entries(g_text, d_text, miss, extra)
+    if not r['diff']:
+        del r['diff']
     if miss or extra:
         k = sorted(extra or miss)[0]
         r['example'] = ('tttt only: ' if extra else 'tsgo only: ') + lines.get(k, str(k))
@@ -1027,6 +1048,88 @@ def cmd_compare(seed, jobs, delete_same, last, code):
           f'(file, line, code) ({fmt} counting text-only), clean agreement {clean}/{n} ({100 * clean / max(n, 1):.0f}%)')
 
 
+# ------------------------------------------------------------------------------------------------------------ rank
+
+def project_owner_repo(name):
+    """'0017-JohnDeved-zooqle-api-ts' -> 'johndeved-zooqle-api-ts' (the clone directory without its index)"""
+    return name.split('-', 1)[-1].lower()
+
+
+def bug_bullets():
+    """(text, fixed) of every bullet in agents/bugs/npmsample*.md"""
+    out = []
+    d = os.path.join(ROOT, 'agents/bugs')
+    for fn in sorted(os.listdir(d)):
+        if not (fn.startswith('npmsample') and fn.endswith('.md')):
+            continue
+        for b in re.split(r'\n(?=- )', open(os.path.join(d, fn)).read()):
+            if b.startswith('- '):
+                t = b.rstrip()
+                out.append((t, bool(re.search(r'\[fixed[^\]]*\]\s*$', t))))
+    return out
+
+
+def rank_data(min_projects=1):
+    """Every results record of every seed: {(side, code, key): {projects, seeds, ...}} with key None for the coarse
+    fallback of records that have only codes_extra/codes_missing; each with a status (fixed, repro, open)"""
+    agg = {}
+    for path in sorted(glob.glob(os.path.join(ROOT, 'test/npmsample/*.results.jsonl'))):
+        seed = os.path.basename(path).split('.')[0]
+        for r in read_jsonl(path):
+            if r.get('verdict') not in ('differ', 'crash', 'varies', 'text') and not r.get('diff'):
+                continue
+            proj = f'{seed}/{r["name"]}'
+            entries = {(e['side'], e['code'], e['key']) for e in r.get('diff', [])}
+            if not r.get('diff'):
+                entries = {('tttt', c, None) for c in r.get('codes_extra', [])} | \
+                          {('tsgo', c, None) for c in r.get('codes_missing', [])}
+            for k in entries:
+                a = agg.setdefault(k, {'projects': set(), 'seeds': set()})
+                a['projects'].add(proj)
+                a['seeds'].add(seed)
+    repros = []
+    tsv = os.path.join(ROOT, 'test/npmsample/repros.tsv')
+    if os.path.exists(tsv):
+        for line in open(tsv):
+            f = line.rstrip('\n').split('\t')
+            if len(f) >= 4:
+                tail = re.sub(r'\.git$', '', f[3]).rstrip('/').split('github.com/')[-1]
+                repros.append((f[0], tail.replace('/', '-').lower()))
+    bullets = bug_bullets()
+    out = []
+    for (side, code, key), a in agg.items():
+        if len(a['projects']) < min_projects:
+            continue
+        status, repo = 'open', set()
+        for proj in sorted(a['projects']):
+            name = proj.split('/', 1)[1]
+            orr = project_owner_repo(name)
+            if any(orr == rr for _, rr in repros):
+                repo.add(proj)
+            owner_repo = orr.replace('-', '[-/]', 1)
+            for text, fixed in bullets:
+                if fixed and re.search(owner_repo, text, re.I) and f'TS{code}' in text:
+                    status = 'fixed'
+        if status != 'fixed' and repo:
+            status = 'repro'
+        out.append({'side': side, 'code': code, 'key': key, 'projects': sorted(a['projects']),
+                    'n_projects': len(a['projects']), 'n_seeds': len(a['seeds']), 'status': status})
+    out.sort(key=lambda e: (-e['n_projects'], -e['n_seeds'], e['code'], e['side'], e['key'] or ''))
+    return out
+
+
+def cmd_rank(min_projects, as_json):
+    rows = rank_data(min_projects)
+    if as_json:
+        print(json.dumps(rows, indent=1))
+        return
+    print(f'{"proj":>4} {"seeds":>5} {"status":6} {"side":4} {"code":>5}  key / examples')
+    for e in rows:
+        ex = ', '.join(p.split('/', 1)[1] for p in e['projects'][:3])
+        print(f'{e["n_projects"]:4} {e["n_seeds"]:5} {e["status"]:6} {e["side"]:4} TS{e["code"]:<5} '
+              f'{e["key"] if e["key"] is not None else "(older record: code only)"}\n{"":29}{ex}')
+
+
 # ----------------------------------------------------------------------------------------------------------- clean
 
 def setup_running(seed):
@@ -1073,8 +1176,10 @@ def cmd_clean(seed, everything, keep):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('command', nargs='?', choices=('sample', 'setup', 'compare', 'clean', 'stats'))
-    ap.add_argument('--seed', type=int, required=True)
+    ap.add_argument('command', nargs='?', choices=('sample', 'setup', 'compare', 'clean', 'stats', 'rank'))
+    ap.add_argument('--seed', type=int)
+    ap.add_argument('--min', type=int, default=1, help='rank: only keys in at least this many projects')
+    ap.add_argument('--json', action='store_true', help='rank: JSON instead of the table')
     ap.add_argument('-n', type=int, default=2000, help='names to sample')
     ap.add_argument('-N', type=int, default=50, help='projects to accept')
     ap.add_argument('-j', type=int, default=4, help='candidates set up / projects compared at once')
@@ -1091,6 +1196,10 @@ def main():
                     '(npm_sampling.md: it cuts the trial rejects, and a third of the accepted projects too)')
     args = ap.parse_args()
     c = args.command
+    if c == 'rank':
+        return cmd_rank(args.min, args.json)
+    if args.seed is None:
+        ap.error('--seed is required')
     if c in ('setup', 'compare', None) and not args.last:
         # (The pinned tsgo: a stale checkout fails here instead of filling tsc.jsonl with another version's output)
         subprocess.run([os.path.join(ROOT, 'thirdparty/ensure-typescript.sh')], check=True, stdout=subprocess.DEVNULL)
