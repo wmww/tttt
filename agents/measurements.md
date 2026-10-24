@@ -119,6 +119,10 @@ run with several checkers or a recycled one; program_typecheck() checks again in
   1.60 s. The 111 circularity configs one run each: 50.5 -> 60.6 s in total.
 - Reusing the parsed program (0724c2984) against the CLI restart (7ca8d73ea): vue 0.73 -> 0.67 s, better-auth 0.56 ->
   0.48 s: the one-checker check is most of the cost.
+- kdiff -k 16 after it (det3, 1ee362e69 + docs): sequelize, rxjs and openclaw's configs, 190: only rxjs/packages/rxjs
+  differs (elaboration text, decided to stay). openclaw at -j 1, 1200 s, 16 GB: 0 / 160 differ; unmeasurable at that
+  budget: `openclaw` (memory at both K) and openclaw/src/infra (K16 killed). vision.md's "kdiff 7 / 4436 (openclaw x4,
+  rxjs, sequelize x2)" is now rxjs alone plus those two.
 
 ## Random npm projects (scripts/npmsample.py; agents/notes/npm_sampling.md)
 `scripts/npmsample.py --seed S` (50 projects per seed, the first accepted in sample order; tsgo 7.1 via tttt-oracle,
