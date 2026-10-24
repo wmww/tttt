@@ -653,7 +653,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   parameter maps to itself: tsgo's seeded root.instantiations), the identity relation
   treats a twin as its original, and `identity_structured()` tells a written distributive conditional (the root,
   whose check type is tsgo's twin) from one instantiated onto the same parameter (tsgo's original): an instance whose
-  outer mapping is the identity is a root in tsgo but not here. Correct: distribute the node and replace the identity tests.
+  outer mapping is the identity is a root in tsgo but not here. That identity isn't symmetric, so its result is whichever direction is compared first: `recursive_related()` keys identity by the pair in id order like tsgo, and matching tsgo relies on tttt asking the pairs in tsgo's order (held on es-toolkit, the probes and the sweeps; not guaranteed). Correct: distribute the node and replace the identity tests.
 - `ty_tuple_target()`: all tuple targets share `Checker.tuple_params` (tsgo: fresh per target; type-fest's IntRange
   made 4.5M). Unsound if a type mentions two targets' raw parameters at once. Element props share the read-only
   `ty_prop_decl_value_name` (`prop_decl_shared()` guards writes).
