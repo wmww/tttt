@@ -252,7 +252,7 @@ for flips); a separate file so the three boxes never conflict.
   +7 in JavaScript: TS7008 "Member '_frameNavigations' implicitly has an 'any[]' type" at
   core/gather/driver/network-monitor.js:60 and :89 (a `this._frameNavigations = []` member), TS2339 "Property
   'level' does not exist on type '{ fingerprint: any[]; tags: any; }'" at core/lib/sentry.js:131 and :141 (a
-  JS object literal later given properties), and TS7022. tsgo 57, tttt 64, not a flip. No repro. [open]
+  JS object literal later given properties), and TS7022. tsgo 57, tttt 64, not a flip. No repro. (claimed: fixE) [open]
 - Seed 20261217, izumiz-dev/react-flow-chart (@izumiz-dev/react-flow-chart@0.1.7, commit c7a97a7e0): tsgo's TS2615
   in @types/styled-components index.d.ts:196 (the defaultProps ForwardRefExoticBase circularity, like
   rocket-slate's npm__rocket-slate_mentions_TS2615) is missing, and tttt reports TS2313 "Type parameter 'P' has a
