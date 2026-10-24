@@ -1657,3 +1657,12 @@ How a refresh is run (repos.txt's "Plan 77" comment: GitHub topics, 300-3000 sta
 lockfile): append rows to `test/sourcesweep/repos.txt`, `thirdparty/ensure-sources.sh NAMES`, `scripts/sourcesweep.py
 --tsc-new`, `scripts/dtsdiff.py --tsc -f RE`, then both with `-f '^(names)(/|$)'`; record day one before any fix.
 The first refresh's 28 repos: 195 / 203 projects on day one (96.1%), two checker root causes, 203 / 203 after.
+
+## Instruction counts re-saved (2026-10-24 ~05:30, main at e38626540)
+`scripts/instrcount.sh --save` after the day's correctness fixes and the perf agent's two fixes (5a2146435 per-file
+`@link` gate, 87c39fb10 memoized tsc_could_contain_type_variables). Against the previous save (85b7c7520, 2026-10-23)
+the drift was +0.5..+1.4% on every corpus; the Sonnet perf bisect attributed zod's +1.24% as: de8e8eef9 (erased
+signature's param is a callback) +0.18%, 7156e6af4 (couldContainTypeVariables in inference, now memoized) +0.23%,
+94a7c0195 (JSDoc {@link} scan, now gated per file) +0.30%, a118b2539 (object literal outer_instantiable) +0.21%, the
+rest many commits under +0.1% each. The two behaviour costs stay; the two avoidable ones were recovered (zod -0.30%).
+New reference: zod 3.643 G, drizzle 4.526 G, vscode 67.207 G (fast/tttt, callgrind).
