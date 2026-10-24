@@ -16,7 +16,7 @@ for flips); a separate file so the three boxes never conflict.
   true, then `!data` with data never falsy there) should leave nothing, so error is the error member's. Guess:
   narrowing a destructured sibling by two successive discriminant references (the binding-element parent narrowing,
   getCandidateDiscriminantPropertyAccess) doesn't compose across `||` in tttt. Repro
-  test/cases/npm__fireproof_core-types-protocols-cloud_TS18048.ts. (claimed: fixE) Cause: tttt asked whether `data` is a discriminant of the computed type (the success member alone after `!success`), tsc of the declared union while the computed type is a subset of it (getDiscriminantPropertyAccess); the pattern and parameter pseudo-references missed that. [fixed PENDING]
+  test/cases/npm__fireproof_core-types-protocols-cloud_TS18048.ts. (claimed: fixE) Cause: tttt asked whether `data` is a discriminant of the computed type (the success member alone after `!success`), tsc of the declared union while the computed type is a subset of it (getDiscriminantPropertyAccess); the pattern and parameter pseudo-references missed that. [fixed ada65342c]
 - Seed 20261201, abrevior/apollo-federation-file-upload (@abrevior/apollo-federation-upload@4.2.0): spurious TS7016
   for `import ... from 'graphql-upload/GraphQLUpload.mjs'` (a JS-only package reached through `exports`), plus tsgo's
   20 errors in the package's own .mjs files (TS2554, TS2694) missing. allowJs + maxNodeModuleJsDepth 10 and a `paths`
