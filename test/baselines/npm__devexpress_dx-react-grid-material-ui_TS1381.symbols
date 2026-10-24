@@ -1,0 +1,29 @@
+//// [test/cases/npm__devexpress_dx-react-grid-material-ui_TS1381.tsx] ////
+
+=== npm__devexpress_dx-react-grid-material-ui_TS1381.tsx ===
+// origin: npm @devexpress/dx-react-grid-material-ui@4.0.11 https://github.com/DevExpress/devextreme-reactive tsconfig.bench.json seed 20261033
+// flip: no
+// `params={...params}` inside an arrow inside JSX children: tsgo's parseList recovery (isInSomeParsingContext: the JSX children context takes any token) unwinds to the children, the rest is JSX text (TS1381/TS1382); tttt goes on in the arrow body (TS1161, TS1005)
+declare const T: any, P: any;
+>T : Symbol(T, Decl(npm__devexpress_dx-react-grid-material-ui_TS1381.tsx, 3, 13))
+>P : Symbol(P, Decl(npm__devexpress_dx-react-grid-material-ui_TS1381.tsx, 3, 21))
+
+const x = (
+>x : Symbol(x, Decl(npm__devexpress_dx-react-grid-material-ui_TS1381.tsx, 4, 5))
+
+  <T>
+>T : Symbol(T, Decl(npm__devexpress_dx-react-grid-material-ui_TS1381.tsx, 3, 13))
+
+    {(params: any) => {
+>params : Symbol(params, Decl(npm__devexpress_dx-react-grid-material-ui_TS1381.tsx, 6, 6))
+
+      return <P params={...params} />;
+>P : Symbol(P, Decl(npm__devexpress_dx-react-grid-material-ui_TS1381.tsx, 3, 21))
+>params : Symbol(params, Decl(npm__devexpress_dx-react-grid-material-ui_TS1381.tsx, 7, 15))
+
+    }}
+  </T>
+>T : Symbol(T, Decl(npm__devexpress_dx-react-grid-material-ui_TS1381.tsx, 3, 13))
+
+);
+

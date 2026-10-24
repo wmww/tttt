@@ -178,3 +178,14 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   doesn't cover. Without the ts-ignore both report, at different lines and codes. Hand-cut repro (reduce.py didn't
   converge in an hour on MUI's types). Guess: tttt's JSX attribute elaboration descends into a property whose target is
   a union-derived member where tsc's elaborateJsxComponents/elaborateElementwise gives up on a union source. [open]
+  (11 files from reduce.py). [open]
+- Seed 20261033, DevExpress/devextreme-reactive: `return <P params={...params} />;` in an arrow inside JSX children.
+  tsgo reports TS1109 at the `...`, ends the attribute list there and the element without `/>`, and then its
+  parseList recovery (abortParsingListOrMoveToNextToken: isInSomeParsingContext, where the enclosing JSX children
+  context takes any token) unwinds out of the statement list, arrow and JSX expression back to the children, so
+  `...params} />;` and the next `}` are JSX text (TS1381, TS1382). tttt's parse_jsx_attributes stops too, but the
+  rest is parsed on in the arrow body (`/>;` a regex: TS1161, then TS1005). The parser has no general unwinding to an
+  enclosing context that would take the token. Repro test/cases/npm__devexpress_dx-react-grid-material-ui_TS1381.tsx.
+  [open]
+- Seed 20261033, ionic-team/stencil-component-starter again (another npm package of the same template repo): the
+  TS2320 flip above. [dup]

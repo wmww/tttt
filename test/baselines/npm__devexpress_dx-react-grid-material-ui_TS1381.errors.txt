@@ -1,0 +1,30 @@
+npm__devexpress_dx-react-grid-material-ui_TS1381.tsx(8,25): error TS1109: Expression expected.
+npm__devexpress_dx-react-grid-material-ui_TS1381.tsx(8,34): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+npm__devexpress_dx-react-grid-material-ui_TS1381.tsx(8,37): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+npm__devexpress_dx-react-grid-material-ui_TS1381.tsx(9,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+npm__devexpress_dx-react-grid-material-ui_TS1381.tsx(9,6): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+
+
+==== npm__devexpress_dx-react-grid-material-ui_TS1381.tsx (5 errors) ====
+    // origin: npm @devexpress/dx-react-grid-material-ui@4.0.11 https://github.com/DevExpress/devextreme-reactive tsconfig.bench.json seed 20261033
+    // flip: no
+    // `params={...params}` inside an arrow inside JSX children: tsgo's parseList recovery (isInSomeParsingContext: the JSX children context takes any token) unwinds to the children, the rest is JSX text (TS1381/TS1382); tttt goes on in the arrow body (TS1161, TS1005)
+    declare const T: any, P: any;
+    const x = (
+      <T>
+        {(params: any) => {
+          return <P params={...params} />;
+                            ~~~
+!!! error TS1109: Expression expected.
+                                     ~
+!!! error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+                                        ~
+!!! error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+        }}
+        ~
+!!! error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+         ~
+!!! error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+      </T>
+    );
+    
