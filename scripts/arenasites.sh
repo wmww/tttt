@@ -2,7 +2,8 @@
 # Where the checker's arena memory goes: bytes by allocating call site (with inlined callers), and types (136 bytes
 # each, also counted in the first list under ty_alloc) by the code that makes them.
 #   scripts/arenasites.sh -p thirdparty/corpora/zod/packages/zod/tsconfig.test.json [--top N]
-# Builds a -g release copy with -DTTTT_ARENA_SITES in /tmp/tttt-arenasites (same code otherwise) and runs it with one
+# Builds a -g release copy with -DTTTT_ARENA_SITES in build-sites/ (this tree's: a shared /tmp directory was
+# configured from whichever tree ran first; same code otherwise) and runs it with one
 # checker on one thread.
 set -e
 cd "$(dirname "$0")/.."
@@ -11,7 +12,7 @@ ARGS=()
 while test $# -gt 0; do
     if test "$1" = --top; then TOP=$2; shift 2; else ARGS+=("$1"); shift; fi
 done
-B=/tmp/tttt-arenasites
+B=build-sites
 if test ! -e $B; then
     meson setup $B --buildtype release -Dc_args='-g -DTTTT_ARENA_SITES' > /dev/null
 fi
