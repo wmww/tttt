@@ -342,7 +342,9 @@ static u32 primitive_facts(u32 eq, bool truthy, bool falsy) {
 }
 
 static bool is_empty_anonymous_object(Checker* me, Ty const* ty) {
-    if (ty->kind != TY_ANONYMOUS || ty->anonymous.function) return false;
+    // (Not an instantiation of a mapped type, even one with no members, `Record<never, never>`: tsc's ObjectFlags.Mapped
+    // isn't Anonymous, isEmptyAnonymousObjectType)
+    if (ty->kind != TY_ANONYMOUS || ty->anonymous.function || ty->anonymous.mapped) return false;
     Members const* members = ty_members(me, ty);
     return !members->prop_count && !members->call_count && !members->construct_count && !members->index_count &&
         !members->mapped;

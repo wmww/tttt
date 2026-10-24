@@ -1,0 +1,46 @@
+//// [test/cases/npm__point0_compiler_TS2349.ts] ////
+
+=== npm__point0_compiler_TS2349.ts ===
+// origin: npm @point0/compiler@0.4.2 https://github.com/1gr14/point0 packages/compiler/tsconfig.bench.json seed 20261106
+// flip: no
+// An instantiation of a mapped type with no members (`Record<never, never>`) isn't an empty anonymous object to typeof
+// narrowing: tsc's isEmptyAnonymousObjectType wants ObjectFlags.Anonymous, which a mapped type lacks, so its facts are an
+// object's and `typeof x === "function"` drops `EmptyObject & {...}` (never) instead of intersecting it with Function
+type EmptyObject = Record<never, never>;
+>EmptyObject : EmptyObject
+
+declare const u: (EmptyObject & { q?: string }) | ((x: number) => boolean);
+>u : ((x: number) => boolean) | (EmptyObject & { q?: string; })
+>q : string | undefined
+>x : number
+
+if (typeof u === 'function') {
+>typeof u === 'function' : boolean
+>typeof u : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>u : ((x: number) => boolean) | (EmptyObject & { q?: string; })
+>'function' : "function"
+
+    const z: [number] = [u];
+>z : [number]
+>[u] : [(x: number) => boolean]
+>u : (x: number) => boolean
+
+    u(1);
+>u(1) : boolean
+>u : (x: number) => boolean
+>1 : 1
+}
+declare const e: EmptyObject | string;
+>e : string | EmptyObject
+
+if (typeof e === 'function') { const z2: [number] = [e]; }
+>typeof e === 'function' : boolean
+>typeof e : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>e : string | EmptyObject
+>'function' : "function"
+>z2 : [number]
+>[e] : [Function]
+>e : Function
+
+export {};
+

@@ -1,0 +1,24 @@
+npm__point0_compiler_TS2349.ts(9,26): error TS2322: Type '(x: number) => boolean' is not assignable to type 'number'.
+npm__point0_compiler_TS2349.ts(13,54): error TS2322: Type 'Function' is not assignable to type 'number'.
+
+
+==== npm__point0_compiler_TS2349.ts (2 errors) ====
+    // origin: npm @point0/compiler@0.4.2 https://github.com/1gr14/point0 packages/compiler/tsconfig.bench.json seed 20261106
+    // flip: no
+    // An instantiation of a mapped type with no members (`Record<never, never>`) isn't an empty anonymous object to typeof
+    // narrowing: tsc's isEmptyAnonymousObjectType wants ObjectFlags.Anonymous, which a mapped type lacks, so its facts are an
+    // object's and `typeof x === "function"` drops `EmptyObject & {...}` (never) instead of intersecting it with Function
+    type EmptyObject = Record<never, never>;
+    declare const u: (EmptyObject & { q?: string }) | ((x: number) => boolean);
+    if (typeof u === 'function') {
+        const z: [number] = [u];
+                             ~
+!!! error TS2322: Type '(x: number) => boolean' is not assignable to type 'number'.
+        u(1);
+    }
+    declare const e: EmptyObject | string;
+    if (typeof e === 'function') { const z2: [number] = [e]; }
+                                                         ~
+!!! error TS2322: Type 'Function' is not assignable to type 'number'.
+    export {};
+    
