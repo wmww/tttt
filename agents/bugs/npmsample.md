@@ -395,7 +395,7 @@ K-dependent.
       agent-task.service.ts:535, agent-tools.service.ts:1100, :1219): tsgo names the apparent type `Agent & { projectId:
       string; }` (getIndexedAccessType reports on getReducedApparentType), tttt named the alias `ProjectAgent`.
       check.c report_no_property() takes ty_apparent_intersection_for_display() for a binding element. Test
-      test/cases/rw_n8n_TS2339.ts. [fixed PENDING]
+      test/cases/rw_n8n_TS2339.ts. [fixed 17d84c588]
     - TS2353 x9 with the EventEmitter truncation (as in nodes-base, below). [open]
     - One TS2322 elaboration at promotion-binding-preflight.service.test.ts:83: `{ name: "w", nodes, ...overrides }` with
       `nodes: INode[]` (an unresolved module's type) and `overrides: Partial<Pick<WorkflowEntity, ...>>` (WorkflowEntity
@@ -413,7 +413,7 @@ K-dependent.
     n8n-workflow: tttt added undefined to the initialized parameter's type, which the named error type absorbs into
     any, and the printer's declared type (undefined taken out) was any. tsc's getTypeOfSymbol of an initialized parameter
     has no undefined, so the name stays (a `?` parameter's does print any in tsgo). members.c leaves such a parameter's
-    error type alone. Test test/cases/rw_n8n_nodes_base_TS2684.ts. [fixed PENDING]
+    error type alone. Test test/cases/rw_n8n_nodes_base_TS2684.ts. [fixed 17d84c588]
   - TS2353 x5 (FormTriggerV2.node.test.ts:308, 437, 540, 597, 638): where the long target type is truncated, tsgo
     `{ [EventEmitter.captureRejectionSymbol]?: ...; ... 105 more ...`, tttt names `off?: ...` instead. tsgo's
     approximateLength must count the first member (`[EventEmitter.captureRejectionSymbol]?: (<K>(error: Error, event:
@@ -437,4 +437,4 @@ workspace packages). Not flips, not K-dependent.
   a rest parameter by getParameterTypeNodeForDecoratorCheck: GetRestParameterElementType gives `T[]`'s T or a type
   reference's first type argument (here the literal `'JobRun'`), else nothing (a parenthesized type, `readonly T[]`).
   tttt's check_decorator_metadata_signature checked the rest parameter's whole annotation. Test
-  rw_immich-server_TS1272; repro ttttDecoratorMetadataRestParameter. [fixed PENDING]
+  rw_immich-server_TS1272; repro ttttDecoratorMetadataRestParameter. [fixed 0470ef693]
