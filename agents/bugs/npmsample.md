@@ -396,7 +396,7 @@ K-dependent.
       string; }` (getIndexedAccessType reports on getReducedApparentType), tttt named the alias `ProjectAgent`.
       check.c report_no_property() takes ty_apparent_intersection_for_display() for a binding element. Test
       test/cases/rw_n8n_TS2339.ts. [fixed 17d84c588]
-    - TS2353 x9 with the EventEmitter truncation (as in nodes-base, below). [fixed PENDING]
+    - TS2353 x9 with the EventEmitter truncation (as in nodes-base, below). [fixed b8aecd599]
     - One TS2322 elaboration at promotion-binding-preflight.service.test.ts:83: `{ name: "w", nodes, ...overrides }` with
       `nodes: INode[]` (an unresolved module's type) and `overrides: Partial<Pick<WorkflowEntity, ...>>` (WorkflowEntity
       unresolved too). tsgo's head prints the spread's properties as their left declarations say (`nodes: INode[]`,
@@ -422,7 +422,7 @@ K-dependent.
     createExpressionFromSymbolChain, adds one more than each part's length (`EventEmitter.captureRejectionSymbol`: 13 +
     23). ty_display.c prop_symbol_name_length() counted tsc 6's `__@name@` with six digits and the name's expression
     nothing; now both like tsgo (approx_add_expression_text()). Test test/cases/rw_n8n_nodes_base_TS2353.ts; nodes-base is
-    byte-identical with tsgo now, cli's 9 too. [fixed PENDING]
+    byte-identical with tsgo now, cli's 9 too. [fixed b8aecd599]
 
 Seed 20269002 (fixF): vue (vuejs/core head, packages/vue) tsgo 5 / tttt 3, only the known pluginScoped.ts TS7006
 [design]; firecrawl and immich-server set up by hand (npmsample's trial rejected them on TS2307 counts from unbuilt
