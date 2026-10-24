@@ -298,7 +298,7 @@ for flips); a separate file so the three boxes never conflict.
   'Blob'" at TransactionInvoiceButton.tsx:47. It looks like one upstream inference or resolution loss (Promise
   `then` callbacks, react-query results) rather than 58 causes. Not K-dependent. No repro. Re-checked at
   7a1056d63 (after cor10's 2b43a7cd4; seed 20261490, the same commit aa01c1469 re-set up): still 94 against 152
-  with the same first lines, so it isn't console-web's DI-container TS7022 cascade. [open]
+  with the same first lines, so it isn't console-web's DI-container TS7022 cascade. (claimed: fixE) [open]
 - Large seed 20261403, akash-network/console@main, apps/api: spurious TS2877 at tsup.config.ts:1 ("This import uses
   a '.ts' extension ... not a relative path"), the same as latitude-llm's apps/web entry above. Not a flip. Re-checked at 7a1056d63 (seed 20261490, the same commit aa01c1469): byte-identical. [fixed ee1a75319]
 - Seed 20261218, wakaztahir/solid-staggered-grid (solid-staggered-grid@1.0.22, commit 4bf293019, root tsconfig.json):
