@@ -1686,3 +1686,21 @@ clean), 802676432 (constraint of an indexed access by a union of keys cached), c
 inside a variance measurement): 22 / 22 ms / 57k types. The 20 biggest sweep configs measured old vs main 99f68d63d:
 median wall ratio 1.05, p90 1.20, max 1.73 (soybean-admin, a legitimate rerun); the previous run before the fixes had
 react-scan 3.57x and three projects at 1.4-1.5x that were load noise (fixE's K1 re-measure: not slower).
+
+## The d22d93ae..main instruction drift on zod, attributed (2026-10-25, perf2, release builds via abbuild.sh, callgrind)
+zod 4.335 G (d22d93ae, and the first commit after it) -> 4.396 G at bee864e1f (+1.41%), 261 src commits. Curve by
+commit index (1/33/65/97/129/161/193/225/257): 4.335 4.348 4.355 4.378 4.402 4.394 4.400 4.409 4.396; the last
+step down is the recovery. Contributors, parent vs commit (3-digit resolution, ~0.02%):
+- de8e8eef9 (erased signature's parameter is a callback unless generic in the instantiation it erases): +0.008 G
+  (+0.18%); an extra per-parameter callback test on every erased signature; inherent (tsc's rule), kept.
+- 7156e6af4 (inference asks what couldContainTypeVariables would): +0.012 G (+0.27%); an 89-line walk per inference
+  candidate; avoidable, memoized since by 87c39fb10.
+- 94a7c0195 (JSDoc `{@link x}` names a block local): +0.012 G (+0.27%); a JSDoc scan of every statement in every
+  block; avoidable, gated per file since by 5a2146435.
+- a118b2539 (object literal instantiated by outer type parameters isn't marked as containing type variables):
+  +0.010 G (+0.23%); fewer early-outs downstream; inherent to the semantics, kept.
+Not contributors (parent vs commit equal): 5f7885f36, dc9d07bb1, 22280be87. Sum of the four 0.042 G; two recovered
+(-0.024 G in the later step), so the remaining ~0.02 G (+0.45%) is spread thin over the first 65 commits (+0.013 G in
+1..33, +0.007 G in 33..65; a bump at index 25: faeef9d01 4.366 then 4.348 at 41, so a transient later undone) with
+no commit found over the 0.15% threshold. Mechanisms are read from the commit messages and diffs' sizes, not
+profiled. Drizzle/excalidraw were not re-confirmed (budget).
