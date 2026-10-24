@@ -1063,6 +1063,19 @@ static Signature const* generic_function_argument(Checker* me, Ty const* arg_typ
         }
         if (changed) param_type = ty_union(me, members.data, members.len, nullptr, (TyList){0});
         ty_buf_drop(&members);
+    } else if (param_type->kind == TY_INTERSECTION && (param_type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+        // (An intersection's signatures are its members', a generic member's by its apparent type: tsc's
+        // getSignaturesOfType through getReducedApparentType, `F & (unhandled extends E ? unknown : "...")` is F's)
+        TyBuf members = {0};
+        bool changed = false;
+        for (u32 i = 0; i < param_type->composite.types.len; i++) {
+            Ty const* member = param_type->composite.types.data[i];
+            Ty const* apparent = member->flags & (TYF_TYPE_PARAM | TYF_DEFERRED) ? ty_apparent_type(me, member) : member;
+            changed |= apparent != member;
+            ty_buf_push(&members, apparent);
+        }
+        if (changed) param_type = ty_intersection(me, members.data, members.len, nullptr, (TyList){0});
+        ty_buf_drop(&members);
     }
     for (u32 construct = 0; construct < 2; construct++) {
         Signature const* sig = ty_single_signature(me, arg_type, construct, true);
@@ -1234,23 +1247,43 @@ static void infer_from_annotated_params_of_inner(Checker* me, Inference* inf, Fu
 }
 
 // A conditional expression with a generic call returning a function as a branch (`c ? share() : shareReplay(..)`),
-// which the first pass skips like tsc's SkipGenericFunctions does wherever it is in the argument
-static bool ternary_has_generic_call(Checker* me, Expr const* expr) {
+// which the first pass skips like tsc's SkipGenericFunctions does wherever it is in the argument, or a generic
+// function as a branch (`span ? withParentSpan(span) : identity`), which tsc's checkExpression of the branch
+// instantiates in the parameter's context (instantiateTypeWithSingleGenericCallSignature) before the conditional's
+// union is made
+static bool branch_is_generic_function(Checker* me, Expr const* expr) {
+    if (expr->tag != EXPR_IDENTIFIER && expr->tag != EXPR_PROPERTY) return false;
+    Ty const* type = ty_expr_type(me, expr);
+    for (u32 construct = 0; construct < 2; construct++) {
+        Signature const* sig = ty_single_signature(me, type, construct, true);
+        if (sig && signature_resolve(me, sig)->type_params.len) return true;
+    }
+    return false;
+}
+
+static bool ternary_has_generic_call_in(Checker* me, Expr const* expr, bool branch) {
     if (expr->tag == EXPR_BINARY_OP) {
         // (The operands tsc's check mode reaches as it does a conditional's branches: `maybe ?? box()`, `(0, box())`)
         switch (expr->binary_op->op) {
             case BINARY_OP_OR_OR:
             case BINARY_OP_EH_EH:
-                return ternary_has_generic_call(me, &expr->binary_op->left) || ternary_has_generic_call(me, &expr->binary_op->right);
+                return ternary_has_generic_call_in(me, &expr->binary_op->left, branch) ||
+                    ternary_has_generic_call_in(me, &expr->binary_op->right, branch);
             case BINARY_OP_AND_AND:
             case BINARY_OP_COMMA:
-                return ternary_has_generic_call(me, &expr->binary_op->right);
+                return ternary_has_generic_call_in(me, &expr->binary_op->right, branch);
             default:
                 return false;
         }
     }
-    if (expr->tag != EXPR_TERNARY) return ty_calls_generic_function_returning_function(me, expr);
-    return ternary_has_generic_call(me, &expr->ternary->yes) || ternary_has_generic_call(me, &expr->ternary->no);
+    if (expr->tag != EXPR_TERNARY) {
+        return ty_calls_generic_function_returning_function(me, expr) || (branch && branch_is_generic_function(me, expr));
+    }
+    return ternary_has_generic_call_in(me, &expr->ternary->yes, true) || ternary_has_generic_call_in(me, &expr->ternary->no, true);
+}
+
+static bool ternary_has_generic_call(Checker* me, Expr const* expr) {
+    return ternary_has_generic_call_in(me, expr, false);
 }
 
 // (A conditional only for its generic calls: checked like a literal otherwise, its type would differ, the literal

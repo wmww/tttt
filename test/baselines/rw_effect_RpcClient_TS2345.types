@@ -1,0 +1,70 @@
+//// [test/cases/rw_effect_RpcClient_TS2345.ts] ////
+
+=== rw_effect_RpcClient_TS2345.ts ===
+// origin: foldkit/repos/effect packages/effect (source sweep), rpc/RpcClient.ts:417, :481, :504
+// A conditional's branches that are generic functions are instantiated in the parameter's context before the
+// conditional's union is made (tsc's checkExpression of each branch), so `c ? ws2 : identity` infers like `ws2` alone
+interface Pipeable {
+    pipe<A>(this: A): A;
+>pipe : { <A>(this: A): A; <A_1, B = never>(this: A_1, ab: (_: A_1) => B): B; <A_1, B = never, C = never>(this: A_1, ab: (_: A_1) => B, bc: (_: B) => C): C; }
+>this : A
+
+    pipe<A, B = never>(this: A, ab: (_: A) => B): B;
+>pipe : { <A_1>(this: A_1): A_1; <A, B = never>(this: A, ab: (_: A) => B): B; <A_1, B_1 = never, C = never>(this: A_1, ab: (_: A_1) => B_1, bc: (_: B_1) => C): C; }
+>this : A
+>ab : (_: A) => B
+>_ : A
+
+    pipe<A, B = never, C = never>(this: A, ab: (_: A) => B, bc: (_: B) => C): C;
+>pipe : { <A_1>(this: A_1): A_1; <A_1, B_1 = never>(this: A_1, ab: (_: A_1) => B_1): B_1; <A, B = never, C = never>(this: A, ab: (_: A) => B, bc: (_: B) => C): C; }
+>this : A
+>ab : (_: A) => B
+>_ : A
+>bc : (_: B) => C
+>_ : B
+}
+interface Eff<out A, out E, out R> extends Pipeable { a: () => A; e: () => E; r: () => R }
+>a : () => A
+>e : () => E
+>r : () => R
+
+declare function identity<T>(a: T): T;
+>identity : <T>(a: T) => T
+>a : T
+
+declare const send: Eff<void, string, never>;
+>send : Eff<void, string, never>
+
+declare const c: boolean;
+>c : boolean
+
+declare const ws: <A, E, R>(self: Eff<A, E, R>) => Eff<A, E, R>;
+>ws : <A, E, R>(self: Eff<A, E, R>) => Eff<A, E, R>
+>self : Eff<A, E, R>
+
+declare const ws2: <A, E, R>(self: Eff<A, E, R>) => Eff<A, E, Exclude<R, number>>;
+>ws2 : <A, E, R>(self: Eff<A, E, R>) => Eff<A, E, Exclude<R, number>>
+>self : Eff<A, E, R>
+
+const b1 = send.pipe(c ? ws : identity);
+>b1 : Eff<void, string, never>
+>send.pipe(c ? ws : identity) : Eff<void, string, never>
+>send.pipe : { <A>(this: A): A; <A, B = never>(this: A, ab: (_: A) => B): B; <A, B = never, C = never>(this: A, ab: (_: A) => B, bc: (_: B) => C): C; }
+>send : Eff<void, string, never>
+>pipe : { <A>(this: A): A; <A, B = never>(this: A, ab: (_: A) => B): B; <A, B = never, C = never>(this: A, ab: (_: A) => B, bc: (_: B) => C): C; }
+>c ? ws : identity : <A, E, R>(self: Eff<A, E, R>) => Eff<A, E, R>
+>c : boolean
+>ws : <A, E, R>(self: Eff<A, E, R>) => Eff<A, E, R>
+>identity : <T>(a: T) => T
+
+const b2 = send.pipe(c ? ws2 : identity);
+>b2 : Eff<void, string, never>
+>send.pipe(c ? ws2 : identity) : Eff<void, string, never>
+>send.pipe : { <A>(this: A): A; <A, B = never>(this: A, ab: (_: A) => B): B; <A, B = never, C = never>(this: A, ab: (_: A) => B, bc: (_: B) => C): C; }
+>send : Eff<void, string, never>
+>pipe : { <A>(this: A): A; <A, B = never>(this: A, ab: (_: A) => B): B; <A, B = never, C = never>(this: A, ab: (_: A) => B, bc: (_: B) => C): C; }
+>c ? ws2 : identity : (<T>(a: T) => T) | (<A, E, R>(self: Eff<A, E, R>) => Eff<A, E, Exclude<R, number>>)
+>c : boolean
+>ws2 : <A, E, R>(self: Eff<A, E, R>) => Eff<A, E, Exclude<R, number>>
+>identity : <T>(a: T) => T
+

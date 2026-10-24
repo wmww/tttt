@@ -1,0 +1,121 @@
+//// [test/cases/rw_effect_RpcClient_TS2345.ts] ////
+
+=== rw_effect_RpcClient_TS2345.ts ===
+// origin: foldkit/repos/effect packages/effect (source sweep), rpc/RpcClient.ts:417, :481, :504
+// A conditional's branches that are generic functions are instantiated in the parameter's context before the
+// conditional's union is made (tsc's checkExpression of each branch), so `c ? ws2 : identity` infers like `ws2` alone
+interface Pipeable {
+>Pipeable : Symbol(Pipeable, Decl(rw_effect_RpcClient_TS2345.ts, 0, 0))
+
+    pipe<A>(this: A): A;
+>pipe : Symbol(Pipeable.pipe, Decl(rw_effect_RpcClient_TS2345.ts, 3, 20), Decl(rw_effect_RpcClient_TS2345.ts, 4, 24), Decl(rw_effect_RpcClient_TS2345.ts, 5, 52))
+>A : Symbol(A, Decl(rw_effect_RpcClient_TS2345.ts, 4, 9))
+>this : Symbol(this, Decl(rw_effect_RpcClient_TS2345.ts, 4, 12))
+>A : Symbol(A, Decl(rw_effect_RpcClient_TS2345.ts, 4, 9))
+>A : Symbol(A, Decl(rw_effect_RpcClient_TS2345.ts, 4, 9))
+
+    pipe<A, B = never>(this: A, ab: (_: A) => B): B;
+>pipe : Symbol(Pipeable.pipe, Decl(rw_effect_RpcClient_TS2345.ts, 3, 20), Decl(rw_effect_RpcClient_TS2345.ts, 4, 24), Decl(rw_effect_RpcClient_TS2345.ts, 5, 52))
+>A : Symbol(A, Decl(rw_effect_RpcClient_TS2345.ts, 5, 9))
+>B : Symbol(B, Decl(rw_effect_RpcClient_TS2345.ts, 5, 11))
+>this : Symbol(this, Decl(rw_effect_RpcClient_TS2345.ts, 5, 23))
+>A : Symbol(A, Decl(rw_effect_RpcClient_TS2345.ts, 5, 9))
+>ab : Symbol(ab, Decl(rw_effect_RpcClient_TS2345.ts, 5, 31))
+>_ : Symbol(_, Decl(rw_effect_RpcClient_TS2345.ts, 5, 37))
+>A : Symbol(A, Decl(rw_effect_RpcClient_TS2345.ts, 5, 9))
+>B : Symbol(B, Decl(rw_effect_RpcClient_TS2345.ts, 5, 11))
+>B : Symbol(B, Decl(rw_effect_RpcClient_TS2345.ts, 5, 11))
+
+    pipe<A, B = never, C = never>(this: A, ab: (_: A) => B, bc: (_: B) => C): C;
+>pipe : Symbol(Pipeable.pipe, Decl(rw_effect_RpcClient_TS2345.ts, 3, 20), Decl(rw_effect_RpcClient_TS2345.ts, 4, 24), Decl(rw_effect_RpcClient_TS2345.ts, 5, 52))
+>A : Symbol(A, Decl(rw_effect_RpcClient_TS2345.ts, 6, 9))
+>B : Symbol(B, Decl(rw_effect_RpcClient_TS2345.ts, 6, 11))
+>C : Symbol(C, Decl(rw_effect_RpcClient_TS2345.ts, 6, 22))
+>this : Symbol(this, Decl(rw_effect_RpcClient_TS2345.ts, 6, 34))
+>A : Symbol(A, Decl(rw_effect_RpcClient_TS2345.ts, 6, 9))
+>ab : Symbol(ab, Decl(rw_effect_RpcClient_TS2345.ts, 6, 42))
+>_ : Symbol(_, Decl(rw_effect_RpcClient_TS2345.ts, 6, 48))
+>A : Symbol(A, Decl(rw_effect_RpcClient_TS2345.ts, 6, 9))
+>B : Symbol(B, Decl(rw_effect_RpcClient_TS2345.ts, 6, 11))
+>bc : Symbol(bc, Decl(rw_effect_RpcClient_TS2345.ts, 6, 59))
+>_ : Symbol(_, Decl(rw_effect_RpcClient_TS2345.ts, 6, 65))
+>B : Symbol(B, Decl(rw_effect_RpcClient_TS2345.ts, 6, 11))
+>C : Symbol(C, Decl(rw_effect_RpcClient_TS2345.ts, 6, 22))
+>C : Symbol(C, Decl(rw_effect_RpcClient_TS2345.ts, 6, 22))
+}
+interface Eff<out A, out E, out R> extends Pipeable { a: () => A; e: () => E; r: () => R }
+>Eff : Symbol(Eff, Decl(rw_effect_RpcClient_TS2345.ts, 7, 1))
+>A : Symbol(A, Decl(rw_effect_RpcClient_TS2345.ts, 8, 14))
+>E : Symbol(E, Decl(rw_effect_RpcClient_TS2345.ts, 8, 20))
+>R : Symbol(R, Decl(rw_effect_RpcClient_TS2345.ts, 8, 27))
+>Pipeable : Symbol(Pipeable, Decl(rw_effect_RpcClient_TS2345.ts, 0, 0))
+>a : Symbol(Eff.a, Decl(rw_effect_RpcClient_TS2345.ts, 8, 53))
+>A : Symbol(A, Decl(rw_effect_RpcClient_TS2345.ts, 8, 14))
+>e : Symbol(Eff.e, Decl(rw_effect_RpcClient_TS2345.ts, 8, 65))
+>E : Symbol(E, Decl(rw_effect_RpcClient_TS2345.ts, 8, 20))
+>r : Symbol(Eff.r, Decl(rw_effect_RpcClient_TS2345.ts, 8, 77))
+>R : Symbol(R, Decl(rw_effect_RpcClient_TS2345.ts, 8, 27))
+
+declare function identity<T>(a: T): T;
+>identity : Symbol(identity, Decl(rw_effect_RpcClient_TS2345.ts, 8, 90))
+>T : Symbol(T, Decl(rw_effect_RpcClient_TS2345.ts, 9, 26))
+>a : Symbol(a, Decl(rw_effect_RpcClient_TS2345.ts, 9, 29))
+>T : Symbol(T, Decl(rw_effect_RpcClient_TS2345.ts, 9, 26))
+>T : Symbol(T, Decl(rw_effect_RpcClient_TS2345.ts, 9, 26))
+
+declare const send: Eff<void, string, never>;
+>send : Symbol(send, Decl(rw_effect_RpcClient_TS2345.ts, 10, 13))
+>Eff : Symbol(Eff, Decl(rw_effect_RpcClient_TS2345.ts, 7, 1))
+
+declare const c: boolean;
+>c : Symbol(c, Decl(rw_effect_RpcClient_TS2345.ts, 11, 13))
+
+declare const ws: <A, E, R>(self: Eff<A, E, R>) => Eff<A, E, R>;
+>ws : Symbol(ws, Decl(rw_effect_RpcClient_TS2345.ts, 12, 13))
+>A : Symbol(A, Decl(rw_effect_RpcClient_TS2345.ts, 12, 19))
+>E : Symbol(E, Decl(rw_effect_RpcClient_TS2345.ts, 12, 21))
+>R : Symbol(R, Decl(rw_effect_RpcClient_TS2345.ts, 12, 24))
+>self : Symbol(self, Decl(rw_effect_RpcClient_TS2345.ts, 12, 28))
+>Eff : Symbol(Eff, Decl(rw_effect_RpcClient_TS2345.ts, 7, 1))
+>A : Symbol(A, Decl(rw_effect_RpcClient_TS2345.ts, 12, 19))
+>E : Symbol(E, Decl(rw_effect_RpcClient_TS2345.ts, 12, 21))
+>R : Symbol(R, Decl(rw_effect_RpcClient_TS2345.ts, 12, 24))
+>Eff : Symbol(Eff, Decl(rw_effect_RpcClient_TS2345.ts, 7, 1))
+>A : Symbol(A, Decl(rw_effect_RpcClient_TS2345.ts, 12, 19))
+>E : Symbol(E, Decl(rw_effect_RpcClient_TS2345.ts, 12, 21))
+>R : Symbol(R, Decl(rw_effect_RpcClient_TS2345.ts, 12, 24))
+
+declare const ws2: <A, E, R>(self: Eff<A, E, R>) => Eff<A, E, Exclude<R, number>>;
+>ws2 : Symbol(ws2, Decl(rw_effect_RpcClient_TS2345.ts, 13, 13))
+>A : Symbol(A, Decl(rw_effect_RpcClient_TS2345.ts, 13, 20))
+>E : Symbol(E, Decl(rw_effect_RpcClient_TS2345.ts, 13, 22))
+>R : Symbol(R, Decl(rw_effect_RpcClient_TS2345.ts, 13, 25))
+>self : Symbol(self, Decl(rw_effect_RpcClient_TS2345.ts, 13, 29))
+>Eff : Symbol(Eff, Decl(rw_effect_RpcClient_TS2345.ts, 7, 1))
+>A : Symbol(A, Decl(rw_effect_RpcClient_TS2345.ts, 13, 20))
+>E : Symbol(E, Decl(rw_effect_RpcClient_TS2345.ts, 13, 22))
+>R : Symbol(R, Decl(rw_effect_RpcClient_TS2345.ts, 13, 25))
+>Eff : Symbol(Eff, Decl(rw_effect_RpcClient_TS2345.ts, 7, 1))
+>A : Symbol(A, Decl(rw_effect_RpcClient_TS2345.ts, 13, 20))
+>E : Symbol(E, Decl(rw_effect_RpcClient_TS2345.ts, 13, 22))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>R : Symbol(R, Decl(rw_effect_RpcClient_TS2345.ts, 13, 25))
+
+const b1 = send.pipe(c ? ws : identity);
+>b1 : Symbol(b1, Decl(rw_effect_RpcClient_TS2345.ts, 14, 5))
+>send.pipe : Symbol(Pipeable.pipe, Decl(rw_effect_RpcClient_TS2345.ts, 3, 20), Decl(rw_effect_RpcClient_TS2345.ts, 4, 24), Decl(rw_effect_RpcClient_TS2345.ts, 5, 52))
+>send : Symbol(send, Decl(rw_effect_RpcClient_TS2345.ts, 10, 13))
+>pipe : Symbol(Pipeable.pipe, Decl(rw_effect_RpcClient_TS2345.ts, 3, 20), Decl(rw_effect_RpcClient_TS2345.ts, 4, 24), Decl(rw_effect_RpcClient_TS2345.ts, 5, 52))
+>c : Symbol(c, Decl(rw_effect_RpcClient_TS2345.ts, 11, 13))
+>ws : Symbol(ws, Decl(rw_effect_RpcClient_TS2345.ts, 12, 13))
+>identity : Symbol(identity, Decl(rw_effect_RpcClient_TS2345.ts, 8, 90))
+
+const b2 = send.pipe(c ? ws2 : identity);
+>b2 : Symbol(b2, Decl(rw_effect_RpcClient_TS2345.ts, 15, 5))
+>send.pipe : Symbol(Pipeable.pipe, Decl(rw_effect_RpcClient_TS2345.ts, 3, 20), Decl(rw_effect_RpcClient_TS2345.ts, 4, 24), Decl(rw_effect_RpcClient_TS2345.ts, 5, 52))
+>send : Symbol(send, Decl(rw_effect_RpcClient_TS2345.ts, 10, 13))
+>pipe : Symbol(Pipeable.pipe, Decl(rw_effect_RpcClient_TS2345.ts, 3, 20), Decl(rw_effect_RpcClient_TS2345.ts, 4, 24), Decl(rw_effect_RpcClient_TS2345.ts, 5, 52))
+>c : Symbol(c, Decl(rw_effect_RpcClient_TS2345.ts, 11, 13))
+>ws2 : Symbol(ws2, Decl(rw_effect_RpcClient_TS2345.ts, 13, 13))
+>identity : Symbol(identity, Decl(rw_effect_RpcClient_TS2345.ts, 8, 90))
+
