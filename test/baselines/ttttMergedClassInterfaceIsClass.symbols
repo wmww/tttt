@@ -1,0 +1,160 @@
+//// [test/cases/ttttMergedClassInterfaceIsClass.ts] ////
+
+=== ttttMergedClassInterfaceIsClass.ts ===
+// A class merged with an interface is a class to tsc wherever it asks ObjectFlags.Class (getDeclaredTypeOfClassOrInterface
+// gives the merged symbol a class type): the static member suggestion (TS2576), a `#x` of another class (TS2322 with its
+// own message), subtype reduction (two unrelated classes stay), constructor narrowing
+interface Iface { a: number }
+>Iface : Symbol(Iface, Decl(ttttMergedClassInterfaceIsClass.ts, 0, 0))
+>a : Symbol(Iface.a, Decl(ttttMergedClassInterfaceIsClass.ts, 3, 17))
+
+interface Extra { e: string }
+>Extra : Symbol(Extra, Decl(ttttMergedClassInterfaceIsClass.ts, 3, 29))
+>e : Symbol(Extra.e, Decl(ttttMergedClassInterfaceIsClass.ts, 4, 17))
+
+declare class Merged { m: number; static s: number; constructor(); }
+>Merged : Symbol(Merged, Decl(ttttMergedClassInterfaceIsClass.ts, 4, 29), Decl(ttttMergedClassInterfaceIsClass.ts, 5, 68))
+>m : Symbol(Merged.m, Decl(ttttMergedClassInterfaceIsClass.ts, 5, 22))
+>s : Symbol(Merged.s, Decl(ttttMergedClassInterfaceIsClass.ts, 5, 33))
+
+interface Merged extends Extra {}
+>Merged : Symbol(Merged, Decl(ttttMergedClassInterfaceIsClass.ts, 4, 29), Decl(ttttMergedClassInterfaceIsClass.ts, 5, 68))
+>Extra : Symbol(Extra, Decl(ttttMergedClassInterfaceIsClass.ts, 3, 29))
+
+declare class Plain { m: number; static s: number; constructor(); }
+>Plain : Symbol(Plain, Decl(ttttMergedClassInterfaceIsClass.ts, 6, 33))
+>m : Symbol(Plain.m, Decl(ttttMergedClassInterfaceIsClass.ts, 7, 21))
+>s : Symbol(Plain.s, Decl(ttttMergedClassInterfaceIsClass.ts, 7, 32))
+
+declare const u1: Iface | Merged;
+>u1 : Symbol(u1, Decl(ttttMergedClassInterfaceIsClass.ts, 8, 13))
+>Iface : Symbol(Iface, Decl(ttttMergedClassInterfaceIsClass.ts, 0, 0))
+>Merged : Symbol(Merged, Decl(ttttMergedClassInterfaceIsClass.ts, 4, 29), Decl(ttttMergedClassInterfaceIsClass.ts, 5, 68))
+
+declare const u3: Plain | Iface;
+>u3 : Symbol(u3, Decl(ttttMergedClassInterfaceIsClass.ts, 9, 13))
+>Plain : Symbol(Plain, Decl(ttttMergedClassInterfaceIsClass.ts, 6, 33))
+>Iface : Symbol(Iface, Decl(ttttMergedClassInterfaceIsClass.ts, 0, 0))
+
+export const t1: number = u1;
+>t1 : Symbol(t1, Decl(ttttMergedClassInterfaceIsClass.ts, 10, 12))
+>u1 : Symbol(u1, Decl(ttttMergedClassInterfaceIsClass.ts, 8, 13))
+
+export const t3: number = u3;
+>t3 : Symbol(t3, Decl(ttttMergedClassInterfaceIsClass.ts, 11, 12))
+>u3 : Symbol(u3, Decl(ttttMergedClassInterfaceIsClass.ts, 9, 13))
+
+declare const mi: Merged;
+>mi : Symbol(mi, Decl(ttttMergedClassInterfaceIsClass.ts, 12, 13))
+>Merged : Symbol(Merged, Decl(ttttMergedClassInterfaceIsClass.ts, 4, 29), Decl(ttttMergedClassInterfaceIsClass.ts, 5, 68))
+
+mi.s;
+>mi : Symbol(mi, Decl(ttttMergedClassInterfaceIsClass.ts, 12, 13))
+
+declare const pi: Plain;
+>pi : Symbol(pi, Decl(ttttMergedClassInterfaceIsClass.ts, 14, 13))
+>Plain : Symbol(Plain, Decl(ttttMergedClassInterfaceIsClass.ts, 6, 33))
+
+pi.s;
+>pi : Symbol(pi, Decl(ttttMergedClassInterfaceIsClass.ts, 14, 13))
+
+declare const x: Merged | Iface;
+>x : Symbol(x, Decl(ttttMergedClassInterfaceIsClass.ts, 16, 13))
+>Merged : Symbol(Merged, Decl(ttttMergedClassInterfaceIsClass.ts, 4, 29), Decl(ttttMergedClassInterfaceIsClass.ts, 5, 68))
+>Iface : Symbol(Iface, Decl(ttttMergedClassInterfaceIsClass.ts, 0, 0))
+
+if (x.constructor === Merged) { const n: number = x; }
+>x.constructor : Symbol(Object.constructor, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttMergedClassInterfaceIsClass.ts, 16, 13))
+>constructor : Symbol(Object.constructor, Decl(lib.es5.d.ts, --, --))
+>Merged : Symbol(Merged, Decl(ttttMergedClassInterfaceIsClass.ts, 4, 29), Decl(ttttMergedClassInterfaceIsClass.ts, 5, 68))
+>n : Symbol(n, Decl(ttttMergedClassInterfaceIsClass.ts, 17, 37))
+>x : Symbol(x, Decl(ttttMergedClassInterfaceIsClass.ts, 16, 13))
+
+class Priv { #p = 1; q = 2; }
+>Priv : Symbol(Priv, Decl(ttttMergedClassInterfaceIsClass.ts, 17, 54), Decl(ttttMergedClassInterfaceIsClass.ts, 18, 29))
+>#p : Symbol(Priv.#p, Decl(ttttMergedClassInterfaceIsClass.ts, 18, 12))
+>q : Symbol(Priv.q, Decl(ttttMergedClassInterfaceIsClass.ts, 18, 20))
+
+interface Priv { r: number }
+>Priv : Symbol(Priv, Decl(ttttMergedClassInterfaceIsClass.ts, 17, 54), Decl(ttttMergedClassInterfaceIsClass.ts, 18, 29))
+>r : Symbol(Priv.r, Decl(ttttMergedClassInterfaceIsClass.ts, 19, 16))
+
+class Priv2 { #p = 1; q = 2; r = 3 }
+>Priv2 : Symbol(Priv2, Decl(ttttMergedClassInterfaceIsClass.ts, 19, 28))
+>#p : Symbol(Priv2.#p, Decl(ttttMergedClassInterfaceIsClass.ts, 20, 13))
+>q : Symbol(Priv2.q, Decl(ttttMergedClassInterfaceIsClass.ts, 20, 21))
+>r : Symbol(Priv2.r, Decl(ttttMergedClassInterfaceIsClass.ts, 20, 28))
+
+export const pp: Priv2 = new Priv();
+>pp : Symbol(pp, Decl(ttttMergedClassInterfaceIsClass.ts, 21, 12))
+>Priv2 : Symbol(Priv2, Decl(ttttMergedClassInterfaceIsClass.ts, 19, 28))
+>Priv : Symbol(Priv, Decl(ttttMergedClassInterfaceIsClass.ts, 17, 54), Decl(ttttMergedClassInterfaceIsClass.ts, 18, 29))
+
+declare class Base { on(e: string): this; x: number }
+>Base : Symbol(Base, Decl(ttttMergedClassInterfaceIsClass.ts, 21, 36))
+>on : Symbol(Base.on, Decl(ttttMergedClassInterfaceIsClass.ts, 22, 20))
+>e : Symbol(e, Decl(ttttMergedClassInterfaceIsClass.ts, 22, 24))
+>x : Symbol(Base.x, Decl(ttttMergedClassInterfaceIsClass.ts, 22, 41))
+
+declare class BC extends Base { constructor(); }
+>BC : Symbol(BC, Decl(ttttMergedClassInterfaceIsClass.ts, 22, 53), Decl(ttttMergedClassInterfaceIsClass.ts, 23, 48))
+>Base : Symbol(Base, Decl(ttttMergedClassInterfaceIsClass.ts, 21, 36))
+
+interface BC extends Base { close(): void }
+>BC : Symbol(BC, Decl(ttttMergedClassInterfaceIsClass.ts, 22, 53), Decl(ttttMergedClassInterfaceIsClass.ts, 23, 48))
+>Base : Symbol(Base, Decl(ttttMergedClassInterfaceIsClass.ts, 21, 36))
+>close : Symbol(BC.close, Decl(ttttMergedClassInterfaceIsClass.ts, 24, 27))
+
+declare class DF extends Base { constructor(); }
+>DF : Symbol(DF, Decl(ttttMergedClassInterfaceIsClass.ts, 24, 43), Decl(ttttMergedClassInterfaceIsClass.ts, 25, 48))
+>Base : Symbol(Base, Decl(ttttMergedClassInterfaceIsClass.ts, 21, 36))
+
+interface DF extends Base { close(): void; params(l: number): void }
+>DF : Symbol(DF, Decl(ttttMergedClassInterfaceIsClass.ts, 24, 43), Decl(ttttMergedClassInterfaceIsClass.ts, 25, 48))
+>Base : Symbol(Base, Decl(ttttMergedClassInterfaceIsClass.ts, 21, 36))
+>close : Symbol(DF.close, Decl(ttttMergedClassInterfaceIsClass.ts, 26, 27))
+>params : Symbol(DF.params, Decl(ttttMergedClassInterfaceIsClass.ts, 26, 42))
+>l : Symbol(l, Decl(ttttMergedClassInterfaceIsClass.ts, 26, 50))
+
+declare const c: boolean;
+>c : Symbol(c, Decl(ttttMergedClassInterfaceIsClass.ts, 27, 13))
+
+declare const d: DF;
+>d : Symbol(d, Decl(ttttMergedClassInterfaceIsClass.ts, 28, 13))
+>DF : Symbol(DF, Decl(ttttMergedClassInterfaceIsClass.ts, 24, 43), Decl(ttttMergedClassInterfaceIsClass.ts, 25, 48))
+
+declare const b: BC;
+>b : Symbol(b, Decl(ttttMergedClassInterfaceIsClass.ts, 29, 13))
+>BC : Symbol(BC, Decl(ttttMergedClassInterfaceIsClass.ts, 22, 53), Decl(ttttMergedClassInterfaceIsClass.ts, 23, 48))
+
+export const both = c ? d : b;
+>both : Symbol(both, Decl(ttttMergedClassInterfaceIsClass.ts, 30, 12))
+>c : Symbol(c, Decl(ttttMergedClassInterfaceIsClass.ts, 27, 13))
+>d : Symbol(d, Decl(ttttMergedClassInterfaceIsClass.ts, 28, 13))
+>b : Symbol(b, Decl(ttttMergedClassInterfaceIsClass.ts, 29, 13))
+
+export class Gen { field = 1; method<T>(x: T): T { return x; } }
+>Gen : Symbol(Gen, Decl(ttttMergedClassInterfaceIsClass.ts, 30, 30), Decl(ttttMergedClassInterfaceIsClass.ts, 31, 64))
+>field : Symbol(Gen.field, Decl(ttttMergedClassInterfaceIsClass.ts, 31, 18))
+>method : Symbol(Gen.method, Decl(ttttMergedClassInterfaceIsClass.ts, 31, 29))
+>T : Symbol(T, Decl(ttttMergedClassInterfaceIsClass.ts, 31, 37))
+>x : Symbol(x, Decl(ttttMergedClassInterfaceIsClass.ts, 31, 40))
+>T : Symbol(T, Decl(ttttMergedClassInterfaceIsClass.ts, 31, 37))
+>T : Symbol(T, Decl(ttttMergedClassInterfaceIsClass.ts, 31, 37))
+>x : Symbol(x, Decl(ttttMergedClassInterfaceIsClass.ts, 31, 40))
+
+export interface Gen { extra: string }
+>Gen : Symbol(Gen, Decl(ttttMergedClassInterfaceIsClass.ts, 30, 30), Decl(ttttMergedClassInterfaceIsClass.ts, 31, 64))
+>extra : Symbol(Gen.extra, Decl(ttttMergedClassInterfaceIsClass.ts, 32, 22))
+
+export const g = new Gen();
+>g : Symbol(g, Decl(ttttMergedClassInterfaceIsClass.ts, 33, 12))
+>Gen : Symbol(Gen, Decl(ttttMergedClassInterfaceIsClass.ts, 30, 30), Decl(ttttMergedClassInterfaceIsClass.ts, 31, 64))
+
+export const gm = g.method;
+>gm : Symbol(gm, Decl(ttttMergedClassInterfaceIsClass.ts, 34, 12))
+>g.method : Symbol(Gen.method, Decl(ttttMergedClassInterfaceIsClass.ts, 31, 29))
+>g : Symbol(g, Decl(ttttMergedClassInterfaceIsClass.ts, 33, 12))
+>method : Symbol(Gen.method, Decl(ttttMergedClassInterfaceIsClass.ts, 31, 29))
+

@@ -2859,6 +2859,13 @@ static bool is_tsc_reference(Checker* me, Ty const* declared, u32 depth) {
     return false;
 }
 
+bool ty_declared_is_class(Ty const* declared) {
+    if (declared->kind == TY_REFERENCE) declared = declared->reference.target;
+    if (declared->kind != TY_DECLARED) return false;
+    return declared->declared.kind == TY_DECLARED_CLASS_INSTANCE ||
+        (declared->declared.kind == TY_DECLARED_INTERFACE && declared->declared.symbol && (declared->declared.symbol->flags & SYMBOL_CLASS));
+}
+
 bool ty_is_tsc_reference(Checker* me, Ty const* declared) {
     return declared->kind == TY_DECLARED && (declared->declared.kind == TY_DECLARED_INTERFACE ||
         declared->declared.kind == TY_DECLARED_CLASS_INSTANCE) && is_tsc_reference(me, declared, 0);

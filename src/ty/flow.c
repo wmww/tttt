@@ -2865,8 +2865,8 @@ static bool is_matching_constructor_reference(FlowQuery* q, Expr const* expr) {
 
 static bool is_constructed_by(Checker* me, Ty const* source, void const* arg) {
     Ty const* target = arg;
-    bool source_class = source->kind == TY_DECLARED && source->declared.kind == TY_DECLARED_CLASS_INSTANCE;
-    bool target_class = target->kind == TY_DECLARED && target->declared.kind == TY_DECLARED_CLASS_INSTANCE;
+    bool source_class = source->kind == TY_DECLARED && ty_declared_is_class(source);
+    bool target_class = target->kind == TY_DECLARED && ty_declared_is_class(target);
     if (source_class || target_class) {
         // (tsc compares symbols: a class's `this` type has the class's)
         if (source->kind == TY_TYPE_PARAM && source->param.state->is_this && target_class) {

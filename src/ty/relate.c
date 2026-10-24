@@ -2822,7 +2822,7 @@ static Ternary props_related_impl(
         Symbol const* private_owner = missing_count ? ty_private_name_class(me, missing_prop->name) : nullptr;
         Ty const* source_declared = source->kind == TY_REFERENCE ? source->reference.target : source;
         Symbol const* source_class = source_declared->kind == TY_DECLARED &&
-            source_declared->declared.kind == TY_DECLARED_CLASS_INSTANCE ? source_declared->declared.symbol : nullptr;
+            ty_declared_is_class(source_declared) ? source_declared->declared.symbol : nullptr;
         if (private_owner && source_class &&
             find_prop(me, source, ty_private_name(me, source_class, atom_sv(missing_prop->name)), 0).found
         ) {

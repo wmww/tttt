@@ -499,7 +499,8 @@ static u32 object_kind(Ty const* t) {
         case TY_DECLARED:
             switch (t->declared.kind) {
                 case TY_DECLARED_CLASS_INSTANCE: return 1;
-                case TY_DECLARED_INTERFACE:
+                // (A class merged with an interface is a class: tsc's getDeclaredTypeOfClassOrInterface)
+                case TY_DECLARED_INTERFACE: return ty_declared_is_class(t) ? 1 : 2;
                 case TY_DECLARED_SYNTHETIC: return 2;
                 default: return 16;
             }

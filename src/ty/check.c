@@ -1559,7 +1559,8 @@ static cstr index_type_str(Checker* me, Ty const* index, Span index_span) {
 // The class an instance type is of, if it is
 static Symbol const* instance_class(Ty const* object) {
     Ty const* declared = object->kind == TY_REFERENCE ? object->reference.target : object;
-    if (declared->kind != TY_DECLARED || declared->declared.kind != TY_DECLARED_CLASS_INSTANCE) return nullptr;
+    // (A class merged with an interface is one too: tsc's static member suggestion asks the symbol)
+    if (!ty_declared_is_class(declared)) return nullptr;
     return declared->declared.symbol;
 }
 

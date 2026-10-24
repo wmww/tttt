@@ -901,7 +901,7 @@ static ClassItem const* declared_field(Ty const* ty, Prop const* prop) {
     while (prop->target) prop = prop->target; // (An instantiation for `this`: the field's own)
     if (!prop->decl->lazy) return nullptr;
     Ty const* declared = ty->kind == TY_REFERENCE ? ty->reference.target : ty;
-    if (declared->kind != TY_DECLARED || (declared->declared.kind != TY_DECLARED_CLASS_INSTANCE &&
+    if (declared->kind != TY_DECLARED || (!ty_declared_is_class(declared) &&
         declared->declared.kind != TY_DECLARED_CLASS_STATIC) || !declared->declared.symbol) {
         return nullptr;
     }
@@ -6079,9 +6079,8 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             // references `this`: members.c's thisless, lower.c's free parameters)
             TyDisplay method_d = d;
             method_d.own_params_fresh = d.tracker && !(prop->flags & PROP_STATIC) &&
-                ((ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_CLASS_INSTANCE) ||
-                 (ty->kind == TY_REFERENCE && ty->reference.target->kind == TY_DECLARED &&
-                  ty->reference.target->declared.kind == TY_DECLARED_CLASS_INSTANCE)) &&
+                ((ty->kind == TY_DECLARED || (ty->kind == TY_REFERENCE && ty->reference.target->kind == TY_DECLARED)) &&
+                 ty_declared_is_class(ty)) &&
                 method_type->kind == TY_ANONYMOUS && method_type->anonymous.target != nullptr;
             // Methods print once per signature
             for (u32 j = 0; j < type_members->call_count; j++) {

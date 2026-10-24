@@ -382,6 +382,10 @@ Ty const* ty_access_element(Checker* me, Ty const* object, Ty const* index, bool
 // Whether tsc makes a class or interface's declared type a TypeReference: a class, a generic one, an interface that
 // isn't thisless (members.c)
 bool ty_is_tsc_reference(Checker* me, Ty const* declared);
+// A class's instance type (tsc's ObjectFlags.Class on the declared type), a class merged with an interface too: its
+// declared type is TY_DECLARED_INTERFACE here, while tsc's getDeclaredTypeOfClassOrInterface makes it a class whenever the
+// symbol is one (members.c). A reference is taken by its target
+bool ty_declared_is_class(Ty const* declared);
 // An intersection as tsc's getApparentTypeOfIntersectionType makes it, for messages: a new one without the alias when
 // a member is primitive, a type parameter, or a class or interface reference given `this` (relate.c)
 Ty const* ty_apparent_intersection_for_display(Checker* me, Ty const* ty);
