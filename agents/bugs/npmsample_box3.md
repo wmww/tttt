@@ -183,7 +183,7 @@ for flips); a separate file so the three boxes never conflict.
   interface, and removeSubtypes keeps two class instance types unless one derives from the other; tttt's declared type
   of a class+interface symbol is an interface, so expr.c's is_class_instance() didn't apply the rule. It now asks the
   symbol's class flag. Then `in` narrowed `BrotliCompress` to `BrotliCompress & Record<"params", unknown>`. Test
-  npm_bytecodealliance_jco_TS18046 (self-contained). [flip] [fixed PENDING]
+  npm_bytecodealliance_jco_TS18046 (self-contained). [flip] [fixed f1a53b501]
 - Large seed 20261402, cellajs/cella@main backend and frontend: spurious TS2322/TS2345 "'{}' is not assignable to
   'string'". `Object.entries(o)` with `o: Partial<Record<keyof T, string>>` (T a type parameter) infers U for
   `{ [s: string]: U }` as `Record<keyof T, string>[string] | undefined` in tsgo (an index signature read off the
