@@ -870,6 +870,10 @@ void initialized_binding_lookup_names_parameter(InitializedBinding* me, Scope* n
 // implies isn't made then, nor are its defaults checked without a context (`const { f = (d) => d } = o` takes f's
 // contextual type from o's property, not from an any of the pattern's)
 static bool initializer_ignores_context(Checker* checker, Expr const* value) {
+    // A type assertion or `satisfies` gives its operand the written type as context, never the outer one: what the
+    // pattern implies is never asked for, its defaults aren't checked without context first (tsc's
+    // getContextualTypeForInitializerExpression is only asked on demand; kirka's `{ ok = (v) => v } = {} as {...}`)
+    if (value->tag == EXPR_AS_TYPE) return true;
     if (value->tag != EXPR_IDENTIFIER && value->tag != EXPR_PROPERTY) return false;
     if (value->tag == EXPR_PROPERTY && value->property->form == PROPERTY_EXPR_BRACKET) return false;
     Ty const* type = ty_expr_type(checker, (Expr*)value);

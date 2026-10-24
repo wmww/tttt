@@ -1,0 +1,100 @@
+//// [test/cases/ttttAssertedInitializerDefaults.ts] ////
+
+=== ttttAssertedInitializerDefaults.ts ===
+// A destructuring whose initializer is a type assertion (or satisfies): the operand takes the written type as context,
+// never the outer one, so what the pattern implies is never asked for and its defaults are checked once, with the
+// asserted type's properties as context (tsc asks getContextualTypeForInitializerExpression on demand)
+export function debug<T, E>({ ok = (v) => v, err = (e) => e } = {} as { ok?(v: T): string; err?(e: E): string }) {}
+>debug : <T, E>({ ok, err }?: { ok?(v: T): string; err?(e: E): string; }) => void
+>ok : ((v: T) => T) | ((v: T) => string)
+>(v) => v : (v: T) => T
+>v : T
+>v : T
+>err : ((e: E) => E) | ((e: E) => string)
+>(e) => e : (e: E) => E
+>e : E
+>e : E
+>{} as { ok?(v: T): string; err?(e: E): string } : { ok?(v: T): string; err?(e: E): string; }
+>{} : {}
+>ok : ((v: T) => string) | undefined
+>v : T
+>err : ((e: E) => string) | undefined
+>e : E
+
+export function d2({ ok = (v) => v } = {} as { ok?(v: number): number }) {}
+>d2 : ({ ok }?: { ok?(v: number): number; }) => void
+>ok : (v: number) => number
+>(v) => v : (v: number) => number
+>v : number
+>v : number
+>{} as { ok?(v: number): number } : { ok?(v: number): number; }
+>{} : {}
+>ok : ((v: number) => number) | undefined
+>v : number
+
+export function d3({ ok = (v) => v }: { ok?(v: number): number } = {}) {}
+>d3 : ({ ok }?: { ok?(v: number): number; }) => void
+>ok : (v: number) => number
+>(v) => v : (v: number) => number
+>v : number
+>v : number
+>ok : ((v: number) => number) | undefined
+>v : number
+>{} : {}
+
+const { ok = (v) => v } = {} as { ok?(v: number): number };
+>ok : (v: number) => number
+>(v) => v : (v: number) => number
+>v : number
+>v : number
+>{} as { ok?(v: number): number } : { ok?(v: number): number; }
+>{} : {}
+>ok : ((v: number) => number) | undefined
+>v : number
+
+export function d4([a = (v) => v] = [] as [((v: number) => number)?]) {}
+>d4 : ([a]?: [(((v: number) => number) | undefined)?]) => void
+>a : (v: number) => number
+>(v) => v : (v: number) => number
+>v : number
+>v : number
+>[] as [((v: number) => number)?] : [(((v: number) => number) | undefined)?]
+>[] : []
+>v : number
+
+type X = { a?: (v: number) => number };
+>X : X
+>a : ((v: number) => number) | undefined
+>v : number
+
+declare const y: unknown;
+>y : unknown
+
+const { a: a1 = (v) => v } = y as X;
+>a : any
+>a1 : (v: number) => number
+>(v) => v : (v: number) => number
+>v : number
+>v : number
+>y as X : X
+>y : unknown
+
+const { a: a2 = (v) => v } = <X>y;
+>a : any
+>a2 : (v: number) => number
+>(v) => v : (v: number) => number
+>v : number
+>v : number
+><X>y : X
+>y : unknown
+
+const { a: a3 = (v) => v } = {} satisfies X as X;
+>a : any
+>a3 : (v: number) => number
+>(v) => v : (v: number) => number
+>v : number
+>v : number
+>{} satisfies X as X : X
+>{} satisfies X : {}
+>{} : {}
+

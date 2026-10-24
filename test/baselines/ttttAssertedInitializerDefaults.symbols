@@ -1,0 +1,85 @@
+//// [test/cases/ttttAssertedInitializerDefaults.ts] ////
+
+=== ttttAssertedInitializerDefaults.ts ===
+// A destructuring whose initializer is a type assertion (or satisfies): the operand takes the written type as context,
+// never the outer one, so what the pattern implies is never asked for and its defaults are checked once, with the
+// asserted type's properties as context (tsc asks getContextualTypeForInitializerExpression on demand)
+export function debug<T, E>({ ok = (v) => v, err = (e) => e } = {} as { ok?(v: T): string; err?(e: E): string }) {}
+>debug : Symbol(debug, Decl(ttttAssertedInitializerDefaults.ts, 0, 0))
+>T : Symbol(T, Decl(ttttAssertedInitializerDefaults.ts, 3, 22))
+>E : Symbol(E, Decl(ttttAssertedInitializerDefaults.ts, 3, 24))
+>ok : Symbol(ok, Decl(ttttAssertedInitializerDefaults.ts, 3, 29))
+>v : Symbol(v, Decl(ttttAssertedInitializerDefaults.ts, 3, 36))
+>v : Symbol(v, Decl(ttttAssertedInitializerDefaults.ts, 3, 36))
+>err : Symbol(err, Decl(ttttAssertedInitializerDefaults.ts, 3, 44))
+>e : Symbol(e, Decl(ttttAssertedInitializerDefaults.ts, 3, 52))
+>e : Symbol(e, Decl(ttttAssertedInitializerDefaults.ts, 3, 52))
+>ok : Symbol(ok, Decl(ttttAssertedInitializerDefaults.ts, 3, 71))
+>v : Symbol(v, Decl(ttttAssertedInitializerDefaults.ts, 3, 76))
+>T : Symbol(T, Decl(ttttAssertedInitializerDefaults.ts, 3, 22))
+>err : Symbol(err, Decl(ttttAssertedInitializerDefaults.ts, 3, 90))
+>e : Symbol(e, Decl(ttttAssertedInitializerDefaults.ts, 3, 96))
+>E : Symbol(E, Decl(ttttAssertedInitializerDefaults.ts, 3, 24))
+
+export function d2({ ok = (v) => v } = {} as { ok?(v: number): number }) {}
+>d2 : Symbol(d2, Decl(ttttAssertedInitializerDefaults.ts, 3, 115))
+>ok : Symbol(ok, Decl(ttttAssertedInitializerDefaults.ts, 4, 20))
+>v : Symbol(v, Decl(ttttAssertedInitializerDefaults.ts, 4, 27))
+>v : Symbol(v, Decl(ttttAssertedInitializerDefaults.ts, 4, 27))
+>ok : Symbol(ok, Decl(ttttAssertedInitializerDefaults.ts, 4, 46))
+>v : Symbol(v, Decl(ttttAssertedInitializerDefaults.ts, 4, 51))
+
+export function d3({ ok = (v) => v }: { ok?(v: number): number } = {}) {}
+>d3 : Symbol(d3, Decl(ttttAssertedInitializerDefaults.ts, 4, 75))
+>ok : Symbol(ok, Decl(ttttAssertedInitializerDefaults.ts, 5, 20))
+>v : Symbol(v, Decl(ttttAssertedInitializerDefaults.ts, 5, 27))
+>v : Symbol(v, Decl(ttttAssertedInitializerDefaults.ts, 5, 27))
+>ok : Symbol(ok, Decl(ttttAssertedInitializerDefaults.ts, 5, 39))
+>v : Symbol(v, Decl(ttttAssertedInitializerDefaults.ts, 5, 44))
+
+const { ok = (v) => v } = {} as { ok?(v: number): number };
+>ok : Symbol(ok, Decl(ttttAssertedInitializerDefaults.ts, 6, 7))
+>v : Symbol(v, Decl(ttttAssertedInitializerDefaults.ts, 6, 14))
+>v : Symbol(v, Decl(ttttAssertedInitializerDefaults.ts, 6, 14))
+>ok : Symbol(ok, Decl(ttttAssertedInitializerDefaults.ts, 6, 33))
+>v : Symbol(v, Decl(ttttAssertedInitializerDefaults.ts, 6, 38))
+
+export function d4([a = (v) => v] = [] as [((v: number) => number)?]) {}
+>d4 : Symbol(d4, Decl(ttttAssertedInitializerDefaults.ts, 6, 59))
+>a : Symbol(a, Decl(ttttAssertedInitializerDefaults.ts, 7, 20))
+>v : Symbol(v, Decl(ttttAssertedInitializerDefaults.ts, 7, 25))
+>v : Symbol(v, Decl(ttttAssertedInitializerDefaults.ts, 7, 25))
+>v : Symbol(v, Decl(ttttAssertedInitializerDefaults.ts, 7, 45))
+
+type X = { a?: (v: number) => number };
+>X : Symbol(X, Decl(ttttAssertedInitializerDefaults.ts, 7, 72))
+>a : Symbol(a, Decl(ttttAssertedInitializerDefaults.ts, 8, 10))
+>v : Symbol(v, Decl(ttttAssertedInitializerDefaults.ts, 8, 16))
+
+declare const y: unknown;
+>y : Symbol(y, Decl(ttttAssertedInitializerDefaults.ts, 9, 13))
+
+const { a: a1 = (v) => v } = y as X;
+>a : Symbol(a, Decl(ttttAssertedInitializerDefaults.ts, 8, 10))
+>a1 : Symbol(a1, Decl(ttttAssertedInitializerDefaults.ts, 10, 7))
+>v : Symbol(v, Decl(ttttAssertedInitializerDefaults.ts, 10, 17))
+>v : Symbol(v, Decl(ttttAssertedInitializerDefaults.ts, 10, 17))
+>y : Symbol(y, Decl(ttttAssertedInitializerDefaults.ts, 9, 13))
+>X : Symbol(X, Decl(ttttAssertedInitializerDefaults.ts, 7, 72))
+
+const { a: a2 = (v) => v } = <X>y;
+>a : Symbol(a, Decl(ttttAssertedInitializerDefaults.ts, 8, 10))
+>a2 : Symbol(a2, Decl(ttttAssertedInitializerDefaults.ts, 11, 7))
+>v : Symbol(v, Decl(ttttAssertedInitializerDefaults.ts, 11, 17))
+>v : Symbol(v, Decl(ttttAssertedInitializerDefaults.ts, 11, 17))
+>X : Symbol(X, Decl(ttttAssertedInitializerDefaults.ts, 7, 72))
+>y : Symbol(y, Decl(ttttAssertedInitializerDefaults.ts, 9, 13))
+
+const { a: a3 = (v) => v } = {} satisfies X as X;
+>a : Symbol(a, Decl(ttttAssertedInitializerDefaults.ts, 8, 10))
+>a3 : Symbol(a3, Decl(ttttAssertedInitializerDefaults.ts, 12, 7))
+>v : Symbol(v, Decl(ttttAssertedInitializerDefaults.ts, 12, 17))
+>v : Symbol(v, Decl(ttttAssertedInitializerDefaults.ts, 12, 17))
+>X : Symbol(X, Decl(ttttAssertedInitializerDefaults.ts, 7, 72))
+>X : Symbol(X, Decl(ttttAssertedInitializerDefaults.ts, 7, 72))
+
