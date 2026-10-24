@@ -1,0 +1,50 @@
+//// [test/cases/npm_matrix-org_matrix-js-sdk_TS2322.ts] ////
+
+=== node_modules/wasm/index.d.ts ===
+export class SecretsBundle {
+>SecretsBundle : SecretsBundle
+
+    to_json(): unknown;
+>to_json : { (): unknown; (): Promise<import("../../src/types").SecretsBundleJson>; }
+}
+=== src/types.d.ts ===
+import type * as Wasm from "wasm";
+>Wasm : typeof Wasm
+
+type SecretsBundleJson = { cross_signing: { master_key: string } };
+>SecretsBundleJson : SecretsBundleJson
+>cross_signing : { master_key: string; }
+>master_key : string
+
+declare module "wasm" {
+>"wasm" : typeof Wasm
+
+    interface SecretsBundle {
+        to_json(): Promise<SecretsBundleJson>;
+>to_json : { (): unknown; (): Promise<SecretsBundleJson>; }
+    }
+}
+=== src/a.ts ===
+import { SecretsBundle } from "wasm";
+>SecretsBundle : typeof SecretsBundle
+
+type Json = { cross_signing: { master_key: string } };
+>Json : Json
+>cross_signing : { master_key: string; }
+>master_key : string
+
+export async function f(b: SecretsBundle): Promise<Json> {
+>f : (b: SecretsBundle) => Promise<Json>
+>b : SecretsBundle
+
+    const secrets = b.to_json();
+>secrets : Promise<import("./types").SecretsBundleJson>
+>b.to_json() : Promise<import("./types").SecretsBundleJson>
+>b.to_json : { (): unknown; (): Promise<import("./types").SecretsBundleJson>; }
+>b : SecretsBundle
+>to_json : { (): unknown; (): Promise<import("./types").SecretsBundleJson>; }
+
+    return secrets;
+>secrets : Promise<import("./types").SecretsBundleJson>
+}
+

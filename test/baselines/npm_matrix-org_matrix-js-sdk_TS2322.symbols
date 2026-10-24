@@ -1,0 +1,56 @@
+//// [test/cases/npm_matrix-org_matrix-js-sdk_TS2322.ts] ////
+
+=== node_modules/wasm/index.d.ts ===
+export class SecretsBundle {
+>SecretsBundle : Symbol(SecretsBundle, Decl(index.d.ts, 0, 0), Decl(types.d.ts, 2, 23))
+
+    to_json(): unknown;
+>to_json : Symbol(SecretsBundle.to_json, Decl(index.d.ts, 0, 28), Decl(types.d.ts, 3, 29))
+}
+=== src/types.d.ts ===
+import type * as Wasm from "wasm";
+>Wasm : Symbol(Wasm, Decl(types.d.ts, 0, 11))
+
+type SecretsBundleJson = { cross_signing: { master_key: string } };
+>SecretsBundleJson : Symbol(SecretsBundleJson, Decl(types.d.ts, 0, 34))
+>cross_signing : Symbol(cross_signing, Decl(types.d.ts, 1, 26))
+>master_key : Symbol(master_key, Decl(types.d.ts, 1, 43))
+
+declare module "wasm" {
+>"wasm" : Symbol(Wasm, Decl(index.d.ts, 0, 0), Decl(types.d.ts, 1, 67))
+
+    interface SecretsBundle {
+>SecretsBundle : Symbol(SecretsBundle, Decl(index.d.ts, 0, 0), Decl(types.d.ts, 2, 23))
+
+        to_json(): Promise<SecretsBundleJson>;
+>to_json : Symbol(SecretsBundle.to_json, Decl(index.d.ts, 0, 28), Decl(types.d.ts, 3, 29))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>SecretsBundleJson : Symbol(SecretsBundleJson, Decl(types.d.ts, 0, 34))
+    }
+}
+=== src/a.ts ===
+import { SecretsBundle } from "wasm";
+>SecretsBundle : Symbol(SecretsBundle, Decl(a.ts, 0, 8))
+
+type Json = { cross_signing: { master_key: string } };
+>Json : Symbol(Json, Decl(a.ts, 0, 37))
+>cross_signing : Symbol(cross_signing, Decl(a.ts, 1, 13))
+>master_key : Symbol(master_key, Decl(a.ts, 1, 30))
+
+export async function f(b: SecretsBundle): Promise<Json> {
+>f : Symbol(f, Decl(a.ts, 1, 54))
+>b : Symbol(b, Decl(a.ts, 2, 24))
+>SecretsBundle : Symbol(SecretsBundle, Decl(a.ts, 0, 8))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>Json : Symbol(Json, Decl(a.ts, 0, 37))
+
+    const secrets = b.to_json();
+>secrets : Symbol(secrets, Decl(a.ts, 3, 9))
+>b.to_json : Symbol(SecretsBundle.to_json, Decl(index.d.ts, 0, 28), Decl(types.d.ts, 3, 29))
+>b : Symbol(b, Decl(a.ts, 2, 24))
+>to_json : Symbol(SecretsBundle.to_json, Decl(index.d.ts, 0, 28), Decl(types.d.ts, 3, 29))
+
+    return secrets;
+>secrets : Symbol(secrets, Decl(a.ts, 3, 9))
+}
+

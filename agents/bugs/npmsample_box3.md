@@ -167,3 +167,9 @@ for flips); a separate file so the three boxes never conflict.
   'begin': change[2]... }`, narrows `change` by the destructured tuple discriminant in tsgo (the binding-element
   parent narrowing, for array binding patterns too), and tttt narrows only `tag`. Repro
   test/cases/npm_rocicorp_mono_TS2339.ts (by hand, 18 lines). [flip] [open]
+- Large seed 20261401, matrix-org/matrix-js-sdk@develop: spurious TS2322 "Type 'unknown' is not assignable to type
+  'SecretsBundleJson'". The wasm package's `class SecretsBundle { to_json(): unknown }` gets an overload
+  `to_json(): Promise<SecretsBundleJson>` from the project's module augmentation (`declare module ... { interface
+  SecretsBundle { ... } }`). tsgo resolves the call to the augmentation's signature (the later declaration's
+  overloads first), and tttt takes the class's. Repro test/cases/npm_matrix-org_matrix-js-sdk_TS2322.ts (by
+  hand). [flip] [open]

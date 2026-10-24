@@ -73,3 +73,4 @@ npm__pentest-harness_cordis_TS2313	no	@pentest-harness/cordis@4.0.1	https://gith
 npm_akashnetwork_console-api_TS2345	no	@akashnetwork/console-api@3.32.0	https://github.com/akash-network/console	3	19	TS2322 TS2345 TS2352 TS2877
 npm_akashnetwork_console-web_TS7022	no	@akashnetwork/console-web@3.31.0	https://github.com/akash-network/console	94	410	TS7022 TS7006 TS2339 TS2345
 npm_rocicorp_mono_TS2339	yes	rocicorp/mono@main	https://github.com/rocicorp/mono	0	42	+TS2322 +TS2339 +TS2345 +TS2349 +TS2532 +TS2722
+npm_matrix-org_matrix-js-sdk_TS2322	yes	matrix-org/matrix-js-sdk@develop	https://github.com/matrix-org/matrix-js-sdk	0	1	+TS2322
