@@ -1,0 +1,73 @@
+//// [test/cases/ttttEnumMembersOfOtherEnumNotComparable.ts] ////
+
+=== ttttEnumMembersOfOtherEnumNotComparable.ts ===
+// Members of two different enums are not comparable even with the same value (tsc's isEnumTypeRelatedTo):
+// `t !== D.B` keeps a `T.B`, `t === D.B` has no overlap; a plain literal of the same value is comparable either way
+enum T { B = 'boolean' }
+>T : T
+>B : T.B
+>'boolean' : "boolean"
+
+enum D { B = 'boolean' }
+>D : D
+>B : D.B
+>'boolean' : "boolean"
+
+export function f(x: D | T, t: T) {
+>f : (x: D | T, t: T) => void
+>x : T | D
+>t : T
+
+  if (t !== D.B) { const a = t; }
+>t !== D.B : boolean
+>t : T
+>D.B : D
+>D : typeof D
+>B : D
+>a : T
+>t : T
+
+  if (x !== D.B) { const b = x; }
+>x !== D.B : boolean
+>x : T | D
+>D.B : D
+>D : typeof D
+>B : D
+>b : T
+>x : T
+
+  if (x === D.B) { const c = x; }
+>x === D.B : boolean
+>x : T | D
+>D.B : D
+>D : typeof D
+>B : D
+>c : D
+>x : D
+
+  if (t === 'boolean') { const d = t; }
+>t === 'boolean' : boolean
+>t : T
+>'boolean' : "boolean"
+>d : T
+>t : T
+
+  if ('boolean' === t) { const e = t; }
+>'boolean' === t : boolean
+>'boolean' : "boolean"
+>t : T
+>e : T
+>t : T
+}
+const w = D.B as T;
+>w : T
+>D.B as T : T
+>D.B : D
+>D : typeof D
+>B : D
+
+const s = 'boolean' as T;
+>s : T
+>'boolean' as T : T
+>'boolean' : "boolean"
+

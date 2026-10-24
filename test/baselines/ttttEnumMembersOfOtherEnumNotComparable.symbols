@@ -1,0 +1,66 @@
+//// [test/cases/ttttEnumMembersOfOtherEnumNotComparable.ts] ////
+
+=== ttttEnumMembersOfOtherEnumNotComparable.ts ===
+// Members of two different enums are not comparable even with the same value (tsc's isEnumTypeRelatedTo):
+// `t !== D.B` keeps a `T.B`, `t === D.B` has no overlap; a plain literal of the same value is comparable either way
+enum T { B = 'boolean' }
+>T : Symbol(T, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 0, 0))
+>B : Symbol(T.B, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 2, 8))
+
+enum D { B = 'boolean' }
+>D : Symbol(D, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 2, 24))
+>B : Symbol(D.B, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 3, 8))
+
+export function f(x: D | T, t: T) {
+>f : Symbol(f, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 3, 24))
+>x : Symbol(x, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 4, 18))
+>D : Symbol(D, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 2, 24))
+>T : Symbol(T, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 0, 0))
+>t : Symbol(t, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 4, 27))
+>T : Symbol(T, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 0, 0))
+
+  if (t !== D.B) { const a = t; }
+>t : Symbol(t, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 4, 27))
+>D.B : Symbol(D.B, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 3, 8))
+>D : Symbol(D, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 2, 24))
+>B : Symbol(D.B, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 3, 8))
+>a : Symbol(a, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 5, 24))
+>t : Symbol(t, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 4, 27))
+
+  if (x !== D.B) { const b = x; }
+>x : Symbol(x, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 4, 18))
+>D.B : Symbol(D.B, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 3, 8))
+>D : Symbol(D, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 2, 24))
+>B : Symbol(D.B, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 3, 8))
+>b : Symbol(b, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 6, 24))
+>x : Symbol(x, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 4, 18))
+
+  if (x === D.B) { const c = x; }
+>x : Symbol(x, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 4, 18))
+>D.B : Symbol(D.B, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 3, 8))
+>D : Symbol(D, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 2, 24))
+>B : Symbol(D.B, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 3, 8))
+>c : Symbol(c, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 7, 24))
+>x : Symbol(x, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 4, 18))
+
+  if (t === 'boolean') { const d = t; }
+>t : Symbol(t, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 4, 27))
+>d : Symbol(d, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 8, 30))
+>t : Symbol(t, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 4, 27))
+
+  if ('boolean' === t) { const e = t; }
+>t : Symbol(t, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 4, 27))
+>e : Symbol(e, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 9, 30))
+>t : Symbol(t, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 4, 27))
+}
+const w = D.B as T;
+>w : Symbol(w, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 11, 5))
+>D.B : Symbol(D.B, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 3, 8))
+>D : Symbol(D, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 2, 24))
+>B : Symbol(D.B, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 3, 8))
+>T : Symbol(T, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 0, 0))
+
+const s = 'boolean' as T;
+>s : Symbol(s, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 12, 5))
+>T : Symbol(T, Decl(ttttEnumMembersOfOtherEnumNotComparable.ts, 0, 0))
+

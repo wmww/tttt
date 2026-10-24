@@ -698,8 +698,10 @@ static bool is_simple_related_enum(Checker* me, RelationState const* st, Ty cons
         }
     }
     if (st->relation == TY_RELATION_COMPARABLE) {
-        // Enum members of the same value are comparable to each other
-        if (s->kind == TY_LITERAL && t->kind == TY_LITERAL && (s->literal.enum_decl || t->literal.enum_decl) &&
+        // An enum member and a plain literal of the same value are comparable either way (tsc's isRelatedTo asks
+        // isSimpleTypeRelatedTo both ways under comparability); two enums' members are only through isEnumTypeRelatedTo
+        // above: `t !== D.B` keeps a `T.B` of the same value
+        if (s->kind == TY_LITERAL && t->kind == TY_LITERAL && (!s->literal.enum_decl != !t->literal.enum_decl) &&
             (sf & TYF_LITERAL) && same_literal_value(s, t)
         ) {
             return true;
