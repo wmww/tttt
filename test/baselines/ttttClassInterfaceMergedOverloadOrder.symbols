@@ -1,0 +1,79 @@
+//// [test/cases/ttttClassInterfaceMergedOverloadOrder.ts] ////
+
+=== ttttClassInterfaceMergedOverloadOrder.ts ===
+// A class merged with an interface: each declaration's overloads are a group of the merged symbol, and overload
+// resolution tries a later declaration's group first (tsc's reorderCandidates), the class's own too (matrix-js-sdk's
+// module augmentation `interface SecretsBundle { to_json(): Promise<J> }` before the class's `to_json(): unknown`)
+declare class X { m(): unknown }
+>X : Symbol(X, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 0, 0), Decl(ttttClassInterfaceMergedOverloadOrder.ts, 3, 32))
+>m : Symbol(X.m, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 3, 17), Decl(ttttClassInterfaceMergedOverloadOrder.ts, 4, 13))
+
+interface X { m(): Promise<number> }
+>X : Symbol(X, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 0, 0), Decl(ttttClassInterfaceMergedOverloadOrder.ts, 3, 32))
+>m : Symbol(X.m, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 3, 17), Decl(ttttClassInterfaceMergedOverloadOrder.ts, 4, 13))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+
+declare const x: X;
+>x : Symbol(x, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 5, 13))
+>X : Symbol(X, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 0, 0), Decl(ttttClassInterfaceMergedOverloadOrder.ts, 3, 32))
+
+const r1 = x.m();
+>r1 : Symbol(r1, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 6, 5))
+>x.m : Symbol(X.m, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 3, 17), Decl(ttttClassInterfaceMergedOverloadOrder.ts, 4, 13))
+>x : Symbol(x, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 5, 13))
+>m : Symbol(X.m, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 3, 17), Decl(ttttClassInterfaceMergedOverloadOrder.ts, 4, 13))
+
+interface Y { m(): unknown }
+>Y : Symbol(Y, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 6, 17), Decl(ttttClassInterfaceMergedOverloadOrder.ts, 7, 28))
+>m : Symbol(Y.m, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 7, 13), Decl(ttttClassInterfaceMergedOverloadOrder.ts, 8, 13))
+
+interface Y { m(): Promise<number> }
+>Y : Symbol(Y, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 6, 17), Decl(ttttClassInterfaceMergedOverloadOrder.ts, 7, 28))
+>m : Symbol(Y.m, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 7, 13), Decl(ttttClassInterfaceMergedOverloadOrder.ts, 8, 13))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+
+declare const y: Y;
+>y : Symbol(y, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 9, 13))
+>Y : Symbol(Y, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 6, 17), Decl(ttttClassInterfaceMergedOverloadOrder.ts, 7, 28))
+
+const r2 = y.m();
+>r2 : Symbol(r2, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 10, 5))
+>y.m : Symbol(Y.m, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 7, 13), Decl(ttttClassInterfaceMergedOverloadOrder.ts, 8, 13))
+>y : Symbol(y, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 9, 13))
+>m : Symbol(Y.m, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 7, 13), Decl(ttttClassInterfaceMergedOverloadOrder.ts, 8, 13))
+
+declare class Z { m(): unknown; m(): Promise<number> }
+>Z : Symbol(Z, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 10, 17))
+>m : Symbol(Z.m, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 11, 17), Decl(ttttClassInterfaceMergedOverloadOrder.ts, 11, 31))
+>m : Symbol(Z.m, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 11, 17), Decl(ttttClassInterfaceMergedOverloadOrder.ts, 11, 31))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+
+declare const z: Z;
+>z : Symbol(z, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 12, 13))
+>Z : Symbol(Z, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 10, 17))
+
+const r3 = z.m();
+>r3 : Symbol(r3, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 13, 5))
+>z.m : Symbol(Z.m, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 11, 17), Decl(ttttClassInterfaceMergedOverloadOrder.ts, 11, 31))
+>z : Symbol(z, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 12, 13))
+>m : Symbol(Z.m, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 11, 17), Decl(ttttClassInterfaceMergedOverloadOrder.ts, 11, 31))
+
+interface W { m(): Promise<number> }
+>W : Symbol(W, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 13, 17), Decl(ttttClassInterfaceMergedOverloadOrder.ts, 14, 36))
+>m : Symbol(W.m, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 14, 13), Decl(ttttClassInterfaceMergedOverloadOrder.ts, 15, 17))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+
+declare class W { m(): unknown }
+>W : Symbol(W, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 13, 17), Decl(ttttClassInterfaceMergedOverloadOrder.ts, 14, 36))
+>m : Symbol(W.m, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 14, 13), Decl(ttttClassInterfaceMergedOverloadOrder.ts, 15, 17))
+
+declare const w: W;
+>w : Symbol(w, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 16, 13))
+>W : Symbol(W, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 13, 17), Decl(ttttClassInterfaceMergedOverloadOrder.ts, 14, 36))
+
+const r4 = w.m();
+>r4 : Symbol(r4, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 17, 5))
+>w.m : Symbol(W.m, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 14, 13), Decl(ttttClassInterfaceMergedOverloadOrder.ts, 15, 17))
+>w : Symbol(w, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 16, 13))
+>m : Symbol(W.m, Decl(ttttClassInterfaceMergedOverloadOrder.ts, 14, 13), Decl(ttttClassInterfaceMergedOverloadOrder.ts, 15, 17))
+

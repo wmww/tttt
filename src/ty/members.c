@@ -2171,6 +2171,10 @@ static void builder_add_class_items(
                         }
                     }
                     if (!count) break;
+                    // (Merged with interfaces, the class's own overloads are a group of the merged symbol too, which
+                    // reorder_candidates() tries after a later declaration's: tsc's reorderCandidates, a module
+                    // augmentation's `interface C { m(): Promise<J> }` before the class's `m(): unknown`)
+                    for (u32 f = 0; builder->decl_group && f < count; f++) set_decl_group(me, functions[f], builder->decl_group);
                     // After an interface's method of its name (the class merges with it): one method, the interface's
                     // signatures then the class's (tsc's getSignaturesOfSymbol over the symbol's declarations)
                     // A late-bound method after the early method of its name (the early declarations of every
@@ -3393,6 +3397,10 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 }
             }
             builder.index_pass = index_signatures ? 1 : 0;
+            bool merged_with_interface = false;
+            for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
+                merged_with_interface |= node->kind == SYMBOL_DECL_INTERFACE;
+            }
             // The early-bound members of every declaration, then the late-bound ones (builder_add_declarations())
             for (u32 pass = 0; pass < 2; pass++) {
                 builder.skip_computed = pass == 0;
@@ -3405,7 +3413,9 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                         builder_add_interface(me, &builder, &interface_decl->type.interface, ctx, decl);
                         builder.decl_group = nullptr;
                     } else if (node->kind == SYMBOL_DECL_CLASS) {
+                        builder.decl_group = merged_with_interface ? decl_group_of(me, decl, node) : nullptr;
                         builder_add_class_items(me, &builder, node->node, false, ctx, decl);
+                        builder.decl_group = nullptr;
                     }
                 }
             }

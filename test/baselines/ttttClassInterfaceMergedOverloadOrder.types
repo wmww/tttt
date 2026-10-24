@@ -1,0 +1,71 @@
+//// [test/cases/ttttClassInterfaceMergedOverloadOrder.ts] ////
+
+=== ttttClassInterfaceMergedOverloadOrder.ts ===
+// A class merged with an interface: each declaration's overloads are a group of the merged symbol, and overload
+// resolution tries a later declaration's group first (tsc's reorderCandidates), the class's own too (matrix-js-sdk's
+// module augmentation `interface SecretsBundle { to_json(): Promise<J> }` before the class's `to_json(): unknown`)
+declare class X { m(): unknown }
+>X : X
+>m : { (): unknown; (): Promise<number>; }
+
+interface X { m(): Promise<number> }
+>m : { (): unknown; (): Promise<number>; }
+
+declare const x: X;
+>x : X
+
+const r1 = x.m();
+>r1 : Promise<number>
+>x.m() : Promise<number>
+>x.m : { (): unknown; (): Promise<number>; }
+>x : X
+>m : { (): unknown; (): Promise<number>; }
+
+interface Y { m(): unknown }
+>m : { (): unknown; (): Promise<number>; }
+
+interface Y { m(): Promise<number> }
+>m : { (): unknown; (): Promise<number>; }
+
+declare const y: Y;
+>y : Y
+
+const r2 = y.m();
+>r2 : Promise<number>
+>y.m() : Promise<number>
+>y.m : { (): unknown; (): Promise<number>; }
+>y : Y
+>m : { (): unknown; (): Promise<number>; }
+
+declare class Z { m(): unknown; m(): Promise<number> }
+>Z : Z
+>m : { (): unknown; (): Promise<number>; }
+>m : { (): unknown; (): Promise<number>; }
+
+declare const z: Z;
+>z : Z
+
+const r3 = z.m();
+>r3 : unknown
+>z.m() : unknown
+>z.m : { (): unknown; (): Promise<number>; }
+>z : Z
+>m : { (): unknown; (): Promise<number>; }
+
+interface W { m(): Promise<number> }
+>m : { (): Promise<number>; (): unknown; }
+
+declare class W { m(): unknown }
+>W : W
+>m : { (): Promise<number>; (): unknown; }
+
+declare const w: W;
+>w : W
+
+const r4 = w.m();
+>r4 : unknown
+>w.m() : unknown
+>w.m : { (): Promise<number>; (): unknown; }
+>w : W
+>m : { (): Promise<number>; (): unknown; }
+
