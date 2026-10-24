@@ -1,0 +1,47 @@
+//// [test/cases/npm_vinext_TS2345.ts] ////
+
+=== npm_vinext_TS2345.ts ===
+// origin: npm vinext@1.3.0 https://github.com/cloudflare/vinext packages/vinext/tsconfig.bench.json seed 20261301
+// flip: no
+type Comp = (props: {}) => string;
+>Comp : Comp
+>props : {}
+
+type Mod = Record<string, unknown> & {
+>Mod : Mod
+
+  default?: Comp | null | undefined;
+>default : Comp | null | undefined
+
+};
+export function f<TModule extends Mod = Mod>(mods: readonly (TModule | null | undefined)[]) {
+>f : <TModule extends Mod = Mod>(mods: readonly (TModule | null | undefined)[]) => void
+>mods : readonly (TModule | null | undefined)[]
+
+  const m = new Map<number, NonNullable<TModule["default"]>>();
+>m : Map<number, NonNullable<TModule["default"]>>
+>new Map<number, NonNullable<TModule["default"]>>() : Map<number, NonNullable<TModule["default"]>>
+>Map : MapConstructor
+
+  for (const mod of mods) {
+>mod : TModule | null | undefined
+>mods : readonly (TModule | null | undefined)[]
+
+    if (mod?.default) {
+>mod?.default : Comp | null | undefined
+>mod : TModule | null | undefined
+>default : Comp | null | undefined
+
+      m.set(1, mod.default);
+>m.set(1, mod.default) : Map<number, NonNullable<TModule["default"]>>
+>m.set : (key: number, value: NonNullable<TModule["default"]>) => Map<number, NonNullable<TModule["default"]>>
+>m : Map<number, NonNullable<TModule["default"]>>
+>set : (key: number, value: NonNullable<TModule["default"]>) => Map<number, NonNullable<TModule["default"]>>
+>1 : 1
+>mod.default : Comp
+>mod : TModule
+>default : Comp
+    }
+  }
+}
+

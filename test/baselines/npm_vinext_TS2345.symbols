@@ -1,0 +1,52 @@
+//// [test/cases/npm_vinext_TS2345.ts] ////
+
+=== npm_vinext_TS2345.ts ===
+// origin: npm vinext@1.3.0 https://github.com/cloudflare/vinext packages/vinext/tsconfig.bench.json seed 20261301
+// flip: no
+type Comp = (props: {}) => string;
+>Comp : Symbol(Comp, Decl(npm_vinext_TS2345.ts, 0, 0))
+>props : Symbol(props, Decl(npm_vinext_TS2345.ts, 2, 13))
+
+type Mod = Record<string, unknown> & {
+>Mod : Symbol(Mod, Decl(npm_vinext_TS2345.ts, 2, 34))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+  default?: Comp | null | undefined;
+>default : Symbol(default, Decl(npm_vinext_TS2345.ts, 3, 38))
+>Comp : Symbol(Comp, Decl(npm_vinext_TS2345.ts, 0, 0))
+
+};
+export function f<TModule extends Mod = Mod>(mods: readonly (TModule | null | undefined)[]) {
+>f : Symbol(f, Decl(npm_vinext_TS2345.ts, 5, 2))
+>TModule : Symbol(TModule, Decl(npm_vinext_TS2345.ts, 6, 18))
+>Mod : Symbol(Mod, Decl(npm_vinext_TS2345.ts, 2, 34))
+>Mod : Symbol(Mod, Decl(npm_vinext_TS2345.ts, 2, 34))
+>mods : Symbol(mods, Decl(npm_vinext_TS2345.ts, 6, 45))
+>TModule : Symbol(TModule, Decl(npm_vinext_TS2345.ts, 6, 18))
+
+  const m = new Map<number, NonNullable<TModule["default"]>>();
+>m : Symbol(m, Decl(npm_vinext_TS2345.ts, 7, 7))
+>Map : Symbol(Map, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>NonNullable : Symbol(NonNullable, Decl(lib.es5.d.ts, --, --))
+>TModule : Symbol(TModule, Decl(npm_vinext_TS2345.ts, 6, 18))
+
+  for (const mod of mods) {
+>mod : Symbol(mod, Decl(npm_vinext_TS2345.ts, 8, 12))
+>mods : Symbol(mods, Decl(npm_vinext_TS2345.ts, 6, 45))
+
+    if (mod?.default) {
+>mod?.default : Symbol(default, Decl(npm_vinext_TS2345.ts, 3, 38))
+>mod : Symbol(mod, Decl(npm_vinext_TS2345.ts, 8, 12))
+>default : Symbol(default, Decl(npm_vinext_TS2345.ts, 3, 38))
+
+      m.set(1, mod.default);
+>m.set : Symbol(Map.set, Decl(lib.es2015.collection.d.ts, --, --))
+>m : Symbol(m, Decl(npm_vinext_TS2345.ts, 7, 7))
+>set : Symbol(Map.set, Decl(lib.es2015.collection.d.ts, --, --))
+>mod.default : Symbol(default, Decl(npm_vinext_TS2345.ts, 3, 38))
+>mod : Symbol(mod, Decl(npm_vinext_TS2345.ts, 8, 12))
+>default : Symbol(default, Decl(npm_vinext_TS2345.ts, 3, 38))
+    }
+  }
+}
+
