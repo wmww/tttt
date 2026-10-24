@@ -1,0 +1,30 @@
+//// [test/cases/ttttPickUnionIntersectionIndexOptional.ts] ////
+
+=== ttttPickUnionIntersectionIndexOptional.ts ===
+// A union property's optionality takes in a union member that lacks it but has an applicable index signature, an
+// intersection member's too (tsc's createUnionOrIntersectionProperty): Pick over react-transition-group's
+// TransitionGroupProps keeps the intrinsic element's attributes optional (mui-x x-date-pickers' styled
+// TransitionGroup, TS2740/TS2322 there)
+type U = ({ a?: string; b?: number } & { c?: boolean }) | ({ component: any } & { [prop: string]: any });
+>U : Symbol(U, Decl(ttttPickUnionIntersectionIndexOptional.ts, 0, 0))
+>a : Symbol(a, Decl(ttttPickUnionIntersectionIndexOptional.ts, 4, 11))
+>b : Symbol(b, Decl(ttttPickUnionIntersectionIndexOptional.ts, 4, 23))
+>c : Symbol(c, Decl(ttttPickUnionIntersectionIndexOptional.ts, 4, 40))
+>component : Symbol(component, Decl(ttttPickUnionIntersectionIndexOptional.ts, 4, 60))
+>prop : Symbol(prop, Decl(ttttPickUnionIntersectionIndexOptional.ts, 4, 83))
+
+type P = Pick<U, "a" | "b">;
+>P : Symbol(P, Decl(ttttPickUnionIntersectionIndexOptional.ts, 4, 105))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>U : Symbol(U, Decl(ttttPickUnionIntersectionIndexOptional.ts, 0, 0))
+
+const x: P = {};
+>x : Symbol(x, Decl(ttttPickUnionIntersectionIndexOptional.ts, 6, 5))
+>P : Symbol(P, Decl(ttttPickUnionIntersectionIndexOptional.ts, 4, 105))
+
+const y: Pick<U, "b"> = { b: 1 };
+>y : Symbol(y, Decl(ttttPickUnionIntersectionIndexOptional.ts, 7, 5))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>U : Symbol(U, Decl(ttttPickUnionIntersectionIndexOptional.ts, 0, 0))
+>b : Symbol(b, Decl(ttttPickUnionIntersectionIndexOptional.ts, 7, 25))
+

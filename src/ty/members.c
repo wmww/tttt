@@ -4436,7 +4436,9 @@ static Prop const* modifiers_prop(Checker* me, Ty const* modifiers, Atom const* 
             // (A union member without it but with an index signature that applies is in the union property too, not
             // optional by it, readonly if the signature is: tsc's createUnionOrIntersectionProperty, CheckFlags.WritePartial.
             // `Omit<Record<string, any> | { class?: string }, "x">` keeps `class` optional)
-            IndexInfo const* info = is_union && (member->flags & TYF_OBJECT) ?
+            // (An intersection member's too: `{ component: any } & { [prop: string]: any }` in react-transition-group's
+            // TransitionGroupProps, which Pick then keeps `about?` optional from, mui-x's styled TransitionGroup)
+            IndexInfo const* info = is_union && ((member->flags & TYF_OBJECT) || member->kind == TY_INTERSECTION) ?
                 ty_applicable_index_info(me, member, ty_prop_name_literal(me, name)) : nullptr;
             if (info) {
                 if (info->readonly) readonly |= PROP_READONLY;
