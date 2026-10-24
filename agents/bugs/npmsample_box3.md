@@ -270,6 +270,8 @@ for flips); a separate file so the three boxes never conflict.
   src/queries/useTemplateQuery.tsx:84, TS2322 "Type '{} | null' is not assignable to type 'ProviderSummary | null'"
   at src/components/providers/ProvidersExplorer/ProvidersExplorer.tsx:82, TS2740 "Type '{}' is missing ... from type
   'Blob'" at TransactionInvoiceButton.tsx:47. It looks like one upstream inference or resolution loss (Promise
-  `then` callbacks, react-query results) rather than 58 causes. Not K-dependent. No repro. [open]
+  `then` callbacks, react-query results) rather than 58 causes. Not K-dependent. No repro. Re-checked at
+  7a1056d63 (after cor10's 2b43a7cd4; seed 20261490, the same commit aa01c1469 re-set up): still 94 against 152
+  with the same first lines, so it isn't console-web's DI-container TS7022 cascade. [open]
 - Large seed 20261403, akash-network/console@main, apps/api: spurious TS2877 at tsup.config.ts:1 ("This import uses
-  a '.ts' extension ... not a relative path"), the same as latitude-llm's apps/web entry above. Not a flip. [open]
+  a '.ts' extension ... not a relative path"), the same as latitude-llm's apps/web entry above. Not a flip. Re-checked at 7a1056d63 (seed 20261490, the same commit aa01c1469): byte-identical. [fixed ee1a75319]
