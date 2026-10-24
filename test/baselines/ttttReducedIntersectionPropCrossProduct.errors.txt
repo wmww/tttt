@@ -1,0 +1,24 @@
+b.ts(8,1): error TS2590: Expression produces a union type that is too complex to represent.
+b.ts(10,7): error TS2322: Type '[any]' is not assignable to type 'number'.
+
+
+==== a.ts (0 errors) ====
+    type D = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+    interface C<P> { p: P }
+    export type El<P = any> = `${D}${D}${D}` | C<P>;
+==== b.ts (2 errors) ====
+    // tsc's getReducedType (inference from an intersection source) makes the intersection's property of a name exactly two
+    // members have and intersects their types at once: `(El<any> | undefined) & (El | undefined)` keeps El<any> and El, two
+    // unions of the same members (an imported alias referenced without arguments is its own instantiation), and their
+    // cross product is too complex (TS2590 at the call). chakra-ui's `as?: As` through React's element types
+    import { El } from "./a";
+    declare function f<T>(x: { a: T }): T;
+    declare const v: { as?: El<any> } & { as?: El } & { a: 1 };
+    f(v);
+    ~~~~
+!!! error TS2590: Expression produces a union type that is too complex to represent.
+    declare const w: [(El<any> | undefined) & (El | undefined)];
+    const n: number = w;
+          ~
+!!! error TS2322: Type '[any]' is not assignable to type 'number'.
+    

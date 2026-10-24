@@ -2098,6 +2098,17 @@ static Atom const* never_reduced_prop(Checker* me, Ty const* const* types, u32 l
 // interfaces of ~290 properties each, cost 9M lookups. A name is never when two of its properties, not both optional,
 // one of them literal-like, have disjoint types; the types are deduplicated (a type intersected with itself is never
 // only when it is never). Names are tried in order of first appearance, tsc's
+// tsc's somePropertyReducesToNever makes the intersection's property of each name two or more members have, and with
+// exactly two (createUnionOrIntersectionProperty defers three or more) intersects their types right away: two big
+// unions are a cross product of 100000 or more, TS2590 at the current node (chakra-ui's style props through React's
+// element props in a JSX call's inference). Only that is asked here: tttt doesn't otherwise need those intersections
+static void shared_prop_cross_product(Checker* me, Prop const* a, Prop const* b) {
+    Ty const* both[2] = { prop_type(me, a), prop_type(me, b) };
+    if (both[0]->kind != TY_UNION || both[1]->kind != TY_UNION) return;
+    if ((double)both[0]->composite.types.len * both[1]->composite.types.len < 100000) return;
+    ty_intersection(me, both, 2, nullptr, (TyList){0});
+}
+
 typedef struct { Atom const* name; u32 first, last; } ReduceNameSlot;
 typedef struct { Prop const* prop; u32 next; } ReduceHolder;
 typedef struct { Ty const* type; bool required; } ReduceDistinct;
@@ -2133,6 +2144,7 @@ static Atom const* never_reduced_prop_grouped(Checker* me, Ty const* const* type
     for (u32 n = 0; n < name_count && !found; n++) {
         ReduceNameSlot const* slot = &slots[order[n]];
         if (slot->first == slot->last) continue;
+        if (holders[slot->first].next == slot->last) shared_prop_cross_product(me, holders[slot->first].prop, holders[slot->last].prop);
         bool any_required = false;
         for (u32 h = slot->first; h != UINT32_MAX && !any_required; h = holders[h].next) {
             any_required = !(holders[h].prop->flags & PROP_OPTIONAL);
@@ -2228,7 +2240,9 @@ static Atom const* never_reduced_prop_known(Checker* me, Ty const* const* types,
                 Ty const* b = types[j];
                 if (!is_known_object_for_reduction(me, b)) continue;
                 Prop const* other = ty_get_prop(me, b, prop->name);
-                if (!other || (prop->flags & other->flags & PROP_OPTIONAL)) continue;
+                if (!other) continue;
+                shared_prop_cross_product(me, prop, other);
+                if (prop->flags & other->flags & PROP_OPTIONAL) continue;
                 if (!a_type) {
                     a_type = prop_type(me, prop);
                 }
@@ -2454,7 +2468,10 @@ static Ty const* intersect_unions(Checker* me, TyBuf* buf, u32 len, Symbol const
             for (u32 j = 0; j < members.len; j++) {
                 if (!(members.data[j]->flags & flags[f])) kept[kept_len++] = members.data[j];
             }
-            rest[i] = ty_union(me, kept, kept_len, nullptr, (TyList){0});
+            // (tsc's filterTypes: filterType keeps a named union of the origin, `As<any> | undefined` is As<any>
+            // again, so `(As<any> | undefined) & (As | undefined)` is `(As<any> & As) | undefined`, two unions of the
+            // same members whose cross product isn't either of them; rebuilt from the members they were one union)
+            rest[i] = ty_union_filtered(me, buf->data[i], kept, kept_len);
             free(kept);
         }
         // (The missing type if any has it: `(X | undefined) & (X | missing)` is `X | missing`)
