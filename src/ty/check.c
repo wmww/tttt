@@ -4831,6 +4831,7 @@ static bool initialized_in_static_blocks(ClassDecl const* class_decl, csview nam
 // initializer or a static block, where x isn't initialized yet (TS2729). Any property declared later in the file
 // counts, class members have more rules
 static void check_used_before_initialization(Checker* me, PropertyExpr const* access, Prop const* prop, ErrorCtx* errs) {
+    if (my in_jsx_closing_name) return;
     PropertyContext const* site = property_context(access);
     while (prop->target) prop = prop->target;
     if (!span_valid(prop->decl->name_span) || span_source(prop->decl->name_span) != span_source(property_key_span(access))) return;

@@ -4116,6 +4116,14 @@ void jsx_element_typecheck(Expr const* me, ErrorCtx* errs) {
     bool intrinsic = my tag == EXPR_JSX_FRAGMENT || jsx_element_is_intrinsic(my jsx) ||
         !my jsx->tag_name.inner_span.size;
     if (!intrinsic) expr_typecheck(&my jsx->tag_name, errs);
+    // The closing tag's name is checked too (tsc's checkJsxElementDeferred: checkExpression of a non-intrinsic closing
+    // tag name): `</React.StrictMode>` is a TS2339 of its own. (An identifier's TS2304 is the name lookup's)
+    if (my tag == EXPR_JSX_ELEMENT && my jsx->closing_name.tag == EXPR_PROPERTY && !jsx_closing_is_intrinsic(my jsx)) {
+        bool saved = current_checker->in_jsx_closing_name;
+        current_checker->in_jsx_closing_name = true;
+        expr_typecheck(&my jsx->closing_name, errs);
+        current_checker->in_jsx_closing_name = saved;
+    }
     for_each (i, vec_spanned_type, &my jsx->type_args) type_typecheck(&i->type, errs);
     if (span_valid(my jsx->type_args_trailing_comma)) {
         error_ctx_grammar_error_d(errs, my jsx->type_args_trailing_comma, 1009, "Trailing comma not allowed.");

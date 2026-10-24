@@ -1,0 +1,50 @@
+//// [test/cases/ttttJsxClosingTagPropertyChecked.tsx] ////
+
+=== ttttJsxClosingTagPropertyChecked.tsx ===
+// A JSX closing tag's property-access name is checked like the opening one (tsc's checkJsxElementDeferred):
+// `</NS.B>` is a TS2339 of its own; an identifier's TS2304 was already reported twice
+declare namespace JSX { interface Element {} interface IntrinsicElements { div: {} } }
+>div : {}
+
+declare const NS: { A: (p: {}) => JSX.Element };
+>NS : { A: (p: {}) => JSX.Element; }
+>A : (p: {}) => JSX.Element
+>p : {}
+>JSX : any
+
+const a = <Foo></Foo>;
+>a : JSX.Element
+><Foo></Foo> : JSX.Element
+>Foo : any
+>Foo : any
+
+const b = <NS.B></NS.B>;
+>b : JSX.Element
+><NS.B></NS.B> : JSX.Element
+>NS.B : any
+>NS : { A: (p: {}) => JSX.Element; }
+>B : any
+>NS.B : any
+>NS : { A: (p: {}) => JSX.Element; }
+>B : any
+
+const c = <NS.A></NS.A>;
+>c : JSX.Element
+><NS.A></NS.A> : JSX.Element
+>NS.A : (p: {}) => JSX.Element
+>NS : { A: (p: {}) => JSX.Element; }
+>A : (p: {}) => JSX.Element
+>NS.A : (p: {}) => JSX.Element
+>NS : { A: (p: {}) => JSX.Element; }
+>A : (p: {}) => JSX.Element
+
+const d = <div><NS.B /></div>;
+>d : JSX.Element
+><div><NS.B /></div> : JSX.Element
+>div : any
+><NS.B /> : JSX.Element
+>NS.B : any
+>NS : { A: (p: {}) => JSX.Element; }
+>B : any
+>div : any
+

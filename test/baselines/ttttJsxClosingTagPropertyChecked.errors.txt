@@ -1,0 +1,27 @@
+ttttJsxClosingTagPropertyChecked.tsx(5,12): error TS2304: Cannot find name 'Foo'.
+ttttJsxClosingTagPropertyChecked.tsx(5,18): error TS2304: Cannot find name 'Foo'.
+ttttJsxClosingTagPropertyChecked.tsx(6,15): error TS2339: Property 'B' does not exist on type '{ A: (p: {}) => Element; }'.
+ttttJsxClosingTagPropertyChecked.tsx(6,22): error TS2339: Property 'B' does not exist on type '{ A: (p: {}) => Element; }'.
+ttttJsxClosingTagPropertyChecked.tsx(8,20): error TS2339: Property 'B' does not exist on type '{ A: (p: {}) => Element; }'.
+
+
+==== ttttJsxClosingTagPropertyChecked.tsx (5 errors) ====
+    // A JSX closing tag's property-access name is checked like the opening one (tsc's checkJsxElementDeferred):
+    // `</NS.B>` is a TS2339 of its own; an identifier's TS2304 was already reported twice
+    declare namespace JSX { interface Element {} interface IntrinsicElements { div: {} } }
+    declare const NS: { A: (p: {}) => JSX.Element };
+    const a = <Foo></Foo>;
+               ~~~
+!!! error TS2304: Cannot find name 'Foo'.
+                     ~~~
+!!! error TS2304: Cannot find name 'Foo'.
+    const b = <NS.B></NS.B>;
+                  ~
+!!! error TS2339: Property 'B' does not exist on type '{ A: (p: {}) => Element; }'.
+                         ~
+!!! error TS2339: Property 'B' does not exist on type '{ A: (p: {}) => Element; }'.
+    const c = <NS.A></NS.A>;
+    const d = <div><NS.B /></div>;
+                       ~
+!!! error TS2339: Property 'B' does not exist on type '{ A: (p: {}) => Element; }'.
+    

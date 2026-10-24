@@ -1227,6 +1227,7 @@ struct Checker {
     // accessors), class expression members, JSX elements and `void` operands. What they ask is then asked after
     // everything around them settled, which decides cycles and the order types are made in (union order)
     bool defer_checks;
+    bool in_jsx_closing_name; // Checking a JSX closing tag's name: no TS2729 there (tsc's isInPropertyInitializerOrClassStaticBlock quits at a JsxClosingElement)
     struct SourceFile const* checking_file; // The file whose statements are being checked (defer_checks)
     // The materializations of deferred function bodies this incarnation reads (plan 78 stage 2: program.c's
     // deferred_bodies_acquire()), released when it is dropped. A bit per SourceFile.id of theirs, and the list

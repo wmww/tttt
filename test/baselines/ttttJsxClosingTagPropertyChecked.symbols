@@ -1,0 +1,41 @@
+//// [test/cases/ttttJsxClosingTagPropertyChecked.tsx] ////
+
+=== ttttJsxClosingTagPropertyChecked.tsx ===
+// A JSX closing tag's property-access name is checked like the opening one (tsc's checkJsxElementDeferred):
+// `</NS.B>` is a TS2339 of its own; an identifier's TS2304 was already reported twice
+declare namespace JSX { interface Element {} interface IntrinsicElements { div: {} } }
+>JSX : Symbol(JSX, Decl(ttttJsxClosingTagPropertyChecked.tsx, 0, 0))
+>Element : Symbol(Element, Decl(ttttJsxClosingTagPropertyChecked.tsx, 2, 23))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(ttttJsxClosingTagPropertyChecked.tsx, 2, 44))
+>div : Symbol(IntrinsicElements.div, Decl(ttttJsxClosingTagPropertyChecked.tsx, 2, 74))
+
+declare const NS: { A: (p: {}) => JSX.Element };
+>NS : Symbol(NS, Decl(ttttJsxClosingTagPropertyChecked.tsx, 3, 13))
+>A : Symbol(A, Decl(ttttJsxClosingTagPropertyChecked.tsx, 3, 19))
+>p : Symbol(p, Decl(ttttJsxClosingTagPropertyChecked.tsx, 3, 24))
+>JSX : Symbol(JSX, Decl(ttttJsxClosingTagPropertyChecked.tsx, 0, 0))
+>Element : Symbol(JSX.Element, Decl(ttttJsxClosingTagPropertyChecked.tsx, 2, 23))
+
+const a = <Foo></Foo>;
+>a : Symbol(a, Decl(ttttJsxClosingTagPropertyChecked.tsx, 4, 5))
+
+const b = <NS.B></NS.B>;
+>b : Symbol(b, Decl(ttttJsxClosingTagPropertyChecked.tsx, 5, 5))
+>NS : Symbol(NS, Decl(ttttJsxClosingTagPropertyChecked.tsx, 3, 13))
+>NS : Symbol(NS, Decl(ttttJsxClosingTagPropertyChecked.tsx, 3, 13))
+
+const c = <NS.A></NS.A>;
+>c : Symbol(c, Decl(ttttJsxClosingTagPropertyChecked.tsx, 6, 5))
+>NS.A : Symbol(A, Decl(ttttJsxClosingTagPropertyChecked.tsx, 3, 19))
+>NS : Symbol(NS, Decl(ttttJsxClosingTagPropertyChecked.tsx, 3, 13))
+>A : Symbol(A, Decl(ttttJsxClosingTagPropertyChecked.tsx, 3, 19))
+>NS.A : Symbol(A, Decl(ttttJsxClosingTagPropertyChecked.tsx, 3, 19))
+>NS : Symbol(NS, Decl(ttttJsxClosingTagPropertyChecked.tsx, 3, 13))
+>A : Symbol(A, Decl(ttttJsxClosingTagPropertyChecked.tsx, 3, 19))
+
+const d = <div><NS.B /></div>;
+>d : Symbol(d, Decl(ttttJsxClosingTagPropertyChecked.tsx, 7, 5))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(ttttJsxClosingTagPropertyChecked.tsx, 2, 74))
+>NS : Symbol(NS, Decl(ttttJsxClosingTagPropertyChecked.tsx, 3, 13))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(ttttJsxClosingTagPropertyChecked.tsx, 2, 74))
+
