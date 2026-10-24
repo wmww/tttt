@@ -562,4 +562,17 @@ the body) and keeps that signature. tttt errors even with request.ts as the only
 build config, `files: [src/request.ts]`), and hand-made mimics (a class whose method returns `f(this)`, its variance
 measured first through a wrapper type) agree with tsgo in both orders, so the order that matters wasn't found. A
 `scripts/reduce.py --tsgo-clean` run (`--project thirdparty/sources/hono --config tsconfig.build.json --keep TS2769
---tttt-has --tsgo-clean`) was stopped for the npm priority. [open]
+--tttt-has --tsgo-clean`) was stopped for the npm priority. Rechecked (det3, 2026-10-24): not history-dependent
+in either checker. tttt reports it at --checkers 1, 16 and --checker-memory 0, and with TTTT_CHECK_ONLY=src/request.ts.
+tsgo doesn't report it with request.ts as the only root either, and tsgotrace shows the call's first resolution
+inside checkFunctionOrConstructorSymbol (isImplementationCompatibleWithOverload -> getReturnTypeFromBody), not under a
+variance measurement. reltrace pins the pair: `HonoRequest<P, I> & this -> HonoRequest<"/", {}>` passes in tsgo,
+because `valid`'s two method types are both instantiations of one symbol (signaturesRelatedTo then pairs them with type
+parameters erased). In tttt the source side is the declared method type itself, so same_signature_origin() fails and
+the generic signatures are compared unerased. That is exactly bugs/missing_checks.md "This-instantiated members"
+(2026-10-22, with test/cases/ttttThisInstantiatedMethodErased.ts failing). A relation-side shortcut was tried and
+reverted: "declared type == instantiation of itself" in same_signature_origin(), even limited to methods that possibly
+reference `this`, fixes hono and that test. But a class's declared type is a TY_DECLARED in tttt, not a reference, so
+`HonoRequest<I> -> HonoRequest<{}>` goes structural instead of through variances, and with `valid` now erased it passes
+where tsgo reports TS2345 (the test's method with an annotated implementation). The members-level design in
+missing_checks.md, together with variances for a declared type against its instantiations, is the fix. [design]
