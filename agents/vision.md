@@ -8,55 +8,40 @@ faster; correctness is never traded. Completeness first in the sense that nothin
 be fast or can't be complete. The suite's baselines are the first oracle, not the goal; real projects that are clean
 under tsc are the second.
 
-## State (2026-10-23 evening: the fifth coordinator's day; oracles at 37d832827, main at 81bc6b5d4; the laptop at 3a77c827)
-- **Target: TypeScript 7.1.0-beta** (tag `v7.1-beta` = 3e923636, `thirdparty/typescript`): re-pinned this morning
-  from the 2026-10-08 nightly (7bee8d0d3), every cache regenerated with it; 7.1.0 stable when it is on npm (todo.md).
-- **Known correctness bugs (`scripts/bugcount.py` at 81bc6b5d4): 162 root causes open (11 of them designs), 72
-  text-only, 36 argued tsgo artifacts excluded** (the first headline, 2f0cc14a3: 156), from the status tags of
-  agents/bugs/*.md and triage.md (agents/bugs/README.md); the trend is measurements.md "Known correctness bugs"
-  (`--save` per batch). Not yet written up: 530 of bun's 532 case keys (a backlog measure, not distinct bugs).
-- **Today's correctness work, ~110 fixes**: real projects (openclaw, opencode, the TypeScript 7 adopters of refresh 6:
-  95.3% -> **98.6%** of 429 projects), the suite (bun's 2418 differential cases, 2310 imported as `bun*` own tests;
-  mutation seeds 2310-2312), hacks.md's probes and declaration emit (dtsdiff 1497 / 1503).
-- **Tooling built today** (each in CLAUDE.md): `scripts/quickgate.sh --vs-main` and `scripts/land.sh` (land fast),
-  `scripts/abbuild.sh` (out-of-tree A/B builds), `scripts/bugcount.py` (the headline), `scripts/reduce.py` (safe
-  repro reduction), `scripts/projdiff.py` (one project, sandboxed), `scripts/tsgotrace.py` (tsgo's stack per
-  diagnostic), `scripts/tttt_run.py` (one run wrapper, frozen binary, killed apart from crashes),
-  `scripts/sourcescheck.sh` (the shared checkouts' integrity), `scripts/buncases.py`, agents/notes/tsgo_map.md.
-- **Suite** (`scripts/passcount.py`): **15177 / 16590** configurations with the bun tests (dts 1908 / 1937); by origin
-  tsc 13653 / 13706, tttt's own 544 / 552, bun 980 / 2332. Before the bun tests (the merger's run at 37d832827) 14198
-  passing, 0 lost, `--no-defer-bodies` the same, `--checker-memory 0` 0 of 17921 differ. The 8 failing own tests are
-  known-failing repros of written-up divergences (bugcount.py lists them); the native suite's last ones are argued
-  (bugs/tsgo_divergences.md).
-- **Drop-in `tsc --noEmit`, and drop-in `tsc` where the config only emits declarations**: clidiff **4417 / 4450**
-  projects (text 14, diagnostics 19), dtsdiff **1497 / 1503** projects (129347 / 129362 files). Refused: `--watch`,
-  `--incremental`'s `.tsbuildinfo`, `--showConfig`, `--explainFiles`, `--init` (parked). JS emit is out of scope.
-- **Real code** (37d832827, measurements.md "Oracle totals (2026-10-23 evening)"): corpora 0 / 0 but vue (0 / 2, a
-  tsgo runaway artifact), DT 8595 / 8595, `$ExpectType` 68640 / 68640, flagflip 16 / 2 / 2 (vue, won't fix), source
-  sweep (346 repositories, 6085 projects) full **6053 / 6085** (main + wt-cor8), quarter sample 1458 / 1464; `-b`
-  sweep 418 / 426 (419 + 2 known since e342649f8: tsgo's build cache bug, Decisions); bun cases 1278 / 2411 (53.0%,
-  7 crashes); kdiff 7 / 4436 (openclaw x4, rxjs, sequelize x2), recycle 3 / 4436. The human's projects: openclaw 36
-  / 49 configs match (13 timed out), opencode and osis not yet cached in the sweep.
-- **Speed**: tttt beats bun canary 1.4.4 at the defaults on every bench corpus (the laptop, 3a77c827: vscode 1.75
-  against 1.93 s) and the kernel round won >10% on most of the human's private projects (notes/kernel_time.md). **At
-  breadth (notes/bun_breadth.md, 487 source sweep projects)** bun wins on wall on 116 (24%; median ratio 0.82): on 86
-  of them tttt's front end (load+parse, resolve, ~2 cores busy; slower than bun's load on 431 of 487, median 1.55x),
-  on 27 the check (single slow files and a library warm-up every checker pays). Fixed from it: React's 187-member
-  props intersection (9d63a2dd8, ~9M lookups to linear), the largest-file cap counting implementation files only
-  (c082b54c5). perfsweep median check ratio 0.24, worst types ratio 1.73 (mcp-linker: typed i18next's `t()`, triage.md).
-- **Instructions**: `test/instrcount.txt` is at a6af311ed (vscode 66.37 G at d7bc837b0); today's fixes drift ~+0.8%
-  on drizzle, unattributed and not yet re-saved (todo.md); the escaped-keyword support's parser cost was taken back
-  (9a5647e3b: nest +1.05% -> +0.08%).
-- **The shipped build is `scripts/fastbuild.sh` -> `fast/tttt`** (GCC LTO + PGO, llvm-bolt, the hot text on a huge
-  page; `release/` is the edit-test build). The exit reaper (6d7cc707e) and 2 MB-aligned huge arena chunks (97839044a:
-  faults -39%, sys -12..-20%) are in.
-- **Memory**: the default checker budget is now a process-wide pool, 80% of the memory available at startup
-  (1e71cfc86: nothing recycles on a free box, a busy box or a cgroup no longer OOMs; vscode with 3000 MB available
-  peaks at 2.44 GB). At the defaults vscode is 5.5 GB against bun's 2.2. Per-file release (76-82% of an arena is
-  droppable at file end, but it is instantiated type structure) and recycled-chunk reuse were priced and declined
-  (notes/memory.md).
+## State (2026-10-25: release candidate; full oracles at 5de65a46b, quick oracles at the rc commit)
+- **Target: TypeScript 7.1.0-beta** (tag `v7.1-beta` = 3e923636, `thirdparty/typescript`); every cache is tsgo 7.1's.
+- **The rc** is the commit this section lands in: main after the 2026-10-24/25 random-npm correctness sweep (three
+  boxes, ~2000 small packages and ~500 large-repository sub-projects compared; 95.7% byte-identical with tsgo; every
+  flip found was fixed but the depth-limit designs and the five filed last, below), the perf regressions since
+  d22d93ae fixed (measurements.md: three per-file 4-12x blowups, the one-checker rerun's phantom triggers and its
+  final trigger rule, `--no-rerun`), and the two machine-state dependences fixed (huge pages off by default, the
+  memory pool reading free memory now: notes/kernel_time.md, notes/one_checker_rerun.md).
+- **Known correctness bugs (`scripts/bugcount.py`): 309 root causes open (27 of them designs), 82 text-only, 38
+  argued tsgo artifacts excluded.** The rise from 162 (10-23) is the sweeps' write-ups, most of them bun cases and
+  missing checks from tsc's suite; the open real-world items are agents/bugs/npmsample*.md's `[open]` bullets (the
+  five unreduced flips of large seeds 20261305/20261404: synergy x3, Questarr, eva, SparkyFitness's zod TS5115
+  family; akash deploy-web's +58 (the re-entry area); akanjs's TS2344/TS2322; effect HttpApiEndpoint; artsy,
+  rocket-slate, react-flow-chart, vue pluginScoped, paseo, starlight as [design]: tsgo's depth limit and
+  resolution-order circularities).
+- **Suite** (`scripts/passcount.py`): **15656 / 16816** configurations, 0 lost against 10-23, 159 gained today;
+  `--no-defer-bodies` the same, `--checker-memory 0` 0 of 20542 differ.
+- **Real code** (the full run at 5de65a46b): corpora 0 / 0 everywhere (vue's 0 / 2 is the design item), DT 8595 /
+  8595, `$ExpectType` 68640 / 68640, source sweep quarter sample 1666 / 1671 (every miss known), `-b` sweep 420 /
+  426 (4 missing, 2 known), bun cases 1532 / 2411 (63.5%, 0 crashes, K-dependent 0), flagflip 17 / 2 / 4, clidiff
+  5130 / 5174 (text 34, diagnostics 10), dtsdiff 1497 / 1503, perfsweep median check ratio 0.20 against tsgo
+  single-threaded, kdiff 1 / 5166 (rxjs's known elaboration text), recycle 1 / 5166 (rxjs).
+- **Determinism**: output is byte-identical across thread and checker counts on every known case (the one-checker
+  rerun fires on 29 / 5166 sweep configs; its rules and cost: notes/one_checker_rerun.md). `--no-rerun` trades that
+  for speed on those projects.
+- **Speed**: since d22d93ae, +1.3..1.7% instructions on every corpus (measurements.md: attributed; two of the four
+  contributors already recovered), the per-file regressions back to their old times, big projects within noise of
+  d22d93ae (vscode 4.07 s both at the defaults here). Huge pages are opt-in (`--huge-pages`, +1..5% without).
 
 ## Direction (2026-10-23 evening; the items and their numbers are in todo.md)
+- **After the release (the human, 2026-10-25)**: one correctness agent at a time, fixing the known real-world items
+  (agents/bugs/npmsample*.md `[open]`, then sourcesweep_checker.md, then bun cases when the real-world list is
+  empty); no finders (the remote box is gone; notes/npm_workflow.md "Remote finder box" recreates one), no perf work
+  beyond the gate. The coordinator lands and reports as before.
 The human's priorities: diagnostic presence matches tsgo everywhere (absolute), then speed (distinctly faster than
 bun canary on real projects, judged on their private set), memory where cheap, exactness of text last; easy,
 measured wins first; land fast and gate in batches.
