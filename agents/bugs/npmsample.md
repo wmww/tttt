@@ -224,3 +224,12 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   number index: tsgo's checkArrayLiteral takes the spread as a variadic element, normalized to a rest element of its
   number index type or the error type, so `[...x]` is any[]; tttt iterated it. Repro
   test/cases/npm_types-momentum_TS2322.ts. [flip] [fixed 83a82b68e]
+- Seed 20261033, ergolabs/ergo-sdk-js (@ergolabs/cardano-dex-sdk@0.1.19), project level, no reduced test: with
+  skipLibCheck off, `import * as R from "ramda"` alone (src/wallet/boxSelector.ts) makes tsgo report TS2589 "Type
+  instantiation is excessively deep and possibly infinite" and TS5114 "Instantiations of type '___ListOf' appear
+  infinitely circular" at node_modules/@types/ramda/index.d.ts(644,103) (`flip`'s `_.F.Curry<(...args:
+  _.T.Merge<[P[1], P[0]], P>) => _.F.Return<F>>`) and TS2589 at node_modules/ts-toolbelt/out/index.d.ts(5286,12);
+  tttt reports neither (tsgo 9, tttt 6 diagnostics). The depth/circularity limit is reached in checking the
+  declaration file, not by a use. reduce.py on the node_modules files timed out after 50 minutes (ts-toolbelt's
+  single index.d.ts) and the partial cut no longer reproduced; the clone is deleted, the project is reproducible
+  from test/npmsample/20261033.setup.jsonl. [open]
