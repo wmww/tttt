@@ -264,7 +264,21 @@ for flips); a separate file so the three boxes never conflict.
   in @types/styled-components index.d.ts:196 (the defaultProps ForwardRefExoticBase circularity, like
   rocket-slate's npm__rocket-slate_mentions_TS2615) is missing, and tttt reports TS2313 "Type parameter 'P' has a
   circular constraint" at lib.es5.d.ts:1584 instead. Probably the same root as rocket-slate's entry. Not a flip.
-  No repro. (claimed: fixF) [open]
+  fixF (2026-10-25, stopped at the release wind-down, no fix): reproduced on a sandboxed clone (projdiff: tsgo 13, tttt
+  12; tsgo-only TS2615 x2 at @types/styled-components index.d.ts:196 on `ForwardRefExoticBase<Omit<Omit<any, any> &
+  Partial<Pick<any, any>>, "theme"> & ...>`, tttt-only TS2313 at lib.es5.d.ts:1584, Pick's `[P in K]`). reduce.py
+  --keep TS2313 --tttt-has cut the project's own files to one 3-line file, `import styled from 'styled-components';
+  export const PortsGroupDefault = styled.div<IPortsGroupDefaultProps>``;` with IPortsGroupDefaultProps unresolved (an
+  error/any type argument: hence the `any`s in tsgo's mapped type), re-exported through two index.ts files; the
+  node_modules pass (@types/react, @types/styled-components, csstype, prop-types) was stopped unfinished. The TS2313
+  comes from members.c mapped_key_circular(): ty_mapped_info_instantiate() found Pick's instantiated key constraint
+  in flight (RESOLVING_BASE_CONSTRAINT), i.e. tttt meets the same resolution-order cycle as tsgo but closes it at a
+  different place: at the mapped key's base constraint where tsgo closes it at ForwardRefExoticBase's `defaultProps`
+  (TS2615). So (a) and (b) look like one mechanism, rocket-slate's [design] entry above (corF's trace there: the
+  identity check in StyledComponentInnerComponent's inference falling back to structure, getReducedType's eager
+  property walk). Not confirmed with tsgotrace.py 2313/2615 on this project; next step for whoever takes it: rerun
+  reduce.py (--keep TS2313 --tttt-has) including node_modules and compare tsgotrace.py 2615 --funcs
+  getResolvedBaseConstraint with TTTT_DEBUG_CYCLE=1 on the cut. [design]
 - Seed 20261216, sanity-io/comlink (@sanity/comlink@4.0.3, packages/comlink, tsconfig.json): tsgo 0 errors, tttt 2
   TS2589 "Type instantiation is excessively deep and possibly infinite" at src/connection.ts:583 and
   src/node.ts:628 (xstate 5 machine setups). tsgo reports no depth diagnostic anywhere on the project, so this is a
