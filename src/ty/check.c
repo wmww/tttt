@@ -4751,7 +4751,12 @@ static void mark_member_referenced(Checker* me, Prop const* prop, PropertyExpr c
     while (prop->target) prop = prop->target;
     bool private_name = span_valid(prop->decl->name_span) && prop->decl->name_span.buf[0] == '#';
     if (!(prop->flags & PROP_PRIVATE) && !private_name) return;
-    if (access && access->assignment_target == FLOW_TARGET_DEFINITE && !access->read_target && !(prop->flags & PROP_ACCESSOR)) return;
+    // (An auto accessor has a setter too: tsc's binder gives `accessor x` SymbolFlags.Accessor, blocksuite's
+    // `private accessor _x` only written)
+    if (access && access->assignment_target == FLOW_TARGET_DEFINITE && !access->read_target && !(prop->flags & PROP_ACCESSOR) &&
+        !prop_decl_rare(prop->decl)->class_auto_accessor) {
+        return;
+    }
     Expr const* object = access ? &access->expr : nullptr;
     bool self_type = object && (is_keyword(object, KEYWORD_IDENTIFIER_THIS) ||
         (object->tag == EXPR_IDENTIFIER && prop->parent && object->identifier.target == prop->parent));
