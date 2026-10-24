@@ -1,0 +1,41 @@
+//// [test/cases/ttttAnnotatedPatternQuickInitializer.ts] ////
+
+=== ttttAnnotatedPatternQuickInitializer.ts ===
+// An annotated destructuring's initializer is looked at only for whether it can be undefined, through tsc's
+// getTypeOfInitializer (getTypeOfExpression): a call of one non-generic signature is its return type there, its
+// arguments unchecked, so a callback that reads a destructured name isn't circular
+type R = { use: () => number; other: string };
+>R : R
+>use : () => number
+>other : string
+
+declare function make(fn: () => number): R;
+>make : (fn: () => number) => R
+>fn : () => number
+
+export const { use, other }: R = make(() => use() + 1);
+>use : () => number
+>other : string
+>make(() => use() + 1) : R
+>make : (fn: () => number) => R
+>() => use() + 1 : () => number
+>use() + 1 : number
+>use() : number
+>use : () => number
+>1 : 1
+
+declare function makeGeneric<T>(fn: () => T): R;
+>makeGeneric : <T>(fn: () => T) => R
+>fn : () => T
+
+export const { use: use2 }: R = makeGeneric(() => use2() + 1);
+>use : any
+>use2 : any
+>makeGeneric(() => use2() + 1) : R
+>makeGeneric : <T>(fn: () => T) => R
+>() => use2() + 1 : () => any
+>use2() + 1 : any
+>use2() : any
+>use2 : any
+>1 : 1
+

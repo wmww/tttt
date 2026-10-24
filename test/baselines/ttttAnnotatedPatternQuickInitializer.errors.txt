@@ -1,0 +1,18 @@
+ttttAnnotatedPatternQuickInitializer.ts(8,21): error TS7022: 'use2' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+ttttAnnotatedPatternQuickInitializer.ts(8,45): error TS7024: Function implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+
+
+==== ttttAnnotatedPatternQuickInitializer.ts (2 errors) ====
+    // An annotated destructuring's initializer is looked at only for whether it can be undefined, through tsc's
+    // getTypeOfInitializer (getTypeOfExpression): a call of one non-generic signature is its return type there, its
+    // arguments unchecked, so a callback that reads a destructured name isn't circular
+    type R = { use: () => number; other: string };
+    declare function make(fn: () => number): R;
+    export const { use, other }: R = make(() => use() + 1);
+    declare function makeGeneric<T>(fn: () => T): R;
+    export const { use: use2 }: R = makeGeneric(() => use2() + 1);
+                        ~~~~
+!!! error TS7022: 'use2' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                                                ~~~~~~~~~~~~~~~~
+!!! error TS7024: Function implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    

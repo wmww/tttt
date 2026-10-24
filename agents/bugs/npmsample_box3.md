@@ -238,7 +238,11 @@ for flips); a separate file so the three boxes never conflict.
   useOptional, ... }: ReturnType<typeof createX> = createX((props) => { const parent = useOptional(); ... })`, where
   createX is an instantiation expression `createProvider(...)<P, V>`. The binding pattern's annotation types the
   bindings, so reading one inside the initializer's callback isn't circular, and tttt treats it as circular.
-  Repro test/cases/npm_react-native-screen-transitions_TS7022.ts (by hand, 11 lines). (claimed: fixF) [flip] [open]
+  Repro test/cases/npm_react-native-screen-transitions_TS7022.ts (by hand, 11 lines). (claimed: fixF) Cause: an
+  element of an annotated pattern asks whether the initializer can be undefined (tsc's getBindingElementTypeFromParentType
+  via getTypeOfInitializer = getTypeOfExpression, quick type first); tttt checked the whole call, callback included.
+  Now ty_quick_expr_type() first (lower.c binding_assigned_type). Repro ttttAnnotatedPatternQuickInitializer. [flip]
+  [fixed PENDING]
 - Seed 20261217, lambda-direct/datalayer (@lambda-team/datalayer@1.0.11, commit cc98e7158, root tsconfig.json):
   missing TS2345 at src/builders/highLvlBuilders/insertRequestBuilder.ts:63 "Argument of type '{ [name in keyof
   ExtractModel<TTable>]: AbstractColumn<ColumnType<{}>, true, false>; }' is not assignable to parameter of type '{

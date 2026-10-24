@@ -1,0 +1,37 @@
+//// [test/cases/ttttAnnotatedPatternQuickInitializer.ts] ////
+
+=== ttttAnnotatedPatternQuickInitializer.ts ===
+// An annotated destructuring's initializer is looked at only for whether it can be undefined, through tsc's
+// getTypeOfInitializer (getTypeOfExpression): a call of one non-generic signature is its return type there, its
+// arguments unchecked, so a callback that reads a destructured name isn't circular
+type R = { use: () => number; other: string };
+>R : Symbol(R, Decl(ttttAnnotatedPatternQuickInitializer.ts, 0, 0))
+>use : Symbol(use, Decl(ttttAnnotatedPatternQuickInitializer.ts, 3, 10))
+>other : Symbol(other, Decl(ttttAnnotatedPatternQuickInitializer.ts, 3, 29))
+
+declare function make(fn: () => number): R;
+>make : Symbol(make, Decl(ttttAnnotatedPatternQuickInitializer.ts, 3, 46))
+>fn : Symbol(fn, Decl(ttttAnnotatedPatternQuickInitializer.ts, 4, 22))
+>R : Symbol(R, Decl(ttttAnnotatedPatternQuickInitializer.ts, 0, 0))
+
+export const { use, other }: R = make(() => use() + 1);
+>use : Symbol(use, Decl(ttttAnnotatedPatternQuickInitializer.ts, 5, 14))
+>other : Symbol(other, Decl(ttttAnnotatedPatternQuickInitializer.ts, 5, 19))
+>R : Symbol(R, Decl(ttttAnnotatedPatternQuickInitializer.ts, 0, 0))
+>make : Symbol(make, Decl(ttttAnnotatedPatternQuickInitializer.ts, 3, 46))
+>use : Symbol(use, Decl(ttttAnnotatedPatternQuickInitializer.ts, 5, 14))
+
+declare function makeGeneric<T>(fn: () => T): R;
+>makeGeneric : Symbol(makeGeneric, Decl(ttttAnnotatedPatternQuickInitializer.ts, 5, 55))
+>T : Symbol(T, Decl(ttttAnnotatedPatternQuickInitializer.ts, 6, 29))
+>fn : Symbol(fn, Decl(ttttAnnotatedPatternQuickInitializer.ts, 6, 32))
+>T : Symbol(T, Decl(ttttAnnotatedPatternQuickInitializer.ts, 6, 29))
+>R : Symbol(R, Decl(ttttAnnotatedPatternQuickInitializer.ts, 0, 0))
+
+export const { use: use2 }: R = makeGeneric(() => use2() + 1);
+>use : Symbol(use, Decl(ttttAnnotatedPatternQuickInitializer.ts, 3, 10))
+>use2 : Symbol(use2, Decl(ttttAnnotatedPatternQuickInitializer.ts, 7, 14))
+>R : Symbol(R, Decl(ttttAnnotatedPatternQuickInitializer.ts, 0, 0))
+>makeGeneric : Symbol(makeGeneric, Decl(ttttAnnotatedPatternQuickInitializer.ts, 5, 55))
+>use2 : Symbol(use2, Decl(ttttAnnotatedPatternQuickInitializer.ts, 7, 14))
+

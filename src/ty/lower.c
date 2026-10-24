@@ -4165,7 +4165,11 @@ static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
         parent->source->tag == LAZY_TYPE_INITIALIZED_BINDING && !(object->flags & TYF_ANY)
     ) {
         Expr const* value = initialized_binding_value(c_container_of(parent->source, InitializedBinding, lazy_type));
-        if (value->tag != EXPR_IMPLICIT_ANY && !ty_can_equal_undefined(me, ty_expr_type(me, value))) {
+        // (tsc's getTypeOfInitializer: getTypeOfExpression, its quick type first, a call of one non-generic signature
+        // its return type without the arguments checked: `const { use }: R = make((p) => use())` isn't circular)
+        Ty const* initializer = value->tag != EXPR_IMPLICIT_ANY ? ty_quick_expr_type(me, value, false) : nullptr;
+        if (value->tag != EXPR_IMPLICIT_ANY && !initializer) initializer = ty_expr_type(me, value);
+        if (value->tag != EXPR_IMPLICIT_ANY && !ty_can_equal_undefined(me, initializer)) {
             object = ty_without_undefined(me, object);
         }
     }
