@@ -243,7 +243,7 @@ for flips); a separate file so the three boxes never conflict.
   missing TS2345 at src/builders/highLvlBuilders/insertRequestBuilder.ts:63 "Argument of type '{ [name in keyof
   ExtractModel<TTable>]: AbstractColumn<ColumnType<{}>, true, false>; }' is not assignable to parameter of type '{
   [x: string]: Column<ColumnType<{}>, true, false>; }'" (a generic mapped type against an index signature).
-  tsgo 32, tttt 31, not a flip. Not K-dependent. No repro. [open]
+  tsgo 32, tttt 31, not a flip. Not K-dependent. No repro. (claimed: cor10) [open]
 - Seed 20261217, googlechrome/lighthouse (tybrs-lighthouse@1.0.0, commit 1a4ffa418, root tsconfig.json, checkJs):
   +7 in JavaScript: TS7008 "Member '_frameNavigations' implicitly has an 'any[]' type" at
   core/gather/driver/network-monitor.js:60 and :89 (a `this._frameNavigations = []` member), TS2339 "Property
