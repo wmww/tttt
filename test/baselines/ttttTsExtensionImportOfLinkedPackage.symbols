@@ -1,0 +1,14 @@
+//// [test/cases/ttttTsExtensionImportOfLinkedPackage.ts] ////
+
+=== /apps/api/tsup.config.ts ===
+import { u } from "@x/dev-config/tsup-plugins.ts";
+>u : Symbol(u, Decl(tsup.config.ts, 0, 8))
+
+export const v = u;
+>v : Symbol(v, Decl(tsup.config.ts, 1, 12))
+>u : Symbol(u, Decl(tsup.config.ts, 0, 8))
+
+=== /packages/dev-config/tsup-plugins.ts ===
+export const u = 1;
+>u : Symbol(u, Decl(tsup-plugins.ts, 0, 12))
+

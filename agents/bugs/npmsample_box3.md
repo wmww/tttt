@@ -209,7 +209,7 @@ for flips); a separate file so the three boxes never conflict.
 - Large seed 20261402, latitude-dev/latitude-llm@development (commit 4914acc6c), apps/web (tsconfig.json): spurious
   TS2877 at src/domains/annotations/annotations.functions.ts:7 "This import uses a '.ts' extension to resolve to an
   input TypeScript file, but will not be rewritten during emit because it is not a relative path". tsgo 4 errors,
-  tttt 5, not a flip. No repro. [open]
+  tttt 5, not a flip. Same as akash console-api's tsup.config.ts:1 (npmsample.md): a workspace package's .ts through its node_modules link; repro test/cases/ttttTsExtensionImportOfLinkedPackage.ts. (claimed: corF) [open]
 - Large seed 20261401, Bitterbot-AI/bitterbot-desktop@main (commit 733b74195), root tsconfig.json (declaration
   emit): missing TS5088 at src/telegram/bot.ts:471 "The inferred type of 'createTelegramWebhookCallback' references
   a type with a cyclic structure which cannot be trivially serialized". tsgo 1, tttt 0, so a flip. Not
@@ -219,7 +219,7 @@ for flips); a separate file so the three boxes never conflict.
   unknown) => string | null'"). tttt doesn't, and instead reports TS2344 at constant/constant.test.ts:182 ("Type
   'false' does not satisfy the constraint 'true'", a type-level test assertion) and TS2352 at ui/Load/View.tsx:46,
   :56 ("Conversion of type 'ServerView<T, Full>[`${T}Obj`]' to type 'Full' may be a mistake"). 3 against 3, not a
-  flip. No repro. [open]
+  flip. No repro. (claimed: corF) [open]
 - Seed 20261216, liruifengv/starlight-head (starlight-head@0.0.1): an extra TS2589 at @astrojs/starlight 0.21.3's
   schema.ts:113, where tsgo also reports a depth diagnostic (TS5114 "Instantiations of type 'ZodType' appear
   infinitely circular"), which tttt reports too. An extra limit error next to tsgo's own, in the depth-limit family

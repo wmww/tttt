@@ -540,9 +540,9 @@ static void report_unsafe_rewrite(ModuleRef const* me, ErrorCtx* errs) {
             "name, but actually resolves to \"", relative_path, "\".");
         cstr_drop(&relative_path);
     } else if (my used_ts_extension && !should_rewrite && !my file->is_declaration &&
-        // (sourceFileMayBeEmitted: not a package's file)
-        !csview_contains(cstr_sv(&my file->canonical_path), "/node_modules/") &&
-        !csview_starts_with(cstr_sv(&my file->canonical_path), "node_modules/")
+        // (sourceFileMayBeEmitted: not a file found searching node_modules, a workspace package's through its link
+        // too, whose real path has no node_modules in it: tsc's IsSourceFileFromExternalLibrary)
+        !my file->found_searching_node_modules
     ) {
         isize dot = path.size;
         while (dot > 0 && path.buf[dot - 1] != '.' && path.buf[dot - 1] != '/') dot--;
