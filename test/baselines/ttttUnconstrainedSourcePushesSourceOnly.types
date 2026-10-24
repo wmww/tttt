@@ -1,0 +1,35 @@
+//// [test/cases/ttttUnconstrainedSourcePushesSourceOnly.ts] ////
+
+=== ttttUnconstrainedSourcePushesSourceOnly.ts ===
+// An indexed access or type parameter without a constraint relates as `unknown`, pushing only the source on the deep
+// nesting stacks (tsc's RecursionFlags.Source): pushing the target too at each step of `T[P][string]` ->
+// `T[keyof T][string]` -> unknown made the target conditional deeply nested, a Maybe taken as related
+type QP<T> = { [P in keyof T]?: (T[P] extends Array<infer U> ? 1 : QP<T[P]>) | (() => string) };
+>QP : QP<T>
+
+type DP<T> = { [P in keyof T]?: T[P] extends Array<infer U> ? 1 : DP<T[P]> | T[P] };
+>DP : DP<T>
+
+function f<T>(x: DP<T>) {
+>f : <T>(x: DP<T>) => void
+>x : DP<T>
+
+    const y: QP<T> = x;
+>y : QP<T>
+>x : DP<T>
+}
+type DPA<T> = { [P in keyof T]?: T[P] extends Array<infer U> ? Array<DPA<U>> : DPA<T[P]> | T[P] };
+>DPA : DPA<T>
+
+type QPA<T> = { [P in keyof T]?: (T[P] extends Array<infer U> ? Array<QPA<U>> : QPA<T[P]>) | (() => string) };
+>QPA : QPA<T>
+
+function g<E>(r: DPA<E>) {
+>g : <E>(r: DPA<E>) => void
+>r : DPA<E>
+
+    const q: QPA<E> = r;
+>q : QPA<E>
+>r : DPA<E>
+}
+

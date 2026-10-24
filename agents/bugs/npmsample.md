@@ -188,7 +188,11 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   TS2345. tttt finds them assignable. Likely related to npm__skastr0_quartz-engine_TS2719, where tttt also relates
   two deferred conditionals that tsgo doesn't. Not the same root cause: no distributed type parameter is involved
   (it still differs after quartz's fix); tttt's relation reaches deeply-nested Maybe results through
-  `U[P][string]`-like indexed accesses where tsgo's fails first (TTTT_DEBUG_RELATE_NESTED). (claimed: corB) [open]
+  `U[P][string]`-like indexed accesses where tsgo's fails first (TTTT_DEBUG_RELATE_NESTED). Root cause: an indexed
+  access (or type parameter) without a constraint relates as `unknown` by a plain is_related_to, which pushed the
+  target too (tsc: RecursionFlags.Source only); along `T[P][string]` -> `T[keyof T][string]` -> unknown the target
+  conditional was pushed at each step, became deeply nested, and the Maybe passed. Repro
+  ttttUnconstrainedSourcePushesSourceOnly. [fixed PENDING]
 - **npm__mui-treasury_component-number-input_TS2353** (seed 20261031, @mui-treasury/component-number-input@0.0.1-alpha.3,
   siriwatknp/mui-treasury-next; tsgo 75, tttt 81). Six `<TextField {...args} InputProps={{ ..., disableUnderline:
   true }}/>` in packages/style-textfield-{ant,bootstrap,standard} stories, each under a `{/* @ts-ignore */}` line.

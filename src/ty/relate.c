@@ -5855,7 +5855,7 @@ static Ternary type_param_source_related(Checker* me, RelationState* st, Ty cons
         // As `unknown` (tsc's getConstraintOfType(source) || unknownType): comparable to anything, and without
         // strictNullChecks its apparent type `{}` against object types (apparent_type()), though not as a `{}`
         // that any mapped type with `?` takes
-        return is_related_to(me, st, ty_intrinsic(me, TY_UNKNOWN_), target, false);
+        return is_related_to_side(me, st, ty_intrinsic(me, TY_UNKNOWN_), target, false, 2);
     }
     // The constraint as it is first, then with the type parameter as its `this` (tsc: raw `this` types from
     // base classes need it, subclassWithPolymorphicThisIsAssignable). From one type parameter to another, or from
@@ -6495,7 +6495,9 @@ static Ternary structured_related_members(
             IState saved_istate = passing(st);
             // (tsc: `getConstraintOfType(source) || unknownType`, which is comparable to anything; not elaborated)
             Ty const* constraint = constraint_of_type(me, source);
-            Ternary related = !constraint ? is_related_to(me, st, ty_intrinsic(me, TY_UNKNOWN_), target, false) :
+            // (Pushing only the source either way, tsc's RecursionFlags.Source: the target pushed again at each step of
+            // a constraint chain `T[P][string]` -> `T[keyof T][string]` -> unknown made it deeply nested, a Maybe)
+            Ternary related = !constraint ? is_related_to_side(me, st, ty_intrinsic(me, TY_UNKNOWN_), target, false, 2) :
                 is_related_to_side(me, st, constraint, target, report && !mapped_generic_indexed_access(me, source), 2);
             istate_swap(st, saved_istate);
             // `{ [P in K]: E }[X]` was E with X for P; `{ [P in K]: E }[C]`, with C the constraint of X, may be related

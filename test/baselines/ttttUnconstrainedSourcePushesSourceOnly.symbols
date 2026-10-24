@@ -1,0 +1,95 @@
+//// [test/cases/ttttUnconstrainedSourcePushesSourceOnly.ts] ////
+
+=== ttttUnconstrainedSourcePushesSourceOnly.ts ===
+// An indexed access or type parameter without a constraint relates as `unknown`, pushing only the source on the deep
+// nesting stacks (tsc's RecursionFlags.Source): pushing the target too at each step of `T[P][string]` ->
+// `T[keyof T][string]` -> unknown made the target conditional deeply nested, a Maybe taken as related
+type QP<T> = { [P in keyof T]?: (T[P] extends Array<infer U> ? 1 : QP<T[P]>) | (() => string) };
+>QP : Symbol(QP, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 0, 0))
+>T : Symbol(T, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 3, 8))
+>P : Symbol(P, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 3, 16))
+>T : Symbol(T, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 3, 8))
+>T : Symbol(T, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 3, 8))
+>P : Symbol(P, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 3, 16))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>U : Symbol(U, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 3, 57))
+>QP : Symbol(QP, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 0, 0))
+>T : Symbol(T, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 3, 8))
+>P : Symbol(P, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 3, 16))
+
+type DP<T> = { [P in keyof T]?: T[P] extends Array<infer U> ? 1 : DP<T[P]> | T[P] };
+>DP : Symbol(DP, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 3, 96))
+>T : Symbol(T, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 4, 8))
+>P : Symbol(P, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 4, 16))
+>T : Symbol(T, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 4, 8))
+>T : Symbol(T, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 4, 8))
+>P : Symbol(P, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 4, 16))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>U : Symbol(U, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 4, 56))
+>DP : Symbol(DP, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 3, 96))
+>T : Symbol(T, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 4, 8))
+>P : Symbol(P, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 4, 16))
+>T : Symbol(T, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 4, 8))
+>P : Symbol(P, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 4, 16))
+
+function f<T>(x: DP<T>) {
+>f : Symbol(f, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 4, 84))
+>T : Symbol(T, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 5, 11))
+>x : Symbol(x, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 5, 14))
+>DP : Symbol(DP, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 3, 96))
+>T : Symbol(T, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 5, 11))
+
+    const y: QP<T> = x;
+>y : Symbol(y, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 6, 9))
+>QP : Symbol(QP, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 0, 0))
+>T : Symbol(T, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 5, 11))
+>x : Symbol(x, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 5, 14))
+}
+type DPA<T> = { [P in keyof T]?: T[P] extends Array<infer U> ? Array<DPA<U>> : DPA<T[P]> | T[P] };
+>DPA : Symbol(DPA, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 7, 1))
+>T : Symbol(T, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 8, 9))
+>P : Symbol(P, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 8, 17))
+>T : Symbol(T, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 8, 9))
+>T : Symbol(T, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 8, 9))
+>P : Symbol(P, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 8, 17))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>U : Symbol(U, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 8, 57))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>DPA : Symbol(DPA, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 7, 1))
+>U : Symbol(U, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 8, 57))
+>DPA : Symbol(DPA, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 7, 1))
+>T : Symbol(T, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 8, 9))
+>P : Symbol(P, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 8, 17))
+>T : Symbol(T, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 8, 9))
+>P : Symbol(P, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 8, 17))
+
+type QPA<T> = { [P in keyof T]?: (T[P] extends Array<infer U> ? Array<QPA<U>> : QPA<T[P]>) | (() => string) };
+>QPA : Symbol(QPA, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 8, 98))
+>T : Symbol(T, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 9, 9))
+>P : Symbol(P, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 9, 17))
+>T : Symbol(T, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 9, 9))
+>T : Symbol(T, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 9, 9))
+>P : Symbol(P, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 9, 17))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>U : Symbol(U, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 9, 58))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>QPA : Symbol(QPA, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 8, 98))
+>U : Symbol(U, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 9, 58))
+>QPA : Symbol(QPA, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 8, 98))
+>T : Symbol(T, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 9, 9))
+>P : Symbol(P, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 9, 17))
+
+function g<E>(r: DPA<E>) {
+>g : Symbol(g, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 9, 110))
+>E : Symbol(E, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 10, 11))
+>r : Symbol(r, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 10, 14))
+>DPA : Symbol(DPA, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 7, 1))
+>E : Symbol(E, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 10, 11))
+
+    const q: QPA<E> = r;
+>q : Symbol(q, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 11, 9))
+>QPA : Symbol(QPA, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 8, 98))
+>E : Symbol(E, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 10, 11))
+>r : Symbol(r, Decl(ttttUnconstrainedSourcePushesSourceOnly.ts, 10, 14))
+}
+
