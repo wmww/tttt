@@ -1,0 +1,89 @@
+//// [test/cases/ttttDiscriminateLargeUnionContext.ts] ////
+
+=== ttttDiscriminateLargeUnionContext.ts ===
+// A union contextual type of more than 64 members is still discriminated by an object literal's literal properties
+// (tsc's discriminateTypeByDiscriminableItems has no limit): the DeepKeys-mapped union of a recursive row type,
+// `validate: (name) => ...` gets its parameter from the "name" member (slotsmith's tanstack column defs)
+type DeepKeys<T, TDepth extends Array<any> = []> = TDepth['length'] extends 5 ? never : unknown extends T ? string : T extends Array<any> ? DeepKeys<T[number], [...TDepth, any]> : T extends object ? (keyof T & string) | DeepKeysPrefix<T, keyof T, TDepth> : never;
+>DeepKeys : DeepKeys<T, TDepth>
+
+type DeepKeysPrefix<T, TPrefix, TDepth extends Array<any>> = TPrefix extends keyof T & (number | string) ? `${TPrefix}.${DeepKeys<T[TPrefix], [...TDepth, any]> & string}` : never;
+>DeepKeysPrefix : DeepKeysPrefix<T, TPrefix, TDepth>
+
+type DeepValue<T, TProp> = T extends null | undefined ? undefined : T extends Record<string | number, any> ? TProp extends `${infer TBranch}.${infer TDeepProp}` ? DeepValue<T[TBranch], TDeepProp> : T[TProp & keyof T] : never;
+>DeepValue : DeepValue<T, TProp>
+
+interface Base<TF, TData, TValue> {}
+type ColumnDefBase<TF, TData, TValue> = Base<TF, TData, TValue> & {};
+>ColumnDefBase : Base<TF, TData, TValue>
+
+interface IdIdentifier<in out TF, in out TData, TValue> {}
+interface StringHeaderIdentifier {}
+type ColumnIdentifiers<TF, TData, TValue> = IdIdentifier<TF, TData, TValue> | StringHeaderIdentifier;
+>ColumnIdentifiers : ColumnIdentifiers<TF, TData, TValue>
+
+type DisplayColumnDef<TF, TData, TValue> = ColumnDefBase<TF, TData, TValue> & ColumnIdentifiers<TF, TData, TValue>;
+>DisplayColumnDef : DisplayColumnDef<TF, TData, TValue>
+
+type GroupColumnDef<TF, TData, TValue> = ColumnDefBase<TF, TData, TValue> & {} & ColumnIdentifiers<TF, TData, TValue>;
+>GroupColumnDef : GroupColumnDef<TF, TData, TValue>
+
+type AccessorFnColumnDef<TF, TData, TValue> = ColumnDefBase<TF, TData, TValue> & { accessorFn: number } & ColumnIdentifiers<TF, TData, TValue>;
+>AccessorFnColumnDef : AccessorFnColumnDef<TF, TData, TValue>
+>accessorFn : number
+
+type AccessorKeyColumnDef<TF, TData, TValue> = ColumnDefBase<TF, TData, TValue> & {} & Partial<ColumnIdentifiers<TF, TData, TValue>>;
+>AccessorKeyColumnDef : AccessorKeyColumnDef<TF, TData, TValue>
+
+type ColumnDef<TF, TData, TValue = unknown> = DisplayColumnDef<TF, TData, TValue> | GroupColumnDef<TF, TData, TValue> | AccessorKeyColumnDef<TF, TData, TValue> | AccessorFnColumnDef<TF, TData, TValue>;
+>ColumnDef : ColumnDef<TF, TData, TValue>
+
+interface Edit<T, V> { validate?(value: V, row: T): string | null; }
+>validate : ((value: V, row: T) => string | null) | undefined
+>value : V
+>row : T
+
+type EditField<T, TValue> = true extends true
+>EditField : { [K in unknown extends T ? string : T extends any[] ? unknown extends T[number] ? string : T[number] extends infer T_1 ? T_1 extends T[number] ? T_1 extends any[] ? unknown extends T_1[number] ? string : T_1[number] extends infer T_2 ? T_2 extends T_1[number] ? T_2 extends any[] ? unknown extends T_2[number] ? string : T_2[number] extends infer T_3 ? T_3 extends T_2[number] ? T_3 extends any[] ? unknown extends T_3[number] ? string : T_3[number] extends infer T_4 ? T_4 extends T_3[number] ? T_4 extends any[] ? never : T_4 extends object ? DeepKeysPrefix<T_4, keyof T_4, [any, any, any, any]> | (keyof T_4 & string) : never : never : never : T_3 extends object ? DeepKeysPrefix<T_3, keyof T_3, [any, any, any]> | (keyof T_3 & string) : never : never : never : T_2 extends object ? DeepKeysPrefix<T_2, keyof T_2, [any, any]> | (keyof T_2 & string) : never : never : never : T_1 extends object ? DeepKeysPrefix<T_1, keyof T_1, [any]> | (keyof T_1 & string) : never : never : never : T extends object ? DeepKeysPrefix<T, keyof T, []> | (keyof T & string) : never]: { accessorKey: K; edit?: boolean | Edit<T, DeepValue<T, K>>; }; }[unknown extends T ? string : T extends any[] ? unknown extends T[number] ? string : T[number] extends infer T_1 ? T_1 extends T[number] ? T_1 extends any[] ? unknown extends T_1[number] ? string : T_1[number] extends infer T_2 ? T_2 extends T_1[number] ? T_2 extends any[] ? unknown extends T_2[number] ? string : T_2[number] extends infer T_3 ? T_3 extends T_2[number] ? T_3 extends any[] ? unknown extends T_3[number] ? string : T_3[number] extends infer T_4 ? T_4 extends T_3[number] ? T_4 extends any[] ? never : T_4 extends object ? DeepKeysPrefix<T_4, keyof T_4, [any, any, any, any]> | (keyof T_4 & string) : never : never : never : T_3 extends object ? DeepKeysPrefix<T_3, keyof T_3, [any, any, any]> | (keyof T_3 & string) : never : never : never : T_2 extends object ? DeepKeysPrefix<T_2, keyof T_2, [any, any]> | (keyof T_2 & string) : never : never : never : T_1 extends object ? DeepKeysPrefix<T_1, keyof T_1, [any]> | (keyof T_1 & string) : never : never : never : T extends object ? DeepKeysPrefix<T, keyof T, []> | (keyof T & string) : never]
+>true : true
+>true : true
+
+  ? { [K in DeepKeys<T>]: { accessorKey: K; edit?: boolean | Edit<T, DeepValue<T, K>> } }[DeepKeys<T>]
+>accessorKey : K
+>edit : boolean | Edit<T, DeepValue<T, K>> | undefined
+
+  : { edit?: boolean | Edit<T, TValue> };
+>edit : boolean | Edit<T, TValue> | undefined
+
+type DataTableColumnDef<T, TValue = any> = ColumnDef<T, TValue> & EditField<T, TValue>;
+>DataTableColumnDef : DataTableColumnDef<T, TValue>
+
+type Employee = { id: string; name: string; salary: number; reports?: Employee[] };
+>Employee : Employee
+>id : string
+>name : string
+>salary : number
+>reports : Employee[] | undefined
+
+const cols: DataTableColumnDef<Employee>[] = [
+>cols : DataTableColumnDef<Employee, any>[]
+>[  { accessorKey: "name", edit: { validate: (name) => (name.trim() ? null : "Required") } },] : { accessorKey: "name"; edit: { validate: (name: string) => "Required" | null; }; }[]
+
+  { accessorKey: "name", edit: { validate: (name) => (name.trim() ? null : "Required") } },
+>{ accessorKey: "name", edit: { validate: (name) => (name.trim() ? null : "Required") } } : { accessorKey: "name"; edit: { validate: (name: string) => "Required" | null; }; }
+>accessorKey : "name"
+>"name" : "name"
+>edit : { validate: (name: string) => "Required" | null; }
+>{ validate: (name) => (name.trim() ? null : "Required") } : { validate: (name: string) => "Required" | null; }
+>validate : (name: string) => "Required" | null
+>(name) => (name.trim() ? null : "Required") : (name: string) => "Required" | null
+>name : string
+>(name.trim() ? null : "Required") : "Required" | null
+>name.trim() ? null : "Required" : "Required" | null
+>name.trim() : string
+>name.trim : () => string
+>name : string
+>trim : () => string
+>"Required" : "Required"
+
+];

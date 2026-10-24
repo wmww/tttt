@@ -1,0 +1,243 @@
+//// [test/cases/ttttDiscriminateLargeUnionContext.ts] ////
+
+=== ttttDiscriminateLargeUnionContext.ts ===
+// A union contextual type of more than 64 members is still discriminated by an object literal's literal properties
+// (tsc's discriminateTypeByDiscriminableItems has no limit): the DeepKeys-mapped union of a recursive row type,
+// `validate: (name) => ...` gets its parameter from the "name" member (slotsmith's tanstack column defs)
+type DeepKeys<T, TDepth extends Array<any> = []> = TDepth['length'] extends 5 ? never : unknown extends T ? string : T extends Array<any> ? DeepKeys<T[number], [...TDepth, any]> : T extends object ? (keyof T & string) | DeepKeysPrefix<T, keyof T, TDepth> : never;
+>DeepKeys : Symbol(DeepKeys, Decl(ttttDiscriminateLargeUnionContext.ts, 0, 0))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 3, 14))
+>TDepth : Symbol(TDepth, Decl(ttttDiscriminateLargeUnionContext.ts, 3, 16))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>TDepth : Symbol(TDepth, Decl(ttttDiscriminateLargeUnionContext.ts, 3, 16))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 3, 14))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 3, 14))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>DeepKeys : Symbol(DeepKeys, Decl(ttttDiscriminateLargeUnionContext.ts, 0, 0))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 3, 14))
+>TDepth : Symbol(TDepth, Decl(ttttDiscriminateLargeUnionContext.ts, 3, 16))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 3, 14))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 3, 14))
+>DeepKeysPrefix : Symbol(DeepKeysPrefix, Decl(ttttDiscriminateLargeUnionContext.ts, 3, 263))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 3, 14))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 3, 14))
+>TDepth : Symbol(TDepth, Decl(ttttDiscriminateLargeUnionContext.ts, 3, 16))
+
+type DeepKeysPrefix<T, TPrefix, TDepth extends Array<any>> = TPrefix extends keyof T & (number | string) ? `${TPrefix}.${DeepKeys<T[TPrefix], [...TDepth, any]> & string}` : never;
+>DeepKeysPrefix : Symbol(DeepKeysPrefix, Decl(ttttDiscriminateLargeUnionContext.ts, 3, 263))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 4, 20))
+>TPrefix : Symbol(TPrefix, Decl(ttttDiscriminateLargeUnionContext.ts, 4, 22))
+>TDepth : Symbol(TDepth, Decl(ttttDiscriminateLargeUnionContext.ts, 4, 31))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>TPrefix : Symbol(TPrefix, Decl(ttttDiscriminateLargeUnionContext.ts, 4, 22))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 4, 20))
+>TPrefix : Symbol(TPrefix, Decl(ttttDiscriminateLargeUnionContext.ts, 4, 22))
+>DeepKeys : Symbol(DeepKeys, Decl(ttttDiscriminateLargeUnionContext.ts, 0, 0))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 4, 20))
+>TPrefix : Symbol(TPrefix, Decl(ttttDiscriminateLargeUnionContext.ts, 4, 22))
+>TDepth : Symbol(TDepth, Decl(ttttDiscriminateLargeUnionContext.ts, 4, 31))
+
+type DeepValue<T, TProp> = T extends null | undefined ? undefined : T extends Record<string | number, any> ? TProp extends `${infer TBranch}.${infer TDeepProp}` ? DeepValue<T[TBranch], TDeepProp> : T[TProp & keyof T] : never;
+>DeepValue : Symbol(DeepValue, Decl(ttttDiscriminateLargeUnionContext.ts, 4, 179))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 5, 15))
+>TProp : Symbol(TProp, Decl(ttttDiscriminateLargeUnionContext.ts, 5, 17))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 5, 15))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 5, 15))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>TProp : Symbol(TProp, Decl(ttttDiscriminateLargeUnionContext.ts, 5, 17))
+>TBranch : Symbol(TBranch, Decl(ttttDiscriminateLargeUnionContext.ts, 5, 131))
+>TDeepProp : Symbol(TDeepProp, Decl(ttttDiscriminateLargeUnionContext.ts, 5, 148))
+>DeepValue : Symbol(DeepValue, Decl(ttttDiscriminateLargeUnionContext.ts, 4, 179))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 5, 15))
+>TBranch : Symbol(TBranch, Decl(ttttDiscriminateLargeUnionContext.ts, 5, 131))
+>TDeepProp : Symbol(TDeepProp, Decl(ttttDiscriminateLargeUnionContext.ts, 5, 148))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 5, 15))
+>TProp : Symbol(TProp, Decl(ttttDiscriminateLargeUnionContext.ts, 5, 17))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 5, 15))
+
+interface Base<TF, TData, TValue> {}
+>Base : Symbol(Base, Decl(ttttDiscriminateLargeUnionContext.ts, 5, 225))
+>TF : Symbol(TF, Decl(ttttDiscriminateLargeUnionContext.ts, 6, 15))
+>TData : Symbol(TData, Decl(ttttDiscriminateLargeUnionContext.ts, 6, 18))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 6, 25))
+
+type ColumnDefBase<TF, TData, TValue> = Base<TF, TData, TValue> & {};
+>ColumnDefBase : Symbol(ColumnDefBase, Decl(ttttDiscriminateLargeUnionContext.ts, 6, 36))
+>TF : Symbol(TF, Decl(ttttDiscriminateLargeUnionContext.ts, 7, 19))
+>TData : Symbol(TData, Decl(ttttDiscriminateLargeUnionContext.ts, 7, 22))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 7, 29))
+>Base : Symbol(Base, Decl(ttttDiscriminateLargeUnionContext.ts, 5, 225))
+>TF : Symbol(TF, Decl(ttttDiscriminateLargeUnionContext.ts, 7, 19))
+>TData : Symbol(TData, Decl(ttttDiscriminateLargeUnionContext.ts, 7, 22))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 7, 29))
+
+interface IdIdentifier<in out TF, in out TData, TValue> {}
+>IdIdentifier : Symbol(IdIdentifier, Decl(ttttDiscriminateLargeUnionContext.ts, 7, 69))
+>TF : Symbol(TF, Decl(ttttDiscriminateLargeUnionContext.ts, 8, 23))
+>TData : Symbol(TData, Decl(ttttDiscriminateLargeUnionContext.ts, 8, 33))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 8, 47))
+
+interface StringHeaderIdentifier {}
+>StringHeaderIdentifier : Symbol(StringHeaderIdentifier, Decl(ttttDiscriminateLargeUnionContext.ts, 8, 58))
+
+type ColumnIdentifiers<TF, TData, TValue> = IdIdentifier<TF, TData, TValue> | StringHeaderIdentifier;
+>ColumnIdentifiers : Symbol(ColumnIdentifiers, Decl(ttttDiscriminateLargeUnionContext.ts, 9, 35))
+>TF : Symbol(TF, Decl(ttttDiscriminateLargeUnionContext.ts, 10, 23))
+>TData : Symbol(TData, Decl(ttttDiscriminateLargeUnionContext.ts, 10, 26))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 10, 33))
+>IdIdentifier : Symbol(IdIdentifier, Decl(ttttDiscriminateLargeUnionContext.ts, 7, 69))
+>TF : Symbol(TF, Decl(ttttDiscriminateLargeUnionContext.ts, 10, 23))
+>TData : Symbol(TData, Decl(ttttDiscriminateLargeUnionContext.ts, 10, 26))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 10, 33))
+>StringHeaderIdentifier : Symbol(StringHeaderIdentifier, Decl(ttttDiscriminateLargeUnionContext.ts, 8, 58))
+
+type DisplayColumnDef<TF, TData, TValue> = ColumnDefBase<TF, TData, TValue> & ColumnIdentifiers<TF, TData, TValue>;
+>DisplayColumnDef : Symbol(DisplayColumnDef, Decl(ttttDiscriminateLargeUnionContext.ts, 10, 101))
+>TF : Symbol(TF, Decl(ttttDiscriminateLargeUnionContext.ts, 11, 22))
+>TData : Symbol(TData, Decl(ttttDiscriminateLargeUnionContext.ts, 11, 25))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 11, 32))
+>ColumnDefBase : Symbol(ColumnDefBase, Decl(ttttDiscriminateLargeUnionContext.ts, 6, 36))
+>TF : Symbol(TF, Decl(ttttDiscriminateLargeUnionContext.ts, 11, 22))
+>TData : Symbol(TData, Decl(ttttDiscriminateLargeUnionContext.ts, 11, 25))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 11, 32))
+>ColumnIdentifiers : Symbol(ColumnIdentifiers, Decl(ttttDiscriminateLargeUnionContext.ts, 9, 35))
+>TF : Symbol(TF, Decl(ttttDiscriminateLargeUnionContext.ts, 11, 22))
+>TData : Symbol(TData, Decl(ttttDiscriminateLargeUnionContext.ts, 11, 25))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 11, 32))
+
+type GroupColumnDef<TF, TData, TValue> = ColumnDefBase<TF, TData, TValue> & {} & ColumnIdentifiers<TF, TData, TValue>;
+>GroupColumnDef : Symbol(GroupColumnDef, Decl(ttttDiscriminateLargeUnionContext.ts, 11, 115))
+>TF : Symbol(TF, Decl(ttttDiscriminateLargeUnionContext.ts, 12, 20))
+>TData : Symbol(TData, Decl(ttttDiscriminateLargeUnionContext.ts, 12, 23))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 12, 30))
+>ColumnDefBase : Symbol(ColumnDefBase, Decl(ttttDiscriminateLargeUnionContext.ts, 6, 36))
+>TF : Symbol(TF, Decl(ttttDiscriminateLargeUnionContext.ts, 12, 20))
+>TData : Symbol(TData, Decl(ttttDiscriminateLargeUnionContext.ts, 12, 23))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 12, 30))
+>ColumnIdentifiers : Symbol(ColumnIdentifiers, Decl(ttttDiscriminateLargeUnionContext.ts, 9, 35))
+>TF : Symbol(TF, Decl(ttttDiscriminateLargeUnionContext.ts, 12, 20))
+>TData : Symbol(TData, Decl(ttttDiscriminateLargeUnionContext.ts, 12, 23))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 12, 30))
+
+type AccessorFnColumnDef<TF, TData, TValue> = ColumnDefBase<TF, TData, TValue> & { accessorFn: number } & ColumnIdentifiers<TF, TData, TValue>;
+>AccessorFnColumnDef : Symbol(AccessorFnColumnDef, Decl(ttttDiscriminateLargeUnionContext.ts, 12, 118))
+>TF : Symbol(TF, Decl(ttttDiscriminateLargeUnionContext.ts, 13, 25))
+>TData : Symbol(TData, Decl(ttttDiscriminateLargeUnionContext.ts, 13, 28))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 13, 35))
+>ColumnDefBase : Symbol(ColumnDefBase, Decl(ttttDiscriminateLargeUnionContext.ts, 6, 36))
+>TF : Symbol(TF, Decl(ttttDiscriminateLargeUnionContext.ts, 13, 25))
+>TData : Symbol(TData, Decl(ttttDiscriminateLargeUnionContext.ts, 13, 28))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 13, 35))
+>accessorFn : Symbol(accessorFn, Decl(ttttDiscriminateLargeUnionContext.ts, 13, 82))
+>ColumnIdentifiers : Symbol(ColumnIdentifiers, Decl(ttttDiscriminateLargeUnionContext.ts, 9, 35))
+>TF : Symbol(TF, Decl(ttttDiscriminateLargeUnionContext.ts, 13, 25))
+>TData : Symbol(TData, Decl(ttttDiscriminateLargeUnionContext.ts, 13, 28))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 13, 35))
+
+type AccessorKeyColumnDef<TF, TData, TValue> = ColumnDefBase<TF, TData, TValue> & {} & Partial<ColumnIdentifiers<TF, TData, TValue>>;
+>AccessorKeyColumnDef : Symbol(AccessorKeyColumnDef, Decl(ttttDiscriminateLargeUnionContext.ts, 13, 143))
+>TF : Symbol(TF, Decl(ttttDiscriminateLargeUnionContext.ts, 14, 26))
+>TData : Symbol(TData, Decl(ttttDiscriminateLargeUnionContext.ts, 14, 29))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 14, 36))
+>ColumnDefBase : Symbol(ColumnDefBase, Decl(ttttDiscriminateLargeUnionContext.ts, 6, 36))
+>TF : Symbol(TF, Decl(ttttDiscriminateLargeUnionContext.ts, 14, 26))
+>TData : Symbol(TData, Decl(ttttDiscriminateLargeUnionContext.ts, 14, 29))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 14, 36))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>ColumnIdentifiers : Symbol(ColumnIdentifiers, Decl(ttttDiscriminateLargeUnionContext.ts, 9, 35))
+>TF : Symbol(TF, Decl(ttttDiscriminateLargeUnionContext.ts, 14, 26))
+>TData : Symbol(TData, Decl(ttttDiscriminateLargeUnionContext.ts, 14, 29))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 14, 36))
+
+type ColumnDef<TF, TData, TValue = unknown> = DisplayColumnDef<TF, TData, TValue> | GroupColumnDef<TF, TData, TValue> | AccessorKeyColumnDef<TF, TData, TValue> | AccessorFnColumnDef<TF, TData, TValue>;
+>ColumnDef : Symbol(ColumnDef, Decl(ttttDiscriminateLargeUnionContext.ts, 14, 133))
+>TF : Symbol(TF, Decl(ttttDiscriminateLargeUnionContext.ts, 15, 15))
+>TData : Symbol(TData, Decl(ttttDiscriminateLargeUnionContext.ts, 15, 18))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 15, 25))
+>DisplayColumnDef : Symbol(DisplayColumnDef, Decl(ttttDiscriminateLargeUnionContext.ts, 10, 101))
+>TF : Symbol(TF, Decl(ttttDiscriminateLargeUnionContext.ts, 15, 15))
+>TData : Symbol(TData, Decl(ttttDiscriminateLargeUnionContext.ts, 15, 18))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 15, 25))
+>GroupColumnDef : Symbol(GroupColumnDef, Decl(ttttDiscriminateLargeUnionContext.ts, 11, 115))
+>TF : Symbol(TF, Decl(ttttDiscriminateLargeUnionContext.ts, 15, 15))
+>TData : Symbol(TData, Decl(ttttDiscriminateLargeUnionContext.ts, 15, 18))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 15, 25))
+>AccessorKeyColumnDef : Symbol(AccessorKeyColumnDef, Decl(ttttDiscriminateLargeUnionContext.ts, 13, 143))
+>TF : Symbol(TF, Decl(ttttDiscriminateLargeUnionContext.ts, 15, 15))
+>TData : Symbol(TData, Decl(ttttDiscriminateLargeUnionContext.ts, 15, 18))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 15, 25))
+>AccessorFnColumnDef : Symbol(AccessorFnColumnDef, Decl(ttttDiscriminateLargeUnionContext.ts, 12, 118))
+>TF : Symbol(TF, Decl(ttttDiscriminateLargeUnionContext.ts, 15, 15))
+>TData : Symbol(TData, Decl(ttttDiscriminateLargeUnionContext.ts, 15, 18))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 15, 25))
+
+interface Edit<T, V> { validate?(value: V, row: T): string | null; }
+>Edit : Symbol(Edit, Decl(ttttDiscriminateLargeUnionContext.ts, 15, 201))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 16, 15))
+>V : Symbol(V, Decl(ttttDiscriminateLargeUnionContext.ts, 16, 17))
+>validate : Symbol(Edit.validate, Decl(ttttDiscriminateLargeUnionContext.ts, 16, 22))
+>value : Symbol(value, Decl(ttttDiscriminateLargeUnionContext.ts, 16, 33))
+>V : Symbol(V, Decl(ttttDiscriminateLargeUnionContext.ts, 16, 17))
+>row : Symbol(row, Decl(ttttDiscriminateLargeUnionContext.ts, 16, 42))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 16, 15))
+
+type EditField<T, TValue> = true extends true
+>EditField : Symbol(EditField, Decl(ttttDiscriminateLargeUnionContext.ts, 16, 68))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 17, 15))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 17, 17))
+
+  ? { [K in DeepKeys<T>]: { accessorKey: K; edit?: boolean | Edit<T, DeepValue<T, K>> } }[DeepKeys<T>]
+>K : Symbol(K, Decl(ttttDiscriminateLargeUnionContext.ts, 18, 7))
+>DeepKeys : Symbol(DeepKeys, Decl(ttttDiscriminateLargeUnionContext.ts, 0, 0))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 17, 15))
+>accessorKey : Symbol(accessorKey, Decl(ttttDiscriminateLargeUnionContext.ts, 18, 27))
+>K : Symbol(K, Decl(ttttDiscriminateLargeUnionContext.ts, 18, 7))
+>edit : Symbol(edit, Decl(ttttDiscriminateLargeUnionContext.ts, 18, 43))
+>Edit : Symbol(Edit, Decl(ttttDiscriminateLargeUnionContext.ts, 15, 201))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 17, 15))
+>DeepValue : Symbol(DeepValue, Decl(ttttDiscriminateLargeUnionContext.ts, 4, 179))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 17, 15))
+>K : Symbol(K, Decl(ttttDiscriminateLargeUnionContext.ts, 18, 7))
+>DeepKeys : Symbol(DeepKeys, Decl(ttttDiscriminateLargeUnionContext.ts, 0, 0))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 17, 15))
+
+  : { edit?: boolean | Edit<T, TValue> };
+>edit : Symbol(edit, Decl(ttttDiscriminateLargeUnionContext.ts, 19, 5))
+>Edit : Symbol(Edit, Decl(ttttDiscriminateLargeUnionContext.ts, 15, 201))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 17, 15))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 17, 17))
+
+type DataTableColumnDef<T, TValue = any> = ColumnDef<T, TValue> & EditField<T, TValue>;
+>DataTableColumnDef : Symbol(DataTableColumnDef, Decl(ttttDiscriminateLargeUnionContext.ts, 19, 41))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 20, 24))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 20, 26))
+>ColumnDef : Symbol(ColumnDef, Decl(ttttDiscriminateLargeUnionContext.ts, 14, 133))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 20, 24))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 20, 26))
+>EditField : Symbol(EditField, Decl(ttttDiscriminateLargeUnionContext.ts, 16, 68))
+>T : Symbol(T, Decl(ttttDiscriminateLargeUnionContext.ts, 20, 24))
+>TValue : Symbol(TValue, Decl(ttttDiscriminateLargeUnionContext.ts, 20, 26))
+
+type Employee = { id: string; name: string; salary: number; reports?: Employee[] };
+>Employee : Symbol(Employee, Decl(ttttDiscriminateLargeUnionContext.ts, 20, 87))
+>id : Symbol(id, Decl(ttttDiscriminateLargeUnionContext.ts, 21, 17))
+>name : Symbol(name, Decl(ttttDiscriminateLargeUnionContext.ts, 21, 29))
+>salary : Symbol(salary, Decl(ttttDiscriminateLargeUnionContext.ts, 21, 43))
+>reports : Symbol(reports, Decl(ttttDiscriminateLargeUnionContext.ts, 21, 59))
+>Employee : Symbol(Employee, Decl(ttttDiscriminateLargeUnionContext.ts, 20, 87))
+
+const cols: DataTableColumnDef<Employee>[] = [
+>cols : Symbol(cols, Decl(ttttDiscriminateLargeUnionContext.ts, 22, 5))
+>DataTableColumnDef : Symbol(DataTableColumnDef, Decl(ttttDiscriminateLargeUnionContext.ts, 19, 41))
+>Employee : Symbol(Employee, Decl(ttttDiscriminateLargeUnionContext.ts, 20, 87))
+
+  { accessorKey: "name", edit: { validate: (name) => (name.trim() ? null : "Required") } },
+>accessorKey : Symbol(accessorKey, Decl(ttttDiscriminateLargeUnionContext.ts, 23, 3))
+>edit : Symbol(edit, Decl(ttttDiscriminateLargeUnionContext.ts, 23, 24))
+>validate : Symbol(validate, Decl(ttttDiscriminateLargeUnionContext.ts, 23, 32))
+>name : Symbol(name, Decl(ttttDiscriminateLargeUnionContext.ts, 23, 44))
+>name.trim : Symbol(String.trim, Decl(lib.es5.d.ts, --, --))
+>name : Symbol(name, Decl(ttttDiscriminateLargeUnionContext.ts, 23, 44))
+>trim : Symbol(String.trim, Decl(lib.es5.d.ts, --, --))
+
+];

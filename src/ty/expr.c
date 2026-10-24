@@ -4221,9 +4221,11 @@ typedef struct Discriminator {
 // discriminators fit (a discriminator that fits none excludes nothing)
 static Ty const* discriminate_by_items(Checker* me, Ty const* contextual, Discriminator const* items, u32 count) {
     TyList types = contextual->composite.types;
-    if (types.len > 64) return contextual;
-    // 0: excluded, 1: maybe, 3: included
-    unsigned char include[64];
+    // 0: excluded, 1: maybe, 3: included (any number of members: tsc has no limit, slotsmith's DeepKeys-mapped union
+    // of a recursive row type has hundreds)
+    unsigned char include_small[64];
+    unsigned char* include = types.len <= 64 ? include_small : malloc(types.len);
+    panic_if(!include, "out of memory");
     u32 const primitive = TYF_STRING | TYF_NUMBER | TYF_BIGINT | TYF_ES_SYMBOL_LIKE | TYF_BOOLEAN | TYF_LITERAL | TYF_ENUM |
         TYF_NULLABLE | TYF_VOID;
     // (Nor a member that reduces to never, tsc 6.0)
@@ -4256,13 +4258,17 @@ static Ty const* discriminate_by_items(Checker* me, Ty const* contextual, Discri
             if (include[i] == 1) include[i] = matched ? 0 : 3;
         }
     }
-    Ty const* kept[64];
+    Ty const* kept_small[64];
+    Ty const** kept = types.len <= 64 ? kept_small : malloc(sizeof(Ty const*) * types.len);
+    panic_if(!kept, "out of memory");
     u32 len = 0;
     for (u32 i = 0; i < types.len; i++) {
         if (include[i]) kept[len++] = types.data[i];
     }
-    if (len == types.len || !len) return contextual;
-    return ty_union_unreduced(me, kept, len); // (tsc's filterType)
+    Ty const* ret = len == types.len || !len ? contextual : ty_union_unreduced(me, kept, len); // (tsc's filterType)
+    if (include != include_small) free(include);
+    if (kept != kept_small) free(kept);
+    return ret;
 }
 
 // The optional discriminant properties of a union contextual type that a literal doesn't have are undefined in it (the
