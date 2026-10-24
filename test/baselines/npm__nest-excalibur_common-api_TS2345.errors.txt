@@ -1,0 +1,31 @@
+npm__nest-excalibur_common-api_TS2345.ts(13,20): error TS2345: Argument of type 'DeepPartial<Entity>' is not assignable to parameter of type 'QueryDeepPartialEntity<Entity>'.
+  Type '(Entity[P] extends (infer U)[] ? DeepPartial<U>[] : Entity[P] extends readonly (infer U)[] ? readonly DeepPartial<U>[] : DeepPartial<Entity[P]> | Entity[P]) | undefined' is not assignable to type '(() => string) | (Entity[P] extends (infer U)[] ? QueryDeepPartialEntity<U>[] : Entity[P] extends readonly (infer U)[] ? readonly QueryDeepPartialEntity<U>[] : QueryDeepPartialEntity<Entity[P]>) | undefined'.
+    Type 'Entity[P] extends (infer U)[] ? DeepPartial<U>[] : Entity[P] extends readonly (infer U)[] ? readonly DeepPartial<U>[] : DeepPartial<Entity[P]> | Entity[P]' is not assignable to type '(() => string) | (Entity[P] extends (infer U)[] ? QueryDeepPartialEntity<U>[] : Entity[P] extends readonly (infer U)[] ? readonly QueryDeepPartialEntity<U>[] : QueryDeepPartialEntity<Entity[P]>) | undefined'.
+      Type 'DeepPartial<unknown>[] | (Entity[P] extends readonly (infer U)[] ? readonly DeepPartial<U>[] : DeepPartial<Entity[P]> | Entity[P])' is not assignable to type '(() => string) | (Entity[P] extends (infer U)[] ? QueryDeepPartialEntity<U>[] : Entity[P] extends readonly (infer U)[] ? readonly QueryDeepPartialEntity<U>[] : QueryDeepPartialEntity<Entity[P]>) | undefined'.
+        Type 'DeepPartial<unknown>[]' is not assignable to type '(() => string) | (Entity[P] extends (infer U)[] ? QueryDeepPartialEntity<U>[] : Entity[P] extends readonly (infer U)[] ? readonly QueryDeepPartialEntity<U>[] : QueryDeepPartialEntity<Entity[P]>) | undefined'.
+          Type 'DeepPartial<unknown>[]' is not assignable to type 'Entity[P] extends (infer U)[] ? QueryDeepPartialEntity<U>[] : Entity[P] extends readonly (infer U)[] ? readonly QueryDeepPartialEntity<U>[] : QueryDeepPartialEntity<Entity[P]>'.
+
+
+==== npm__nest-excalibur_common-api_TS2345.ts (1 errors) ====
+    // origin: npm @nest-excalibur/common-api@0.1.0 https://github.com/nest-excalibur/common-api tsconfig.bench.json seed 20261025
+    // flip: no
+    // typeorm's DeepPartial<Entity> against QueryDeepPartialEntity<Entity> (Repository.update): each property a conditional
+    // type over Entity[P] with `infer U`; tsgo finds the source's conditional unrelated to the target's union, tttt relates them
+    type DeepPartial<T> = {
+        [P in keyof T]?: T[P] extends Array<infer U> ? Array<DeepPartial<U>> : T[P] extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>> : DeepPartial<T[P]> | T[P];
+    };
+    type QueryDeepPartialEntity<T> = {
+        [P in keyof T]?: (T[P] extends Array<infer U> ? Array<QueryDeepPartialEntity<U>> : T[P] extends ReadonlyArray<infer U> ? ReadonlyArray<QueryDeepPartialEntity<U>> : QueryDeepPartialEntity<T[P]>) | (() => string);
+    };
+    declare function update<Entity>(partialEntity: QueryDeepPartialEntity<Entity>): void;
+    function f<Entity>(record: DeepPartial<Entity>) {
+        update<Entity>(record);
+                       ~~~~~~
+!!! error TS2345: Argument of type 'DeepPartial<Entity>' is not assignable to parameter of type 'QueryDeepPartialEntity<Entity>'.
+!!! error TS2345:   Type '(Entity[P] extends (infer U)[] ? DeepPartial<U>[] : Entity[P] extends readonly (infer U)[] ? readonly DeepPartial<U>[] : DeepPartial<Entity[P]> | Entity[P]) | undefined' is not assignable to type '(() => string) | (Entity[P] extends (infer U)[] ? QueryDeepPartialEntity<U>[] : Entity[P] extends readonly (infer U)[] ? readonly QueryDeepPartialEntity<U>[] : QueryDeepPartialEntity<Entity[P]>) | undefined'.
+!!! error TS2345:     Type 'Entity[P] extends (infer U)[] ? DeepPartial<U>[] : Entity[P] extends readonly (infer U)[] ? readonly DeepPartial<U>[] : DeepPartial<Entity[P]> | Entity[P]' is not assignable to type '(() => string) | (Entity[P] extends (infer U)[] ? QueryDeepPartialEntity<U>[] : Entity[P] extends readonly (infer U)[] ? readonly QueryDeepPartialEntity<U>[] : QueryDeepPartialEntity<Entity[P]>) | undefined'.
+!!! error TS2345:       Type 'DeepPartial<unknown>[] | (Entity[P] extends readonly (infer U)[] ? readonly DeepPartial<U>[] : DeepPartial<Entity[P]> | Entity[P])' is not assignable to type '(() => string) | (Entity[P] extends (infer U)[] ? QueryDeepPartialEntity<U>[] : Entity[P] extends readonly (infer U)[] ? readonly QueryDeepPartialEntity<U>[] : QueryDeepPartialEntity<Entity[P]>) | undefined'.
+!!! error TS2345:         Type 'DeepPartial<unknown>[]' is not assignable to type '(() => string) | (Entity[P] extends (infer U)[] ? QueryDeepPartialEntity<U>[] : Entity[P] extends readonly (infer U)[] ? readonly QueryDeepPartialEntity<U>[] : QueryDeepPartialEntity<Entity[P]>) | undefined'.
+!!! error TS2345:           Type 'DeepPartial<unknown>[]' is not assignable to type 'Entity[P] extends (infer U)[] ? QueryDeepPartialEntity<U>[] : Entity[P] extends readonly (infer U)[] ? readonly QueryDeepPartialEntity<U>[] : QueryDeepPartialEntity<Entity[P]>'.
+    }
+    

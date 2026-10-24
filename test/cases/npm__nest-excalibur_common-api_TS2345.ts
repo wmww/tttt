@@ -1,0 +1,15 @@
+// origin: npm @nest-excalibur/common-api@0.1.0 https://github.com/nest-excalibur/common-api tsconfig.bench.json seed 20261025
+// flip: no
+// typeorm's DeepPartial<Entity> against QueryDeepPartialEntity<Entity> (Repository.update): each property a conditional
+// type over Entity[P] with `infer U`; tsgo finds the source's conditional unrelated to the target's union, tttt relates them
+// @strict: true
+type DeepPartial<T> = {
+    [P in keyof T]?: T[P] extends Array<infer U> ? Array<DeepPartial<U>> : T[P] extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>> : DeepPartial<T[P]> | T[P];
+};
+type QueryDeepPartialEntity<T> = {
+    [P in keyof T]?: (T[P] extends Array<infer U> ? Array<QueryDeepPartialEntity<U>> : T[P] extends ReadonlyArray<infer U> ? ReadonlyArray<QueryDeepPartialEntity<U>> : QueryDeepPartialEntity<T[P]>) | (() => string);
+};
+declare function update<Entity>(partialEntity: QueryDeepPartialEntity<Entity>): void;
+function f<Entity>(record: DeepPartial<Entity>) {
+    update<Entity>(record);
+}

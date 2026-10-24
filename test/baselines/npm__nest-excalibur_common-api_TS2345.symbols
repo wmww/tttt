@@ -1,0 +1,81 @@
+//// [test/cases/npm__nest-excalibur_common-api_TS2345.ts] ////
+
+=== npm__nest-excalibur_common-api_TS2345.ts ===
+// origin: npm @nest-excalibur/common-api@0.1.0 https://github.com/nest-excalibur/common-api tsconfig.bench.json seed 20261025
+// flip: no
+// typeorm's DeepPartial<Entity> against QueryDeepPartialEntity<Entity> (Repository.update): each property a conditional
+// type over Entity[P] with `infer U`; tsgo finds the source's conditional unrelated to the target's union, tttt relates them
+type DeepPartial<T> = {
+>DeepPartial : Symbol(DeepPartial, Decl(npm__nest-excalibur_common-api_TS2345.ts, 0, 0))
+>T : Symbol(T, Decl(npm__nest-excalibur_common-api_TS2345.ts, 4, 17))
+
+    [P in keyof T]?: T[P] extends Array<infer U> ? Array<DeepPartial<U>> : T[P] extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>> : DeepPartial<T[P]> | T[P];
+>P : Symbol(P, Decl(npm__nest-excalibur_common-api_TS2345.ts, 5, 5))
+>T : Symbol(T, Decl(npm__nest-excalibur_common-api_TS2345.ts, 4, 17))
+>T : Symbol(T, Decl(npm__nest-excalibur_common-api_TS2345.ts, 4, 17))
+>P : Symbol(P, Decl(npm__nest-excalibur_common-api_TS2345.ts, 5, 5))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>U : Symbol(U, Decl(npm__nest-excalibur_common-api_TS2345.ts, 5, 45))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>DeepPartial : Symbol(DeepPartial, Decl(npm__nest-excalibur_common-api_TS2345.ts, 0, 0))
+>U : Symbol(U, Decl(npm__nest-excalibur_common-api_TS2345.ts, 5, 45))
+>T : Symbol(T, Decl(npm__nest-excalibur_common-api_TS2345.ts, 4, 17))
+>P : Symbol(P, Decl(npm__nest-excalibur_common-api_TS2345.ts, 5, 5))
+>ReadonlyArray : Symbol(ReadonlyArray, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 3 more)
+>U : Symbol(U, Decl(npm__nest-excalibur_common-api_TS2345.ts, 5, 107))
+>ReadonlyArray : Symbol(ReadonlyArray, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 3 more)
+>DeepPartial : Symbol(DeepPartial, Decl(npm__nest-excalibur_common-api_TS2345.ts, 0, 0))
+>U : Symbol(U, Decl(npm__nest-excalibur_common-api_TS2345.ts, 5, 107))
+>DeepPartial : Symbol(DeepPartial, Decl(npm__nest-excalibur_common-api_TS2345.ts, 0, 0))
+>T : Symbol(T, Decl(npm__nest-excalibur_common-api_TS2345.ts, 4, 17))
+>P : Symbol(P, Decl(npm__nest-excalibur_common-api_TS2345.ts, 5, 5))
+>T : Symbol(T, Decl(npm__nest-excalibur_common-api_TS2345.ts, 4, 17))
+>P : Symbol(P, Decl(npm__nest-excalibur_common-api_TS2345.ts, 5, 5))
+
+};
+type QueryDeepPartialEntity<T> = {
+>QueryDeepPartialEntity : Symbol(QueryDeepPartialEntity, Decl(npm__nest-excalibur_common-api_TS2345.ts, 6, 2))
+>T : Symbol(T, Decl(npm__nest-excalibur_common-api_TS2345.ts, 7, 28))
+
+    [P in keyof T]?: (T[P] extends Array<infer U> ? Array<QueryDeepPartialEntity<U>> : T[P] extends ReadonlyArray<infer U> ? ReadonlyArray<QueryDeepPartialEntity<U>> : QueryDeepPartialEntity<T[P]>) | (() => string);
+>P : Symbol(P, Decl(npm__nest-excalibur_common-api_TS2345.ts, 8, 5))
+>T : Symbol(T, Decl(npm__nest-excalibur_common-api_TS2345.ts, 7, 28))
+>T : Symbol(T, Decl(npm__nest-excalibur_common-api_TS2345.ts, 7, 28))
+>P : Symbol(P, Decl(npm__nest-excalibur_common-api_TS2345.ts, 8, 5))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>U : Symbol(U, Decl(npm__nest-excalibur_common-api_TS2345.ts, 8, 46))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>QueryDeepPartialEntity : Symbol(QueryDeepPartialEntity, Decl(npm__nest-excalibur_common-api_TS2345.ts, 6, 2))
+>U : Symbol(U, Decl(npm__nest-excalibur_common-api_TS2345.ts, 8, 46))
+>T : Symbol(T, Decl(npm__nest-excalibur_common-api_TS2345.ts, 7, 28))
+>P : Symbol(P, Decl(npm__nest-excalibur_common-api_TS2345.ts, 8, 5))
+>ReadonlyArray : Symbol(ReadonlyArray, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 3 more)
+>U : Symbol(U, Decl(npm__nest-excalibur_common-api_TS2345.ts, 8, 119))
+>ReadonlyArray : Symbol(ReadonlyArray, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 3 more)
+>QueryDeepPartialEntity : Symbol(QueryDeepPartialEntity, Decl(npm__nest-excalibur_common-api_TS2345.ts, 6, 2))
+>U : Symbol(U, Decl(npm__nest-excalibur_common-api_TS2345.ts, 8, 119))
+>QueryDeepPartialEntity : Symbol(QueryDeepPartialEntity, Decl(npm__nest-excalibur_common-api_TS2345.ts, 6, 2))
+>T : Symbol(T, Decl(npm__nest-excalibur_common-api_TS2345.ts, 7, 28))
+>P : Symbol(P, Decl(npm__nest-excalibur_common-api_TS2345.ts, 8, 5))
+
+};
+declare function update<Entity>(partialEntity: QueryDeepPartialEntity<Entity>): void;
+>update : Symbol(update, Decl(npm__nest-excalibur_common-api_TS2345.ts, 9, 2))
+>Entity : Symbol(Entity, Decl(npm__nest-excalibur_common-api_TS2345.ts, 10, 24))
+>partialEntity : Symbol(partialEntity, Decl(npm__nest-excalibur_common-api_TS2345.ts, 10, 32))
+>QueryDeepPartialEntity : Symbol(QueryDeepPartialEntity, Decl(npm__nest-excalibur_common-api_TS2345.ts, 6, 2))
+>Entity : Symbol(Entity, Decl(npm__nest-excalibur_common-api_TS2345.ts, 10, 24))
+
+function f<Entity>(record: DeepPartial<Entity>) {
+>f : Symbol(f, Decl(npm__nest-excalibur_common-api_TS2345.ts, 10, 85))
+>Entity : Symbol(Entity, Decl(npm__nest-excalibur_common-api_TS2345.ts, 11, 11))
+>record : Symbol(record, Decl(npm__nest-excalibur_common-api_TS2345.ts, 11, 19))
+>DeepPartial : Symbol(DeepPartial, Decl(npm__nest-excalibur_common-api_TS2345.ts, 0, 0))
+>Entity : Symbol(Entity, Decl(npm__nest-excalibur_common-api_TS2345.ts, 11, 11))
+
+    update<Entity>(record);
+>update : Symbol(update, Decl(npm__nest-excalibur_common-api_TS2345.ts, 9, 2))
+>Entity : Symbol(Entity, Decl(npm__nest-excalibur_common-api_TS2345.ts, 11, 11))
+>record : Symbol(record, Decl(npm__nest-excalibur_common-api_TS2345.ts, 11, 19))
+}
+
