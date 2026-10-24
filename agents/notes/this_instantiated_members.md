@@ -110,3 +110,19 @@ the structural fix; this note is the plan and the log.
       out).
 - Next: ty_display.c's method_this_instantiated() may now be redundant (the instances say it), a cleanup to try
   separately.
+- 2026-10-24, the display cleanup: method_this_instantiated() and its helpers (function_may_reference_this(),
+  node_may_reference_this(), span_says_this()) in ty_display.c are gone. The printer now asks whether the member is an
+  instance (`anonymous.target`).
+  - It needed two more changes after all: Prop.thisless follows isThisless (a method with more than one declaration
+    is never thisless), and ty_anonymous_from_overloads() collects the implementation's free parameters. Without them a
+    class expression's overloaded method stayed the declared type, and ttttDeclarationMapClassLiteralFreshTypeParams
+    lost its fresh type parameters.
+  - Gates:
+    - The suite is unchanged.
+    - $ExpectType: 68640/68640.
+    - dtsdiff: corpora 13/13 (15876 files); --sample 4 345/346, mcp-sdk/examples being the known [tsgo] case in
+      dts_emit.md.
+    - quickgate --vs-main -k passes.
+    - instrcount: zod +0.04%, excalidraw +0.01%, nest +0.00%, vscode -0.04%.
+    - DT sweep: 8595/8595.
+

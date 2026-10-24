@@ -2201,7 +2201,7 @@ static void builder_add_class_items(
                         memcpy(all + had, functions, sizeof(FunctionImpl const*) * count);
                         prop_decl_rare_mut(me, interface_method->decl)->overloads = all;
                         prop_decl_rare_mut(me, interface_method->decl)->overload_count = had + count;
-                        for (u32 f = 0; f < count; f++) interface_method->thisless &= function_is_thisless(functions[f]);
+                        interface_method->thisless = false; // (Declared more than once: tsc's isThisless)
                         prop_add_shared_decl_spans(me, interface_method, &i->span, 1);
                         prop_add_decl_spans(me, interface_method, spans, span_count);
                         break;
@@ -2212,7 +2212,9 @@ static void builder_add_class_items(
                     if (!prop) break;
                     prop->decl->function = functions[0];
                     prop->flags |= PROP_METHOD;
-                    prop->thisless = true;
+                    // (tsc's isThisless: only a symbol with one declaration can be, an implementation counting as one,
+                    // so an overloaded method's members are instantiated per `this`)
+                    prop->thisless = span_count == 0;
                     for (u32 f = 0; f < count; f++) prop->thisless &= function_is_thisless(functions[f]);
                     prop_add_shared_decl_spans(me, prop, spans, span_count);
                     add_jsdoc_overload_decl_spans(me, prop, class_decl, i, static_side);

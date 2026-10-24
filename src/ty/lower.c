@@ -1542,6 +1542,12 @@ Ty const* ty_anonymous_from_overloads(Checker* me, FunctionImpl const* const* ov
     if (ctx.generic) {
         FreeParams found = {0};
         for (u32 i = 0; i < count; i++) collect_free_params_of_function(me, overloads[i], &found);
+        // (The implementation is a declaration too: tsc's isTypeParameterPossiblyReferenced looks at all of them, and
+        // one with a body and no return type annotation may mention any type parameter, the class's `this` among them)
+        FunctionImpl const* implementation = count ? function_impl_rare(overloads[0])->overload_implementation : nullptr;
+        bool listed = false;
+        for (u32 i = 0; i < count && !listed; i++) listed = overloads[i] == implementation;
+        if (implementation && !listed) collect_free_params_of_function(me, implementation, &found);
         anonymous_set_free_params(me, ret, found);
     }
     return intern_set(me, &my links, intern_slot(me, &my links, key, 2), ret);
