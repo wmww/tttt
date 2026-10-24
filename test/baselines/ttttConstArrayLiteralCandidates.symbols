@@ -1,0 +1,67 @@
+//// [test/cases/ttttConstArrayLiteralCandidates.ts] ////
+
+=== ttttConstArrayLiteralCandidates.ts ===
+// Array literals nested in a const-asserted argument are array literal candidates, the empty one too (its tuple is its
+// own target): several of them are one candidate, their union (tsc's unionObjectAndArrayLiteralCandidates)
+declare function f<V>(x: Iterable<readonly [string, V]>): V;
+>f : Symbol(f, Decl(ttttConstArrayLiteralCandidates.ts, 0, 0))
+>V : Symbol(V, Decl(ttttConstArrayLiteralCandidates.ts, 2, 19))
+>x : Symbol(x, Decl(ttttConstArrayLiteralCandidates.ts, 2, 22))
+>Iterable : Symbol(Iterable, Decl(lib.es2015.iterable.d.ts, --, --))
+>V : Symbol(V, Decl(ttttConstArrayLiteralCandidates.ts, 2, 19))
+>V : Symbol(V, Decl(ttttConstArrayLiteralCandidates.ts, 2, 19))
+
+const r1 = f([['a', ['x']], ['b', []]] as const);
+>r1 : Symbol(r1, Decl(ttttConstArrayLiteralCandidates.ts, 3, 5))
+>f : Symbol(f, Decl(ttttConstArrayLiteralCandidates.ts, 0, 0))
+>const : Symbol(const)
+
+declare function g<V>(x: readonly (readonly [string, V])[]): V;
+>g : Symbol(g, Decl(ttttConstArrayLiteralCandidates.ts, 3, 49))
+>V : Symbol(V, Decl(ttttConstArrayLiteralCandidates.ts, 4, 19))
+>x : Symbol(x, Decl(ttttConstArrayLiteralCandidates.ts, 4, 22))
+>V : Symbol(V, Decl(ttttConstArrayLiteralCandidates.ts, 4, 19))
+>V : Symbol(V, Decl(ttttConstArrayLiteralCandidates.ts, 4, 19))
+
+const r2 = g([['a', ['x']], ['b', []]] as const);
+>r2 : Symbol(r2, Decl(ttttConstArrayLiteralCandidates.ts, 5, 5))
+>g : Symbol(g, Decl(ttttConstArrayLiteralCandidates.ts, 3, 49))
+>const : Symbol(const)
+
+declare function h<V>(a: V, b: V): V;
+>h : Symbol(h, Decl(ttttConstArrayLiteralCandidates.ts, 5, 49))
+>V : Symbol(V, Decl(ttttConstArrayLiteralCandidates.ts, 6, 19))
+>a : Symbol(a, Decl(ttttConstArrayLiteralCandidates.ts, 6, 22))
+>V : Symbol(V, Decl(ttttConstArrayLiteralCandidates.ts, 6, 19))
+>b : Symbol(b, Decl(ttttConstArrayLiteralCandidates.ts, 6, 27))
+>V : Symbol(V, Decl(ttttConstArrayLiteralCandidates.ts, 6, 19))
+>V : Symbol(V, Decl(ttttConstArrayLiteralCandidates.ts, 6, 19))
+
+declare const t1: readonly ["x"];
+>t1 : Symbol(t1, Decl(ttttConstArrayLiteralCandidates.ts, 7, 13))
+
+declare const t0: readonly [];
+>t0 : Symbol(t0, Decl(ttttConstArrayLiteralCandidates.ts, 8, 13))
+
+const r3 = h(t1, t0);
+>r3 : Symbol(r3, Decl(ttttConstArrayLiteralCandidates.ts, 9, 5))
+>h : Symbol(h, Decl(ttttConstArrayLiteralCandidates.ts, 5, 49))
+>t1 : Symbol(t1, Decl(ttttConstArrayLiteralCandidates.ts, 7, 13))
+>t0 : Symbol(t0, Decl(ttttConstArrayLiteralCandidates.ts, 8, 13))
+
+const r4 = h(t0, t1);
+>r4 : Symbol(r4, Decl(ttttConstArrayLiteralCandidates.ts, 10, 5))
+>h : Symbol(h, Decl(ttttConstArrayLiteralCandidates.ts, 5, 49))
+>t0 : Symbol(t0, Decl(ttttConstArrayLiteralCandidates.ts, 8, 13))
+>t1 : Symbol(t1, Decl(ttttConstArrayLiteralCandidates.ts, 7, 13))
+
+const r5 = g([["a", ["x"]], ["b", []]]);
+>r5 : Symbol(r5, Decl(ttttConstArrayLiteralCandidates.ts, 11, 5))
+>g : Symbol(g, Decl(ttttConstArrayLiteralCandidates.ts, 3, 49))
+
+const m: ReadonlyMap<string, readonly string[]> = new Map([["a", ["--x"]], ["b", []]] as const);
+>m : Symbol(m, Decl(ttttConstArrayLiteralCandidates.ts, 12, 5))
+>ReadonlyMap : Symbol(ReadonlyMap, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --))
+>Map : Symbol(Map, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>const : Symbol(const)
+

@@ -1,0 +1,93 @@
+//// [test/cases/ttttConstArrayLiteralCandidates.ts] ////
+
+=== ttttConstArrayLiteralCandidates.ts ===
+// Array literals nested in a const-asserted argument are array literal candidates, the empty one too (its tuple is its
+// own target): several of them are one candidate, their union (tsc's unionObjectAndArrayLiteralCandidates)
+declare function f<V>(x: Iterable<readonly [string, V]>): V;
+>f : <V>(x: Iterable<readonly [string, V]>) => V
+>x : Iterable<readonly [string, V]>
+
+const r1 = f([['a', ['x']], ['b', []]] as const);
+>r1 : readonly [] | readonly ["x"]
+>f([['a', ['x']], ['b', []]] as const) : readonly [] | readonly ["x"]
+>f : <V>(x: Iterable<readonly [string, V]>) => V
+>[['a', ['x']], ['b', []]] as const : readonly [readonly ["a", readonly ["x"]], readonly ["b", readonly []]]
+>[['a', ['x']], ['b', []]] : readonly [readonly ["a", readonly ["x"]], readonly ["b", readonly []]]
+>['a', ['x']] : readonly ["a", readonly ["x"]]
+>'a' : "a"
+>['x'] : readonly ["x"]
+>'x' : "x"
+>['b', []] : readonly ["b", readonly []]
+>'b' : "b"
+>[] : readonly []
+
+declare function g<V>(x: readonly (readonly [string, V])[]): V;
+>g : <V>(x: readonly (readonly [string, V])[]) => V
+>x : readonly (readonly [string, V])[]
+
+const r2 = g([['a', ['x']], ['b', []]] as const);
+>r2 : readonly [] | readonly ["x"]
+>g([['a', ['x']], ['b', []]] as const) : readonly [] | readonly ["x"]
+>g : <V>(x: readonly (readonly [string, V])[]) => V
+>[['a', ['x']], ['b', []]] as const : readonly [readonly ["a", readonly ["x"]], readonly ["b", readonly []]]
+>[['a', ['x']], ['b', []]] : readonly [readonly ["a", readonly ["x"]], readonly ["b", readonly []]]
+>['a', ['x']] : readonly ["a", readonly ["x"]]
+>'a' : "a"
+>['x'] : readonly ["x"]
+>'x' : "x"
+>['b', []] : readonly ["b", readonly []]
+>'b' : "b"
+>[] : readonly []
+
+declare function h<V>(a: V, b: V): V;
+>h : <V>(a: V, b: V) => V
+>a : V
+>b : V
+
+declare const t1: readonly ["x"];
+>t1 : readonly ["x"]
+
+declare const t0: readonly [];
+>t0 : readonly []
+
+const r3 = h(t1, t0);
+>r3 : readonly ["x"]
+>h(t1, t0) : readonly ["x"]
+>h : <V>(a: V, b: V) => V
+>t1 : readonly ["x"]
+>t0 : readonly []
+
+const r4 = h(t0, t1);
+>r4 : readonly []
+>h(t0, t1) : readonly []
+>h : <V>(a: V, b: V) => V
+>t0 : readonly []
+>t1 : readonly ["x"]
+
+const r5 = g([["a", ["x"]], ["b", []]]);
+>r5 : string[]
+>g([["a", ["x"]], ["b", []]]) : string[]
+>g : <V>(x: readonly (readonly [string, V])[]) => V
+>[["a", ["x"]], ["b", []]] : [string, string[]][]
+>["a", ["x"]] : [string, string[]]
+>"a" : "a"
+>["x"] : string[]
+>"x" : "x"
+>["b", []] : [string, never[]]
+>"b" : "b"
+>[] : never[]
+
+const m: ReadonlyMap<string, readonly string[]> = new Map([["a", ["--x"]], ["b", []]] as const);
+>m : ReadonlyMap<string, readonly string[]>
+>new Map([["a", ["--x"]], ["b", []]] as const) : Map<"a" | "b", readonly [] | readonly ["--x"]>
+>Map : MapConstructor
+>[["a", ["--x"]], ["b", []]] as const : readonly [readonly ["a", readonly ["--x"]], readonly ["b", readonly []]]
+>[["a", ["--x"]], ["b", []]] : readonly [readonly ["a", readonly ["--x"]], readonly ["b", readonly []]]
+>["a", ["--x"]] : readonly ["a", readonly ["--x"]]
+>"a" : "a"
+>["--x"] : readonly ["--x"]
+>"--x" : "--x"
+>["b", []] : readonly ["b", readonly []]
+>"b" : "b"
+>[] : readonly []
+

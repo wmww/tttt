@@ -849,7 +849,7 @@ static void add_nested_array_literals(Checker* me, Inference* inf, Expr const* e
         for_each (i, vec_expr, &expr->array) any_array |= i->tag == EXPR_ARRAY;
         for (u32 j = 0; j < members.len; j++) {
             Ty const* member = members.data[j];
-            bool array_like = ty_is_tuple(member) || ty_is_array(me, member);
+            bool array_like = ty_tuple_shape(member) || ty_is_array(me, member);
             if (array_like && any_array) add_array_literal(inf, member);
             u32 looked = 0;
             for_each (i, vec_expr, &expr->array) {
@@ -867,7 +867,8 @@ static void add_nested_array_literals(Checker* me, Inference* inf, Expr const* e
         for_each (i, vec_expr, &expr->array) {
             if (i->tag == EXPR_SPREAD || n >= elements.len) return;
             Ty const* element = elements.data[n++];
-            if (i->tag == EXPR_ARRAY && (ty_is_tuple(element) || ty_is_array(me, element))) add_array_literal(inf, element);
+            // (The empty tuple too, its own target: ty_tuple_shape())
+            if (i->tag == EXPR_ARRAY && (ty_tuple_shape(element) || ty_is_array(me, element))) add_array_literal(inf, element);
             if (i->tag == EXPR_ARRAY || i->tag == EXPR_OBJECT) add_nested_array_literals(me, inf, i, element, nullptr, depth + 1);
         }
     } else if (expr->tag == EXPR_OBJECT) {
@@ -881,7 +882,7 @@ static void add_nested_array_literals(Checker* me, Inference* inf, Expr const* e
                 ty_find_prop(me, target, name) : (FoundProp){0};
             Ty const* nested_target = target_prop.found ? target_prop.type : nullptr;
             if (nested_target && !(nested_target->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
-            if (i->value.tag == EXPR_ARRAY && (ty_is_tuple(prop.type) || ty_is_array(me, prop.type))) add_array_literal(inf, prop.type);
+            if (i->value.tag == EXPR_ARRAY && (ty_tuple_shape(prop.type) || ty_is_array(me, prop.type))) add_array_literal(inf, prop.type);
             add_nested_array_literals(me, inf, &i->value, prop.type, nested_target, depth + 1);
         }
     }
@@ -890,9 +891,13 @@ static void add_nested_array_literals(Checker* me, Inference* inf, Expr const* e
 static void infer_from_arg(Checker* me, Inference* inf, ParamShape const* shape, Args const* args, u32 i) {
     Ty const* param_type = shape_type_at(shape, i);
     Arg const* arg = &args->data[i];
-    bool literal = arg->type && !arg->spread && !arg->part_of_spread && arg->expr->tag == EXPR_ARRAY;
+    // (Through a const assertion: its type is the literal's own, made readonly, which tsc's checkAssertion keeps an array
+    // literal type, `new Map([["a", ["x"]], ["b", []]] as const)`)
+    Expr const* expr = arg->expr;
+    while (expr->tag == EXPR_AS_TYPE && as_type_is_const(expr->as_type)) expr = &expr->as_type->expr;
+    bool literal = arg->type && !arg->spread && !arg->part_of_spread && expr->tag == EXPR_ARRAY;
     if (literal && ty_is_array(me, arg->type)) add_array_literal(inf, arg->type);
-    if (arg->type && !arg->spread && !arg->part_of_spread) add_nested_array_literals(me, inf, arg->expr, arg->type, param_type, 0);
+    if (arg->type && !arg->spread && !arg->part_of_spread) add_nested_array_literals(me, inf, expr, arg->type, param_type, 0);
     // (A tuple one is a literal candidate where it is inferred from as it is, see co_literals)
     inf->arg_tuple_literal = literal && ty_is_tuple(arg->type) ? arg->type : nullptr;
     if (param_type && args->data[i].type) infer_types(me, inf, args->data[i].type, param_type, INFER_PRIORITY_NORMAL);
