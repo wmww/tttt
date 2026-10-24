@@ -1,0 +1,97 @@
+//// [test/cases/ttttOverloadFailureBeforeErrorReport.ts] ////
+
+=== ttttOverloadFailureBeforeErrorReport.ts ===
+// A call failing on a candidate's first check (generic calls among the arguments left out: tsc's SkipGenericFunctions)
+// is taken to return what inferSignatureInstantiationForOverloadFailure infers before the errors are reported; their
+// report checks the arguments in full and resolves those calls, but too late: nothing is inferred from them, the type
+// parameter is its constraint (opencode's node-build.test.ts, `makeGlobalNode({ layer: Layer.effect(...) })`)
+interface Box<A, B> { a: A; b: B }
+>Box : Symbol(Box, Decl(ttttOverloadFailureBeforeErrorReport.ts, 0, 0))
+>A : Symbol(A, Decl(ttttOverloadFailureBeforeErrorReport.ts, 4, 14))
+>B : Symbol(B, Decl(ttttOverloadFailureBeforeErrorReport.ts, 4, 16))
+>a : Symbol(Box.a, Decl(ttttOverloadFailureBeforeErrorReport.ts, 4, 21))
+>A : Symbol(A, Decl(ttttOverloadFailureBeforeErrorReport.ts, 4, 14))
+>b : Symbol(Box.b, Decl(ttttOverloadFailureBeforeErrorReport.ts, 4, 27))
+>B : Symbol(B, Decl(ttttOverloadFailureBeforeErrorReport.ts, 4, 16))
+
+declare const mk: { <A>(a: A): <B>(b: B) => Box<A, B>; <A, B>(a: A, b: B): Box<A, B> };
+>mk : Symbol(mk, Decl(ttttOverloadFailureBeforeErrorReport.ts, 5, 13))
+>A : Symbol(A, Decl(ttttOverloadFailureBeforeErrorReport.ts, 5, 21))
+>a : Symbol(a, Decl(ttttOverloadFailureBeforeErrorReport.ts, 5, 24))
+>A : Symbol(A, Decl(ttttOverloadFailureBeforeErrorReport.ts, 5, 21))
+>B : Symbol(B, Decl(ttttOverloadFailureBeforeErrorReport.ts, 5, 32))
+>b : Symbol(b, Decl(ttttOverloadFailureBeforeErrorReport.ts, 5, 35))
+>B : Symbol(B, Decl(ttttOverloadFailureBeforeErrorReport.ts, 5, 32))
+>Box : Symbol(Box, Decl(ttttOverloadFailureBeforeErrorReport.ts, 0, 0))
+>A : Symbol(A, Decl(ttttOverloadFailureBeforeErrorReport.ts, 5, 21))
+>B : Symbol(B, Decl(ttttOverloadFailureBeforeErrorReport.ts, 5, 32))
+>A : Symbol(A, Decl(ttttOverloadFailureBeforeErrorReport.ts, 5, 56))
+>B : Symbol(B, Decl(ttttOverloadFailureBeforeErrorReport.ts, 5, 58))
+>a : Symbol(a, Decl(ttttOverloadFailureBeforeErrorReport.ts, 5, 62))
+>A : Symbol(A, Decl(ttttOverloadFailureBeforeErrorReport.ts, 5, 56))
+>b : Symbol(b, Decl(ttttOverloadFailureBeforeErrorReport.ts, 5, 67))
+>B : Symbol(B, Decl(ttttOverloadFailureBeforeErrorReport.ts, 5, 58))
+>Box : Symbol(Box, Decl(ttttOverloadFailureBeforeErrorReport.ts, 0, 0))
+>A : Symbol(A, Decl(ttttOverloadFailureBeforeErrorReport.ts, 5, 56))
+>B : Symbol(B, Decl(ttttOverloadFailureBeforeErrorReport.ts, 5, 58))
+
+declare function node<I extends Box<unknown, unknown>>(input: { layer: I; name: string }): I["a"];
+>node : Symbol(node, Decl(ttttOverloadFailureBeforeErrorReport.ts, 5, 87))
+>I : Symbol(I, Decl(ttttOverloadFailureBeforeErrorReport.ts, 6, 22))
+>Box : Symbol(Box, Decl(ttttOverloadFailureBeforeErrorReport.ts, 0, 0))
+>input : Symbol(input, Decl(ttttOverloadFailureBeforeErrorReport.ts, 6, 55))
+>layer : Symbol(layer, Decl(ttttOverloadFailureBeforeErrorReport.ts, 6, 63))
+>I : Symbol(I, Decl(ttttOverloadFailureBeforeErrorReport.ts, 6, 22))
+>name : Symbol(name, Decl(ttttOverloadFailureBeforeErrorReport.ts, 6, 73))
+>I : Symbol(I, Decl(ttttOverloadFailureBeforeErrorReport.ts, 6, 22))
+
+const r = node({ layer: mk(1, 2) });
+>r : Symbol(r, Decl(ttttOverloadFailureBeforeErrorReport.ts, 7, 5))
+>node : Symbol(node, Decl(ttttOverloadFailureBeforeErrorReport.ts, 5, 87))
+>layer : Symbol(layer, Decl(ttttOverloadFailureBeforeErrorReport.ts, 7, 16))
+>mk : Symbol(mk, Decl(ttttOverloadFailureBeforeErrorReport.ts, 5, 13))
+
+declare function node2<I extends Box<unknown, unknown>>(layer: I, name: string): I["a"];
+>node2 : Symbol(node2, Decl(ttttOverloadFailureBeforeErrorReport.ts, 7, 36))
+>I : Symbol(I, Decl(ttttOverloadFailureBeforeErrorReport.ts, 8, 23))
+>Box : Symbol(Box, Decl(ttttOverloadFailureBeforeErrorReport.ts, 0, 0))
+>layer : Symbol(layer, Decl(ttttOverloadFailureBeforeErrorReport.ts, 8, 56))
+>I : Symbol(I, Decl(ttttOverloadFailureBeforeErrorReport.ts, 8, 23))
+>name : Symbol(name, Decl(ttttOverloadFailureBeforeErrorReport.ts, 8, 65))
+>I : Symbol(I, Decl(ttttOverloadFailureBeforeErrorReport.ts, 8, 23))
+
+const r2 = node2(mk(1, 2));
+>r2 : Symbol(r2, Decl(ttttOverloadFailureBeforeErrorReport.ts, 9, 5))
+>node2 : Symbol(node2, Decl(ttttOverloadFailureBeforeErrorReport.ts, 7, 36))
+>mk : Symbol(mk, Decl(ttttOverloadFailureBeforeErrorReport.ts, 5, 13))
+
+const r3 = node2(mk(1, 2), 5);
+>r3 : Symbol(r3, Decl(ttttOverloadFailureBeforeErrorReport.ts, 10, 5))
+>node2 : Symbol(node2, Decl(ttttOverloadFailureBeforeErrorReport.ts, 7, 36))
+>mk : Symbol(mk, Decl(ttttOverloadFailureBeforeErrorReport.ts, 5, 13))
+
+declare function node4<I extends Box<unknown, unknown>>(input: { layer: I; name: string }, x: number): I["a"];
+>node4 : Symbol(node4, Decl(ttttOverloadFailureBeforeErrorReport.ts, 10, 30))
+>I : Symbol(I, Decl(ttttOverloadFailureBeforeErrorReport.ts, 11, 23))
+>Box : Symbol(Box, Decl(ttttOverloadFailureBeforeErrorReport.ts, 0, 0))
+>input : Symbol(input, Decl(ttttOverloadFailureBeforeErrorReport.ts, 11, 56))
+>layer : Symbol(layer, Decl(ttttOverloadFailureBeforeErrorReport.ts, 11, 64))
+>I : Symbol(I, Decl(ttttOverloadFailureBeforeErrorReport.ts, 11, 23))
+>name : Symbol(name, Decl(ttttOverloadFailureBeforeErrorReport.ts, 11, 74))
+>x : Symbol(x, Decl(ttttOverloadFailureBeforeErrorReport.ts, 11, 90))
+>I : Symbol(I, Decl(ttttOverloadFailureBeforeErrorReport.ts, 11, 23))
+
+const r4 = node4({ layer: mk(1, 2), name: "" }, "");
+>r4 : Symbol(r4, Decl(ttttOverloadFailureBeforeErrorReport.ts, 12, 5))
+>node4 : Symbol(node4, Decl(ttttOverloadFailureBeforeErrorReport.ts, 10, 30))
+>layer : Symbol(layer, Decl(ttttOverloadFailureBeforeErrorReport.ts, 12, 18))
+>mk : Symbol(mk, Decl(ttttOverloadFailureBeforeErrorReport.ts, 5, 13))
+>name : Symbol(name, Decl(ttttOverloadFailureBeforeErrorReport.ts, 12, 35))
+
+const r5 = node({ layer: mk(1, 2), name: 5 });
+>r5 : Symbol(r5, Decl(ttttOverloadFailureBeforeErrorReport.ts, 13, 5))
+>node : Symbol(node, Decl(ttttOverloadFailureBeforeErrorReport.ts, 5, 87))
+>layer : Symbol(layer, Decl(ttttOverloadFailureBeforeErrorReport.ts, 13, 17))
+>mk : Symbol(mk, Decl(ttttOverloadFailureBeforeErrorReport.ts, 5, 13))
+>name : Symbol(name, Decl(ttttOverloadFailureBeforeErrorReport.ts, 13, 34))
+

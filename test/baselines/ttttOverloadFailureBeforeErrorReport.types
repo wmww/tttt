@@ -1,0 +1,93 @@
+//// [test/cases/ttttOverloadFailureBeforeErrorReport.ts] ////
+
+=== ttttOverloadFailureBeforeErrorReport.ts ===
+// A call failing on a candidate's first check (generic calls among the arguments left out: tsc's SkipGenericFunctions)
+// is taken to return what inferSignatureInstantiationForOverloadFailure infers before the errors are reported; their
+// report checks the arguments in full and resolves those calls, but too late: nothing is inferred from them, the type
+// parameter is its constraint (opencode's node-build.test.ts, `makeGlobalNode({ layer: Layer.effect(...) })`)
+interface Box<A, B> { a: A; b: B }
+>a : A
+>b : B
+
+declare const mk: { <A>(a: A): <B>(b: B) => Box<A, B>; <A, B>(a: A, b: B): Box<A, B> };
+>mk : { <A>(a: A): <B>(b: B) => Box<A, B>; <A, B>(a: A, b: B): Box<A, B>; }
+>a : A
+>b : B
+>a : A
+>b : B
+
+declare function node<I extends Box<unknown, unknown>>(input: { layer: I; name: string }): I["a"];
+>node : <I extends Box<unknown, unknown>>(input: { layer: I; name: string; }) => I["a"]
+>input : { layer: I; name: string; }
+>layer : I
+>name : string
+
+const r = node({ layer: mk(1, 2) });
+>r : unknown
+>node({ layer: mk(1, 2) }) : unknown
+>node : <I extends Box<unknown, unknown>>(input: { layer: I; name: string; }) => I["a"]
+>{ layer: mk(1, 2) } : { layer: Box<number, number>; }
+>layer : Box<number, number>
+>mk(1, 2) : Box<number, number>
+>mk : { <A>(a: A): <B>(b: B) => Box<A, B>; <A, B>(a: A, b: B): Box<A, B>; }
+>1 : 1
+>2 : 2
+
+declare function node2<I extends Box<unknown, unknown>>(layer: I, name: string): I["a"];
+>node2 : <I extends Box<unknown, unknown>>(layer: I, name: string) => I["a"]
+>layer : I
+>name : string
+
+const r2 = node2(mk(1, 2));
+>r2 : unknown
+>node2(mk(1, 2)) : unknown
+>node2 : <I extends Box<unknown, unknown>>(layer: I, name: string) => I["a"]
+>mk(1, 2) : Box<number, number>
+>mk : { <A>(a: A): <B>(b: B) => Box<A, B>; <A, B>(a: A, b: B): Box<A, B>; }
+>1 : 1
+>2 : 2
+
+const r3 = node2(mk(1, 2), 5);
+>r3 : unknown
+>node2(mk(1, 2), 5) : unknown
+>node2 : <I extends Box<unknown, unknown>>(layer: I, name: string) => I["a"]
+>mk(1, 2) : Box<number, number>
+>mk : { <A>(a: A): <B>(b: B) => Box<A, B>; <A, B>(a: A, b: B): Box<A, B>; }
+>1 : 1
+>2 : 2
+>5 : 5
+
+declare function node4<I extends Box<unknown, unknown>>(input: { layer: I; name: string }, x: number): I["a"];
+>node4 : <I extends Box<unknown, unknown>>(input: { layer: I; name: string; }, x: number) => I["a"]
+>input : { layer: I; name: string; }
+>layer : I
+>name : string
+>x : number
+
+const r4 = node4({ layer: mk(1, 2), name: "" }, "");
+>r4 : unknown
+>node4({ layer: mk(1, 2), name: "" }, "") : unknown
+>node4 : <I extends Box<unknown, unknown>>(input: { layer: I; name: string; }, x: number) => I["a"]
+>{ layer: mk(1, 2), name: "" } : { layer: Box<number, number>; name: string; }
+>layer : Box<number, number>
+>mk(1, 2) : Box<number, number>
+>mk : { <A>(a: A): <B>(b: B) => Box<A, B>; <A, B>(a: A, b: B): Box<A, B>; }
+>1 : 1
+>2 : 2
+>name : string
+>"" : ""
+>"" : ""
+
+const r5 = node({ layer: mk(1, 2), name: 5 });
+>r5 : unknown
+>node({ layer: mk(1, 2), name: 5 }) : unknown
+>node : <I extends Box<unknown, unknown>>(input: { layer: I; name: string; }) => I["a"]
+>{ layer: mk(1, 2), name: 5 } : { layer: Box<number, number>; name: number; }
+>layer : Box<number, number>
+>mk(1, 2) : Box<number, number>
+>mk : { <A>(a: A): <B>(b: B) => Box<A, B>; <A, B>(a: A, b: B): Box<A, B>; }
+>1 : 1
+>2 : 2
+>name : number
+>5 : 5
+

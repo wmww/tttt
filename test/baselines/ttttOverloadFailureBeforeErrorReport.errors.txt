@@ -1,0 +1,36 @@
+ttttOverloadFailureBeforeErrorReport.ts(8,16): error TS2741: Property 'name' is missing in type '{ layer: Box<number, number>; }' but required in type '{ layer: Box<unknown, unknown>; name: string; }'.
+ttttOverloadFailureBeforeErrorReport.ts(10,12): error TS2554: Expected 2 arguments, but got 1.
+ttttOverloadFailureBeforeErrorReport.ts(11,28): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+ttttOverloadFailureBeforeErrorReport.ts(13,49): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+ttttOverloadFailureBeforeErrorReport.ts(14,36): error TS2322: Type 'number' is not assignable to type 'string'.
+
+
+==== ttttOverloadFailureBeforeErrorReport.ts (5 errors) ====
+    // A call failing on a candidate's first check (generic calls among the arguments left out: tsc's SkipGenericFunctions)
+    // is taken to return what inferSignatureInstantiationForOverloadFailure infers before the errors are reported; their
+    // report checks the arguments in full and resolves those calls, but too late: nothing is inferred from them, the type
+    // parameter is its constraint (opencode's node-build.test.ts, `makeGlobalNode({ layer: Layer.effect(...) })`)
+    interface Box<A, B> { a: A; b: B }
+    declare const mk: { <A>(a: A): <B>(b: B) => Box<A, B>; <A, B>(a: A, b: B): Box<A, B> };
+    declare function node<I extends Box<unknown, unknown>>(input: { layer: I; name: string }): I["a"];
+    const r = node({ layer: mk(1, 2) });
+                   ~~~~~~~~~~~~~~~~~~~
+!!! error TS2741: Property 'name' is missing in type '{ layer: Box<number, number>; }' but required in type '{ layer: Box<unknown, unknown>; name: string; }'.
+!!! related TS2728 ttttOverloadFailureBeforeErrorReport.ts:7:75: 'name' is declared here.
+    declare function node2<I extends Box<unknown, unknown>>(layer: I, name: string): I["a"];
+    const r2 = node2(mk(1, 2));
+               ~~~~~
+!!! error TS2554: Expected 2 arguments, but got 1.
+!!! related TS6210 ttttOverloadFailureBeforeErrorReport.ts:9:67: An argument for 'name' was not provided.
+    const r3 = node2(mk(1, 2), 5);
+                               ~
+!!! error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+    declare function node4<I extends Box<unknown, unknown>>(input: { layer: I; name: string }, x: number): I["a"];
+    const r4 = node4({ layer: mk(1, 2), name: "" }, "");
+                                                    ~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    const r5 = node({ layer: mk(1, 2), name: 5 });
+                                       ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+!!! related TS6500 ttttOverloadFailureBeforeErrorReport.ts:7:75: The expected type comes from property 'name' which is declared here on type '{ layer: Box<unknown, unknown>; name: string; }'
+    

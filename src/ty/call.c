@@ -2324,6 +2324,44 @@ static TyMapper const* explicit_type_arguments(Checker* me, Signature const* sig
 // createUnionOfSignaturesForOverloadFailure): each parameter the union of the overloads' at its position, a rest
 // parameter the array of the union of their rest elements, `this` the union of theirs, all of their returns at once
 // (`string & number` is never)
+// Which overload an overload failure is taken to be (tsc's pickLongestCandidateSignature): the first one with a rest
+// parameter or enough parameters for the arguments (getLongestCandidateIndex), when it got as far as being checked,
+// else the last unfit candidate. `infer`: the generic signature to infer again (inferSignatureInstantiationForOverloadFailure)
+typedef struct FailurePick {
+    u32 picked;
+    Signature const* longest;
+    bool longest_unchecked;
+    Signature const* infer;
+} FailurePick;
+
+static FailurePick failure_pick(
+    Checker* me, Signature* const* signatures, u32 count, Candidate const* unfit, u32 unfit_count, Args const* args,
+    CallInfo const* info
+) {
+    FailurePick ret = { .picked = unfit_count - 1 };
+    for (u32 i = 0; i < count; i++) {
+        if (!ty_signature_has_rest(me, signatures[i]) && ty_signature_param_count(me, signatures[i]) < args->len) continue;
+        ret.longest = signatures[i];
+        for (u32 u = 0; u < unfit_count; u++) {
+            if (unfit[u].sig == signatures[i]) ret.picked = u;
+        }
+        break;
+    }
+    // (A non-generic one that wasn't checked, its type argument count being wrong: `f<T>(...)` of `f(s:
+    // string, n: number): number; f<T>(n: number, t: T): T` returns number)
+    // (So is a generic one with explicit type arguments, which are cut or filled in for it: getTypeArgumentsFromNodes)
+    Signature const* longest = ret.longest;
+    ret.longest_unchecked = longest && unfit[ret.picked].sig != longest &&
+        (!sig_res(me, longest)->type_params.len || info->type_arg_nodes);
+    Signature const* fallback = ret.longest_unchecked ? longest : unfit[ret.picked].sig;
+    if (longest && sig_res(me, longest)->type_params.len && unfit[ret.picked].sig != longest && !info->type_arg_nodes) {
+        ret.infer = longest;
+    } else if (sig_res(me, fallback)->type_params.len && !info->type_arg_nodes) {
+        ret.infer = fallback;
+    }
+    return ret;
+}
+
 static Signature const* overload_failure_union_signature(Checker* me, Signature* const* signatures, u32 count) {
     u32 min_args = UINT32_MAX, max_params = 0;
     bool some_rest = false, some_this = false;
@@ -2662,6 +2700,21 @@ static Resolution resolve_with_signatures_inner(
     if (ret.chosen.sig) {
         ret.ret = resolved_return_type(me, &ret.chosen);
     } else {
+        bool some_generic = false;
+        for (u32 i = 0; i < count; i++) {
+            signature_resolve(me, signatures[i]);
+            some_generic |= sig_res(me, signatures[i])->type_params.len > 0;
+        }
+        // The failure's inference comes before the errors are reported (tsc's resolveCall: getCandidateForOverloadFailure,
+        // then reportCallResolutionErrors), whose full check of the arguments resolves the generic calls among them:
+        // one that a candidate's first check left out (SkipGenericFunctions) is still unresolved for it, and nothing is
+        // inferred from it (`node({ layer: mk(1, 2) })` failing on another property infers no layer type)
+        FailurePick pick = {0};
+        Candidate pre_inferred = {0};
+        if (unfit_count && !(count > 1 && !some_generic)) {
+            pick = failure_pick(me, signatures, count, unfit, unfit_count, args, info);
+            if (pick.infer) pre_inferred = make_candidate(me, pick.infer, args, info, true, true);
+        }
         if (errs) {
             if (!type_argument_arity_ok) {
                 // (A `super(...)`'s are the heritage clause's, which reports them: TS2314/TS2315. The call itself then
@@ -2690,11 +2743,6 @@ static Resolution resolve_with_signatures_inner(
         // What the call is taken to return anyway (tsc's getCandidateForOverloadFailure): of several non-generic
         // overloads, all of their returns at once (createUnionOfSignaturesForOverloadFailure: `string & number` is
         // never), else the candidate that got furthest, or every possibility
-        bool some_generic = false;
-        for (u32 i = 0; i < count; i++) {
-            signature_resolve(me, signatures[i]);
-            some_generic |= sig_res(me, signatures[i])->type_params.len > 0;
-        }
         if (count > 1 && !some_generic) {
             // (The arguments are checked against it: a callback's parameters get the union of what each overload
             // gives them, which is no contextual signature unless they agree)
@@ -2709,20 +2757,9 @@ static Resolution resolve_with_signatures_inner(
             // arguments left out (tsc's inferSignatureInstantiationForOverloadFailure). Which one: tsc's
             // pickLongestCandidateSignature, the first overload with a rest parameter or enough parameters for the
             // arguments (getLongestCandidateIndex), when that one got as far as being checked
-            u32 picked = unfit_count - 1;
-            Signature const* longest = nullptr;
-            for (u32 i = 0; i < count; i++) {
-                if (!ty_signature_has_rest(me, signatures[i]) && ty_signature_param_count(me, signatures[i]) < args->len) continue;
-                longest = signatures[i];
-                for (u32 u = 0; u < unfit_count; u++) {
-                    if (unfit[u].sig == signatures[i]) picked = u;
-                }
-                break;
-            }
-            // (A non-generic one that wasn't checked, its type argument count being wrong: `f<T>(...)` of `f(s:
-            // string, n: number): number; f<T>(n: number, t: T): T` returns number)
-            // (So is a generic one with explicit type arguments, which are cut or filled in for it: getTypeArgumentsFromNodes)
-            bool longest_unchecked = longest && unfit[picked].sig != longest && (!sig_res(me, longest)->type_params.len || info->type_arg_nodes);
+            u32 picked = pick.picked;
+            Signature const* longest = pick.longest;
+            bool longest_unchecked = pick.longest_unchecked;
             Candidate fallback = longest_unchecked ? (Candidate){ .sig = longest } : unfit[picked];
             if (info->type_arg_nodes && sig_res(me, fallback.sig)->type_params.len &&
                 (info->type_args.len < sig_res(me, fallback.sig)->type_params.len || longest_unchecked)
@@ -2737,9 +2774,9 @@ static Resolution resolve_with_signatures_inner(
             if (longest && sig_res(me, longest)->type_params.len && unfit[picked].sig != longest && !info->type_arg_nodes) {
                 // A generic one that wasn't checked (too many parameters for the arguments: vitest's `spyOn(o, k,
                 // accessor)` before `spyOn(o, k)`) is still the one, inferred from the arguments
-                fallback = make_candidate(me, longest, args, info, true, true);
+                fallback = pre_inferred;
             } else if (sig_res(me, fallback.sig)->type_params.len && !info->type_arg_nodes) {
-                fallback = make_candidate(me, fallback.sig, args, info, true, true);
+                fallback = pre_inferred;
                 // (The arguments are left as checked against the candidate, which is what the types baseline shows)
                 ParamShape shape;
                 call_param_shape(me, info, unfit[picked].sig, unfit[picked].mapper, &shape);

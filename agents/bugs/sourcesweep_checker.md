@@ -442,7 +442,11 @@ which the sweep's cache no longer lists (its 62 configs are the packages'), so n
   - So the inference that yields Layer.Any depends on something in effect's Layer or Context.Service types that hasn't
     been isolated (Pipeable/Unify members, Context.Key variance), and the return difference comes after it.
   - 2026-10-24 at 10941157b: still, projdiff core/tsconfig.tests.json tsgo 5315 / tttt 5312: -TS2322 node-build.test.ts:49 (and the
-    two -TS2488 below). (claimed: fixF) [open]
+    two -TS2488 below). Cause (fixF): the first call's candidate failed its first check (Layer.effect, a generic call
+    returning a function, left out: SkipGenericFunctions), so tsc never resolved that call before getCandidateForOverloadFailure;
+    the fallback inference skips it and Implementation is its constraint Layer.Any. tttt reported the errors first, whose
+    full argument check resolved the call, and the fallback then inferred from it. Now call.c infers the fallback before
+    reporting (failure_pick). Repro test/cases/ttttOverloadFailureBeforeErrorReport.ts; projdiff byte-identical. [fixed PENDING]
 - **opencode/packages/core/tsconfig.tests.json: -TS2488 at test/session-owned.test.ts:197 and :845** ("Type 'never'
   must have a '[Symbol.iterator]()' method", tsgo only), found by the 2026-10-24 at 10941157b recheck, uninvestigated. Cause: an overload failure's fallback inference (SkipGenericFunctions) inferred from an argument that is a call returning a generic function, `e.pipe(Effect.satisfiesServicesType<never>(), Effect.setContext(Context.empty()))`; tsc's checkExpression makes it anyFunctionType there (instantiateTypeWithSingleGenericCallSignature), so the failed pipe's C stays never and `yield* never` is TS2488. Repro test/cases/ttttOverloadFailureSkipsGenericCallResult.ts. [fixed 9ba61e39e]
 - **JSX children elaboration under a generic target** (typewriter.tsx:52, root project). tsgo reports TS2746
