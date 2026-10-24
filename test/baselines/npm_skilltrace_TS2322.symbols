@@ -1,0 +1,1537 @@
+//// [test/cases/npm_skilltrace_TS2322.ts] ////
+
+=== app/.server/db/helpers.ts ===
+import {
+  customType,
+>customType : Symbol(customType, Decl(helpers.ts, 0, 8))
+
+  index,
+>index : Symbol(index, Decl(helpers.ts, 1, 13))
+
+  integer,
+>integer : Symbol(integer, Decl(helpers.ts, 2, 8))
+
+  text,
+>text : Symbol(text, Decl(helpers.ts, 3, 10))
+
+  uniqueIndex,
+>uniqueIndex : Symbol(uniqueIndex, Decl(helpers.ts, 4, 7))
+
+  type AnySQLiteColumn,
+>AnySQLiteColumn : Symbol(AnySQLiteColumn, Decl(helpers.ts, 5, 14))
+
+  type IndexColumn,
+>IndexColumn : Symbol(IndexColumn, Decl(helpers.ts, 6, 23))
+
+  type UpdateDeleteAction,
+>UpdateDeleteAction : Symbol(UpdateDeleteAction, Decl(helpers.ts, 7, 19))
+
+} from 'drizzle-orm/sqlite-core'
+export const timestamp = customType<{ data: Date; driverData: string }>({
+>timestamp : Symbol(timestamp, Decl(helpers.ts, 10, 12))
+>customType : Symbol(customType, Decl(helpers.ts, 0, 8))
+>data : Symbol(data, Decl(helpers.ts, 10, 37))
+>Date : Symbol(Date, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2020.date.d.ts, --, --) ... and 1 more)
+>driverData : Symbol(driverData, Decl(helpers.ts, 10, 49))
+
+  dataType: (): string => 'text',
+>dataType : Symbol(dataType, Decl(helpers.ts, 10, 73))
+
+})
+export function id() {
+>id : Symbol(id, Decl(helpers.ts, 12, 2))
+
+  return integer().primaryKey({ autoIncrement: true })
+>integer : Symbol(integer, Decl(helpers.ts, 2, 8))
+>autoIncrement : Symbol(autoIncrement, Decl(helpers.ts, 14, 31))
+}
+export function defaultHex(length = 12) {
+>defaultHex : Symbol(defaultHex, Decl(helpers.ts, 15, 1))
+>length : Symbol(length, Decl(helpers.ts, 16, 27))
+
+  return text()
+>text : Symbol(text, Decl(helpers.ts, 3, 10))
+}
+export function defaultNow() {
+>defaultNow : Symbol(defaultNow, Decl(helpers.ts, 18, 1))
+
+  return timestamp()
+>timestamp : Symbol(timestamp, Decl(helpers.ts, 10, 12))
+}
+type Table = Record<string, AnySQLiteColumn>
+>Table : Symbol(Table, Decl(helpers.ts, 21, 1))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>AnySQLiteColumn : Symbol(AnySQLiteColumn, Decl(helpers.ts, 5, 14))
+
+export function idx(table: Table, ...names: string[]) {
+>idx : Symbol(idx, Decl(helpers.ts, 22, 44))
+>table : Symbol(table, Decl(helpers.ts, 23, 20))
+>Table : Symbol(Table, Decl(helpers.ts, 21, 1))
+>names : Symbol(names, Decl(helpers.ts, 23, 33))
+
+  return buildIndex(index, table, ...names)
+>buildIndex : Symbol(buildIndex, Decl(helpers.ts, 25, 1))
+>index : Symbol(index, Decl(helpers.ts, 1, 13))
+>table : Symbol(table, Decl(helpers.ts, 23, 20))
+>names : Symbol(names, Decl(helpers.ts, 23, 33))
+}
+function buildIndex(
+>buildIndex : Symbol(buildIndex, Decl(helpers.ts, 25, 1))
+
+  indexFn: typeof index | typeof uniqueIndex,
+>indexFn : Symbol(indexFn, Decl(helpers.ts, 26, 20))
+>index : Symbol(index, Decl(helpers.ts, 1, 13))
+>uniqueIndex : Symbol(uniqueIndex, Decl(helpers.ts, 4, 7))
+
+  table: Table,
+>table : Symbol(table, Decl(helpers.ts, 27, 45))
+>Table : Symbol(Table, Decl(helpers.ts, 21, 1))
+
+  ...names: string[]
+>names : Symbol(names, Decl(helpers.ts, 28, 15))
+
+) {
+  let columns = names.map((name) => table[name])
+>columns : Symbol(columns, Decl(helpers.ts, 31, 5))
+>names.map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>names : Symbol(names, Decl(helpers.ts, 28, 15))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>name : Symbol(name, Decl(helpers.ts, 31, 27))
+>table : Symbol(table, Decl(helpers.ts, 27, 45))
+>name : Symbol(name, Decl(helpers.ts, 31, 27))
+
+  let tableName = columns[0]?.table[Symbol.for('drizzle:Name')]
+>tableName : Symbol(tableName, Decl(helpers.ts, 32, 5))
+>columns : Symbol(columns, Decl(helpers.ts, 31, 5))
+>Symbol.for : Symbol(SymbolConstructor.for, Decl(lib.es2015.symbol.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>for : Symbol(SymbolConstructor.for, Decl(lib.es2015.symbol.d.ts, --, --))
+
+  let indexName = `${tableName}_${names.join('_')}_index`
+>indexName : Symbol(indexName, Decl(helpers.ts, 33, 5))
+>tableName : Symbol(tableName, Decl(helpers.ts, 32, 5))
+>names.join : Symbol(Array.join, Decl(lib.es5.d.ts, --, --))
+>names : Symbol(names, Decl(helpers.ts, 28, 15))
+>join : Symbol(Array.join, Decl(lib.es5.d.ts, --, --))
+
+  return indexFn(indexName).on(...(columns as [IndexColumn, ...IndexColumn[]]))
+>indexFn : Symbol(indexFn, Decl(helpers.ts, 26, 20))
+>indexName : Symbol(indexName, Decl(helpers.ts, 33, 5))
+>columns : Symbol(columns, Decl(helpers.ts, 31, 5))
+>IndexColumn : Symbol(IndexColumn, Decl(helpers.ts, 6, 23))
+>IndexColumn : Symbol(IndexColumn, Decl(helpers.ts, 6, 23))
+}
+type Cascade = { onDelete?: UpdateDeleteAction; onUpdate?: UpdateDeleteAction }
+>Cascade : Symbol(Cascade, Decl(helpers.ts, 35, 1))
+>onDelete : Symbol(onDelete, Decl(helpers.ts, 36, 16))
+>UpdateDeleteAction : Symbol(UpdateDeleteAction, Decl(helpers.ts, 7, 19))
+>onUpdate : Symbol(onUpdate, Decl(helpers.ts, 36, 47))
+>UpdateDeleteAction : Symbol(UpdateDeleteAction, Decl(helpers.ts, 7, 19))
+
+type TableWithId = { id: AnySQLiteColumn }
+>TableWithId : Symbol(TableWithId, Decl(helpers.ts, 36, 79))
+>id : Symbol(id, Decl(helpers.ts, 37, 20))
+>AnySQLiteColumn : Symbol(AnySQLiteColumn, Decl(helpers.ts, 5, 14))
+
+export function foreign<T extends TableWithId>(
+>foreign : Symbol(foreign, Decl(helpers.ts, 37, 42))
+>T : Symbol(T, Decl(helpers.ts, 38, 24))
+>TableWithId : Symbol(TableWithId, Decl(helpers.ts, 36, 79))
+
+  tableRef: () => T,
+>tableRef : Symbol(tableRef, Decl(helpers.ts, 38, 47))
+>T : Symbol(T, Decl(helpers.ts, 38, 24))
+
+  { onDelete = 'cascade', onUpdate = 'no action' }: Cascade = {},
+>onDelete : Symbol(onDelete, Decl(helpers.ts, 40, 3))
+>onUpdate : Symbol(onUpdate, Decl(helpers.ts, 40, 25))
+>Cascade : Symbol(Cascade, Decl(helpers.ts, 35, 1))
+
+) {
+  return integer().references(() => tableRef().id, { onDelete, onUpdate })
+>integer : Symbol(integer, Decl(helpers.ts, 2, 8))
+>tableRef().id : Symbol(id, Decl(helpers.ts, 37, 20))
+>tableRef : Symbol(tableRef, Decl(helpers.ts, 38, 47))
+>id : Symbol(id, Decl(helpers.ts, 37, 20))
+>onDelete : Symbol(onDelete, Decl(helpers.ts, 42, 52))
+>onUpdate : Symbol(onUpdate, Decl(helpers.ts, 42, 62))
+}
+=== app/.server/db/index.ts ===
+import { drizzle } from 'drizzle-orm/libsql'
+>drizzle : Symbol(drizzle, Decl(index.ts, 0, 8))
+
+import { dbCredentials } from '../../config/.server/db'
+>dbCredentials : Symbol(dbCredentials, Decl(index.ts, 1, 8))
+
+import * as schema from './schema'
+>schema : Symbol(schema, Decl(index.ts, 2, 6))
+
+export const db = drizzle({
+>db : Symbol(db, Decl(index.ts, 3, 12))
+>drizzle : Symbol(drizzle, Decl(index.ts, 0, 8))
+
+  connection: dbCredentials,
+>connection : Symbol(connection, Decl(index.ts, 3, 27))
+>dbCredentials : Symbol(dbCredentials, Decl(index.ts, 1, 8))
+
+  schema,
+>schema : Symbol(schema, Decl(index.ts, 4, 28))
+
+})
+=== app/.server/db/schema.ts ===
+export { users, userRelations } from './schema/users'
+>users : Symbol(users, Decl(schema.ts, 0, 8))
+>userRelations : Symbol(userRelations, Decl(schema.ts, 0, 15))
+
+=== app/.server/db/schema/notes.ts ===
+import { relations } from 'drizzle-orm'
+>relations : Symbol(relations, Decl(notes.ts, 0, 8))
+
+import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
+>sqliteTable : Symbol(sqliteTable, Decl(notes.ts, 1, 8))
+>text : Symbol(text, Decl(notes.ts, 1, 21))
+
+export const notes = sqliteTable('notes', {
+>notes : Symbol(notes, Decl(notes.ts, 2, 12))
+>sqliteTable : Symbol(sqliteTable, Decl(notes.ts, 1, 8))
+
+})
+export type Select = typeof notes.$inferSelect
+>Select : Symbol(Select, Decl(notes.ts, 3, 2))
+>notes.$inferSelect : Symbol(Table.$inferSelect, Decl(table.d.ts, 4, 6))
+>notes : Symbol(notes, Decl(notes.ts, 2, 12))
+>$inferSelect : Symbol(Table.$inferSelect, Decl(table.d.ts, 4, 6))
+
+export type Insert = typeof notes.$inferInsert
+>Insert : Symbol(Insert, Decl(notes.ts, 4, 46))
+>notes.$inferInsert : Symbol(Table.$inferInsert, Decl(table.d.ts, 5, 54))
+>notes : Symbol(notes, Decl(notes.ts, 2, 12))
+>$inferInsert : Symbol(Table.$inferInsert, Decl(table.d.ts, 5, 54))
+
+export type Update = Partial<Insert>
+>Update : Symbol(Update, Decl(notes.ts, 5, 46))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Insert : Symbol(Insert, Decl(notes.ts, 4, 46))
+
+export const noteRelations = relations(notes, ({ one }) => ({
+>noteRelations : Symbol(noteRelations, Decl(notes.ts, 7, 12))
+>relations : Symbol(relations, Decl(notes.ts, 0, 8))
+>notes : Symbol(notes, Decl(notes.ts, 2, 12))
+>one : Symbol(one, Decl(notes.ts, 7, 48))
+
+}))
+=== app/.server/db/schema/runs.ts ===
+import { relations } from 'drizzle-orm'
+>relations : Symbol(relations, Decl(runs.ts, 0, 8))
+
+import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
+>sqliteTable : Symbol(sqliteTable, Decl(runs.ts, 1, 8))
+>text : Symbol(text, Decl(runs.ts, 1, 21))
+
+export const runs = sqliteTable(
+>runs : Symbol(runs, Decl(runs.ts, 2, 12))
+>sqliteTable : Symbol(sqliteTable, Decl(runs.ts, 1, 8))
+
+  'runs',
+  {
+  },
+)
+export type Select = typeof runs.$inferSelect
+>Select : Symbol(Select, Decl(runs.ts, 6, 1))
+>runs.$inferSelect : Symbol(Table.$inferSelect, Decl(table.d.ts, 4, 6))
+>runs : Symbol(runs, Decl(runs.ts, 2, 12))
+>$inferSelect : Symbol(Table.$inferSelect, Decl(table.d.ts, 4, 6))
+
+export type Insert = typeof runs.$inferInsert
+>Insert : Symbol(Insert, Decl(runs.ts, 7, 45))
+>runs.$inferInsert : Symbol(Table.$inferInsert, Decl(table.d.ts, 5, 54))
+>runs : Symbol(runs, Decl(runs.ts, 2, 12))
+>$inferInsert : Symbol(Table.$inferInsert, Decl(table.d.ts, 5, 54))
+
+export type Update = Partial<Insert>
+>Update : Symbol(Update, Decl(runs.ts, 8, 45))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Insert : Symbol(Insert, Decl(runs.ts, 7, 45))
+
+export type RunBag = Record<string, unknown>
+>RunBag : Symbol(RunBag, Decl(runs.ts, 9, 36))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+export const runRelations = relations(runs, ({ one, many }) => ({
+>runRelations : Symbol(runRelations, Decl(runs.ts, 11, 12))
+>relations : Symbol(relations, Decl(runs.ts, 0, 8))
+>runs : Symbol(runs, Decl(runs.ts, 2, 12))
+>one : Symbol(one, Decl(runs.ts, 11, 46))
+>many : Symbol(many, Decl(runs.ts, 11, 51))
+
+}))
+=== app/.server/db/schema/trace-events.ts ===
+import { relations } from 'drizzle-orm'
+>relations : Symbol(relations, Decl(trace-events.ts, 0, 8))
+
+import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
+>sqliteTable : Symbol(sqliteTable, Decl(trace-events.ts, 1, 8))
+>text : Symbol(text, Decl(trace-events.ts, 1, 21))
+
+export const trace_events = sqliteTable(
+>trace_events : Symbol(trace_events, Decl(trace-events.ts, 2, 12))
+>sqliteTable : Symbol(sqliteTable, Decl(trace-events.ts, 1, 8))
+
+  'trace_events',
+  {
+  },
+)
+export type Select = typeof trace_events.$inferSelect
+>Select : Symbol(Select, Decl(trace-events.ts, 6, 1))
+>trace_events.$inferSelect : Symbol(Table.$inferSelect, Decl(table.d.ts, 4, 6))
+>trace_events : Symbol(trace_events, Decl(trace-events.ts, 2, 12))
+>$inferSelect : Symbol(Table.$inferSelect, Decl(table.d.ts, 4, 6))
+
+export type Insert = typeof trace_events.$inferInsert
+>Insert : Symbol(Insert, Decl(trace-events.ts, 7, 53))
+>trace_events.$inferInsert : Symbol(Table.$inferInsert, Decl(table.d.ts, 5, 54))
+>trace_events : Symbol(trace_events, Decl(trace-events.ts, 2, 12))
+>$inferInsert : Symbol(Table.$inferInsert, Decl(table.d.ts, 5, 54))
+
+export type Update = Partial<Insert>
+>Update : Symbol(Update, Decl(trace-events.ts, 8, 53))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Insert : Symbol(Insert, Decl(trace-events.ts, 7, 53))
+
+export type TraceEventPayload = Record<string, unknown>
+>TraceEventPayload : Symbol(TraceEventPayload, Decl(trace-events.ts, 9, 36))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+export const traceEventRelations = relations(trace_events, ({ one }) => ({
+>traceEventRelations : Symbol(traceEventRelations, Decl(trace-events.ts, 11, 12))
+>relations : Symbol(relations, Decl(trace-events.ts, 0, 8))
+>trace_events : Symbol(trace_events, Decl(trace-events.ts, 2, 12))
+>one : Symbol(one, Decl(trace-events.ts, 11, 61))
+
+}))
+=== app/.server/db/schema/users.ts ===
+import { relations } from 'drizzle-orm'
+>relations : Symbol(relations, Decl(users.ts, 0, 8))
+
+import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
+>sqliteTable : Symbol(sqliteTable, Decl(users.ts, 1, 8))
+>text : Symbol(text, Decl(users.ts, 1, 21))
+
+import { defaultHex, defaultNow, id, idx, timestamp } from '../helpers'
+>defaultHex : Symbol(defaultHex, Decl(users.ts, 2, 8))
+>defaultNow : Symbol(defaultNow, Decl(users.ts, 2, 20))
+>id : Symbol(id, Decl(users.ts, 2, 32))
+>idx : Symbol(idx, Decl(users.ts, 2, 36))
+>timestamp : Symbol(timestamp, Decl(users.ts, 2, 41))
+
+export const users = sqliteTable(
+>users : Symbol(users, Decl(users.ts, 3, 12))
+>sqliteTable : Symbol(sqliteTable, Decl(users.ts, 1, 8))
+
+  'users',
+  {
+    id: id(),
+>id : Symbol(id, Decl(users.ts, 5, 3))
+>id : Symbol(id, Decl(users.ts, 2, 32))
+
+  },
+)
+export type Select = typeof users.$inferSelect
+>Select : Symbol(Select, Decl(users.ts, 8, 1))
+>users.$inferSelect : Symbol(Table.$inferSelect, Decl(table.d.ts, 4, 6))
+>users : Symbol(users, Decl(users.ts, 3, 12))
+>$inferSelect : Symbol(Table.$inferSelect, Decl(table.d.ts, 4, 6))
+
+export type Insert = typeof users.$inferInsert
+>Insert : Symbol(Insert, Decl(users.ts, 9, 46))
+>users.$inferInsert : Symbol(Table.$inferInsert, Decl(table.d.ts, 5, 54))
+>users : Symbol(users, Decl(users.ts, 3, 12))
+>$inferInsert : Symbol(Table.$inferInsert, Decl(table.d.ts, 5, 54))
+
+export type Update = Partial<Insert>
+>Update : Symbol(Update, Decl(users.ts, 10, 46))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Insert : Symbol(Insert, Decl(users.ts, 9, 46))
+
+export type UserBag = {
+>UserBag : Symbol(UserBag, Decl(users.ts, 11, 36))
+}
+export const userRelations = relations(users, ({ many }) => ({
+>userRelations : Symbol(userRelations, Decl(users.ts, 14, 12))
+>relations : Symbol(relations, Decl(users.ts, 0, 8))
+>users : Symbol(users, Decl(users.ts, 3, 12))
+>many : Symbol(many, Decl(users.ts, 14, 48))
+
+}))
+=== app/config/.server/db.ts ===
+import path from 'path'
+>path : Symbol(path, Decl(db.ts, 0, 6))
+
+const dbName = 'local/dev.db'
+>dbName : Symbol(dbName, Decl(db.ts, 1, 5))
+
+const dataDir = process.env.SKILLTRACE_DATA_DIR
+>dataDir : Symbol(dataDir, Decl(db.ts, 2, 5))
+>process : Symbol(process, Decl(globals.d.ts, 0, 11))
+
+  ? path.resolve(process.env.SKILLTRACE_DATA_DIR)
+>path : Symbol(path, Decl(db.ts, 0, 6))
+>process : Symbol(process, Decl(globals.d.ts, 0, 11))
+
+  : path.join(process.cwd(), 'data')
+>path : Symbol(path, Decl(db.ts, 0, 6))
+>process : Symbol(process, Decl(globals.d.ts, 0, 11))
+
+export const dbPath = path.join(dataDir, dbName)
+>dbPath : Symbol(dbPath, Decl(db.ts, 5, 12))
+>path : Symbol(path, Decl(db.ts, 0, 6))
+>dataDir : Symbol(dataDir, Decl(db.ts, 2, 5))
+>dbName : Symbol(dbName, Decl(db.ts, 1, 5))
+
+const isProd = process.env.NODE_ENV === 'production' && !!process.env.DB_URL
+>isProd : Symbol(isProd, Decl(db.ts, 6, 5))
+>process : Symbol(process, Decl(globals.d.ts, 0, 11))
+>process : Symbol(process, Decl(globals.d.ts, 0, 11))
+
+export const dbCredentials = isProd
+>dbCredentials : Symbol(dbCredentials, Decl(db.ts, 7, 12))
+>isProd : Symbol(isProd, Decl(db.ts, 6, 5))
+
+  ? { url: process.env.DB_URL!, authToken: process.env.DB_AUTH_TOKEN! }
+>url : Symbol(url, Decl(db.ts, 8, 5))
+>process : Symbol(process, Decl(globals.d.ts, 0, 11))
+>authToken : Symbol(authToken, Decl(db.ts, 8, 31))
+>process : Symbol(process, Decl(globals.d.ts, 0, 11))
+
+  : { url: `file:${dbPath}` }
+>url : Symbol(url, Decl(db.ts, 9, 5))
+>dbPath : Symbol(dbPath, Decl(db.ts, 5, 12))
+
+=== app/lib/.server/errors.ts ===
+
+=== app/lib/data/hexid.ts ===
+
+/*
+*/
+=== app/lib/data/lens.ts ===
+
+=== app/lib/vite-devtools-json.ts ===
+import type { Plugin, ResolvedConfig } from 'vite'
+>Plugin : Symbol(Plugin, Decl(vite-devtools-json.ts, 0, 13))
+>ResolvedConfig : Symbol(ResolvedConfig, Decl(vite-devtools-json.ts, 0, 21))
+
+=== app/models/.server/base/index.ts ===
+import { db } from '../../../.server/db'
+>db : Symbol(db, Decl(index.ts, 0, 8))
+
+import { buildWhere, getTableName } from './query'
+>buildWhere : Symbol(buildWhere, Decl(index.ts, 1, 8))
+>getTableName : Symbol(getTableName, Decl(index.ts, 1, 20))
+
+import type {
+  QueryConfigFirst,
+>QueryConfigFirst : Symbol(QueryConfigFirst, Decl(index.ts, 2, 13))
+
+  QueryConfigMany,
+>QueryConfigMany : Symbol(QueryConfigMany, Decl(index.ts, 3, 19))
+
+  QueryResult,
+>QueryResult : Symbol(QueryResult, Decl(index.ts, 4, 18))
+
+  Table,
+>Table : Symbol(Table, Decl(index.ts, 5, 14))
+
+  TableName,
+>TableName : Symbol(TableName, Decl(index.ts, 6, 8))
+
+  Where,
+>Where : Symbol(Where, Decl(index.ts, 7, 12))
+
+} from './types'
+export function createModel<T extends Table>(table: T) {
+>createModel : Symbol(createModel, Decl(index.ts, 9, 16))
+>T : Symbol(T, Decl(index.ts, 10, 28))
+>Table : Symbol(Table, Decl(index.ts, 5, 14))
+>table : Symbol(table, Decl(index.ts, 10, 45))
+>T : Symbol(T, Decl(index.ts, 10, 28))
+
+  type First = QueryConfigFirst<T>
+>First : Symbol(First, Decl(index.ts, 10, 56))
+>QueryConfigFirst : Symbol(QueryConfigFirst, Decl(index.ts, 2, 13))
+>T : Symbol(T, Decl(index.ts, 10, 28))
+
+  type Many = QueryConfigMany<T>
+>Many : Symbol(Many, Decl(index.ts, 11, 34))
+>QueryConfigMany : Symbol(QueryConfigMany, Decl(index.ts, 3, 19))
+>T : Symbol(T, Decl(index.ts, 10, 28))
+
+  type Row<C extends Many> = QueryResult<T, C>
+>Row : Symbol(Row, Decl(index.ts, 12, 32))
+>C : Symbol(C, Decl(index.ts, 13, 11))
+>Many : Symbol(Many, Decl(index.ts, 11, 34))
+>QueryResult : Symbol(QueryResult, Decl(index.ts, 4, 18))
+>T : Symbol(T, Decl(index.ts, 10, 28))
+>C : Symbol(C, Decl(index.ts, 13, 11))
+
+  type FindFirst<C extends First> = Promise<Row<C> | undefined>
+>FindFirst : Symbol(FindFirst, Decl(index.ts, 13, 46))
+>C : Symbol(C, Decl(index.ts, 14, 17))
+>First : Symbol(First, Decl(index.ts, 10, 56))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>Row : Symbol(Row, Decl(index.ts, 12, 32))
+>C : Symbol(C, Decl(index.ts, 14, 17))
+
+  let key = getTableName(table) as T['_']['name'] & TableName
+>key : Symbol(key, Decl(index.ts, 15, 5))
+>getTableName : Symbol(getTableName, Decl(index.ts, 1, 20))
+>table : Symbol(table, Decl(index.ts, 10, 45))
+>T : Symbol(T, Decl(index.ts, 10, 28))
+>TableName : Symbol(TableName, Decl(index.ts, 6, 8))
+
+  let query = db.query[key]
+>query : Symbol(query, Decl(index.ts, 16, 5))
+>db.query : Symbol(BaseSQLiteDatabase.query, Decl(db.d.ts, 5, 6))
+>db : Symbol(db, Decl(index.ts, 0, 8))
+>query : Symbol(BaseSQLiteDatabase.query, Decl(db.d.ts, 5, 6))
+>key : Symbol(key, Decl(index.ts, 15, 5))
+
+  return {
+    async findBy<const C extends First = First>(
+>findBy : Symbol(findBy, Decl(index.ts, 17, 10))
+>C : Symbol(C, Decl(index.ts, 18, 17))
+>First : Symbol(First, Decl(index.ts, 10, 56))
+>First : Symbol(First, Decl(index.ts, 10, 56))
+
+      where?: Where<T>,
+>where : Symbol(where, Decl(index.ts, 18, 48))
+>Where : Symbol(Where, Decl(index.ts, 7, 12))
+>T : Symbol(T, Decl(index.ts, 10, 28))
+
+      options?: C,
+>options : Symbol(options, Decl(index.ts, 19, 23))
+>C : Symbol(C, Decl(index.ts, 18, 17))
+
+    ): FindFirst<C> {
+>FindFirst : Symbol(FindFirst, Decl(index.ts, 13, 46))
+>C : Symbol(C, Decl(index.ts, 18, 17))
+
+      let queryOptions = { ...options, where: buildWhere(table, where) }
+>queryOptions : Symbol(queryOptions, Decl(index.ts, 22, 9))
+>options : Symbol(options, Decl(index.ts, 19, 23))
+>where : Symbol(where, Decl(index.ts, 22, 38))
+>buildWhere : Symbol(buildWhere, Decl(index.ts, 1, 8))
+>table : Symbol(table, Decl(index.ts, 10, 45))
+>where : Symbol(where, Decl(index.ts, 18, 48))
+
+      return await query.findFirst(queryOptions as any)
+>query.findFirst : Symbol(RelationalQueryBuilder.findFirst, Decl(query.d.ts, 3, 201))
+>query : Symbol(query, Decl(index.ts, 16, 5))
+>findFirst : Symbol(RelationalQueryBuilder.findFirst, Decl(query.d.ts, 3, 201))
+>queryOptions : Symbol(queryOptions, Decl(index.ts, 22, 9))
+
+    },
+  }
+}
+=== app/models/.server/base/query.ts ===
+import type { Table } from './types'
+>Table : Symbol(Table, Decl(query.ts, 0, 13))
+
+export function getTableName(table: Table) {
+>getTableName : Symbol(getTableName, Decl(query.ts, 0, 36))
+>table : Symbol(table, Decl(query.ts, 1, 29))
+>Table : Symbol(Table, Decl(query.ts, 0, 13))
+
+  return table[Symbol.for('drizzle:Name')]
+>table : Symbol(table, Decl(query.ts, 1, 29))
+>Symbol.for : Symbol(SymbolConstructor.for, Decl(lib.es2015.symbol.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>for : Symbol(SymbolConstructor.for, Decl(lib.es2015.symbol.d.ts, --, --))
+}
+export function buildWhere(model: any, where?: any) {
+>buildWhere : Symbol(buildWhere, Decl(query.ts, 3, 1))
+>model : Symbol(model, Decl(query.ts, 4, 27))
+>where : Symbol(where, Decl(query.ts, 4, 38))
+}
+=== app/models/.server/base/types.ts ===
+import type {
+  BuildQueryResult,
+>BuildQueryResult : Symbol(BuildQueryResult, Decl(types.ts, 0, 13))
+
+  DBQueryConfig,
+>DBQueryConfig : Symbol(DBQueryConfig, Decl(types.ts, 1, 19))
+
+  ExtractTablesWithRelations,
+>ExtractTablesWithRelations : Symbol(ExtractTablesWithRelations, Decl(types.ts, 2, 16))
+
+} from 'drizzle-orm'
+import type { db } from '../../../.server/db'
+>db : Symbol(db, Decl(types.ts, 5, 13))
+
+type FullSchema = typeof db._.fullSchema
+>FullSchema : Symbol(FullSchema, Decl(types.ts, 5, 45))
+>db._.fullSchema : Symbol(fullSchema, Decl(db.d.ts, 3, 17))
+>db._ : Symbol(BaseSQLiteDatabase._, Decl(db.d.ts, 2, 242))
+>db : Symbol(db, Decl(types.ts, 5, 13))
+>_ : Symbol(BaseSQLiteDatabase._, Decl(db.d.ts, 2, 242))
+>fullSchema : Symbol(fullSchema, Decl(db.d.ts, 3, 17))
+
+export type TableName = keyof typeof db.query
+>TableName : Symbol(TableName, Decl(types.ts, 6, 40))
+>db.query : Symbol(BaseSQLiteDatabase.query, Decl(db.d.ts, 5, 6))
+>db : Symbol(db, Decl(types.ts, 5, 13))
+>query : Symbol(BaseSQLiteDatabase.query, Decl(db.d.ts, 5, 6))
+
+export type Table = FullSchema[TableName]
+>Table : Symbol(Table, Decl(types.ts, 7, 45))
+>FullSchema : Symbol(FullSchema, Decl(types.ts, 5, 45))
+>TableName : Symbol(TableName, Decl(types.ts, 6, 40))
+
+export type Schema = ExtractTablesWithRelations<FullSchema>
+>Schema : Symbol(Schema, Decl(types.ts, 8, 41))
+>ExtractTablesWithRelations : Symbol(ExtractTablesWithRelations, Decl(types.ts, 2, 16))
+>FullSchema : Symbol(FullSchema, Decl(types.ts, 5, 45))
+
+export type Where<T extends Table> = {
+>Where : Symbol(Where, Decl(types.ts, 9, 59))
+>T : Symbol(T, Decl(types.ts, 10, 18))
+>Table : Symbol(Table, Decl(types.ts, 7, 45))
+
+  [K in keyof T['$inferSelect']]?:
+>K : Symbol(K, Decl(types.ts, 11, 3))
+>T : Symbol(T, Decl(types.ts, 10, 18))
+
+    | null
+}
+type DrizzleQueryConfig<T extends Table> = DBQueryConfig<
+>DrizzleQueryConfig : Symbol(DrizzleQueryConfig, Decl(types.ts, 13, 1))
+>T : Symbol(T, Decl(types.ts, 14, 24))
+>Table : Symbol(Table, Decl(types.ts, 7, 45))
+>DBQueryConfig : Symbol(DBQueryConfig, Decl(types.ts, 1, 19))
+
+  'many',
+  true,
+  Schema,
+>Schema : Symbol(Schema, Decl(types.ts, 8, 41))
+
+  Schema[T['_']['name']]
+>Schema : Symbol(Schema, Decl(types.ts, 8, 41))
+>T : Symbol(T, Decl(types.ts, 14, 24))
+
+>
+export type QueryConfigMany<T extends Table> = Omit<
+>QueryConfigMany : Symbol(QueryConfigMany, Decl(types.ts, 19, 1))
+>T : Symbol(T, Decl(types.ts, 20, 28))
+>Table : Symbol(Table, Decl(types.ts, 7, 45))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+
+  DrizzleQueryConfig<T>,
+>DrizzleQueryConfig : Symbol(DrizzleQueryConfig, Decl(types.ts, 13, 1))
+>T : Symbol(T, Decl(types.ts, 20, 28))
+
+  'where'
+> & {
+}
+export type QueryConfigFirst<T extends Table> = Omit<
+>QueryConfigFirst : Symbol(QueryConfigFirst, Decl(types.ts, 24, 1))
+>T : Symbol(T, Decl(types.ts, 25, 29))
+>Table : Symbol(Table, Decl(types.ts, 7, 45))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+
+  QueryConfigMany<T>,
+>QueryConfigMany : Symbol(QueryConfigMany, Decl(types.ts, 19, 1))
+>T : Symbol(T, Decl(types.ts, 25, 29))
+
+  'limit'
+>
+export type QueryResult<
+>QueryResult : Symbol(QueryResult, Decl(types.ts, 28, 1))
+
+  T extends Table,
+>T : Symbol(T, Decl(types.ts, 29, 24))
+>Table : Symbol(Table, Decl(types.ts, 7, 45))
+
+  C extends QueryConfigMany<T>,
+>C : Symbol(C, Decl(types.ts, 30, 18))
+>QueryConfigMany : Symbol(QueryConfigMany, Decl(types.ts, 19, 1))
+>T : Symbol(T, Decl(types.ts, 29, 24))
+
+> = BuildQueryResult<Schema, Schema[T['_']['name']], Omit<C, 'where'>>
+>BuildQueryResult : Symbol(BuildQueryResult, Decl(types.ts, 0, 13))
+>Schema : Symbol(Schema, Decl(types.ts, 8, 41))
+>Schema : Symbol(Schema, Decl(types.ts, 8, 41))
+>T : Symbol(T, Decl(types.ts, 29, 24))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>C : Symbol(C, Decl(types.ts, 30, 18))
+
+=== node_modules/@types/node/globals.d.ts ===
+declare var process: NodeJS.Process;
+>process : Symbol(process, Decl(globals.d.ts, 0, 11))
+>NodeJS : Symbol(NodeJS)
+>Process : Symbol(NodeJS.Process)
+
+=== node_modules/@types/node/index.d.ts ===
+
+/// <reference path="globals.d.ts" />
+/// <reference path="path.d.ts" />
+=== node_modules/@types/node/path.d.ts ===
+declare module "path" {
+>"path" : Symbol("path", Decl(path.d.ts, 0, 0))
+
+    export = path;
+}
+=== node_modules/drizzle-orm/index.d.ts ===
+
+export * from "./relations.js";
+=== node_modules/drizzle-orm/libsql/driver-core.d.ts ===
+import { BaseSQLiteDatabase } from "../sqlite-core/db.js";
+>BaseSQLiteDatabase : Symbol(BaseSQLiteDatabase, Decl(driver-core.d.ts, 0, 8))
+
+export declare class LibSQLDatabase<TSchema extends Record<string, unknown> = Record<string, never>> extends BaseSQLiteDatabase<'async', ResultSet, TSchema> {
+>LibSQLDatabase : Symbol(LibSQLDatabase, Decl(driver-core.d.ts, 0, 58))
+>TSchema : Symbol(TSchema, Decl(driver-core.d.ts, 1, 36))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>BaseSQLiteDatabase : Symbol(BaseSQLiteDatabase, Decl(driver-core.d.ts, 0, 8))
+>ResultSet : Symbol(ResultSet)
+>TSchema : Symbol(TSchema, Decl(driver-core.d.ts, 1, 36))
+}
+=== node_modules/drizzle-orm/libsql/driver.d.ts ===
+import { type DrizzleConfig } from "../utils.js";
+>DrizzleConfig : Symbol(DrizzleConfig, Decl(driver.d.ts, 0, 8))
+
+import { type LibSQLDatabase } from "./driver-core.js";
+>LibSQLDatabase : Symbol(LibSQLDatabase, Decl(driver.d.ts, 1, 8))
+
+export declare function drizzle<TSchema extends Record<string, unknown> = Record<string, never>, TClient extends Client = Client>(...params: [
+>drizzle : Symbol(drizzle, Decl(driver.d.ts, 1, 55))
+>TSchema : Symbol(TSchema, Decl(driver.d.ts, 2, 32))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>TClient : Symbol(TClient, Decl(driver.d.ts, 2, 96))
+>Client : Symbol(Client)
+>Client : Symbol(Client)
+>params : Symbol(params, Decl(driver.d.ts, 2, 130))
+
+    (DrizzleConfig<TSchema> & ({
+>DrizzleConfig : Symbol(DrizzleConfig, Decl(driver.d.ts, 0, 8))
+>TSchema : Symbol(TSchema, Decl(driver.d.ts, 2, 32))
+
+        connection: string | Config;
+>connection : Symbol(connection, Decl(driver.d.ts, 3, 32))
+>Config : Symbol(Config)
+
+    }))
+]): LibSQLDatabase<TSchema> & {
+>LibSQLDatabase : Symbol(LibSQLDatabase, Decl(driver.d.ts, 1, 8))
+>TSchema : Symbol(TSchema, Decl(driver.d.ts, 2, 32))
+
+};
+=== node_modules/drizzle-orm/libsql/index.d.ts ===
+
+export * from "./driver.js";
+=== node_modules/drizzle-orm/query-promise.d.ts ===
+export declare abstract class QueryPromise<T> implements Promise<T> {
+>QueryPromise : Symbol(QueryPromise, Decl(query-promise.d.ts, 0, 0))
+>T : Symbol(T, Decl(query-promise.d.ts, 0, 43))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(query-promise.d.ts, 0, 43))
+
+    then<TResult1 = T, TResult2 = never>(onFulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onRejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): Promise<TResult1 | TResult2>;
+>then : Symbol(QueryPromise.then, Decl(query-promise.d.ts, 0, 69))
+>TResult1 : Symbol(TResult1, Decl(query-promise.d.ts, 1, 9))
+>T : Symbol(T, Decl(query-promise.d.ts, 0, 43))
+>TResult2 : Symbol(TResult2, Decl(query-promise.d.ts, 1, 22))
+>onFulfilled : Symbol(onFulfilled, Decl(query-promise.d.ts, 1, 41))
+>value : Symbol(value, Decl(query-promise.d.ts, 1, 57))
+>T : Symbol(T, Decl(query-promise.d.ts, 0, 43))
+>TResult1 : Symbol(TResult1, Decl(query-promise.d.ts, 1, 9))
+>PromiseLike : Symbol(PromiseLike, Decl(lib.es5.d.ts, --, --))
+>TResult1 : Symbol(TResult1, Decl(query-promise.d.ts, 1, 9))
+>onRejected : Symbol(onRejected, Decl(query-promise.d.ts, 1, 123))
+>reason : Symbol(reason, Decl(query-promise.d.ts, 1, 139))
+>TResult2 : Symbol(TResult2, Decl(query-promise.d.ts, 1, 22))
+>PromiseLike : Symbol(PromiseLike, Decl(lib.es5.d.ts, --, --))
+>TResult2 : Symbol(TResult2, Decl(query-promise.d.ts, 1, 22))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>TResult1 : Symbol(TResult1, Decl(query-promise.d.ts, 1, 9))
+>TResult2 : Symbol(TResult2, Decl(query-promise.d.ts, 1, 22))
+}
+=== node_modules/drizzle-orm/relations.d.ts ===
+import { type AnyTable, type InferModelFromColumns, Table } from "./table.js";
+>AnyTable : Symbol(AnyTable, Decl(relations.d.ts, 0, 8))
+>InferModelFromColumns : Symbol(InferModelFromColumns, Decl(relations.d.ts, 0, 23))
+>Table : Symbol(Table, Decl(relations.d.ts, 0, 51))
+
+import { type Placeholder, SQL, sql } from "./sql/sql.js";
+>Placeholder : Symbol(Placeholder, Decl(relations.d.ts, 1, 8))
+>SQL : Symbol(SQL, Decl(relations.d.ts, 1, 26))
+>sql : Symbol(sql, Decl(relations.d.ts, 1, 31))
+
+import type { Assume, ColumnsWithTable, Equal, Simplify, ValueOrArray } from "./utils.js";
+>Assume : Symbol(Assume, Decl(relations.d.ts, 2, 13))
+>ColumnsWithTable : Symbol(ColumnsWithTable, Decl(relations.d.ts, 2, 21))
+>Equal : Symbol(Equal, Decl(relations.d.ts, 2, 39))
+>Simplify : Symbol(Simplify, Decl(relations.d.ts, 2, 46))
+>ValueOrArray : Symbol(ValueOrArray, Decl(relations.d.ts, 2, 56))
+
+export declare class Relations<TTableName extends string = string, TConfig extends Record<string, Relation> = Record<string, Relation>> {
+>Relations : Symbol(Relations, Decl(relations.d.ts, 2, 90))
+>TTableName : Symbol(TTableName, Decl(relations.d.ts, 3, 31))
+>TConfig : Symbol(TConfig, Decl(relations.d.ts, 3, 66))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Relation : Symbol(Relation)
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Relation : Symbol(Relation)
+}
+export type ExtractObjectValues<T> = T[keyof T];
+>ExtractObjectValues : Symbol(ExtractObjectValues, Decl(relations.d.ts, 4, 1))
+>T : Symbol(T, Decl(relations.d.ts, 5, 32))
+>T : Symbol(T, Decl(relations.d.ts, 5, 32))
+>T : Symbol(T, Decl(relations.d.ts, 5, 32))
+
+export type FindTableByDBName<TSchema extends TablesRelationalConfig, TTableName extends string> = ExtractObjectValues<{
+>FindTableByDBName : Symbol(FindTableByDBName, Decl(relations.d.ts, 5, 48))
+>TSchema : Symbol(TSchema, Decl(relations.d.ts, 6, 30))
+>TablesRelationalConfig : Symbol(TablesRelationalConfig)
+>TTableName : Symbol(TTableName, Decl(relations.d.ts, 6, 69))
+>ExtractObjectValues : Symbol(ExtractObjectValues, Decl(relations.d.ts, 4, 1))
+
+    [K in keyof TSchema as TSchema[K]['dbName'] extends TTableName ? K : never]: TSchema[K];
+>K : Symbol(K, Decl(relations.d.ts, 7, 5))
+>TSchema : Symbol(TSchema, Decl(relations.d.ts, 6, 30))
+>TSchema : Symbol(TSchema, Decl(relations.d.ts, 6, 30))
+>K : Symbol(K, Decl(relations.d.ts, 7, 5))
+>TTableName : Symbol(TTableName, Decl(relations.d.ts, 6, 69))
+>K : Symbol(K, Decl(relations.d.ts, 7, 5))
+>TSchema : Symbol(TSchema, Decl(relations.d.ts, 6, 30))
+>K : Symbol(K, Decl(relations.d.ts, 7, 5))
+
+}>;
+export type DBQueryConfig<TRelationType extends 'one' | 'many' = 'one' | 'many', TIsRoot extends boolean = boolean, TSchema extends TablesRelationalConfig = TablesRelationalConfig, TTableConfig extends TableRelationalConfig = TableRelationalConfig> = {
+>DBQueryConfig : Symbol(DBQueryConfig, Decl(relations.d.ts, 8, 3))
+>TRelationType : Symbol(TRelationType, Decl(relations.d.ts, 9, 26))
+>TIsRoot : Symbol(TIsRoot, Decl(relations.d.ts, 9, 80))
+>TSchema : Symbol(TSchema, Decl(relations.d.ts, 9, 115))
+>TablesRelationalConfig : Symbol(TablesRelationalConfig)
+>TablesRelationalConfig : Symbol(TablesRelationalConfig)
+>TTableConfig : Symbol(TTableConfig, Decl(relations.d.ts, 9, 180))
+>TableRelationalConfig : Symbol(TableRelationalConfig)
+>TableRelationalConfig : Symbol(TableRelationalConfig)
+
+    with?: {
+>with : Symbol(with, Decl(relations.d.ts, 9, 252))
+
+        [K in keyof TTableConfig['relations']]?: true | DBQueryConfig<TTableConfig['relations'][K] extends One ? 'one' : 'many', false, TSchema, FindTableByDBName<TSchema, TTableConfig['relations'][K]['referencedTableName']>> | undefined;
+>K : Symbol(K, Decl(relations.d.ts, 11, 9))
+>TTableConfig : Symbol(TTableConfig, Decl(relations.d.ts, 9, 180))
+>DBQueryConfig : Symbol(DBQueryConfig, Decl(relations.d.ts, 8, 3))
+>TTableConfig : Symbol(TTableConfig, Decl(relations.d.ts, 9, 180))
+>K : Symbol(K, Decl(relations.d.ts, 11, 9))
+>One : Symbol(One)
+>TSchema : Symbol(TSchema, Decl(relations.d.ts, 9, 115))
+>FindTableByDBName : Symbol(FindTableByDBName, Decl(relations.d.ts, 5, 48))
+>TSchema : Symbol(TSchema, Decl(relations.d.ts, 9, 115))
+>TTableConfig : Symbol(TTableConfig, Decl(relations.d.ts, 9, 180))
+>K : Symbol(K, Decl(relations.d.ts, 11, 9))
+
+    } | undefined;
+} & (TRelationType extends 'many' ? {
+>TRelationType : Symbol(TRelationType, Decl(relations.d.ts, 9, 26))
+
+    where?: SQL | undefined | ((fields: Simplify<[
+>where : Symbol(where, Decl(relations.d.ts, 13, 37))
+>SQL : Symbol(SQL, Decl(relations.d.ts, 1, 26))
+>fields : Symbol(fields, Decl(relations.d.ts, 14, 32))
+>Simplify : Symbol(Simplify, Decl(relations.d.ts, 2, 46))
+
+    ] extends [never] ? {} : TTableConfig['columns']>, operators: Operators) => SQL | undefined);
+>TTableConfig : Symbol(TTableConfig, Decl(relations.d.ts, 9, 180))
+>operators : Symbol(operators, Decl(relations.d.ts, 15, 54))
+>Operators : Symbol(Operators)
+>SQL : Symbol(SQL, Decl(relations.d.ts, 1, 26))
+
+} & (TIsRoot extends true ? {
+>TIsRoot : Symbol(TIsRoot, Decl(relations.d.ts, 9, 80))
+
+} : {}) : {});
+export type ExtractTablesWithRelations<TSchema extends Record<string, unknown>> = {
+>ExtractTablesWithRelations : Symbol(ExtractTablesWithRelations, Decl(relations.d.ts, 17, 14))
+>TSchema : Symbol(TSchema, Decl(relations.d.ts, 18, 39))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+    [K in keyof TSchema as TSchema[K] extends Table ? K : never]: TSchema[K] extends Table ? {
+>K : Symbol(K, Decl(relations.d.ts, 19, 5))
+>TSchema : Symbol(TSchema, Decl(relations.d.ts, 18, 39))
+>TSchema : Symbol(TSchema, Decl(relations.d.ts, 18, 39))
+>K : Symbol(K, Decl(relations.d.ts, 19, 5))
+>Table : Symbol(Table, Decl(relations.d.ts, 0, 51))
+>K : Symbol(K, Decl(relations.d.ts, 19, 5))
+>TSchema : Symbol(TSchema, Decl(relations.d.ts, 18, 39))
+>K : Symbol(K, Decl(relations.d.ts, 19, 5))
+>Table : Symbol(Table, Decl(relations.d.ts, 0, 51))
+
+    } : never;
+};
+export type BuildQueryResult<TSchema extends TablesRelationalConfig, TTableConfig extends TableRelationalConfig, TFullSelection extends true | Record<string, unknown>> = Equal<TFullSelection, true> extends true ? InferModelFromColumns<TTableConfig['columns']> : TFullSelection extends Record<string, unknown> ? Simplify<(TFullSelection['columns'] extends Record<string, unknown> ? InferModelFromColumns<{
+>BuildQueryResult : Symbol(BuildQueryResult, Decl(relations.d.ts, 21, 2))
+>TSchema : Symbol(TSchema, Decl(relations.d.ts, 22, 29))
+>TablesRelationalConfig : Symbol(TablesRelationalConfig)
+>TTableConfig : Symbol(TTableConfig, Decl(relations.d.ts, 22, 68))
+>TableRelationalConfig : Symbol(TableRelationalConfig)
+>TFullSelection : Symbol(TFullSelection, Decl(relations.d.ts, 22, 112))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Equal : Symbol(Equal, Decl(relations.d.ts, 2, 39))
+>TFullSelection : Symbol(TFullSelection, Decl(relations.d.ts, 22, 112))
+>InferModelFromColumns : Symbol(InferModelFromColumns, Decl(relations.d.ts, 0, 23))
+>TTableConfig : Symbol(TTableConfig, Decl(relations.d.ts, 22, 68))
+>TFullSelection : Symbol(TFullSelection, Decl(relations.d.ts, 22, 112))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Simplify : Symbol(Simplify, Decl(relations.d.ts, 2, 46))
+>TFullSelection : Symbol(TFullSelection, Decl(relations.d.ts, 22, 112))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>InferModelFromColumns : Symbol(InferModelFromColumns, Decl(relations.d.ts, 0, 23))
+
+}> : InferModelFromColumns<TTableConfig['columns']>) & (TFullSelection['extras'] extends Record<string, unknown> | ((...args: any[]) => Record<string, unknown>) ? {
+>InferModelFromColumns : Symbol(InferModelFromColumns, Decl(relations.d.ts, 0, 23))
+>TTableConfig : Symbol(TTableConfig, Decl(relations.d.ts, 22, 68))
+>TFullSelection : Symbol(TFullSelection, Decl(relations.d.ts, 22, 112))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>args : Symbol(args, Decl(relations.d.ts, 23, 117))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+} : {}) & (TFullSelection['with'] extends Record<string, unknown> ? BuildRelationResult<TSchema, TFullSelection['with'], TTableConfig['relations']> : {})> : never;
+>TFullSelection : Symbol(TFullSelection, Decl(relations.d.ts, 22, 112))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>BuildRelationResult : Symbol(BuildRelationResult)
+>TSchema : Symbol(TSchema, Decl(relations.d.ts, 22, 29))
+>TFullSelection : Symbol(TFullSelection, Decl(relations.d.ts, 22, 112))
+>TTableConfig : Symbol(TTableConfig, Decl(relations.d.ts, 22, 68))
+
+export declare function relations<TTableName extends string, TRelations extends Record<string, Relation<any>>>(table: AnyTable<{
+>relations : Symbol(relations, Decl(relations.d.ts, 24, 163))
+>TTableName : Symbol(TTableName, Decl(relations.d.ts, 25, 34))
+>TRelations : Symbol(TRelations, Decl(relations.d.ts, 25, 60))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Relation : Symbol(Relation)
+>table : Symbol(table, Decl(relations.d.ts, 25, 111))
+>AnyTable : Symbol(AnyTable, Decl(relations.d.ts, 0, 8))
+
+}>, relations: (helpers: TableRelationsHelpers<TTableName>) => TRelations): Relations<TTableName, TRelations>;
+>relations : Symbol(relations, Decl(relations.d.ts, 26, 3))
+>helpers : Symbol(helpers, Decl(relations.d.ts, 26, 16))
+>TableRelationsHelpers : Symbol(TableRelationsHelpers)
+>TTableName : Symbol(TTableName, Decl(relations.d.ts, 25, 34))
+>TRelations : Symbol(TRelations, Decl(relations.d.ts, 25, 60))
+>Relations : Symbol(Relations, Decl(relations.d.ts, 2, 90))
+>TTableName : Symbol(TTableName, Decl(relations.d.ts, 25, 34))
+>TRelations : Symbol(TRelations, Decl(relations.d.ts, 25, 60))
+
+=== node_modules/drizzle-orm/sql/sql.d.ts ===
+/**
+ */
+export declare class SQL<T = unknown> implements SQLWrapper {
+>SQL : Symbol(SQL, Decl(sql.d.ts, 0, 0))
+>T : Symbol(T, Decl(sql.d.ts, 2, 25))
+
+    /**
+     */
+    if(condition: any | undefined): this | undefined;
+>if : Symbol(SQL.if, Decl(sql.d.ts, 2, 61))
+>condition : Symbol(condition, Decl(sql.d.ts, 5, 7))
+}
+=== node_modules/drizzle-orm/sqlite-core/columns/common.d.ts ===
+export type AnySQLiteColumn<TPartial extends Partial<ColumnBaseConfig<ColumnDataType, string>> = {}> = SQLiteColumn<Required<Update<ColumnBaseConfig<ColumnDataType, string>, TPartial>>>;
+>AnySQLiteColumn : Symbol(AnySQLiteColumn, Decl(common.d.ts, 0, 0))
+>TPartial : Symbol(TPartial, Decl(common.d.ts, 0, 28))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>ColumnBaseConfig : Symbol(ColumnBaseConfig)
+>ColumnDataType : Symbol(ColumnDataType)
+>SQLiteColumn : Symbol(SQLiteColumn)
+>Required : Symbol(Required, Decl(lib.es5.d.ts, --, --))
+>Update : Symbol(Update)
+>ColumnBaseConfig : Symbol(ColumnBaseConfig)
+>ColumnDataType : Symbol(ColumnDataType)
+>TPartial : Symbol(TPartial, Decl(common.d.ts, 0, 28))
+
+=== node_modules/drizzle-orm/sqlite-core/columns/custom.d.ts ===
+import { type Equal } from "../../utils.js";
+>Equal : Symbol(Equal, Decl(custom.d.ts, 0, 8))
+
+/**
+ */
+export declare function customType<T extends CustomTypeValues = CustomTypeValues>(customTypeParams: CustomTypeParams<T>): Equal<T['configRequired'], true> extends true ? {
+>customType : Symbol(customType, Decl(custom.d.ts, 0, 44))
+>T : Symbol(T, Decl(custom.d.ts, 3, 35))
+>CustomTypeValues : Symbol(CustomTypeValues)
+>CustomTypeValues : Symbol(CustomTypeValues)
+>customTypeParams : Symbol(customTypeParams, Decl(custom.d.ts, 3, 82))
+>CustomTypeParams : Symbol(CustomTypeParams)
+>T : Symbol(T, Decl(custom.d.ts, 3, 35))
+>Equal : Symbol(Equal, Decl(custom.d.ts, 0, 8))
+>T : Symbol(T, Decl(custom.d.ts, 3, 35))
+
+} : {
+    <TConfig extends Record<string, any> & T['config']>(fieldConfig?: TConfig): SQLiteCustomColumnBuilder<ConvertCustomConfig<'', T>>;
+>TConfig : Symbol(TConfig, Decl(custom.d.ts, 5, 5))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(custom.d.ts, 3, 35))
+>fieldConfig : Symbol(fieldConfig, Decl(custom.d.ts, 5, 56))
+>TConfig : Symbol(TConfig, Decl(custom.d.ts, 5, 5))
+>SQLiteCustomColumnBuilder : Symbol(SQLiteCustomColumnBuilder)
+>ConvertCustomConfig : Symbol(ConvertCustomConfig)
+>T : Symbol(T, Decl(custom.d.ts, 3, 35))
+
+};
+=== node_modules/drizzle-orm/sqlite-core/columns/index.d.ts ===
+
+export * from "./common.js";
+export * from "./custom.js";
+export * from "./integer.js";
+export * from "./text.js";
+=== node_modules/drizzle-orm/sqlite-core/columns/integer.d.ts ===
+export declare function integer<TMode extends IntegerConfig['mode']>(config?: IntegerConfig<TMode>): Or<Equal<TMode, 'timestamp'>, Equal<TMode, 'timestamp_ms'>> extends true ? SQLiteTimestampBuilderInitial<''> : Equal<TMode, 'boolean'> extends true ? SQLiteBooleanBuilderInitial<''> : SQLiteIntegerBuilderInitial<''>;
+>integer : Symbol(integer, Decl(integer.d.ts, 0, 0))
+>TMode : Symbol(TMode, Decl(integer.d.ts, 0, 32))
+>IntegerConfig : Symbol(IntegerConfig)
+>config : Symbol(config, Decl(integer.d.ts, 0, 69))
+>IntegerConfig : Symbol(IntegerConfig)
+>TMode : Symbol(TMode, Decl(integer.d.ts, 0, 32))
+>Or : Symbol(Or)
+>Equal : Symbol(Equal)
+>TMode : Symbol(TMode, Decl(integer.d.ts, 0, 32))
+>Equal : Symbol(Equal)
+>TMode : Symbol(TMode, Decl(integer.d.ts, 0, 32))
+>SQLiteTimestampBuilderInitial : Symbol(SQLiteTimestampBuilderInitial)
+>Equal : Symbol(Equal)
+>TMode : Symbol(TMode, Decl(integer.d.ts, 0, 32))
+>SQLiteBooleanBuilderInitial : Symbol(SQLiteBooleanBuilderInitial)
+>SQLiteIntegerBuilderInitial : Symbol(SQLiteIntegerBuilderInitial)
+
+=== node_modules/drizzle-orm/sqlite-core/columns/text.d.ts ===
+export declare function text<U extends string, T extends Readonly<[U, ...U[]]>, L extends number | undefined, TMode extends 'text' | 'json' = 'text' | 'json'>(config?: SQLiteTextConfig<TMode, T | Writable<T>, L>): Equal<TMode, 'json'> extends true ? SQLiteTextJsonBuilderInitial<''> : SQLiteTextBuilderInitial<'', Writable<T>, L>;
+>text : Symbol(text, Decl(text.d.ts, 0, 0))
+>U : Symbol(U, Decl(text.d.ts, 0, 29))
+>T : Symbol(T, Decl(text.d.ts, 0, 46))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>U : Symbol(U, Decl(text.d.ts, 0, 29))
+>U : Symbol(U, Decl(text.d.ts, 0, 29))
+>L : Symbol(L, Decl(text.d.ts, 0, 79))
+>TMode : Symbol(TMode, Decl(text.d.ts, 0, 109))
+>config : Symbol(config, Decl(text.d.ts, 0, 159))
+>SQLiteTextConfig : Symbol(SQLiteTextConfig)
+>TMode : Symbol(TMode, Decl(text.d.ts, 0, 109))
+>T : Symbol(T, Decl(text.d.ts, 0, 46))
+>Writable : Symbol(Writable)
+>T : Symbol(T, Decl(text.d.ts, 0, 46))
+>L : Symbol(L, Decl(text.d.ts, 0, 79))
+>Equal : Symbol(Equal)
+>TMode : Symbol(TMode, Decl(text.d.ts, 0, 109))
+>SQLiteTextJsonBuilderInitial : Symbol(SQLiteTextJsonBuilderInitial)
+>SQLiteTextBuilderInitial : Symbol(SQLiteTextBuilderInitial)
+>Writable : Symbol(Writable)
+>T : Symbol(T, Decl(text.d.ts, 0, 46))
+>L : Symbol(L, Decl(text.d.ts, 0, 79))
+
+=== node_modules/drizzle-orm/sqlite-core/db.d.ts ===
+import type { ExtractTablesWithRelations, RelationalSchemaConfig, TablesRelationalConfig } from "../relations.js";
+>ExtractTablesWithRelations : Symbol(ExtractTablesWithRelations, Decl(db.d.ts, 0, 13))
+>RelationalSchemaConfig : Symbol(RelationalSchemaConfig, Decl(db.d.ts, 0, 41))
+>TablesRelationalConfig : Symbol(TablesRelationalConfig, Decl(db.d.ts, 0, 65))
+
+import { RelationalQueryBuilder } from "./query-builders/query.js";
+>RelationalQueryBuilder : Symbol(RelationalQueryBuilder, Decl(db.d.ts, 1, 8))
+
+export declare class BaseSQLiteDatabase<TResultKind extends 'sync' | 'async', TRunResult, TFullSchema extends Record<string, unknown> = Record<string, never>, TSchema extends TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>> {
+>BaseSQLiteDatabase : Symbol(BaseSQLiteDatabase, Decl(db.d.ts, 1, 67))
+>TResultKind : Symbol(TResultKind, Decl(db.d.ts, 2, 40))
+>TRunResult : Symbol(TRunResult, Decl(db.d.ts, 2, 77))
+>TFullSchema : Symbol(TFullSchema, Decl(db.d.ts, 2, 89))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>TSchema : Symbol(TSchema, Decl(db.d.ts, 2, 158))
+>TablesRelationalConfig : Symbol(TablesRelationalConfig, Decl(db.d.ts, 0, 65))
+>ExtractTablesWithRelations : Symbol(ExtractTablesWithRelations, Decl(db.d.ts, 0, 13))
+>TFullSchema : Symbol(TFullSchema, Decl(db.d.ts, 2, 89))
+
+    readonly _: {
+>_ : Symbol(BaseSQLiteDatabase._, Decl(db.d.ts, 2, 242))
+
+        readonly fullSchema: TFullSchema;
+>fullSchema : Symbol(fullSchema, Decl(db.d.ts, 3, 17))
+>TFullSchema : Symbol(TFullSchema, Decl(db.d.ts, 2, 89))
+
+    };
+    query: TFullSchema extends Record<string, never> ? DrizzleTypeError<'Seems like the schema generic is missing - did you forget to add it to your DB type?'> : {
+>query : Symbol(BaseSQLiteDatabase.query, Decl(db.d.ts, 5, 6))
+>TFullSchema : Symbol(TFullSchema, Decl(db.d.ts, 2, 89))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>DrizzleTypeError : Symbol(DrizzleTypeError)
+
+        [K in keyof TSchema]: RelationalQueryBuilder<TResultKind, TFullSchema, TSchema, TSchema[K]>;
+>K : Symbol(K, Decl(db.d.ts, 7, 9))
+>TSchema : Symbol(TSchema, Decl(db.d.ts, 2, 158))
+>RelationalQueryBuilder : Symbol(RelationalQueryBuilder, Decl(db.d.ts, 1, 8))
+>TResultKind : Symbol(TResultKind, Decl(db.d.ts, 2, 40))
+>TFullSchema : Symbol(TFullSchema, Decl(db.d.ts, 2, 89))
+>TSchema : Symbol(TSchema, Decl(db.d.ts, 2, 158))
+>TSchema : Symbol(TSchema, Decl(db.d.ts, 2, 158))
+>K : Symbol(K, Decl(db.d.ts, 7, 9))
+
+    };
+    /**
+     */
+}
+=== node_modules/drizzle-orm/sqlite-core/foreign-keys.d.ts ===
+export type UpdateDeleteAction = 'cascade' | 'restrict' | 'no action' | 'set null' | 'set default';
+>UpdateDeleteAction : Symbol(UpdateDeleteAction, Decl(foreign-keys.d.ts, 0, 0))
+
+/**
+ */
+=== node_modules/drizzle-orm/sqlite-core/index.d.ts ===
+
+export * from "./columns/index.js";
+export * from "./foreign-keys.js";
+export * from "./indexes.js";
+export * from "./table.js";
+=== node_modules/drizzle-orm/sqlite-core/indexes.d.ts ===
+export type IndexColumn = SQLiteColumn | SQL;
+>IndexColumn : Symbol(IndexColumn, Decl(indexes.d.ts, 0, 0))
+>SQLiteColumn : Symbol(SQLiteColumn)
+>SQL : Symbol(SQL)
+
+export declare function index(name: string): IndexBuilderOn;
+>index : Symbol(index, Decl(indexes.d.ts, 0, 45))
+>name : Symbol(name, Decl(indexes.d.ts, 1, 30))
+>IndexBuilderOn : Symbol(IndexBuilderOn)
+
+export declare function uniqueIndex(name: string): IndexBuilderOn;
+>uniqueIndex : Symbol(uniqueIndex, Decl(indexes.d.ts, 1, 60))
+>name : Symbol(name, Decl(indexes.d.ts, 2, 36))
+>IndexBuilderOn : Symbol(IndexBuilderOn)
+
+=== node_modules/drizzle-orm/sqlite-core/query-builders/query.d.ts ===
+import { QueryPromise } from "../../query-promise.js";
+>QueryPromise : Symbol(QueryPromise, Decl(query.d.ts, 0, 8))
+
+import { type BuildQueryResult, type DBQueryConfig, type TableRelationalConfig, type TablesRelationalConfig } from "../../relations.js";
+>BuildQueryResult : Symbol(BuildQueryResult, Decl(query.d.ts, 1, 8))
+>DBQueryConfig : Symbol(DBQueryConfig, Decl(query.d.ts, 1, 31))
+>TableRelationalConfig : Symbol(TableRelationalConfig, Decl(query.d.ts, 1, 51))
+>TablesRelationalConfig : Symbol(TablesRelationalConfig, Decl(query.d.ts, 1, 79))
+
+export type SQLiteRelationalQueryKind<TMode extends 'sync' | 'async', TResult> = TMode extends 'async' ? SQLiteRelationalQuery<TMode, TResult> : SQLiteSyncRelationalQuery<TResult>;
+>SQLiteRelationalQueryKind : Symbol(SQLiteRelationalQueryKind, Decl(query.d.ts, 1, 136))
+>TMode : Symbol(TMode, Decl(query.d.ts, 2, 38))
+>TResult : Symbol(TResult, Decl(query.d.ts, 2, 69))
+>TMode : Symbol(TMode, Decl(query.d.ts, 2, 38))
+>SQLiteRelationalQuery : Symbol(SQLiteRelationalQuery, Decl(query.d.ts, 5, 1))
+>TMode : Symbol(TMode, Decl(query.d.ts, 2, 38))
+>TResult : Symbol(TResult, Decl(query.d.ts, 2, 69))
+>SQLiteSyncRelationalQuery : Symbol(SQLiteSyncRelationalQuery)
+>TResult : Symbol(TResult, Decl(query.d.ts, 2, 69))
+
+export declare class RelationalQueryBuilder<TMode extends 'sync' | 'async', TFullSchema extends Record<string, unknown>, TSchema extends TablesRelationalConfig, TFields extends TableRelationalConfig> {
+>RelationalQueryBuilder : Symbol(RelationalQueryBuilder, Decl(query.d.ts, 2, 180))
+>TMode : Symbol(TMode, Decl(query.d.ts, 3, 44))
+>TFullSchema : Symbol(TFullSchema, Decl(query.d.ts, 3, 75))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>TSchema : Symbol(TSchema, Decl(query.d.ts, 3, 120))
+>TablesRelationalConfig : Symbol(TablesRelationalConfig, Decl(query.d.ts, 1, 79))
+>TFields : Symbol(TFields, Decl(query.d.ts, 3, 160))
+>TableRelationalConfig : Symbol(TableRelationalConfig, Decl(query.d.ts, 1, 51))
+
+    findFirst<TSelection extends Omit<DBQueryConfig<'many', true, TSchema, TFields>, 'limit'>>(config?: KnownKeysOnly<TSelection, Omit<DBQueryConfig<'many', true, TSchema, TFields>, 'limit'>>): SQLiteRelationalQueryKind<TMode, BuildQueryResult<TSchema, TFields, TSelection> | undefined>;
+>findFirst : Symbol(RelationalQueryBuilder.findFirst, Decl(query.d.ts, 3, 201))
+>TSelection : Symbol(TSelection, Decl(query.d.ts, 4, 14))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>DBQueryConfig : Symbol(DBQueryConfig, Decl(query.d.ts, 1, 31))
+>TSchema : Symbol(TSchema, Decl(query.d.ts, 3, 120))
+>TFields : Symbol(TFields, Decl(query.d.ts, 3, 160))
+>config : Symbol(config, Decl(query.d.ts, 4, 95))
+>KnownKeysOnly : Symbol(KnownKeysOnly)
+>TSelection : Symbol(TSelection, Decl(query.d.ts, 4, 14))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>DBQueryConfig : Symbol(DBQueryConfig, Decl(query.d.ts, 1, 31))
+>TSchema : Symbol(TSchema, Decl(query.d.ts, 3, 120))
+>TFields : Symbol(TFields, Decl(query.d.ts, 3, 160))
+>SQLiteRelationalQueryKind : Symbol(SQLiteRelationalQueryKind, Decl(query.d.ts, 1, 136))
+>TMode : Symbol(TMode, Decl(query.d.ts, 3, 44))
+>BuildQueryResult : Symbol(BuildQueryResult, Decl(query.d.ts, 1, 8))
+>TSchema : Symbol(TSchema, Decl(query.d.ts, 3, 120))
+>TFields : Symbol(TFields, Decl(query.d.ts, 3, 160))
+>TSelection : Symbol(TSelection, Decl(query.d.ts, 4, 14))
+}
+export declare class SQLiteRelationalQuery<TType extends 'sync' | 'async', TResult> extends QueryPromise<TResult> implements RunnableQuery<TResult, 'sqlite'>, SQLWrapper {
+>SQLiteRelationalQuery : Symbol(SQLiteRelationalQuery, Decl(query.d.ts, 5, 1))
+>TType : Symbol(TType, Decl(query.d.ts, 6, 43))
+>TResult : Symbol(TResult, Decl(query.d.ts, 6, 74))
+>QueryPromise : Symbol(QueryPromise, Decl(query.d.ts, 0, 8))
+>TResult : Symbol(TResult, Decl(query.d.ts, 6, 74))
+>TResult : Symbol(TResult, Decl(query.d.ts, 6, 74))
+}
+=== node_modules/drizzle-orm/sqlite-core/table.d.ts ===
+import { Table, type TableConfig as TableConfigBase, type UpdateTableConfig } from "../table.js";
+>Table : Symbol(Table, Decl(table.d.ts, 0, 8))
+>TableConfigBase : Symbol(TableConfigBase, Decl(table.d.ts, 0, 15))
+>UpdateTableConfig : Symbol(UpdateTableConfig, Decl(table.d.ts, 0, 52))
+
+export declare class SQLiteTable<T extends TableConfig = TableConfig> extends Table<T> {
+>SQLiteTable : Symbol(SQLiteTable, Decl(table.d.ts, 0, 97))
+>T : Symbol(T, Decl(table.d.ts, 1, 33))
+>TableConfig : Symbol(TableConfig)
+>TableConfig : Symbol(TableConfig)
+>Table : Symbol(Table, Decl(table.d.ts, 0, 8))
+>T : Symbol(T, Decl(table.d.ts, 1, 33))
+}
+export type SQLiteTableWithColumns<T extends TableConfig> = SQLiteTable<T> & {
+>SQLiteTableWithColumns : Symbol(SQLiteTableWithColumns, Decl(table.d.ts, 2, 1))
+>T : Symbol(T, Decl(table.d.ts, 3, 35))
+>TableConfig : Symbol(TableConfig)
+>SQLiteTable : Symbol(SQLiteTable, Decl(table.d.ts, 0, 97))
+>T : Symbol(T, Decl(table.d.ts, 3, 35))
+
+};
+export interface SQLiteTableFn<TSchema extends string | undefined = undefined> {
+>SQLiteTableFn : Symbol(SQLiteTableFn, Decl(table.d.ts, 4, 2))
+>TSchema : Symbol(TSchema, Decl(table.d.ts, 5, 31))
+
+    <TTableName extends string, TColumnsMap extends Record<string, SQLiteColumnBuilderBase>>(name: TTableName, columns: TColumnsMap, extraConfig?: (self: BuildColumns<TTableName, TColumnsMap, 'sqlite'>) => SQLiteTableExtraConfig): SQLiteTableWithColumns<{
+>TTableName : Symbol(TTableName, Decl(table.d.ts, 6, 5))
+>TColumnsMap : Symbol(TColumnsMap, Decl(table.d.ts, 6, 31))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>SQLiteColumnBuilderBase : Symbol(SQLiteColumnBuilderBase)
+>name : Symbol(name, Decl(table.d.ts, 6, 93))
+>TTableName : Symbol(TTableName, Decl(table.d.ts, 6, 5))
+>columns : Symbol(columns, Decl(table.d.ts, 6, 110))
+>TColumnsMap : Symbol(TColumnsMap, Decl(table.d.ts, 6, 31))
+>extraConfig : Symbol(extraConfig, Decl(table.d.ts, 6, 132))
+>self : Symbol(self, Decl(table.d.ts, 6, 148))
+>BuildColumns : Symbol(BuildColumns)
+>TTableName : Symbol(TTableName, Decl(table.d.ts, 6, 5))
+>TColumnsMap : Symbol(TColumnsMap, Decl(table.d.ts, 6, 31))
+>SQLiteTableExtraConfig : Symbol(SQLiteTableExtraConfig)
+>SQLiteTableWithColumns : Symbol(SQLiteTableWithColumns, Decl(table.d.ts, 2, 1))
+
+        name: TTableName;
+>name : Symbol(name, Decl(table.d.ts, 6, 255))
+>TTableName : Symbol(TTableName, Decl(table.d.ts, 6, 5))
+
+        schema: TSchema;
+>schema : Symbol(schema, Decl(table.d.ts, 7, 25))
+>TSchema : Symbol(TSchema, Decl(table.d.ts, 5, 31))
+
+        columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>;
+>columns : Symbol(columns, Decl(table.d.ts, 8, 24))
+>BuildColumns : Symbol(BuildColumns)
+>TTableName : Symbol(TTableName, Decl(table.d.ts, 6, 5))
+>TColumnsMap : Symbol(TColumnsMap, Decl(table.d.ts, 6, 31))
+
+        dialect: 'sqlite';
+>dialect : Symbol(dialect, Decl(table.d.ts, 9, 65))
+
+    }>;
+}
+export declare const sqliteTable: SQLiteTableFn;
+>sqliteTable : Symbol(sqliteTable, Decl(table.d.ts, 13, 20))
+>SQLiteTableFn : Symbol(SQLiteTableFn, Decl(table.d.ts, 4, 2))
+
+=== node_modules/drizzle-orm/table.d.ts ===
+import type { Simplify, Update } from "./utils.js";
+>Simplify : Symbol(Simplify, Decl(table.d.ts, 0, 13))
+>Update : Symbol(Update, Decl(table.d.ts, 0, 23))
+
+export declare class Table<T extends TableConfig = TableConfig> implements SQLWrapper {
+>Table : Symbol(Table, Decl(table.d.ts, 0, 51))
+>T : Symbol(T, Decl(table.d.ts, 1, 27))
+>TableConfig : Symbol(TableConfig)
+>TableConfig : Symbol(TableConfig)
+
+    readonly _: {
+>_ : Symbol(Table._, Decl(table.d.ts, 1, 87))
+
+        readonly name: T['name'];
+>name : Symbol(name, Decl(table.d.ts, 2, 17))
+>T : Symbol(T, Decl(table.d.ts, 1, 27))
+
+    };
+    readonly $inferSelect: InferSelectModel<Table<T>>;
+>$inferSelect : Symbol(Table.$inferSelect, Decl(table.d.ts, 4, 6))
+>InferSelectModel : Symbol(InferSelectModel)
+>Table : Symbol(Table, Decl(table.d.ts, 0, 51))
+>T : Symbol(T, Decl(table.d.ts, 1, 27))
+
+    readonly $inferInsert: InferInsertModel<Table<T>>;
+>$inferInsert : Symbol(Table.$inferInsert, Decl(table.d.ts, 5, 54))
+>InferInsertModel : Symbol(InferInsertModel)
+>Table : Symbol(Table, Decl(table.d.ts, 0, 51))
+>T : Symbol(T, Decl(table.d.ts, 1, 27))
+}
+export type InferModelFromColumns<TColumns extends Record<string, Column>, TInferMode extends 'select' | 'insert' = 'select', TConfig extends {
+>InferModelFromColumns : Symbol(InferModelFromColumns, Decl(table.d.ts, 7, 1))
+>TColumns : Symbol(TColumns, Decl(table.d.ts, 8, 34))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Column : Symbol(Column)
+>TInferMode : Symbol(TInferMode, Decl(table.d.ts, 8, 74))
+>TConfig : Symbol(TConfig, Decl(table.d.ts, 8, 125))
+
+} = {
+}> = Simplify<TInferMode extends 'insert' ? {
+>Simplify : Symbol(Simplify, Decl(table.d.ts, 0, 13))
+>TInferMode : Symbol(TInferMode, Decl(table.d.ts, 8, 74))
+
+} : {
+}>;
+/** @deprecated Use one of the alternatives: {@link InferSelectModel} / {@link InferInsertModel}, or `table.$inferSelect` / `table.$inferInsert`
+ */
+=== node_modules/drizzle-orm/utils.d.ts ===
+export type Simplify<T> = {
+>Simplify : Symbol(Simplify, Decl(utils.d.ts, 0, 0))
+>T : Symbol(T, Decl(utils.d.ts, 0, 21))
+
+    [K in keyof T]: T[K];
+>K : Symbol(K, Decl(utils.d.ts, 1, 5))
+>T : Symbol(T, Decl(utils.d.ts, 0, 21))
+>T : Symbol(T, Decl(utils.d.ts, 0, 21))
+>K : Symbol(K, Decl(utils.d.ts, 1, 5))
+
+} & {};
+export type Equal<X, Y> = (<T>() => T extends X ? 1 : 2) extends (<T>() => T extends Y ? 1 : 2) ? true : false;
+>Equal : Symbol(Equal, Decl(utils.d.ts, 2, 7))
+>X : Symbol(X, Decl(utils.d.ts, 3, 18))
+>Y : Symbol(Y, Decl(utils.d.ts, 3, 20))
+>T : Symbol(T, Decl(utils.d.ts, 3, 28))
+>T : Symbol(T, Decl(utils.d.ts, 3, 28))
+>X : Symbol(X, Decl(utils.d.ts, 3, 18))
+>T : Symbol(T, Decl(utils.d.ts, 3, 67))
+>T : Symbol(T, Decl(utils.d.ts, 3, 67))
+>Y : Symbol(Y, Decl(utils.d.ts, 3, 20))
+
+export interface DrizzleConfig<TSchema extends Record<string, unknown> = Record<string, never>> {
+>DrizzleConfig : Symbol(DrizzleConfig, Decl(utils.d.ts, 3, 111))
+>TSchema : Symbol(TSchema, Decl(utils.d.ts, 4, 31))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+    schema?: TSchema;
+>schema : Symbol(DrizzleConfig.schema, Decl(utils.d.ts, 4, 97))
+>TSchema : Symbol(TSchema, Decl(utils.d.ts, 4, 31))
+}
+=== node_modules/vite/client.d.ts ===
+
+export {};
+=== node_modules/vite/dist/node/index.d.ts ===
+/// <reference types="node" />
+export { type Alias, type AliasOptions, type AnymatchFn, type AnymatchPattern, type AppType, type BindCLIShortcutsOptions, type BuildAppHook, BuildEnvironment, type BuildEnvironmentOptions, type BuildOptions, type BuilderOptions, type CLIShortcut, type CSSModulesOptions, type CSSOptions, type ChunkMetadata, type CommonServerOptions, type ConfigEnv, type ConfigPluginContext, type Connect, type ConnectedPayload, type CorsOptions, type CorsOrigin, type CustomEventMap, type CustomPayload, type CustomPluginOptionsVite, type DepOptimizationConfig, type DepOptimizationMetadata, type DepOptimizationOptions, DevEnvironment, type DevEnvironmentContext, type DevEnvironmentOptions, type ESBuildOptions, type ESBuildTransformResult, type Environment, type EnvironmentModuleGraph, type EnvironmentModuleNode, type EnvironmentOptions, type ErrorPayload, type EsbuildTransformOptions, type ExperimentalOptions, type ExportsData, type FSWatcher, type FetchFunction, type FetchModuleOptions, type FetchResult, type FetchableDevEnvironment, type FetchableDevEnvironmentContext, type FileSystemServeOptions, type FilterPattern, type FullReloadPayload, type GeneralImportGlobOptions, type HMRPayload, type HTMLOptions, type HmrContext, type HmrOptions, type HookHandler, type HotChannel, type HotChannelClient, type HotChannelListener, type HotPayload, type HotUpdateOptions, type HtmlTagDescriptor, type index_d_exports as HttpProxy, type HttpServer, type ImportGlobFunction, type ImportGlobOptions, type IndexHtmlTransform, type IndexHtmlTransformContext, type IndexHtmlTransformHook, type IndexHtmlTransformResult, type InferCustomEventPayload, type InlineConfig, type InternalResolveOptions, type InvalidatePayload, type JsonOptions, type KnownAsTypeMap, type LegacyOptions, type LessPreprocessorOptions, type LibraryFormats, type LibraryOptions, type LightningCSSOptions, type LogErrorOptions, type LogLevel, type LogOptions, type LogType, type Logger, type LoggerOptions, type Manifest, type ManifestChunk, type MapToFunction, type AnymatchMatcher as Matcher, type MinimalPluginContextWithoutEnvironment, type ModuleGraph, type ModuleNode, type ModulePreloadOptions, type ModuleRunnerTransformOptions, type NormalizedHotChannel, type NormalizedHotChannelClient, type NormalizedServerHotChannel, type OptimizedDepInfo, type Plugin, type PluginContainer, type PluginHookUtils, type PluginOption, type PreprocessCSSResult, type PreviewOptions, type PreviewServer, type PreviewServerHook, type ProxyOptions, type PrunePayload, type RenderBuiltAssetUrl, type ResolveFn, type ResolveModulePreloadDependenciesFn, type ResolveOptions, type ResolvedBuildEnvironmentOptions, type ResolvedBuildOptions, type ResolvedCSSOptions, type ResolvedConfig, type ResolvedDevEnvironmentOptions, type ResolvedModulePreloadOptions, type ResolvedPreviewOptions, type ResolvedSSROptions, type ResolvedServerOptions, type ResolvedServerUrls, type ResolvedUrl, type ResolvedWorkerOptions, type ResolverFunction, type ResolverObject, type Rollup, type RollupCommonJSOptions, type RollupDynamicImportVarsOptions, type RunnableDevEnvironment, type RunnableDevEnvironmentContext, type SSROptions, type SSRTarget, type SassPreprocessorOptions, type SendOptions, type ServerHook, type ServerHotChannel, type ServerModuleRunnerOptions, type ServerOptions$1 as ServerOptions, type SkipInformation, type SsrDepOptimizationConfig, type StylusPreprocessorOptions, type Terser, type TerserOptions, type TransformOptions, type TransformResult, type Update, type UpdatePayload, type UserConfig, type UserConfigExport, type UserConfigFn, type UserConfigFnObject, type UserConfigFnPromise, type ViteBuilder, type ViteDevServer, type WatchOptions, type WebSocket, type WebSocketAlias, type WebSocketClient, type WebSocketCustomListener, type WebSocketServer, build, buildErrorMessage, createBuilder, createFetchableDevEnvironment, createFilter, createIdResolver, createLogger, createRunnableDevEnvironment, createServer, createServerHotChannel, createServerModuleRunner, createServerModuleRunnerTransport, defaultAllowedOrigins, DEFAULT_CLIENT_CONDITIONS as defaultClientConditions, DEFAULT_CLIENT_MAIN_FIELDS as defaultClientMainFields, DEFAULT_EXTERNAL_CONDITIONS as defaultExternalConditions, DEFAULT_SERVER_CONDITIONS as defaultServerConditions, DEFAULT_SERVER_MAIN_FIELDS as defaultServerMainFields, defineConfig, esbuildVersion, fetchModule, formatPostcssSourceMap, isCSSRequest, isFetchableDevEnvironment, isFileLoadingAllowed, isFileServingAllowed, isRunnableDevEnvironment, loadConfigFromFile, loadEnv, mergeAlias, mergeConfig, ssrTransform as moduleRunnerTransform, normalizePath, optimizeDeps, parseAst, parseAstAsync, perEnvironmentPlugin, perEnvironmentState, preprocessCSS, preview, resolveConfig, resolveEnvPrefix, rollupVersion, runnerImport, searchForWorkspaceRoot, send, sortUserPlugins, transformWithEsbuild, VERSION as version };
+>Alias : Symbol(Alias, Decl(index.d.ts, 1, 8))
+>AliasOptions : Symbol(AliasOptions, Decl(index.d.ts, 1, 20))
+>AnymatchFn : Symbol(AnymatchFn, Decl(index.d.ts, 1, 39))
+>AnymatchPattern : Symbol(AnymatchPattern, Decl(index.d.ts, 1, 56))
+>AppType : Symbol(AppType, Decl(index.d.ts, 1, 78))
+>BindCLIShortcutsOptions : Symbol(BindCLIShortcutsOptions, Decl(index.d.ts, 1, 92))
+>BuildAppHook : Symbol(BuildAppHook, Decl(index.d.ts, 1, 122))
+>BuildEnvironment : Symbol(BuildEnvironment, Decl(index.d.ts, 1, 141))
+>BuildEnvironmentOptions : Symbol(BuildEnvironmentOptions, Decl(index.d.ts, 1, 159))
+>BuildOptions : Symbol(BuildOptions, Decl(index.d.ts, 1, 189))
+>BuilderOptions : Symbol(BuilderOptions, Decl(index.d.ts, 1, 208))
+>CLIShortcut : Symbol(CLIShortcut, Decl(index.d.ts, 1, 229))
+>CSSModulesOptions : Symbol(CSSModulesOptions, Decl(index.d.ts, 1, 247))
+>CSSOptions : Symbol(CSSOptions, Decl(index.d.ts, 1, 271))
+>ChunkMetadata : Symbol(ChunkMetadata, Decl(index.d.ts, 1, 288))
+>CommonServerOptions : Symbol(CommonServerOptions, Decl(index.d.ts, 1, 308))
+>ConfigEnv : Symbol(ConfigEnv, Decl(index.d.ts, 1, 334))
+>ConfigPluginContext : Symbol(ConfigPluginContext, Decl(index.d.ts, 1, 350))
+>Connect : Symbol(Connect, Decl(index.d.ts, 1, 376))
+>ConnectedPayload : Symbol(ConnectedPayload, Decl(index.d.ts, 1, 390))
+>CorsOptions : Symbol(CorsOptions, Decl(index.d.ts, 1, 413))
+>CorsOrigin : Symbol(CorsOrigin, Decl(index.d.ts, 1, 431))
+>CustomEventMap : Symbol(CustomEventMap, Decl(index.d.ts, 1, 448))
+>CustomPayload : Symbol(CustomPayload, Decl(index.d.ts, 1, 469))
+>CustomPluginOptionsVite : Symbol(CustomPluginOptionsVite, Decl(index.d.ts, 1, 489))
+>DepOptimizationConfig : Symbol(DepOptimizationConfig, Decl(index.d.ts, 1, 519))
+>DepOptimizationMetadata : Symbol(DepOptimizationMetadata, Decl(index.d.ts, 1, 547))
+>DepOptimizationOptions : Symbol(DepOptimizationOptions, Decl(index.d.ts, 1, 577))
+>DevEnvironment : Symbol(DevEnvironment, Decl(index.d.ts, 1, 606))
+>DevEnvironmentContext : Symbol(DevEnvironmentContext, Decl(index.d.ts, 1, 622))
+>DevEnvironmentOptions : Symbol(DevEnvironmentOptions, Decl(index.d.ts, 1, 650))
+>ESBuildOptions : Symbol(ESBuildOptions, Decl(index.d.ts, 1, 678))
+>ESBuildTransformResult : Symbol(ESBuildTransformResult, Decl(index.d.ts, 1, 699))
+>Environment : Symbol(Environment, Decl(index.d.ts, 1, 728))
+>EnvironmentModuleGraph : Symbol(EnvironmentModuleGraph, Decl(index.d.ts, 1, 746))
+>EnvironmentModuleNode : Symbol(EnvironmentModuleNode, Decl(index.d.ts, 1, 775))
+>EnvironmentOptions : Symbol(EnvironmentOptions, Decl(index.d.ts, 1, 803))
+>ErrorPayload : Symbol(ErrorPayload, Decl(index.d.ts, 1, 828))
+>EsbuildTransformOptions : Symbol(EsbuildTransformOptions, Decl(index.d.ts, 1, 847))
+>ExperimentalOptions : Symbol(ExperimentalOptions, Decl(index.d.ts, 1, 877))
+>ExportsData : Symbol(ExportsData, Decl(index.d.ts, 1, 903))
+>FSWatcher : Symbol(FSWatcher, Decl(index.d.ts, 1, 921))
+>FetchFunction : Symbol(FetchFunction, Decl(index.d.ts, 1, 937))
+>FetchModuleOptions : Symbol(FetchModuleOptions, Decl(index.d.ts, 1, 957))
+>FetchResult : Symbol(FetchResult, Decl(index.d.ts, 1, 982))
+>FetchableDevEnvironment : Symbol(FetchableDevEnvironment, Decl(index.d.ts, 1, 1000))
+>FetchableDevEnvironmentContext : Symbol(FetchableDevEnvironmentContext, Decl(index.d.ts, 1, 1030))
+>FileSystemServeOptions : Symbol(FileSystemServeOptions, Decl(index.d.ts, 1, 1067))
+>FilterPattern : Symbol(FilterPattern, Decl(index.d.ts, 1, 1096))
+>FullReloadPayload : Symbol(FullReloadPayload, Decl(index.d.ts, 1, 1116))
+>GeneralImportGlobOptions : Symbol(GeneralImportGlobOptions, Decl(index.d.ts, 1, 1140))
+>HMRPayload : Symbol(HMRPayload, Decl(index.d.ts, 1, 1171))
+>HTMLOptions : Symbol(HTMLOptions, Decl(index.d.ts, 1, 1188))
+>HmrContext : Symbol(HmrContext, Decl(index.d.ts, 1, 1206))
+>HmrOptions : Symbol(HmrOptions, Decl(index.d.ts, 1, 1223))
+>HookHandler : Symbol(HookHandler, Decl(index.d.ts, 1, 1240))
+>HotChannel : Symbol(HotChannel, Decl(index.d.ts, 1, 1258))
+>HotChannelClient : Symbol(HotChannelClient, Decl(index.d.ts, 1, 1275))
+>HotChannelListener : Symbol(HotChannelListener, Decl(index.d.ts, 1, 1298))
+>HotPayload : Symbol(HotPayload, Decl(index.d.ts, 1, 1323))
+>HotUpdateOptions : Symbol(HotUpdateOptions, Decl(index.d.ts, 1, 1340))
+>HtmlTagDescriptor : Symbol(HtmlTagDescriptor, Decl(index.d.ts, 1, 1363))
+>HttpProxy : Symbol(HttpProxy, Decl(index.d.ts, 1, 1387))
+>HttpServer : Symbol(HttpServer, Decl(index.d.ts, 1, 1422))
+>ImportGlobFunction : Symbol(ImportGlobFunction, Decl(index.d.ts, 1, 1439))
+>ImportGlobOptions : Symbol(ImportGlobOptions, Decl(index.d.ts, 1, 1464))
+>IndexHtmlTransform : Symbol(IndexHtmlTransform, Decl(index.d.ts, 1, 1488))
+>IndexHtmlTransformContext : Symbol(IndexHtmlTransformContext, Decl(index.d.ts, 1, 1513))
+>IndexHtmlTransformHook : Symbol(IndexHtmlTransformHook, Decl(index.d.ts, 1, 1545))
+>IndexHtmlTransformResult : Symbol(IndexHtmlTransformResult, Decl(index.d.ts, 1, 1574))
+>InferCustomEventPayload : Symbol(InferCustomEventPayload, Decl(index.d.ts, 1, 1605))
+>InlineConfig : Symbol(InlineConfig, Decl(index.d.ts, 1, 1635))
+>InternalResolveOptions : Symbol(InternalResolveOptions, Decl(index.d.ts, 1, 1654))
+>InvalidatePayload : Symbol(InvalidatePayload, Decl(index.d.ts, 1, 1683))
+>JsonOptions : Symbol(JsonOptions, Decl(index.d.ts, 1, 1707))
+>KnownAsTypeMap : Symbol(KnownAsTypeMap, Decl(index.d.ts, 1, 1725))
+>LegacyOptions : Symbol(LegacyOptions, Decl(index.d.ts, 1, 1746))
+>LessPreprocessorOptions : Symbol(LessPreprocessorOptions, Decl(index.d.ts, 1, 1766))
+>LibraryFormats : Symbol(LibraryFormats, Decl(index.d.ts, 1, 1796))
+>LibraryOptions : Symbol(LibraryOptions, Decl(index.d.ts, 1, 1817))
+>LightningCSSOptions : Symbol(LightningCSSOptions, Decl(index.d.ts, 1, 1838))
+>LogErrorOptions : Symbol(LogErrorOptions, Decl(index.d.ts, 1, 1864))
+>LogLevel : Symbol(LogLevel, Decl(index.d.ts, 1, 1886))
+>LogOptions : Symbol(LogOptions, Decl(index.d.ts, 1, 1901))
+>LogType : Symbol(LogType, Decl(index.d.ts, 1, 1918))
+>Logger : Symbol(Logger, Decl(index.d.ts, 1, 1932))
+>LoggerOptions : Symbol(LoggerOptions, Decl(index.d.ts, 1, 1945))
+>Manifest : Symbol(Manifest, Decl(index.d.ts, 1, 1965))
+>ManifestChunk : Symbol(ManifestChunk, Decl(index.d.ts, 1, 1980))
+>MapToFunction : Symbol(MapToFunction, Decl(index.d.ts, 1, 2000))
+>Matcher : Symbol(Matcher, Decl(index.d.ts, 1, 2020))
+>MinimalPluginContextWithoutEnvironment : Symbol(MinimalPluginContextWithoutEnvironment, Decl(index.d.ts, 1, 2053))
+>ModuleGraph : Symbol(ModuleGraph, Decl(index.d.ts, 1, 2098))
+>ModuleNode : Symbol(ModuleNode, Decl(index.d.ts, 1, 2116))
+>ModulePreloadOptions : Symbol(ModulePreloadOptions, Decl(index.d.ts, 1, 2133))
+>ModuleRunnerTransformOptions : Symbol(ModuleRunnerTransformOptions, Decl(index.d.ts, 1, 2160))
+>NormalizedHotChannel : Symbol(NormalizedHotChannel, Decl(index.d.ts, 1, 2195))
+>NormalizedHotChannelClient : Symbol(NormalizedHotChannelClient, Decl(index.d.ts, 1, 2222))
+>NormalizedServerHotChannel : Symbol(NormalizedServerHotChannel, Decl(index.d.ts, 1, 2255))
+>OptimizedDepInfo : Symbol(OptimizedDepInfo, Decl(index.d.ts, 1, 2288))
+>Plugin : Symbol(Plugin, Decl(index.d.ts, 1, 2311))
+>PluginContainer : Symbol(PluginContainer, Decl(index.d.ts, 1, 2324))
+>PluginHookUtils : Symbol(PluginHookUtils, Decl(index.d.ts, 1, 2346))
+>PluginOption : Symbol(PluginOption, Decl(index.d.ts, 1, 2368))
+>PreprocessCSSResult : Symbol(PreprocessCSSResult, Decl(index.d.ts, 1, 2387))
+>PreviewOptions : Symbol(PreviewOptions, Decl(index.d.ts, 1, 2413))
+>PreviewServer : Symbol(PreviewServer, Decl(index.d.ts, 1, 2434))
+>PreviewServerHook : Symbol(PreviewServerHook, Decl(index.d.ts, 1, 2454))
+>ProxyOptions : Symbol(ProxyOptions, Decl(index.d.ts, 1, 2478))
+>PrunePayload : Symbol(PrunePayload, Decl(index.d.ts, 1, 2497))
+>RenderBuiltAssetUrl : Symbol(RenderBuiltAssetUrl, Decl(index.d.ts, 1, 2516))
+>ResolveFn : Symbol(ResolveFn, Decl(index.d.ts, 1, 2542))
+>ResolveModulePreloadDependenciesFn : Symbol(ResolveModulePreloadDependenciesFn, Decl(index.d.ts, 1, 2558))
+>ResolveOptions : Symbol(ResolveOptions, Decl(index.d.ts, 1, 2599))
+>ResolvedBuildEnvironmentOptions : Symbol(ResolvedBuildEnvironmentOptions, Decl(index.d.ts, 1, 2620))
+>ResolvedBuildOptions : Symbol(ResolvedBuildOptions, Decl(index.d.ts, 1, 2658))
+>ResolvedCSSOptions : Symbol(ResolvedCSSOptions, Decl(index.d.ts, 1, 2685))
+>ResolvedConfig : Symbol(ResolvedConfig, Decl(index.d.ts, 1, 2710))
+>ResolvedDevEnvironmentOptions : Symbol(ResolvedDevEnvironmentOptions, Decl(index.d.ts, 1, 2731))
+>ResolvedModulePreloadOptions : Symbol(ResolvedModulePreloadOptions, Decl(index.d.ts, 1, 2767))
+>ResolvedPreviewOptions : Symbol(ResolvedPreviewOptions, Decl(index.d.ts, 1, 2802))
+>ResolvedSSROptions : Symbol(ResolvedSSROptions, Decl(index.d.ts, 1, 2831))
+>ResolvedServerOptions : Symbol(ResolvedServerOptions, Decl(index.d.ts, 1, 2856))
+>ResolvedServerUrls : Symbol(ResolvedServerUrls, Decl(index.d.ts, 1, 2884))
+>ResolvedUrl : Symbol(ResolvedUrl, Decl(index.d.ts, 1, 2909))
+>ResolvedWorkerOptions : Symbol(ResolvedWorkerOptions, Decl(index.d.ts, 1, 2927))
+>ResolverFunction : Symbol(ResolverFunction, Decl(index.d.ts, 1, 2955))
+>ResolverObject : Symbol(ResolverObject, Decl(index.d.ts, 1, 2978))
+>Rollup : Symbol(Rollup, Decl(index.d.ts, 1, 2999))
+>RollupCommonJSOptions : Symbol(RollupCommonJSOptions, Decl(index.d.ts, 1, 3012))
+>RollupDynamicImportVarsOptions : Symbol(RollupDynamicImportVarsOptions, Decl(index.d.ts, 1, 3040))
+>RunnableDevEnvironment : Symbol(RunnableDevEnvironment, Decl(index.d.ts, 1, 3077))
+>RunnableDevEnvironmentContext : Symbol(RunnableDevEnvironmentContext, Decl(index.d.ts, 1, 3106))
+>SSROptions : Symbol(SSROptions, Decl(index.d.ts, 1, 3142))
+>SSRTarget : Symbol(SSRTarget, Decl(index.d.ts, 1, 3159))
+>SassPreprocessorOptions : Symbol(SassPreprocessorOptions, Decl(index.d.ts, 1, 3175))
+>SendOptions : Symbol(SendOptions, Decl(index.d.ts, 1, 3205))
+>ServerHook : Symbol(ServerHook, Decl(index.d.ts, 1, 3223))
+>ServerHotChannel : Symbol(ServerHotChannel, Decl(index.d.ts, 1, 3240))
+>ServerModuleRunnerOptions : Symbol(ServerModuleRunnerOptions, Decl(index.d.ts, 1, 3263))
+>ServerOptions : Symbol(ServerOptions, Decl(index.d.ts, 1, 3295))
+>SkipInformation : Symbol(SkipInformation, Decl(index.d.ts, 1, 3334))
+>SsrDepOptimizationConfig : Symbol(SsrDepOptimizationConfig, Decl(index.d.ts, 1, 3356))
+>StylusPreprocessorOptions : Symbol(StylusPreprocessorOptions, Decl(index.d.ts, 1, 3387))
+>Terser : Symbol(Terser, Decl(index.d.ts, 1, 3419))
+>TerserOptions : Symbol(TerserOptions, Decl(index.d.ts, 1, 3432))
+>TransformOptions : Symbol(TransformOptions, Decl(index.d.ts, 1, 3452))
+>TransformResult : Symbol(TransformResult, Decl(index.d.ts, 1, 3475))
+>Update : Symbol(Update, Decl(index.d.ts, 1, 3497))
+>UpdatePayload : Symbol(UpdatePayload, Decl(index.d.ts, 1, 3510))
+>UserConfig : Symbol(UserConfig, Decl(index.d.ts, 1, 3530))
+>UserConfigExport : Symbol(UserConfigExport, Decl(index.d.ts, 1, 3547))
+>UserConfigFn : Symbol(UserConfigFn, Decl(index.d.ts, 1, 3570))
+>UserConfigFnObject : Symbol(UserConfigFnObject, Decl(index.d.ts, 1, 3589))
+>UserConfigFnPromise : Symbol(UserConfigFnPromise, Decl(index.d.ts, 1, 3614))
+>ViteBuilder : Symbol(ViteBuilder, Decl(index.d.ts, 1, 3640))
+>ViteDevServer : Symbol(ViteDevServer, Decl(index.d.ts, 1, 3658))
+>WatchOptions : Symbol(WatchOptions, Decl(index.d.ts, 1, 3678))
+>WebSocket : Symbol(WebSocket, Decl(index.d.ts, 1, 3697))
+>WebSocketAlias : Symbol(WebSocketAlias, Decl(index.d.ts, 1, 3713))
+>WebSocketClient : Symbol(WebSocketClient, Decl(index.d.ts, 1, 3734))
+>WebSocketCustomListener : Symbol(WebSocketCustomListener, Decl(index.d.ts, 1, 3756))
+>WebSocketServer : Symbol(WebSocketServer, Decl(index.d.ts, 1, 3786))
+>build : Symbol(build, Decl(index.d.ts, 1, 3808))
+>buildErrorMessage : Symbol(buildErrorMessage, Decl(index.d.ts, 1, 3815))
+>createBuilder : Symbol(createBuilder, Decl(index.d.ts, 1, 3834))
+>createFetchableDevEnvironment : Symbol(createFetchableDevEnvironment, Decl(index.d.ts, 1, 3849))
+>createFilter : Symbol(createFilter, Decl(index.d.ts, 1, 3880))
+>createIdResolver : Symbol(createIdResolver, Decl(index.d.ts, 1, 3894))
+>createLogger : Symbol(createLogger, Decl(index.d.ts, 1, 3912))
+>createRunnableDevEnvironment : Symbol(createRunnableDevEnvironment, Decl(index.d.ts, 1, 3926))
+>createServer : Symbol(createServer, Decl(index.d.ts, 1, 3956))
+>createServerHotChannel : Symbol(createServerHotChannel, Decl(index.d.ts, 1, 3970))
+>createServerModuleRunner : Symbol(createServerModuleRunner, Decl(index.d.ts, 1, 3994))
+>createServerModuleRunnerTransport : Symbol(createServerModuleRunnerTransport, Decl(index.d.ts, 1, 4020))
+>defaultAllowedOrigins : Symbol(defaultAllowedOrigins, Decl(index.d.ts, 1, 4055))
+>defaultClientConditions : Symbol(defaultClientConditions, Decl(index.d.ts, 1, 4078))
+>defaultClientMainFields : Symbol(defaultClientMainFields, Decl(index.d.ts, 1, 4132))
+>defaultExternalConditions : Symbol(defaultExternalConditions, Decl(index.d.ts, 1, 4187))
+>defaultServerConditions : Symbol(defaultServerConditions, Decl(index.d.ts, 1, 4245))
+>defaultServerMainFields : Symbol(defaultServerMainFields, Decl(index.d.ts, 1, 4299))
+>defineConfig : Symbol(defineConfig, Decl(index.d.ts, 1, 4354))
+>esbuildVersion : Symbol(esbuildVersion, Decl(index.d.ts, 1, 4368))
+>fetchModule : Symbol(fetchModule, Decl(index.d.ts, 1, 4384))
+>formatPostcssSourceMap : Symbol(formatPostcssSourceMap, Decl(index.d.ts, 1, 4397))
+>isCSSRequest : Symbol(isCSSRequest, Decl(index.d.ts, 1, 4421))
+>isFetchableDevEnvironment : Symbol(isFetchableDevEnvironment, Decl(index.d.ts, 1, 4435))
+>isFileLoadingAllowed : Symbol(isFileLoadingAllowed, Decl(index.d.ts, 1, 4462))
+>isFileServingAllowed : Symbol(isFileServingAllowed, Decl(index.d.ts, 1, 4484))
+>isRunnableDevEnvironment : Symbol(isRunnableDevEnvironment, Decl(index.d.ts, 1, 4506))
+>loadConfigFromFile : Symbol(loadConfigFromFile, Decl(index.d.ts, 1, 4532))
+>loadEnv : Symbol(loadEnv, Decl(index.d.ts, 1, 4552))
+>mergeAlias : Symbol(mergeAlias, Decl(index.d.ts, 1, 4561))
+>mergeConfig : Symbol(mergeConfig, Decl(index.d.ts, 1, 4573))
+>moduleRunnerTransform : Symbol(moduleRunnerTransform, Decl(index.d.ts, 1, 4586))
+>normalizePath : Symbol(normalizePath, Decl(index.d.ts, 1, 4625))
+>optimizeDeps : Symbol(optimizeDeps, Decl(index.d.ts, 1, 4640))
+>parseAst : Symbol(parseAst, Decl(index.d.ts, 1, 4654))
+>parseAstAsync : Symbol(parseAstAsync, Decl(index.d.ts, 1, 4664))
+>perEnvironmentPlugin : Symbol(perEnvironmentPlugin, Decl(index.d.ts, 1, 4679))
+>perEnvironmentState : Symbol(perEnvironmentState, Decl(index.d.ts, 1, 4701))
+>preprocessCSS : Symbol(preprocessCSS, Decl(index.d.ts, 1, 4722))
+>preview : Symbol(preview, Decl(index.d.ts, 1, 4737))
+>resolveConfig : Symbol(resolveConfig, Decl(index.d.ts, 1, 4746))
+>resolveEnvPrefix : Symbol(resolveEnvPrefix, Decl(index.d.ts, 1, 4761))
+>rollupVersion : Symbol(rollupVersion, Decl(index.d.ts, 1, 4779))
+>runnerImport : Symbol(runnerImport, Decl(index.d.ts, 1, 4794))
+>searchForWorkspaceRoot : Symbol(searchForWorkspaceRoot, Decl(index.d.ts, 1, 4808))
+>send : Symbol(send, Decl(index.d.ts, 1, 4832))
+>sortUserPlugins : Symbol(sortUserPlugins, Decl(index.d.ts, 1, 4838))
+>transformWithEsbuild : Symbol(transformWithEsbuild, Decl(index.d.ts, 1, 4855))
+>version : Symbol(version, Decl(index.d.ts, 1, 4877))
+

@@ -1,0 +1,1290 @@
+//// [test/cases/npm_skilltrace_TS2322.ts] ////
+
+=== app/.server/db/helpers.ts ===
+import {
+  customType,
+>customType : <T extends CustomTypeValues = CustomTypeValues>(customTypeParams: CustomTypeParams<T>) => import("drizzle-orm/utils").Equal<T['configRequired'], true> extends true ? {} : { <TConfig extends Record<string, any> & T['config']>(fieldConfig?: TConfig): SQLiteCustomColumnBuilder<ConvertCustomConfig<'', T>>; }
+
+  index,
+>index : (name: string) => IndexBuilderOn
+
+  integer,
+>integer : <TMode extends IntegerConfig['mode']>(config?: IntegerConfig<TMode>) => Or<Equal<TMode, 'timestamp'>, Equal<TMode, 'timestamp_ms'>> extends true ? SQLiteTimestampBuilderInitial<''> : Equal<TMode, 'boolean'> extends true ? SQLiteBooleanBuilderInitial<''> : SQLiteIntegerBuilderInitial<''>
+
+  text,
+>text : <U extends string, T extends Readonly<[U, ...U[]]>, L extends number | undefined, TMode extends 'text' | 'json' = "json" | "text">(config?: SQLiteTextConfig<TMode, T | Writable<T>, L>) => Equal<TMode, 'json'> extends true ? SQLiteTextJsonBuilderInitial<''> : SQLiteTextBuilderInitial<'', Writable<T>, L>
+
+  uniqueIndex,
+>uniqueIndex : (name: string) => IndexBuilderOn
+
+  type AnySQLiteColumn,
+>AnySQLiteColumn : any
+
+  type IndexColumn,
+>IndexColumn : any
+
+  type UpdateDeleteAction,
+>UpdateDeleteAction : any
+
+} from 'drizzle-orm/sqlite-core'
+export const timestamp = customType<{ data: Date; driverData: string }>({
+>timestamp : <TConfig extends Record<string, any> & unknown>(fieldConfig?: TConfig | undefined) => SQLiteCustomColumnBuilder<ConvertCustomConfig<'', { data: Date; driverData: string; }>>
+>customType<{ data: Date; driverData: string }>({  dataType: (): string => 'text',}) : <TConfig extends Record<string, any> & unknown>(fieldConfig?: TConfig | undefined) => SQLiteCustomColumnBuilder<ConvertCustomConfig<'', { data: Date; driverData: string; }>>
+>customType : <T extends CustomTypeValues = CustomTypeValues>(customTypeParams: CustomTypeParams<T>) => import("drizzle-orm/utils").Equal<T['configRequired'], true> extends true ? {} : { <TConfig extends Record<string, any> & T['config']>(fieldConfig?: TConfig): SQLiteCustomColumnBuilder<ConvertCustomConfig<'', T>>; }
+>data : Date
+>driverData : string
+>{  dataType: (): string => 'text',} : { dataType: () => string; }
+
+  dataType: (): string => 'text',
+>dataType : () => string
+>(): string => 'text' : () => string
+>'text' : "text"
+
+})
+export function id() {
+>id : () => any
+
+  return integer().primaryKey({ autoIncrement: true })
+>integer().primaryKey({ autoIncrement: true }) : error
+>integer().primaryKey : error
+>integer() : any
+>integer : <TMode extends IntegerConfig['mode']>(config?: IntegerConfig<TMode>) => Or<Equal<TMode, 'timestamp'>, Equal<TMode, 'timestamp_ms'>> extends true ? SQLiteTimestampBuilderInitial<''> : Equal<TMode, 'boolean'> extends true ? SQLiteBooleanBuilderInitial<''> : SQLiteIntegerBuilderInitial<''>
+>primaryKey : any
+>{ autoIncrement: true } : { autoIncrement: boolean; }
+>autoIncrement : boolean
+>true : true
+}
+export function defaultHex(length = 12) {
+>defaultHex : (length?: number) => any
+>length : number
+>12 : 12
+
+  return text()
+>text() : error
+>text : <U extends string, T extends Readonly<[U, ...U[]]>, L extends number | undefined, TMode extends 'text' | 'json' = "json" | "text">(config?: SQLiteTextConfig<TMode, T | Writable<T>, L>) => Equal<TMode, 'json'> extends true ? SQLiteTextJsonBuilderInitial<''> : SQLiteTextBuilderInitial<'', Writable<T>, L>
+}
+export function defaultNow() {
+>defaultNow : () => SQLiteCustomColumnBuilder<ConvertCustomConfig<"", T>>
+
+  return timestamp()
+>timestamp() : error
+>timestamp : <TConfig extends Record<string, any> & unknown>(fieldConfig?: TConfig | undefined) => SQLiteCustomColumnBuilder<ConvertCustomConfig<'', { data: Date; driverData: string; }>>
+}
+type Table = Record<string, AnySQLiteColumn>
+>Table : Table
+
+export function idx(table: Table, ...names: string[]) {
+>idx : (table: Table, ...names: string[]) => any
+>table : Table
+>names : string[]
+
+  return buildIndex(index, table, ...names)
+>buildIndex(index, table, ...names) : error
+>buildIndex : (indexFn: typeof index | typeof uniqueIndex, table: Table, ...names: string[]) => any
+>index : (name: string) => IndexBuilderOn
+>table : Table
+>...names : string
+>names : string[]
+}
+function buildIndex(
+>buildIndex : (indexFn: typeof index | typeof uniqueIndex, table: Table, ...names: string[]) => any
+
+  indexFn: typeof index | typeof uniqueIndex,
+>indexFn : ((name: string) => IndexBuilderOn) | ((name: string) => IndexBuilderOn)
+>index : (name: string) => IndexBuilderOn
+>uniqueIndex : (name: string) => IndexBuilderOn
+
+  table: Table,
+>table : Table
+
+  ...names: string[]
+>names : string[]
+
+) {
+  let columns = names.map((name) => table[name])
+>columns : SQLiteColumn<Update<ColumnBaseConfig<ColumnDataType, string>, TPartial>>[]
+>names.map((name) => table[name]) : SQLiteColumn<Update<ColumnBaseConfig<ColumnDataType, string>, TPartial>>[]
+>names.map : <U>(callbackfn: (value: string, index: number, array: string[]) => U, thisArg?: any) => U[]
+>names : string[]
+>map : <U>(callbackfn: (value: string, index: number, array: string[]) => U, thisArg?: any) => U[]
+>(name) => table[name] : (name: string) => SQLiteColumn<Update<ColumnBaseConfig<ColumnDataType, string>, TPartial>>
+>name : string
+>table[name] : error
+>table : Table
+>name : string
+
+  let tableName = columns[0]?.table[Symbol.for('drizzle:Name')]
+>tableName : error
+>columns[0]?.table[Symbol.for('drizzle:Name')] : error
+>columns[0]?.table : error
+>columns[0] : SQLiteColumn<Update<ColumnBaseConfig<ColumnDataType, string>, TPartial>>
+>columns : SQLiteColumn<Update<ColumnBaseConfig<ColumnDataType, string>, TPartial>>[]
+>0 : 0
+>table : any
+>Symbol.for('drizzle:Name') : symbol
+>Symbol.for : (key: string) => symbol
+>Symbol : SymbolConstructor
+>for : (key: string) => symbol
+>'drizzle:Name' : "drizzle:Name"
+
+  let indexName = `${tableName}_${names.join('_')}_index`
+>indexName : string
+>`${tableName}_${names.join('_')}_index` : string
+>tableName : error
+>names.join('_') : string
+>names.join : (separator?: string) => string
+>names : string[]
+>join : (separator?: string) => string
+>'_' : "_"
+
+  return indexFn(indexName).on(...(columns as [IndexColumn, ...IndexColumn[]]))
+>indexFn(indexName).on(...(columns as [IndexColumn, ...IndexColumn[]])) : error
+>indexFn(indexName).on : error
+>indexFn(indexName) : any
+>indexFn : ((name: string) => IndexBuilderOn) | ((name: string) => IndexBuilderOn)
+>indexName : string
+>on : any
+>...(columns as [IndexColumn, ...IndexColumn[]]) : error
+>(columns as [IndexColumn, ...IndexColumn[]]) : [any, ...any[]]
+>columns as [IndexColumn, ...IndexColumn[]] : [any, ...any[]]
+>columns : SQLiteColumn<Update<ColumnBaseConfig<ColumnDataType, string>, TPartial>>[]
+}
+type Cascade = { onDelete?: UpdateDeleteAction; onUpdate?: UpdateDeleteAction }
+>Cascade : Cascade
+>onDelete : UpdateDeleteAction | undefined
+>onUpdate : UpdateDeleteAction | undefined
+
+type TableWithId = { id: AnySQLiteColumn }
+>TableWithId : TableWithId
+>id : error
+
+export function foreign<T extends TableWithId>(
+>foreign : <T extends TableWithId>(tableRef: () => T, { onDelete, onUpdate }?: Cascade) => any
+
+  tableRef: () => T,
+>tableRef : () => T
+
+  { onDelete = 'cascade', onUpdate = 'no action' }: Cascade = {},
+>onDelete : UpdateDeleteAction
+>'cascade' : "cascade"
+>onUpdate : UpdateDeleteAction
+>'no action' : "no action"
+>{} : {}
+
+) {
+  return integer().references(() => tableRef().id, { onDelete, onUpdate })
+>integer().references(() => tableRef().id, { onDelete, onUpdate }) : error
+>integer().references : error
+>integer() : any
+>integer : <TMode extends IntegerConfig['mode']>(config?: IntegerConfig<TMode>) => Or<Equal<TMode, 'timestamp'>, Equal<TMode, 'timestamp_ms'>> extends true ? SQLiteTimestampBuilderInitial<''> : Equal<TMode, 'boolean'> extends true ? SQLiteBooleanBuilderInitial<''> : SQLiteIntegerBuilderInitial<''>
+>references : any
+>() => tableRef().id : () => SQLiteColumn<Update<ColumnBaseConfig<ColumnDataType, string>, TPartial>>
+>tableRef().id : error
+>tableRef() : T
+>tableRef : () => T
+>id : SQLiteColumn<Update<ColumnBaseConfig<ColumnDataType, string>, TPartial>>
+>{ onDelete, onUpdate } : { onDelete: UpdateDeleteAction; onUpdate: UpdateDeleteAction; }
+>onDelete : UpdateDeleteAction
+>onUpdate : UpdateDeleteAction
+}
+=== app/.server/db/index.ts ===
+import { drizzle } from 'drizzle-orm/libsql'
+>drizzle : <TSchema extends Record<string, unknown> = Record<string, never>, TClient extends Client = Client>(params_0: import("drizzle-orm/utils").DrizzleConfig<TSchema> & { connection: string | Config; }) => import("drizzle-orm/libsql/driver-core").LibSQLDatabase<TSchema> & {}
+
+import { dbCredentials } from '../../config/.server/db'
+>dbCredentials : { url: any; authToken: any; } | { authToken?: undefined; url: string; }
+
+import * as schema from './schema'
+>schema : typeof schema
+
+export const db = drizzle({
+>db : import("drizzle-orm/libsql/driver-core").LibSQLDatabase<typeof schema>
+>drizzle({  connection: dbCredentials,  schema,}) : import("drizzle-orm/libsql/driver-core").LibSQLDatabase<typeof schema>
+>drizzle : <TSchema extends Record<string, unknown> = Record<string, never>, TClient extends Client = Client>(params_0: import("drizzle-orm/utils").DrizzleConfig<TSchema> & { connection: string | Config; }) => import("drizzle-orm/libsql/driver-core").LibSQLDatabase<TSchema> & {}
+>{  connection: dbCredentials,  schema,} : { connection: { url: any; authToken: any; } | { authToken?: undefined; url: string; }; schema: typeof schema; }
+
+  connection: dbCredentials,
+>connection : { url: any; authToken: any; } | { authToken?: undefined; url: string; }
+>dbCredentials : { url: any; authToken: any; } | { authToken?: undefined; url: string; }
+
+  schema,
+>schema : typeof schema
+
+})
+=== app/.server/db/schema.ts ===
+export { users, userRelations } from './schema/users'
+>users : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "users"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+>userRelations : import("drizzle-orm").Relations<string, {}>
+
+=== app/.server/db/schema/notes.ts ===
+import { relations } from 'drizzle-orm'
+>relations : <TTableName extends string, TRelations extends Record<string, Relation<any>>>(table: AnyTable<{}>, relations: (helpers: TableRelationsHelpers<TTableName>) => TRelations) => import("drizzle-orm").Relations<TTableName, TRelations>
+
+import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
+>sqliteTable : import("drizzle-orm/sqlite-core").SQLiteTableFn<undefined>
+>text : <U extends string, T extends Readonly<[U, ...U[]]>, L extends number | undefined, TMode extends 'text' | 'json' = "json" | "text">(config?: SQLiteTextConfig<TMode, T | Writable<T>, L>) => Equal<TMode, 'json'> extends true ? SQLiteTextJsonBuilderInitial<''> : SQLiteTextBuilderInitial<'', Writable<T>, L>
+
+export const notes = sqliteTable('notes', {
+>notes : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "notes"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+>sqliteTable('notes', {}) : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "notes"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+>sqliteTable : import("drizzle-orm/sqlite-core").SQLiteTableFn<undefined>
+>'notes' : "notes"
+>{} : {}
+
+})
+export type Select = typeof notes.$inferSelect
+>Select : error
+>notes.$inferSelect : error
+>notes : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "notes"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+>$inferSelect : InferSelectModel<import("drizzle-orm/table").Table<T>>
+
+export type Insert = typeof notes.$inferInsert
+>Insert : error
+>notes.$inferInsert : error
+>notes : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "notes"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+>$inferInsert : InferInsertModel<import("drizzle-orm/table").Table<T>>
+
+export type Update = Partial<Insert>
+>Update : error
+
+export const noteRelations = relations(notes, ({ one }) => ({
+>noteRelations : import("drizzle-orm").Relations<string, {}>
+>relations(notes, ({ one }) => ({})) : import("drizzle-orm").Relations<string, {}>
+>relations : <TTableName extends string, TRelations extends Record<string, Relation<any>>>(table: AnyTable<{}>, relations: (helpers: TableRelationsHelpers<TTableName>) => TRelations) => import("drizzle-orm").Relations<TTableName, TRelations>
+>notes : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "notes"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+>({ one }) => ({}) : ({ one }: TableRelationsHelpers<TTableName>) => {}
+>one : TableRelationsHelpers<TTableName>
+>({}) : {}
+>{} : {}
+
+}))
+=== app/.server/db/schema/runs.ts ===
+import { relations } from 'drizzle-orm'
+>relations : <TTableName extends string, TRelations extends Record<string, Relation<any>>>(table: AnyTable<{}>, relations: (helpers: TableRelationsHelpers<TTableName>) => TRelations) => import("drizzle-orm").Relations<TTableName, TRelations>
+
+import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
+>sqliteTable : import("drizzle-orm/sqlite-core").SQLiteTableFn<undefined>
+>text : <U extends string, T extends Readonly<[U, ...U[]]>, L extends number | undefined, TMode extends 'text' | 'json' = "json" | "text">(config?: SQLiteTextConfig<TMode, T | Writable<T>, L>) => Equal<TMode, 'json'> extends true ? SQLiteTextJsonBuilderInitial<''> : SQLiteTextBuilderInitial<'', Writable<T>, L>
+
+export const runs = sqliteTable(
+>runs : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "runs"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+>sqliteTable(  'runs',  {  },) : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "runs"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+>sqliteTable : import("drizzle-orm/sqlite-core").SQLiteTableFn<undefined>
+
+  'runs',
+>'runs' : "runs"
+  {
+>{  } : {}
+
+  },
+)
+export type Select = typeof runs.$inferSelect
+>Select : error
+>runs.$inferSelect : error
+>runs : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "runs"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+>$inferSelect : InferSelectModel<import("drizzle-orm/table").Table<T>>
+
+export type Insert = typeof runs.$inferInsert
+>Insert : error
+>runs.$inferInsert : error
+>runs : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "runs"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+>$inferInsert : InferInsertModel<import("drizzle-orm/table").Table<T>>
+
+export type Update = Partial<Insert>
+>Update : error
+
+export type RunBag = Record<string, unknown>
+>RunBag : RunBag
+
+export const runRelations = relations(runs, ({ one, many }) => ({
+>runRelations : import("drizzle-orm").Relations<string, {}>
+>relations(runs, ({ one, many }) => ({})) : import("drizzle-orm").Relations<string, {}>
+>relations : <TTableName extends string, TRelations extends Record<string, Relation<any>>>(table: AnyTable<{}>, relations: (helpers: TableRelationsHelpers<TTableName>) => TRelations) => import("drizzle-orm").Relations<TTableName, TRelations>
+>runs : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "runs"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+>({ one, many }) => ({}) : ({ one, many }: TableRelationsHelpers<TTableName>) => {}
+>one : TableRelationsHelpers<TTableName>
+>many : TableRelationsHelpers<TTableName>
+>({}) : {}
+>{} : {}
+
+}))
+=== app/.server/db/schema/trace-events.ts ===
+import { relations } from 'drizzle-orm'
+>relations : <TTableName extends string, TRelations extends Record<string, Relation<any>>>(table: AnyTable<{}>, relations: (helpers: TableRelationsHelpers<TTableName>) => TRelations) => import("drizzle-orm").Relations<TTableName, TRelations>
+
+import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
+>sqliteTable : import("drizzle-orm/sqlite-core").SQLiteTableFn<undefined>
+>text : <U extends string, T extends Readonly<[U, ...U[]]>, L extends number | undefined, TMode extends 'text' | 'json' = "json" | "text">(config?: SQLiteTextConfig<TMode, T | Writable<T>, L>) => Equal<TMode, 'json'> extends true ? SQLiteTextJsonBuilderInitial<''> : SQLiteTextBuilderInitial<'', Writable<T>, L>
+
+export const trace_events = sqliteTable(
+>trace_events : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "trace_events"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+>sqliteTable(  'trace_events',  {  },) : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "trace_events"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+>sqliteTable : import("drizzle-orm/sqlite-core").SQLiteTableFn<undefined>
+
+  'trace_events',
+>'trace_events' : "trace_events"
+  {
+>{  } : {}
+
+  },
+)
+export type Select = typeof trace_events.$inferSelect
+>Select : error
+>trace_events.$inferSelect : error
+>trace_events : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "trace_events"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+>$inferSelect : InferSelectModel<import("drizzle-orm/table").Table<T>>
+
+export type Insert = typeof trace_events.$inferInsert
+>Insert : error
+>trace_events.$inferInsert : error
+>trace_events : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "trace_events"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+>$inferInsert : InferInsertModel<import("drizzle-orm/table").Table<T>>
+
+export type Update = Partial<Insert>
+>Update : error
+
+export type TraceEventPayload = Record<string, unknown>
+>TraceEventPayload : TraceEventPayload
+
+export const traceEventRelations = relations(trace_events, ({ one }) => ({
+>traceEventRelations : import("drizzle-orm").Relations<string, {}>
+>relations(trace_events, ({ one }) => ({})) : import("drizzle-orm").Relations<string, {}>
+>relations : <TTableName extends string, TRelations extends Record<string, Relation<any>>>(table: AnyTable<{}>, relations: (helpers: TableRelationsHelpers<TTableName>) => TRelations) => import("drizzle-orm").Relations<TTableName, TRelations>
+>trace_events : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "trace_events"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+>({ one }) => ({}) : ({ one }: TableRelationsHelpers<TTableName>) => {}
+>one : TableRelationsHelpers<TTableName>
+>({}) : {}
+>{} : {}
+
+}))
+=== app/.server/db/schema/users.ts ===
+import { relations } from 'drizzle-orm'
+>relations : <TTableName extends string, TRelations extends Record<string, Relation<any>>>(table: AnyTable<{}>, relations: (helpers: TableRelationsHelpers<TTableName>) => TRelations) => import("drizzle-orm").Relations<TTableName, TRelations>
+
+import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
+>sqliteTable : import("drizzle-orm/sqlite-core").SQLiteTableFn<undefined>
+>text : <U extends string, T extends Readonly<[U, ...U[]]>, L extends number | undefined, TMode extends 'text' | 'json' = "json" | "text">(config?: SQLiteTextConfig<TMode, T | Writable<T>, L>) => Equal<TMode, 'json'> extends true ? SQLiteTextJsonBuilderInitial<''> : SQLiteTextBuilderInitial<'', Writable<T>, L>
+
+import { defaultHex, defaultNow, id, idx, timestamp } from '../helpers'
+>defaultHex : (length?: number) => any
+>defaultNow : () => SQLiteCustomColumnBuilder<ConvertCustomConfig<"", T>>
+>id : () => any
+>idx : (table: { [x: string]: SQLiteColumn<Update<ColumnBaseConfig<ColumnDataType, string>, TPartial>>; }, ...names: string[]) => any
+>timestamp : <TConfig extends Record<string, any> & unknown>(fieldConfig?: TConfig | undefined) => SQLiteCustomColumnBuilder<ConvertCustomConfig<'', { data: Date; driverData: string; }>>
+
+export const users = sqliteTable(
+>users : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "users"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+>sqliteTable(  'users',  {    id: id(),  },) : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "users"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+>sqliteTable : import("drizzle-orm/sqlite-core").SQLiteTableFn<undefined>
+
+  'users',
+>'users' : "users"
+  {
+>{    id: id(),  } : { id: any; }
+
+    id: id(),
+>id : error
+>id() : error
+>id : () => any
+
+  },
+)
+export type Select = typeof users.$inferSelect
+>Select : error
+>users.$inferSelect : error
+>users : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "users"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+>$inferSelect : InferSelectModel<import("drizzle-orm/table").Table<T>>
+
+export type Insert = typeof users.$inferInsert
+>Insert : error
+>users.$inferInsert : error
+>users : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "users"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+>$inferInsert : InferInsertModel<import("drizzle-orm/table").Table<T>>
+
+export type Update = Partial<Insert>
+>Update : error
+
+export type UserBag = {
+>UserBag : UserBag
+}
+export const userRelations = relations(users, ({ many }) => ({
+>userRelations : import("drizzle-orm").Relations<string, {}>
+>relations(users, ({ many }) => ({})) : import("drizzle-orm").Relations<string, {}>
+>relations : <TTableName extends string, TRelations extends Record<string, Relation<any>>>(table: AnyTable<{}>, relations: (helpers: TableRelationsHelpers<TTableName>) => TRelations) => import("drizzle-orm").Relations<TTableName, TRelations>
+>users : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "users"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+>({ many }) => ({}) : ({ many }: TableRelationsHelpers<TTableName>) => {}
+>many : TableRelationsHelpers<TTableName>
+>({}) : {}
+>{} : {}
+
+}))
+=== app/config/.server/db.ts ===
+import path from 'path'
+>path : any
+
+const dbName = 'local/dev.db'
+>dbName : "local/dev.db"
+>'local/dev.db' : "local/dev.db"
+
+const dataDir = process.env.SKILLTRACE_DATA_DIR
+>dataDir : error
+>process.env.SKILLTRACE_DATA_DIR  ? path.resolve(process.env.SKILLTRACE_DATA_DIR)  : path.join(process.cwd(), 'data') : error
+>process.env.SKILLTRACE_DATA_DIR : error
+>process.env : any
+>process : NodeJS.Process
+>env : any
+>SKILLTRACE_DATA_DIR : any
+
+  ? path.resolve(process.env.SKILLTRACE_DATA_DIR)
+>path.resolve(process.env.SKILLTRACE_DATA_DIR) : error
+>path.resolve : error
+>path : any
+>resolve : any
+>process.env.SKILLTRACE_DATA_DIR : error
+>process.env : any
+>process : NodeJS.Process
+>env : any
+>SKILLTRACE_DATA_DIR : any
+
+  : path.join(process.cwd(), 'data')
+>path.join(process.cwd(), 'data') : error
+>path.join : error
+>path : any
+>join : any
+>process.cwd() : error
+>process.cwd : error
+>process : NodeJS.Process
+>cwd : any
+>'data' : "data"
+
+export const dbPath = path.join(dataDir, dbName)
+>dbPath : error
+>path.join(dataDir, dbName) : error
+>path.join : error
+>path : any
+>join : any
+>dataDir : error
+>dbName : "local/dev.db"
+
+const isProd = process.env.NODE_ENV === 'production' && !!process.env.DB_URL
+>isProd : boolean
+>process.env.NODE_ENV === 'production' && !!process.env.DB_URL : boolean
+>process.env.NODE_ENV === 'production' : boolean
+>process.env.NODE_ENV : error
+>process.env : any
+>process : NodeJS.Process
+>env : any
+>NODE_ENV : any
+>'production' : "production"
+>!!process.env.DB_URL : boolean
+>!process.env.DB_URL : boolean
+>process.env.DB_URL : error
+>process.env : any
+>process : NodeJS.Process
+>env : any
+>DB_URL : any
+
+export const dbCredentials = isProd
+>dbCredentials : { url: any; authToken: any; } | { authToken?: undefined; url: string; }
+>isProd  ? { url: process.env.DB_URL!, authToken: process.env.DB_AUTH_TOKEN! }  : { url: `file:${dbPath}` } : { url: any; authToken: any; } | { url: string; }
+>isProd : boolean
+
+  ? { url: process.env.DB_URL!, authToken: process.env.DB_AUTH_TOKEN! }
+>{ url: process.env.DB_URL!, authToken: process.env.DB_AUTH_TOKEN! } : { url: any; authToken: any; }
+>url : error
+>process.env.DB_URL! : error
+>process.env.DB_URL : error
+>process.env : any
+>process : NodeJS.Process
+>env : any
+>DB_URL : any
+>authToken : error
+>process.env.DB_AUTH_TOKEN! : error
+>process.env.DB_AUTH_TOKEN : error
+>process.env : any
+>process : NodeJS.Process
+>env : any
+>DB_AUTH_TOKEN : any
+
+  : { url: `file:${dbPath}` }
+>{ url: `file:${dbPath}` } : { url: string; }
+>url : string
+>`file:${dbPath}` : string
+>dbPath : error
+
+=== app/lib/.server/errors.ts ===
+
+=== app/lib/data/hexid.ts ===
+
+/*
+*/
+=== app/lib/data/lens.ts ===
+
+=== app/lib/vite-devtools-json.ts ===
+import type { Plugin, ResolvedConfig } from 'vite'
+>Plugin : Plugin
+>ResolvedConfig : any
+
+=== app/models/.server/base/index.ts ===
+import { db } from '../../../.server/db'
+>db : import("drizzle-orm/libsql/driver-core").LibSQLDatabase<typeof import("../../../.server/db/schema.js")>
+
+import { buildWhere, getTableName } from './query'
+>buildWhere : (model: any, where?: any) => void
+>getTableName : (table: Table) => any
+
+import type {
+  QueryConfigFirst,
+>QueryConfigFirst : QueryConfigFirst<T>
+
+  QueryConfigMany,
+>QueryConfigMany : Omit<{ with?: { [K in keyof import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema.js")>[T["_"]["name"]]["relations"]]?: true | import("drizzle-orm").DBQueryConfig<import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>[T["_"]["name"]]["relations"][K] extends One ? "one" : "many", false, import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, import("drizzle-orm").FindTableByDBName<import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>[T["_"]["name"]]["relations"][K]["referencedTableName"]>> | undefined; } | undefined; } & { where?: import("drizzle-orm/sql/sql").SQL<unknown> | ((fields: import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>[T["_"]["name"]]["columns"] extends infer T_1 ? { [K in keyof T_1]: T_1[K]; } : never, operators: Operators) => import("drizzle-orm/sql/sql").SQL | undefined) | undefined; }, "where">
+
+  QueryResult,
+>QueryResult : QueryResult<T, C>
+
+  Table,
+>Table : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "users"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+
+  TableName,
+>TableName : "users"
+
+  Where,
+>Where : Where<T>
+
+} from './types'
+export function createModel<T extends Table>(table: T) {
+>createModel : <T extends Table>(table: T) => { findBy<const C extends QueryConfigFirst<T> = QueryConfigFirst<T>>(where?: Where<T>, options?: C): Promise<import("drizzle-orm").BuildQueryResult<import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>[T["_"]["name"]], Omit<C, "where">> | undefined>; }
+>table : T
+
+  type First = QueryConfigFirst<T>
+>First : QueryConfigFirst<T>
+
+  type Many = QueryConfigMany<T>
+>Many : QueryConfigMany<T>
+
+  type Row<C extends Many> = QueryResult<T, C>
+>Row : QueryResult<T, C>
+
+  type FindFirst<C extends First> = Promise<Row<C> | undefined>
+>FindFirst : Promise<import("drizzle-orm").BuildQueryResult<import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>[T["_"]["name"]], Omit<C, "where">> | undefined>
+
+  let key = getTableName(table) as T['_']['name'] & TableName
+>key : T["_"]["name"]
+>getTableName(table) as T['_']['name'] & TableName : T["_"]["name"]
+>getTableName(table) : error
+>getTableName : (table: Table) => any
+>table : T
+
+  let query = db.query[key]
+>query : { users: import("drizzle-orm/sqlite-core/query-builders/query").RelationalQueryBuilder<"async", typeof import("../../../.server/db/schema"), import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, {}>; }[T["_"]["name"]]
+>db.query[key] : { users: import("drizzle-orm/sqlite-core/query-builders/query").RelationalQueryBuilder<"async", typeof import("../../../.server/db/schema"), import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, {}>; }[T["_"]["name"]]
+>db.query : { users: import("drizzle-orm/sqlite-core/query-builders/query").RelationalQueryBuilder<"async", typeof import("../../../.server/db/schema"), import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, {}>; }
+>db : import("drizzle-orm/libsql/driver-core").LibSQLDatabase<typeof import("../../../.server/db/schema")>
+>query : { users: import("drizzle-orm/sqlite-core/query-builders/query").RelationalQueryBuilder<"async", typeof import("../../../.server/db/schema"), import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, {}>; }
+>key : T["_"]["name"]
+
+  return {
+>{    async findBy<const C extends First = First>(      where?: Where<T>,      options?: C,    ): FindFirst<C> {      let queryOptions = { ...options, where: buildWhere(table, where) }      return await query.findFirst(queryOptions as any)    },  } : { findBy<const C extends QueryConfigFirst<T> = QueryConfigFirst<T>>(where?: Where<T>, options?: C): Promise<import("drizzle-orm").BuildQueryResult<import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>[T["_"]["name"]], Omit<C, "where">> | undefined>; }
+
+    async findBy<const C extends First = First>(
+>findBy : <const C extends QueryConfigFirst<T> = QueryConfigFirst<T>>(where?: Where<T>, options?: C) => Promise<import("drizzle-orm").BuildQueryResult<import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>[T["_"]["name"]], Omit<C, "where">> | undefined>
+
+      where?: Where<T>,
+>where : Where<T> | undefined
+
+      options?: C,
+>options : C | undefined
+
+    ): FindFirst<C> {
+      let queryOptions = { ...options, where: buildWhere(table, where) }
+>queryOptions : { with?: { [K in keyof import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>[T["_"]["name"]]["relations"]]?: true | import("drizzle-orm").DBQueryConfig<import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>[T["_"]["name"]]["relations"][K] extends One ? "one" : "many", false, import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, import("drizzle-orm").FindTableByDBName<import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>[T["_"]["name"]]["relations"][K]["referencedTableName"]>> | undefined; } | undefined; where: void; }
+>{ ...options, where: buildWhere(table, where) } : { with?: { [K in keyof import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>[T["_"]["name"]]["relations"]]?: true | import("drizzle-orm").DBQueryConfig<import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>[T["_"]["name"]]["relations"][K] extends One ? "one" : "many", false, import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, import("drizzle-orm").FindTableByDBName<import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>[T["_"]["name"]]["relations"][K]["referencedTableName"]>> | undefined; } | undefined; where: void; }
+>options : C | undefined
+>where : void
+>buildWhere(table, where) : void
+>buildWhere : (model: any, where?: any) => void
+>table : T
+>where : Where<T> | undefined
+
+      return await query.findFirst(queryOptions as any)
+>await query.findFirst(queryOptions as any) : Awaited<import("drizzle-orm").BuildQueryResult<import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>[T["_"]["name"]], Omit<C, "where">>> | undefined
+>query.findFirst(queryOptions as any) : import("drizzle-orm/sqlite-core/query-builders/query").SQLiteRelationalQuery<"async", import("drizzle-orm").BuildQueryResult<import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>[T["_"]["name"]], Omit<C, "where">> | undefined>
+>query.findFirst : <TSelection extends Omit<import("drizzle-orm").DBQueryConfig<'many', true, import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>[T["_"]["name"]]>, 'limit'>>(config?: KnownKeysOnly<TSelection, Omit<import("drizzle-orm").DBQueryConfig<'many', true, import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>[T["_"]["name"]]>, 'limit'>>) => import("drizzle-orm/sqlite-core/query-builders/query").SQLiteRelationalQuery<"async", import("drizzle-orm").BuildQueryResult<import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>[T["_"]["name"]], TSelection> | undefined>
+>query : { users: import("drizzle-orm/sqlite-core/query-builders/query").RelationalQueryBuilder<"async", typeof import("../../../.server/db/schema"), import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, {}>; }[T["_"]["name"]]
+>findFirst : <TSelection extends Omit<import("drizzle-orm").DBQueryConfig<'many', true, import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>[T["_"]["name"]]>, 'limit'>>(config?: KnownKeysOnly<TSelection, Omit<import("drizzle-orm").DBQueryConfig<'many', true, import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>[T["_"]["name"]]>, 'limit'>>) => import("drizzle-orm/sqlite-core/query-builders/query").SQLiteRelationalQuery<"async", import("drizzle-orm").BuildQueryResult<import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>[T["_"]["name"]], TSelection> | undefined>
+>queryOptions as any : any
+>queryOptions : { with?: { [K in keyof import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>[T["_"]["name"]]["relations"]]?: true | import("drizzle-orm").DBQueryConfig<import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>[T["_"]["name"]]["relations"][K] extends One ? "one" : "many", false, import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, import("drizzle-orm").FindTableByDBName<import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, import("drizzle-orm").ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>[T["_"]["name"]]["relations"][K]["referencedTableName"]>> | undefined; } | undefined; where: void; }
+
+    },
+  }
+}
+=== app/models/.server/base/query.ts ===
+import type { Table } from './types'
+>Table : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "users"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+
+export function getTableName(table: Table) {
+>getTableName : (table: Table) => any
+>table : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "users"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+
+  return table[Symbol.for('drizzle:Name')]
+>table[Symbol.for('drizzle:Name')] : error
+>table : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "users"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+>Symbol.for('drizzle:Name') : symbol
+>Symbol.for : (key: string) => symbol
+>Symbol : SymbolConstructor
+>for : (key: string) => symbol
+>'drizzle:Name' : "drizzle:Name"
+}
+export function buildWhere(model: any, where?: any) {
+>buildWhere : (model: any, where?: any) => void
+>model : any
+>where : any
+}
+=== app/models/.server/base/types.ts ===
+import type {
+  BuildQueryResult,
+>BuildQueryResult : BuildQueryResult<TSchema, TTableConfig, TFullSelection>
+
+  DBQueryConfig,
+>DBQueryConfig : DBQueryConfig<TRelationType, TIsRoot, TSchema, TTableConfig>
+
+  ExtractTablesWithRelations,
+>ExtractTablesWithRelations : ExtractTablesWithRelations<TSchema>
+
+} from 'drizzle-orm'
+import type { db } from '../../../.server/db'
+>db : any
+
+type FullSchema = typeof db._.fullSchema
+>FullSchema : typeof import("../../../.server/db/schema")
+>db._.fullSchema : typeof import("../../../.server/db/schema")
+>db._ : { readonly fullSchema: typeof import("../../../.server/db/schema"); }
+>db : import("drizzle-orm/libsql/driver-core").LibSQLDatabase<typeof import("../../../.server/db/schema")>
+>_ : { readonly fullSchema: typeof import("../../../.server/db/schema"); }
+>fullSchema : typeof import("../../../.server/db/schema")
+
+export type TableName = keyof typeof db.query
+>TableName : "users"
+>db.query : { users: import("drizzle-orm/sqlite-core/query-builders/query").RelationalQueryBuilder<"async", typeof import("../../../.server/db/schema"), ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, {}>; }
+>db : import("drizzle-orm/libsql/driver-core").LibSQLDatabase<typeof import("../../../.server/db/schema")>
+>query : { users: import("drizzle-orm/sqlite-core/query-builders/query").RelationalQueryBuilder<"async", typeof import("../../../.server/db/schema"), ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>, {}>; }
+
+export type Table = FullSchema[TableName]
+>Table : import("drizzle-orm/sqlite-core").SQLiteTable<{ name: "users"; schema: undefined; columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>; dialect: 'sqlite'; }>
+
+export type Schema = ExtractTablesWithRelations<FullSchema>
+>Schema : ExtractTablesWithRelations<typeof import("../../../.server/db/schema")>
+
+export type Where<T extends Table> = {
+>Where : Where<T>
+
+  [K in keyof T['$inferSelect']]?:
+    | null
+}
+type DrizzleQueryConfig<T extends Table> = DBQueryConfig<
+>DrizzleQueryConfig : DrizzleQueryConfig<T>
+
+  'many',
+  true,
+>true : true
+
+  Schema,
+  Schema[T['_']['name']]
+>
+export type QueryConfigMany<T extends Table> = Omit<
+>QueryConfigMany : Omit<DrizzleQueryConfig<T>, "where">
+
+  DrizzleQueryConfig<T>,
+  'where'
+> & {
+}
+export type QueryConfigFirst<T extends Table> = Omit<
+>QueryConfigFirst : QueryConfigFirst<T>
+
+  QueryConfigMany<T>,
+  'limit'
+>
+export type QueryResult<
+>QueryResult : QueryResult<T, C>
+
+  T extends Table,
+  C extends QueryConfigMany<T>,
+> = BuildQueryResult<Schema, Schema[T['_']['name']], Omit<C, 'where'>>
+=== node_modules/@types/node/globals.d.ts ===
+declare var process: NodeJS.Process;
+>process : error
+>NodeJS : any
+
+=== node_modules/@types/node/index.d.ts ===
+
+/// <reference path="globals.d.ts" />
+/// <reference path="path.d.ts" />
+=== node_modules/@types/node/path.d.ts ===
+declare module "path" {
+>"path" : typeof import("path")
+
+    export = path;
+>path : any
+}
+=== node_modules/drizzle-orm/index.d.ts ===
+
+export * from "./relations.js";
+=== node_modules/drizzle-orm/libsql/driver-core.d.ts ===
+import { BaseSQLiteDatabase } from "../sqlite-core/db.js";
+>BaseSQLiteDatabase : typeof BaseSQLiteDatabase
+
+export declare class LibSQLDatabase<TSchema extends Record<string, unknown> = Record<string, never>> extends BaseSQLiteDatabase<'async', ResultSet, TSchema> {
+>LibSQLDatabase : LibSQLDatabase<TSchema>
+>BaseSQLiteDatabase : BaseSQLiteDatabase<"async", ResultSet, TSchema, import("drizzle-orm").ExtractTablesWithRelations<TSchema>>
+}
+=== node_modules/drizzle-orm/libsql/driver.d.ts ===
+import { type DrizzleConfig } from "../utils.js";
+>DrizzleConfig : any
+
+import { type LibSQLDatabase } from "./driver-core.js";
+>LibSQLDatabase : typeof LibSQLDatabase
+
+export declare function drizzle<TSchema extends Record<string, unknown> = Record<string, never>, TClient extends Client = Client>(...params: [
+>drizzle : <TSchema extends Record<string, unknown> = Record<string, never>, TClient extends Client = Client>(params_0: DrizzleConfig<TSchema> & { connection: string | Config; }) => LibSQLDatabase<TSchema> & {}
+>params : [DrizzleConfig<TSchema> & { connection: string | Config; }]
+
+    (DrizzleConfig<TSchema> & ({
+        connection: string | Config;
+>connection : error
+
+    }))
+]): LibSQLDatabase<TSchema> & {
+};
+=== node_modules/drizzle-orm/libsql/index.d.ts ===
+
+export * from "./driver.js";
+=== node_modules/drizzle-orm/query-promise.d.ts ===
+export declare abstract class QueryPromise<T> implements Promise<T> {
+>QueryPromise : QueryPromise<T>
+
+    then<TResult1 = T, TResult2 = never>(onFulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onRejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): Promise<TResult1 | TResult2>;
+>then : <TResult1 = T, TResult2 = never>(onFulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onRejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null) => Promise<TResult1 | TResult2>
+>onFulfilled : ((value: T) => TResult1 | PromiseLike<TResult1>) | null | undefined
+>value : T
+>onRejected : ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined
+>reason : any
+}
+=== node_modules/drizzle-orm/relations.d.ts ===
+import { type AnyTable, type InferModelFromColumns, Table } from "./table.js";
+>AnyTable : any
+>InferModelFromColumns : any
+>Table : typeof Table
+
+import { type Placeholder, SQL, sql } from "./sql/sql.js";
+>Placeholder : any
+>SQL : typeof SQL
+>sql : any
+
+import type { Assume, ColumnsWithTable, Equal, Simplify, ValueOrArray } from "./utils.js";
+>Assume : any
+>ColumnsWithTable : any
+>Equal : Equal<X, Y>
+>Simplify : { [K in keyof T]: T[K]; }
+>ValueOrArray : any
+
+export declare class Relations<TTableName extends string = string, TConfig extends Record<string, Relation> = Record<string, Relation>> {
+>Relations : Relations<TTableName, TConfig>
+}
+export type ExtractObjectValues<T> = T[keyof T];
+>ExtractObjectValues : ExtractObjectValues<T>
+
+export type FindTableByDBName<TSchema extends TablesRelationalConfig, TTableName extends string> = ExtractObjectValues<{
+>FindTableByDBName : FindTableByDBName<TSchema, TTableName>
+
+    [K in keyof TSchema as TSchema[K]['dbName'] extends TTableName ? K : never]: TSchema[K];
+}>;
+export type DBQueryConfig<TRelationType extends 'one' | 'many' = 'one' | 'many', TIsRoot extends boolean = boolean, TSchema extends TablesRelationalConfig = TablesRelationalConfig, TTableConfig extends TableRelationalConfig = TableRelationalConfig> = {
+>DBQueryConfig : DBQueryConfig<TRelationType, TIsRoot, TSchema, TTableConfig>
+
+    with?: {
+>with : { [K in keyof TTableConfig["relations"]]?: true | DBQueryConfig<TTableConfig["relations"][K] extends One ? "one" : "many", false, TSchema, FindTableByDBName<TSchema, TTableConfig["relations"][K]["referencedTableName"]>> | undefined; } | undefined
+
+        [K in keyof TTableConfig['relations']]?: true | DBQueryConfig<TTableConfig['relations'][K] extends One ? 'one' : 'many', false, TSchema, FindTableByDBName<TSchema, TTableConfig['relations'][K]['referencedTableName']>> | undefined;
+>true : true
+>false : false
+
+    } | undefined;
+} & (TRelationType extends 'many' ? {
+    where?: SQL | undefined | ((fields: Simplify<[
+>where : SQL<unknown> | ((fields: Simplify<[] extends [never] ? {} : TTableConfig['columns']>, operators: Operators) => SQL | undefined) | undefined
+>fields : TTableConfig["columns"] extends infer T ? { [K in keyof T]: T[K]; } : never
+
+    ] extends [never] ? {} : TTableConfig['columns']>, operators: Operators) => SQL | undefined);
+>operators : error
+
+} & (TIsRoot extends true ? {
+>true : true
+
+} : {}) : {});
+export type ExtractTablesWithRelations<TSchema extends Record<string, unknown>> = {
+>ExtractTablesWithRelations : ExtractTablesWithRelations<TSchema>
+
+    [K in keyof TSchema as TSchema[K] extends Table ? K : never]: TSchema[K] extends Table ? {
+    } : never;
+};
+export type BuildQueryResult<TSchema extends TablesRelationalConfig, TTableConfig extends TableRelationalConfig, TFullSelection extends true | Record<string, unknown>> = Equal<TFullSelection, true> extends true ? InferModelFromColumns<TTableConfig['columns']> : TFullSelection extends Record<string, unknown> ? Simplify<(TFullSelection['columns'] extends Record<string, unknown> ? InferModelFromColumns<{
+>BuildQueryResult : BuildQueryResult<TSchema, TTableConfig, TFullSelection>
+>true : true
+>true : true
+>true : true
+
+}> : InferModelFromColumns<TTableConfig['columns']>) & (TFullSelection['extras'] extends Record<string, unknown> | ((...args: any[]) => Record<string, unknown>) ? {
+>args : any[]
+
+} : {}) & (TFullSelection['with'] extends Record<string, unknown> ? BuildRelationResult<TSchema, TFullSelection['with'], TTableConfig['relations']> : {})> : never;
+export declare function relations<TTableName extends string, TRelations extends Record<string, Relation<any>>>(table: AnyTable<{
+>relations : <TTableName extends string, TRelations extends Record<string, Relation<any>>>(table: AnyTable<{}>, relations: (helpers: TableRelationsHelpers<TTableName>) => TRelations) => Relations<TTableName, TRelations>
+>table : error
+
+}>, relations: (helpers: TableRelationsHelpers<TTableName>) => TRelations): Relations<TTableName, TRelations>;
+>relations : (helpers: TableRelationsHelpers<TTableName>) => TRelations
+>helpers : error
+
+=== node_modules/drizzle-orm/sql/sql.d.ts ===
+/**
+ */
+export declare class SQL<T = unknown> implements SQLWrapper {
+>SQL : SQL<T>
+
+    /**
+     */
+    if(condition: any | undefined): this | undefined;
+>if : (condition: any | undefined) => this | undefined
+>condition : any
+}
+=== node_modules/drizzle-orm/sqlite-core/columns/common.d.ts ===
+export type AnySQLiteColumn<TPartial extends Partial<ColumnBaseConfig<ColumnDataType, string>> = {}> = SQLiteColumn<Required<Update<ColumnBaseConfig<ColumnDataType, string>, TPartial>>>;
+>AnySQLiteColumn : error
+
+=== node_modules/drizzle-orm/sqlite-core/columns/custom.d.ts ===
+import { type Equal } from "../../utils.js";
+>Equal : any
+
+/**
+ */
+export declare function customType<T extends CustomTypeValues = CustomTypeValues>(customTypeParams: CustomTypeParams<T>): Equal<T['configRequired'], true> extends true ? {
+>customType : <T extends CustomTypeValues = CustomTypeValues>(customTypeParams: CustomTypeParams<T>) => Equal<T['configRequired'], true> extends true ? {} : { <TConfig extends Record<string, any> & T['config']>(fieldConfig?: TConfig): SQLiteCustomColumnBuilder<ConvertCustomConfig<'', T>>; }
+>customTypeParams : error
+>true : true
+>true : true
+
+} : {
+    <TConfig extends Record<string, any> & T['config']>(fieldConfig?: TConfig): SQLiteCustomColumnBuilder<ConvertCustomConfig<'', T>>;
+>fieldConfig : TConfig | undefined
+
+};
+=== node_modules/drizzle-orm/sqlite-core/columns/index.d.ts ===
+
+export * from "./common.js";
+export * from "./custom.js";
+export * from "./integer.js";
+export * from "./text.js";
+=== node_modules/drizzle-orm/sqlite-core/columns/integer.d.ts ===
+export declare function integer<TMode extends IntegerConfig['mode']>(config?: IntegerConfig<TMode>): Or<Equal<TMode, 'timestamp'>, Equal<TMode, 'timestamp_ms'>> extends true ? SQLiteTimestampBuilderInitial<''> : Equal<TMode, 'boolean'> extends true ? SQLiteBooleanBuilderInitial<''> : SQLiteIntegerBuilderInitial<''>;
+>integer : <TMode extends IntegerConfig['mode']>(config?: IntegerConfig<TMode>) => Or<Equal<TMode, 'timestamp'>, Equal<TMode, 'timestamp_ms'>> extends true ? SQLiteTimestampBuilderInitial<''> : Equal<TMode, 'boolean'> extends true ? SQLiteBooleanBuilderInitial<''> : SQLiteIntegerBuilderInitial<''>
+>config : error
+>true : true
+>true : true
+
+=== node_modules/drizzle-orm/sqlite-core/columns/text.d.ts ===
+export declare function text<U extends string, T extends Readonly<[U, ...U[]]>, L extends number | undefined, TMode extends 'text' | 'json' = 'text' | 'json'>(config?: SQLiteTextConfig<TMode, T | Writable<T>, L>): Equal<TMode, 'json'> extends true ? SQLiteTextJsonBuilderInitial<''> : SQLiteTextBuilderInitial<'', Writable<T>, L>;
+>text : <U extends string, T extends Readonly<[U, ...U[]]>, L extends number | undefined, TMode extends 'text' | 'json' = "json" | "text">(config?: SQLiteTextConfig<TMode, T | Writable<T>, L>) => Equal<TMode, 'json'> extends true ? SQLiteTextJsonBuilderInitial<''> : SQLiteTextBuilderInitial<'', Writable<T>, L>
+>config : error
+>true : true
+
+=== node_modules/drizzle-orm/sqlite-core/db.d.ts ===
+import type { ExtractTablesWithRelations, RelationalSchemaConfig, TablesRelationalConfig } from "../relations.js";
+>ExtractTablesWithRelations : ExtractTablesWithRelations<TSchema>
+>RelationalSchemaConfig : any
+>TablesRelationalConfig : any
+
+import { RelationalQueryBuilder } from "./query-builders/query.js";
+>RelationalQueryBuilder : typeof RelationalQueryBuilder
+
+export declare class BaseSQLiteDatabase<TResultKind extends 'sync' | 'async', TRunResult, TFullSchema extends Record<string, unknown> = Record<string, never>, TSchema extends TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>> {
+>BaseSQLiteDatabase : BaseSQLiteDatabase<TResultKind, TRunResult, TFullSchema, TSchema>
+
+    readonly _: {
+>_ : { readonly fullSchema: TFullSchema; }
+
+        readonly fullSchema: TFullSchema;
+>fullSchema : TFullSchema
+
+    };
+    query: TFullSchema extends Record<string, never> ? DrizzleTypeError<'Seems like the schema generic is missing - did you forget to add it to your DB type?'> : {
+>query : TFullSchema extends Record<string, never> ? DrizzleTypeError<"Seems like the schema generic is missing - did you forget to add it to your DB type?"> : { [K in keyof TSchema]: RelationalQueryBuilder<TResultKind, TFullSchema, TSchema, TSchema[K]>; }
+
+        [K in keyof TSchema]: RelationalQueryBuilder<TResultKind, TFullSchema, TSchema, TSchema[K]>;
+    };
+    /**
+     */
+}
+=== node_modules/drizzle-orm/sqlite-core/foreign-keys.d.ts ===
+export type UpdateDeleteAction = 'cascade' | 'restrict' | 'no action' | 'set null' | 'set default';
+>UpdateDeleteAction : UpdateDeleteAction
+
+/**
+ */
+=== node_modules/drizzle-orm/sqlite-core/index.d.ts ===
+
+export * from "./columns/index.js";
+export * from "./foreign-keys.js";
+export * from "./indexes.js";
+export * from "./table.js";
+=== node_modules/drizzle-orm/sqlite-core/indexes.d.ts ===
+export type IndexColumn = SQLiteColumn | SQL;
+>IndexColumn : error
+
+export declare function index(name: string): IndexBuilderOn;
+>index : (name: string) => IndexBuilderOn
+>name : string
+
+export declare function uniqueIndex(name: string): IndexBuilderOn;
+>uniqueIndex : (name: string) => IndexBuilderOn
+>name : string
+
+=== node_modules/drizzle-orm/sqlite-core/query-builders/query.d.ts ===
+import { QueryPromise } from "../../query-promise.js";
+>QueryPromise : typeof QueryPromise
+
+import { type BuildQueryResult, type DBQueryConfig, type TableRelationalConfig, type TablesRelationalConfig } from "../../relations.js";
+>BuildQueryResult : any
+>DBQueryConfig : any
+>TableRelationalConfig : any
+>TablesRelationalConfig : any
+
+export type SQLiteRelationalQueryKind<TMode extends 'sync' | 'async', TResult> = TMode extends 'async' ? SQLiteRelationalQuery<TMode, TResult> : SQLiteSyncRelationalQuery<TResult>;
+>SQLiteRelationalQueryKind : SQLiteRelationalQueryKind<TMode, TResult>
+
+export declare class RelationalQueryBuilder<TMode extends 'sync' | 'async', TFullSchema extends Record<string, unknown>, TSchema extends TablesRelationalConfig, TFields extends TableRelationalConfig> {
+>RelationalQueryBuilder : RelationalQueryBuilder<TMode, TFullSchema, TSchema, TFields>
+
+    findFirst<TSelection extends Omit<DBQueryConfig<'many', true, TSchema, TFields>, 'limit'>>(config?: KnownKeysOnly<TSelection, Omit<DBQueryConfig<'many', true, TSchema, TFields>, 'limit'>>): SQLiteRelationalQueryKind<TMode, BuildQueryResult<TSchema, TFields, TSelection> | undefined>;
+>findFirst : <TSelection extends Omit<DBQueryConfig<'many', true, TSchema, TFields>, 'limit'>>(config?: KnownKeysOnly<TSelection, Omit<DBQueryConfig<'many', true, TSchema, TFields>, 'limit'>>) => SQLiteRelationalQueryKind<TMode, BuildQueryResult<TSchema, TFields, TSelection> | undefined>
+>true : true
+>config : error
+>true : true
+}
+export declare class SQLiteRelationalQuery<TType extends 'sync' | 'async', TResult> extends QueryPromise<TResult> implements RunnableQuery<TResult, 'sqlite'>, SQLWrapper {
+>SQLiteRelationalQuery : SQLiteRelationalQuery<TType, TResult>
+>QueryPromise : QueryPromise<TResult>
+}
+=== node_modules/drizzle-orm/sqlite-core/table.d.ts ===
+import { Table, type TableConfig as TableConfigBase, type UpdateTableConfig } from "../table.js";
+>Table : typeof Table
+>TableConfig : any
+>TableConfigBase : any
+>UpdateTableConfig : any
+
+export declare class SQLiteTable<T extends TableConfig = TableConfig> extends Table<T> {
+>SQLiteTable : SQLiteTable<T>
+>Table : Table<T>
+}
+export type SQLiteTableWithColumns<T extends TableConfig> = SQLiteTable<T> & {
+>SQLiteTableWithColumns : SQLiteTable<T>
+
+};
+export interface SQLiteTableFn<TSchema extends string | undefined = undefined> {
+    <TTableName extends string, TColumnsMap extends Record<string, SQLiteColumnBuilderBase>>(name: TTableName, columns: TColumnsMap, extraConfig?: (self: BuildColumns<TTableName, TColumnsMap, 'sqlite'>) => SQLiteTableExtraConfig): SQLiteTableWithColumns<{
+>name : TTableName
+>columns : TColumnsMap
+>extraConfig : ((self: BuildColumns<TTableName, TColumnsMap, 'sqlite'>) => SQLiteTableExtraConfig) | undefined
+>self : error
+
+        name: TTableName;
+>name : TTableName
+
+        schema: TSchema;
+>schema : TSchema
+
+        columns: BuildColumns<TTableName, TColumnsMap, 'sqlite'>;
+>columns : error
+
+        dialect: 'sqlite';
+>dialect : "sqlite"
+
+    }>;
+}
+export declare const sqliteTable: SQLiteTableFn;
+>sqliteTable : SQLiteTableFn<undefined>
+
+=== node_modules/drizzle-orm/table.d.ts ===
+import type { Simplify, Update } from "./utils.js";
+>Simplify : { [K in keyof T]: T[K]; }
+>Update : any
+
+export declare class Table<T extends TableConfig = TableConfig> implements SQLWrapper {
+>Table : Table<T>
+
+    readonly _: {
+>_ : { readonly name: T['name']; }
+
+        readonly name: T['name'];
+>name : T["name"]
+
+    };
+    readonly $inferSelect: InferSelectModel<Table<T>>;
+>$inferSelect : error
+
+    readonly $inferInsert: InferInsertModel<Table<T>>;
+>$inferInsert : error
+}
+export type InferModelFromColumns<TColumns extends Record<string, Column>, TInferMode extends 'select' | 'insert' = 'select', TConfig extends {
+>InferModelFromColumns : (TInferMode extends "insert" ? {} : {}) extends infer T ? { [K in keyof T]: T[K]; } : never
+
+} = {
+}> = Simplify<TInferMode extends 'insert' ? {
+} : {
+}>;
+/** @deprecated Use one of the alternatives: {@link InferSelectModel} / {@link InferInsertModel}, or `table.$inferSelect` / `table.$inferInsert`
+ */
+=== node_modules/drizzle-orm/utils.d.ts ===
+export type Simplify<T> = {
+>Simplify : { [K in keyof T]: T[K]; }
+
+    [K in keyof T]: T[K];
+} & {};
+export type Equal<X, Y> = (<T>() => T extends X ? 1 : 2) extends (<T>() => T extends Y ? 1 : 2) ? true : false;
+>Equal : Equal<X, Y>
+>true : true
+>false : false
+
+export interface DrizzleConfig<TSchema extends Record<string, unknown> = Record<string, never>> {
+    schema?: TSchema;
+>schema : TSchema | undefined
+}
+=== node_modules/vite/client.d.ts ===
+
+export {};
+=== node_modules/vite/dist/node/index.d.ts ===
+/// <reference types="node" />
+export { type Alias, type AliasOptions, type AnymatchFn, type AnymatchPattern, type AppType, type BindCLIShortcutsOptions, type BuildAppHook, BuildEnvironment, type BuildEnvironmentOptions, type BuildOptions, type BuilderOptions, type CLIShortcut, type CSSModulesOptions, type CSSOptions, type ChunkMetadata, type CommonServerOptions, type ConfigEnv, type ConfigPluginContext, type Connect, type ConnectedPayload, type CorsOptions, type CorsOrigin, type CustomEventMap, type CustomPayload, type CustomPluginOptionsVite, type DepOptimizationConfig, type DepOptimizationMetadata, type DepOptimizationOptions, DevEnvironment, type DevEnvironmentContext, type DevEnvironmentOptions, type ESBuildOptions, type ESBuildTransformResult, type Environment, type EnvironmentModuleGraph, type EnvironmentModuleNode, type EnvironmentOptions, type ErrorPayload, type EsbuildTransformOptions, type ExperimentalOptions, type ExportsData, type FSWatcher, type FetchFunction, type FetchModuleOptions, type FetchResult, type FetchableDevEnvironment, type FetchableDevEnvironmentContext, type FileSystemServeOptions, type FilterPattern, type FullReloadPayload, type GeneralImportGlobOptions, type HMRPayload, type HTMLOptions, type HmrContext, type HmrOptions, type HookHandler, type HotChannel, type HotChannelClient, type HotChannelListener, type HotPayload, type HotUpdateOptions, type HtmlTagDescriptor, type index_d_exports as HttpProxy, type HttpServer, type ImportGlobFunction, type ImportGlobOptions, type IndexHtmlTransform, type IndexHtmlTransformContext, type IndexHtmlTransformHook, type IndexHtmlTransformResult, type InferCustomEventPayload, type InlineConfig, type InternalResolveOptions, type InvalidatePayload, type JsonOptions, type KnownAsTypeMap, type LegacyOptions, type LessPreprocessorOptions, type LibraryFormats, type LibraryOptions, type LightningCSSOptions, type LogErrorOptions, type LogLevel, type LogOptions, type LogType, type Logger, type LoggerOptions, type Manifest, type ManifestChunk, type MapToFunction, type AnymatchMatcher as Matcher, type MinimalPluginContextWithoutEnvironment, type ModuleGraph, type ModuleNode, type ModulePreloadOptions, type ModuleRunnerTransformOptions, type NormalizedHotChannel, type NormalizedHotChannelClient, type NormalizedServerHotChannel, type OptimizedDepInfo, type Plugin, type PluginContainer, type PluginHookUtils, type PluginOption, type PreprocessCSSResult, type PreviewOptions, type PreviewServer, type PreviewServerHook, type ProxyOptions, type PrunePayload, type RenderBuiltAssetUrl, type ResolveFn, type ResolveModulePreloadDependenciesFn, type ResolveOptions, type ResolvedBuildEnvironmentOptions, type ResolvedBuildOptions, type ResolvedCSSOptions, type ResolvedConfig, type ResolvedDevEnvironmentOptions, type ResolvedModulePreloadOptions, type ResolvedPreviewOptions, type ResolvedSSROptions, type ResolvedServerOptions, type ResolvedServerUrls, type ResolvedUrl, type ResolvedWorkerOptions, type ResolverFunction, type ResolverObject, type Rollup, type RollupCommonJSOptions, type RollupDynamicImportVarsOptions, type RunnableDevEnvironment, type RunnableDevEnvironmentContext, type SSROptions, type SSRTarget, type SassPreprocessorOptions, type SendOptions, type ServerHook, type ServerHotChannel, type ServerModuleRunnerOptions, type ServerOptions$1 as ServerOptions, type SkipInformation, type SsrDepOptimizationConfig, type StylusPreprocessorOptions, type Terser, type TerserOptions, type TransformOptions, type TransformResult, type Update, type UpdatePayload, type UserConfig, type UserConfigExport, type UserConfigFn, type UserConfigFnObject, type UserConfigFnPromise, type ViteBuilder, type ViteDevServer, type WatchOptions, type WebSocket, type WebSocketAlias, type WebSocketClient, type WebSocketCustomListener, type WebSocketServer, build, buildErrorMessage, createBuilder, createFetchableDevEnvironment, createFilter, createIdResolver, createLogger, createRunnableDevEnvironment, createServer, createServerHotChannel, createServerModuleRunner, createServerModuleRunnerTransport, defaultAllowedOrigins, DEFAULT_CLIENT_CONDITIONS as defaultClientConditions, DEFAULT_CLIENT_MAIN_FIELDS as defaultClientMainFields, DEFAULT_EXTERNAL_CONDITIONS as defaultExternalConditions, DEFAULT_SERVER_CONDITIONS as defaultServerConditions, DEFAULT_SERVER_MAIN_FIELDS as defaultServerMainFields, defineConfig, esbuildVersion, fetchModule, formatPostcssSourceMap, isCSSRequest, isFetchableDevEnvironment, isFileLoadingAllowed, isFileServingAllowed, isRunnableDevEnvironment, loadConfigFromFile, loadEnv, mergeAlias, mergeConfig, ssrTransform as moduleRunnerTransform, normalizePath, optimizeDeps, parseAst, parseAstAsync, perEnvironmentPlugin, perEnvironmentState, preprocessCSS, preview, resolveConfig, resolveEnvPrefix, rollupVersion, runnerImport, searchForWorkspaceRoot, send, sortUserPlugins, transformWithEsbuild, VERSION as version };
+>Alias : any
+>AliasOptions : any
+>AnymatchFn : any
+>AnymatchPattern : any
+>AppType : any
+>BindCLIShortcutsOptions : any
+>BuildAppHook : any
+>BuildEnvironment : any
+>BuildEnvironmentOptions : any
+>BuildOptions : any
+>BuilderOptions : any
+>CLIShortcut : any
+>CSSModulesOptions : any
+>CSSOptions : any
+>ChunkMetadata : any
+>CommonServerOptions : any
+>ConfigEnv : any
+>ConfigPluginContext : any
+>Connect : any
+>ConnectedPayload : any
+>CorsOptions : any
+>CorsOrigin : any
+>CustomEventMap : any
+>CustomPayload : any
+>CustomPluginOptionsVite : any
+>DepOptimizationConfig : any
+>DepOptimizationMetadata : any
+>DepOptimizationOptions : any
+>DevEnvironment : any
+>DevEnvironmentContext : any
+>DevEnvironmentOptions : any
+>ESBuildOptions : any
+>ESBuildTransformResult : any
+>Environment : any
+>EnvironmentModuleGraph : any
+>EnvironmentModuleNode : any
+>EnvironmentOptions : any
+>ErrorPayload : any
+>EsbuildTransformOptions : any
+>ExperimentalOptions : any
+>ExportsData : any
+>FSWatcher : any
+>FetchFunction : any
+>FetchModuleOptions : any
+>FetchResult : any
+>FetchableDevEnvironment : any
+>FetchableDevEnvironmentContext : any
+>FileSystemServeOptions : any
+>FilterPattern : any
+>FullReloadPayload : any
+>GeneralImportGlobOptions : any
+>HMRPayload : any
+>HTMLOptions : any
+>HmrContext : any
+>HmrOptions : any
+>HookHandler : any
+>HotChannel : any
+>HotChannelClient : any
+>HotChannelListener : any
+>HotPayload : any
+>HotUpdateOptions : any
+>HtmlTagDescriptor : any
+>index_d_exports : any
+>HttpProxy : any
+>HttpServer : any
+>ImportGlobFunction : any
+>ImportGlobOptions : any
+>IndexHtmlTransform : any
+>IndexHtmlTransformContext : any
+>IndexHtmlTransformHook : any
+>IndexHtmlTransformResult : any
+>InferCustomEventPayload : any
+>InlineConfig : any
+>InternalResolveOptions : any
+>InvalidatePayload : any
+>JsonOptions : any
+>KnownAsTypeMap : any
+>LegacyOptions : any
+>LessPreprocessorOptions : any
+>LibraryFormats : any
+>LibraryOptions : any
+>LightningCSSOptions : any
+>LogErrorOptions : any
+>LogLevel : any
+>LogOptions : any
+>LogType : any
+>Logger : any
+>LoggerOptions : any
+>Manifest : any
+>ManifestChunk : any
+>MapToFunction : any
+>AnymatchMatcher : any
+>Matcher : any
+>MinimalPluginContextWithoutEnvironment : any
+>ModuleGraph : any
+>ModuleNode : any
+>ModulePreloadOptions : any
+>ModuleRunnerTransformOptions : any
+>NormalizedHotChannel : any
+>NormalizedHotChannelClient : any
+>NormalizedServerHotChannel : any
+>OptimizedDepInfo : any
+>Plugin : { new (): Plugin; prototype: Plugin; }
+>PluginContainer : any
+>PluginHookUtils : any
+>PluginOption : any
+>PreprocessCSSResult : any
+>PreviewOptions : any
+>PreviewServer : any
+>PreviewServerHook : any
+>ProxyOptions : any
+>PrunePayload : any
+>RenderBuiltAssetUrl : any
+>ResolveFn : any
+>ResolveModulePreloadDependenciesFn : any
+>ResolveOptions : any
+>ResolvedBuildEnvironmentOptions : any
+>ResolvedBuildOptions : any
+>ResolvedCSSOptions : any
+>ResolvedConfig : any
+>ResolvedDevEnvironmentOptions : any
+>ResolvedModulePreloadOptions : any
+>ResolvedPreviewOptions : any
+>ResolvedSSROptions : any
+>ResolvedServerOptions : any
+>ResolvedServerUrls : any
+>ResolvedUrl : any
+>ResolvedWorkerOptions : any
+>ResolverFunction : any
+>ResolverObject : any
+>Rollup : any
+>RollupCommonJSOptions : any
+>RollupDynamicImportVarsOptions : any
+>RunnableDevEnvironment : any
+>RunnableDevEnvironmentContext : any
+>SSROptions : any
+>SSRTarget : any
+>SassPreprocessorOptions : any
+>SendOptions : any
+>ServerHook : any
+>ServerHotChannel : any
+>ServerModuleRunnerOptions : any
+>ServerOptions$1 : any
+>ServerOptions : any
+>SkipInformation : any
+>SsrDepOptimizationConfig : any
+>StylusPreprocessorOptions : any
+>Terser : any
+>TerserOptions : any
+>TransformOptions : any
+>TransformResult : any
+>Update : any
+>UpdatePayload : any
+>UserConfig : any
+>UserConfigExport : any
+>UserConfigFn : any
+>UserConfigFnObject : any
+>UserConfigFnPromise : any
+>ViteBuilder : any
+>ViteDevServer : any
+>WatchOptions : any
+>WebSocket : { new (url: string | URL, protocols?: string | string[]): WebSocket; prototype: WebSocket; readonly CONNECTING: 0; readonly OPEN: 1; readonly CLOSING: 2; readonly CLOSED: 3; }
+>WebSocketAlias : any
+>WebSocketClient : any
+>WebSocketCustomListener : any
+>WebSocketServer : any
+>build : any
+>buildErrorMessage : any
+>createBuilder : any
+>createFetchableDevEnvironment : any
+>createFilter : any
+>createIdResolver : any
+>createLogger : any
+>createRunnableDevEnvironment : any
+>createServer : any
+>createServerHotChannel : any
+>createServerModuleRunner : any
+>createServerModuleRunnerTransport : any
+>defaultAllowedOrigins : any
+>DEFAULT_CLIENT_CONDITIONS : any
+>defaultClientConditions : any
+>DEFAULT_CLIENT_MAIN_FIELDS : any
+>defaultClientMainFields : any
+>DEFAULT_EXTERNAL_CONDITIONS : any
+>defaultExternalConditions : any
+>DEFAULT_SERVER_CONDITIONS : any
+>defaultServerConditions : any
+>DEFAULT_SERVER_MAIN_FIELDS : any
+>defaultServerMainFields : any
+>defineConfig : any
+>esbuildVersion : any
+>fetchModule : any
+>formatPostcssSourceMap : any
+>isCSSRequest : any
+>isFetchableDevEnvironment : any
+>isFileLoadingAllowed : any
+>isFileServingAllowed : any
+>isRunnableDevEnvironment : any
+>loadConfigFromFile : any
+>loadEnv : any
+>mergeAlias : any
+>mergeConfig : any
+>ssrTransform : any
+>moduleRunnerTransform : any
+>normalizePath : any
+>optimizeDeps : any
+>parseAst : any
+>parseAstAsync : any
+>perEnvironmentPlugin : any
+>perEnvironmentState : any
+>preprocessCSS : any
+>preview : any
+>resolveConfig : any
+>resolveEnvPrefix : any
+>rollupVersion : any
+>runnerImport : any
+>searchForWorkspaceRoot : any
+>send : any
+>sortUserPlugins : any
+>transformWithEsbuild : any
+>VERSION : any
+>version : any
+

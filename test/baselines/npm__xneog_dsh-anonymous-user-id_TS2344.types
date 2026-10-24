@@ -1,0 +1,43 @@
+//// [test/cases/npm__xneog_dsh-anonymous-user-id_TS2344.ts] ////
+
+=== npm__xneog_dsh-anonymous-user-id_TS2344.ts ===
+// origin: npm @xneog/dsh-anonymous-user-id@0.1.0 https://github.com/gomes007-alt/xneog-harness packages/identity/anonymous-user-id/tsconfig.bench.json seed 20261102
+// flip: no
+type Dict<T = any, K extends string | symbol = string> = { [key in K]: T }
+>Dict : Dict<T, K>
+
+interface Schema<S = any, T = S> { (data?: S | null): T; new (data?: S | null): T; uid: number }
+>data : S | null | undefined
+>data : S | null | undefined
+>uid : number
+
+type Constructor<T = any> = new (...args: any[]) => T
+>Constructor : Constructor<T>
+>args : any[]
+
+type From<X> =
+>From : From<X>
+
+  | X extends string | number | boolean ? Schema<X>
+  : X extends Schema ? X
+  : X extends typeof String ? Schema<string>
+>String : StringConstructor
+
+  : X extends Constructor<infer S> ? Schema<S>
+  : never
+type TypeS1<X> = X extends Schema<infer S, unknown> ? S : never
+>TypeS1 : TypeS1<X>
+
+type TypeS<X> = TypeS1<From<X>>
+>TypeS : TypeS<X>
+
+type TypeT<X> = ReturnType<From<X>>
+>TypeT : TypeT<X>
+
+interface I {
+  dict<X, Y extends Schema<any, string> = Schema<string>>(inner: X, sKey?: Y): Schema<Dict<TypeS<X>, TypeS<Y>>, Dict<TypeT<X>, TypeT<Y>>>
+>dict : <X, Y extends Schema<any, string> = Schema<string, string>>(inner: X, sKey?: Y) => Schema<Dict<TypeS<X>, TypeS<Y>>, Dict<TypeT<X>, TypeT<Y>>>
+>inner : X
+>sKey : Y | undefined
+}
+

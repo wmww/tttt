@@ -1,0 +1,107 @@
+//// [test/cases/npm__xneog_dsh-anonymous-user-id_TS2344.ts] ////
+
+=== npm__xneog_dsh-anonymous-user-id_TS2344.ts ===
+// origin: npm @xneog/dsh-anonymous-user-id@0.1.0 https://github.com/gomes007-alt/xneog-harness packages/identity/anonymous-user-id/tsconfig.bench.json seed 20261102
+// flip: no
+type Dict<T = any, K extends string | symbol = string> = { [key in K]: T }
+>Dict : Symbol(Dict, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 0, 0))
+>T : Symbol(T, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 2, 10))
+>K : Symbol(K, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 2, 18))
+>key : Symbol(key, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 2, 60))
+>K : Symbol(K, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 2, 18))
+>T : Symbol(T, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 2, 10))
+
+interface Schema<S = any, T = S> { (data?: S | null): T; new (data?: S | null): T; uid: number }
+>Schema : Symbol(Schema, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 2, 74))
+>S : Symbol(S, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 3, 17))
+>T : Symbol(T, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 3, 25))
+>S : Symbol(S, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 3, 17))
+>data : Symbol(data, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 3, 36))
+>S : Symbol(S, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 3, 17))
+>T : Symbol(T, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 3, 25))
+>data : Symbol(data, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 3, 62))
+>S : Symbol(S, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 3, 17))
+>T : Symbol(T, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 3, 25))
+>uid : Symbol(Schema.uid, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 3, 82))
+
+type Constructor<T = any> = new (...args: any[]) => T
+>Constructor : Symbol(Constructor, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 3, 96))
+>T : Symbol(T, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 4, 17))
+>args : Symbol(args, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 4, 33))
+>T : Symbol(T, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 4, 17))
+
+type From<X> =
+>From : Symbol(From, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 4, 53))
+>X : Symbol(X, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 5, 10))
+
+  | X extends string | number | boolean ? Schema<X>
+>X : Symbol(X, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 5, 10))
+>Schema : Symbol(Schema, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 2, 74))
+>X : Symbol(X, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 5, 10))
+
+  : X extends Schema ? X
+>X : Symbol(X, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 5, 10))
+>Schema : Symbol(Schema, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 2, 74))
+>X : Symbol(X, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 5, 10))
+
+  : X extends typeof String ? Schema<string>
+>X : Symbol(X, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 5, 10))
+>String : Symbol(String, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --) ... and 7 more)
+>Schema : Symbol(Schema, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 2, 74))
+
+  : X extends Constructor<infer S> ? Schema<S>
+>X : Symbol(X, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 5, 10))
+>Constructor : Symbol(Constructor, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 3, 96))
+>S : Symbol(S, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 9, 31))
+>Schema : Symbol(Schema, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 2, 74))
+>S : Symbol(S, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 9, 31))
+
+  : never
+type TypeS1<X> = X extends Schema<infer S, unknown> ? S : never
+>TypeS1 : Symbol(TypeS1, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 10, 9))
+>X : Symbol(X, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 11, 12))
+>X : Symbol(X, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 11, 12))
+>Schema : Symbol(Schema, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 2, 74))
+>S : Symbol(S, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 11, 39))
+>S : Symbol(S, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 11, 39))
+
+type TypeS<X> = TypeS1<From<X>>
+>TypeS : Symbol(TypeS, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 11, 63))
+>X : Symbol(X, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 12, 11))
+>TypeS1 : Symbol(TypeS1, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 10, 9))
+>From : Symbol(From, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 4, 53))
+>X : Symbol(X, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 12, 11))
+
+type TypeT<X> = ReturnType<From<X>>
+>TypeT : Symbol(TypeT, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 12, 31))
+>X : Symbol(X, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 13, 11))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>From : Symbol(From, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 4, 53))
+>X : Symbol(X, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 13, 11))
+
+interface I {
+>I : Symbol(I, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 13, 35))
+
+  dict<X, Y extends Schema<any, string> = Schema<string>>(inner: X, sKey?: Y): Schema<Dict<TypeS<X>, TypeS<Y>>, Dict<TypeT<X>, TypeT<Y>>>
+>dict : Symbol(I.dict, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 14, 13))
+>X : Symbol(X, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 15, 7))
+>Y : Symbol(Y, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 15, 9))
+>Schema : Symbol(Schema, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 2, 74))
+>Schema : Symbol(Schema, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 2, 74))
+>inner : Symbol(inner, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 15, 58))
+>X : Symbol(X, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 15, 7))
+>sKey : Symbol(sKey, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 15, 67))
+>Y : Symbol(Y, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 15, 9))
+>Schema : Symbol(Schema, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 2, 74))
+>Dict : Symbol(Dict, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 0, 0))
+>TypeS : Symbol(TypeS, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 11, 63))
+>X : Symbol(X, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 15, 7))
+>TypeS : Symbol(TypeS, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 11, 63))
+>Y : Symbol(Y, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 15, 9))
+>Dict : Symbol(Dict, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 0, 0))
+>TypeT : Symbol(TypeT, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 12, 31))
+>X : Symbol(X, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 15, 7))
+>TypeT : Symbol(TypeT, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 12, 31))
+>Y : Symbol(Y, Decl(npm__xneog_dsh-anonymous-user-id_TS2344.ts, 15, 9))
+}
+

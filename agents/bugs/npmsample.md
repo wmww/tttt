@@ -189,3 +189,16 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   [open]
 - Seed 20261033, ionic-team/stencil-component-starter again (another npm package of the same template repo): the
   TS2320 flip above. [dup]
+
+## Seed 20261102 (second box)
+- **npm_skilltrace_TS2322** (seed 20261102, skilltrace@0.3.3, hideya/skilltrace tsconfig.bench.json; tsgo 0, tttt 1) [flip]:
+  spurious TS2322 at a generic helper returning a mapped type built from drizzle-orm's `ExtractTablesWithRelations<...>[T["_"]["name"]]["columns"]`
+  (`{ [K in keyof ({} & ({ [K in keyof ...]?: boolean } ...))]: ...}` not assignable). Reduced to 40 files / 380 lines (drizzle's .d.ts
+  cut down, `~/` paths made relative); not cut by hand further. Guess: assignability of a deferred mapped type over an intersection
+  with a conditional (`undefined extends Record<...> ? ...`) to another mapped type that tsgo relates via the template/modifiers. [open]
+- **npm__xneog_dsh-anonymous-user-id_TS2344** (seed 20261102, @xneog/dsh-anonymous-user-id@0.1.0, gomes007-alt/xneog-harness
+  vendor/schemastery/src/index.ts:85; tsgo 89, tttt 91, +2 TS2344): `Dict<TypeS<X>, TypeS<Y>>` / `Dict<TypeT<X>, TypeT<Y>>` where
+  `Y extends Schema<any, string>` and `From<Y>` is a distributive conditional with a `X extends string|number|boolean ? Schema<X>` branch:
+  tttt checks the constraint `string | symbol` against `Y | ...` / `(string|number|boolean) & Y` instead of the conditional's
+  constraint with Y's own constraint substituted (Schema<any,string> is not a primitive, so that branch is never). Repro is the
+  vendored file's types, 15 lines. [open]
