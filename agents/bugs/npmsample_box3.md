@@ -38,3 +38,19 @@ for flips); a separate file so the three boxes never conflict.
   assignment, or the reference's flow is cached differently). Reduced by hand from the reduce.py copy: --tsgo-clean
   kept all 149 package files whole, since deleting one breaks tsgo's imports. Repro
   test/cases/npm__octanejs_sanity-icons_TS7022.ts. [flip] [open]
+- Seed 20261205, akveo/nebular (@nbholleweger/eva-icons@0.0.5): an Angular schematics template checked as TypeScript,
+  `export class <%= classify(className) %>Component {`. tsgo parses the `<` after `class` as the type parameter
+  list of a nameless class (TS1139 at the `%`, then TS1005 '>' expected). tttt reports TS1005 '{' expected and TS1110
+  and treats `classify` as a name. A parser recovery difference: a class heritage/body is expected right after
+  `class` when no name follows, where tsgo allows type parameters. Also -TS1005 ',' expected in the .spec.ts
+  template, probably the same recovery in an import list. Repro test/cases/npm__nbholleweger_eva-icons_TS1110.ts.
+  [open]
+- Seed 20261205, yuschick/stylelint-plugin-defensive-css (stylelint-plugin-defensive-css@2.9.7): both sides report one
+  TS5115 ('Container', 'Diff', postcss-selector-parser 7), tsgo at src/rules/require-pure-selectors/utils.ts:107 and
+  tttt at :24. This is the placement mechanism of rw_vue_TS7006 in agents/bugs/npmsample.md: tsgo's depth-100
+  chain against tttt's members_reentered_unguarded. No new repro. [design]
+- Seed 20261205, whats-good/graphql-ts (@whatsgood/graphql-ts@0.1.2): TS5115 placement. tsgo reports three, at
+  InputFieldsMap.ts:19 ('InternalType', 'Array', 'ExternalTypeOf'), InterfaceType.ts:70 and OutputField.ts:63.
+  tttt reports them at packages/core/src/types/core.ts:70/77/82 ('Array', 'ExternalTypeOf'). It's the same
+  instantiation-depth placement class as above (tsgo's depth-100 point against tttt's re-entry probe), and its
+  places also depend on tsgo's checker count (tsgo_divergences.md). No repro yet. [design]

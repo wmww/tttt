@@ -1,0 +1,30 @@
+npm__nbholleweger_eva-icons_TS1110.ts(7,15): error TS1139: Type parameter declaration expected.
+npm__nbholleweger_eva-icons_TS1110.ts(7,26): error TS1005: '>' expected.
+npm__nbholleweger_eva-icons_TS1110.ts(7,27): error TS2304: Cannot find name 'className'.
+npm__nbholleweger_eva-icons_TS1110.ts(7,39): error TS1109: Expression expected.
+npm__nbholleweger_eva-icons_TS1110.ts(7,40): error TS2304: Cannot find name 'Component'.
+npm__nbholleweger_eva-icons_TS1110.ts(7,50): error TS1005: ';' expected.
+
+
+==== npm__nbholleweger_eva-icons_TS1110.ts (6 errors) ====
+    // origin: npm @nbholleweger/eva-icons@0.0.5 https://github.com/akveo/nebular tsconfig.json seed 20261205
+    // flip: no
+    // An Angular schematics template checked as TypeScript (tools/dev-schematics/.../__name@dasherize__.component.ts):
+    // `class <%= ... %>Component`. tsgo parses the `<` after `class` as a type parameter list of a nameless class
+    // (TS1139 "Type parameter declaration expected", then TS1005 '>' expected); tttt recovers otherwise (TS1005 '{'
+    // expected, TS1110 "Type expected").
+    export class <%= classify(className) %>Component {
+                  ~~
+!!! error TS1139: Type parameter declaration expected.
+                             ~
+!!! error TS1005: '>' expected.
+                              ~~~~~~~~~
+!!! error TS2304: Cannot find name 'className'.
+                                          ~
+!!! error TS1109: Expression expected.
+                                           ~~~~~~~~~
+!!! error TS2304: Cannot find name 'Component'.
+                                                     ~
+!!! error TS1005: ';' expected.
+    }
+    
