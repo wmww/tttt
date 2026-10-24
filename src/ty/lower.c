@@ -2066,6 +2066,9 @@ static Ty const* with_synthetic_default(Checker* me, Ty const* type, bool spread
         panic_if(!from, "out of memory");
         for (u32 i = 0; i < members->prop_count; i++) {
             Prop const* prop = members->props[i];
+            // (A class's methods, accessors and private or protected members don't spread: tsc's getSpreadType with
+            // isSpreadableProperty, `import * as R` of an `export = class R { static bundle() }` has no `bundle`)
+            if (!ty_is_spreadable_prop(me, prop)) continue;
             // (A readonly one is copied without readonly: tsc's getSpreadSymbol with readonly false. An exported const)
             if (!(prop->flags & PROP_READONLY)) {
                 from[from_count++] = (ObjectLiteralProp){ .reuse = prop };
@@ -2088,6 +2091,8 @@ static Ty const* with_synthetic_default(Checker* me, Ty const* type, bool spread
     u32 n = 1;
     for (u32 i = 0; i < from_count; i++) {
         Atom const* name = from[i].reuse ? from[i].reuse->name : from[i].name;
+        // (An intersection's too)
+        if (from[i].reuse && !ty_is_spreadable_prop(me, from[i].reuse)) continue;
         if (name != default_name) props[n++] = from[i];
     }
     free(from);
