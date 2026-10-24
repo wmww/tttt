@@ -228,7 +228,15 @@ for flips); a separate file so the three boxes never conflict.
   unknown) => string | null'"). tttt doesn't, and instead reports TS2344 at constant/constant.test.ts:182 ("Type
   'false' does not satisfy the constraint 'true'", a type-level test assertion) and TS2352 at ui/Load/View.tsx:46,
   :56 ("Conversion of type 'ServerView<T, Full>[`${T}Obj`]' to type 'Full' may be a mistake"). 3 against 3, not a
-  flip. No repro. (claimed: corF) [open]
+  flip. The two TS2352 are fixed by corF's commit "An intersection indexed by a template literal isn't
+  distributed" (test ttttIndexedIntersectionTemplateIndex): tttt distributed `({ refName: T } & { [K in `${T}Obj`]:
+  V })[`${T}Obj`]` over the intersection, tsc doesn't for a TypeFlags.Instantiable index. Left, parked at the release
+  wind-down (2026-10-24, clone deleted; recreate with a private seed's candidates line, setup --large --per-repo 1):
+  the TS2344 at constant.test.ts:182 (`Assert<Equal<keyof ReturnType<typeof buildNumericFieldTypeChecks>, ...>>`,
+  an object literal of `f<number>(Int)` and `@ts-expect-error`'d `f(Number)` calls; reduce.py with --tsgo-clean and
+  that message didn't finish, an unrestricted run drifted) and the two missing TS2322 at service.test.ts:672/675
+  (`builder.memory(String, { get: (value: string) => value, set: (value) => value })`: injectInfo.ts's `memory`
+  with GetFn's constraint over GetFieldValue<ValueRef, ExplicitType>; not reduced). [open]
 - Seed 20261216, liruifengv/starlight-head (starlight-head@0.0.1): an extra TS2589 at @astrojs/starlight 0.21.3's
   schema.ts:113, where tsgo also reports a depth diagnostic (TS5114 "Instantiations of type 'ZodType' appear
   infinitely circular"), which tttt reports too. An extra limit error next to tsgo's own, in the depth-limit family

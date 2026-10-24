@@ -4298,8 +4298,11 @@ static Ty const* compute_simplified(Checker* me, Ty const* ty, bool writing) {
     // T[A | B] -> T[A] | T[B] (reading), T[A] & T[B] (writing)
     if (index->kind == TY_UNION) return simplified_parts(me, object, index, index->composite.types, true, writing, writing);
     // (T | U)[K] -> T[K] | U[K] (reading), T[K] & U[K] (writing); (T & U)[K] -> T[K] & U[K]. Only once the index can't be
-    // instantiated into a union that would distribute again
-    if (index->kind != TY_TYPE_PARAM && !(index->flags & TYF_DEFERRED)) {
+    // instantiated into a union that would distribute again (tsc's TypeFlags.Instantiable: a template literal or string
+    // mapping type too, `({ refName: T } & { [K in `${T}Obj`]: V })[`${T}Obj`]` stays as it is)
+    if (index->kind != TY_TYPE_PARAM && !(index->flags & TYF_DEFERRED) && index->kind != TY_TEMPLATE_LITERAL &&
+        index->kind != TY_STRING_MAPPING
+    ) {
         if (object->kind == TY_UNION) return simplified_parts(me, object, index, object->composite.types, false, writing, writing);
         if (object->kind == TY_INTERSECTION && !defers_index(me, object)) {
             return simplified_parts(me, object, index, object->composite.types, false, true, writing);

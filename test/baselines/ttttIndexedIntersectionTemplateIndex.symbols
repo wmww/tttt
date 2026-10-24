@@ -1,0 +1,56 @@
+//// [test/cases/ttttIndexedIntersectionTemplateIndex.ts] ////
+
+=== ttttIndexedIntersectionTemplateIndex.ts ===
+// An intersection indexed by a template literal type is not distributed over its members (tsc's getSimplifiedIndexedAccessType:
+// a template literal is Instantiable): `view[`${refName}Obj`]` stays `ServerView<T, Full>[`${T}Obj`]`, comparable to Full
+// through `${string}Obj` (akanjs ui/Load/View.tsx's TS2352)
+type GetStateObject<T> = {
+>GetStateObject : Symbol(GetStateObject, Decl(ttttIndexedIntersectionTemplateIndex.ts, 0, 0))
+>T : Symbol(T, Decl(ttttIndexedIntersectionTemplateIndex.ts, 3, 20))
+
+  [K in keyof T as T[K] extends (...args: never[]) => unknown ? never : K]: T[K];
+>K : Symbol(K, Decl(ttttIndexedIntersectionTemplateIndex.ts, 4, 3))
+>T : Symbol(T, Decl(ttttIndexedIntersectionTemplateIndex.ts, 3, 20))
+>T : Symbol(T, Decl(ttttIndexedIntersectionTemplateIndex.ts, 3, 20))
+>K : Symbol(K, Decl(ttttIndexedIntersectionTemplateIndex.ts, 4, 3))
+>args : Symbol(args, Decl(ttttIndexedIntersectionTemplateIndex.ts, 4, 33))
+>K : Symbol(K, Decl(ttttIndexedIntersectionTemplateIndex.ts, 4, 3))
+>T : Symbol(T, Decl(ttttIndexedIntersectionTemplateIndex.ts, 3, 20))
+>K : Symbol(K, Decl(ttttIndexedIntersectionTemplateIndex.ts, 4, 3))
+
+};
+type ServerView<RefName extends string, Model> = { refName: RefName } & {
+>ServerView : Symbol(ServerView, Decl(ttttIndexedIntersectionTemplateIndex.ts, 5, 2))
+>RefName : Symbol(RefName, Decl(ttttIndexedIntersectionTemplateIndex.ts, 6, 16))
+>Model : Symbol(Model, Decl(ttttIndexedIntersectionTemplateIndex.ts, 6, 39))
+>refName : Symbol(refName, Decl(ttttIndexedIntersectionTemplateIndex.ts, 6, 50))
+>RefName : Symbol(RefName, Decl(ttttIndexedIntersectionTemplateIndex.ts, 6, 16))
+
+  [K in `${RefName}Obj`]: GetStateObject<Model>;
+>K : Symbol(K, Decl(ttttIndexedIntersectionTemplateIndex.ts, 7, 3))
+>RefName : Symbol(RefName, Decl(ttttIndexedIntersectionTemplateIndex.ts, 6, 16))
+>GetStateObject : Symbol(GetStateObject, Decl(ttttIndexedIntersectionTemplateIndex.ts, 0, 0))
+>Model : Symbol(Model, Decl(ttttIndexedIntersectionTemplateIndex.ts, 6, 39))
+
+};
+function Render<T extends string, Full extends { id: string }>(view: ServerView<T, Full>) {
+>Render : Symbol(Render, Decl(ttttIndexedIntersectionTemplateIndex.ts, 8, 2))
+>T : Symbol(T, Decl(ttttIndexedIntersectionTemplateIndex.ts, 9, 16))
+>Full : Symbol(Full, Decl(ttttIndexedIntersectionTemplateIndex.ts, 9, 33))
+>id : Symbol(id, Decl(ttttIndexedIntersectionTemplateIndex.ts, 9, 48))
+>view : Symbol(view, Decl(ttttIndexedIntersectionTemplateIndex.ts, 9, 63))
+>ServerView : Symbol(ServerView, Decl(ttttIndexedIntersectionTemplateIndex.ts, 5, 2))
+>T : Symbol(T, Decl(ttttIndexedIntersectionTemplateIndex.ts, 9, 16))
+>Full : Symbol(Full, Decl(ttttIndexedIntersectionTemplateIndex.ts, 9, 33))
+
+  const { refName } = view;
+>refName : Symbol(refName, Decl(ttttIndexedIntersectionTemplateIndex.ts, 10, 9))
+>view : Symbol(view, Decl(ttttIndexedIntersectionTemplateIndex.ts, 9, 63))
+
+  const modelObj = view[`${refName}Obj`] as Full;
+>modelObj : Symbol(modelObj, Decl(ttttIndexedIntersectionTemplateIndex.ts, 11, 7))
+>view : Symbol(view, Decl(ttttIndexedIntersectionTemplateIndex.ts, 9, 63))
+>refName : Symbol(refName, Decl(ttttIndexedIntersectionTemplateIndex.ts, 10, 9))
+>Full : Symbol(Full, Decl(ttttIndexedIntersectionTemplateIndex.ts, 9, 33))
+}
+
