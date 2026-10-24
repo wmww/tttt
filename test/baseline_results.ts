@@ -11680,7 +11680,17 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'npm__rocket-slate_mentions_TS2615': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
     'npm__skastr0_quartz-engine_TS2719': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm__taiyakihitotsu_foxp_TS2344': {
         errors: true,
         symbols: true,
         types: true,
@@ -11705,6 +11715,11 @@ const baselines = {
         symbols: true,
         types: false,
     },
+    'npm__vkontakte_vk-mini-apps-router_TS2322': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'npm__vobs_theme_TS1003': {
         errors: true,
         symbols: true,
@@ -11726,9 +11741,9 @@ const baselines = {
         types: true,
     },
     'npm_ag-sockets_TS2345': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'npm_better-auth_TS2352': {
         errors: true,
@@ -11751,6 +11766,11 @@ const baselines = {
         types: true,
     },
     'npm_firelab_TS2538': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_forgesteel_TS2345': {
         errors: true,
         symbols: true,
         types: true,
@@ -11781,9 +11801,9 @@ const baselines = {
         types: false,
     },
     'npm_payload-storage-cloudinary_TS2322': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'npm_rabbitmq-pub-sub_TS2339': {
         errors: true,
@@ -11820,12 +11840,67 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'npm_voxel-three_TS2589': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
     'npm_znicholasbrown-graphql-tools_TS2345': {
         errors: true,
         symbols: true,
         types: true,
     },
+    'rw_discordx_TS2344': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'rw_firecrawl_TS2345': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'rw_foldkit_TS6133': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'rw_immich-server_TS1272': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'rw_n8n_TS2322': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'rw_n8n_TS2339': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'rw_n8n_TS2345': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'rw_n8n_TS7031': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'rw_n8n_nodes_base_TS2353': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'rw_n8n_nodes_base_TS2684': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'rw_vscode_TS2345': {
         errors: true,
         symbols: true,
         types: true,
@@ -12294,6 +12369,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttConditionalIdentityWrittenVsInstantiated': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttConditionalInferAliasedIntersectionFlattened': {
         errors: true,
         symbols: true,
@@ -12301,6 +12381,11 @@ const baselines = {
         dts: true,
     },
     'ttttConditionalManyBoundTypeParams': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttConditionalOwnInferInBranchArgs': {
         errors: true,
         symbols: true,
         types: true,
@@ -13094,6 +13179,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDecoratorMetadataRestParameter': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDecoratorOptionalFieldValue': {
         errors: true,
         symbols: true,
@@ -13185,6 +13275,11 @@ const baselines = {
         types: true,
     },
     'ttttDestructuredDiscriminantRedeclared': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttDestructuredNarrowedThenNarrowable': {
         errors: true,
         symbols: true,
         types: true,
@@ -13375,6 +13470,11 @@ const baselines = {
         types: true,
     },
     'ttttExcessTargetKeepsAliasName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttExhaustiveSwitchNonNull': {
         errors: true,
         symbols: true,
         types: true,
@@ -13802,6 +13902,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttInstantiationExpressionConstraintThis': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttInstantiationExpressionParameterCycle': {
         errors: true,
         symbols: true,
@@ -13859,6 +13964,11 @@ const baselines = {
         types: true,
     },
     'ttttIntersectionInheritedPropExactOptional': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttIntersectionNullableConstraintMember': {
         errors: true,
         symbols: true,
         types: true,
@@ -14742,6 +14852,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttPatternFallbackObjectLiteralTarget': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttPatternParamFirstElementScope': {
         errors: true,
         symbols: true,
@@ -15025,6 +15140,11 @@ const baselines = {
         symbols: true,
         types: true,
         dts: true,
+    },
+    'ttttSpreadNullableUnionMemberIndex': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttSpreadOptionalTypeParamUndefinedFacts': {
         errors: true,
