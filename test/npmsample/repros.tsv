@@ -56,3 +56,5 @@ npm_Zoo-Code-Org_Zoo-Code_TS2322	yes	Zoo-Code-Org/Zoo-Code@main	https://github.c
 npm__vkontakte_vk-mini-apps-router_TS2322	no	@vkontakte/vk-mini-apps-router@1.8.6	https://github.com/VKCOM/vk-mini-apps-router	5	4	-TS2322
 npm__taiyakihitotsu_foxp_TS2344	yes	@taiyakihitotsu/foxp@0.5.11	https://github.com/taiyakihitotsu/foxp	0	97	+TS2344 +TS2345 +TS7006
 npm_forgesteel_TS2345	yes	forgesteel@14.217.0	https://github.com/andyaiken/forgesteel	0	1	TS2345
+npm__rocket-slate_mentions_TS2615	no	@rocket-slate/mentions@0.2.26	https://github.com/rs-pro/rocket-slate	22	21	-TS2615
+npm_voxel-three_TS2589	no	voxel-three@0.3.0	https://github.com/tseijp/voxelizer	39	41	+TS2589 +TS2590

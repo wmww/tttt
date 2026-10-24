@@ -1,0 +1,1003 @@
+//// [test/cases/npm_voxel-three_TS2589.ts] ////
+
+=== node_modules/glre/src/node/create.ts ===
+import { addToScope, assign, toVar } from './scope'
+>addToScope : Symbol(addToScope, Decl(create.ts, 0, 8))
+>assign : Symbol(assign, Decl(create.ts, 0, 20))
+>toVar : Symbol(toVar, Decl(create.ts, 0, 28))
+
+import type { Bool, Constants as C, Functions, NodeProps, NodeTypes, Operators, X, Y } from './types'
+>Bool : Symbol(Bool, Decl(create.ts, 1, 13))
+>Constants : Symbol(C, Decl(types.ts, 0, 139))
+>C : Symbol(C, Decl(create.ts, 1, 19))
+>Functions : Symbol(Functions, Decl(create.ts, 1, 35))
+>NodeProps : Symbol(NodeProps, Decl(create.ts, 1, 46))
+>NodeTypes : Symbol(NodeTypes, Decl(create.ts, 1, 57))
+>Operators : Symbol(Operators, Decl(create.ts, 1, 68))
+>X : Symbol(X, Decl(create.ts, 1, 79))
+>Y : Symbol(Y, Decl(create.ts, 1, 82))
+
+export const create = <T extends C>(type: NodeTypes, props?: NodeProps | null, ...children: Y[]) => {
+>create : Symbol(create, Decl(create.ts, 2, 12))
+>T : Symbol(T, Decl(create.ts, 2, 23))
+>C : Symbol(C, Decl(create.ts, 1, 19))
+>type : Symbol(type, Decl(create.ts, 2, 36))
+>NodeTypes : Symbol(NodeTypes, Decl(create.ts, 1, 57))
+>props : Symbol(props, Decl(create.ts, 2, 52))
+>NodeProps : Symbol(NodeProps, Decl(create.ts, 1, 46))
+>children : Symbol(children, Decl(create.ts, 2, 78))
+>Y : Symbol(Y, Decl(create.ts, 1, 82))
+
+                if (key === 'toVar') return toVar.bind(null, x)
+>toVar.bind : Symbol(CallableFunction.bind, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>toVar : Symbol(toVar, Decl(create.ts, 0, 28))
+>bind : Symbol(CallableFunction.bind, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(create.ts, 4, 13))
+
+        const x = new Proxy({}, { get, set }) as unknown as X<T>
+>x : Symbol(x, Decl(create.ts, 4, 13))
+>Proxy : Symbol(Proxy, Decl(lib.es2015.proxy.d.ts, --, --))
+>get : Symbol(get, Decl(create.ts, 4, 33))
+>set : Symbol(set, Decl(create.ts, 4, 38))
+>X : Symbol(X, Decl(create.ts, 1, 79))
+>T : Symbol(T, Decl(create.ts, 2, 23))
+}
+=== node_modules/glre/src/node/index.ts ===
+
+export * from './scope'
+=== node_modules/glre/src/node/scope.ts ===
+import { conversion, create } from './create'
+>conversion : Symbol(conversion, Decl(scope.ts, 0, 8))
+>create : Symbol(create, Decl(scope.ts, 0, 20))
+
+import type { FnLayout, FnType, Constants as C, Int, NodeProps, Struct, StructFactory, StructFields, X, Y } from './types'
+>FnLayout : Symbol(FnLayout, Decl(scope.ts, 1, 13))
+>FnType : Symbol(FnType, Decl(scope.ts, 1, 23))
+>Constants : Symbol(C, Decl(types.ts, 0, 139))
+>C : Symbol(C, Decl(scope.ts, 1, 31))
+>Int : Symbol(Int, Decl(scope.ts, 1, 47))
+>NodeProps : Symbol(NodeProps, Decl(scope.ts, 1, 52))
+>Struct : Symbol(Struct, Decl(scope.ts, 1, 63))
+>StructFactory : Symbol(StructFactory, Decl(scope.ts, 1, 71))
+>StructFields : Symbol(StructFields, Decl(scope.ts, 1, 86))
+>X : Symbol(X, Decl(scope.ts, 1, 100))
+>Y : Symbol(Y, Decl(scope.ts, 1, 103))
+
+export function toVar<T extends StructFields>(x: Struct<T>, id?: string): Struct<T>
+>toVar : Symbol(toVar, Decl(scope.ts, 1, 122))
+>T : Symbol(T, Decl(scope.ts, 2, 22))
+>StructFields : Symbol(StructFields, Decl(scope.ts, 1, 86))
+>x : Symbol(x, Decl(scope.ts, 2, 46))
+>Struct : Symbol(Struct, Decl(scope.ts, 1, 63))
+>T : Symbol(T, Decl(scope.ts, 2, 22))
+>id : Symbol(id, Decl(scope.ts, 2, 59))
+>Struct : Symbol(Struct, Decl(scope.ts, 1, 63))
+>T : Symbol(T, Decl(scope.ts, 2, 22))
+
+=== node_modules/glre/src/node/types.ts ===
+import { CONSTANTS, CONVERSIONS, FUNCTIONS, OPERATOR_KEYS, OPERATOR_TYPE_RULES, SWIZZLE_BASE_MAP, SWIZZLE_RESULT_MAP } from './utils/const'
+>CONSTANTS : Symbol(CONSTANTS, Decl(types.ts, 0, 8))
+>CONVERSIONS : Symbol(CONVERSIONS, Decl(types.ts, 0, 19))
+>FUNCTIONS : Symbol(FUNCTIONS, Decl(types.ts, 0, 32))
+>OPERATOR_KEYS : Symbol(OPERATOR_KEYS, Decl(types.ts, 0, 43))
+>OPERATOR_TYPE_RULES : Symbol(OPERATOR_TYPE_RULES, Decl(types.ts, 0, 58))
+>SWIZZLE_BASE_MAP : Symbol(SWIZZLE_BASE_MAP, Decl(types.ts, 0, 79))
+>SWIZZLE_RESULT_MAP : Symbol(SWIZZLE_RESULT_MAP, Decl(types.ts, 0, 97))
+
+export type Constants = (typeof CONSTANTS)[number] | 'void'
+>Constants : Symbol(Constants, Decl(types.ts, 0, 139))
+>CONSTANTS : Symbol(CONSTANTS, Decl(types.ts, 0, 8))
+
+/**
+ */
+type _SwizzleLength<A extends string> =
+>_SwizzleLength : Symbol(_SwizzleLength, Decl(types.ts, 1, 59))
+>A : Symbol(A, Decl(types.ts, 4, 20))
+
+        A extends `${infer _}${infer A}` ? A extends '' ? 1 :
+>A : Symbol(A, Decl(types.ts, 4, 20))
+>_ : Symbol(_, Decl(types.ts, 5, 26))
+>A : Symbol(A, Decl(types.ts, 5, 36))
+>A : Symbol(A, Decl(types.ts, 5, 36))
+
+        A extends `${infer _}${infer B}` ? B extends '' ? 2 :
+>A : Symbol(A, Decl(types.ts, 5, 36))
+>_ : Symbol(_, Decl(types.ts, 6, 26))
+>B : Symbol(B, Decl(types.ts, 6, 36))
+>B : Symbol(B, Decl(types.ts, 6, 36))
+
+        B extends `${infer _}${infer C}` ? C extends '' ? 3 :
+>B : Symbol(B, Decl(types.ts, 6, 36))
+>_ : Symbol(_, Decl(types.ts, 7, 26))
+>C : Symbol(C, Decl(types.ts, 7, 36))
+>C : Symbol(C, Decl(types.ts, 7, 36))
+
+        4 : never : never : never
+type _SwizzleBaseMap = typeof SWIZZLE_BASE_MAP
+>_SwizzleBaseMap : Symbol(_SwizzleBaseMap, Decl(types.ts, 8, 33))
+>SWIZZLE_BASE_MAP : Symbol(SWIZZLE_BASE_MAP, Decl(types.ts, 0, 79))
+
+type _SwizzleResultMap = typeof SWIZZLE_RESULT_MAP
+>_SwizzleResultMap : Symbol(_SwizzleResultMap, Decl(types.ts, 9, 46))
+>SWIZZLE_RESULT_MAP : Symbol(SWIZZLE_RESULT_MAP, Decl(types.ts, 0, 97))
+
+type _SwizzleBase<T extends C> = T extends keyof _SwizzleBaseMap ? _SwizzleBaseMap[T] : never
+>_SwizzleBase : Symbol(_SwizzleBase, Decl(types.ts, 10, 50))
+>T : Symbol(T, Decl(types.ts, 11, 18))
+>C : Symbol(C)
+>T : Symbol(T, Decl(types.ts, 11, 18))
+>_SwizzleBaseMap : Symbol(_SwizzleBaseMap, Decl(types.ts, 8, 33))
+>_SwizzleBaseMap : Symbol(_SwizzleBaseMap, Decl(types.ts, 8, 33))
+>T : Symbol(T, Decl(types.ts, 11, 18))
+
+type _SwizzleResult<T extends C, L extends 1 | 2 | 3 | 4> = _SwizzleResultMap[_SwizzleBase<T>][L]
+>_SwizzleResult : Symbol(_SwizzleResult, Decl(types.ts, 11, 93))
+>T : Symbol(T, Decl(types.ts, 12, 20))
+>C : Symbol(C)
+>L : Symbol(L, Decl(types.ts, 12, 32))
+>_SwizzleResultMap : Symbol(_SwizzleResultMap, Decl(types.ts, 9, 46))
+>_SwizzleBase : Symbol(_SwizzleBase, Decl(types.ts, 10, 50))
+>T : Symbol(T, Decl(types.ts, 12, 20))
+>L : Symbol(L, Decl(types.ts, 12, 32))
+
+type InferSwizzleType<T extends C, S extends string> = _SwizzleLength<S> extends infer L extends 1 | 2 | 3 | 4 ? _SwizzleResult<_SwizzleBase<T>, L> : never
+>InferSwizzleType : Symbol(InferSwizzleType, Decl(types.ts, 12, 97))
+>T : Symbol(T, Decl(types.ts, 13, 22))
+>C : Symbol(C)
+>S : Symbol(S, Decl(types.ts, 13, 34))
+>_SwizzleLength : Symbol(_SwizzleLength, Decl(types.ts, 1, 59))
+>S : Symbol(S, Decl(types.ts, 13, 34))
+>L : Symbol(L, Decl(types.ts, 13, 86))
+>_SwizzleResult : Symbol(_SwizzleResult, Decl(types.ts, 11, 93))
+>_SwizzleBase : Symbol(_SwizzleBase, Decl(types.ts, 10, 50))
+>T : Symbol(T, Decl(types.ts, 13, 22))
+>L : Symbol(L, Decl(types.ts, 13, 86))
+
+type InferOperator<L extends C, R extends C> =
+>InferOperator : Symbol(InferOperator, Decl(types.ts, 13, 155))
+>L : Symbol(L, Decl(types.ts, 14, 19))
+>C : Symbol(C)
+>R : Symbol(R, Decl(types.ts, 14, 31))
+>C : Symbol(C)
+
+        L extends R ? L :
+>L : Symbol(L, Decl(types.ts, 14, 19))
+>R : Symbol(R, Decl(types.ts, 14, 31))
+>L : Symbol(L, Decl(types.ts, 14, 19))
+
+        'float'
+type _Swizzles<T extends string> = T | `${T}${T}` | `${T}${T}${T}` | `${T}${T}${T}${T}`
+>_Swizzles : Symbol(_Swizzles, Decl(types.ts, 16, 15))
+>T : Symbol(T, Decl(types.ts, 17, 15))
+>T : Symbol(T, Decl(types.ts, 17, 15))
+>T : Symbol(T, Decl(types.ts, 17, 15))
+>T : Symbol(T, Decl(types.ts, 17, 15))
+>T : Symbol(T, Decl(types.ts, 17, 15))
+>T : Symbol(T, Decl(types.ts, 17, 15))
+>T : Symbol(T, Decl(types.ts, 17, 15))
+>T : Symbol(T, Decl(types.ts, 17, 15))
+>T : Symbol(T, Decl(types.ts, 17, 15))
+>T : Symbol(T, Decl(types.ts, 17, 15))
+>T : Symbol(T, Decl(types.ts, 17, 15))
+
+export type Swizzles = _Swizzles<'x' | 'y' | 'z' | 'w'> | _Swizzles<'r' | 'g' | 'b' | 'a'> | _Swizzles<'p' | 'q'> | _Swizzles<'s' | 't'>
+>Swizzles : Symbol(Swizzles, Decl(types.ts, 17, 87))
+>_Swizzles : Symbol(_Swizzles, Decl(types.ts, 16, 15))
+>_Swizzles : Symbol(_Swizzles, Decl(types.ts, 16, 15))
+>_Swizzles : Symbol(_Swizzles, Decl(types.ts, 16, 15))
+>_Swizzles : Symbol(_Swizzles, Decl(types.ts, 16, 15))
+
+export type Void = XImpl<'void'>
+>Void : Symbol(Void, Decl(types.ts, 18, 136))
+>XImpl : Symbol(XImpl, Decl(types.ts, 73, 1))
+
+export type Bool = XImpl<'bool'>
+>Bool : Symbol(Bool, Decl(types.ts, 19, 32))
+>XImpl : Symbol(XImpl, Decl(types.ts, 73, 1))
+
+export type UInt = XImpl<'uint'>
+>UInt : Symbol(UInt, Decl(types.ts, 20, 32))
+>XImpl : Symbol(XImpl, Decl(types.ts, 73, 1))
+
+export type Int = XImpl<'int'>
+>Int : Symbol(Int, Decl(types.ts, 21, 32))
+>XImpl : Symbol(XImpl, Decl(types.ts, 73, 1))
+
+export type Float = XImpl<'float'>
+>Float : Symbol(Float, Decl(types.ts, 22, 30))
+>XImpl : Symbol(XImpl, Decl(types.ts, 73, 1))
+
+export type BVec2 = XImpl<'bvec2'>
+>BVec2 : Symbol(BVec2, Decl(types.ts, 23, 34))
+>XImpl : Symbol(XImpl, Decl(types.ts, 73, 1))
+
+export type IVec2 = XImpl<'ivec2'>
+>IVec2 : Symbol(IVec2, Decl(types.ts, 24, 34))
+>XImpl : Symbol(XImpl, Decl(types.ts, 73, 1))
+
+export type UVec2 = XImpl<'uvec2'>
+>UVec2 : Symbol(UVec2, Decl(types.ts, 25, 34))
+>XImpl : Symbol(XImpl, Decl(types.ts, 73, 1))
+
+export type Vec2 = XImpl<'vec2'>
+>Vec2 : Symbol(Vec2, Decl(types.ts, 26, 34))
+>XImpl : Symbol(XImpl, Decl(types.ts, 73, 1))
+
+export type BVec3 = XImpl<'bvec3'>
+>BVec3 : Symbol(BVec3, Decl(types.ts, 27, 32))
+>XImpl : Symbol(XImpl, Decl(types.ts, 73, 1))
+
+export type IVec3 = XImpl<'ivec3'>
+>IVec3 : Symbol(IVec3, Decl(types.ts, 28, 34))
+>XImpl : Symbol(XImpl, Decl(types.ts, 73, 1))
+
+export type UVec3 = XImpl<'uvec3'>
+>UVec3 : Symbol(UVec3, Decl(types.ts, 29, 34))
+>XImpl : Symbol(XImpl, Decl(types.ts, 73, 1))
+
+export type Vec3 = XImpl<'vec3'>
+>Vec3 : Symbol(Vec3, Decl(types.ts, 30, 34))
+>XImpl : Symbol(XImpl, Decl(types.ts, 73, 1))
+
+export type BVec4 = XImpl<'bvec4'>
+>BVec4 : Symbol(BVec4, Decl(types.ts, 31, 32))
+>XImpl : Symbol(XImpl, Decl(types.ts, 73, 1))
+
+export type IVec4 = XImpl<'ivec4'>
+>IVec4 : Symbol(IVec4, Decl(types.ts, 32, 34))
+>XImpl : Symbol(XImpl, Decl(types.ts, 73, 1))
+
+export type UVec4 = XImpl<'uvec4'>
+>UVec4 : Symbol(UVec4, Decl(types.ts, 33, 34))
+>XImpl : Symbol(XImpl, Decl(types.ts, 73, 1))
+
+export type Vec4 = XImpl<'vec4'>
+>Vec4 : Symbol(Vec4, Decl(types.ts, 34, 34))
+>XImpl : Symbol(XImpl, Decl(types.ts, 73, 1))
+
+export type Color = XImpl<'color'>
+>Color : Symbol(Color, Decl(types.ts, 35, 32))
+>XImpl : Symbol(XImpl, Decl(types.ts, 73, 1))
+
+export type Mat2 = XImpl<'mat2'>
+>Mat2 : Symbol(Mat2, Decl(types.ts, 36, 34))
+>XImpl : Symbol(XImpl, Decl(types.ts, 73, 1))
+
+export type Mat3 = XImpl<'mat3'>
+>Mat3 : Symbol(Mat3, Decl(types.ts, 37, 32))
+>XImpl : Symbol(XImpl, Decl(types.ts, 73, 1))
+
+export type Mat4 = XImpl<'mat4'>
+>Mat4 : Symbol(Mat4, Decl(types.ts, 38, 32))
+>XImpl : Symbol(XImpl, Decl(types.ts, 73, 1))
+
+export type Texture = XImpl<'texture'>
+>Texture : Symbol(Texture, Decl(types.ts, 39, 32))
+>XImpl : Symbol(XImpl, Decl(types.ts, 73, 1))
+
+export type Sampler2D = XImpl<'sampler2D'>
+>Sampler2D : Symbol(Sampler2D, Decl(types.ts, 40, 38))
+>XImpl : Symbol(XImpl, Decl(types.ts, 73, 1))
+
+export type StructBase = XImpl<'struct'>
+>StructBase : Symbol(StructBase, Decl(types.ts, 41, 42))
+>XImpl : Symbol(XImpl, Decl(types.ts, 73, 1))
+
+export type Struct<T extends StructFields = any> = Omit<StructBase, keyof T> & {
+>Struct : Symbol(Struct, Decl(types.ts, 42, 40))
+>T : Symbol(T, Decl(types.ts, 43, 19))
+>StructFields : Symbol(StructFields)
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>StructBase : Symbol(StructBase, Decl(types.ts, 41, 42))
+>T : Symbol(T, Decl(types.ts, 43, 19))
+
+        [K in keyof T]: T[K] extends X<infer U> ? X<U> : never
+>K : Symbol(K, Decl(types.ts, 44, 9))
+>T : Symbol(T, Decl(types.ts, 43, 19))
+>T : Symbol(T, Decl(types.ts, 43, 19))
+>K : Symbol(K, Decl(types.ts, 44, 9))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 44, 44))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 44, 44))
+
+} & {
+        toVar(id?: string): Struct<T>
+>toVar : Symbol(toVar, Decl(types.ts, 45, 5))
+>id : Symbol(id, Decl(types.ts, 46, 14))
+>Struct : Symbol(Struct, Decl(types.ts, 42, 40))
+>T : Symbol(T, Decl(types.ts, 43, 19))
+}
+export interface ConstantsToType {
+>ConstantsToType : Symbol(ConstantsToType, Decl(types.ts, 47, 1))
+
+        void: Void
+>void : Symbol(ConstantsToType.void, Decl(types.ts, 48, 34))
+>Void : Symbol(Void, Decl(types.ts, 18, 136))
+
+        bool: Bool
+>bool : Symbol(ConstantsToType.bool, Decl(types.ts, 49, 18))
+>Bool : Symbol(Bool, Decl(types.ts, 19, 32))
+
+        uint: UInt
+>uint : Symbol(ConstantsToType.uint, Decl(types.ts, 50, 18))
+>UInt : Symbol(UInt, Decl(types.ts, 20, 32))
+
+        int: Int
+>int : Symbol(ConstantsToType.int, Decl(types.ts, 51, 18))
+>Int : Symbol(Int, Decl(types.ts, 21, 32))
+
+        float: Float
+>float : Symbol(ConstantsToType.float, Decl(types.ts, 52, 16))
+>Float : Symbol(Float, Decl(types.ts, 22, 30))
+
+        bvec2: BVec2
+>bvec2 : Symbol(ConstantsToType.bvec2, Decl(types.ts, 53, 20))
+>BVec2 : Symbol(BVec2, Decl(types.ts, 23, 34))
+
+        ivec2: IVec2
+>ivec2 : Symbol(ConstantsToType.ivec2, Decl(types.ts, 54, 20))
+>IVec2 : Symbol(IVec2, Decl(types.ts, 24, 34))
+
+        uvec2: UVec2
+>uvec2 : Symbol(ConstantsToType.uvec2, Decl(types.ts, 55, 20))
+>UVec2 : Symbol(UVec2, Decl(types.ts, 25, 34))
+
+        vec2: Vec2
+>vec2 : Symbol(ConstantsToType.vec2, Decl(types.ts, 56, 20))
+>Vec2 : Symbol(Vec2, Decl(types.ts, 26, 34))
+
+        bvec3: BVec3
+>bvec3 : Symbol(ConstantsToType.bvec3, Decl(types.ts, 57, 18))
+>BVec3 : Symbol(BVec3, Decl(types.ts, 27, 32))
+
+        ivec3: IVec3
+>ivec3 : Symbol(ConstantsToType.ivec3, Decl(types.ts, 58, 20))
+>IVec3 : Symbol(IVec3, Decl(types.ts, 28, 34))
+
+        uvec3: UVec3
+>uvec3 : Symbol(ConstantsToType.uvec3, Decl(types.ts, 59, 20))
+>UVec3 : Symbol(UVec3, Decl(types.ts, 29, 34))
+
+        vec3: Vec3
+>vec3 : Symbol(ConstantsToType.vec3, Decl(types.ts, 60, 20))
+>Vec3 : Symbol(Vec3, Decl(types.ts, 30, 34))
+
+        bvec4: BVec4
+>bvec4 : Symbol(ConstantsToType.bvec4, Decl(types.ts, 61, 18))
+>BVec4 : Symbol(BVec4, Decl(types.ts, 31, 32))
+
+        ivec4: IVec4
+>ivec4 : Symbol(ConstantsToType.ivec4, Decl(types.ts, 62, 20))
+>IVec4 : Symbol(IVec4, Decl(types.ts, 32, 34))
+
+        uvec4: UVec4
+>uvec4 : Symbol(ConstantsToType.uvec4, Decl(types.ts, 63, 20))
+>UVec4 : Symbol(UVec4, Decl(types.ts, 33, 34))
+
+        vec4: Vec4
+>vec4 : Symbol(ConstantsToType.vec4, Decl(types.ts, 64, 20))
+>Vec4 : Symbol(Vec4, Decl(types.ts, 34, 34))
+
+        color: Color
+>color : Symbol(ConstantsToType.color, Decl(types.ts, 65, 18))
+>Color : Symbol(Color, Decl(types.ts, 35, 32))
+
+        mat2: Mat2
+>mat2 : Symbol(ConstantsToType.mat2, Decl(types.ts, 66, 20))
+>Mat2 : Symbol(Mat2, Decl(types.ts, 36, 34))
+
+        mat3: Mat3
+>mat3 : Symbol(ConstantsToType.mat3, Decl(types.ts, 67, 18))
+>Mat3 : Symbol(Mat3, Decl(types.ts, 37, 32))
+
+        mat4: Mat4
+>mat4 : Symbol(ConstantsToType.mat4, Decl(types.ts, 68, 18))
+>Mat4 : Symbol(Mat4, Decl(types.ts, 38, 32))
+
+        texture: Texture
+>texture : Symbol(ConstantsToType.texture, Decl(types.ts, 69, 18))
+>Texture : Symbol(Texture, Decl(types.ts, 39, 32))
+
+        sampler2D: Sampler2D
+>sampler2D : Symbol(ConstantsToType.sampler2D, Decl(types.ts, 70, 24))
+>Sampler2D : Symbol(Sampler2D, Decl(types.ts, 40, 38))
+
+        struct: StructBase
+>struct : Symbol(ConstantsToType.struct, Decl(types.ts, 71, 28))
+>StructBase : Symbol(StructBase, Decl(types.ts, 41, 42))
+}
+/**
+ */
+type XImpl<T extends C> = _X<T> & {
+>XImpl : Symbol(XImpl, Decl(types.ts, 73, 1))
+>T : Symbol(T, Decl(types.ts, 76, 11))
+>C : Symbol(C)
+>_X : Symbol(_X, Decl(types.ts, 79, 93))
+>T : Symbol(T, Decl(types.ts, 76, 11))
+
+        [K in Swizzles]: X<InferSwizzleType<T, K>>
+>K : Symbol(K, Decl(types.ts, 77, 9))
+>Swizzles : Symbol(Swizzles, Decl(types.ts, 17, 87))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>InferSwizzleType : Symbol(InferSwizzleType, Decl(types.ts, 12, 97))
+>T : Symbol(T, Decl(types.ts, 76, 11))
+>K : Symbol(K, Decl(types.ts, 77, 9))
+}
+export type X<T extends C = C> = T extends keyof ConstantsToType ? ConstantsToType[T] : _X<T>
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>T : Symbol(T, Decl(types.ts, 79, 14))
+>C : Symbol(C)
+>C : Symbol(C)
+>T : Symbol(T, Decl(types.ts, 79, 14))
+>ConstantsToType : Symbol(ConstantsToType, Decl(types.ts, 47, 1))
+>ConstantsToType : Symbol(ConstantsToType, Decl(types.ts, 47, 1))
+>T : Symbol(T, Decl(types.ts, 79, 14))
+>_X : Symbol(_X, Decl(types.ts, 79, 93))
+>T : Symbol(T, Decl(types.ts, 79, 14))
+
+interface _X<T extends C> {
+>_X : Symbol(_X, Decl(types.ts, 79, 93))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>C : Symbol(C)
+
+        toVar(name?: string): X<T>
+>toVar : Symbol(_X.toVar, Decl(types.ts, 80, 27))
+>name : Symbol(name, Decl(types.ts, 81, 14))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+
+        add<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<InferOperator<T, U>>
+>add : Symbol(_X.add, Decl(types.ts, 81, 34))
+>U : Symbol(U, Decl(types.ts, 82, 12))
+>C : Symbol(C)
+>x : Symbol(x, Decl(types.ts, 82, 25))
+>ValidateOperator : Symbol(ValidateOperator)
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 82, 12))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 82, 12))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>InferOperator : Symbol(InferOperator, Decl(types.ts, 13, 155))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 82, 12))
+
+        sub<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<InferOperator<T, U>>
+>sub : Symbol(_X.sub, Decl(types.ts, 82, 109))
+>U : Symbol(U, Decl(types.ts, 83, 12))
+>C : Symbol(C)
+>x : Symbol(x, Decl(types.ts, 83, 25))
+>ValidateOperator : Symbol(ValidateOperator)
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 83, 12))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 83, 12))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>InferOperator : Symbol(InferOperator, Decl(types.ts, 13, 155))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 83, 12))
+
+        mul<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<InferOperator<T, U>>
+>mul : Symbol(_X.mul, Decl(types.ts, 83, 109))
+>U : Symbol(U, Decl(types.ts, 84, 12))
+>C : Symbol(C)
+>x : Symbol(x, Decl(types.ts, 84, 25))
+>ValidateOperator : Symbol(ValidateOperator)
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 84, 12))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 84, 12))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>InferOperator : Symbol(InferOperator, Decl(types.ts, 13, 155))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 84, 12))
+
+        div<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<InferOperator<T, U>>
+>div : Symbol(_X.div, Decl(types.ts, 84, 109))
+>U : Symbol(U, Decl(types.ts, 85, 12))
+>C : Symbol(C)
+>x : Symbol(x, Decl(types.ts, 85, 25))
+>ValidateOperator : Symbol(ValidateOperator)
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 85, 12))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 85, 12))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>InferOperator : Symbol(InferOperator, Decl(types.ts, 13, 155))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 85, 12))
+
+        mod<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<InferOperator<T, U>>
+>mod : Symbol(_X.mod, Decl(types.ts, 85, 109))
+>U : Symbol(U, Decl(types.ts, 86, 12))
+>C : Symbol(C)
+>x : Symbol(x, Decl(types.ts, 86, 25))
+>ValidateOperator : Symbol(ValidateOperator)
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 86, 12))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 86, 12))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>InferOperator : Symbol(InferOperator, Decl(types.ts, 13, 155))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 86, 12))
+
+        equal<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): Bool
+>equal : Symbol(_X.equal, Decl(types.ts, 86, 109))
+>U : Symbol(U, Decl(types.ts, 87, 14))
+>C : Symbol(C)
+>x : Symbol(x, Decl(types.ts, 87, 27))
+>ValidateOperator : Symbol(ValidateOperator)
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 87, 14))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 87, 14))
+>Bool : Symbol(Bool, Decl(types.ts, 19, 32))
+
+        lessThanEqual<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): Bool
+>lessThanEqual : Symbol(_X.lessThanEqual, Decl(types.ts, 87, 93))
+>U : Symbol(U, Decl(types.ts, 88, 22))
+>C : Symbol(C)
+>x : Symbol(x, Decl(types.ts, 88, 35))
+>ValidateOperator : Symbol(ValidateOperator)
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 88, 22))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 88, 22))
+>Bool : Symbol(Bool, Decl(types.ts, 19, 32))
+
+        greaterThan<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): Bool
+>greaterThan : Symbol(_X.greaterThan, Decl(types.ts, 88, 101))
+>U : Symbol(U, Decl(types.ts, 89, 20))
+>C : Symbol(C)
+>x : Symbol(x, Decl(types.ts, 89, 33))
+>ValidateOperator : Symbol(ValidateOperator)
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 89, 20))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 89, 20))
+>Bool : Symbol(Bool, Decl(types.ts, 19, 32))
+
+        greaterThanEqual<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): Bool
+>greaterThanEqual : Symbol(_X.greaterThanEqual, Decl(types.ts, 89, 99))
+>U : Symbol(U, Decl(types.ts, 90, 25))
+>C : Symbol(C)
+>x : Symbol(x, Decl(types.ts, 90, 38))
+>ValidateOperator : Symbol(ValidateOperator)
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 90, 25))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 90, 25))
+>Bool : Symbol(Bool, Decl(types.ts, 19, 32))
+
+        shiftLeft<U extends C>(x: X<U>): X<InferOperator<T, U>>
+>shiftLeft : Symbol(_X.shiftLeft, Decl(types.ts, 90, 104))
+>U : Symbol(U, Decl(types.ts, 91, 18))
+>C : Symbol(C)
+>x : Symbol(x, Decl(types.ts, 91, 31))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 91, 18))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>InferOperator : Symbol(InferOperator, Decl(types.ts, 13, 155))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 91, 18))
+
+        shiftRight<U extends C>(x: X<U>): X<InferOperator<T, U>>
+>shiftRight : Symbol(_X.shiftRight, Decl(types.ts, 91, 63))
+>U : Symbol(U, Decl(types.ts, 92, 19))
+>C : Symbol(C)
+>x : Symbol(x, Decl(types.ts, 92, 32))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 92, 19))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>InferOperator : Symbol(InferOperator, Decl(types.ts, 13, 155))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 92, 19))
+
+        addAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+>addAssign : Symbol(_X.addAssign, Decl(types.ts, 92, 64))
+>U : Symbol(U, Decl(types.ts, 93, 18))
+>C : Symbol(C)
+>x : Symbol(x, Decl(types.ts, 93, 31))
+>ValidateOperator : Symbol(ValidateOperator)
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 93, 18))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 93, 18))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+
+        subAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+>subAssign : Symbol(_X.subAssign, Decl(types.ts, 93, 97))
+>U : Symbol(U, Decl(types.ts, 94, 18))
+>C : Symbol(C)
+>x : Symbol(x, Decl(types.ts, 94, 31))
+>ValidateOperator : Symbol(ValidateOperator)
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 94, 18))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 94, 18))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+
+        mulAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+>mulAssign : Symbol(_X.mulAssign, Decl(types.ts, 94, 97))
+>U : Symbol(U, Decl(types.ts, 95, 18))
+>C : Symbol(C)
+>x : Symbol(x, Decl(types.ts, 95, 31))
+>ValidateOperator : Symbol(ValidateOperator)
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 95, 18))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 95, 18))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+
+        divAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+>divAssign : Symbol(_X.divAssign, Decl(types.ts, 95, 97))
+>U : Symbol(U, Decl(types.ts, 96, 18))
+>C : Symbol(C)
+>x : Symbol(x, Decl(types.ts, 96, 31))
+>ValidateOperator : Symbol(ValidateOperator)
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 96, 18))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 96, 18))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+
+        modAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+>modAssign : Symbol(_X.modAssign, Decl(types.ts, 96, 97))
+>U : Symbol(U, Decl(types.ts, 97, 18))
+>C : Symbol(C)
+>x : Symbol(x, Decl(types.ts, 97, 31))
+>ValidateOperator : Symbol(ValidateOperator)
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 97, 18))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 97, 18))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+
+        bitAndAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+>bitAndAssign : Symbol(_X.bitAndAssign, Decl(types.ts, 97, 97))
+>U : Symbol(U, Decl(types.ts, 98, 21))
+>C : Symbol(C)
+>x : Symbol(x, Decl(types.ts, 98, 34))
+>ValidateOperator : Symbol(ValidateOperator)
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 98, 21))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 98, 21))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+
+        bitOrAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+>bitOrAssign : Symbol(_X.bitOrAssign, Decl(types.ts, 98, 100))
+>U : Symbol(U, Decl(types.ts, 99, 20))
+>C : Symbol(C)
+>x : Symbol(x, Decl(types.ts, 99, 33))
+>ValidateOperator : Symbol(ValidateOperator)
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 99, 20))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 99, 20))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+
+        bitXorAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+>bitXorAssign : Symbol(_X.bitXorAssign, Decl(types.ts, 99, 99))
+>U : Symbol(U, Decl(types.ts, 100, 21))
+>C : Symbol(C)
+>x : Symbol(x, Decl(types.ts, 100, 34))
+>ValidateOperator : Symbol(ValidateOperator)
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 100, 21))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 100, 21))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+
+        shiftLeftAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+>shiftLeftAssign : Symbol(_X.shiftLeftAssign, Decl(types.ts, 100, 100))
+>U : Symbol(U, Decl(types.ts, 101, 24))
+>C : Symbol(C)
+>x : Symbol(x, Decl(types.ts, 101, 37))
+>ValidateOperator : Symbol(ValidateOperator)
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 101, 24))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 101, 24))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+
+        shiftRightAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+>shiftRightAssign : Symbol(_X.shiftRightAssign, Decl(types.ts, 101, 103))
+>U : Symbol(U, Decl(types.ts, 102, 25))
+>C : Symbol(C)
+>x : Symbol(x, Decl(types.ts, 102, 38))
+>ValidateOperator : Symbol(ValidateOperator)
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 102, 25))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 102, 25))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+
+        atan2<U extends C>(x: number | X<U>): X<T>
+>atan2 : Symbol(_X.atan2, Decl(types.ts, 102, 104))
+>U : Symbol(U, Decl(types.ts, 103, 14))
+>C : Symbol(C)
+>x : Symbol(x, Decl(types.ts, 103, 27))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 103, 14))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+
+        clamp<U extends C>(min: number | X<U>, max: number | X<U>): X<InferOperator<T, U>>
+>clamp : Symbol(_X.clamp, Decl(types.ts, 103, 50))
+>U : Symbol(U, Decl(types.ts, 104, 14))
+>C : Symbol(C)
+>min : Symbol(min, Decl(types.ts, 104, 27))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 104, 14))
+>max : Symbol(max, Decl(types.ts, 104, 46))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 104, 14))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>InferOperator : Symbol(InferOperator, Decl(types.ts, 13, 155))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 104, 14))
+
+        max<U extends C>(y: number | X<U>): X<InferOperator<T, U>>
+>max : Symbol(_X.max, Decl(types.ts, 104, 90))
+>U : Symbol(U, Decl(types.ts, 105, 12))
+>C : Symbol(C)
+>y : Symbol(y, Decl(types.ts, 105, 25))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 105, 12))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>InferOperator : Symbol(InferOperator, Decl(types.ts, 13, 155))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 105, 12))
+
+        min<U extends C>(y: number | X<U>): X<InferOperator<T, U>>
+>min : Symbol(_X.min, Decl(types.ts, 105, 66))
+>U : Symbol(U, Decl(types.ts, 106, 12))
+>C : Symbol(C)
+>y : Symbol(y, Decl(types.ts, 106, 25))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 106, 12))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>InferOperator : Symbol(InferOperator, Decl(types.ts, 13, 155))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 106, 12))
+
+        mix<U extends C>(y: number | X<U>, a: number | Float | X<U>): X<InferOperator<T, U>>
+>mix : Symbol(_X.mix, Decl(types.ts, 106, 66))
+>U : Symbol(U, Decl(types.ts, 107, 12))
+>C : Symbol(C)
+>y : Symbol(y, Decl(types.ts, 107, 25))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 107, 12))
+>a : Symbol(a, Decl(types.ts, 107, 42))
+>Float : Symbol(Float, Decl(types.ts, 22, 30))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 107, 12))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>InferOperator : Symbol(InferOperator, Decl(types.ts, 13, 155))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 107, 12))
+
+        pow<U extends C>(y: number | X<U>): X<T>
+>pow : Symbol(_X.pow, Decl(types.ts, 107, 92))
+>U : Symbol(U, Decl(types.ts, 108, 12))
+>C : Symbol(C)
+>y : Symbol(y, Decl(types.ts, 108, 25))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 108, 12))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+
+        fma<U extends C>(b: number | X<U>, c: number | X<U>): X<T>
+>fma : Symbol(_X.fma, Decl(types.ts, 108, 48))
+>U : Symbol(U, Decl(types.ts, 109, 12))
+>C : Symbol(C)
+>b : Symbol(b, Decl(types.ts, 109, 25))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 109, 12))
+>c : Symbol(c, Decl(types.ts, 109, 42))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 109, 12))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+
+        smoothstep<U extends C>(edge0: number | X<U>, edge1: number | X<U>): X<InferOperator<T, U>>
+>smoothstep : Symbol(_X.smoothstep, Decl(types.ts, 109, 66))
+>U : Symbol(U, Decl(types.ts, 110, 19))
+>C : Symbol(C)
+>edge0 : Symbol(edge0, Decl(types.ts, 110, 32))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 110, 19))
+>edge1 : Symbol(edge1, Decl(types.ts, 110, 53))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 110, 19))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>InferOperator : Symbol(InferOperator, Decl(types.ts, 13, 155))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 110, 19))
+
+        step<U extends C>(edge: number | X<U>): X<InferOperator<T, U>>
+>step : Symbol(_X.step, Decl(types.ts, 110, 99))
+>U : Symbol(U, Decl(types.ts, 111, 13))
+>C : Symbol(C)
+>edge : Symbol(edge, Decl(types.ts, 111, 26))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>U : Symbol(U, Decl(types.ts, 111, 13))
+>X : Symbol(X, Decl(types.ts, 78, 1))
+>InferOperator : Symbol(InferOperator, Decl(types.ts, 13, 155))
+>T : Symbol(T, Decl(types.ts, 80, 13))
+>U : Symbol(U, Decl(types.ts, 111, 13))
+}
+=== node_modules/glre/src/node/utils/const.ts ===
+export const TYPE_MAPPING = {
+>TYPE_MAPPING : Symbol(TYPE_MAPPING, Decl(const.ts, 0, 12))
+
+        bool: 'bool',
+>bool : Symbol(bool, Decl(const.ts, 0, 29))
+
+        uint: 'u32',
+>uint : Symbol(uint, Decl(const.ts, 1, 21))
+
+        int: 'i32',
+>int : Symbol(int, Decl(const.ts, 2, 20))
+
+        float: 'f32',
+>float : Symbol(float, Decl(const.ts, 3, 19))
+
+        bvec2: 'vec2<bool>',
+>bvec2 : Symbol(bvec2, Decl(const.ts, 4, 21))
+
+        ivec2: 'vec2i',
+>ivec2 : Symbol(ivec2, Decl(const.ts, 5, 28))
+
+        uvec2: 'vec2u',
+>uvec2 : Symbol(uvec2, Decl(const.ts, 6, 23))
+
+        vec2: 'vec2f',
+>vec2 : Symbol(vec2, Decl(const.ts, 7, 23))
+
+        bvec3: 'vec3<bool>',
+>bvec3 : Symbol(bvec3, Decl(const.ts, 8, 22))
+
+        ivec3: 'vec3i',
+>ivec3 : Symbol(ivec3, Decl(const.ts, 9, 28))
+
+        uvec3: 'vec3u',
+>uvec3 : Symbol(uvec3, Decl(const.ts, 10, 23))
+
+        vec3: 'vec3f',
+>vec3 : Symbol(vec3, Decl(const.ts, 11, 23))
+
+        bvec4: 'vec4<bool>',
+>bvec4 : Symbol(bvec4, Decl(const.ts, 12, 22))
+
+        ivec4: 'vec4i',
+>ivec4 : Symbol(ivec4, Decl(const.ts, 13, 28))
+
+        uvec4: 'vec4u',
+>uvec4 : Symbol(uvec4, Decl(const.ts, 14, 23))
+
+        vec4: 'vec4f',
+>vec4 : Symbol(vec4, Decl(const.ts, 15, 23))
+
+} as const
+>const : Symbol(const)
+
+export const CONSTANTS = Object.keys(TYPE_MAPPING) as (keyof typeof TYPE_MAPPING)[]
+>CONSTANTS : Symbol(CONSTANTS, Decl(const.ts, 18, 12))
+>Object.keys : Symbol(ObjectConstructor.keys, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>keys : Symbol(ObjectConstructor.keys, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --))
+>TYPE_MAPPING : Symbol(TYPE_MAPPING, Decl(const.ts, 0, 12))
+>TYPE_MAPPING : Symbol(TYPE_MAPPING, Decl(const.ts, 0, 12))
+
+export const SWIZZLE_BASE_MAP = {
+>SWIZZLE_BASE_MAP : Symbol(SWIZZLE_BASE_MAP, Decl(const.ts, 19, 12))
+
+        float: 'float',
+>float : Symbol(float, Decl(const.ts, 19, 33))
+
+        vec2: 'float',
+>vec2 : Symbol(vec2, Decl(const.ts, 20, 23))
+
+        vec3: 'float',
+>vec3 : Symbol(vec3, Decl(const.ts, 21, 22))
+
+        vec4: 'float',
+>vec4 : Symbol(vec4, Decl(const.ts, 22, 22))
+
+        int: 'int',
+>int : Symbol(int, Decl(const.ts, 23, 22))
+
+        ivec2: 'int',
+>ivec2 : Symbol(ivec2, Decl(const.ts, 24, 19))
+
+        ivec3: 'int',
+>ivec3 : Symbol(ivec3, Decl(const.ts, 25, 21))
+
+        ivec4: 'int',
+>ivec4 : Symbol(ivec4, Decl(const.ts, 26, 21))
+
+        uint: 'uint',
+>uint : Symbol(uint, Decl(const.ts, 27, 21))
+
+        uvec2: 'uint',
+>uvec2 : Symbol(uvec2, Decl(const.ts, 28, 21))
+
+        uvec3: 'uint',
+>uvec3 : Symbol(uvec3, Decl(const.ts, 29, 22))
+
+        uvec4: 'uint',
+>uvec4 : Symbol(uvec4, Decl(const.ts, 30, 22))
+
+        bool: 'bool',
+>bool : Symbol(bool, Decl(const.ts, 31, 22))
+
+        bvec2: 'bool',
+>bvec2 : Symbol(bvec2, Decl(const.ts, 32, 21))
+
+        bvec3: 'bool',
+>bvec3 : Symbol(bvec3, Decl(const.ts, 33, 22))
+
+        bvec4: 'bool',
+>bvec4 : Symbol(bvec4, Decl(const.ts, 34, 22))
+
+} as const
+>const : Symbol(const)
+
+export const SWIZZLE_RESULT_MAP = {
+>SWIZZLE_RESULT_MAP : Symbol(SWIZZLE_RESULT_MAP, Decl(const.ts, 37, 12))
+
+        float: { 1: 'float', 2: 'vec2', 3: 'vec3', 4: 'vec4', 9: 'mat3', 16: 'mat4' } as const,
+>float : Symbol(float, Decl(const.ts, 37, 35))
+>1 : Symbol(1, Decl(const.ts, 38, 16))
+>2 : Symbol(2, Decl(const.ts, 38, 28))
+>3 : Symbol(3, Decl(const.ts, 38, 39))
+>4 : Symbol(4, Decl(const.ts, 38, 50))
+>9 : Symbol(9, Decl(const.ts, 38, 61))
+>16 : Symbol(16, Decl(const.ts, 38, 72))
+>const : Symbol(const)
+
+        int: { 1: 'int', 2: 'ivec2', 3: 'ivec3', 4: 'ivec4' } as const,
+>int : Symbol(int, Decl(const.ts, 38, 95))
+>1 : Symbol(1, Decl(const.ts, 39, 14))
+>2 : Symbol(2, Decl(const.ts, 39, 24))
+>3 : Symbol(3, Decl(const.ts, 39, 36))
+>4 : Symbol(4, Decl(const.ts, 39, 48))
+>const : Symbol(const)
+
+        uint: { 1: 'uint', 2: 'uvec2', 3: 'uvec3', 4: 'uvec4' } as const,
+>uint : Symbol(uint, Decl(const.ts, 39, 71))
+>1 : Symbol(1, Decl(const.ts, 40, 15))
+>2 : Symbol(2, Decl(const.ts, 40, 26))
+>3 : Symbol(3, Decl(const.ts, 40, 38))
+>4 : Symbol(4, Decl(const.ts, 40, 50))
+>const : Symbol(const)
+
+        bool: { 1: 'bool', 2: 'bvec2', 3: 'bvec3', 4: 'bvec4' } as const,
+>bool : Symbol(bool, Decl(const.ts, 40, 73))
+>1 : Symbol(1, Decl(const.ts, 41, 15))
+>2 : Symbol(2, Decl(const.ts, 41, 26))
+>3 : Symbol(3, Decl(const.ts, 41, 38))
+>4 : Symbol(4, Decl(const.ts, 41, 50))
+>const : Symbol(const)
+}
+=== projects/demo/main.ts ===
+import type { Float, UInt, UVec2, UVec3, Vec3 } from 'glre/src/node'
+>Float : Symbol(Float, Decl(main.ts, 0, 13))
+>UInt : Symbol(UInt, Decl(main.ts, 0, 20))
+>UVec2 : Symbol(UVec2, Decl(main.ts, 0, 26))
+>UVec3 : Symbol(UVec3, Decl(main.ts, 0, 33))
+>Vec3 : Symbol(Vec3, Decl(main.ts, 0, 40))
+

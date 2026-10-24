@@ -1,0 +1,636 @@
+//// [test/cases/npm_voxel-three_TS2589.ts] ////
+
+=== node_modules/glre/src/node/create.ts ===
+import { addToScope, assign, toVar } from './scope'
+>addToScope : any
+>assign : any
+>toVar : <T extends addToScope>(x: import("./types").Struct<T>, id?: string) => import("./types").Struct<T>
+
+import type { Bool, Constants as C, Functions, NodeProps, NodeTypes, Operators, X, Y } from './types'
+>Bool : Bool
+>Constants : any
+>C : C
+>Functions : any
+>NodeProps : any
+>NodeTypes : any
+>Operators : any
+>X : X<T>
+>Y : any
+
+export const create = <T extends C>(type: NodeTypes, props?: NodeProps | null, ...children: Y[]) => {
+>create : <T extends C>(type: NodeTypes, props?: NodeProps | null, ...children: Y[]) => ((id?: string | undefined) => any) | undefined
+><T extends C>(type: NodeTypes, props?: NodeProps | null, ...children: Y[]) => {                if (key === 'toVar') return toVar.bind(null, x)        const x = new Proxy({}, { get, set }) as unknown as X<T>} : <T extends C>(type: NodeTypes, props?: NodeProps | null, ...children: Y[]) => ((id?: string | undefined) => any) | undefined
+>type : NodeTypes
+>props : any
+>children : Y[]
+
+                if (key === 'toVar') return toVar.bind(null, x)
+>key === 'toVar' : boolean
+>key : any
+>'toVar' : "toVar"
+>toVar.bind(null, x) : (id?: string | undefined) => any
+>toVar.bind : { <T_1>(this: T_1, thisArg: ThisParameterType<T_1>): OmitThisParameter<T_1>; <T_1, A extends any[], B extends any[], R>(this: (this: T_1, ...args: [...A, ...B]) => R, thisArg: T_1, ...args: A): (...args: B) => R; }
+>toVar : <T_1 extends addToScope>(x: import("./types").Struct<T_1>, id?: string) => import("./types").Struct<T_1>
+>bind : { <T_1>(this: T_1, thisArg: ThisParameterType<T_1>): OmitThisParameter<T_1>; <T_1, A extends any[], B extends any[], R>(this: (this: T_1, ...args: [...A, ...B]) => R, thisArg: T_1, ...args: A): (...args: B) => R; }
+>x : X<T>
+
+        const x = new Proxy({}, { get, set }) as unknown as X<T>
+>x : X<T>
+>new Proxy({}, { get, set }) as unknown as X<T> : X<T>
+>new Proxy({}, { get, set }) as unknown : unknown
+>new Proxy({}, { get, set }) : {}
+>Proxy : ProxyConstructor
+>{} : {}
+>{ get, set } : { get: any; set: any; }
+>get : any
+>set : any
+}
+=== node_modules/glre/src/node/index.ts ===
+
+export * from './scope'
+=== node_modules/glre/src/node/scope.ts ===
+import { conversion, create } from './create'
+>conversion : any
+>create : <T extends C>(type: conversion, props?: NodeProps | null, ...children: Y[]) => ((id?: string | undefined) => any) | undefined
+
+import type { FnLayout, FnType, Constants as C, Int, NodeProps, Struct, StructFactory, StructFields, X, Y } from './types'
+>FnLayout : any
+>FnType : any
+>Constants : any
+>C : C
+>Int : Int
+>NodeProps : any
+>Struct : Struct<T>
+>StructFactory : any
+>StructFields : any
+>X : X<T>
+>Y : any
+
+export function toVar<T extends StructFields>(x: Struct<T>, id?: string): Struct<T>
+>toVar : <T extends StructFields>(x: Struct<T>, id?: string) => Struct<T>
+>x : Struct<T>
+>id : string | undefined
+
+=== node_modules/glre/src/node/types.ts ===
+import { CONSTANTS, CONVERSIONS, FUNCTIONS, OPERATOR_KEYS, OPERATOR_TYPE_RULES, SWIZZLE_BASE_MAP, SWIZZLE_RESULT_MAP } from './utils/const'
+>CONSTANTS : ("bool" | "bvec2" | "bvec3" | "bvec4" | "float" | "int" | "ivec2" | "ivec3" | "ivec4" | "uint" | "uvec2" | "uvec3" | "uvec4" | "vec2" | "vec3" | "vec4")[]
+>CONVERSIONS : any
+>FUNCTIONS : any
+>OPERATOR_KEYS : any
+>OPERATOR_TYPE_RULES : any
+>SWIZZLE_BASE_MAP : { readonly float: 'float'; readonly vec2: 'float'; readonly vec3: 'float'; readonly vec4: 'float'; readonly int: 'int'; readonly ivec2: 'int'; readonly ivec3: 'int'; readonly ivec4: 'int'; readonly uint: 'uint'; readonly uvec2: 'uint'; readonly uvec3: 'uint'; readonly uvec4: 'uint'; readonly bool: 'bool'; readonly bvec2: 'bool'; readonly bvec3: 'bool'; readonly bvec4: 'bool'; }
+>SWIZZLE_RESULT_MAP : { float: { readonly 1: 'float'; readonly 2: 'vec2'; readonly 3: 'vec3'; readonly 4: 'vec4'; readonly 9: 'mat3'; readonly 16: 'mat4'; }; int: { readonly 1: 'int'; readonly 2: 'ivec2'; readonly 3: 'ivec3'; readonly 4: 'ivec4'; }; uint: { readonly 1: 'uint'; readonly 2: 'uvec2'; readonly 3: 'uvec3'; readonly 4: 'uvec4'; }; bool: { readonly 1: 'bool'; readonly 2: 'bvec2'; readonly 3: 'bvec3'; readonly 4: 'bvec4'; }; }
+
+export type Constants = (typeof CONSTANTS)[number] | 'void'
+>Constants : Constants
+>CONSTANTS : ("bool" | "bvec2" | "bvec3" | "bvec4" | "float" | "int" | "ivec2" | "ivec3" | "ivec4" | "uint" | "uvec2" | "uvec3" | "uvec4" | "vec2" | "vec3" | "vec4")[]
+
+/**
+ */
+type _SwizzleLength<A extends string> =
+>_SwizzleLength : _SwizzleLength<A>
+
+        A extends `${infer _}${infer A}` ? A extends '' ? 1 :
+        A extends `${infer _}${infer B}` ? B extends '' ? 2 :
+        B extends `${infer _}${infer C}` ? C extends '' ? 3 :
+        4 : never : never : never
+type _SwizzleBaseMap = typeof SWIZZLE_BASE_MAP
+>_SwizzleBaseMap : { readonly float: 'float'; readonly vec2: 'float'; readonly vec3: 'float'; readonly vec4: 'float'; readonly int: 'int'; readonly ivec2: 'int'; readonly ivec3: 'int'; readonly ivec4: 'int'; readonly uint: 'uint'; readonly uvec2: 'uint'; readonly uvec3: 'uint'; readonly uvec4: 'uint'; readonly bool: 'bool'; readonly bvec2: 'bool'; readonly bvec3: 'bool'; readonly bvec4: 'bool'; }
+>SWIZZLE_BASE_MAP : { readonly float: 'float'; readonly vec2: 'float'; readonly vec3: 'float'; readonly vec4: 'float'; readonly int: 'int'; readonly ivec2: 'int'; readonly ivec3: 'int'; readonly ivec4: 'int'; readonly uint: 'uint'; readonly uvec2: 'uint'; readonly uvec3: 'uint'; readonly uvec4: 'uint'; readonly bool: 'bool'; readonly bvec2: 'bool'; readonly bvec3: 'bool'; readonly bvec4: 'bool'; }
+
+type _SwizzleResultMap = typeof SWIZZLE_RESULT_MAP
+>_SwizzleResultMap : { float: { readonly 1: 'float'; readonly 2: 'vec2'; readonly 3: 'vec3'; readonly 4: 'vec4'; readonly 9: 'mat3'; readonly 16: 'mat4'; }; int: { readonly 1: 'int'; readonly 2: 'ivec2'; readonly 3: 'ivec3'; readonly 4: 'ivec4'; }; uint: { readonly 1: 'uint'; readonly 2: 'uvec2'; readonly 3: 'uvec3'; readonly 4: 'uvec4'; }; bool: { readonly 1: 'bool'; readonly 2: 'bvec2'; readonly 3: 'bvec3'; readonly 4: 'bvec4'; }; }
+>SWIZZLE_RESULT_MAP : { float: { readonly 1: 'float'; readonly 2: 'vec2'; readonly 3: 'vec3'; readonly 4: 'vec4'; readonly 9: 'mat3'; readonly 16: 'mat4'; }; int: { readonly 1: 'int'; readonly 2: 'ivec2'; readonly 3: 'ivec3'; readonly 4: 'ivec4'; }; uint: { readonly 1: 'uint'; readonly 2: 'uvec2'; readonly 3: 'uvec3'; readonly 4: 'uvec4'; }; bool: { readonly 1: 'bool'; readonly 2: 'bvec2'; readonly 3: 'bvec3'; readonly 4: 'bvec4'; }; }
+
+type _SwizzleBase<T extends C> = T extends keyof _SwizzleBaseMap ? _SwizzleBaseMap[T] : never
+>_SwizzleBase : _SwizzleBase<T>
+
+type _SwizzleResult<T extends C, L extends 1 | 2 | 3 | 4> = _SwizzleResultMap[_SwizzleBase<T>][L]
+>_SwizzleResult : _SwizzleResult<T, L>
+
+type InferSwizzleType<T extends C, S extends string> = _SwizzleLength<S> extends infer L extends 1 | 2 | 3 | 4 ? _SwizzleResult<_SwizzleBase<T>, L> : never
+>InferSwizzleType : InferSwizzleType<T, S>
+
+type InferOperator<L extends C, R extends C> =
+>InferOperator : InferOperator<L, R>
+
+        L extends R ? L :
+        'float'
+type _Swizzles<T extends string> = T | `${T}${T}` | `${T}${T}${T}` | `${T}${T}${T}${T}`
+>_Swizzles : _Swizzles<T>
+
+export type Swizzles = _Swizzles<'x' | 'y' | 'z' | 'w'> | _Swizzles<'r' | 'g' | 'b' | 'a'> | _Swizzles<'p' | 'q'> | _Swizzles<'s' | 't'>
+>Swizzles : Swizzles
+
+export type Void = XImpl<'void'>
+>Void : Void
+
+export type Bool = XImpl<'bool'>
+>Bool : Bool
+
+export type UInt = XImpl<'uint'>
+>UInt : UInt
+
+export type Int = XImpl<'int'>
+>Int : Int
+
+export type Float = XImpl<'float'>
+>Float : Float
+
+export type BVec2 = XImpl<'bvec2'>
+>BVec2 : BVec2
+
+export type IVec2 = XImpl<'ivec2'>
+>IVec2 : IVec2
+
+export type UVec2 = XImpl<'uvec2'>
+>UVec2 : UVec2
+
+export type Vec2 = XImpl<'vec2'>
+>Vec2 : Vec2
+
+export type BVec3 = XImpl<'bvec3'>
+>BVec3 : BVec3
+
+export type IVec3 = XImpl<'ivec3'>
+>IVec3 : IVec3
+
+export type UVec3 = XImpl<'uvec3'>
+>UVec3 : UVec3
+
+export type Vec3 = XImpl<'vec3'>
+>Vec3 : Vec3
+
+export type BVec4 = XImpl<'bvec4'>
+>BVec4 : BVec4
+
+export type IVec4 = XImpl<'ivec4'>
+>IVec4 : IVec4
+
+export type UVec4 = XImpl<'uvec4'>
+>UVec4 : UVec4
+
+export type Vec4 = XImpl<'vec4'>
+>Vec4 : Vec4
+
+export type Color = XImpl<'color'>
+>Color : Color
+
+export type Mat2 = XImpl<'mat2'>
+>Mat2 : Mat2
+
+export type Mat3 = XImpl<'mat3'>
+>Mat3 : Mat3
+
+export type Mat4 = XImpl<'mat4'>
+>Mat4 : Mat4
+
+export type Texture = XImpl<'texture'>
+>Texture : Texture
+
+export type Sampler2D = XImpl<'sampler2D'>
+>Sampler2D : Sampler2D
+
+export type StructBase = XImpl<'struct'>
+>StructBase : StructBase
+
+export type Struct<T extends StructFields = any> = Omit<StructBase, keyof T> & {
+>Struct : Struct<T>
+
+        [K in keyof T]: T[K] extends X<infer U> ? X<U> : never
+} & {
+        toVar(id?: string): Struct<T>
+>toVar : (id?: string) => Struct<T>
+>id : string | undefined
+}
+export interface ConstantsToType {
+        void: Void
+>void : Void
+
+        bool: Bool
+>bool : Bool
+
+        uint: UInt
+>uint : UInt
+
+        int: Int
+>int : Int
+
+        float: Float
+>float : Float
+
+        bvec2: BVec2
+>bvec2 : BVec2
+
+        ivec2: IVec2
+>ivec2 : IVec2
+
+        uvec2: UVec2
+>uvec2 : UVec2
+
+        vec2: Vec2
+>vec2 : Vec2
+
+        bvec3: BVec3
+>bvec3 : BVec3
+
+        ivec3: IVec3
+>ivec3 : IVec3
+
+        uvec3: UVec3
+>uvec3 : UVec3
+
+        vec3: Vec3
+>vec3 : Vec3
+
+        bvec4: BVec4
+>bvec4 : BVec4
+
+        ivec4: IVec4
+>ivec4 : IVec4
+
+        uvec4: UVec4
+>uvec4 : UVec4
+
+        vec4: Vec4
+>vec4 : Vec4
+
+        color: Color
+>color : Color
+
+        mat2: Mat2
+>mat2 : Mat2
+
+        mat3: Mat3
+>mat3 : Mat3
+
+        mat4: Mat4
+>mat4 : Mat4
+
+        texture: Texture
+>texture : Texture
+
+        sampler2D: Sampler2D
+>sampler2D : Sampler2D
+
+        struct: StructBase
+>struct : StructBase
+}
+/**
+ */
+type XImpl<T extends C> = _X<T> & {
+>XImpl : XImpl<T>
+
+        [K in Swizzles]: X<InferSwizzleType<T, K>>
+}
+export type X<T extends C = C> = T extends keyof ConstantsToType ? ConstantsToType[T] : _X<T>
+>X : X<T>
+
+interface _X<T extends C> {
+        toVar(name?: string): X<T>
+>toVar : (name?: string) => X<T>
+>name : string | undefined
+
+        add<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<InferOperator<T, U>>
+>add : <U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>) => X<InferOperator<T, U>>
+>x : number | X<U>
+
+        sub<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<InferOperator<T, U>>
+>sub : <U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>) => X<InferOperator<T, U>>
+>x : number | X<U>
+
+        mul<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<InferOperator<T, U>>
+>mul : <U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>) => X<InferOperator<T, U>>
+>x : number | X<U>
+
+        div<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<InferOperator<T, U>>
+>div : <U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>) => X<InferOperator<T, U>>
+>x : number | X<U>
+
+        mod<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<InferOperator<T, U>>
+>mod : <U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>) => X<InferOperator<T, U>>
+>x : number | X<U>
+
+        equal<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): Bool
+>equal : <U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>) => Bool
+>x : number | X<U>
+
+        lessThanEqual<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): Bool
+>lessThanEqual : <U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>) => Bool
+>x : number | X<U>
+
+        greaterThan<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): Bool
+>greaterThan : <U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>) => Bool
+>x : number | X<U>
+
+        greaterThanEqual<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): Bool
+>greaterThanEqual : <U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>) => Bool
+>x : number | X<U>
+
+        shiftLeft<U extends C>(x: X<U>): X<InferOperator<T, U>>
+>shiftLeft : <U extends C>(x: X<U>) => X<InferOperator<T, U>>
+>x : X<U>
+
+        shiftRight<U extends C>(x: X<U>): X<InferOperator<T, U>>
+>shiftRight : <U extends C>(x: X<U>) => X<InferOperator<T, U>>
+>x : X<U>
+
+        addAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+>addAssign : <U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>) => X<T>
+>x : number | X<U>
+
+        subAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+>subAssign : <U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>) => X<T>
+>x : number | X<U>
+
+        mulAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+>mulAssign : <U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>) => X<T>
+>x : number | X<U>
+
+        divAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+>divAssign : <U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>) => X<T>
+>x : number | X<U>
+
+        modAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+>modAssign : <U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>) => X<T>
+>x : number | X<U>
+
+        bitAndAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+>bitAndAssign : <U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>) => X<T>
+>x : number | X<U>
+
+        bitOrAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+>bitOrAssign : <U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>) => X<T>
+>x : number | X<U>
+
+        bitXorAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+>bitXorAssign : <U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>) => X<T>
+>x : number | X<U>
+
+        shiftLeftAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+>shiftLeftAssign : <U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>) => X<T>
+>x : number | X<U>
+
+        shiftRightAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+>shiftRightAssign : <U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>) => X<T>
+>x : number | X<U>
+
+        atan2<U extends C>(x: number | X<U>): X<T>
+>atan2 : <U extends C>(x: number | X<U>) => X<T>
+>x : number | X<U>
+
+        clamp<U extends C>(min: number | X<U>, max: number | X<U>): X<InferOperator<T, U>>
+>clamp : <U extends C>(min: number | X<U>, max: number | X<U>) => X<InferOperator<T, U>>
+>min : number | X<U>
+>max : number | X<U>
+
+        max<U extends C>(y: number | X<U>): X<InferOperator<T, U>>
+>max : <U extends C>(y: number | X<U>) => X<InferOperator<T, U>>
+>y : number | X<U>
+
+        min<U extends C>(y: number | X<U>): X<InferOperator<T, U>>
+>min : <U extends C>(y: number | X<U>) => X<InferOperator<T, U>>
+>y : number | X<U>
+
+        mix<U extends C>(y: number | X<U>, a: number | Float | X<U>): X<InferOperator<T, U>>
+>mix : <U extends C>(y: number | X<U>, a: number | Float | X<U>) => X<InferOperator<T, U>>
+>y : number | X<U>
+>a : number | X<U> | Float
+
+        pow<U extends C>(y: number | X<U>): X<T>
+>pow : <U extends C>(y: number | X<U>) => X<T>
+>y : number | X<U>
+
+        fma<U extends C>(b: number | X<U>, c: number | X<U>): X<T>
+>fma : <U extends C>(b: number | X<U>, c: number | X<U>) => X<T>
+>b : number | X<U>
+>c : number | X<U>
+
+        smoothstep<U extends C>(edge0: number | X<U>, edge1: number | X<U>): X<InferOperator<T, U>>
+>smoothstep : <U extends C>(edge0: number | X<U>, edge1: number | X<U>) => X<InferOperator<T, U>>
+>edge0 : number | X<U>
+>edge1 : number | X<U>
+
+        step<U extends C>(edge: number | X<U>): X<InferOperator<T, U>>
+>step : <U extends C>(edge: number | X<U>) => X<InferOperator<T, U>>
+>edge : number | X<U>
+}
+=== node_modules/glre/src/node/utils/const.ts ===
+export const TYPE_MAPPING = {
+>TYPE_MAPPING : { readonly bool: 'bool'; readonly uint: 'u32'; readonly int: 'i32'; readonly float: 'f32'; readonly bvec2: 'vec2<bool>'; readonly ivec2: 'vec2i'; readonly uvec2: 'vec2u'; readonly vec2: 'vec2f'; readonly bvec3: 'vec3<bool>'; readonly ivec3: 'vec3i'; readonly uvec3: 'vec3u'; readonly vec3: 'vec3f'; readonly bvec4: 'vec4<bool>'; readonly ivec4: 'vec4i'; readonly uvec4: 'vec4u'; readonly vec4: 'vec4f'; }
+>{        bool: 'bool',        uint: 'u32',        int: 'i32',        float: 'f32',        bvec2: 'vec2<bool>',        ivec2: 'vec2i',        uvec2: 'vec2u',        vec2: 'vec2f',        bvec3: 'vec3<bool>',        ivec3: 'vec3i',        uvec3: 'vec3u',        vec3: 'vec3f',        bvec4: 'vec4<bool>',        ivec4: 'vec4i',        uvec4: 'vec4u',        vec4: 'vec4f',} as const : { readonly bool: 'bool'; readonly uint: 'u32'; readonly int: 'i32'; readonly float: 'f32'; readonly bvec2: 'vec2<bool>'; readonly ivec2: 'vec2i'; readonly uvec2: 'vec2u'; readonly vec2: 'vec2f'; readonly bvec3: 'vec3<bool>'; readonly ivec3: 'vec3i'; readonly uvec3: 'vec3u'; readonly vec3: 'vec3f'; readonly bvec4: 'vec4<bool>'; readonly ivec4: 'vec4i'; readonly uvec4: 'vec4u'; readonly vec4: 'vec4f'; }
+>{        bool: 'bool',        uint: 'u32',        int: 'i32',        float: 'f32',        bvec2: 'vec2<bool>',        ivec2: 'vec2i',        uvec2: 'vec2u',        vec2: 'vec2f',        bvec3: 'vec3<bool>',        ivec3: 'vec3i',        uvec3: 'vec3u',        vec3: 'vec3f',        bvec4: 'vec4<bool>',        ivec4: 'vec4i',        uvec4: 'vec4u',        vec4: 'vec4f',} : { readonly bool: 'bool'; readonly uint: 'u32'; readonly int: 'i32'; readonly float: 'f32'; readonly bvec2: 'vec2<bool>'; readonly ivec2: 'vec2i'; readonly uvec2: 'vec2u'; readonly vec2: 'vec2f'; readonly bvec3: 'vec3<bool>'; readonly ivec3: 'vec3i'; readonly uvec3: 'vec3u'; readonly vec3: 'vec3f'; readonly bvec4: 'vec4<bool>'; readonly ivec4: 'vec4i'; readonly uvec4: 'vec4u'; readonly vec4: 'vec4f'; }
+
+        bool: 'bool',
+>bool : "bool"
+>'bool' : "bool"
+
+        uint: 'u32',
+>uint : "u32"
+>'u32' : "u32"
+
+        int: 'i32',
+>int : "i32"
+>'i32' : "i32"
+
+        float: 'f32',
+>float : "f32"
+>'f32' : "f32"
+
+        bvec2: 'vec2<bool>',
+>bvec2 : "vec2<bool>"
+>'vec2<bool>' : "vec2<bool>"
+
+        ivec2: 'vec2i',
+>ivec2 : "vec2i"
+>'vec2i' : "vec2i"
+
+        uvec2: 'vec2u',
+>uvec2 : "vec2u"
+>'vec2u' : "vec2u"
+
+        vec2: 'vec2f',
+>vec2 : "vec2f"
+>'vec2f' : "vec2f"
+
+        bvec3: 'vec3<bool>',
+>bvec3 : "vec3<bool>"
+>'vec3<bool>' : "vec3<bool>"
+
+        ivec3: 'vec3i',
+>ivec3 : "vec3i"
+>'vec3i' : "vec3i"
+
+        uvec3: 'vec3u',
+>uvec3 : "vec3u"
+>'vec3u' : "vec3u"
+
+        vec3: 'vec3f',
+>vec3 : "vec3f"
+>'vec3f' : "vec3f"
+
+        bvec4: 'vec4<bool>',
+>bvec4 : "vec4<bool>"
+>'vec4<bool>' : "vec4<bool>"
+
+        ivec4: 'vec4i',
+>ivec4 : "vec4i"
+>'vec4i' : "vec4i"
+
+        uvec4: 'vec4u',
+>uvec4 : "vec4u"
+>'vec4u' : "vec4u"
+
+        vec4: 'vec4f',
+>vec4 : "vec4f"
+>'vec4f' : "vec4f"
+
+} as const
+export const CONSTANTS = Object.keys(TYPE_MAPPING) as (keyof typeof TYPE_MAPPING)[]
+>CONSTANTS : ("bool" | "bvec2" | "bvec3" | "bvec4" | "float" | "int" | "ivec2" | "ivec3" | "ivec4" | "uint" | "uvec2" | "uvec3" | "uvec4" | "vec2" | "vec3" | "vec4")[]
+>Object.keys(TYPE_MAPPING) as (keyof typeof TYPE_MAPPING)[] : ("bool" | "bvec2" | "bvec3" | "bvec4" | "float" | "int" | "ivec2" | "ivec3" | "ivec4" | "uint" | "uvec2" | "uvec3" | "uvec4" | "vec2" | "vec3" | "vec4")[]
+>Object.keys(TYPE_MAPPING) : string[]
+>Object.keys : { (o: object): string[]; (o: {}): string[]; }
+>Object : ObjectConstructor
+>keys : { (o: object): string[]; (o: {}): string[]; }
+>TYPE_MAPPING : { readonly bool: 'bool'; readonly uint: 'u32'; readonly int: 'i32'; readonly float: 'f32'; readonly bvec2: 'vec2<bool>'; readonly ivec2: 'vec2i'; readonly uvec2: 'vec2u'; readonly vec2: 'vec2f'; readonly bvec3: 'vec3<bool>'; readonly ivec3: 'vec3i'; readonly uvec3: 'vec3u'; readonly vec3: 'vec3f'; readonly bvec4: 'vec4<bool>'; readonly ivec4: 'vec4i'; readonly uvec4: 'vec4u'; readonly vec4: 'vec4f'; }
+>TYPE_MAPPING : { readonly bool: 'bool'; readonly uint: 'u32'; readonly int: 'i32'; readonly float: 'f32'; readonly bvec2: 'vec2<bool>'; readonly ivec2: 'vec2i'; readonly uvec2: 'vec2u'; readonly vec2: 'vec2f'; readonly bvec3: 'vec3<bool>'; readonly ivec3: 'vec3i'; readonly uvec3: 'vec3u'; readonly vec3: 'vec3f'; readonly bvec4: 'vec4<bool>'; readonly ivec4: 'vec4i'; readonly uvec4: 'vec4u'; readonly vec4: 'vec4f'; }
+
+export const SWIZZLE_BASE_MAP = {
+>SWIZZLE_BASE_MAP : { readonly float: 'float'; readonly vec2: 'float'; readonly vec3: 'float'; readonly vec4: 'float'; readonly int: 'int'; readonly ivec2: 'int'; readonly ivec3: 'int'; readonly ivec4: 'int'; readonly uint: 'uint'; readonly uvec2: 'uint'; readonly uvec3: 'uint'; readonly uvec4: 'uint'; readonly bool: 'bool'; readonly bvec2: 'bool'; readonly bvec3: 'bool'; readonly bvec4: 'bool'; }
+>{        float: 'float',        vec2: 'float',        vec3: 'float',        vec4: 'float',        int: 'int',        ivec2: 'int',        ivec3: 'int',        ivec4: 'int',        uint: 'uint',        uvec2: 'uint',        uvec3: 'uint',        uvec4: 'uint',        bool: 'bool',        bvec2: 'bool',        bvec3: 'bool',        bvec4: 'bool',} as const : { readonly float: 'float'; readonly vec2: 'float'; readonly vec3: 'float'; readonly vec4: 'float'; readonly int: 'int'; readonly ivec2: 'int'; readonly ivec3: 'int'; readonly ivec4: 'int'; readonly uint: 'uint'; readonly uvec2: 'uint'; readonly uvec3: 'uint'; readonly uvec4: 'uint'; readonly bool: 'bool'; readonly bvec2: 'bool'; readonly bvec3: 'bool'; readonly bvec4: 'bool'; }
+>{        float: 'float',        vec2: 'float',        vec3: 'float',        vec4: 'float',        int: 'int',        ivec2: 'int',        ivec3: 'int',        ivec4: 'int',        uint: 'uint',        uvec2: 'uint',        uvec3: 'uint',        uvec4: 'uint',        bool: 'bool',        bvec2: 'bool',        bvec3: 'bool',        bvec4: 'bool',} : { readonly float: 'float'; readonly vec2: 'float'; readonly vec3: 'float'; readonly vec4: 'float'; readonly int: 'int'; readonly ivec2: 'int'; readonly ivec3: 'int'; readonly ivec4: 'int'; readonly uint: 'uint'; readonly uvec2: 'uint'; readonly uvec3: 'uint'; readonly uvec4: 'uint'; readonly bool: 'bool'; readonly bvec2: 'bool'; readonly bvec3: 'bool'; readonly bvec4: 'bool'; }
+
+        float: 'float',
+>float : "float"
+>'float' : "float"
+
+        vec2: 'float',
+>vec2 : "float"
+>'float' : "float"
+
+        vec3: 'float',
+>vec3 : "float"
+>'float' : "float"
+
+        vec4: 'float',
+>vec4 : "float"
+>'float' : "float"
+
+        int: 'int',
+>int : "int"
+>'int' : "int"
+
+        ivec2: 'int',
+>ivec2 : "int"
+>'int' : "int"
+
+        ivec3: 'int',
+>ivec3 : "int"
+>'int' : "int"
+
+        ivec4: 'int',
+>ivec4 : "int"
+>'int' : "int"
+
+        uint: 'uint',
+>uint : "uint"
+>'uint' : "uint"
+
+        uvec2: 'uint',
+>uvec2 : "uint"
+>'uint' : "uint"
+
+        uvec3: 'uint',
+>uvec3 : "uint"
+>'uint' : "uint"
+
+        uvec4: 'uint',
+>uvec4 : "uint"
+>'uint' : "uint"
+
+        bool: 'bool',
+>bool : "bool"
+>'bool' : "bool"
+
+        bvec2: 'bool',
+>bvec2 : "bool"
+>'bool' : "bool"
+
+        bvec3: 'bool',
+>bvec3 : "bool"
+>'bool' : "bool"
+
+        bvec4: 'bool',
+>bvec4 : "bool"
+>'bool' : "bool"
+
+} as const
+export const SWIZZLE_RESULT_MAP = {
+>SWIZZLE_RESULT_MAP : { float: { readonly 1: 'float'; readonly 2: 'vec2'; readonly 3: 'vec3'; readonly 4: 'vec4'; readonly 9: 'mat3'; readonly 16: 'mat4'; }; int: { readonly 1: 'int'; readonly 2: 'ivec2'; readonly 3: 'ivec3'; readonly 4: 'ivec4'; }; uint: { readonly 1: 'uint'; readonly 2: 'uvec2'; readonly 3: 'uvec3'; readonly 4: 'uvec4'; }; bool: { readonly 1: 'bool'; readonly 2: 'bvec2'; readonly 3: 'bvec3'; readonly 4: 'bvec4'; }; }
+>{        float: { 1: 'float', 2: 'vec2', 3: 'vec3', 4: 'vec4', 9: 'mat3', 16: 'mat4' } as const,        int: { 1: 'int', 2: 'ivec2', 3: 'ivec3', 4: 'ivec4' } as const,        uint: { 1: 'uint', 2: 'uvec2', 3: 'uvec3', 4: 'uvec4' } as const,        bool: { 1: 'bool', 2: 'bvec2', 3: 'bvec3', 4: 'bvec4' } as const,} : { float: { readonly 1: 'float'; readonly 2: 'vec2'; readonly 3: 'vec3'; readonly 4: 'vec4'; readonly 9: 'mat3'; readonly 16: 'mat4'; }; int: { readonly 1: 'int'; readonly 2: 'ivec2'; readonly 3: 'ivec3'; readonly 4: 'ivec4'; }; uint: { readonly 1: 'uint'; readonly 2: 'uvec2'; readonly 3: 'uvec3'; readonly 4: 'uvec4'; }; bool: { readonly 1: 'bool'; readonly 2: 'bvec2'; readonly 3: 'bvec3'; readonly 4: 'bvec4'; }; }
+
+        float: { 1: 'float', 2: 'vec2', 3: 'vec3', 4: 'vec4', 9: 'mat3', 16: 'mat4' } as const,
+>float : { readonly 1: 'float'; readonly 2: 'vec2'; readonly 3: 'vec3'; readonly 4: 'vec4'; readonly 9: 'mat3'; readonly 16: 'mat4'; }
+>{ 1: 'float', 2: 'vec2', 3: 'vec3', 4: 'vec4', 9: 'mat3', 16: 'mat4' } as const : { readonly 1: 'float'; readonly 2: 'vec2'; readonly 3: 'vec3'; readonly 4: 'vec4'; readonly 9: 'mat3'; readonly 16: 'mat4'; }
+>{ 1: 'float', 2: 'vec2', 3: 'vec3', 4: 'vec4', 9: 'mat3', 16: 'mat4' } : { readonly 1: 'float'; readonly 2: 'vec2'; readonly 3: 'vec3'; readonly 4: 'vec4'; readonly 9: 'mat3'; readonly 16: 'mat4'; }
+>1 : "float"
+>'float' : "float"
+>2 : "vec2"
+>'vec2' : "vec2"
+>3 : "vec3"
+>'vec3' : "vec3"
+>4 : "vec4"
+>'vec4' : "vec4"
+>9 : "mat3"
+>'mat3' : "mat3"
+>16 : "mat4"
+>'mat4' : "mat4"
+
+        int: { 1: 'int', 2: 'ivec2', 3: 'ivec3', 4: 'ivec4' } as const,
+>int : { readonly 1: 'int'; readonly 2: 'ivec2'; readonly 3: 'ivec3'; readonly 4: 'ivec4'; }
+>{ 1: 'int', 2: 'ivec2', 3: 'ivec3', 4: 'ivec4' } as const : { readonly 1: 'int'; readonly 2: 'ivec2'; readonly 3: 'ivec3'; readonly 4: 'ivec4'; }
+>{ 1: 'int', 2: 'ivec2', 3: 'ivec3', 4: 'ivec4' } : { readonly 1: 'int'; readonly 2: 'ivec2'; readonly 3: 'ivec3'; readonly 4: 'ivec4'; }
+>1 : "int"
+>'int' : "int"
+>2 : "ivec2"
+>'ivec2' : "ivec2"
+>3 : "ivec3"
+>'ivec3' : "ivec3"
+>4 : "ivec4"
+>'ivec4' : "ivec4"
+
+        uint: { 1: 'uint', 2: 'uvec2', 3: 'uvec3', 4: 'uvec4' } as const,
+>uint : { readonly 1: 'uint'; readonly 2: 'uvec2'; readonly 3: 'uvec3'; readonly 4: 'uvec4'; }
+>{ 1: 'uint', 2: 'uvec2', 3: 'uvec3', 4: 'uvec4' } as const : { readonly 1: 'uint'; readonly 2: 'uvec2'; readonly 3: 'uvec3'; readonly 4: 'uvec4'; }
+>{ 1: 'uint', 2: 'uvec2', 3: 'uvec3', 4: 'uvec4' } : { readonly 1: 'uint'; readonly 2: 'uvec2'; readonly 3: 'uvec3'; readonly 4: 'uvec4'; }
+>1 : "uint"
+>'uint' : "uint"
+>2 : "uvec2"
+>'uvec2' : "uvec2"
+>3 : "uvec3"
+>'uvec3' : "uvec3"
+>4 : "uvec4"
+>'uvec4' : "uvec4"
+
+        bool: { 1: 'bool', 2: 'bvec2', 3: 'bvec3', 4: 'bvec4' } as const,
+>bool : { readonly 1: 'bool'; readonly 2: 'bvec2'; readonly 3: 'bvec3'; readonly 4: 'bvec4'; }
+>{ 1: 'bool', 2: 'bvec2', 3: 'bvec3', 4: 'bvec4' } as const : { readonly 1: 'bool'; readonly 2: 'bvec2'; readonly 3: 'bvec3'; readonly 4: 'bvec4'; }
+>{ 1: 'bool', 2: 'bvec2', 3: 'bvec3', 4: 'bvec4' } : { readonly 1: 'bool'; readonly 2: 'bvec2'; readonly 3: 'bvec3'; readonly 4: 'bvec4'; }
+>1 : "bool"
+>'bool' : "bool"
+>2 : "bvec2"
+>'bvec2' : "bvec2"
+>3 : "bvec3"
+>'bvec3' : "bvec3"
+>4 : "bvec4"
+>'bvec4' : "bvec4"
+}
+=== projects/demo/main.ts ===
+import type { Float, UInt, UVec2, UVec3, Vec3 } from 'glre/src/node'
+>Float : any
+>UInt : any
+>UVec2 : any
+>UVec3 : any
+>Vec3 : any
+

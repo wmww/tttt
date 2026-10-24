@@ -1,0 +1,448 @@
+node_modules/glre/src/node/create.ts(1,10): error TS2305: Module '"./scope"' has no exported member 'addToScope'.
+node_modules/glre/src/node/create.ts(1,22): error TS2305: Module '"./scope"' has no exported member 'assign'.
+node_modules/glre/src/node/create.ts(2,37): error TS2305: Module '"./types"' has no exported member 'Functions'.
+node_modules/glre/src/node/create.ts(2,48): error TS2305: Module '"./types"' has no exported member 'NodeProps'.
+node_modules/glre/src/node/create.ts(2,59): error TS2305: Module '"./types"' has no exported member 'NodeTypes'.
+node_modules/glre/src/node/create.ts(2,70): error TS2305: Module '"./types"' has no exported member 'Operators'.
+node_modules/glre/src/node/create.ts(2,84): error TS2305: Module '"./types"' has no exported member 'Y'.
+node_modules/glre/src/node/create.ts(4,21): error TS2304: Cannot find name 'key'.
+node_modules/glre/src/node/create.ts(4,62): error TS2448: Block-scoped variable 'x' used before its declaration.
+node_modules/glre/src/node/create.ts(4,62): error TS2454: Variable 'x' is used before being assigned.
+node_modules/glre/src/node/create.ts(5,35): error TS18004: No value exists in scope for the shorthand property 'get'. Either declare one or provide an initializer.
+node_modules/glre/src/node/create.ts(5,40): error TS2552: Cannot find name 'set'. Did you mean 'Set'?
+node_modules/glre/src/node/scope.ts(1,10): error TS2305: Module '"./create"' has no exported member 'conversion'.
+node_modules/glre/src/node/scope.ts(2,15): error TS2305: Module '"./types"' has no exported member 'FnLayout'.
+node_modules/glre/src/node/scope.ts(2,25): error TS2305: Module '"./types"' has no exported member 'FnType'.
+node_modules/glre/src/node/scope.ts(2,54): error TS2305: Module '"./types"' has no exported member 'NodeProps'.
+node_modules/glre/src/node/scope.ts(2,73): error TS2305: Module '"./types"' has no exported member 'StructFactory'.
+node_modules/glre/src/node/scope.ts(2,88): error TS2305: Module '"./types"' has no exported member 'StructFields'.
+node_modules/glre/src/node/scope.ts(2,105): error TS2305: Module '"./types"' has no exported member 'Y'.
+node_modules/glre/src/node/scope.ts(3,17): error TS2391: Function implementation is missing or not immediately following the declaration.
+node_modules/glre/src/node/types.ts(1,21): error TS2305: Module '"./utils/const"' has no exported member 'CONVERSIONS'.
+node_modules/glre/src/node/types.ts(1,34): error TS2305: Module '"./utils/const"' has no exported member 'FUNCTIONS'.
+node_modules/glre/src/node/types.ts(1,45): error TS2305: Module '"./utils/const"' has no exported member 'OPERATOR_KEYS'.
+node_modules/glre/src/node/types.ts(1,60): error TS2305: Module '"./utils/const"' has no exported member 'OPERATOR_TYPE_RULES'.
+node_modules/glre/src/node/types.ts(12,29): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(13,31): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(14,33): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(15,30): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(15,43): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(44,30): error TS2304: Cannot find name 'StructFields'.
+node_modules/glre/src/node/types.ts(77,22): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(80,25): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(80,29): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(81,24): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(83,23): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(83,29): error TS2304: Cannot find name 'ValidateOperator'.
+node_modules/glre/src/node/types.ts(84,23): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(84,29): error TS2304: Cannot find name 'ValidateOperator'.
+node_modules/glre/src/node/types.ts(85,23): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(85,29): error TS2304: Cannot find name 'ValidateOperator'.
+node_modules/glre/src/node/types.ts(86,23): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(86,29): error TS2304: Cannot find name 'ValidateOperator'.
+node_modules/glre/src/node/types.ts(87,23): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(87,29): error TS2304: Cannot find name 'ValidateOperator'.
+node_modules/glre/src/node/types.ts(88,25): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(88,31): error TS2304: Cannot find name 'ValidateOperator'.
+node_modules/glre/src/node/types.ts(89,33): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(89,39): error TS2304: Cannot find name 'ValidateOperator'.
+node_modules/glre/src/node/types.ts(90,31): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(90,37): error TS2304: Cannot find name 'ValidateOperator'.
+node_modules/glre/src/node/types.ts(91,36): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(91,42): error TS2304: Cannot find name 'ValidateOperator'.
+node_modules/glre/src/node/types.ts(92,29): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(93,30): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(94,29): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(94,35): error TS2304: Cannot find name 'ValidateOperator'.
+node_modules/glre/src/node/types.ts(95,29): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(95,35): error TS2304: Cannot find name 'ValidateOperator'.
+node_modules/glre/src/node/types.ts(96,29): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(96,35): error TS2304: Cannot find name 'ValidateOperator'.
+node_modules/glre/src/node/types.ts(97,29): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(97,35): error TS2304: Cannot find name 'ValidateOperator'.
+node_modules/glre/src/node/types.ts(98,29): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(98,35): error TS2304: Cannot find name 'ValidateOperator'.
+node_modules/glre/src/node/types.ts(99,32): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(99,38): error TS2304: Cannot find name 'ValidateOperator'.
+node_modules/glre/src/node/types.ts(100,31): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(100,37): error TS2304: Cannot find name 'ValidateOperator'.
+node_modules/glre/src/node/types.ts(101,32): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(101,38): error TS2304: Cannot find name 'ValidateOperator'.
+node_modules/glre/src/node/types.ts(102,35): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(102,41): error TS2304: Cannot find name 'ValidateOperator'.
+node_modules/glre/src/node/types.ts(103,36): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(103,42): error TS2304: Cannot find name 'ValidateOperator'.
+node_modules/glre/src/node/types.ts(104,25): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(105,25): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(106,23): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(107,23): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(108,23): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(109,23): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(110,23): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(111,30): error TS2304: Cannot find name 'C'.
+node_modules/glre/src/node/types.ts(112,24): error TS2304: Cannot find name 'C'.
+projects/demo/main.ts(1,15): error TS2305: Module '"glre/src/node"' has no exported member 'Float'.
+projects/demo/main.ts(1,22): error TS2305: Module '"glre/src/node"' has no exported member 'UInt'.
+projects/demo/main.ts(1,28): error TS2305: Module '"glre/src/node"' has no exported member 'UVec2'.
+projects/demo/main.ts(1,35): error TS2305: Module '"glre/src/node"' has no exported member 'UVec3'.
+projects/demo/main.ts(1,42): error TS2305: Module '"glre/src/node"' has no exported member 'Vec3'.
+
+
+==== node_modules/glre/package.json (0 errors) ====
+    {"name": "glre", "version": "0.54.0", "type": "module", "main": "./dist/index.cjs", "types": "./dist/index.d.ts", "module": "./dist/index.js", "exports": {"./packages.json": "./packages.json", "./src/addons": {"types": "./src/addons/index.ts", "import": "./src/addons/index.ts", "default": "./src/addons/index.ts"}, "./src/buffers": {"types": "./src/buffers/index.ts", "import": "./src/buffers/index.ts", "default": "./src/buffers/index.ts"}, "./src/native": {"types": "./src/native.ts", "import": "./src/native.ts", "default": "./src/native.ts"}, "./src/node": {"types": "./src/node/index.ts", "import": "./src/node/index.ts", "default": "./src/node/index.ts"}, "./src/react": {"types": "./src/react.ts", "import": "./src/react.ts", "default": "./src/react.ts"}, "./src/solid": {"types": "./src/solid.ts", "import": "./src/solid.ts", "default": "./src/solid.ts"}, "./src": {"types": "./src/index.ts", "import": "./src/index.ts", "default": "./src/index.ts"}, "./addons": {"types": "./dist/addons/index.d.ts", "import": {"types": "./dist/addons/index.d.ts", "default": "./dist/addons.js"}, "module": {"types": "./dist/addons/index.d.ts", "default": "./dist/addons.js"}, "require": "./dist/addons.cjs", "default": "./dist/addons.js"}, "./buffers": {"types": "./dist/buffers/index.d.ts", "import": {"types": "./dist/buffers/index.d.ts", "default": "./dist/buffers.js"}, "module": {"types": "./dist/buffers/index.d.ts", "default": "./dist/buffers.js"}, "require": "./dist/buffers.cjs", "default": "./dist/buffers.js"}, "./native": {"types": "./dist/native.d.ts", "import": {"types": "./dist/native.d.ts", "default": "./dist/native.js"}, "module": {"types": "./dist/native.d.ts", "default": "./dist/native.js"}, "require": "./dist/native.cjs", "default": "./dist/native.js"}, "./node": {"types": "./dist/node/index.d.ts", "import": {"types": "./dist/node/index.d.ts", "default": "./dist/node.js"}, "module": {"types": "./dist/node/index.d.ts", "default": "./dist/node.js"}, "require": "./dist/node.cjs", "default": "./dist/node.js"}, "./react": {"types": "./dist/react.d.ts", "import": {"types": "./dist/react.d.ts", "default": "./dist/react.js"}, "module": {"types": "./dist/react.d.ts", "default": "./dist/react.js"}, "require": "./dist/react.cjs", "default": "./dist/react.js"}, "./solid": {"types": "./dist/solid.d.ts", "import": {"types": "./dist/solid.d.ts", "default": "./dist/solid.js"}, "module": {"types": "./dist/solid.d.ts", "default": "./dist/solid.js"}, "require": "./dist/solid.cjs", "default": "./dist/solid.js"}, ".": {"types": "./dist/index.d.ts", "import": {"types": "./dist/index.d.ts", "default": "./dist/index.js"}, "module": {"types": "./dist/index.d.ts", "default": "./dist/index.js"}, "require": "./dist/index.cjs", "default": "./dist/index.js"}, "./*": {"types": "./dist/index.d.ts", "import": {"types": "./dist/index.d.ts", "default": "./dist/index.js"}, "module": {"types": "./dist/index.d.ts", "default": "./dist/index.js"}, "require": "./dist/index.cjs", "default": "./dist/index.js"}}}
+==== package.json (0 errors) ====
+    {"name": "@voxelizer/root", "version": "0.1.0"}
+==== projects/demo/package.json (0 errors) ====
+    {"name": "demo", "version": "0.1.0", "type": "module"}
+==== node_modules/glre/src/node/create.ts (12 errors) ====
+    import { addToScope, assign, toVar } from './scope'
+             ~~~~~~~~~~
+!!! error TS2305: Module '"./scope"' has no exported member 'addToScope'.
+                         ~~~~~~
+!!! error TS2305: Module '"./scope"' has no exported member 'assign'.
+    import type { Bool, Constants as C, Functions, NodeProps, NodeTypes, Operators, X, Y } from './types'
+                                        ~~~~~~~~~
+!!! error TS2305: Module '"./types"' has no exported member 'Functions'.
+                                                   ~~~~~~~~~
+!!! error TS2305: Module '"./types"' has no exported member 'NodeProps'.
+                                                              ~~~~~~~~~
+!!! error TS2305: Module '"./types"' has no exported member 'NodeTypes'.
+                                                                         ~~~~~~~~~
+!!! error TS2305: Module '"./types"' has no exported member 'Operators'.
+                                                                                       ~
+!!! error TS2305: Module '"./types"' has no exported member 'Y'.
+    export const create = <T extends C>(type: NodeTypes, props?: NodeProps | null, ...children: Y[]) => {
+                    if (key === 'toVar') return toVar.bind(null, x)
+                        ~~~
+!!! error TS2304: Cannot find name 'key'.
+                                                                 ~
+!!! error TS2448: Block-scoped variable 'x' used before its declaration.
+!!! related TS2728 node_modules/glre/src/node/create.ts:5:15: 'x' is declared here.
+                                                                 ~
+!!! error TS2454: Variable 'x' is used before being assigned.
+            const x = new Proxy({}, { get, set }) as unknown as X<T>
+                                      ~~~
+!!! error TS18004: No value exists in scope for the shorthand property 'get'. Either declare one or provide an initializer.
+                                           ~~~
+!!! error TS2552: Cannot find name 'set'. Did you mean 'Set'?
+!!! related TS2728 lib.es2015.collection.d.ts:--:--: 'Set' is declared here.
+    }
+==== node_modules/glre/src/node/index.ts (0 errors) ====
+    export * from './scope'
+==== node_modules/glre/src/node/scope.ts (8 errors) ====
+    import { conversion, create } from './create'
+             ~~~~~~~~~~
+!!! error TS2305: Module '"./create"' has no exported member 'conversion'.
+    import type { FnLayout, FnType, Constants as C, Int, NodeProps, Struct, StructFactory, StructFields, X, Y } from './types'
+                  ~~~~~~~~
+!!! error TS2305: Module '"./types"' has no exported member 'FnLayout'.
+                            ~~~~~~
+!!! error TS2305: Module '"./types"' has no exported member 'FnType'.
+                                                         ~~~~~~~~~
+!!! error TS2305: Module '"./types"' has no exported member 'NodeProps'.
+                                                                            ~~~~~~~~~~~~~
+!!! error TS2305: Module '"./types"' has no exported member 'StructFactory'.
+                                                                                           ~~~~~~~~~~~~
+!!! error TS2305: Module '"./types"' has no exported member 'StructFields'.
+                                                                                                            ~
+!!! error TS2305: Module '"./types"' has no exported member 'Y'.
+    export function toVar<T extends StructFields>(x: Struct<T>, id?: string): Struct<T>
+                    ~~~~~
+!!! error TS2391: Function implementation is missing or not immediately following the declaration.
+==== node_modules/glre/src/node/types.ts (63 errors) ====
+    import { CONSTANTS, CONVERSIONS, FUNCTIONS, OPERATOR_KEYS, OPERATOR_TYPE_RULES, SWIZZLE_BASE_MAP, SWIZZLE_RESULT_MAP } from './utils/const'
+                        ~~~~~~~~~~~
+!!! error TS2305: Module '"./utils/const"' has no exported member 'CONVERSIONS'.
+                                     ~~~~~~~~~
+!!! error TS2305: Module '"./utils/const"' has no exported member 'FUNCTIONS'.
+                                                ~~~~~~~~~~~~~
+!!! error TS2305: Module '"./utils/const"' has no exported member 'OPERATOR_KEYS'.
+                                                               ~~~~~~~~~~~~~~~~~~~
+!!! error TS2305: Module '"./utils/const"' has no exported member 'OPERATOR_TYPE_RULES'.
+    export type Constants = (typeof CONSTANTS)[number] | 'void'
+    /**
+     */
+    type _SwizzleLength<A extends string> =
+            A extends `${infer _}${infer A}` ? A extends '' ? 1 :
+            A extends `${infer _}${infer B}` ? B extends '' ? 2 :
+            B extends `${infer _}${infer C}` ? C extends '' ? 3 :
+            4 : never : never : never
+    type _SwizzleBaseMap = typeof SWIZZLE_BASE_MAP
+    type _SwizzleResultMap = typeof SWIZZLE_RESULT_MAP
+    type _SwizzleBase<T extends C> = T extends keyof _SwizzleBaseMap ? _SwizzleBaseMap[T] : never
+                                ~
+!!! error TS2304: Cannot find name 'C'.
+    type _SwizzleResult<T extends C, L extends 1 | 2 | 3 | 4> = _SwizzleResultMap[_SwizzleBase<T>][L]
+                                  ~
+!!! error TS2304: Cannot find name 'C'.
+    type InferSwizzleType<T extends C, S extends string> = _SwizzleLength<S> extends infer L extends 1 | 2 | 3 | 4 ? _SwizzleResult<_SwizzleBase<T>, L> : never
+                                    ~
+!!! error TS2304: Cannot find name 'C'.
+    type InferOperator<L extends C, R extends C> =
+                                 ~
+!!! error TS2304: Cannot find name 'C'.
+                                              ~
+!!! error TS2304: Cannot find name 'C'.
+            L extends R ? L :
+            'float'
+    type _Swizzles<T extends string> = T | `${T}${T}` | `${T}${T}${T}` | `${T}${T}${T}${T}`
+    export type Swizzles = _Swizzles<'x' | 'y' | 'z' | 'w'> | _Swizzles<'r' | 'g' | 'b' | 'a'> | _Swizzles<'p' | 'q'> | _Swizzles<'s' | 't'>
+    export type Void = XImpl<'void'>
+    export type Bool = XImpl<'bool'>
+    export type UInt = XImpl<'uint'>
+    export type Int = XImpl<'int'>
+    export type Float = XImpl<'float'>
+    export type BVec2 = XImpl<'bvec2'>
+    export type IVec2 = XImpl<'ivec2'>
+    export type UVec2 = XImpl<'uvec2'>
+    export type Vec2 = XImpl<'vec2'>
+    export type BVec3 = XImpl<'bvec3'>
+    export type IVec3 = XImpl<'ivec3'>
+    export type UVec3 = XImpl<'uvec3'>
+    export type Vec3 = XImpl<'vec3'>
+    export type BVec4 = XImpl<'bvec4'>
+    export type IVec4 = XImpl<'ivec4'>
+    export type UVec4 = XImpl<'uvec4'>
+    export type Vec4 = XImpl<'vec4'>
+    export type Color = XImpl<'color'>
+    export type Mat2 = XImpl<'mat2'>
+    export type Mat3 = XImpl<'mat3'>
+    export type Mat4 = XImpl<'mat4'>
+    export type Texture = XImpl<'texture'>
+    export type Sampler2D = XImpl<'sampler2D'>
+    export type StructBase = XImpl<'struct'>
+    export type Struct<T extends StructFields = any> = Omit<StructBase, keyof T> & {
+                                 ~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'StructFields'.
+            [K in keyof T]: T[K] extends X<infer U> ? X<U> : never
+    } & {
+            toVar(id?: string): Struct<T>
+    }
+    export interface ConstantsToType {
+            void: Void
+            bool: Bool
+            uint: UInt
+            int: Int
+            float: Float
+            bvec2: BVec2
+            ivec2: IVec2
+            uvec2: UVec2
+            vec2: Vec2
+            bvec3: BVec3
+            ivec3: IVec3
+            uvec3: UVec3
+            vec3: Vec3
+            bvec4: BVec4
+            ivec4: IVec4
+            uvec4: UVec4
+            vec4: Vec4
+            color: Color
+            mat2: Mat2
+            mat3: Mat3
+            mat4: Mat4
+            texture: Texture
+            sampler2D: Sampler2D
+            struct: StructBase
+    }
+    /**
+     */
+    type XImpl<T extends C> = _X<T> & {
+                         ~
+!!! error TS2304: Cannot find name 'C'.
+            [K in Swizzles]: X<InferSwizzleType<T, K>>
+    }
+    export type X<T extends C = C> = T extends keyof ConstantsToType ? ConstantsToType[T] : _X<T>
+                            ~
+!!! error TS2304: Cannot find name 'C'.
+                                ~
+!!! error TS2304: Cannot find name 'C'.
+    interface _X<T extends C> {
+                           ~
+!!! error TS2304: Cannot find name 'C'.
+            toVar(name?: string): X<T>
+            add<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<InferOperator<T, U>>
+                          ~
+!!! error TS2304: Cannot find name 'C'.
+                                ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ValidateOperator'.
+            sub<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<InferOperator<T, U>>
+                          ~
+!!! error TS2304: Cannot find name 'C'.
+                                ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ValidateOperator'.
+            mul<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<InferOperator<T, U>>
+                          ~
+!!! error TS2304: Cannot find name 'C'.
+                                ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ValidateOperator'.
+            div<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<InferOperator<T, U>>
+                          ~
+!!! error TS2304: Cannot find name 'C'.
+                                ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ValidateOperator'.
+            mod<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<InferOperator<T, U>>
+                          ~
+!!! error TS2304: Cannot find name 'C'.
+                                ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ValidateOperator'.
+            equal<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): Bool
+                            ~
+!!! error TS2304: Cannot find name 'C'.
+                                  ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ValidateOperator'.
+            lessThanEqual<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): Bool
+                                    ~
+!!! error TS2304: Cannot find name 'C'.
+                                          ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ValidateOperator'.
+            greaterThan<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): Bool
+                                  ~
+!!! error TS2304: Cannot find name 'C'.
+                                        ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ValidateOperator'.
+            greaterThanEqual<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): Bool
+                                       ~
+!!! error TS2304: Cannot find name 'C'.
+                                             ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ValidateOperator'.
+            shiftLeft<U extends C>(x: X<U>): X<InferOperator<T, U>>
+                                ~
+!!! error TS2304: Cannot find name 'C'.
+            shiftRight<U extends C>(x: X<U>): X<InferOperator<T, U>>
+                                 ~
+!!! error TS2304: Cannot find name 'C'.
+            addAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+                                ~
+!!! error TS2304: Cannot find name 'C'.
+                                      ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ValidateOperator'.
+            subAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+                                ~
+!!! error TS2304: Cannot find name 'C'.
+                                      ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ValidateOperator'.
+            mulAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+                                ~
+!!! error TS2304: Cannot find name 'C'.
+                                      ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ValidateOperator'.
+            divAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+                                ~
+!!! error TS2304: Cannot find name 'C'.
+                                      ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ValidateOperator'.
+            modAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+                                ~
+!!! error TS2304: Cannot find name 'C'.
+                                      ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ValidateOperator'.
+            bitAndAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+                                   ~
+!!! error TS2304: Cannot find name 'C'.
+                                         ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ValidateOperator'.
+            bitOrAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+                                  ~
+!!! error TS2304: Cannot find name 'C'.
+                                        ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ValidateOperator'.
+            bitXorAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+                                   ~
+!!! error TS2304: Cannot find name 'C'.
+                                         ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ValidateOperator'.
+            shiftLeftAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+                                      ~
+!!! error TS2304: Cannot find name 'C'.
+                                            ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ValidateOperator'.
+            shiftRightAssign<U extends C>(x: ValidateOperator<T, U> extends 0 ? never : number | X<U>): X<T>
+                                       ~
+!!! error TS2304: Cannot find name 'C'.
+                                             ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ValidateOperator'.
+            atan2<U extends C>(x: number | X<U>): X<T>
+                            ~
+!!! error TS2304: Cannot find name 'C'.
+            clamp<U extends C>(min: number | X<U>, max: number | X<U>): X<InferOperator<T, U>>
+                            ~
+!!! error TS2304: Cannot find name 'C'.
+            max<U extends C>(y: number | X<U>): X<InferOperator<T, U>>
+                          ~
+!!! error TS2304: Cannot find name 'C'.
+            min<U extends C>(y: number | X<U>): X<InferOperator<T, U>>
+                          ~
+!!! error TS2304: Cannot find name 'C'.
+            mix<U extends C>(y: number | X<U>, a: number | Float | X<U>): X<InferOperator<T, U>>
+                          ~
+!!! error TS2304: Cannot find name 'C'.
+            pow<U extends C>(y: number | X<U>): X<T>
+                          ~
+!!! error TS2304: Cannot find name 'C'.
+            fma<U extends C>(b: number | X<U>, c: number | X<U>): X<T>
+                          ~
+!!! error TS2304: Cannot find name 'C'.
+            smoothstep<U extends C>(edge0: number | X<U>, edge1: number | X<U>): X<InferOperator<T, U>>
+                                 ~
+!!! error TS2304: Cannot find name 'C'.
+            step<U extends C>(edge: number | X<U>): X<InferOperator<T, U>>
+                           ~
+!!! error TS2304: Cannot find name 'C'.
+    }
+==== node_modules/glre/src/node/utils/const.ts (0 errors) ====
+    export const TYPE_MAPPING = {
+            bool: 'bool',
+            uint: 'u32',
+            int: 'i32',
+            float: 'f32',
+            bvec2: 'vec2<bool>',
+            ivec2: 'vec2i',
+            uvec2: 'vec2u',
+            vec2: 'vec2f',
+            bvec3: 'vec3<bool>',
+            ivec3: 'vec3i',
+            uvec3: 'vec3u',
+            vec3: 'vec3f',
+            bvec4: 'vec4<bool>',
+            ivec4: 'vec4i',
+            uvec4: 'vec4u',
+            vec4: 'vec4f',
+    } as const
+    export const CONSTANTS = Object.keys(TYPE_MAPPING) as (keyof typeof TYPE_MAPPING)[]
+    export const SWIZZLE_BASE_MAP = {
+            float: 'float',
+            vec2: 'float',
+            vec3: 'float',
+            vec4: 'float',
+            int: 'int',
+            ivec2: 'int',
+            ivec3: 'int',
+            ivec4: 'int',
+            uint: 'uint',
+            uvec2: 'uint',
+            uvec3: 'uint',
+            uvec4: 'uint',
+            bool: 'bool',
+            bvec2: 'bool',
+            bvec3: 'bool',
+            bvec4: 'bool',
+    } as const
+    export const SWIZZLE_RESULT_MAP = {
+            float: { 1: 'float', 2: 'vec2', 3: 'vec3', 4: 'vec4', 9: 'mat3', 16: 'mat4' } as const,
+            int: { 1: 'int', 2: 'ivec2', 3: 'ivec3', 4: 'ivec4' } as const,
+            uint: { 1: 'uint', 2: 'uvec2', 3: 'uvec3', 4: 'uvec4' } as const,
+            bool: { 1: 'bool', 2: 'bvec2', 3: 'bvec3', 4: 'bvec4' } as const,
+    }
+==== projects/demo/main.ts (5 errors) ====
+    import type { Float, UInt, UVec2, UVec3, Vec3 } from 'glre/src/node'
+                  ~~~~~
+!!! error TS2305: Module '"glre/src/node"' has no exported member 'Float'.
+                         ~~~~
+!!! error TS2305: Module '"glre/src/node"' has no exported member 'UInt'.
+                               ~~~~~
+!!! error TS2305: Module '"glre/src/node"' has no exported member 'UVec2'.
+                                      ~~~~~
+!!! error TS2305: Module '"glre/src/node"' has no exported member 'UVec3'.
+                                             ~~~~
+!!! error TS2305: Module '"glre/src/node"' has no exported member 'Vec3'.
+    

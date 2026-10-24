@@ -82,3 +82,13 @@ for flips); a separate file so the three boxes never conflict.
   resolveLambdaPre<S> is `string | false`. Guess: a template-literal inference or string-recursion step in cion's
   evaluator, or an instantiation depth limit, that differs. Repro test/cases/npm__taiyakihitotsu_foxp_TS2344.ts
   (532 lines: reduce.py with --tsgo-clean, own files then the package's). [flip] [open]
+- Seed 20261209, rs-pro/rocket-slate (@rocket-slate/mentions@0.2.26): missing TS2615 "Type of property
+  'defaultProps' circularly references itself in mapped type 'ForwardRefExoticBase<...>'" on `styled(Toolbar)` with
+  @types/styled-components (ts3.7) and @types/react 16. tsgo reports it twice at the same span, for the two
+  `theme` forms. tttt has the check (members.c, the expanded_from containsError path) but doesn't reach the
+  circularity here. Repro test/cases/npm__rocket-slate_mentions_TS2615.ts (reduce.py, 8 files). [open]
+- Seed 20261209, tseijp/voxelizer (voxel-three@0.3.0): spurious TS2589 "excessively deep" in glre's TypeScript
+  sources (`new Proxy(...) as unknown as X<T>` over glre's recursive node types), and a TS2590 "union type too
+  complex" in voxel-three. tsgo hits neither limit. Not a placement difference: tsgo reports no depth error at all,
+  so tttt's instantiation goes deeper or caches less. Repro test/cases/npm_voxel-three_TS2589.ts (reduce.py, 6
+  files; the TS2590 is not reproduced separately). [open]

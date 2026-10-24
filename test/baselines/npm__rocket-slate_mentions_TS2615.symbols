@@ -1,0 +1,650 @@
+//// [test/cases/npm__rocket-slate_mentions_TS2615.ts] ////
+
+=== node_modules/@types/hoist-non-react-statics/index.d.ts ===
+declare namespace hoistNonReactStatics {
+>hoistNonReactStatics : Symbol(hoistNonReactStatics, Decl(index.d.ts, 5, 1), Decl(index.d.ts, 0, 0))
+
+    type NonReactStatics<
+>NonReactStatics : Symbol(NonReactStatics, Decl(index.d.ts, 0, 40))
+
+        S extends React.ComponentType<any>,
+>S : Symbol(S, Decl(index.d.ts, 1, 25))
+>React : Symbol(React)
+>ComponentType : Symbol(React.ComponentType)
+
+    > = {
+    };
+}
+declare function hoistNonReactStatics<
+>hoistNonReactStatics : Symbol(hoistNonReactStatics, Decl(index.d.ts, 5, 1), Decl(index.d.ts, 0, 0))
+
+>(
+): T & hoistNonReactStatics.NonReactStatics<S, C>;
+>T : Symbol(T)
+>hoistNonReactStatics : Symbol(hoistNonReactStatics, Decl(index.d.ts, 5, 1), Decl(index.d.ts, 0, 0))
+>NonReactStatics : Symbol(hoistNonReactStatics.NonReactStatics, Decl(index.d.ts, 0, 40))
+>S : Symbol(S)
+>C : Symbol(C)
+
+export = hoistNonReactStatics;
+>hoistNonReactStatics : Symbol(hoistNonReactStatics, Decl(index.d.ts, 5, 1), Decl(index.d.ts, 0, 0))
+
+=== node_modules/@types/react/index.d.ts ===
+export = React;
+>React : Symbol(React, Decl(index.d.ts, 0, 15))
+
+declare namespace React {
+>React : Symbol(React, Decl(index.d.ts, 0, 15))
+
+    type ComponentType<P = {}> = ComponentClass<P> | FunctionComponent<P>;
+>ComponentType : Symbol(ComponentType, Decl(index.d.ts, 1, 25))
+>P : Symbol(P, Decl(index.d.ts, 2, 23))
+>ComponentClass : Symbol(ComponentClass, Decl(index.d.ts, 22, 5))
+>P : Symbol(P, Decl(index.d.ts, 2, 23))
+>FunctionComponent : Symbol(FunctionComponent, Decl(index.d.ts, 20, 16))
+>P : Symbol(P, Decl(index.d.ts, 2, 23))
+
+    /**
+     */
+    type ElementRef<
+>ElementRef : Symbol(ElementRef, Decl(index.d.ts, 2, 74))
+
+        C extends
+>C : Symbol(C, Decl(index.d.ts, 5, 20))
+
+            | keyof JSX.IntrinsicElements
+>JSX : Symbol(JSX)
+>IntrinsicElements : Symbol(JSX.IntrinsicElements)
+
+    > = C extends ForwardRefExoticComponent<infer FP>
+>C : Symbol(C, Decl(index.d.ts, 5, 20))
+>ForwardRefExoticComponent : Symbol(ForwardRefExoticComponent, Decl(index.d.ts, 24, 5))
+>FP : Symbol(FP, Decl(index.d.ts, 8, 49))
+
+        ? FP extends RefAttributes<infer FC>
+>FP : Symbol(FP, Decl(index.d.ts, 8, 49))
+>RefAttributes : Symbol(RefAttributes)
+>FC : Symbol(FC, Decl(index.d.ts, 9, 40))
+
+            ? FC
+>FC : Symbol(FC, Decl(index.d.ts, 9, 40))
+
+            : never
+        : C extends { new (props: any): Component<any> }
+>C : Symbol(C, Decl(index.d.ts, 5, 20))
+>props : Symbol(props, Decl(index.d.ts, 12, 27))
+>Component : Symbol(Component)
+
+        ? InstanceType<C>
+>InstanceType : Symbol(InstanceType, Decl(lib.es5.d.ts, --, --))
+>C : Symbol(C, Decl(index.d.ts, 5, 20))
+
+        : C extends ((props: any, context?: any) => ReactElement | null)
+>C : Symbol(C, Decl(index.d.ts, 5, 20))
+>props : Symbol(props, Decl(index.d.ts, 14, 22))
+>context : Symbol(context, Decl(index.d.ts, 14, 33))
+>ReactElement : Symbol(ReactElement)
+
+        ? undefined
+        : C extends keyof JSX.IntrinsicElements
+>C : Symbol(C, Decl(index.d.ts, 5, 20))
+>JSX : Symbol(JSX)
+>IntrinsicElements : Symbol(JSX.IntrinsicElements)
+
+        ? JSX.IntrinsicElements[C] extends DOMAttributes<infer E>
+>JSX : Symbol(JSX)
+>IntrinsicElements : Symbol(JSX.IntrinsicElements)
+>C : Symbol(C, Decl(index.d.ts, 5, 20))
+>DOMAttributes : Symbol(DOMAttributes)
+>E : Symbol(E, Decl(index.d.ts, 17, 62))
+
+            ? E
+>E : Symbol(E, Decl(index.d.ts, 17, 62))
+
+            : never
+        : never;
+    interface FunctionComponent<P = {}> {
+>FunctionComponent : Symbol(FunctionComponent, Decl(index.d.ts, 20, 16))
+>P : Symbol(P, Decl(index.d.ts, 21, 32))
+    }
+    interface ComponentClass<P = {}, S = ComponentState> extends StaticLifecycle<P, S> {
+>ComponentClass : Symbol(ComponentClass, Decl(index.d.ts, 22, 5))
+>P : Symbol(P, Decl(index.d.ts, 23, 29))
+>S : Symbol(S, Decl(index.d.ts, 23, 36))
+>ComponentState : Symbol(ComponentState)
+>P : Symbol(P, Decl(index.d.ts, 23, 29))
+>S : Symbol(S, Decl(index.d.ts, 23, 36))
+    }
+        /**
+         */
+    interface ForwardRefExoticComponent<P> extends NamedExoticComponent<P> {
+>ForwardRefExoticComponent : Symbol(ForwardRefExoticComponent, Decl(index.d.ts, 24, 5))
+>P : Symbol(P, Decl(index.d.ts, 27, 40))
+>P : Symbol(P, Decl(index.d.ts, 27, 40))
+
+        defaultProps?: Partial<P>;
+>defaultProps : Symbol(ForwardRefExoticComponent.defaultProps, Decl(index.d.ts, 27, 76))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>P : Symbol(P, Decl(index.d.ts, 27, 40))
+    }
+    type PropsWithRef<P> =
+>PropsWithRef : Symbol(PropsWithRef, Decl(index.d.ts, 29, 5))
+>P : Symbol(P, Decl(index.d.ts, 30, 22))
+
+        'ref' extends keyof P
+>P : Symbol(P, Decl(index.d.ts, 30, 22))
+
+            ? P extends { ref?: infer R }
+>P : Symbol(P, Decl(index.d.ts, 30, 22))
+>ref : Symbol(ref, Decl(index.d.ts, 32, 25))
+>R : Symbol(R, Decl(index.d.ts, 32, 37))
+
+                ? string extends R
+>R : Symbol(R, Decl(index.d.ts, 32, 37))
+
+                    ? PropsWithoutRef<P> & { ref?: Exclude<R, string> }
+>PropsWithoutRef : Symbol(PropsWithoutRef)
+>P : Symbol(P, Decl(index.d.ts, 30, 22))
+>ref : Symbol(ref, Decl(index.d.ts, 34, 44))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>R : Symbol(R, Decl(index.d.ts, 32, 37))
+
+                    : P
+>P : Symbol(P, Decl(index.d.ts, 30, 22))
+
+                : P
+>P : Symbol(P, Decl(index.d.ts, 30, 22))
+
+            : P;
+>P : Symbol(P, Decl(index.d.ts, 30, 22))
+
+    /**
+     */
+    type ComponentProps<T extends keyof JSX.IntrinsicElements | JSXElementConstructor<any>> =
+>ComponentProps : Symbol(ComponentProps, Decl(index.d.ts, 37, 16))
+>T : Symbol(T, Decl(index.d.ts, 40, 24))
+>JSX : Symbol(JSX)
+>IntrinsicElements : Symbol(JSX.IntrinsicElements)
+>JSXElementConstructor : Symbol(JSXElementConstructor)
+
+        T extends JSXElementConstructor<infer P>
+>T : Symbol(T, Decl(index.d.ts, 40, 24))
+>JSXElementConstructor : Symbol(JSXElementConstructor)
+>P : Symbol(P, Decl(index.d.ts, 41, 45))
+
+            ? P
+>P : Symbol(P, Decl(index.d.ts, 41, 45))
+
+            : T extends keyof JSX.IntrinsicElements
+>T : Symbol(T, Decl(index.d.ts, 40, 24))
+>JSX : Symbol(JSX)
+>IntrinsicElements : Symbol(JSX.IntrinsicElements)
+
+                ? JSX.IntrinsicElements[T]
+>JSX : Symbol(JSX)
+>IntrinsicElements : Symbol(JSX.IntrinsicElements)
+>T : Symbol(T, Decl(index.d.ts, 40, 24))
+
+                : {};
+    type ComponentPropsWithRef<T extends ElementType> =
+>ComponentPropsWithRef : Symbol(ComponentPropsWithRef, Decl(index.d.ts, 45, 21))
+>T : Symbol(T, Decl(index.d.ts, 46, 31))
+>ElementType : Symbol(ElementType)
+
+        T extends ComponentClass<infer P>
+>T : Symbol(T, Decl(index.d.ts, 46, 31))
+>ComponentClass : Symbol(ComponentClass, Decl(index.d.ts, 22, 5))
+>P : Symbol(P, Decl(index.d.ts, 47, 38))
+
+            ? PropsWithoutRef<P> & RefAttributes<InstanceType<T>>
+>PropsWithoutRef : Symbol(PropsWithoutRef)
+>P : Symbol(P, Decl(index.d.ts, 47, 38))
+>RefAttributes : Symbol(RefAttributes)
+>InstanceType : Symbol(InstanceType, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(index.d.ts, 46, 31))
+
+            : PropsWithRef<ComponentProps<T>>;
+>PropsWithRef : Symbol(PropsWithRef, Decl(index.d.ts, 29, 5))
+>ComponentProps : Symbol(ComponentProps, Decl(index.d.ts, 37, 16))
+>T : Symbol(T, Decl(index.d.ts, 46, 31))
+}
+type MergePropTypes<P, T> =
+>MergePropTypes : Symbol(MergePropTypes, Decl(index.d.ts, 50, 1))
+>P : Symbol(P, Decl(index.d.ts, 51, 20))
+>T : Symbol(T, Decl(index.d.ts, 51, 22))
+
+    P extends any
+>P : Symbol(P, Decl(index.d.ts, 51, 20))
+
+        ? MergePropTypes<P, PropTypes.InferProps<T>>
+>MergePropTypes : Symbol(MergePropTypes, Decl(index.d.ts, 50, 1))
+>P : Symbol(P, Decl(index.d.ts, 51, 20))
+>PropTypes : Symbol(PropTypes)
+>InferProps : Symbol(PropTypes.InferProps)
+>T : Symbol(T, Decl(index.d.ts, 51, 22))
+
+        : C extends { defaultProps: infer D; }
+>C : Symbol(C)
+>defaultProps : Symbol(defaultProps, Decl(index.d.ts, 54, 21))
+>D : Symbol(D, Decl(index.d.ts, 54, 41))
+
+            ? Defaultize<P, D>
+>Defaultize : Symbol(Defaultize)
+>P : Symbol(P, Decl(index.d.ts, 51, 20))
+>D : Symbol(D, Decl(index.d.ts, 54, 41))
+
+            : P;
+>P : Symbol(P, Decl(index.d.ts, 51, 20))
+
+=== node_modules/@types/styled-components/ts3.7/index.d.ts ===
+import * as React from "react";
+>React : Symbol(React, Decl(index.d.ts, 0, 6))
+
+import * as hoistNonReactStatics from 'hoist-non-react-statics';
+>hoistNonReactStatics : Symbol(hoistNonReactStatics, Decl(index.d.ts, 1, 6))
+
+type Defaultize<P, D> = P extends any
+>Defaultize : Symbol(Defaultize, Decl(index.d.ts, 1, 64))
+>P : Symbol(P, Decl(index.d.ts, 2, 16))
+>D : Symbol(D, Decl(index.d.ts, 2, 18))
+>P : Symbol(P, Decl(index.d.ts, 2, 16))
+
+    ? string extends keyof P ? P :
+>P : Symbol(P, Decl(index.d.ts, 2, 16))
+>P : Symbol(P, Decl(index.d.ts, 2, 16))
+
+        & Partial<Pick<P, Extract<keyof P, keyof D>>>
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>P : Symbol(P, Decl(index.d.ts, 2, 16))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>P : Symbol(P, Decl(index.d.ts, 2, 16))
+>D : Symbol(D, Decl(index.d.ts, 2, 18))
+
+    : P;
+>P : Symbol(P, Decl(index.d.ts, 2, 16))
+
+export type StyledComponentProps<
+>StyledComponentProps : Symbol(StyledComponentProps, Decl(index.d.ts, 5, 8))
+
+    C extends keyof JSX.IntrinsicElements | React.ComponentType<any>,
+>C : Symbol(C, Decl(index.d.ts, 6, 33))
+>JSX : Symbol(JSX)
+>IntrinsicElements : Symbol(JSX.IntrinsicElements)
+>React : Symbol(React, Decl(index.d.ts, 0, 6))
+>ComponentType : Symbol(React.ComponentType, Decl(index.d.ts, 1, 25))
+
+    T extends object,
+>T : Symbol(T, Decl(index.d.ts, 7, 69))
+
+    O extends object,
+>O : Symbol(O, Decl(index.d.ts, 8, 21))
+
+    A extends keyof any
+>A : Symbol(A, Decl(index.d.ts, 9, 21))
+
+> =
+    O extends object
+>O : Symbol(O, Decl(index.d.ts, 8, 21))
+
+    ? WithOptionalTheme<
+>WithOptionalTheme : Symbol(WithOptionalTheme, Decl(index.d.ts, 87, 2))
+
+              Partial<Pick<React.ComponentPropsWithRef<C> & O, A>>,
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>React : Symbol(React, Decl(index.d.ts, 0, 6))
+>ComponentPropsWithRef : Symbol(React.ComponentPropsWithRef, Decl(index.d.ts, 45, 21))
+>C : Symbol(C, Decl(index.d.ts, 6, 33))
+>O : Symbol(O, Decl(index.d.ts, 8, 21))
+>A : Symbol(A, Decl(index.d.ts, 9, 21))
+
+          T
+>T : Symbol(T, Decl(index.d.ts, 7, 69))
+
+      > &
+          WithChildrenIfReactComponentClass<C>
+>WithChildrenIfReactComponentClass : Symbol(WithChildrenIfReactComponentClass, Decl(index.d.ts, 18, 12))
+>C : Symbol(C, Decl(index.d.ts, 6, 33))
+
+    : never;
+type WithChildrenIfReactComponentClass<
+>WithChildrenIfReactComponentClass : Symbol(WithChildrenIfReactComponentClass, Decl(index.d.ts, 18, 12))
+
+    C extends keyof JSX.IntrinsicElements | React.ComponentType<any>
+>C : Symbol(C, Decl(index.d.ts, 19, 39))
+>JSX : Symbol(JSX)
+>IntrinsicElements : Symbol(JSX.IntrinsicElements)
+>React : Symbol(React, Decl(index.d.ts, 0, 6))
+>ComponentType : Symbol(React.ComponentType, Decl(index.d.ts, 1, 25))
+
+> = C extends React.ComponentClass<any> ? { children?: React.ReactNode } : {};
+>C : Symbol(C, Decl(index.d.ts, 19, 39))
+>React : Symbol(React, Decl(index.d.ts, 0, 6))
+>ComponentClass : Symbol(React.ComponentClass, Decl(index.d.ts, 22, 5))
+>children : Symbol(children, Decl(index.d.ts, 21, 43))
+>React : Symbol(React, Decl(index.d.ts, 0, 6))
+>ReactNode : Symbol(React.ReactNode)
+
+type StyledComponentPropsWithAs<
+>StyledComponentPropsWithAs : Symbol(StyledComponentPropsWithAs, Decl(index.d.ts, 21, 78))
+
+> = StyledComponentProps<C, T, O, A> & { as?: C, forwardedAs?: C };
+>StyledComponentProps : Symbol(StyledComponentProps, Decl(index.d.ts, 5, 8))
+>C : Symbol(C)
+>T : Symbol(T)
+>O : Symbol(O)
+>A : Symbol(A)
+>as : Symbol(as, Decl(index.d.ts, 23, 40))
+>C : Symbol(C)
+>forwardedAs : Symbol(forwardedAs, Decl(index.d.ts, 23, 48))
+>C : Symbol(C)
+
+type ForwardRefExoticBase<P> = Pick<
+>ForwardRefExoticBase : Symbol(ForwardRefExoticBase, Decl(index.d.ts, 23, 67))
+>P : Symbol(P, Decl(index.d.ts, 24, 26))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+
+    React.ForwardRefExoticComponent<P>,
+>React : Symbol(React, Decl(index.d.ts, 0, 6))
+>ForwardRefExoticComponent : Symbol(React.ForwardRefExoticComponent, Decl(index.d.ts, 24, 5))
+>P : Symbol(P, Decl(index.d.ts, 24, 26))
+
+    keyof React.ForwardRefExoticComponent<any>
+>React : Symbol(React, Decl(index.d.ts, 0, 6))
+>ForwardRefExoticComponent : Symbol(React.ForwardRefExoticComponent, Decl(index.d.ts, 24, 5))
+
+>;
+export type AnyStyledComponent =
+>AnyStyledComponent : Symbol(AnyStyledComponent, Decl(index.d.ts, 27, 2))
+
+    | StyledComponent<any, any, any>;
+>StyledComponent : Symbol(StyledComponent, Decl(index.d.ts, 29, 37))
+
+export type StyledComponent<
+>StyledComponent : Symbol(StyledComponent, Decl(index.d.ts, 29, 37))
+
+    C extends keyof JSX.IntrinsicElements | React.ComponentType<any>,
+>C : Symbol(C, Decl(index.d.ts, 30, 28))
+>JSX : Symbol(JSX)
+>IntrinsicElements : Symbol(JSX.IntrinsicElements)
+>React : Symbol(React, Decl(index.d.ts, 0, 6))
+>ComponentType : Symbol(React.ComponentType, Decl(index.d.ts, 1, 25))
+
+    T extends object,
+>T : Symbol(T, Decl(index.d.ts, 31, 69))
+
+    O extends object = {},
+>O : Symbol(O, Decl(index.d.ts, 32, 21))
+
+    A extends keyof any = never
+>A : Symbol(A, Decl(index.d.ts, 33, 26))
+
+> = // the "string" allows this to be used as an object key
+    string & StyledComponentBase<C, T, O, A> & hoistNonReactStatics.NonReactStatics<C extends React.ComponentType<any> ? C : never>;
+>StyledComponentBase : Symbol(StyledComponentBase, Decl(index.d.ts, 36, 132))
+>C : Symbol(C, Decl(index.d.ts, 30, 28))
+>T : Symbol(T, Decl(index.d.ts, 31, 69))
+>O : Symbol(O, Decl(index.d.ts, 32, 21))
+>A : Symbol(A, Decl(index.d.ts, 33, 26))
+>hoistNonReactStatics : Symbol(hoistNonReactStatics, Decl(index.d.ts, 1, 6))
+>NonReactStatics : Symbol(hoistNonReactStatics.NonReactStatics, Decl(index.d.ts, 0, 40))
+>C : Symbol(C, Decl(index.d.ts, 30, 28))
+>React : Symbol(React, Decl(index.d.ts, 0, 6))
+>ComponentType : Symbol(React.ComponentType, Decl(index.d.ts, 1, 25))
+>C : Symbol(C, Decl(index.d.ts, 30, 28))
+
+export interface StyledComponentBase<
+>StyledComponentBase : Symbol(StyledComponentBase, Decl(index.d.ts, 36, 132))
+
+    C extends keyof JSX.IntrinsicElements | React.ComponentType<any>,
+>C : Symbol(C, Decl(index.d.ts, 37, 37))
+>JSX : Symbol(JSX)
+>IntrinsicElements : Symbol(JSX.IntrinsicElements)
+>React : Symbol(React, Decl(index.d.ts, 0, 6))
+>ComponentType : Symbol(React.ComponentType, Decl(index.d.ts, 1, 25))
+
+    T extends object,
+>T : Symbol(T, Decl(index.d.ts, 38, 69))
+
+    O extends object = {},
+>O : Symbol(O, Decl(index.d.ts, 39, 21))
+
+    A extends keyof any = never
+>A : Symbol(A, Decl(index.d.ts, 40, 26))
+
+> extends ForwardRefExoticBase<StyledComponentProps<C, T, O, A>> {
+>ForwardRefExoticBase : Symbol(ForwardRefExoticBase, Decl(index.d.ts, 23, 67))
+>StyledComponentProps : Symbol(StyledComponentProps, Decl(index.d.ts, 5, 8))
+>C : Symbol(C, Decl(index.d.ts, 37, 37))
+>T : Symbol(T, Decl(index.d.ts, 38, 69))
+>O : Symbol(O, Decl(index.d.ts, 39, 21))
+>A : Symbol(A, Decl(index.d.ts, 40, 26))
+
+    withComponent<WithC extends AnyStyledComponent>(
+>withComponent : Symbol(StyledComponentBase.withComponent, Decl(index.d.ts, 42, 66))
+>WithC : Symbol(WithC, Decl(index.d.ts, 43, 18))
+>AnyStyledComponent : Symbol(AnyStyledComponent, Decl(index.d.ts, 27, 2))
+
+    ): StyledComponent<
+>StyledComponent : Symbol(StyledComponent, Decl(index.d.ts, 29, 37))
+
+        StyledComponentInnerComponent<WithC>,
+>StyledComponentInnerComponent : Symbol(StyledComponentInnerComponent, Decl(index.d.ts, 57, 33))
+>WithC : Symbol(WithC, Decl(index.d.ts, 43, 18))
+
+        A | StyledComponentInnerAttrs<WithC>
+>A : Symbol(A, Decl(index.d.ts, 40, 26))
+>StyledComponentInnerAttrs : Symbol(StyledComponentInnerAttrs, Decl(index.d.ts, 72, 12))
+>WithC : Symbol(WithC, Decl(index.d.ts, 43, 18))
+
+    >;
+}
+export interface ThemedStyledFunction<
+>ThemedStyledFunction : Symbol(ThemedStyledFunction, Decl(index.d.ts, 48, 1))
+
+    A extends keyof any = never
+>A : Symbol(A, Decl(index.d.ts, 49, 38))
+
+> extends ThemedStyledFunctionBase<C, T, O, A> {
+>C : Symbol(C)
+>T : Symbol(T)
+>O : Symbol(O)
+>A : Symbol(A, Decl(index.d.ts, 49, 38))
+
+    attrs<
+>attrs : Symbol(ThemedStyledFunction.attrs, Decl(index.d.ts, 51, 48))
+
+    >(
+    ): ThemedStyledFunction<C, T, O & NewA, A | keyof NewA>;
+>ThemedStyledFunction : Symbol(ThemedStyledFunction, Decl(index.d.ts, 48, 1))
+>C : Symbol(C)
+>T : Symbol(T)
+>O : Symbol(O)
+>NewA : Symbol(NewA)
+>A : Symbol(A, Decl(index.d.ts, 49, 38))
+>NewA : Symbol(NewA)
+}
+export type StyledFunction<
+>StyledFunction : Symbol(StyledFunction, Decl(index.d.ts, 55, 1))
+
+> = ThemedStyledFunction<C, any>;
+>ThemedStyledFunction : Symbol(ThemedStyledFunction, Decl(index.d.ts, 48, 1))
+>C : Symbol(C)
+
+export type StyledComponentInnerComponent<
+>StyledComponentInnerComponent : Symbol(StyledComponentInnerComponent, Decl(index.d.ts, 57, 33))
+
+    C extends React.ComponentType<any>
+>C : Symbol(C, Decl(index.d.ts, 58, 42))
+>React : Symbol(React, Decl(index.d.ts, 0, 6))
+>ComponentType : Symbol(React.ComponentType, Decl(index.d.ts, 1, 25))
+
+> = C extends
+>C : Symbol(C, Decl(index.d.ts, 58, 42))
+
+    | StyledComponent<infer I, any, any, any>
+>StyledComponent : Symbol(StyledComponent, Decl(index.d.ts, 29, 37))
+>I : Symbol(I, Decl(index.d.ts, 61, 27), Decl(index.d.ts, 62, 27))
+
+    | StyledComponent<infer I, any, any>
+>StyledComponent : Symbol(StyledComponent, Decl(index.d.ts, 29, 37))
+>I : Symbol(I, Decl(index.d.ts, 61, 27), Decl(index.d.ts, 62, 27))
+
+    ? I
+>I : Symbol(I, Decl(index.d.ts, 61, 27), Decl(index.d.ts, 62, 27))
+
+    : C;
+>C : Symbol(C, Decl(index.d.ts, 58, 42))
+
+export type StyledComponentPropsWithRef<
+>StyledComponentPropsWithRef : Symbol(StyledComponentPropsWithRef, Decl(index.d.ts, 64, 8))
+
+> = C extends AnyStyledComponent
+>C : Symbol(C)
+>AnyStyledComponent : Symbol(AnyStyledComponent, Decl(index.d.ts, 27, 2))
+
+    ? React.ComponentPropsWithRef<StyledComponentInnerComponent<C>>
+>React : Symbol(React, Decl(index.d.ts, 0, 6))
+>ComponentPropsWithRef : Symbol(React.ComponentPropsWithRef, Decl(index.d.ts, 45, 21))
+>StyledComponentInnerComponent : Symbol(StyledComponentInnerComponent, Decl(index.d.ts, 57, 33))
+>C : Symbol(C)
+
+    : React.ComponentPropsWithRef<C>;
+>React : Symbol(React, Decl(index.d.ts, 0, 6))
+>ComponentPropsWithRef : Symbol(React.ComponentPropsWithRef, Decl(index.d.ts, 45, 21))
+>C : Symbol(C)
+
+export type StyledComponentInnerOtherProps<C extends AnyStyledComponent> = C extends
+>StyledComponentInnerOtherProps : Symbol(StyledComponentInnerOtherProps, Decl(index.d.ts, 68, 37))
+>C : Symbol(C, Decl(index.d.ts, 69, 43))
+>AnyStyledComponent : Symbol(AnyStyledComponent, Decl(index.d.ts, 27, 2))
+>C : Symbol(C, Decl(index.d.ts, 69, 43))
+
+    | StyledComponent<any, any, infer O>
+>StyledComponent : Symbol(StyledComponent, Decl(index.d.ts, 29, 37))
+>O : Symbol(O, Decl(index.d.ts, 70, 37))
+
+    ? O
+>O : Symbol(O, Decl(index.d.ts, 70, 37))
+
+    : never;
+export type StyledComponentInnerAttrs<
+>StyledComponentInnerAttrs : Symbol(StyledComponentInnerAttrs, Decl(index.d.ts, 72, 12))
+
+    C extends AnyStyledComponent
+>C : Symbol(C, Decl(index.d.ts, 73, 38))
+>AnyStyledComponent : Symbol(AnyStyledComponent, Decl(index.d.ts, 27, 2))
+
+> = C extends StyledComponent<any, any, any, infer A> ? A : never;
+>C : Symbol(C, Decl(index.d.ts, 73, 38))
+>StyledComponent : Symbol(StyledComponent, Decl(index.d.ts, 29, 37))
+>A : Symbol(A, Decl(index.d.ts, 75, 50))
+>A : Symbol(A, Decl(index.d.ts, 75, 50))
+
+export interface ThemedBaseStyledInterface<T extends object>
+>ThemedBaseStyledInterface : Symbol(ThemedBaseStyledInterface, Decl(index.d.ts, 75, 66))
+>T : Symbol(T, Decl(index.d.ts, 76, 43))
+
+    extends ThemedStyledComponentFactories<T> {
+>T : Symbol(T, Decl(index.d.ts, 76, 43))
+
+    <C extends AnyStyledComponent>(component: C): ThemedStyledFunction<
+>C : Symbol(C, Decl(index.d.ts, 78, 5))
+>AnyStyledComponent : Symbol(AnyStyledComponent, Decl(index.d.ts, 27, 2))
+>component : Symbol(component, Decl(index.d.ts, 78, 35))
+>C : Symbol(C, Decl(index.d.ts, 78, 5))
+>ThemedStyledFunction : Symbol(ThemedStyledFunction, Decl(index.d.ts, 48, 1))
+
+        StyledComponentInnerComponent<C>,
+>StyledComponentInnerComponent : Symbol(StyledComponentInnerComponent, Decl(index.d.ts, 57, 33))
+>C : Symbol(C, Decl(index.d.ts, 78, 5))
+
+    >;
+}
+export type ThemedStyledInterface<T extends object> = ThemedBaseStyledInterface<
+>ThemedStyledInterface : Symbol(ThemedStyledInterface, Decl(index.d.ts, 81, 1))
+>T : Symbol(T, Decl(index.d.ts, 82, 34))
+>ThemedBaseStyledInterface : Symbol(ThemedBaseStyledInterface, Decl(index.d.ts, 75, 66))
+
+    AnyIfEmpty<T>
+>AnyIfEmpty : Symbol(AnyIfEmpty)
+>T : Symbol(T, Decl(index.d.ts, 82, 34))
+
+>;
+export type StyledInterface = ThemedStyledInterface<DefaultTheme>;
+>StyledInterface : Symbol(StyledInterface, Decl(index.d.ts, 84, 2))
+>ThemedStyledInterface : Symbol(ThemedStyledInterface, Decl(index.d.ts, 81, 1))
+>DefaultTheme : Symbol(DefaultTheme)
+
+export type ThemedCssFunction<T extends object> = BaseThemedCssFunction<
+>ThemedCssFunction : Symbol(ThemedCssFunction, Decl(index.d.ts, 85, 66))
+>T : Symbol(T, Decl(index.d.ts, 86, 30))
+>BaseThemedCssFunction : Symbol(BaseThemedCssFunction)
+
+>;
+type WithOptionalTheme<P extends { theme?: T }, T> = Omit<P, "theme"> & {
+>WithOptionalTheme : Symbol(WithOptionalTheme, Decl(index.d.ts, 87, 2))
+>P : Symbol(P, Decl(index.d.ts, 88, 23))
+>theme : Symbol(theme, Decl(index.d.ts, 88, 34))
+>T : Symbol(T, Decl(index.d.ts, 88, 47))
+>T : Symbol(T, Decl(index.d.ts, 88, 47))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>P : Symbol(P, Decl(index.d.ts, 88, 23))
+
+    theme?: T;
+>theme : Symbol(theme, Decl(index.d.ts, 88, 73))
+>T : Symbol(T, Decl(index.d.ts, 88, 47))
+}
+declare const styled: StyledInterface;
+>styled : Symbol(styled, Decl(index.d.ts, 91, 13))
+>StyledInterface : Symbol(StyledInterface, Decl(index.d.ts, 84, 2))
+
+export type BaseWithThemeFnInterface<T extends object> = <
+>BaseWithThemeFnInterface : Symbol(BaseWithThemeFnInterface, Decl(index.d.ts, 91, 38))
+>T : Symbol(T, Decl(index.d.ts, 92, 37))
+
+>(
+) => React.ForwardRefExoticComponent<
+>React : Symbol(React, Decl(index.d.ts, 0, 6))
+>ForwardRefExoticComponent : Symbol(React.ForwardRefExoticComponent, Decl(index.d.ts, 24, 5))
+
+>;
+export type WithThemeFnInterface<T extends object> = BaseWithThemeFnInterface<
+>WithThemeFnInterface : Symbol(WithThemeFnInterface, Decl(index.d.ts, 95, 2))
+>T : Symbol(T, Decl(index.d.ts, 96, 33))
+>BaseWithThemeFnInterface : Symbol(BaseWithThemeFnInterface, Decl(index.d.ts, 91, 38))
+
+>;
+export default styled;
+>styled : Symbol(styled, Decl(index.d.ts, 91, 13))
+
+=== node_modules/slate-plugins-next/dist/index.d.ts ===
+
+export * from './toolbar';
+=== node_modules/slate-plugins-next/dist/toolbar/components/Toolbar.d.ts ===
+export declare const Toolbar: import("styled-components").StyledComponent<"div", any, ToolbarProps, never>;
+>Toolbar : Symbol(Toolbar, Decl(Toolbar.d.ts, 0, 20))
+>StyledComponent : Symbol(StyledComponent, Decl(index.d.ts, 29, 37))
+>ToolbarProps : Symbol(ToolbarProps)
+
+=== node_modules/slate-plugins-next/dist/toolbar/components/index.d.ts ===
+
+export * from './Toolbar';
+=== node_modules/slate-plugins-next/dist/toolbar/index.d.ts ===
+
+export * from './components';
+=== packages/rocket-slate/src/Toolbar.tsx ===
+import { Toolbar } from 'slate-plugins-next';
+>Toolbar : Symbol(Toolbar, Decl(Toolbar.tsx, 0, 8))
+
+import styled from 'styled-components';
+>styled : Symbol(styled, Decl(Toolbar.tsx, 1, 6))
+
+const RocketToolbar = styled(Toolbar)`
+>RocketToolbar : Symbol(RocketToolbar, Decl(Toolbar.tsx, 2, 5))
+>styled : Symbol(styled, Decl(Toolbar.tsx, 1, 6))
+>Toolbar : Symbol(Toolbar, Decl(Toolbar.tsx, 0, 8))
+
+`;
+
