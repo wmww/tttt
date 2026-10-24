@@ -1,0 +1,49 @@
+npm__mui-treasury_component-number-input_TS2353.tsx(27,4): error TS2322: Type '{ variant: "outlined"; InputProps: { a: number; disableUnderline: true; }; } | { variant?: "standard" | undefined; InputProps: { a: number; disableUnderline: true; }; }' is not assignable to type 'TFProps'.
+  Type '{ variant: "outlined"; InputProps: { a: number; disableUnderline: true; }; }' is not assignable to type 'TFProps'.
+    Types of property 'InputProps' are incompatible.
+      Type '{ a: number; disableUnderline: true; }' is not assignable to type 'Partial<OutInput>'.
+        Property 'disableUnderline' does not exist on type 'Partial<OutInput>'.
+
+
+==== npm__mui-treasury_component-number-input_TS2353.tsx (1 errors) ====
+    // origin: npm @mui-treasury/component-number-input@0.0.1-alpha.3 https://github.com/siriwatknp/mui-treasury-next tsconfig.bench.json seed 20261031
+    // flip: no
+    // packages/style-textfield-*/src/*.stories.tsx: `<TextField {...args} InputProps={{ ..., disableUnderline: true }}/>`
+    // with MUI's TextFieldProps a union of variants (standard has disableUnderline, outlined doesn't). tsgo relates the
+    // whole attributes type and reports TS2322 at the tag name (in the project under a `{/* @ts-ignore */}` line, so
+    // nothing shows); tttt elaborates into the attribute and reports TS2353 at the property, past the ts-ignore.
+    declare namespace JSX { interface Element {} interface IntrinsicElements {} interface ElementAttributesProperty { props: {} } }
+    interface StdInput { disableUnderline?: boolean; a?: number }
+    interface OutInput { notched?: boolean; a?: number }
+    interface StdProps { variant?: 'standard'; InputProps?: Partial<StdInput> }
+    interface OutProps { variant: 'outlined'; InputProps?: Partial<OutInput> }
+    type TFProps = StdProps | OutProps;
+    declare function TextField(p: TFProps): JSX.Element;
+    export const A = (args: TFProps) => (
+      <>
+        {/* @ts-ignore */}
+        <TextField
+          {...args}
+          InputProps={{
+            a: 1,
+            disableUnderline: true,
+          }}
+        />
+      </>
+    );
+    export const B = (args: TFProps) => (
+      <TextField
+       ~~~~~~~~~
+!!! error TS2322: Type '{ variant: "outlined"; InputProps: { a: number; disableUnderline: true; }; } | { variant?: "standard" | undefined; InputProps: { a: number; disableUnderline: true; }; }' is not assignable to type 'TFProps'.
+!!! error TS2322:   Type '{ variant: "outlined"; InputProps: { a: number; disableUnderline: true; }; }' is not assignable to type 'TFProps'.
+!!! error TS2322:     Types of property 'InputProps' are incompatible.
+!!! error TS2322:       Type '{ a: number; disableUnderline: true; }' is not assignable to type 'Partial<OutInput>'.
+!!! error TS2322:         Property 'disableUnderline' does not exist on type 'Partial<OutInput>'.
+        {...args}
+        InputProps={{
+          a: 1,
+          disableUnderline: true,
+        }}
+      />
+    );
+    

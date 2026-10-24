@@ -169,3 +169,12 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   identical, and two `infer U`s are distinct type parameters, so the source falls back to its branches and fails:
   TS2345. tttt finds them assignable. Likely related to npm__skastr0_quartz-engine_TS2719, where tttt also relates
   two deferred conditionals that tsgo doesn't. [open]
+- **npm__mui-treasury_component-number-input_TS2353** (seed 20261031, @mui-treasury/component-number-input@0.0.1-alpha.3,
+  siriwatknp/mui-treasury-next; tsgo 75, tttt 81). Six `<TextField {...args} InputProps={{ ..., disableUnderline:
+  true }}/>` in packages/style-textfield-{ant,bootstrap,standard} stories, each under a `{/* @ts-ignore */}` line.
+  TextFieldProps is a union of variants (standard's InputProps has disableUnderline, outlined's doesn't) and the spread
+  makes the attributes a union. tsgo reports TS2322 for the whole attributes type at the tag name (suppressed there by
+  the ts-ignore); tttt elaborates into the attribute and reports TS2353 at the property line, which the ts-ignore
+  doesn't cover. Without the ts-ignore both report, at different lines and codes. Hand-cut repro (reduce.py didn't
+  converge in an hour on MUI's types). Guess: tttt's JSX attribute elaboration descends into a property whose target is
+  a union-derived member where tsc's elaborateJsxComponents/elaborateElementwise gives up on a union source. [open]

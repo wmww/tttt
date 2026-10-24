@@ -1,0 +1,102 @@
+//// [test/cases/npm__mui-treasury_component-number-input_TS2353.tsx] ////
+
+=== npm__mui-treasury_component-number-input_TS2353.tsx ===
+// origin: npm @mui-treasury/component-number-input@0.0.1-alpha.3 https://github.com/siriwatknp/mui-treasury-next tsconfig.bench.json seed 20261031
+// flip: no
+// packages/style-textfield-*/src/*.stories.tsx: `<TextField {...args} InputProps={{ ..., disableUnderline: true }}/>`
+// with MUI's TextFieldProps a union of variants (standard has disableUnderline, outlined doesn't). tsgo relates the
+// whole attributes type and reports TS2322 at the tag name (in the project under a `{/* @ts-ignore */}` line, so
+// nothing shows); tttt elaborates into the attribute and reports TS2353 at the property, past the ts-ignore.
+declare namespace JSX { interface Element {} interface IntrinsicElements {} interface ElementAttributesProperty { props: {} } }
+>JSX : Symbol(JSX, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 0, 0))
+>Element : Symbol(Element, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 6, 23))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 6, 44))
+>ElementAttributesProperty : Symbol(ElementAttributesProperty, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 6, 75))
+>props : Symbol(ElementAttributesProperty.props, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 6, 113))
+
+interface StdInput { disableUnderline?: boolean; a?: number }
+>StdInput : Symbol(StdInput, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 6, 127))
+>disableUnderline : Symbol(StdInput.disableUnderline, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 7, 20))
+>a : Symbol(StdInput.a, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 7, 48))
+
+interface OutInput { notched?: boolean; a?: number }
+>OutInput : Symbol(OutInput, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 7, 61))
+>notched : Symbol(OutInput.notched, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 8, 20))
+>a : Symbol(OutInput.a, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 8, 39))
+
+interface StdProps { variant?: 'standard'; InputProps?: Partial<StdInput> }
+>StdProps : Symbol(StdProps, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 8, 52))
+>variant : Symbol(StdProps.variant, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 9, 20))
+>InputProps : Symbol(StdProps.InputProps, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 9, 42))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>StdInput : Symbol(StdInput, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 6, 127))
+
+interface OutProps { variant: 'outlined'; InputProps?: Partial<OutInput> }
+>OutProps : Symbol(OutProps, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 9, 75))
+>variant : Symbol(OutProps.variant, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 10, 20))
+>InputProps : Symbol(OutProps.InputProps, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 10, 41))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>OutInput : Symbol(OutInput, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 7, 61))
+
+type TFProps = StdProps | OutProps;
+>TFProps : Symbol(TFProps, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 10, 74))
+>StdProps : Symbol(StdProps, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 8, 52))
+>OutProps : Symbol(OutProps, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 9, 75))
+
+declare function TextField(p: TFProps): JSX.Element;
+>TextField : Symbol(TextField, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 11, 35))
+>p : Symbol(p, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 12, 27))
+>TFProps : Symbol(TFProps, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 10, 74))
+>JSX : Symbol(JSX, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 0, 0))
+>Element : Symbol(JSX.Element, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 6, 23))
+
+export const A = (args: TFProps) => (
+>A : Symbol(A, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 13, 12))
+>args : Symbol(args, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 13, 18))
+>TFProps : Symbol(TFProps, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 10, 74))
+
+  <>
+    {/* @ts-ignore */}
+    <TextField
+>TextField : Symbol(TextField, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 11, 35))
+
+      {...args}
+>args : Symbol(args, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 13, 18))
+
+      InputProps={{
+>InputProps : Symbol(InputProps, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 17, 15))
+
+        a: 1,
+>a : Symbol(a, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 18, 19))
+
+        disableUnderline: true,
+>disableUnderline : Symbol(disableUnderline, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 19, 13))
+
+      }}
+    />
+  </>
+);
+export const B = (args: TFProps) => (
+>B : Symbol(B, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 25, 12))
+>args : Symbol(args, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 25, 18))
+>TFProps : Symbol(TFProps, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 10, 74))
+
+  <TextField
+>TextField : Symbol(TextField, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 11, 35))
+
+    {...args}
+>args : Symbol(args, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 25, 18))
+
+    InputProps={{
+>InputProps : Symbol(InputProps, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 27, 13))
+
+      a: 1,
+>a : Symbol(a, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 28, 17))
+
+      disableUnderline: true,
+>disableUnderline : Symbol(disableUnderline, Decl(npm__mui-treasury_component-number-input_TS2353.tsx, 29, 11))
+
+    }}
+  />
+);
+
