@@ -28,4 +28,4 @@ for flips); a separate file so the three boxes never conflict.
 - Seed 20261202, ragokan/bunicorn (@bunicorn/server@0.0.30): spurious TS6196 "'T' is declared but never used" for
   `serve<T>(options: Omit<ServeOptions & Serve<T>, "fetch">)`, where `Serve` is a namespace (TS2709). tsgo's
   checkTypeReferenceNode still checks the type arguments of a reference that fails to resolve, which marks T
-  referenced. tttt skips them. Repro test/cases/npm__bunicorn_server_TS6196.ts. [open]
+  referenced. tttt skips them. Repro test/cases/npm__bunicorn_server_TS6196.ts. Fixed (det3): several_types.c's TS2709 return now looks up the type arguments first. [fixed det3]

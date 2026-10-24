@@ -435,6 +435,9 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
         Symbol const* namespace = my target ? nullptr : scope_resolve(names, span_sv(my name), SYMBOL_VALUE_MODULE | SYMBOL_NAMESPACE_MODULE);
         if (namespace && !namespace_from_expandos_only(namespace)) {
             error_ctx_error_d(errs, my name, 2709, "Cannot use namespace '", my name, "' as a type.");
+            // (Its type arguments are still looked up: tsc's checkTypeReferenceNode checks them whatever the reference
+            // resolves to, so a type parameter used only there is referenced)
+            for_each (i, vec_spanned_type, &my generic_params) type_lookup_names(&i->type, names, errs);
             return;
         }
         // (A value found instead, TS2749 below, isn't a use: tsc's resolveName for the type failed, the lookup for the
