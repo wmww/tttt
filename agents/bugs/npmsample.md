@@ -219,7 +219,7 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   unwinds to the children from any list inside them, as in tsc. That made a speculative arrow function in a ternary
   (bun98-J1, jsxTernaryWithObjectInAttribute) succeed through the new aborts, so tsc's
   typeHasArrowFunctionBlockingParseError went in too (type_blocks_arrow_function: a return type that is a function
-  type missing its parameter list ends a non-committed arrow). [fixed PENDING]
+  type missing its parameter list ends a non-committed arrow). [fixed 5b926eff3]
 - Seed 20261033, ionic-team/stencil-component-starter again (another npm package of the same template repo): the
   TS2320 flip above. [dup]
 
