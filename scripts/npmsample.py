@@ -10,6 +10,9 @@ by tsgo and tttt, and every difference is a tttt bug (or a formatting-only one, 
   scripts/npmsample.py setup --seed S [-N 50]      # clone + install + bench config + tsgo trial, resumable
         [--prefer-large] [--skip-monorepos]        # the trees listed first (precheck(): skips before any checkout),
                                                    # largest first; workspaces skipped (opt-in, see npm_sampling.md)
+  scripts/npmsample.py sample --large --seed S [-n 60]   # large mode: random large GitHub repositories (reposearch.py
+  scripts/npmsample.py setup --large --seed S [-N 50] [--per-repo 3] [--min-ts-files 200]  # large), per repo up to K
+                                                   # workspace packages as projects (name DIR#package); one install
   scripts/npmsample.py compare --seed S [--last] [-k CODE] [--keep]   # tttt at the defaults twice and --threads 1:
                                                    # any two differing is verdict `varies`, priority 1; matches deleted
   scripts/npmsample.py rank [--min N] [--json]     # every seed's results by (side, code, message skeleton): projects, seeds,
@@ -31,7 +34,7 @@ the clone's .yarnrc.yml and logged in the setup record), tsc 6's --showConfig, t
 Nothing from node_modules is ever run. Caches in thirdparty/npmsample/.cache/pm (the package managers' deleted after
 each setup run).
 """
-import argparse, collections, concurrent.futures, glob, json, os, random, re, shutil, subprocess, sys, tarfile, threading, time
+import argparse, collections, concurrent.futures, fnmatch, glob, json, os, random, re, shutil, subprocess, sys, tarfile, threading, time
 import urllib.error, urllib.parse, urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -185,6 +188,30 @@ def github_repo(m):
         t = re.search(r'github\.com/[\w.-]+/[\w.-]+/tree/[^/]+/(.+?)/?$', r)
         directory = t.group(1) if t else ''
     return f'https://github.com/{owner}/{repo}', directory.strip('/').removeprefix('./')
+
+
+def cmd_sample_large(seed, n):
+    """--large: the candidates are scripts/reposearch.py large's (random large TypeScript repositories from GitHub's
+    search, SEED picks the pages; GITHUB_TOKEN is used when set), one per repository with the repository root as its
+    directory"""
+    out = files(seed, 'candidates.jsonl')
+    print(f'sample --large: reposearch.py large {seed} {n} (7 s between searches)', flush=True)
+    p = subprocess.run([sys.executable, os.path.join(ROOT, 'scripts/reposearch.py'), 'large', str(seed), str(n)],
+                       stdout=subprocess.PIPE, text=True, timeout=6 * 3600)
+    if p.returncode:
+        sys.exit(f'reposearch.py failed ({p.returncode})')
+    cands = []
+    for line in p.stdout.splitlines():
+        f = line.split()
+        if len(f) != 5 or '/' not in f[0]:
+            continue
+        cands.append({'i': len(cands), 'name': f[0], 'version': f[4], 'repo': f'https://github.com/{f[0]}',
+                      'directory': '', 'large': True, 'stars': int(f[1]), 'size_kb': int(f[2]), 'ts_bytes': int(f[3])})
+    os.makedirs(TESTDIR, exist_ok=True)
+    with open(out, 'w') as fh:
+        for c in cands:
+            fh.write(json.dumps(c) + '\n')
+    print(f'sample --large: {len(cands)} candidate repos -> {os.path.relpath(out, ROOT)}')
 
 
 def cmd_sample(seed, n):
@@ -575,7 +602,7 @@ def is_ts_source(path):
     return f.endswith(TS_SOURCE) and '.d.' not in f
 
 
-def precheck(repo, directory):
+def precheck(repo, directory, min_ts=0, large=False):
     """Before any checkout or install, from the tree listing alone (and the root package.json, one blob): a skip
     reason (what setup_one() would find after the checkout: no tsconfig.json, fewer than 3 .ts files, the
     package directory gone), or None; and what the listing says (ts files under the package directory, monorepo)"""
@@ -599,10 +626,16 @@ def precheck(repo, directory):
             info['monorepo'] = q.returncode == 0 and 'workspaces' in json.loads(q.stdout)
         except (ValueError, TypeError):
             pass
-    if prefix + 'tsconfig.json' not in names and 'tsconfig.json' not in names:
+    if large:
+        # (A large repository: the projects are its workspace packages, found after the checkout; here only that
+        # some tsconfig*.json exists and the tree is big enough)
+        if not any(re.fullmatch(r'tsconfig[^/]*\.json', x.rsplit('/', 1)[-1]) and '/node_modules/' not in '/' + x
+                   for x in paths):
+            return 'no tsconfig*.json', info
+    elif prefix + 'tsconfig.json' not in names and 'tsconfig.json' not in names:
         return 'no tsconfig.json', info
-    if info['ts_files'] < 3:
-        return 'fewer than 3 .ts files', info
+    if info['ts_files'] < max(3, min_ts):
+        return (f'fewer than {min_ts} .ts files (--min-ts-files)' if min_ts > 3 else 'fewer than 3 .ts files'), info
     return None, info
 
 
@@ -611,7 +644,7 @@ def clone(url, repo):
     return checkout(repo) if p.returncode == 0 else p
 
 
-def list_one(seed, c, skip_monorepos=False):
+def list_one(seed, c, skip_monorepos=False, large=False, min_ts=0):
     """The first stage of a candidate's setup: its trees cloned (no blobs, no checkout) and precheck()ed. A skip
     record, or None and what the listing says (setup_one() then checks out the same clone)"""
     rec = {k: c[k] for k in ('i', 'name', 'version', 'repo', 'directory')}
@@ -628,7 +661,7 @@ def list_one(seed, c, skip_monorepos=False):
         return {**rec, 'status': 'skip', 'reason': 'clone: ' + (p.stderr.strip().splitlines() or [''])[-1][:200],
                 't_clone': t_clone}, {}
     t0 = time.time()
-    reason, info = precheck(repo, c['directory'])
+    reason, info = precheck(repo, c['directory'], min_ts, large)
     info = {**info, 't_clone': t_clone, 't_precheck': time.time() - t0}
     if not reason and skip_monorepos and info.get('monorepo'):
         reason = 'monorepo (--skip-monorepos)'
@@ -638,15 +671,15 @@ def list_one(seed, c, skip_monorepos=False):
     return None, info
 
 
-def setup_one(seed, c, listed=None, skip_monorepos=False):
+def setup_one(seed, c, listed=None, skip_monorepos=False, large=False, min_ts=0, per_repo=3):
     """`listed`: list_one()'s result if it ran already. The record carries the wall-clock seconds of its steps
     (t_clone: clone and checkout, t_precheck, t_install, t_trial: the bench config and tsgo's run) and t_total"""
     pre = listed is not None
     if not pre:
-        listed = list_one(seed, c, skip_monorepos)
+        listed = list_one(seed, c, skip_monorepos, large, min_ts)
     t0 = time.time()
     t = {}
-    r = setup_one_steps(seed, c, listed, t)
+    r = setup_one_steps(seed, c, listed, t, per_repo if large else 0)
     # (list_one's steps are in the record already: its skip record, or the info merged into it; a listing done
     # before this call (--prefer-large) is not in this call's wall time)
     t['t_total'] = time.time() - t0 + (sum(listed[1].get(k, 0.0) for k in ('t_clone', 't_precheck')) if pre else 0.0)
@@ -655,7 +688,7 @@ def setup_one(seed, c, listed=None, skip_monorepos=False):
     return {**r, **{k: round(v, 3) for k, v in t.items()}}
 
 
-def setup_one_steps(seed, c, listed, t):
+def setup_one_steps(seed, c, listed, t, per_repo=0):
     rec = {k: c[k] for k in ('i', 'name', 'version', 'repo', 'directory')}
     repo = os.path.join(NS, str(seed), repo_dirname(c))
     marker = os.path.join(repo, '.npmsample-installed')
@@ -674,11 +707,16 @@ def setup_one_steps(seed, c, listed, t):
     pkg = os.path.normpath(os.path.join(repo, c['directory'])) if c['directory'] else repo
     if not os.path.isdir(pkg) or not pkg.startswith(repo):
         return {**rec, 'status': 'skip', 'reason': 'repository.directory gone'}
-    config = next((p for p in (os.path.join(pkg, 'tsconfig.json'), os.path.join(repo, 'tsconfig.json'))
+    if per_repo:
+        projs = large_projects(repo)
+        if not projs:
+            return {**rec, 'status': 'skip', 'reason': 'no workspace package or root with a tsconfig and 3 .ts files'}
+        rec['workspaces'] = len(projs)
+    config = None if per_repo else next((p for p in (os.path.join(pkg, 'tsconfig.json'), os.path.join(repo, 'tsconfig.json'))
                    if os.path.exists(p)), None)
-    if not config:
+    if not config and not per_repo:
         return {**rec, 'status': 'skip', 'reason': 'no tsconfig.json'}
-    if count_ts(pkg) < 3:
+    if not per_repo and count_ts(pkg) < 3:
         return {**rec, 'status': 'skip', 'reason': 'fewer than 3 .ts files'}
     if not os.path.exists(marker):
         # (A cache per install, deleted after it: a batch's shared caches reached 7-9 GB, more than its clones; pnpm's
@@ -698,6 +736,8 @@ def setup_one_steps(seed, c, listed, t):
             f.write(json.dumps(rec['install']) + '\n')
     rec['pm'] = json.loads(open(marker).read())['pm'] if open(marker).read().startswith('{') else open(marker).read().strip()
     t0 = time.time()
+    if per_repo:
+        return large_trials(seed, c, repo, projs, per_repo, rec, t)
     bench, changes = make_bench(config, repo)
     rec['changes'] = changes
     if bench is None:
@@ -721,6 +761,107 @@ def setup_one_steps(seed, c, listed, t):
     return {**rec, 'status': 'accepted'}
 
 
+def workspace_globs(repo):
+    """(include, exclude) globs of the repository's workspaces: package.json `workspaces` (list or {packages}) and
+    pnpm-workspace.yaml `packages`"""
+    globs = []
+    try:
+        w = json.load(open(os.path.join(repo, 'package.json'), encoding='utf-8-sig')).get('workspaces', [])
+        globs += w.get('packages', []) if isinstance(w, dict) else w
+    except (OSError, ValueError, AttributeError):
+        pass
+    try:
+        m = re.search(r'(?ms)^packages:\s*\n((?:[ \t]*-.*\n?|[ \t]*#.*\n?)+)', open(os.path.join(repo, 'pnpm-workspace.yaml')).read())
+        if m:
+            globs += [x.split('#')[0].strip().lstrip('-').strip().strip('\'"') for x in m.group(1).splitlines()
+                      if x.strip() and not x.strip().startswith('#')]
+    except OSError:
+        pass
+    globs = [g.removeprefix('./') for g in globs if isinstance(g, str) and g]
+    return [g for g in globs if not g.startswith('!')], [g[1:] for g in globs if g.startswith('!')]
+
+
+def package_config(d):
+    """The tsconfig a package directory is checked with: tsconfig.json, else the first tsconfig*.json that is not a
+    base/shared one"""
+    if os.path.exists(os.path.join(d, 'tsconfig.json')):
+        return os.path.join(d, 'tsconfig.json')
+    names = sorted(f for f in os.listdir(d) if re.fullmatch(r'tsconfig[^/]*\.json', f))
+    names = [f for f in names if not re.search(r'base|shared|common', f)] or names
+    return os.path.join(d, names[0]) if names else None
+
+
+def large_projects(repo):
+    """[(directory, config, ts files)] of a --large repository, biggest first: the workspace packages with a
+    tsconfig*.json and 3 .ts files, the root itself last (first when it declares no workspaces)"""
+    inc, exc = workspace_globs(repo)
+    dirs = set()
+    for g in inc:
+        for p in glob.glob(os.path.join(repo, g.rstrip('/')), recursive=True):
+            rel = os.path.relpath(p, repo)
+            if os.path.isdir(p) and 'node_modules' not in rel.split(os.sep) and rel != '.' and \
+                    not any(fnmatch.fnmatch(rel, e.rstrip('/')) for e in exc):
+                dirs.add(p)
+    out = []
+    for d in sorted(dirs):
+        cfg = package_config(d)
+        n = count_ts(d) if cfg else 0
+        if cfg and n >= 3:
+            out.append((os.path.relpath(d, repo), cfg, n))
+    out.sort(key=lambda x: -x[2])
+    root = package_config(repo)
+    if root and count_ts(repo) >= 3:
+        out = out + [('.', root, count_ts(repo))] if dirs else [('.', root, count_ts(repo))]
+    return out
+
+
+def large_trials(seed, c, repo, projs, per_repo, rec, t):
+    """--large: the repository (installed once) trial-run per sub-project, biggest first, until per_repo are accepted
+    (or 4*per_repo+4 tried); the same trial as one project (<=100 errors, <=5 TS2307, >=1 own file)"""
+    subs, used, t0 = [], set(), time.time()
+    for d, config, n in projs:
+        if sum(s['status'] == 'accepted' for s in subs) >= per_repo or len(subs) >= 4 * per_repo + 4:
+            break
+        s = {'name': f'{c["name"]}#{d}', 'dir': d, 'ts_files': n}
+        subs.append(s)
+        bench, changes = make_bench(config, repo)
+        s['changes'] = changes
+        if bench is None:
+            s.update(status='skip', reason=changes)
+            continue
+        if bench in used:
+            s.update(status='skip', reason='same project as another sub-project (solution reference)')
+            continue
+        used.add(bench)
+        s['config'] = os.path.relpath(bench, os.path.join(NS, str(seed)))
+        text, status = tsgo_run('tsconfig.bench.json', os.path.dirname(bench))
+        diags = tscformat.parse(text)
+        codes = collections.Counter(x[3] for x in diags)
+        own = own_files(bench, repo)
+        s['tsgo'] = {'exit': status, 'errors': len(diags), 'ts2307': codes[2307], 'own': own}
+        left = option_errors(text)
+        if status not in (0, 1, 2):
+            s.update(status='reject', reason=f'tsgo {status}')
+        elif left:
+            s.update(status='reject', reason='option errors left: ' + '; '.join(f'TS{x} {m[:80]}' for x, m in left[:3]))
+        elif own < 1 or len(diags) > 100 or codes[2307] > 5:
+            s.update(status='reject', reason=f'trial: {own} own files, {len(diags)} errors, {codes[2307]} TS2307')
+        else:
+            s['status'] = 'accepted'
+    t['t_trial'] = time.time() - t0
+    ok = [s for s in subs if s['status'] == 'accepted']
+    return {**rec, 'subs': subs, 'status': 'accepted' if ok else 'reject',
+            **({} if ok else {'reason': 'no sub-project passed the trial: ' + '; '.join(
+                f'{s["dir"]}: {s["reason"][:60]}' for s in subs[:3])})}
+
+
+def accepted_of(r):
+    """How many projects a setup record accepted (a --large record: its accepted sub-projects)"""
+    if 'subs' in r:
+        return sum(s['status'] == 'accepted' for s in r['subs'])
+    return int(r['status'] == 'accepted')
+
+
 def ensure_ts6():
     if not os.path.exists(TS6):
         d = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(TS6))))
@@ -742,7 +883,12 @@ def write_tsv(seed, n):
     acc = [r for r in recs if r['status'] == 'accepted']
     with open(files(seed, 'tsv'), 'w') as f:
         for r in acc:
-            f.write(f'{repo_dirname(r)}\t{r["config"]}\n')
+            if 'subs' in r:
+                for s in r['subs']:
+                    if s['status'] == 'accepted':
+                        f.write(f'{repo_dirname(r)}#{s["dir"]}\t{s["config"]}\n')
+            else:
+                f.write(f'{repo_dirname(r)}\t{r["config"]}\n')
     return acc
 
 
@@ -789,14 +935,15 @@ def cmd_stats(seed):
     print(timing_summary(recs))
 
 
-def cmd_setup(seed, n, jobs, prefer_large=False, skip_monorepos=False):
+def cmd_setup(seed, n, jobs, prefer_large=False, skip_monorepos=False, large=False, min_ts=0, per_repo=3):
     cands = read_jsonl(files(seed, 'candidates.jsonl'))
     if not cands:
         sys.exit(f'no candidates: run `scripts/npmsample.py sample --seed {seed}` first')
     ensure_ts6()
     log = files(seed, 'setup.jsonl')
     done = {r['i']: r for r in read_jsonl(log)}
-    accepted = sum(1 for r in done.values() if r['status'] == 'accepted')
+    large = large or any(c.get('large') for c in cands)
+    accepted = sum(accepted_of(r) for r in done.values())
     todo = [c for c in cands if c['i'] not in done]
     os.makedirs(os.path.join(NS, str(seed)), exist_ok=True)
     # (clean refuses to run while this file names a live process)
@@ -819,7 +966,7 @@ def cmd_setup(seed, n, jobs, prefer_large=False, skip_monorepos=False):
             print(f'setup: stopping, {free:.0f} GB free (< {MIN_FREE_GB})', flush=True)
             return None
         try:
-            r = setup_one(seed, c, listed.get(c['i']), skip_monorepos)
+            r = setup_one(seed, c, listed.get(c['i']), skip_monorepos, large, min_ts, per_repo)
         except Exception as e:  # noqa: BLE001 (one candidate's surprise is its skip reason)
             r = {k: c[k] for k in ('i', 'name', 'version', 'repo', 'directory')}
             r.update(status='skip', reason=f'setup error: {type(e).__name__}: {str(e)[:200]}')
@@ -841,7 +988,7 @@ def cmd_setup(seed, n, jobs, prefer_large=False, skip_monorepos=False):
         # (--prefer-large: the chunk's trees listed first, cheaply, its skips recorded; the rest set up largest
         # first by their .ts file count. Never by what tsgo says: clean projects and erroring ones alike)
         with concurrent.futures.ThreadPoolExecutor(jobs * 2) as ex:
-            got = list(ex.map(lambda c: list_one(seed, c, skip_monorepos), chunk))
+            got = list(ex.map(lambda c: list_one(seed, c, skip_monorepos, large, min_ts), chunk))
         kept = []
         for c, (skip, info) in zip(chunk, got):
             if skip:
@@ -866,8 +1013,9 @@ def cmd_setup(seed, n, jobs, prefer_large=False, skip_monorepos=False):
                     continue
                 tag = r['status'] if r['status'] != 'skip' and r['status'] != 'reject' else r['status'] + ': ' + str(r['reason'])[:150]
                 if r['status'] == 'accepted':
-                    accepted += 1
-                    tag += f' ({accepted}/{n}, tsgo {r["tsgo"]["errors"]} errors)'
+                    accepted += accepted_of(r)
+                    tag += f' ({accepted}/{n}, ' + (f'{accepted_of(r)} of {len(r["subs"])} sub-projects tried' if 'subs' in r
+                                                    else f'tsgo {r["tsgo"]["errors"]} errors') + ')'
                 print(f'  {c["i"]:4} {c["name"][:40]:40} {tag}', flush=True)
                 if accepted >= n:
                     stop.set()
@@ -980,7 +1128,7 @@ def compare_one(seed, name, config, tsc_cache, lock, delete_same):
         r['example'] = f'tsgo: {a[first] if first < len(a) else "(end)"} / tttt: {b[first] if first < len(b) else "(end)"}'
         if g_status != d_code:
             r['example'] += f' (exit {g_status} vs {d_code})'
-    if r['verdict'] == 'same' and delete_same:
+    if r['verdict'] == 'same' and delete_same and '#' not in name:  # (a --large clone is shared: `clean` decides)
         # (A matching project is never needed again: deleted at once)
         shutil.rmtree(REPO_OF(bench), ignore_errors=True)
     r['_g'] = g_text
@@ -1052,7 +1200,7 @@ def cmd_compare(seed, jobs, delete_same, last, code):
 
 def project_owner_repo(name):
     """'0017-JohnDeved-zooqle-api-ts' -> 'johndeved-zooqle-api-ts' (the clone directory without its index)"""
-    return name.split('-', 1)[-1].lower()
+    return name.split('#')[0].split('-', 1)[-1].lower()
 
 
 def bug_bullets():
@@ -1155,6 +1303,16 @@ def cmd_clean(seed, everything, keep):
         return
     last_path = os.path.join(base, 'compare.json')
     compared = {r['name']: r.get('verdict') for r in json.load(open(last_path))} if os.path.exists(last_path) else {}
+    # (--large: a clone holds several projects, named DIR#package; it counts as `same` when all of them are)
+    group = collections.defaultdict(list)
+    if os.path.exists(files(seed, 'tsv')):
+        for line in open(files(seed, 'tsv')):
+            nm = line.split('\t')[0]
+            if '#' in nm:
+                group[nm.split('#')[0]].append(nm)
+    for d, nms in group.items():
+        vs = [compared.get(x) for x in nms]
+        compared[d] = 'same' if all(v == 'same' for v in vs) else next((v or 'not compared' for v in vs if v != 'same'), None)
     removed, kept = 0, []
     for d in sorted(os.listdir(base)):
         p = os.path.join(base, d)
@@ -1181,7 +1339,13 @@ def main():
     ap.add_argument('--seed', type=int)
     ap.add_argument('--min', type=int, default=1, help='rank: only keys in at least this many projects')
     ap.add_argument('--json', action='store_true', help='rank: JSON instead of the table')
-    ap.add_argument('-n', type=int, default=2000, help='names to sample')
+    ap.add_argument('-n', type=int, default=None, help='names to sample (2000; --large: repositories, 60)')
+    ap.add_argument('--large', action='store_true', help='sample/setup: large-project mode (npm_sampling.md "Large '
+                    'mode"): GitHub\'s large TypeScript repositories instead of npm packages; setup takes up to '
+                    '--per-repo workspace packages of each as projects')
+    ap.add_argument('--per-repo', type=int, default=3, help='setup --large: sub-projects accepted per repository')
+    ap.add_argument('--min-ts-files', type=int, default=None, help='setup: skip a repository with fewer .ts sources '
+                    'in its tree (default 200 with --large, else none)')
     ap.add_argument('-N', type=int, default=50, help='projects to accept')
     ap.add_argument('-j', type=int, default=4, help='candidates set up / projects compared at once')
     ap.add_argument('--last', action='store_true')
@@ -1207,9 +1371,13 @@ def main():
     if c == 'stats':
         return cmd_stats(args.seed)
     if c == 'sample' or (c is None and not os.path.exists(files(args.seed, 'candidates.jsonl'))):
-        cmd_sample(args.seed, args.n)
+        if args.large:
+            cmd_sample_large(args.seed, args.n or 60)
+        else:
+            cmd_sample(args.seed, args.n or 2000)
     if c in ('setup', None):
-        if not cmd_setup(args.seed, args.N, args.j, args.prefer_large, args.skip_monorepos) and c is None:
+        if not cmd_setup(args.seed, args.N, args.j, args.prefer_large, args.skip_monorepos, args.large,
+                     args.min_ts_files if args.min_ts_files is not None else 200 if args.large else 0, args.per_repo) and c is None:
             sys.exit('setup: fewer than N accepted (sample more names with -n, then rerun)')
     if c in ('compare', None):
         cmd_compare(args.seed, args.j, not args.keep, args.last, args.k)

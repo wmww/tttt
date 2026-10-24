@@ -107,3 +107,24 @@ package directory, `repository.directory` gone. Those records carry `"precheck":
   the rest in decreasing `ts_files` order, chunk by chunk. tsgo's verdict is never used, so clean projects and
   erroring ones are kept alike. Listed-but-unused tree clones are deleted at the end and listed again on a resume.
   It biases the sample toward bigger projects (more code per install); say so in a batch's results.
+
+## Large mode (2026-10-24, tool3)
+The human wants the sweep biased toward big projects. `sample --large --seed S [-n 60]` takes its candidates from
+`scripts/reposearch.py large S n` instead of the npm registry (random large TypeScript repositories: size buckets x
+sort x random pages, picked by the seed; >= 5 MB of TypeScript by the languages API; 7 s between searches; the
+unauthenticated languages API is 60 calls an hour, so set `GITHUB_TOKEN` (used for api.github.com only) for more than
+a few dozen; without it `-n 20` takes well over half an hour: ~2.5 min of searches, then every checked candidate costs one of the 60 hourly calls and the script sleeps 65 s+ at the limit). One candidate per repository, `directory` = the root, the usual candidates.jsonl shape (`name` =
+full_name, `version` = default branch, plus `large`, `stars`, `size_kb`, `ts_bytes`), so setup/compare/clean work on it.
+- `setup --large [--per-repo K=3] [--min-ts-files N=200]` (also implied by a `large` candidate): precheck() requires
+  some tsconfig*.json in the tree and N `.ts` sources (monorepos are the norm, never skipped). The repo is checked out
+  and installed once at its root; `large_projects()` enumerates the workspace packages (package.json `workspaces`,
+  pnpm-workspace.yaml `packages`, `!` excludes) with a tsconfig*.json (tsconfig.json, else the first non-base one) and
+  3 `.ts` files, biggest first, the root last (first when it has no workspaces). Each gets make_bench (its bench config
+  next to its own tsconfig; solution roots go through solution_target, and a bench shared with an earlier sub-project
+  is dropped) and the usual trial (<=100 errors, <=5 TS2307, >=1 own file), until K are accepted or 4K+4 tried.
+- The setup record is per repository with `subs` (name `full_name#package dir`, dir, config, tsgo counts, status,
+  reason); `-N` counts accepted sub-projects. S.tsv has one row per accepted sub-project (`NNNN-owner-repo#dir`), which
+  is the project name in compare, results and `rank`. The clone is not deleted by compare (it is shared); `clean`
+  deletes it once all its sub-projects compared `same`.
+- Cost: one root install of a big monorepo is the expensive step (minutes, GBs); K sub-projects share it. Results of
+  a large batch are biased toward big, workspace-heavy code; say so.

@@ -47,7 +47,10 @@ for l in open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 def get(url, js=True):
     for i in range(5):
         try:
-            r = urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent': 'tttt'}), timeout=30)
+            hdr = {'User-Agent': 'tttt'}
+            if os.environ.get('GITHUB_TOKEN') and url.startswith('https://api.github.com/'):
+                hdr['Authorization'] = 'Bearer ' + os.environ['GITHUB_TOKEN']
+            r = urllib.request.urlopen(urllib.request.Request(url, headers=hdr), timeout=30)
             d = r.read().decode('utf-8', 'replace')
             return json.loads(d) if js else d
         except urllib.error.HTTPError as e:
