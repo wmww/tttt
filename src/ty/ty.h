@@ -1072,6 +1072,11 @@ enum {
     // a property only through a spread, whose ContainsWideningType tsc doesn't propagate (nothing in it is reported,
     // TS7018, but getWidenedType still widens every object literal)
     TYX_WIDENS = 16,
+    // Memo of infer.c's tsc_could_contain_type_variables() on the type itself (set once, atomically, by whichever worker
+    // asks first; every worker computes the same answer): not a propagating flag, so TYX_PROPAGATING masks it out
+    TYX_CCTV_KNOWN = 1u << 30,
+    TYX_CCTV_YES = 1u << 31,
+    TYX_PROPAGATING = ~(TYX_CCTV_KNOWN | TYX_CCTV_YES),
 };
 
 typedef enum TyIntrinsic {

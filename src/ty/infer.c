@@ -426,7 +426,18 @@ static void infer_from_params(
 // tsc's couldContainTypeVariables where tttt's flag knows the type has none: an anonymous type of a function, type
 // literal or object literal (an object rest type too), or a union or intersection with one, unless it's a non-generic
 // alias's (isNonGenericTopLevelType)
+static bool tsc_could_contain_type_variables_uncached(Ty const* ty);
+
+// (Memoized on the type, tsc's ObjectFlags.CouldContainTypeVariablesComputed/CouldContainTypeVariables)
 static bool tsc_could_contain_type_variables(Ty const* ty) {
+    u32 x = __atomic_load_n(&ty->xflags, __ATOMIC_RELAXED);
+    if (x & TYX_CCTV_KNOWN) return (x & TYX_CCTV_YES) != 0;
+    bool ret = tsc_could_contain_type_variables_uncached(ty);
+    __atomic_fetch_or((u32*)&ty->xflags, TYX_CCTV_KNOWN | (ret ? TYX_CCTV_YES : 0), __ATOMIC_RELAXED);
+    return ret;
+}
+
+static bool tsc_could_contain_type_variables_uncached(Ty const* ty) {
     if (ty->alias && !ty->alias_args.len) return false;
     if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
         if (ty->flags & TYF_ENUM_LITERAL) return false;

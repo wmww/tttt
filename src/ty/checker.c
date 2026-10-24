@@ -1357,7 +1357,7 @@ static Ty const* intern_composite_ex(
         u32 flags = 0, xflags = 0;
         for (u32 i = 0; i < len; i++) {
             flags |= types[i]->flags;
-            xflags |= types[i]->xflags;
+            xflags |= types[i]->xflags & TYX_PROPAGATING;
         }
         u32 member_flags = flags;
         flags = (flags | ty_list_flags(alias_args)) & TYF_COULD_CONTAIN_TYPE_VARIABLES;
@@ -1546,7 +1546,7 @@ static Ty const* union_with_origin(
     bool includes_error = false, includes_non_widening = false;
     for (u32 i = 0; i < buf.len; i++) {
         includes |= buf.data[i]->flags;
-        u32 xflags = buf.data[i]->xflags;
+        u32 xflags = buf.data[i]->xflags & TYX_PROPAGATING;
         xincludes |= xflags;
         if ((buf.data[i]->flags & TYF_NULLABLE) && !(xflags & TYX_CONTAINS_WIDENING)) includes_non_widening = true;
         // (An unresolved name's any too: tsc's isErrorType, IncludesError)
@@ -3184,7 +3184,7 @@ Ty const* ty_reference_with_this(Checker* me, Ty const* target, TyList args, Ty 
         ret->reference.this_arg = this_arg;
         ret->reference.from_type_node = my creating_from_type_node;
         if (!compiler_options()->strict_null_checks) {
-            for (u32 i = 0; i < args.len; i++) ret->xflags |= args.data[i]->xflags;
+            for (u32 i = 0; i < args.len; i++) ret->xflags |= args.data[i]->xflags & TYX_PROPAGATING;
         }
         ret->reference.state = arena_new(&my arena, TyObjectState);
         intern_set(me, &my types, slot, ret);

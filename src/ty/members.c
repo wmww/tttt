@@ -6566,10 +6566,10 @@ Ty const* ty_object_literal_alternative(
             // properties' flags)
             for (u32 i = 0; i < count; i++) {
                 if (props[i].reuse || !props[i].type) continue;
-                u32 xflags = props[i].type->xflags;
+                u32 xflags = props[i].type->xflags & TYX_PROPAGATING;
                 fresh->xflags |= props[i].own || props[i].own_merged ? xflags : xflags & ~(u32)TYX_CONTAINS_WIDENING;
             }
-            for (u32 i = 0; i < index_count; i++) fresh->xflags |= index[i].value->xflags;
+            for (u32 i = 0; i < index_count; i++) fresh->xflags |= index[i].value->xflags & TYX_PROPAGATING;
         }
         fresh->anonymous.ctx = (LowerCtx){ .generic = true };
         // (Of a literal outside every function and generic declaration: none, so it's never instantiated. Keyed by
