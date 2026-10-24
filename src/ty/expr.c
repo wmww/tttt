@@ -434,10 +434,14 @@ bool ty_is_unit(Ty const* ty) {
     return is_unit_for_reduction(ty);
 }
 
-// An instance type of a class (tsc's ObjectFlags.Class on getTargetType())
+// An instance type of a class (tsc's ObjectFlags.Class on getTargetType()). A class merged with an interface too: its
+// declared type is TY_DECLARED_INTERFACE here, but tsc's getDeclaredTypeOfClassOrInterface makes it a class whenever the
+// symbol is one (@types/node's zlib `class Deflate` + `interface Deflate`)
 static bool is_class_instance(Ty const* ty) {
     if (ty->kind == TY_REFERENCE) ty = ty->reference.target;
-    return ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_CLASS_INSTANCE;
+    if (ty->kind != TY_DECLARED) return false;
+    return ty->declared.kind == TY_DECLARED_CLASS_INSTANCE ||
+        (ty->declared.kind == TY_DECLARED_INTERFACE && ty->declared.symbol && (ty->declared.symbol->flags & SYMBOL_CLASS));
 }
 
 // tsc's emptyObjectType and unknownEmptyObjectType

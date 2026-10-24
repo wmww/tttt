@@ -1,0 +1,123 @@
+//// [test/cases/npm_bytecodealliance_jco_TS18046.ts] ////
+
+=== npm_bytecodealliance_jco_TS18046.ts ===
+// origin: large seed 20261401 bytecodealliance/jco@39b2b63e https://github.com/bytecodealliance/jco packages/jco-std/tsconfig.bench.json, src/wasi/0.2.x/node/24.x.x/zlib/host-worker.ts:88
+// flip: yes
+// The zlib module of @types/node declares each stream as a class merged with an interface. Two classes' instances are a subtype of
+// each other only when one derives from the other (tsc's removeSubtypes), and a class merged with an interface is still
+// a class there: `factories[algorithm]()` is `Deflate | BrotliCompress`, so `"params" in stream` narrows to Deflate.
+declare class Transform { on(event: string, listener: () => void): this; write(chunk: unknown): boolean }
+>Transform : Symbol(Transform, Decl(npm_bytecodealliance_jco_TS18046.ts, 0, 0))
+>on : Symbol(Transform.on, Decl(npm_bytecodealliance_jco_TS18046.ts, 5, 25))
+>event : Symbol(event, Decl(npm_bytecodealliance_jco_TS18046.ts, 5, 29))
+>listener : Symbol(listener, Decl(npm_bytecodealliance_jco_TS18046.ts, 5, 43))
+>write : Symbol(Transform.write, Decl(npm_bytecodealliance_jco_TS18046.ts, 5, 72))
+>chunk : Symbol(chunk, Decl(npm_bytecodealliance_jco_TS18046.ts, 5, 79))
+
+interface Zlib { readonly bytesWritten: number; close(callback?: () => void): void; flush(callback?: () => void): void }
+>Zlib : Symbol(Zlib, Decl(npm_bytecodealliance_jco_TS18046.ts, 5, 105))
+>bytesWritten : Symbol(Zlib.bytesWritten, Decl(npm_bytecodealliance_jco_TS18046.ts, 6, 16))
+>close : Symbol(Zlib.close, Decl(npm_bytecodealliance_jco_TS18046.ts, 6, 47))
+>callback : Symbol(callback, Decl(npm_bytecodealliance_jco_TS18046.ts, 6, 54))
+>flush : Symbol(Zlib.flush, Decl(npm_bytecodealliance_jco_TS18046.ts, 6, 83))
+>callback : Symbol(callback, Decl(npm_bytecodealliance_jco_TS18046.ts, 6, 90))
+
+interface ZlibParams { params(level: number, strategy: number, callback: () => void): void }
+>ZlibParams : Symbol(ZlibParams, Decl(npm_bytecodealliance_jco_TS18046.ts, 6, 120))
+>params : Symbol(ZlibParams.params, Decl(npm_bytecodealliance_jco_TS18046.ts, 7, 22))
+>level : Symbol(level, Decl(npm_bytecodealliance_jco_TS18046.ts, 7, 30))
+>strategy : Symbol(strategy, Decl(npm_bytecodealliance_jco_TS18046.ts, 7, 44))
+>callback : Symbol(callback, Decl(npm_bytecodealliance_jco_TS18046.ts, 7, 62))
+
+interface ZlibReset { reset(): void }
+>ZlibReset : Symbol(ZlibReset, Decl(npm_bytecodealliance_jco_TS18046.ts, 7, 92))
+>reset : Symbol(ZlibReset.reset, Decl(npm_bytecodealliance_jco_TS18046.ts, 8, 21))
+
+declare namespace zlib {
+>zlib : Symbol(zlib, Decl(npm_bytecodealliance_jco_TS18046.ts, 8, 37))
+
+    class BrotliCompress extends Transform { constructor(); }
+>BrotliCompress : Symbol(BrotliCompress, Decl(npm_bytecodealliance_jco_TS18046.ts, 9, 24), Decl(npm_bytecodealliance_jco_TS18046.ts, 10, 61))
+>Transform : Symbol(Transform, Decl(npm_bytecodealliance_jco_TS18046.ts, 0, 0))
+
+    interface BrotliCompress extends Transform, Zlib {}
+>BrotliCompress : Symbol(BrotliCompress, Decl(npm_bytecodealliance_jco_TS18046.ts, 9, 24), Decl(npm_bytecodealliance_jco_TS18046.ts, 10, 61))
+>Transform : Symbol(Transform, Decl(npm_bytecodealliance_jco_TS18046.ts, 0, 0))
+>Zlib : Symbol(Zlib, Decl(npm_bytecodealliance_jco_TS18046.ts, 5, 105))
+
+    class Deflate extends Transform { constructor(); }
+>Deflate : Symbol(Deflate, Decl(npm_bytecodealliance_jco_TS18046.ts, 11, 55), Decl(npm_bytecodealliance_jco_TS18046.ts, 12, 54))
+>Transform : Symbol(Transform, Decl(npm_bytecodealliance_jco_TS18046.ts, 0, 0))
+
+    interface Deflate extends Transform, Zlib, ZlibReset, ZlibParams {}
+>Deflate : Symbol(Deflate, Decl(npm_bytecodealliance_jco_TS18046.ts, 11, 55), Decl(npm_bytecodealliance_jco_TS18046.ts, 12, 54))
+>Transform : Symbol(Transform, Decl(npm_bytecodealliance_jco_TS18046.ts, 0, 0))
+>Zlib : Symbol(Zlib, Decl(npm_bytecodealliance_jco_TS18046.ts, 5, 105))
+>ZlibReset : Symbol(ZlibReset, Decl(npm_bytecodealliance_jco_TS18046.ts, 7, 92))
+>ZlibParams : Symbol(ZlibParams, Decl(npm_bytecodealliance_jco_TS18046.ts, 6, 120))
+
+    function createDeflate(): Deflate;
+>createDeflate : Symbol(createDeflate, Decl(npm_bytecodealliance_jco_TS18046.ts, 13, 71))
+>Deflate : Symbol(Deflate, Decl(npm_bytecodealliance_jco_TS18046.ts, 11, 55), Decl(npm_bytecodealliance_jco_TS18046.ts, 12, 54))
+
+    function createBrotliCompress(): BrotliCompress;
+>createBrotliCompress : Symbol(createBrotliCompress, Decl(npm_bytecodealliance_jco_TS18046.ts, 14, 38))
+>BrotliCompress : Symbol(BrotliCompress, Decl(npm_bytecodealliance_jco_TS18046.ts, 9, 24), Decl(npm_bytecodealliance_jco_TS18046.ts, 10, 61))
+}
+const factories = { deflate: zlib.createDeflate, brotlicompress: zlib.createBrotliCompress };
+>factories : Symbol(factories, Decl(npm_bytecodealliance_jco_TS18046.ts, 17, 5))
+>deflate : Symbol(deflate, Decl(npm_bytecodealliance_jco_TS18046.ts, 17, 19))
+>zlib.createDeflate : Symbol(zlib.createDeflate, Decl(npm_bytecodealliance_jco_TS18046.ts, 13, 71))
+>zlib : Symbol(zlib, Decl(npm_bytecodealliance_jco_TS18046.ts, 8, 37))
+>createDeflate : Symbol(zlib.createDeflate, Decl(npm_bytecodealliance_jco_TS18046.ts, 13, 71))
+>brotlicompress : Symbol(brotlicompress, Decl(npm_bytecodealliance_jco_TS18046.ts, 17, 48))
+>zlib.createBrotliCompress : Symbol(zlib.createBrotliCompress, Decl(npm_bytecodealliance_jco_TS18046.ts, 14, 38))
+>zlib : Symbol(zlib, Decl(npm_bytecodealliance_jco_TS18046.ts, 8, 37))
+>createBrotliCompress : Symbol(zlib.createBrotliCompress, Decl(npm_bytecodealliance_jco_TS18046.ts, 14, 38))
+
+declare const algorithm: keyof typeof factories;
+>algorithm : Symbol(algorithm, Decl(npm_bytecodealliance_jco_TS18046.ts, 18, 13))
+>factories : Symbol(factories, Decl(npm_bytecodealliance_jco_TS18046.ts, 17, 5))
+
+export function run(level: number, strategy: number): void {
+>run : Symbol(run, Decl(npm_bytecodealliance_jco_TS18046.ts, 18, 48))
+>level : Symbol(level, Decl(npm_bytecodealliance_jco_TS18046.ts, 19, 20))
+>strategy : Symbol(strategy, Decl(npm_bytecodealliance_jco_TS18046.ts, 19, 34))
+
+    const stream = factories[algorithm]();
+>stream : Symbol(stream, Decl(npm_bytecodealliance_jco_TS18046.ts, 20, 9))
+>factories : Symbol(factories, Decl(npm_bytecodealliance_jco_TS18046.ts, 17, 5))
+>algorithm : Symbol(algorithm, Decl(npm_bytecodealliance_jco_TS18046.ts, 18, 13))
+
+    if (!("params" in stream)) {
+>stream : Symbol(stream, Decl(npm_bytecodealliance_jco_TS18046.ts, 20, 9))
+
+        throw new TypeError("params is only supported by zlib streams");
+>TypeError : Symbol(TypeError, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+    }
+    stream.params(level, strategy, () => {});
+>stream.params : Symbol(ZlibParams.params, Decl(npm_bytecodealliance_jco_TS18046.ts, 7, 22))
+>stream : Symbol(stream, Decl(npm_bytecodealliance_jco_TS18046.ts, 20, 9))
+>params : Symbol(ZlibParams.params, Decl(npm_bytecodealliance_jco_TS18046.ts, 7, 22))
+>level : Symbol(level, Decl(npm_bytecodealliance_jco_TS18046.ts, 19, 20))
+>strategy : Symbol(strategy, Decl(npm_bytecodealliance_jco_TS18046.ts, 19, 34))
+}
+declare const c: boolean;
+>c : Symbol(c, Decl(npm_bytecodealliance_jco_TS18046.ts, 26, 13))
+
+declare const d: zlib.Deflate;
+>d : Symbol(d, Decl(npm_bytecodealliance_jco_TS18046.ts, 27, 13))
+>zlib : Symbol(zlib, Decl(npm_bytecodealliance_jco_TS18046.ts, 8, 37))
+>Deflate : Symbol(zlib.Deflate, Decl(npm_bytecodealliance_jco_TS18046.ts, 11, 55), Decl(npm_bytecodealliance_jco_TS18046.ts, 12, 54))
+
+declare const b: zlib.BrotliCompress;
+>b : Symbol(b, Decl(npm_bytecodealliance_jco_TS18046.ts, 28, 13))
+>zlib : Symbol(zlib, Decl(npm_bytecodealliance_jco_TS18046.ts, 8, 37))
+>BrotliCompress : Symbol(zlib.BrotliCompress, Decl(npm_bytecodealliance_jco_TS18046.ts, 9, 24), Decl(npm_bytecodealliance_jco_TS18046.ts, 10, 61))
+
+export const both = c ? d : b;
+>both : Symbol(both, Decl(npm_bytecodealliance_jco_TS18046.ts, 29, 12))
+>c : Symbol(c, Decl(npm_bytecodealliance_jco_TS18046.ts, 26, 13))
+>d : Symbol(d, Decl(npm_bytecodealliance_jco_TS18046.ts, 27, 13))
+>b : Symbol(b, Decl(npm_bytecodealliance_jco_TS18046.ts, 28, 13))
+

@@ -178,7 +178,12 @@ for flips); a separate file so the three boxes never conflict.
   ttttClassInterfaceMergedOverloadOrder. [flip] [fixed 6a3029342]
 - Large seed 20261401, bytecodealliance/jco@39b2b63e packages/jco-std (tsconfig.bench.json): tsgo 0 errors, tttt 1,
   TS18046 "'stream.params' is of type 'unknown'" at src/wasi/0.2.x/node/24.x.x/zlib/host-worker.ts:88, after
-  `if (!("params" in stream)) throw ...` (`in` narrowing with a throw guard). Not reduced yet. (claimed: fixE) [flip] [open]
+  `if (!("params" in stream)) throw ...`. Cause: `stream = factories[algorithm]()` is `Deflate | BrotliCompress | ...`
+  in tsgo but subtype-reduced to `BrotliCompress` in tttt: @types/node declares each zlib stream as a class merged with an
+  interface, and removeSubtypes keeps two class instance types unless one derives from the other; tttt's declared type
+  of a class+interface symbol is an interface, so expr.c's is_class_instance() didn't apply the rule. It now asks the
+  symbol's class flag. Then `in` narrowed `BrotliCompress` to `BrotliCompress & Record<"params", unknown>`. Test
+  npm_bytecodealliance_jco_TS18046 (self-contained). [flip] [fixed PENDING]
 - Large seed 20261402, cellajs/cella@main backend and frontend: spurious TS2322/TS2345 "'{}' is not assignable to
   'string'". `Object.entries(o)` with `o: Partial<Record<keyof T, string>>` (T a type parameter) infers U for
   `{ [s: string]: U }` as `Record<keyof T, string>[string] | undefined` in tsgo (an index signature read off the

@@ -1,0 +1,118 @@
+//// [test/cases/npm_bytecodealliance_jco_TS18046.ts] ////
+
+=== npm_bytecodealliance_jco_TS18046.ts ===
+// origin: large seed 20261401 bytecodealliance/jco@39b2b63e https://github.com/bytecodealliance/jco packages/jco-std/tsconfig.bench.json, src/wasi/0.2.x/node/24.x.x/zlib/host-worker.ts:88
+// flip: yes
+// The zlib module of @types/node declares each stream as a class merged with an interface. Two classes' instances are a subtype of
+// each other only when one derives from the other (tsc's removeSubtypes), and a class merged with an interface is still
+// a class there: `factories[algorithm]()` is `Deflate | BrotliCompress`, so `"params" in stream` narrows to Deflate.
+declare class Transform { on(event: string, listener: () => void): this; write(chunk: unknown): boolean }
+>Transform : Transform
+>on : (event: string, listener: () => void) => this
+>event : string
+>listener : () => void
+>write : (chunk: unknown) => boolean
+>chunk : unknown
+
+interface Zlib { readonly bytesWritten: number; close(callback?: () => void): void; flush(callback?: () => void): void }
+>bytesWritten : number
+>close : (callback?: () => void) => void
+>callback : (() => void) | undefined
+>flush : (callback?: () => void) => void
+>callback : (() => void) | undefined
+
+interface ZlibParams { params(level: number, strategy: number, callback: () => void): void }
+>params : (level: number, strategy: number, callback: () => void) => void
+>level : number
+>strategy : number
+>callback : () => void
+
+interface ZlibReset { reset(): void }
+>reset : () => void
+
+declare namespace zlib {
+>zlib : typeof zlib
+
+    class BrotliCompress extends Transform { constructor(); }
+>BrotliCompress : BrotliCompress
+>Transform : Transform
+
+    interface BrotliCompress extends Transform, Zlib {}
+    class Deflate extends Transform { constructor(); }
+>Deflate : Deflate
+>Transform : Transform
+
+    interface Deflate extends Transform, Zlib, ZlibReset, ZlibParams {}
+    function createDeflate(): Deflate;
+>createDeflate : () => Deflate
+
+    function createBrotliCompress(): BrotliCompress;
+>createBrotliCompress : () => BrotliCompress
+}
+const factories = { deflate: zlib.createDeflate, brotlicompress: zlib.createBrotliCompress };
+>factories : { deflate: () => zlib.Deflate; brotlicompress: () => zlib.BrotliCompress; }
+>{ deflate: zlib.createDeflate, brotlicompress: zlib.createBrotliCompress } : { deflate: () => zlib.Deflate; brotlicompress: () => zlib.BrotliCompress; }
+>deflate : () => zlib.Deflate
+>zlib.createDeflate : () => zlib.Deflate
+>zlib : typeof zlib
+>createDeflate : () => zlib.Deflate
+>brotlicompress : () => zlib.BrotliCompress
+>zlib.createBrotliCompress : () => zlib.BrotliCompress
+>zlib : typeof zlib
+>createBrotliCompress : () => zlib.BrotliCompress
+
+declare const algorithm: keyof typeof factories;
+>algorithm : "brotlicompress" | "deflate"
+>factories : { deflate: () => zlib.Deflate; brotlicompress: () => zlib.BrotliCompress; }
+
+export function run(level: number, strategy: number): void {
+>run : (level: number, strategy: number) => void
+>level : number
+>strategy : number
+
+    const stream = factories[algorithm]();
+>stream : zlib.BrotliCompress | zlib.Deflate
+>factories[algorithm]() : zlib.BrotliCompress | zlib.Deflate
+>factories[algorithm] : (() => zlib.Deflate) | (() => zlib.BrotliCompress)
+>factories : { deflate: () => zlib.Deflate; brotlicompress: () => zlib.BrotliCompress; }
+>algorithm : "brotlicompress" | "deflate"
+
+    if (!("params" in stream)) {
+>!("params" in stream) : boolean
+>("params" in stream) : boolean
+>"params" in stream : boolean
+>"params" : "params"
+>stream : zlib.BrotliCompress | zlib.Deflate
+
+        throw new TypeError("params is only supported by zlib streams");
+>new TypeError("params is only supported by zlib streams") : TypeError
+>TypeError : TypeErrorConstructor
+>"params is only supported by zlib streams" : "params is only supported by zlib streams"
+    }
+    stream.params(level, strategy, () => {});
+>stream.params(level, strategy, () => {}) : void
+>stream.params : (level: number, strategy: number, callback: () => void) => void
+>stream : zlib.Deflate
+>params : (level: number, strategy: number, callback: () => void) => void
+>level : number
+>strategy : number
+>() => {} : () => void
+}
+declare const c: boolean;
+>c : boolean
+
+declare const d: zlib.Deflate;
+>d : zlib.Deflate
+>zlib : any
+
+declare const b: zlib.BrotliCompress;
+>b : zlib.BrotliCompress
+>zlib : any
+
+export const both = c ? d : b;
+>both : zlib.BrotliCompress | zlib.Deflate
+>c ? d : b : zlib.BrotliCompress | zlib.Deflate
+>c : boolean
+>d : zlib.Deflate
+>b : zlib.BrotliCompress
+
