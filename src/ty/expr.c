@@ -1980,9 +1980,16 @@ static void assign_contextual_signature_as(
         u64 this_key[2] = { KEY_CONTEXT_THIS, (u64)(uintptr_t)function };
         *intern_slot(me, &my links, this_key, 2) = sig_res(me, sig)->this_type;
     }
+    // A function with type parameters of its own isn't context sensitive (unless it's a generator yielding a context
+    // sensitive expression), its unannotated parameters stay implicitly any (tsc's getContextuallyTypedParameterType
+    // asks isContextSensitiveFunctionOrObjectLiteralMethod first); its `this` and its return still take the contextual
+    // signature's. A JSDoc @type's signature types them all the same
+    bool own_type_params = vec_generic_item_size(&function->generic.items) && !function_impl_rare(function)->jsdoc_signature_type &&
+        !ty_function_is_context_sensitive(function);
     u32 index = 0;
     for_each (i, vec_function_arg, &function->args) {
         bool is_this = i->initializer.binding.tag == BINDING_IDENTIFIER && span_equals(i->initializer.binding.content_span, "this");
+        if (own_type_params && !is_this) continue;
         if (is_this) {
             // An unannotated `this` parameter takes the contextual signature's (tsc's assignContextualParameterTypes)
             if (!i->initializer.binding.has_explicit_type && sig_res(me, sig)->this_type) {
@@ -2072,16 +2079,16 @@ static bool has_context_sensitive_params(FunctionImpl const* function) {
 }
 
 bool ty_function_is_context_sensitive(FunctionImpl const* function) {
-    if (vec_generic_item_size(&function->generic.items)) return false;
-    if (has_context_sensitive_params(function)) return true;
+    bool generic = vec_generic_item_size(&function->generic.items);
+    if (!generic && has_context_sensitive_params(function)) return true;
     // So is one whose returned expression is (tsc's hasContextSensitiveReturnExpression): `() => x => x.length`
-    if (!function->ret_explicit && function->has_body &&
+    if (!generic && !function->ret_explicit && function->has_body &&
         statements_any_return(&function_impl_body(function)->statements, ty_expr_is_context_sensitive)
     ) {
         return true;
     }
     // Or a generator one of whose yielded expressions is (tsc 6's hasContextSensitiveYieldExpression, whatever the
-    // return type annotation): `function* () { yield x => x.length }`
+    // return type annotation and type parameters): `function* () { yield x => x.length }`
     if (function->is_generator && function->has_body) {
         Expr const* const* yields = function_impl_yields(function);
         for (u32 i = 0; i < function_impl_yield_count(function); i++) {
