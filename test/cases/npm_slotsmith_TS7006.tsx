@@ -1,0 +1,118 @@
+// origin: npm slotsmith@1.10.0 https://github.com/tmzm/slotsmith tsconfig.bench.json seed 20261035
+// flip: yes
+// @isolatedModules: true
+// @jsx: react-jsx
+// @lib: es2022, dom, dom.iterable
+// @module: esnext
+// @moduleResolution: bundler
+// @noUncheckedIndexedAccess: true
+// @skipLibCheck: true
+// @strict: true
+// @target: es2022
+// @esModuleInterop: true
+// @preserveConstEnums: true
+// @filename: node_modules/@tanstack/react-table/package.json
+{"name": "@tanstack/react-table", "version": "9.2.4", "type": "module", "types": "./dist/index.d.ts", "exports": {".": "./dist/index.js", "./experimental-worker-plugin": "./dist/experimental-worker-plugin.js", "./flex-render": "./dist/flex-render.js", "./legacy": "./dist/legacy.js", "./static-functions": "./dist/static-functions.js", "./package.json": "./package.json"}}
+// @filename: node_modules/@tanstack/table-core/package.json
+{"name": "@tanstack/table-core", "version": "9.2.4", "type": "module", "types": "./dist/index.d.ts", "exports": {".": "./dist/index.js", "./experimental-worker-plugin": "./dist/experimental-worker-plugin.js", "./flex-render": "./dist/flex-render.js", "./reactivity": "./dist/reactivity.js", "./static-functions": "./dist/static-functions.js", "./store-reactivity-bindings": "./dist/store-reactivity-bindings.js", "./package.json": "./package.json"}}
+// @filename: package.json
+{"name": "slotsmith", "version": "1.10.0", "type": "module", "main": "./dist/index.cjs", "module": "./dist/index.js", "types": "./dist/index.d.ts", "exports": {".": {"import": {"types": "./dist/index.d.ts", "default": "./dist/index.js"}, "require": {"types": "./dist/index.d.cts", "default": "./dist/index.cjs"}}, "./virtual": {"import": {"types": "./dist/virtual.d.ts", "default": "./dist/virtual.js"}, "require": {"types": "./dist/virtual.d.cts", "default": "./dist/virtual.cjs"}}, "./autocomplete": {"import": {"types": "./dist/autocomplete/index.d.ts", "default": "./dist/autocomplete.js"}, "require": {"types": "./dist/autocomplete/index.d.cts", "default": "./dist/autocomplete.cjs"}}, "./data-table": {"import": {"types": "./dist/data-table/index.d.ts", "default": "./dist/data-table.js"}, "require": {"types": "./dist/data-table/index.d.cts", "default": "./dist/data-table.cjs"}}, "./date-picker": {"import": {"types": "./dist/date-picker/index.d.ts", "default": "./dist/date-picker.js"}, "require": {"types": "./dist/date-picker/index.d.cts", "default": "./dist/date-picker.cjs"}}, "./file-uploader": {"import": {"types": "./dist/file-uploader/index.d.ts", "default": "./dist/file-uploader.js"}, "require": {"types": "./dist/file-uploader/index.d.cts", "default": "./dist/file-uploader.cjs"}}, "./locale": {"import": {"types": "./dist/locale/index.d.ts", "default": "./dist/locale.js"}, "require": {"types": "./dist/locale/index.d.cts", "default": "./dist/locale.cjs"}}, "./locales/*": {"import": {"types": "./dist/locales/*.d.ts", "default": "./dist/locales/*.js"}, "require": {"types": "./dist/locales/*.d.cts", "default": "./dist/locales/*.cjs"}}, "./provider": {"import": {"types": "./dist/provider/index.d.ts", "default": "./dist/provider.js"}, "require": {"types": "./dist/provider/index.d.cts", "default": "./dist/provider.cjs"}}, "./styles.css": "./dist/styles.css", "./autocomplete.css": "./dist/autocomplete.styles.css", "./data-table.css": "./dist/data-table.styles.css", "./date-picker.css": "./dist/date-picker.styles.css", "./file-uploader.css": "./dist/file-uploader.styles.css", "./themes/*.css": "./dist/themes/*.css", "./package.json": "./package.json"}}
+// @filename: node_modules/@tanstack/react-table/dist/index.d.ts
+export * from "@tanstack/table-core";
+// @filename: node_modules/@tanstack/table-core/dist/index.d.ts
+import { CellData, DeepKeys, DeepValue, Getter, NoInfer, OnChangeFn, PartialKeys, Prettify, RequiredKeys, RowData, TransformDataValueFn, UnionToIntersection, Updater } from "./types/type-utils.js";
+import { AccessorColumnDef, AccessorFn, AccessorFnColumnDef, AccessorFnColumnDefBase, AccessorKeyColumnDef, AccessorKeyColumnDefBase, ColumnDef, ColumnDefBase, ColumnDefBase_All, ColumnDefResolved, ColumnDefTemplate, ColumnDef_FeatureMap, ColumnMeta, DisplayColumnDef, ExtractColumnMeta, GroupColumnDef, IdIdentifier, IdentifiedColumnDef, StringHeaderIdentifier, StringOrTemplateHeader } from "./types/ColumnDef.js";
+export { API, APIObject, AccessorColumnDef, AccessorFn, AccessorFnColumnDef, AccessorFnColumnDefBase, AccessorKeyColumnDef, AccessorKeyColumnDefBase, AggregationContext, AggregationFnDef, AggregationFnDescriptor, AggregationFnListItem, AggregationFnOption, AggregationFnRef, AggregationFns, AggregationMergeContext, AggregationResult, AggregationResultOf, AggregationValueContext, AggregationValueOptions, AggregationValueResult, Atoms, Atoms_All, BaseAtoms, BaseAtoms_All, BuiltInAggregationFn, BuiltInFilterFn, BuiltInSortFn, CachedRowModel_All, CachedRowModel_Core, CachedRowModel_Expanded, CachedRowModel_Faceted, CachedRowModel_Filtered, CachedRowModel_Grouped, CachedRowModel_Paginated, CachedRowModel_Sorted, CachedRowModels, CachedRowModels_FeatureMap, Cell, CellContext, CellData, CellSelectionBounds, CellSelectionDirection, CellSelectionEdges, CellSelectionRange, CellSelectionRangeMode, CellSelectionRangeOperation, CellSelectionState, CellSpanIndex, Cell_Cell, Cell_CellSelection, Cell_CellSpanning, Cell_ColumnGrouping, Cell_Core, Cell_CoreProperties, Cell_FeatureMap, Cell_RowAggregation, ColSpanContext, Column, ColumnAggregationValue, ColumnDef, ColumnDefBase, ColumnDefBase_All, ColumnDefResolved, ColumnDefTemplate, ColumnDef_CellSelection, ColumnDef_CellSpanning, ColumnDef_ColumnFiltering, ColumnDef_ColumnGrouping, ColumnDef_ColumnPinning, ColumnDef_ColumnResizing, ColumnDef_ColumnSizing, ColumnDef_ColumnVisibility, ColumnDef_FeatureMap, ColumnDef_GlobalFiltering, ColumnDef_RowAggregation, ColumnDef_RowSorting, ColumnDefaultOptions, ColumnFilter, ColumnFilterAutoRemoveTestFn, ColumnFiltersState, ColumnHelper, ColumnIndexes, ColumnMeta, ColumnOffsets, ColumnOffsetsByPosition, ColumnOrderDefaultOptions, ColumnOrderState, ColumnPinningDefaultOptions, ColumnPinningPosition, ColumnPinningState, ColumnResizeDirection, ColumnResizeMode, ColumnResizingDefaultOptions, ColumnSizingDefaultOptions, ColumnSizingState, ColumnSort, ColumnVisibilityState, Column_Column, Column_ColumnFaceting, Column_ColumnFiltering, Column_ColumnGrouping, Column_ColumnOrdering, Column_ColumnPinning, Column_ColumnResizing, Column_ColumnSizing, Column_ColumnVisibility, Column_Core, Column_CoreProperties, Column_FeatureMap, Column_GlobalFiltering, Column_RowAggregation, Column_RowSorting, CoreFeatures, CreatedFilterFn, CreatedSortFn, CustomAggregationFns, CustomFilterFns, CustomSortFns, DebugOptions, DeepKeys, DeepValue, DisplayColumnDef, ExpandedState, ExpandedStateList, ExternalAtoms, ExternalAtoms_All, ExtractAggregationFnKeys, ExtractColumnMeta, ExtractFeatureMapTypes, ExtractFilterFnKeys, ExtractFilterMeta, ExtractSortFnKeys, ExtractTableMeta, FeatureSlotPrereqs, FilterFn, FilterFnDef, FilterFnOption, FilterFns, FilterMeta, Getter, GroupColumnDef, GroupingColumnMode, GroupingState, Header, HeaderContext, HeaderGroup, HeaderGroup_Core, HeaderGroup_Header, Header_ColumnResizing, Header_ColumnSizing, Header_Core, Header_CoreProperties, Header_FeatureMap, Header_Header, IdIdentifier, IdentifiedColumnDef, IsAny, NoInfer, NonFeatureKeys, OnChangeFn, PaginationDefaultOptions, PaginationState, PartialKeys, Plugins, Prettify, PrototypeAPI, PrototypeAPIObject, RequiredKeys, ResolvedAggregationFn, ResolvedColumnFilter, Row, RowData, RowModel, RowModelFns, RowModelFns_All, RowModelFns_ColumnFiltering, RowModelFns_Core, RowModelFns_FeatureMap, RowModelFns_RowAggregation, RowModelFns_RowSorting, RowPinningDefaultOptions, RowPinningPosition, RowPinningState, RowSelectionState, RowSpanContext, Row_ColumnFiltering, Row_ColumnGrouping, Row_ColumnPinning, Row_ColumnVisibility, Row_Core, Row_CoreProperties, Row_FeatureMap, Row_Row, Row_RowAggregation, Row_RowExpanding, Row_RowPinning, Row_RowSelection, SelectCellRangeOptions, SortDirection, SortFn, SortFnDef, SortFnOption, SortFns, SortingState, StateSliceEqualityFn, StockFeatures, StringHeaderIdentifier, StringOrTemplateHeader, Table, TableFeature, TableFeatures, TableMeta, TableOptions, TableOptions_All, TableOptions_Cell, TableOptions_CellSelection, TableOptions_CellSpanning, TableOptions_ColumnFiltering, TableOptions_ColumnGrouping, TableOptions_ColumnOrdering, TableOptions_ColumnPinning, TableOptions_ColumnResizing, TableOptions_ColumnSizing, TableOptions_ColumnVisibility, TableOptions_Columns, TableOptions_Core, TableOptions_FeatureMap, TableOptions_GlobalFiltering, TableOptions_RowAggregation, TableOptions_RowExpanding, TableOptions_RowPagination, TableOptions_RowPinning, TableOptions_RowSelection, TableOptions_RowSorting, TableOptions_Rows, TableOptions_Table, TableState, TableState_All, TableState_CellSelection, TableState_ColumnFiltering, TableState_ColumnGrouping, TableState_ColumnOrdering, TableState_ColumnPinning, TableState_ColumnResizing, TableState_ColumnSizing, TableState_ColumnVisibility, TableState_FeatureMap, TableState_GlobalFiltering, TableState_RowExpanding, TableState_RowPagination, TableState_RowPinning, TableState_RowSelection, TableState_RowSorting, Table_CellSelection, Table_CellSpanning, Table_ColumnFaceting, Table_ColumnFiltering, Table_ColumnGrouping, Table_ColumnOrdering, Table_ColumnPinning, Table_ColumnResizing, Table_ColumnSizing, Table_ColumnVisibility, Table_Columns, Table_Core, Table_CoreProperties, Table_FeatureMap, Table_GlobalFiltering, Table_Headers, Table_RowExpanding, Table_RowModels, Table_RowModels_Core, Table_RowModels_Expanded, Table_RowModels_Faceted, Table_RowModels_Filtered, Table_RowModels_Grouped, Table_RowModels_Paginated, Table_RowModels_Sorted, Table_RowPagination, Table_RowPinning, Table_RowSelection, Table_RowSorting, Table_Rows, Table_Table, ToggleSelectedOptions, TransformDataValueFn, TransformFilterValueFn, UnionToIntersection, Updater, ValidateFeatureSlots, VisibilityDefaultOptions, aggregationFn_count, aggregationFn_extent, aggregationFn_first, aggregationFn_last, aggregationFn_max, aggregationFn_mean, aggregationFn_median, aggregationFn_min, aggregationFn_sum, aggregationFn_unique, aggregationFn_uniqueCount, aggregationFns, assignPrototypeAPIs, assignTableAPIs, buildHeaderGroups, callMemoOrStaticFn, cellSelectionFeature, cellSpanningFeature, cloneState, columnFacetingFeature, columnFilteringFeature, columnGroupingFeature, columnOrderingFeature, columnPinningFeature, columnResizingFeature, columnResizingState, columnSizingFeature, columnVisibilityFeature, constructAggregationFn, constructCell, constructColumn, constructFilterFn, constructHeader, constructRow, constructSortFn, constructTable, copyInstancePropertiesWithoutMemos, coreCellsFeature, coreColumnsFeature, coreFeatures, coreHeadersFeature, coreRowModelsFeature, coreRowsFeature, coreTablesFeature, createColumnHelper, createCoreRowModel, createExpandedRowModel, createFacetedMinMaxValues, createFacetedRowModel, createFacetedUniqueValues, createFilteredRowModel, createGroupedRowModel, createPaginatedRowModel, createSortedRowModel, expandRows, filterFn_arrHas, filterFn_arrIncludes, filterFn_arrIncludesAll, filterFn_arrIncludesSome, filterFn_between, filterFn_betweenInclusive, filterFn_empty, filterFn_endsWith, filterFn_equals, filterFn_equalsString, filterFn_equalsStringSensitive, filterFn_greaterThan, filterFn_greaterThanOrEqualTo, filterFn_inDateRange, filterFn_inNumberRange, filterFn_includesString, filterFn_includesStringSensitive, filterFn_lessThan, filterFn_lessThanOrEqualTo, filterFn_notEmpty, filterFn_startsWith, filterFn_weakEquals, filterFns, flattenBy, functionalUpdate, getFunctionNameInfo, getInitialTableState, globalFilteringFeature, hasOwn, isFunction, makeObjectMap, makeStateUpdater, memo, metaHelper, reSplitAlphaNumeric, rowAggregationFeature, rowExpandingFeature, rowPaginationFeature, rowPinningFeature, rowSelectionFeature, rowSortingFeature, setStateSlice, skipFirstRun, sortFn_alphanumeric, sortFn_alphanumericCaseSensitive, sortFn_basic, sortFn_datetime, sortFn_text, sortFn_textCaseSensitive, sortFns, stateSlicesEqual, stockFeatures, tableFeatures, tableMemo, tableOptions };
+// @filename: node_modules/@tanstack/table-core/dist/types/ColumnDef.d.ts
+import { ExtractFeatureMapTypes, IsAny, TableFeatures } from "./TableFeatures.js";
+/**
+ */
+interface StringHeaderIdentifier {
+}
+interface IdIdentifier<in out TFeatures extends TableFeatures, in out TData extends RowData, TValue extends CellData = CellData> {
+}
+type ColumnIdentifiers<TFeatures extends TableFeatures, TData extends RowData, TValue extends CellData = CellData> = IdIdentifier<TFeatures, TData, TValue> | StringHeaderIdentifier;
+interface ColumnDefBase_Core<TFeatures extends TableFeatures, TData extends RowData, TValue extends CellData = CellData> {
+  /**
+   */
+}
+interface ColumnDef_FeatureMap<in out TFeatures extends TableFeatures, in out TData extends RowData, TValue extends CellData> {
+}
+type ColumnDefBase<TFeatures extends TableFeatures, TData extends RowData, TValue extends CellData = CellData> = ColumnDefBase_Core<TFeatures, TData, TValue> & ExtractFeatureMapTypes<TFeatures, ColumnDef_FeatureMap<TFeatures, TData, TValue>>;
+type DisplayColumnDef<TFeatures extends TableFeatures, TData extends RowData, TValue extends CellData = CellData> = ColumnDefBase<TFeatures, TData, TValue> & ColumnIdentifiers<TFeatures, TData, TValue>;
+type GroupColumnDefBase<TFeatures extends TableFeatures, TData extends RowData, TValue extends CellData = CellData> = ColumnDefBase<TFeatures, TData, TValue> & {
+};
+type GroupColumnDef<TFeatures extends TableFeatures, TData extends RowData, TValue extends CellData = CellData> = GroupColumnDefBase<TFeatures, TData, TValue> & ColumnIdentifiers<TFeatures, TData, TValue>;
+type AccessorFnColumnDefBase<TFeatures extends TableFeatures, TData extends RowData, TValue extends CellData = CellData> = ColumnDefBase<TFeatures, TData, TValue> & {
+  accessorFn: AccessorFn<TData, TValue>;
+};
+type AccessorFnColumnDef<TFeatures extends TableFeatures, TData extends RowData, TValue extends CellData = CellData> = AccessorFnColumnDefBase<TFeatures, TData, TValue> & ColumnIdentifiers<TFeatures, TData, TValue>;
+type AccessorKeyColumnDefBase<TFeatures extends TableFeatures, TData extends RowData, TValue extends CellData = CellData> = ColumnDefBase<TFeatures, TData, TValue> & {
+};
+type AccessorKeyColumnDef<TFeatures extends TableFeatures, TData extends RowData, TValue extends CellData = CellData> = AccessorKeyColumnDefBase<TFeatures, TData, TValue> & Partial<ColumnIdentifiers<TFeatures, TData, TValue>>;
+type AccessorColumnDef<TFeatures extends TableFeatures, TData extends RowData, TValue extends CellData = CellData> = AccessorKeyColumnDef<TFeatures, TData, TValue> | AccessorFnColumnDef<TFeatures, TData, TValue>;
+type ColumnDef<TFeatures extends TableFeatures, TData extends RowData, TValue extends CellData = CellData> = DisplayColumnDef<TFeatures, TData, TValue> | GroupColumnDef<TFeatures, TData, TValue> | AccessorColumnDef<TFeatures, TData, TValue>;
+// @filename: node_modules/@tanstack/table-core/dist/types/TableFeatures.d.ts
+import { StockFeatures } from "../features/stockFeatures.js";
+/**
+ */
+type IsAny<T> = 0 extends 1 & T ? true : false;
+/**
+ */
+type UnionToIntersectionOrEmpty<T> = [T] extends [never] ? {} : UnionToIntersection<T> & {};
+/**
+ */
+type ExtractFeatureMapTypes<TFeatures extends TableFeatures, TFeatureMap extends object> = IsAny<TFeatures> extends true ? UnionToIntersection<TFeatureMap[keyof TFeatureMap]> : UnionToIntersectionOrEmpty<TFeatureMap[Extract<keyof TFeatures, keyof TFeatureMap>]>;
+/**
+ */
+// @filename: node_modules/@tanstack/table-core/dist/types/type-utils.d.ts
+type ComputeRange<N extends number, Result extends Array<unknown> = []> = Result['length'] extends N ? Result : ComputeRange<N, [...Result, Result['length']]>;
+type Index40 = ComputeRange<40>[number];
+type IsTuple<T> = T extends ReadonlyArray<any> & {
+  length: infer Length;
+} ? Length extends Index40 ? T : never : never;
+type DeepKeys<T, TDepth extends Array<any> = []> = TDepth['length'] extends 5 ? never : unknown extends T ? string : T extends ReadonlyArray<any> & IsTuple<T> ? AllowedIndexes<T> | DeepKeysPrefix<T, AllowedIndexes<T>, TDepth> : T extends Array<any> ? DeepKeys<T[number], [...TDepth, any]> : T extends Date ? never : T extends object ? (keyof T & string) | DeepKeysPrefix<T, keyof T, TDepth> : never;
+type DeepKeysPrefix<T, TPrefix, TDepth extends Array<any>> = TPrefix extends keyof T & (number | string) ? `${TPrefix}.${DeepKeys<T[TPrefix], [...TDepth, any]> & string}` : never;
+type DeepValue<T, TProp> = T extends null | undefined ? undefined : T extends Record<string | number, any> ? TProp extends `${infer TBranch}.${infer TDeepProp}` ? DeepValue<T[TBranch], TDeepProp> : T[TProp & keyof T] : never;
+export { CellData, DeepKeys, DeepValue, Getter, NoInfer, OnChangeFn, PartialKeys, Prettify, RequiredKeys, RowData, TransformDataValueFn, UnionToIntersection, Updater };
+// @filename: src/data-table/__tests__/integrations/shared.tsx
+import { DataTable, type DataTableColumnDef, type DataTableComponents, type RowOrderChange } from "../../index";
+/**
+ */
+export type Employee = { id: string; name: string; salary: number; active: boolean; reports?: Employee[] };
+const spreadsheetColumns: DataTableColumnDef<Employee>[] = [
+  { accessorKey: "name", header: "Name", edit: { validate: (name) => (name.trim() ? null : "Required") } },
+];
+/**
+ */
+// @filename: src/data-table/core/features.ts
+import {
+  type ColumnDef,
+  type DeepKeys,
+  type DeepValue,
+} from "@tanstack/react-table";
+import type { DataTableColumnEditInput } from "./spreadsheet/types";
+export type DataTableColumnDef<T extends RowData, TValue extends CellData = any> = ColumnDef<
+  T,
+  TValue
+> &
+  DataTableColumnEditField<T, TValue>;
+type IsAnyType<V> = 0 extends 1 & V ? true : false;
+export type DataTableColumnEditField<T extends RowData, TValue> =
+  IsAnyType<TValue> extends true
+    ?
+        | { [K in DeepKeys<T>]: { accessorKey: K; edit?: DataTableColumnEditInput<T, DeepValue<T, K>> } }[DeepKeys<T>]
+    : { edit?: DataTableColumnEditInput<T, TValue> };
+/**
+ */
+// @filename: src/data-table/core/spreadsheet/types.ts
+export interface DataTableColumnEdit<T, TValue> {
+  validate?(value: TValue, row: T): string | null;
+}
+/**
+ */
+export type DataTableColumnEditInput<T, TValue> = boolean | DataTableColumnEdit<T, TValue>;
+// @filename: src/data-table/index.ts
+export type {
+  DataTableColumnDef,
+} from "./core/features";

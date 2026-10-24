@@ -1,0 +1,29 @@
+//// [test/cases/npm_kirka_TS7006.ts] ////
+
+=== src/result/api/debug.ts ===
+export function debug<T, E>(
+>debug : <T, E>({ ok, err }?: { ok?(v: T): string; err?(e: E): string; }) => void
+
+  { ok = (v) => v, err = (e) => e } = {} as {
+>ok : ((v: T) => T) | ((v: T) => string)
+>(v) => v : (v: T) => T
+>v : T
+>v : T
+>err : ((e: E) => E) | ((e: E) => string)
+>(e) => e : (e: E) => E
+>e : E
+>e : E
+>{} as {    ok?(v: T): string;    err?(e: E): string;  } : { ok?(v: T): string; err?(e: E): string; }
+>{} : {}
+
+    ok?(v: T): string;
+>ok : ((v: T) => string) | undefined
+>v : T
+
+    err?(e: E): string;
+>err : ((e: E) => string) | undefined
+>e : E
+  }
+) {
+}
+
