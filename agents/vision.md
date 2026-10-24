@@ -360,3 +360,9 @@ core. All checker state is in `Checker`; the AST is read-only while checking. Wh
   checkers. Our margin is single-threaded efficiency, which many cores spend on all-core clocks, SMT, idle cores
   behind one dominating file and duplicated work.
 - tsgo is order dependent in places tttt isn't; tsgo 7.1's ordering rules are what `ty/order.c` must port, not patch.
+- The per-fix instruction gate (quickgate's drizzle/zod budget, 2026-10-25 at +0.3%, flagged at 2%) lets drift
+  accumulate: ~250 commits added +1.3..1.7% on every corpus between d22d93ae and main, next to three per-file 4-12x
+  regressions no corpus showed. The human (2026-10-25): bisect the drift (perf2), and "if you find anything a tighter
+  gate would have caught that would have been worth catching, tighten it. but feel free to loosen it again if it causes
+  more trouble than its worth". A per-file oracle for the gate (the sweep's biggest configs' hot files, as
+  scripts/perfab did) is the structural answer to the per-file class.
