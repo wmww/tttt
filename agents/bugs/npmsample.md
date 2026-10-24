@@ -215,7 +215,11 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   `...params} />;` and the next `}` are JSX text (TS1381, TS1382). tttt's parse_jsx_attributes stops too, but the
   rest is parsed on in the arrow body (`/>;` a regex: TS1161, then TS1005). The parser has no general unwinding to an
   enclosing context that would take the token. Repro test/cases/npm__devexpress_dx-react-grid-material-ui_TS1381.tsx.
-  (claimed: corB) [open]
+  Fixed: parse_jsx_children enters a PARSING_JSX_CHILDREN list context that takes every token, so list_abort_or_skip
+  unwinds to the children from any list inside them, as in tsc. That made a speculative arrow function in a ternary
+  (bun98-J1, jsxTernaryWithObjectInAttribute) succeed through the new aborts, so tsc's
+  typeHasArrowFunctionBlockingParseError went in too (type_blocks_arrow_function: a return type that is a function
+  type missing its parameter list ends a non-committed arrow). [fixed PENDING]
 - Seed 20261033, ionic-team/stencil-component-starter again (another npm package of the same template repo): the
   TS2320 flip above. [dup]
 

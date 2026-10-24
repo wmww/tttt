@@ -2148,6 +2148,9 @@ typedef enum ParsingContext {
     PARSING_IMPORT_OR_EXPORT_SPECIFIERS,
     PARSING_OBJECT_BINDING_ELEMENTS,
     PARSING_TUPLE_ELEMENT_TYPES,
+    // A JSX element's children (parse_jsx_children()): every token is one (JSX text), so any list inside them, an arrow
+    // body's statements in a `{...}` child, gives up at a token it can't use and unwinds to the children
+    PARSING_JSX_CHILDREN,
     PARSING_CONTEXT_COUNT,
 } ParsingContext;
 
@@ -2246,6 +2249,8 @@ static bool list_is_element(Parser* p, ParsingContext ctx, Tok t) {
             return tok_is_string(t) || tok_is_word(t);
         case PARSING_TUPLE_ELEMENT_TYPES:
             return tok_is(t, ",") || tok_is_start_of_type(p, t);
+        case PARSING_JSX_CHILDREN:
+            return true;
         case PARSING_CONTEXT_COUNT: break;
     }
     impossible;
@@ -2282,6 +2287,8 @@ static bool list_is_terminator(ParsingContext ctx, Tok t) {
         case PARSING_ARRAY_BINDING_ELEMENTS:
         case PARSING_TUPLE_ELEMENT_TYPES:
             return tok_is(t, "]");
+        case PARSING_JSX_CHILDREN:
+            return false; // (`</`, which list_is_element() already takes, like every token)
         case PARSING_OBJECT_BINDING_ELEMENTS:
             return tok_is(t, "}");
         case PARSING_IMPORT_OR_EXPORT_SPECIFIERS:
@@ -2364,6 +2371,9 @@ static void list_report_error(Parser* p, ParsingContext ctx, Tok t) {
             break;
         case PARSING_TUPLE_ELEMENT_TYPES:
             parse_error(p, span, 1110, "Type expected.");
+            break;
+        case PARSING_JSX_CHILDREN: // (Never: every token is a child)
+            parse_error(p, span, 1003, "Identifier expected.");
             break;
         case PARSING_CONTEXT_COUNT: impossible;
     }
@@ -7352,6 +7362,16 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionFlags flag
     return success;
 }
 
+// tsc's typeHasArrowFunctionBlockingParseError: a return type that is a function type missing its parameter list (in
+// parentheses or as a function type's own return type too) ends a speculative arrow function, `a ? (b) : (<C x={..`
+// isn't `(b): (<C ...` (the type parameters `<C`, then no `(`), whatever recovery made of the rest
+// (tsc's missing type reference name isn't checked: tttt's type parser fails there instead)
+static bool type_blocks_arrow_function(TypeNode const* type) {
+    if (type->tag != TYPE_CALLABLE) return false;
+    FunctionImpl const* function = type->callable->function;
+    return function_impl_args_span(function).size == 0 || (function->ret_explicit && type_blocks_arrow_function(&function->ret));
+}
+
 static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committed, FunctionImpl* ret) {
     Parser p = parser(parent);
     FAIL_CACHE_HOOK(&p, FAIL_CACHE_ARROW_FUNCTION);
@@ -7365,6 +7385,10 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
     }
 
     if (parse_function_args(&p, false, false, true, committed, ret)) {
+        if (!committed && ret->ret_explicit && type_blocks_arrow_function(&ret->ret)) {
+            function_impl_drop(ret);
+            return parse_fail(&p);
+        }
 
         // (A type annotation, not a JSDoc type before the parameter: `(/** @type {T} */ [...s].sort())` in JavaScript
         // is a parenthesized expression)
@@ -11632,7 +11656,9 @@ static void parse_jsx_children_inner(Parser* p, JsxElement* el, bool is_fragment
 
 static void parse_jsx_children(Parser* p, JsxElement* el, bool is_fragment, const char* fragment_start) {
     p->shared->jsx_children_depth++;
+    u32 saved = list_enter(p, PARSING_JSX_CHILDREN);
     parse_jsx_children_inner(p, el, is_fragment, fragment_start);
+    list_leave(p, saved);
     p->shared->jsx_children_depth--;
 }
 
