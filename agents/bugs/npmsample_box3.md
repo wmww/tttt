@@ -217,7 +217,7 @@ for flips); a separate file so the three boxes never conflict.
   `Parameters<...>` in bot.ts's declaration, `typeof req` isn't accessible (req is a parameter of a function in another
   file) and expands into the object it's in, a cycle: TS5088. ty_display.c name_accessible() only refused a parameter
   printed outside its function in the same file. Repro test/cases/npm_Bitterbot-AI_bitterbot-desktop_TS5088.ts.
-  [flip] [fixed PENDING]
+  [flip] [fixed d36868a8f]
 - Large seed 20261401, akan-team/akanjs@main (commit 1324d30dc), pkgs/akanjs (tsconfig.json): tsgo reports TS2322 at
   service/service.test.ts:672 and :675 ("Type '(value: string) => string' is not assignable to type '(value:
   unknown) => string | null'"). tttt doesn't, and instead reports TS2344 at constant/constant.test.ts:182 ("Type
