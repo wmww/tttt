@@ -153,6 +153,7 @@ typedef struct ErrorSummary {
     bool first_has_file; // The first error has a file
     isize file_count;
     ErrorSummaryFile* files;
+    bool repeated_names; // Some rows have the same name (content-mapped files': error_summary_add())
 } ErrorSummary;
 void error_summary_add(ErrorSummary* me, VecError const* errors, ErrorFileNamer file_name);
 // Adds from's to me, leaving from empty

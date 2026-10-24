@@ -255,11 +255,16 @@ void error_summary_add(ErrorSummary* me, VecError const* errors, ErrorFileNamer 
         my errors++;
         if (!source) continue;
         char const* name = file_name(source);
-        isize j = 0;
+        // (The errors come sorted by file: the last row first, which is the first of its name while names are unique,
+        // else a scan of 69k errors over 6k rows was ~190 ms of openclaw's 6 s, on the critical path after the output)
+        isize j = my file_count && !my repeated_names && !strcmp(cstr_str(&my files[my file_count - 1].name), name) ? my file_count - 1 : 0;
         while (j < my file_count && strcmp(cstr_str(&my files[j].name), name)) j++;
         // (tsgo's diagnosticwriter shows each diagnostic of a content-mapped file against an original text object of
         // its own, and its summary groups by that object: one row each)
-        if (source->content_original) j = my file_count;
+        if (source->content_original) {
+            my repeated_names |= j < my file_count;
+            j = my file_count;
+        }
         if (j == my file_count) {
             my files = realloc(my files, sizeof(ErrorSummaryFile) * (size_t)(my file_count + 1));
             my files[my file_count++] = (ErrorSummaryFile){ cstr_from(name), source_file_message_path(source),
@@ -272,6 +277,7 @@ void error_summary_add(ErrorSummary* me, VecError const* errors, ErrorFileNamer 
 void error_summary_merge(ErrorSummary* me, ErrorSummary* from) {
     if (!my errors) my first_has_file = from->first_has_file;
     my errors += from->errors;
+    my repeated_names |= from->repeated_names;
     for (isize i = 0; i < from->file_count; i++) {
         isize j = 0;
         while (j < my file_count && !cstr_eq(&my files[j].name, &from->files[i].name)) j++;
