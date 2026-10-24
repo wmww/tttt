@@ -1,0 +1,62 @@
+//// [test/cases/ttttFlowIssueSingleQuery.ts] ////
+
+=== ttttFlowIssueSingleQuery.ts ===
+// tsc computes a reference's flow type once, as it checks it: `if (r)` here leaves the else branch's loop junction
+// incomplete (its way in meets the first loop's shared node as its back edge left it), so the narrowed `r` inside is
+// the silent never and `r.previous` no error. tttt's check pass asked the flow again for the unassigned-variable issue,
+// which cached that junction complete and turned the later reference into a plain never (TS2339). paperclip's
+// tool-access.ts
+type M = { previous: number };
+>M : M
+>previous : number
+
+declare const xs: string[];
+>xs : string[]
+
+export function f1(c: boolean) {
+>f1 : (c: boolean) => void
+>c : boolean
+
+  let r: M | null = null;
+>r : M | null
+
+  let app: number | null = null;
+>app : number | null
+
+  for (const x of xs) {
+>x : string
+>xs : string[]
+  }
+  if (c) {
+>c : boolean
+
+  } else {
+    for (let attempt = 0; attempt < 10 && !app; attempt += 1) {
+>attempt : number
+>0 : 0
+>attempt < 10 && !app : boolean
+>attempt < 10 : boolean
+>attempt : number
+>10 : 10
+>!app : boolean
+>app : number | null
+>attempt += 1 : number
+>attempt : number
+>1 : 1
+
+      app = 1;
+>app = 1 : 1
+>app : number | null
+>1 : 1
+    }
+  }
+  if (r) {
+>r : null
+
+    r.previous;
+>r.previous : error
+>r : never
+>previous : any
+  }
+}
+

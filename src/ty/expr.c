@@ -2724,6 +2724,17 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
     // (A type with undefined in it is its own optional type, tsc's getOptionalType: the same as assumed initialized)
     bool assume_initialized = tsc_assumes_initialized || includes_undefined(type);
     if (issue_only && assume_initialized) return nullptr;
+    // (The check pass asks again for the issue: what the type's own flow query found, tsc's checkIdentifier reports it
+    // as it computes the type. A second flow query isn't free of effects: its loop junctions are cached complete where
+    // the first one left them incomplete, and a later reference then misses tsc's incomplete (silent never) result)
+    u64 issue_key[2] = { KEY_IDENTIFIER_FLOW_ISSUE, (u64)(uintptr_t)expr };
+    if (issue_only) {
+        void const* seen = intern_get(&my links, issue_key, 2);
+        if (seen) {
+            if ((uintptr_t)seen == 2) *issue = IDENTIFIER_FLOW_UNASSIGNED;
+            return nullptr;
+        }
+    }
     // What the pattern's other elements say about the value destructured (tsc's getNarrowedTypeOfSymbol)
     // (Then made narrowable like the declared type: tsc's checkIdentifier asks getNarrowedTypeOfSymbol before
     // getNarrowableTypeForReference, so a generic element the pattern's narrowing leaves, `T & Exclude<T, "c">`, is its
@@ -2755,7 +2766,9 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
     }
     my flow_substitutes_constraints = substituted;
     Ty const* flow_type = non_null_flow_type(me, expr, type, initial);
-    if (!assume_initialized && includes_undefined(flow_type)) {
+    bool unassigned = !assume_initialized && includes_undefined(flow_type);
+    if (!issue_only && !assume_initialized) *intern_slot(me, &my links, issue_key, 2) = (void const*)(uintptr_t)(unassigned ? 2 : 1);
+    if (unassigned) {
         *issue = IDENTIFIER_FLOW_UNASSIGNED;
         return type;
     }

@@ -138,6 +138,7 @@ enum {
     KEY_FLOW_EXHAUSTIVE, // SwitchStatement -> 1 + whether it is exhaustive (2: being worked out)
     KEY_EVOLVING_ARRAY, // element type id -> the evolving array type of it (flow.c)
     KEY_AUTO_FLOW_ISSUE, // identifier Expr pointer -> the auto type its flow type was seen as (expr.c)
+    KEY_IDENTIFIER_FLOW_ISSUE, // identifier Expr pointer -> whether its flow type had undefined left (expr.c)
     KEY_FLOW_LOOP,      // (loop label FlowNode, reference key id) -> Ty at the top of the loop
     KEY_SYNTHETIC_ACCESS, // Binding (an element of an object pattern) -> Expr `init.name`, see destructured_flow_type()
     KEY_REDUCED_UNION, // union type id -> ty_reduced() of it

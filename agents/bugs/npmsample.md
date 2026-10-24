@@ -457,6 +457,19 @@ not committed), a bench config next to each of its 4 tsconfigs. Not K-dependent.
   makes the mapped type generic (isGenericMappedType), but tsc's resolveMappedTypeMembers still gives it the properties
   of the keys whose names resolve. tttt's mapped members gave up on all of them, so `provider` was missing. Members.c
   now marks it generic and goes on key by key. A flip (tsgo clean). Test test/cases/rw_rea_TS2345.ts. [fixed fc76fdebc]
+- paperclip-ui / paperclip-server (corB, seed 20269003): neither name is on npm unscoped; the match is paperclipai/paperclip's
+  @paperclipai/ui (ui/) and @paperclipai/server (server/) at ee29e2850, one pnpm install, workspace packages unbuilt. `rea`
+  resolves to stagas/rea 0.0.1 (2022, "a fancy wrapper over connect.router"), no tsconfig: nothing to check, probably not
+  the project meant. ui: tsgo 14 / tttt 14, byte-identical. server (checked with NPMSAMPLE_ANY_TRIAL=1, 73 TS2307 from
+  the unbuilt packages): tsgo 354 / tttt 355, not a flip, not K-dependent.
+  - +TS2339 at src/services/tool-access.ts:2712, `revivedGrantMutation.previous` in `if (revivedGrantMutation)` where the
+    variable is still its initializer's null. tsgo's narrowed type there is the silent never (incomplete flow: the walk
+    meets a loop junction whose shared entry its back edge left incomplete), so the access is any-like and silent; a
+    probe reference earlier in the branch makes tsgo report it too. tttt's check pass (ty_identifier_flow_issue) ran the
+    reference's flow query a second time for the unassigned-variable issue, which cached that junction complete, and the
+    later reference got a plain never. The issue is now remembered from the type's own query. Repro
+    test/cases/ttttFlowIssueSingleQuery.ts (hand-cut, 15 lines; reduce.py on the 6481-file program was too slow and was
+    stopped). Its types component still differs (tsgo prints `r.previous : error`, tttt `never`). [fixed PENDING]
 
 ## Seed 20261301
 
