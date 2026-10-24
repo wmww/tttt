@@ -5,23 +5,50 @@ memo layout, code size), each a few percent. Measure by callgrind instructions o
 of `git show af936072c:agents/plans/86_multiples.md`; the last round's results are measurements.md
 "Single-threaded checker speed".
 
-## The stall ranking (cachegrind on pgo/tttt at K1, 2026-10-19; `scripts/cgrank.py`)
-drizzle 5.56 G instructions, I1 miss rate 1.63%, D1 2.7%, 2.26 LL misses per 1000 instructions; tsc 3.92 G, 1.55%,
-2.4%, 1.55. About 1.2 instructions per cycle on drizzle; the stall estimate (D1mr*12 + DLmr*150 + I1mr*10 + DLmw*20)
-is about half the cycles. Shares of it:
-1. **Instruction footprint, ~42% on both**: spread out (instantiate_inner has 7% of drizzle's I1 misses), capacity
-   misses (`-fipa-reorder-for-locality` changed nothing). Only smaller hot paths help: outlining cold arms of the
-   giant switches (instantiate_inner, is_related_to's, structured_related_members), fewer duplicated inlined bodies.
-   Unverified without counters (the uop cache hides part).
-2. **Hash tables, ~10% drizzle / 5% tsc**: Checker.types and .links (drizzle 443k and 256k entries, 16 + 8 MB),
-   node_links (ty_link_get is tsc's top line); the first probe is a random line. Candidates: 8-byte entries (a hash
-   tag plus a 48-bit pointer), the hottest kinds (KEY_ANONYMOUS_INSTANCE, KEY_CONDITIONAL_INSTANCE: 40% of drizzle's
-   lookups) in their own table, or a memo on the Ty for the commonest kind.
-3. **Ty header reads in hot predicates, ~5%** (`ty->flags` in ty_instantiate()'s inline test, union member walks).
-   Big-union walks memoized where they showed (KEY_FLOW_NOT_UNIT: tsc -2.3%).
-4. First writes to fresh memory, 8% of the estimate but mostly a model artifact; the real cost is page faults
-   (drizzle 0.1 s sys of 1.3 s): allocation volume.
-5. Cold source text, 1-3% (memchr in source_file_make(): fuse into the scanner).
+## Where the time goes (perf3, 2026-10-24, main 862617c2e, this box quiet: load 2-7, 16 vCPUs / 8 cores)
+At the defaults (fast/tttt, warm page cache):
+- **vscode 1.40 s**: config 1 ms, load+parse 150, resolve 140 (main thread on a CPU 134-140: nearly serial),
+  typecheck 1110 (16 checkers, finished within 3% of each other: the pool doesn't idle). K1: typecheck 9.07 s,
+  2.39M types; the 16 checkers make 3.79M types between them (**1.6x duplication**) and spend 17.3 checker-seconds
+  against K1's 9.07 (duplication plus SMT: 16 threads on 8 cores). The next big lever, structural (shared graph:
+  measurements.md "Shared graph end state").
+- **openclaw root 6.2 s** (22.8 GB peak): config 80 ms, load+parse 547 (the loader's own work 589 ms is the critical
+  path, the 16 workers busy 7.5 of 9.8 s; TTTT_LOAD_POOL_STATS), resolve 616 (link: aliases **165 ms serial**,
+  memory-latency bound at ~550 instructions an alias with prefetch already; parallel walk 176; declare 111),
+  typecheck 4.8 s (16 checkers balanced; sys 3.4 of 72 CPU-s, 4.8M faults with huge pages off; `--huge-pages` changed
+  nothing measurable with few free 2 MB blocks). The output tail (68.9k diagnostics, 12 MB) was 195 ms in
+  error_summary_add()'s quadratic scan and ~35 ms of sorting: fixed (2fd330892, aac3864d6), 41 ms left (sort 13,
+  formatting 29).
+- effect 0.47 s, drizzle 0.41 s: front end 30-60 ms, the rest checking (8 checkers).
+
+K1 instructions (callgrind, release build): vscode 79.2 G (typecheck 88%, load 8%, of it parse 5.7%, resolve 3.3%);
+flat as before: the top self costs are type_at_flow_node 2.0%+0.9%, ty_get_prop 1.9%, infer_from 1.9%,
+expr_lookup_names 1.7%, ty_link_get 1.4%, hop_whitespace_slow 1.4%, ty_access_key_type 1.3% (fixed: 862617c2e),
+parse_expr 1.2%, atom_table_get 1.2%, intern_slot 1.1%, skip_balanced_braces_at 1.0%. drizzle 5.54 G:
+instantiate_inner 4.1%+1.8%, ty_get_prop 2.9%, instantiate_structured 2.6%, intern_slot 2.4%, intern_lookup 1.9%,
+mapper_list 1.7% (1.7M calls, already a dedup cache); inference_mapper_impl is 17% inclusive (12% its constraint
+checks, relation work tsc does too). cachegrind on fast/tttt drizzle: 4.59 G, stall estimate 1.97 G cycles (D1mr
+0.43, DLmr 0.73, I1mr 0.68, DLmw 0.14); intern_grow tops it at 8.8% but as sequential rehash misses cachegrind
+can't see prefetched (38.7M instructions: a model artifact), then instantiate_inner 7.7%.
+
+perfsweep (the 2026-10-24 run's cache): K1 check time median 0.20x tsgo's, nothing with tsgo check > 0.2 s above
+0.65x. Its wall ratios above 1 (faker 7.5x, nest 11.8x) are page-cache-cold reads at `--threads 1` (faker's load
+14.5 s cold, 0.37 s warm), not tttt's work. The worst types ratio, lit/packages/labs/tsserver-plugin 1.40 (3363 vs
+2406, 4 ms), is literal types, no runaway: 513 enum literals and their fresh types (tsgo's getDeclaredTypeOfEnum
+makes those eagerly too) and ~561 fresh string literals from ty_access_key_type(), one per dot-accessed name
+(tsgo makes none for `a.b`): a counting difference.
+
+Tried and dropped (perf3):
+- A memo of inference_mapper_impl() on the inference's whole state (candidates, priorities, fixed, flags): 0 hits in
+  13k calls on drizzle and 217k on effect; every call sees changed candidates (call.c's non_fixing_mapper() already
+  caches the repeats).
+- ty_is_related()'s fast path for `source == target` after ty_regular() (75% of check_related()'s calls on tsc
+  return there, a 15-instruction prologue each): +0.2..+1.0% instructions (relate.c's inlining limit, below).
+- F_SETPIPE_SZ 1 MB on a stdout pipe: no change; the 12 MB write is fast, the time was the summary.
+- Candidates left, each under 1%: alias_type_of_symbol() (0.8% of tsc, a dispatcher before value_entry_type()'s memo,
+  deliberately unmemoized: the memo below detects cycles); hop_whitespace_slow()'s indentation loop (byte at a time,
+  ~0.3% of tsc; word-at-a-time needs padding past the text's NUL); ty_check_member_modifiers()' second lookup (below);
+  type_at_flow_node()'s shared-node scan (tsc's own linear sharedFlowNodes).
 
 ## Left from the 2026-10-22 rounds (k1: ee9501eb8 -> 859a7a6a2, vscode -5.3%, excalidraw -10.9%; ck: 08a80d884 -> 23c882120, drizzle -1.8%, type-fest -1.5%, zod -1.3%; vscode -0.43% for the commits after 1f2699984)
 - The checker's instruction profile is near its floor for local fixes: what is left is tsc's algorithms (variance
