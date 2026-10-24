@@ -2871,7 +2871,12 @@ static Ternary props_related_impl(
     // isn't one of `{ valid: true }`. Also in the optional properties' check of an intersection source (tsc's
     // propertiesRelatedTo doesn't skip it for optionalsOnly): `{ a } & { b? }` isn't a strict subtype of `{ a }`, which
     // subtype reduction keeps next to it
-    if (ty_is_unwidened_object_literal(target) && (source->flags & (TYF_OBJECT | TYF_INTERSECTION))) {
+    // (And a destructured parameter's pattern type inference fell back to, an unwidened object literal type in tsc:
+    // `({ id }) => ...` against `(a: { id: string; title: string }) => boolean` once `{ id: any }` was assigned)
+    bool literal_target = ty_is_unwidened_object_literal(target) ||
+        (target->kind == TY_ANONYMOUS && target->anonymous.no_symbol && target->anonymous.no_inferable_index &&
+            intern_get(&my links, (u64[]){ KEY_PATTERN_OBJECT_LITERAL, target->id }, 2));
+    if (literal_target && (source->flags & (TYF_OBJECT | TYF_INTERSECTION))) {
         u32 prop_count;
         SourceProp* props = source_props(me, source, source->kind == TY_INTERSECTION ? nullptr : ty_members(me, source), &prop_count);
         for (u32 i = 0; i < prop_count; i++) {

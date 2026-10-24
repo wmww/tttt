@@ -1,0 +1,128 @@
+//// [test/cases/ttttPatternFallbackObjectLiteralTarget.ts] ////
+
+=== ttttPatternFallbackObjectLiteralTarget.ts ===
+// A destructured parameter whose contextual type inference left `unknown` takes its pattern's type, which tsc keeps
+// as an unwidened object literal type: as a relation's target it has no room for other properties. The first overload
+// tried assigns it for good (foldkit's kanban: effect's Array.findFirst under pipe)
+interface Option<A> { _A: A }
+>Option : Symbol(Option, Decl(lib.dom.d.ts, --, --), Decl(ttttPatternFallbackObjectLiteralTarget.ts, 0, 0))
+>A : Symbol(A, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 3, 17))
+>_A : Symbol(Option._A, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 3, 21))
+>A : Symbol(A, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 3, 17))
+
+declare function pipe<A, B = never>(a: A, ab: (a: A) => B): B;
+>pipe : Symbol(pipe, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 3, 29))
+>A : Symbol(A, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 4, 22))
+>B : Symbol(B, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 4, 24))
+>a : Symbol(a, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 4, 36))
+>A : Symbol(A, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 4, 22))
+>ab : Symbol(ab, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 4, 41))
+>a : Symbol(a, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 4, 47))
+>A : Symbol(A, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 4, 22))
+>B : Symbol(B, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 4, 24))
+>B : Symbol(B, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 4, 24))
+
+declare const findFirst: {
+>findFirst : Symbol(findFirst, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 5, 13))
+
+    <A, B>(f: (a: NoInfer<A>, i: number) => Option<B>): (self: Iterable<A>) => Option<B>;
+>A : Symbol(A, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 6, 5))
+>B : Symbol(B, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 6, 7))
+>f : Symbol(f, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 6, 11))
+>a : Symbol(a, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 6, 15))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>A : Symbol(A, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 6, 5))
+>i : Symbol(i, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 6, 29))
+>Option : Symbol(Option, Decl(lib.dom.d.ts, --, --), Decl(ttttPatternFallbackObjectLiteralTarget.ts, 0, 0))
+>B : Symbol(B, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 6, 7))
+>self : Symbol(self, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 6, 57))
+>Iterable : Symbol(Iterable, Decl(lib.es2015.iterable.d.ts, --, --))
+>A : Symbol(A, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 6, 5))
+>Option : Symbol(Option, Decl(lib.dom.d.ts, --, --), Decl(ttttPatternFallbackObjectLiteralTarget.ts, 0, 0))
+>B : Symbol(B, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 6, 7))
+
+    <A>(predicate: (a: NoInfer<A>, i: number) => boolean): (self: Iterable<A>) => Option<A>;
+>A : Symbol(A, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 7, 5))
+>predicate : Symbol(predicate, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 7, 8))
+>a : Symbol(a, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 7, 20))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>A : Symbol(A, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 7, 5))
+>i : Symbol(i, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 7, 34))
+>self : Symbol(self, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 7, 60))
+>Iterable : Symbol(Iterable, Decl(lib.es2015.iterable.d.ts, --, --))
+>A : Symbol(A, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 7, 5))
+>Option : Symbol(Option, Decl(lib.dom.d.ts, --, --), Decl(ttttPatternFallbackObjectLiteralTarget.ts, 0, 0))
+>A : Symbol(A, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 7, 5))
+
+};
+type Card = { readonly id: string; readonly sortKey: string };
+>Card : Symbol(Card, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 8, 2))
+>id : Symbol(id, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 9, 13))
+>sortKey : Symbol(sortKey, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 9, 34))
+
+declare const draggedId: string;
+>draggedId : Symbol(draggedId, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 10, 13))
+
+declare const cards: any;
+>cards : Symbol(cards, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 11, 13))
+
+const viaPipe = (): Option<Card> => pipe(cards, findFirst(({ id }) => id === draggedId));
+>viaPipe : Symbol(viaPipe, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 12, 5))
+>Option : Symbol(Option, Decl(lib.dom.d.ts, --, --), Decl(ttttPatternFallbackObjectLiteralTarget.ts, 0, 0))
+>Card : Symbol(Card, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 8, 2))
+>pipe : Symbol(pipe, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 3, 29))
+>cards : Symbol(cards, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 11, 13))
+>findFirst : Symbol(findFirst, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 5, 13))
+>id : Symbol(id, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 12, 60))
+>id : Symbol(id, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 12, 60))
+>draggedId : Symbol(draggedId, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 10, 13))
+
+const direct: (self: any) => Option<Card> = findFirst(({ id }) => id === draggedId);
+>direct : Symbol(direct, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 13, 5))
+>self : Symbol(self, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 13, 15))
+>Option : Symbol(Option, Decl(lib.dom.d.ts, --, --), Decl(ttttPatternFallbackObjectLiteralTarget.ts, 0, 0))
+>Card : Symbol(Card, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 8, 2))
+>findFirst : Symbol(findFirst, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 5, 13))
+>id : Symbol(id, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 13, 56))
+>id : Symbol(id, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 13, 56))
+>draggedId : Symbol(draggedId, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 10, 13))
+
+const known: (self: Iterable<Card>) => Option<Card> = findFirst(({ id }) => id === draggedId);
+>known : Symbol(known, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 14, 5))
+>self : Symbol(self, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 14, 14))
+>Iterable : Symbol(Iterable, Decl(lib.es2015.iterable.d.ts, --, --))
+>Card : Symbol(Card, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 8, 2))
+>Option : Symbol(Option, Decl(lib.dom.d.ts, --, --), Decl(ttttPatternFallbackObjectLiteralTarget.ts, 0, 0))
+>Card : Symbol(Card, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 8, 2))
+>findFirst : Symbol(findFirst, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 5, 13))
+>id : Symbol(id, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 14, 66))
+>id : Symbol(id, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 14, 66))
+>draggedId : Symbol(draggedId, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 10, 13))
+
+// Without a contextual type the same pattern's type is widened: no such check
+const loose = ({ id }) => id === draggedId;
+>loose : Symbol(loose, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 17, 5))
+>id : Symbol(id, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 17, 16))
+>id : Symbol(id, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 17, 16))
+>draggedId : Symbol(draggedId, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 10, 13))
+
+const card: Card = { id: "", sortKey: "" };
+>card : Symbol(card, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 18, 5))
+>Card : Symbol(Card, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 8, 2))
+>id : Symbol(id, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 18, 20))
+>sortKey : Symbol(sortKey, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 18, 28))
+
+loose(card);
+>loose : Symbol(loose, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 17, 5))
+>card : Symbol(card, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 18, 5))
+
+declare function takes(f: (a: Card) => boolean): void;
+>takes : Symbol(takes, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 19, 12))
+>f : Symbol(f, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 20, 23))
+>a : Symbol(a, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 20, 27))
+>Card : Symbol(Card, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 8, 2))
+
+takes(loose);
+>takes : Symbol(takes, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 19, 12))
+>loose : Symbol(loose, Decl(ttttPatternFallbackObjectLiteralTarget.ts, 17, 5))
+

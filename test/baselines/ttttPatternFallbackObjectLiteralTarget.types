@@ -1,0 +1,110 @@
+//// [test/cases/ttttPatternFallbackObjectLiteralTarget.ts] ////
+
+=== ttttPatternFallbackObjectLiteralTarget.ts ===
+// A destructured parameter whose contextual type inference left `unknown` takes its pattern's type, which tsc keeps
+// as an unwidened object literal type: as a relation's target it has no room for other properties. The first overload
+// tried assigns it for good (foldkit's kanban: effect's Array.findFirst under pipe)
+interface Option<A> { _A: A }
+>_A : A
+
+declare function pipe<A, B = never>(a: A, ab: (a: A) => B): B;
+>pipe : <A, B = never>(a: A, ab: (a: A) => B) => B
+>a : A
+>ab : (a: A) => B
+>a : A
+
+declare const findFirst: {
+>findFirst : { <A, B>(f: (a: NoInfer<A>, i: number) => Option<B>): (self: Iterable<A>) => Option<B>; <A>(predicate: (a: NoInfer<A>, i: number) => boolean): (self: Iterable<A>) => Option<A>; }
+
+    <A, B>(f: (a: NoInfer<A>, i: number) => Option<B>): (self: Iterable<A>) => Option<B>;
+>f : (a: NoInfer<A>, i: number) => Option<B>
+>a : NoInfer<A>
+>i : number
+>self : Iterable<A>
+
+    <A>(predicate: (a: NoInfer<A>, i: number) => boolean): (self: Iterable<A>) => Option<A>;
+>predicate : (a: NoInfer<A>, i: number) => boolean
+>a : NoInfer<A>
+>i : number
+>self : Iterable<A>
+
+};
+type Card = { readonly id: string; readonly sortKey: string };
+>Card : Card
+>id : string
+>sortKey : string
+
+declare const draggedId: string;
+>draggedId : string
+
+declare const cards: any;
+>cards : any
+
+const viaPipe = (): Option<Card> => pipe(cards, findFirst(({ id }) => id === draggedId));
+>viaPipe : () => Option<Card>
+>(): Option<Card> => pipe(cards, findFirst(({ id }) => id === draggedId)) : () => Option<Card>
+>pipe(cards, findFirst(({ id }) => id === draggedId)) : Option<Card>
+>pipe : <A, B = never>(a: A, ab: (a: A) => B) => B
+>cards : any
+>findFirst(({ id }) => id === draggedId) : (self: Iterable<unknown>) => Option<Card>
+>findFirst : { <A, B>(f: (a: NoInfer<A>, i: number) => Option<B>): (self: Iterable<A>) => Option<B>; <A>(predicate: (a: NoInfer<A>, i: number) => boolean): (self: Iterable<A>) => Option<A>; }
+>({ id }) => id === draggedId : ({ id }: { id: any; }) => boolean
+>id : any
+>id === draggedId : boolean
+>id : any
+>draggedId : string
+
+const direct: (self: any) => Option<Card> = findFirst(({ id }) => id === draggedId);
+>direct : (self: any) => Option<Card>
+>self : any
+>findFirst(({ id }) => id === draggedId) : (self: Iterable<unknown>) => Option<Card>
+>findFirst : { <A, B>(f: (a: NoInfer<A>, i: number) => Option<B>): (self: Iterable<A>) => Option<B>; <A>(predicate: (a: NoInfer<A>, i: number) => boolean): (self: Iterable<A>) => Option<A>; }
+>({ id }) => id === draggedId : ({ id }: { id: any; }) => boolean
+>id : any
+>id === draggedId : boolean
+>id : any
+>draggedId : string
+
+const known: (self: Iterable<Card>) => Option<Card> = findFirst(({ id }) => id === draggedId);
+>known : (self: Iterable<Card>) => Option<Card>
+>self : Iterable<Card>
+>findFirst(({ id }) => id === draggedId) : (self: Iterable<Card>) => Option<Card>
+>findFirst : { <A, B>(f: (a: NoInfer<A>, i: number) => Option<B>): (self: Iterable<A>) => Option<B>; <A>(predicate: (a: NoInfer<A>, i: number) => boolean): (self: Iterable<A>) => Option<A>; }
+>({ id }) => id === draggedId : ({ id }: NoInfer<Card>) => boolean
+>id : string
+>id === draggedId : boolean
+>id : string
+>draggedId : string
+
+// Without a contextual type the same pattern's type is widened: no such check
+const loose = ({ id }) => id === draggedId;
+>loose : ({ id }: { id: any; }) => boolean
+>({ id }) => id === draggedId : ({ id }: { id: any; }) => boolean
+>id : any
+>id === draggedId : boolean
+>id : any
+>draggedId : string
+
+const card: Card = { id: "", sortKey: "" };
+>card : Card
+>{ id: "", sortKey: "" } : { id: string; sortKey: string; }
+>id : string
+>"" : ""
+>sortKey : string
+>"" : ""
+
+loose(card);
+>loose(card) : boolean
+>loose : ({ id }: { id: any; }) => boolean
+>card : Card
+
+declare function takes(f: (a: Card) => boolean): void;
+>takes : (f: (a: Card) => boolean) => void
+>f : (a: Card) => boolean
+>a : Card
+
+takes(loose);
+>takes(loose) : void
+>takes : (f: (a: Card) => boolean) => void
+>loose : ({ id }: { id: any; }) => boolean
+

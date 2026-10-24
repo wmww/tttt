@@ -77,6 +77,7 @@ enum {
     KEY_CONTEXT_PARAM,  // InitializedBinding (an unannotated parameter, node_links) -> Ty from the contextual signature
     KEY_CONTEXT_PARAM_UNWIDENED, // InitializedBinding -> its contextual type before a wider initializer replaced it
     KEY_CONTEXT_PARAM_PATTERN, // Binding (a parameter's pattern) -> non-null if its contextual type fell back to it
+    KEY_PATTERN_OBJECT_LITERAL, // Ty id -> the type: a parameter's pattern type it fell back to, an object literal to relations
     KEY_CONTEXT_RETURN, // FunctionImpl -> contextual return type
     // FunctionImpl -> non-null: its contextual signature is its own, so its unit return type is the literal of its
     // context (see set_contextual_return())

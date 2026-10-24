@@ -2073,6 +2073,13 @@ static void assign_contextual_signature_as(
             (i->initializer.binding.tag == BINDING_OBJECT || i->initializer.binding.tag == BINDING_ARRAY)
         ) {
             type = ty_binding_pattern_type(me, &i->initializer.binding, false);
+            // (tsc's getTypeFromObjectBindingPattern is an object literal type, isObjectLiteralType, and this one isn't
+            // widened: as the target of a relation it has no room for other properties, propertiesRelatedTo. A copy of its
+            // own, the same pattern elsewhere is widened first)
+            if (type->kind == TY_ANONYMOUS) {
+                type = ty_pattern_unclone(me, type);
+                *intern_slot(me, &my links, (u64[]){ KEY_PATTERN_OBJECT_LITERAL, type->id }, 2) = type;
+            }
             u64 pattern_key[2] = { KEY_CONTEXT_PARAM_PATTERN, (u64)(uintptr_t)&i->initializer.binding };
             *intern_slot(me, &my links, pattern_key, 2) = type;
         }
