@@ -184,3 +184,36 @@ for flips); a separate file so the three boxes never conflict.
   `{ [s: string]: U }` as `Record<keyof T, string>[string] | undefined` in tsgo (an index signature read off the
   generic mapped type) and as `unknown` in tttt. Repro test/cases/npm_cellajs_cella_TS2322.ts (by hand). [flip]
   [open]
+- Large seed 20261402, marimo-team/marimohub@main (commit 2139c26c5), packages/core and packages/api
+  (tsconfig.json; api reaches core's file): spurious TS2322 at packages/core/src/services/runtime/SandboxProvisioner.ts:852
+  "Type 'Promise<unknown> | Promise<ReturnType<T[string]>>' is not assignable to type 'Promise<void>'", in `await
+  all({ async reachable() {...}, async load() { ... this.$.reachable ... } })` (better-all's `all`, a `this`-typed
+  task object). tsgo 0, tttt 1 each, so a flip. Not K-dependent. No repro (corF reduces it). [flip] [open]
+- Large seed 20261402, deepagent-ltd/deepagent-code@dev (commit 87403bac1), packages/app (tsconfig.json): spurious
+  TS2322 at src/utils/persist.ts:643 and :644 "Type 'T | Accessor<(readonly unknown[] & Exclude<T,
+  NotWrappable>)[number]>' is not assignable to type 'T'", in the returned tuple `[state, setState, init, ...]` of a
+  solid-js store helper (solid-js/store's Store/SetStoreFunction, @solid-primitives/storage makePersisted). tsgo 0,
+  tttt 2, so a flip. Not K-dependent. No repro (corB reduces it). [flip] [open]
+- Large seed 20261402, mui/mui-x@master (commit 215513c6c), packages/x-date-pickers (tsconfig.json): spurious TS2740 at
+  src/DateCalendar/PickersFadeTransitionGroup.tsx:54 "Type '{ className: string; ownerState: {...}; children: ... }'
+  is missing the following properties from type ...: about, accessKey, ... and 274 more", and TS2322 at
+  PickersSlideTransition.tsx:157 (props with `childFactory` to a styled TransitionGroup). tsgo 0, tttt 2, so a
+  flip. Not K-dependent. No repro. [flip] [open]
+- Large seed 20261402, latitude-dev/latitude-llm@development (commit 4914acc6c), apps/web (tsconfig.json): spurious
+  TS2877 at src/domains/annotations/annotations.functions.ts:7 "This import uses a '.ts' extension to resolve to an
+  input TypeScript file, but will not be rewritten during emit because it is not a relative path". tsgo 4 errors,
+  tttt 5, not a flip. No repro. [open]
+- Large seed 20261401, Bitterbot-AI/bitterbot-desktop@main (commit 733b74195), root tsconfig.json (declaration
+  emit): missing TS5088 at src/telegram/bot.ts:471 "The inferred type of 'createTelegramWebhookCallback' references
+  a type with a cyclic structure which cannot be trivially serialized". tsgo 1, tttt 0, so a flip. Not
+  K-dependent. No repro. [flip] [open]
+- Large seed 20261401, akan-team/akanjs@main (commit 1324d30dc), pkgs/akanjs (tsconfig.json): tsgo reports TS2322 at
+  service/service.test.ts:672 and :675 ("Type '(value: string) => string' is not assignable to type '(value:
+  unknown) => string | null'"). tttt doesn't, and instead reports TS2344 at constant/constant.test.ts:182 ("Type
+  'false' does not satisfy the constraint 'true'", a type-level test assertion) and TS2352 at ui/Load/View.tsx:46,
+  :56 ("Conversion of type 'ServerView<T, Full>[`${T}Obj`]' to type 'Full' may be a mistake"). 3 against 3, not a
+  flip. No repro. [open]
+- Seed 20261216, liruifengv/starlight-head (starlight-head@0.0.1): an extra TS2589 at @astrojs/starlight 0.21.3's
+  schema.ts:113, where tsgo also reports a depth diagnostic (TS5114 "Instantiations of type 'ZodType' appear
+  infinitely circular"), which tttt reports too. An extra limit error next to tsgo's own, in the depth-limit family
+  (paseo's write-up in npmsample.md). No repro. [design]
