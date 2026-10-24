@@ -259,7 +259,7 @@ for flips); a separate file so the three boxes never conflict.
   {}) => { opts.fingerprint = ...; opts.tags = ... }`: tttt made the parameter's `{}` default an expando container, so
   opts was `{ fingerprint; tags }` instead of the contextual `{ level?, tags?, extra? }` (TS2339 x3, TS7022 via `tags`);
   tsc's getInitializerSymbol takes variable declarations only (scope.c symbol_is_expando_host() skips parameters). Test
-  npm_lighthouse_TS2339. Byte-identical with tsgo after both. [fixed PENDING]
+  npm_lighthouse_TS2339. Byte-identical with tsgo after both. [fixed 7636bc66e]
 - Seed 20261217, izumiz-dev/react-flow-chart (@izumiz-dev/react-flow-chart@0.1.7, commit c7a97a7e0): tsgo's TS2615
   in @types/styled-components index.d.ts:196 (the defaultProps ForwardRefExoticBase circularity, like
   rocket-slate's npm__rocket-slate_mentions_TS2615) is missing, and tttt reports TS2313 "Type parameter 'P' has a
