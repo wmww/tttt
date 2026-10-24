@@ -905,6 +905,9 @@ def main():
     ap.add_argument('--except', dest='keep_names', nargs='*', default=[], help='clean: also keep these clones')
     args = ap.parse_args()
     c = args.command
+    if c in ('setup', 'compare', None) and not args.last:
+        # (The pinned tsgo: a stale checkout fails here instead of filling tsc.jsonl with another version's output)
+        subprocess.run([os.path.join(ROOT, 'thirdparty/ensure-typescript.sh')], check=True, stdout=subprocess.DEVNULL)
     if c == 'sample' or (c is None and not os.path.exists(files(args.seed, 'candidates.jsonl'))):
         cmd_sample(args.seed, args.n)
     if c in ('setup', None):
