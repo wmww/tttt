@@ -238,7 +238,7 @@ for flips); a separate file so the three boxes never conflict.
   useOptional, ... }: ReturnType<typeof createX> = createX((props) => { const parent = useOptional(); ... })`, where
   createX is an instantiation expression `createProvider(...)<P, V>`. The binding pattern's annotation types the
   bindings, so reading one inside the initializer's callback isn't circular, and tttt treats it as circular.
-  Repro test/cases/npm_react-native-screen-transitions_TS7022.ts (by hand, 11 lines). [flip] [open]
+  Repro test/cases/npm_react-native-screen-transitions_TS7022.ts (by hand, 11 lines). (claimed: fixF) [flip] (claimed: fixF) [open]
 - Seed 20261217, lambda-direct/datalayer (@lambda-team/datalayer@1.0.11, commit cc98e7158, root tsconfig.json):
   missing TS2345 at src/builders/highLvlBuilders/insertRequestBuilder.ts:63 "Argument of type '{ [name in keyof
   ExtractModel<TTable>]: AbstractColumn<ColumnType<{}>, true, false>; }' is not assignable to parameter of type '{
