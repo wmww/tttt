@@ -1,0 +1,44 @@
+//// [test/cases/ttttClassBaseTypeParamDynamic.ts] ////
+
+=== ttttClassBaseTypeParamDynamic.ts ===
+// A class whose base is a type parameter's instance (`class C<t> extends (class {} as new <t>() => t)<t>`): its members
+// depend on the type arguments (arktype's CastableBase), so a class extending an instantiation of a class extending it
+// has the instantiated members (NodeCompiler's `data` and `ctx`)
+const NoopBase = class {} as new <t extends object>() => t;
+>NoopBase : Symbol(NoopBase, Decl(ttttClassBaseTypeParamDynamic.ts, 3, 5))
+>t : Symbol(t, Decl(ttttClassBaseTypeParamDynamic.ts, 3, 34))
+>t : Symbol(t, Decl(ttttClassBaseTypeParamDynamic.ts, 3, 34))
+
+// @ts-ignore (as arktype: tsgo says TS2415, which tttt misses, see triage.md)
+class CastableBase<t extends object> extends NoopBase<t> {
+>CastableBase : Symbol(CastableBase, Decl(ttttClassBaseTypeParamDynamic.ts, 3, 59))
+>t : Symbol(t, Decl(ttttClassBaseTypeParamDynamic.ts, 5, 19))
+>NoopBase : Symbol(NoopBase, Decl(ttttClassBaseTypeParamDynamic.ts, 3, 5))
+>t : Symbol(t, Decl(ttttClassBaseTypeParamDynamic.ts, 5, 19))
+
+    declare private " covariant"?: t
+>" covariant" : Symbol(CastableBase[" covariant"], Decl(ttttClassBaseTypeParamDynamic.ts, 5, 58))
+>t : Symbol(t, Decl(ttttClassBaseTypeParamDynamic.ts, 5, 19))
+}
+class CompiledFunction<args extends readonly string[]> extends CastableBase<{ [k in args[number]]: k }> {}
+>CompiledFunction : Symbol(CompiledFunction, Decl(ttttClassBaseTypeParamDynamic.ts, 7, 1))
+>args : Symbol(args, Decl(ttttClassBaseTypeParamDynamic.ts, 8, 23))
+>CastableBase : Symbol(CastableBase, Decl(ttttClassBaseTypeParamDynamic.ts, 3, 59))
+>k : Symbol(k, Decl(ttttClassBaseTypeParamDynamic.ts, 8, 79))
+>args : Symbol(args, Decl(ttttClassBaseTypeParamDynamic.ts, 8, 23))
+>k : Symbol(k, Decl(ttttClassBaseTypeParamDynamic.ts, 8, 79))
+
+export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
+>NodeCompiler : Symbol(NodeCompiler, Decl(ttttClassBaseTypeParamDynamic.ts, 8, 106))
+>CompiledFunction : Symbol(CompiledFunction, Decl(ttttClassBaseTypeParamDynamic.ts, 7, 1))
+
+    f(): string { return this.data + this.ctx; }
+>f : Symbol(NodeCompiler.f, Decl(ttttClassBaseTypeParamDynamic.ts, 9, 69))
+>this.data : Symbol(data)
+>this : Symbol(NodeCompiler, Decl(ttttClassBaseTypeParamDynamic.ts, 8, 106))
+>data : Symbol(data)
+>this.ctx : Symbol(ctx)
+>this : Symbol(NodeCompiler, Decl(ttttClassBaseTypeParamDynamic.ts, 8, 106))
+>ctx : Symbol(ctx)
+}
+

@@ -215,3 +215,8 @@ intersection's property symbol to bugs/type_core.md.
   `declare class D<F, X = ETR<F>> { m<N, Z extends ByName<X, N>>(): void }` with `declare const d: D<typeof s>`.
   tttt prints `d.m : <N_1, Z extends ByName<X, N_1>>() => void`, tsgo `ByName<ETR<{ ... }>, N_1>`. Types component
   only. [open]
+- Missing TS2415 for a class extending a type parameter's instance (cor10, 2026-10-24): `const NoopBase = class {} as
+  new <t extends object>() => t; class CastableBase<t extends object> extends NoopBase<t> {}` is TS2415 in tsgo
+  ("Class 'CastableBase<t>' incorrectly extends base class 't'. 'CastableBase<t>' is assignable to the constraint of
+  type 't', but 't' could be instantiated with a different subtype of constraint 'object'."), nothing in tttt
+  (arktype silences it with @ts-ignore; test/cases/ttttClassBaseTypeParamDynamic.ts too). [open]

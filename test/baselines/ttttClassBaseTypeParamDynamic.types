@@ -1,0 +1,38 @@
+//// [test/cases/ttttClassBaseTypeParamDynamic.ts] ////
+
+=== ttttClassBaseTypeParamDynamic.ts ===
+// A class whose base is a type parameter's instance (`class C<t> extends (class {} as new <t>() => t)<t>`): its members
+// depend on the type arguments (arktype's CastableBase), so a class extending an instantiation of a class extending it
+// has the instantiated members (NodeCompiler's `data` and `ctx`)
+const NoopBase = class {} as new <t extends object>() => t;
+>NoopBase : new <t extends object>() => t
+>class {} as new <t extends object>() => t : new <t extends object>() => t
+>class {} : typeof (Anonymous class)
+
+// @ts-ignore (as arktype: tsgo says TS2415, which tttt misses, see triage.md)
+class CastableBase<t extends object> extends NoopBase<t> {
+>CastableBase : CastableBase<t>
+>NoopBase : t
+
+    declare private " covariant"?: t
+>" covariant" : t | undefined
+}
+class CompiledFunction<args extends readonly string[]> extends CastableBase<{ [k in args[number]]: k }> {}
+>CompiledFunction : CompiledFunction<args>
+>CastableBase : CastableBase<{ [k in args[number]]: k; }>
+
+export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
+>NodeCompiler : NodeCompiler
+>CompiledFunction : CompiledFunction<["data", "ctx"]>
+
+    f(): string { return this.data + this.ctx; }
+>f : () => string
+>this.data + this.ctx : string
+>this.data : "data"
+>this : this
+>data : "data"
+>this.ctx : "ctx"
+>this : this
+>ctx : "ctx"
+}
+

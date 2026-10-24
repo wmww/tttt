@@ -674,12 +674,6 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   ty_mapped_type_name_keys() (tsc's getIndexTypeForMappedType), other renamed mapped types still from their expanded
   members (an `any` name there would be a string index signature). Oracle: ttttKeyofMappedAsAnyName.
 
-- `resolve_declared_members()` (members.c): an interface's bases decide `dynamic` (base_is_dynamic(), which asks for
-  each base's raw members) after its RESOLVING_BASES window, with a bases-only cycle check (has_base_type(), tsc's
-  hasBaseType) inside it; a class's bases still ask inside the window, because moving them out made arktype's
-  `NodeCompiler extends CompiledFunction<...>` (through CastableBase's `new <t>() => t` base) lose its inherited
-  properties. Not understood: classes should take the interfaces' path once that is (2026-10-24, cor10).
-
 ## Checks (`ty/check.c`, `unused.c`, `statement.c`, `class_decl.c`)
 - `check_duplicate_declarations()` (TS2300): artifact of tsgo's checking order: in a class, a member before the first
   late-bound one counts only its early symbol's declarations (`MemberEntry.early_total`), keyed on the `private_names`

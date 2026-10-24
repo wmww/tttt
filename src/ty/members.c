@@ -3436,7 +3436,6 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
             BasesFrame frame = { .ty = ty, .builder = &builder, .outer = my bases_frames };
             my bases_frames = &frame;
             bool any_base = false;
-            bool class_dynamic_known = false;
             for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
                 if (node->kind == SYMBOL_DECL_CLASS) {
                     Ty const* base = nullptr;
@@ -3444,12 +3443,8 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                     if (class_base(me, node->node, ctx, &base, &base_decl) && base != ty) {
                         ty_buf_push(&bases, this_param ? ty_with_this_arg(me, base, this_param) : base);
                         ty_buf_push(&written_bases, base);
-                        // HACK: a class's base still asks for its members inside the bases window, unlike an interface's
-                        // (below): moving it out made arktype's `NodeCompiler extends CompiledFunction<...>` (a base
-                        // through CastableBase's `new <t>() => t`) lose its inherited properties, not understood yet
-                        // (hacks.md)
-                        dynamic |= base_is_dynamic(me, base, 0);
-                        class_dynamic_known = true;
+                        // (tsc's resolveBaseTypesOfClass: hasBaseType walks the base's bases, not its members)
+                        if (has_base_type(me, base, ty)) ty_resolving_cycle_across_calls(me, RESOLVING_BASES, ty);
                     }
                     // (A base constructor of any: tsc's anyBaseTypeIndexInfo)
                     else if (class_base_is_any(me, node->node, ctx)) any_base = true;
@@ -3507,13 +3502,10 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
             // are known, as tsc's getBaseTypes never resolves a base's members (`interface G extends P` with `interface P
             // extends Pick<G, 'k'>`: P's members read G's, which isn't a base cycle). What this type has declared is
             // known meanwhile, as below
-            if (class_dynamic_known) {
-                // (Known from the class's base, above)
-            } else if (!dynamic && !bases_reentered && ty->kind == TY_DECLARED) {
+            if (!dynamic && !bases_reentered && ty->kind == TY_DECLARED) {
                 TyObjectState* states[2] = { ty->declared.raw, object_state(ty) };
                 for (u32 i = 0; i < written_bases.len && !dynamic; i++) {
                     Ty const* base = written_bases.data[i];
-                    if (base->kind == TY_TYPE_PARAM) continue;
                     // (Only for a class or interface base, whose raw members base_is_dynamic() asks for)
                     Ty const* target = base->kind == TY_REFERENCE ? base->reference.target : base;
                     if (target->kind == TY_DECLARED) publish_early_snapshot(me, states, &builder);
@@ -3521,7 +3513,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 }
             } else if (!dynamic) {
                 for (u32 i = 0; i < written_bases.len && !dynamic; i++) {
-                    if (written_bases.data[i]->kind != TY_TYPE_PARAM) dynamic |= base_is_dynamic(me, written_bases.data[i], 0);
+                    dynamic |= base_is_dynamic(me, written_bases.data[i], 0);
                 }
             }
             bool recursive_bases = false;
