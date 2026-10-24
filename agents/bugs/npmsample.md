@@ -318,4 +318,25 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
 
 ## Seed 20261045
 
-- **npm_paseo-agent-todos_TS5115** (paseo-agent-todos@0.1.1, tsconfig.bench.json, client/todos-surface.tsx:6, 13-file case with zod's v4 core `.d.cts` reduced in node_modules): tsgo reports TS5115 ('$ZodTypeInternals', '$InferZodRecordInput', 'IsOptionalIn') from `useQuery({queryFn: ...})` over zod types; tttt reports nothing (tsgo's instantiation depth limit is not reached). Same key as ergolabs-ergo-sdk-js's TS5115. [flip] [open]
+- **npm_paseo-agent-todos_TS5115** (paseo-agent-todos@0.1.1, tsconfig.bench.json, client/todos-surface.tsx:6, 13-file case with zod's v4 core `.d.cts` reduced in node_modules): tsgo reports TS5115 ('$ZodTypeInternals', '$InferZodRecordInput', 'IsOptionalIn') from `useQuery({queryFn: ...})` over zod types; tttt reports nothing (tsgo's instantiation depth limit is not reached). Same key as ergolabs-ergo-sdk-js's TS5115.
+  corF's analysis (2026-10-24, tsgotrace.py 5115 --suite on the test): tsgo's cycle is resolveStructuredTypeMembers ->
+  resolveObjectTypeMembers instantiating a reference's *base types* with their type arguments -> a base argument that
+  is a conditional type, `$ZodTypeInternals<$InferZodRecordOutput<K, V>, $InferZodRecordInput<K, V>>` (the base of
+  $ZodRecordInternals<ZodString, ZodJSONSchema>), resolved eagerly by getConditionalTypeInstantiation ->
+  getConditionalType -> isTypeAssignableTo([ZodJSONSchema], [OptionalInSchema]) -> getUnmatchedProperty -> members of
+  ZodJSONSchema -> ZodUnion<[ZodRecord<ZodString, ZodJSONSchema>]> -> `optin: IsOptionalIn<T[number]>` ->
+  isTypeAssignableTo(ZodRecord<ZodString, ZodJSONSchema>, OptionalInSchema) -> getUnmatchedProperty -> members of that
+  ZodRecord (no in-flight state in tsc: resolved again) -> its bases instantiated again -> ... until the instantiation
+  depth hits 100: TS5115 naming the three types.
+  - tttt never evaluates $InferZodRecordInput at all. It resolves a reference's members from the raw members
+    instantiated lazily, not by instantiating its bases, and no property on the way depends on the Input argument:
+    `optin` is what OptionalInSchema asks for, and it isn't typed by I. There is no members re-entry
+    (ty_members_resolving()'s SW_LOOK_MINE is never hit) and no relation of the cyclic pair.
+  - The cycle exists only because of tsc's eager base instantiation. A lazy evaluation of the same types terminates
+    with a sensible answer, so it is a tsgo artifact of the vue kind, not a missed infinite type.
+  - Emulating it means instantiating every base type argument of every reference whose members are resolved (tsc's
+    resolveObjectTypeMembers). That is what probe_eager_bases()/members_reentered_unguarded() approximate for
+    MembersRare.eager_bases, and only for bases whose instantiation "resolves something". Extending the probe to
+    conditional base arguments would emulate this case, at the cost of evaluating conditional types tttt otherwise
+    never needs, in every program, for a diagnostic that marks no real error. Not done.
+  [flip] [design]
