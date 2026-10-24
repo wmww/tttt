@@ -1,42 +1,109 @@
 //// [test/cases/ttttBaseReadsDerivedThroughPick.ts] ////
 
-=== ttttBaseReadsDerivedThroughPick.ts ===
-// An interface whose base reads its derived interface through Pick (`P extends Pick<G, 'k'>`, `G extends P`): the
-// Pick asks for G's members while P's are resolved, which finds what G has so far, its declared members and the bases
-// added before (tsc's resolveObjectTypeMembers sets the members table before it adds the inherited ones), not a base
-// cycle: G's bases don't resolve their members (getBaseTypes)
+=== a.ts ===
+interface U1 { id: string; unavailable: boolean; }
+>U1 : Symbol(U1, Decl(a.ts, 0, 0))
+>id : Symbol(U1.id, Decl(a.ts, 0, 14))
+>unavailable : Symbol(U1.unavailable, Decl(a.ts, 0, 26))
+
+interface P1 extends Omit<U1, 'unavailable'>, Pick<G1, 'screen'> { name: string; icon: string | null; }
+>P1 : Symbol(P1, Decl(a.ts, 0, 50))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>U1 : Symbol(U1, Decl(a.ts, 0, 0))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>G1 : Symbol(G1, Decl(a.ts, 1, 103))
+>name : Symbol(P1.name, Decl(a.ts, 1, 66))
+>icon : Symbol(P1.icon, Decl(a.ts, 1, 80))
+
+interface G1 extends P1 { owner: boolean; screen?: { description: string }; }
+>G1 : Symbol(G1, Decl(a.ts, 1, 103))
+>P1 : Symbol(P1, Decl(a.ts, 0, 50))
+>owner : Symbol(G1.owner, Decl(a.ts, 2, 25))
+>screen : Symbol(G1.screen, Decl(a.ts, 2, 41))
+>description : Symbol(description, Decl(a.ts, 2, 52))
+
+const k1: keyof G1 = "icon";
+>k1 : Symbol(k1, Decl(a.ts, 3, 5))
+>G1 : Symbol(G1, Decl(a.ts, 1, 103))
+
+export type First = Pick<G1, 'id' | 'name' | 'icon' | 'owner'>;
+>First : Symbol(First, Decl(a.ts, 3, 28))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>G1 : Symbol(G1, Decl(a.ts, 1, 103))
+
+export const s1: P1["screen"] = undefined;
+>s1 : Symbol(s1, Decl(a.ts, 5, 12))
+>P1 : Symbol(P1, Decl(a.ts, 0, 50))
+>undefined : Symbol(undefined)
+
+=== b.ts ===
+export type Second = Pick<G2, 'id' | 'name' | 'icon' | 'owner'>;
+>Second : Symbol(Second, Decl(b.ts, 0, 0))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>G2 : Symbol(G2, Decl(b.ts, 2, 103))
+
 interface U2 { id: string; unavailable: boolean; }
->U2 : Symbol(U2, Decl(ttttBaseReadsDerivedThroughPick.ts, 0, 0))
->id : Symbol(U2.id, Decl(ttttBaseReadsDerivedThroughPick.ts, 4, 14))
->unavailable : Symbol(U2.unavailable, Decl(ttttBaseReadsDerivedThroughPick.ts, 4, 26))
+>U2 : Symbol(U2, Decl(b.ts, 0, 64))
+>id : Symbol(U2.id, Decl(b.ts, 1, 14))
+>unavailable : Symbol(U2.unavailable, Decl(b.ts, 1, 26))
 
 interface P2 extends Omit<U2, 'unavailable'>, Pick<G2, 'screen'> { name: string; icon: string | null; }
->P2 : Symbol(P2, Decl(ttttBaseReadsDerivedThroughPick.ts, 4, 50))
+>P2 : Symbol(P2, Decl(b.ts, 1, 50))
 >Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
->U2 : Symbol(U2, Decl(ttttBaseReadsDerivedThroughPick.ts, 0, 0))
+>U2 : Symbol(U2, Decl(b.ts, 0, 64))
 >Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
->G2 : Symbol(G2, Decl(ttttBaseReadsDerivedThroughPick.ts, 5, 103))
->name : Symbol(P2.name, Decl(ttttBaseReadsDerivedThroughPick.ts, 5, 66))
->icon : Symbol(P2.icon, Decl(ttttBaseReadsDerivedThroughPick.ts, 5, 80))
+>G2 : Symbol(G2, Decl(b.ts, 2, 103))
+>name : Symbol(P2.name, Decl(b.ts, 2, 66))
+>icon : Symbol(P2.icon, Decl(b.ts, 2, 80))
 
 interface G2 extends P2 { owner: boolean; screen?: { description: string }; }
->G2 : Symbol(G2, Decl(ttttBaseReadsDerivedThroughPick.ts, 5, 103))
->P2 : Symbol(P2, Decl(ttttBaseReadsDerivedThroughPick.ts, 4, 50))
->owner : Symbol(G2.owner, Decl(ttttBaseReadsDerivedThroughPick.ts, 6, 25))
->screen : Symbol(G2.screen, Decl(ttttBaseReadsDerivedThroughPick.ts, 6, 41))
->description : Symbol(description, Decl(ttttBaseReadsDerivedThroughPick.ts, 6, 52))
+>G2 : Symbol(G2, Decl(b.ts, 2, 103))
+>P2 : Symbol(P2, Decl(b.ts, 1, 50))
+>owner : Symbol(G2.owner, Decl(b.ts, 3, 25))
+>screen : Symbol(G2.screen, Decl(b.ts, 3, 41))
+>description : Symbol(description, Decl(b.ts, 3, 52))
 
-const k: keyof G2 = "icon";
->k : Symbol(k, Decl(ttttBaseReadsDerivedThroughPick.ts, 7, 5))
->G2 : Symbol(G2, Decl(ttttBaseReadsDerivedThroughPick.ts, 5, 103))
+const k2: keyof G2 = "icon";
+>k2 : Symbol(k2, Decl(b.ts, 4, 5))
+>G2 : Symbol(G2, Decl(b.ts, 2, 103))
 
-export type Second = Pick<G2, 'id' | 'name' | 'icon' | 'owner'>;
->Second : Symbol(Second, Decl(ttttBaseReadsDerivedThroughPick.ts, 7, 27))
+=== c.ts ===
+interface Derived extends G3 { extra: number }
+>Derived : Symbol(Derived, Decl(c.ts, 0, 0))
+>G3 : Symbol(G3, Decl(c.ts, 4, 103))
+>extra : Symbol(Derived.extra, Decl(c.ts, 0, 30))
+
+declare const d: Derived;
+>d : Symbol(d, Decl(c.ts, 1, 13))
+>Derived : Symbol(Derived, Decl(c.ts, 0, 0))
+
+d.extra;
+>d.extra : Symbol(Derived.extra, Decl(c.ts, 0, 30))
+>d : Symbol(d, Decl(c.ts, 1, 13))
+>extra : Symbol(Derived.extra, Decl(c.ts, 0, 30))
+
+interface U3 { id: string; unavailable: boolean; }
+>U3 : Symbol(U3, Decl(c.ts, 2, 8))
+>id : Symbol(U3.id, Decl(c.ts, 3, 14))
+>unavailable : Symbol(U3.unavailable, Decl(c.ts, 3, 26))
+
+interface P3 extends Omit<U3, 'unavailable'>, Pick<G3, 'screen'> { name: string; icon: string | null; }
+>P3 : Symbol(P3, Decl(c.ts, 3, 50))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>U3 : Symbol(U3, Decl(c.ts, 2, 8))
 >Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
->G2 : Symbol(G2, Decl(ttttBaseReadsDerivedThroughPick.ts, 5, 103))
+>G3 : Symbol(G3, Decl(c.ts, 4, 103))
+>name : Symbol(P3.name, Decl(c.ts, 4, 66))
+>icon : Symbol(P3.icon, Decl(c.ts, 4, 80))
 
-export const s: P2["screen"] = undefined;
->s : Symbol(s, Decl(ttttBaseReadsDerivedThroughPick.ts, 9, 12))
->P2 : Symbol(P2, Decl(ttttBaseReadsDerivedThroughPick.ts, 4, 50))
->undefined : Symbol(undefined)
+interface G3 extends P3 { owner: boolean; screen?: { description: string }; }
+>G3 : Symbol(G3, Decl(c.ts, 4, 103))
+>P3 : Symbol(P3, Decl(c.ts, 3, 50))
+>owner : Symbol(G3.owner, Decl(c.ts, 5, 25))
+>screen : Symbol(G3.screen, Decl(c.ts, 5, 41))
+>description : Symbol(description, Decl(c.ts, 5, 52))
+
+export const k3: keyof G3 = "icon";
+>k3 : Symbol(k3, Decl(c.ts, 6, 12))
+>G3 : Symbol(G3, Decl(c.ts, 4, 103))
 

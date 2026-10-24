@@ -157,7 +157,11 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
     RESOLVING_BASES window), which reaches Pick and APIGuild's members there; tsc's getBaseTypes never resolves a base's
     members (hasBaseType walks bases only). Moving it out of the window broke ttttCircularBaseDefaultArgument (the A/B
     interface cycle is found through that re-entry): the cycle check needs a bases-only walk instead. Repro: put
-    `export type First = Pick<G2, 'id'>;` above the declarations of test/cases/ttttBaseReadsDerivedThroughPick.ts. [open]
+    `export type First = Pick<G2, 'id'>;` above the declarations of test/cases/ttttBaseReadsDerivedThroughPick.ts.
+    Fixed with the thread dependence it caused (npmsample_box2.md, seed 20261107): an interface's bases decide
+    `dynamic` after the window, with a bases-only cycle check (has_base_type) inside it; the members so far are early
+    members then too; and a type's object-level members made from its raw members while those are partial aren't
+    kept (ty_members_resolving()). [fixed 2026-10-24]
 
 ## Seed 20261103 (second box)
 - npm_task-definition-ts_TS2339 (task-definition-ts@1.0.18, config tsconfig.bench.json, allowJs+checkJs, no include): tttt's default wildcard include adds `dist/index.mjs` although `dist/index.d.mts` sits beside it, and checks it (TS2339/TS7006 x6); tsgo drops the .mjs (same-basename extension priority: a declaration file beats the JS file), as tttt already does for `index.cjs` next to `index.d.cts`. Guess: the priority removal in tttt's wildcard expansion knows .d.cts/.cjs but not .d.mts/.mjs. Fixed: tsgo's LEGACY BEHAVIOR keeps only a `.js`/`.jsx` next to its `.d.ts`; tttt kept every JS file next to any declaration (has_higher_priority_sibling). [flip] [fixed corF 2026-10-24]
