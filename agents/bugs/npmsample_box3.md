@@ -200,7 +200,7 @@ for flips); a separate file so the three boxes never conflict.
   src/DateCalendar/PickersFadeTransitionGroup.tsx:54 "Type '{ className: string; ownerState: {...}; children: ... }'
   is missing the following properties from type ...: about, accessKey, ... and 274 more", and TS2322 at
   PickersSlideTransition.tsx:157 (props with `childFactory` to a styled TransitionGroup). tsgo 0, tttt 2, so a
-  flip. Not K-dependent. No repro. [flip] [open]
+  flip. Not K-dependent. No repro. (claimed: cor10) [flip] [open]
 - Large seed 20261402, latitude-dev/latitude-llm@development (commit 4914acc6c), apps/web (tsconfig.json): spurious
   TS2877 at src/domains/annotations/annotations.functions.ts:7 "This import uses a '.ts' extension to resolve to an
   input TypeScript file, but will not be rewritten during emit because it is not a relative path". tsgo 4 errors,
