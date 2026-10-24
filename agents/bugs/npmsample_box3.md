@@ -86,7 +86,24 @@ for flips); a separate file so the three boxes never conflict.
   'defaultProps' circularly references itself in mapped type 'ForwardRefExoticBase<...>'" on `styled(Toolbar)` with
   @types/styled-components (ts3.7) and @types/react 16. tsgo reports it twice at the same span, for the two
   `theme` forms. tttt has the check (members.c, the expanded_from containsError path) but doesn't reach the
-  circularity here. Repro test/cases/npm__rocket-slate_mentions_TS2615.ts (reduce.py, 8 files). [open]
+  circularity here. Repro test/cases/npm__rocket-slate_mentions_TS2615.ts (reduce.py, 8 files).
+  corF (2026-10-24, tsgotrace.py 2615 --suite): tsgo's cycle runs through
+  - `styled(Toolbar)`'s return type, StyledComponentInnerComponent<typeof Toolbar>, whose conditional type infers from
+    `StyledComponent<"div", ...>` to `StyledComponent<infer I, ...> | StyledComponent<infer I, ...>`;
+  - inferFromMatchingTypes' identity check of each pair: the references' variances are unreliable, so tsc falls back
+    to structure, propertiesIdenticalTo, compareSignaturesIdentical of `withComponent`, and then the type of
+    ForwardRefExoticBase's mapped `defaultProps`;
+  - that type instantiates a mapped type, and getReducedType -> somePropertyReducesToNever -> getPropertiesOfType ->
+    getReducedApparentType asks the base constraint of a distributive conditional, StyledComponentInnerComponent
+    again, whose inference does the same identity check and reaches the same `defaultProps` in flight: TS2615
+    (twice, once per `theme` form).
+  tttt makes the same identity check and falls back to structure too (unreliable variances, `objects_identical`),
+  and never asks for `defaultProps` while it is in flight. The likely reason, not confirmed by instrumentation, is
+  that its mapped-type instantiation doesn't walk the reduced type's properties eagerly (no somePropertyReducesToNever
+  over the instantiated members).
+  It is a resolution-order circularity of the kind of tanstack-ai's TS2615 (sourcesweep_checker.md, [tsgo]): what
+  tsgo resolves eagerly and in which order decides it, and a lazy evaluation terminates. Matching it means emulating
+  getReducedType's eager property walk on mapped instantiations in tsc's order. Not done. [design]
 - Seed 20261209, tseijp/voxelizer (voxel-three@0.3.0): spurious TS2589 "excessively deep" in glre's TypeScript
   sources (`new Proxy(...) as unknown as X<T>` over glre's recursive node types), and a TS2590 "union type too
   complex" in voxel-three. tsgo hits neither limit. Not a placement difference: tsgo reports no depth error at all,
