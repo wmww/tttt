@@ -1,0 +1,26 @@
+//// [test/cases/npm__bunicorn_server_TS6196.ts] ////
+
+=== bun.d.ts ===
+declare module "bun" {
+>"bun" : typeof import("bun")
+
+    namespace Serve {
+        interface Options { port?: number }
+>port : number | undefined
+    }
+    interface ServeOptions { hostname?: string }
+>hostname : string | undefined
+}
+=== a.ts ===
+import type { Serve, ServeOptions } from "bun";
+>Serve : any
+>ServeOptions : ServeOptions
+
+export class App {
+>App : App
+
+    serve<T>(options: Omit<ServeOptions & Serve<T>, "fetch">): void {}
+>serve : <T>(options: Omit<ServeOptions & Serve<T>, "fetch">) => void
+>options : Omit<any, "fetch">
+}
+

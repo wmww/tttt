@@ -83,3 +83,10 @@ Fixers take the top of `rank` when no flip is open; a finder checks `rank` befor
   second seed's sample waits for the first's, so only one pacer hits the registry from the host at a time.
 - Writing test files over nested `ssh ... su -c "..."` quoting breaks on parentheses and apostrophes. Write them on
   the driving box and scp them over.
+- Ubuntu 26.10's coreutils are the Rust uutils: `tail -3` is refused, write `tail -n 3`.
+- reduce.py's `--files` globs are relative to the copy root. A package under a workspace member is at
+  `packages/X/node_modules/*` there, not `node_modules/*`.
+- `clean --all --except NAME` used to ignore --except and delete everything, which is how seed 20261201's octane
+  clone went before its repro was cut. Fixed: --except holds a clone back under --all too.
+- Throughput with two seeds at once on 4 cores: 54, 62 and 70 projects accepted, each seed's setup and compare done in
+  about 20-30 minutes; load stays around 5-10, RSS well under the 30 GB.

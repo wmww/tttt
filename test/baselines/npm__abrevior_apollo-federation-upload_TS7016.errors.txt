@@ -1,0 +1,14 @@
+lib/a.ts(1,15): error TS2305: Module '"graphql-upload/GraphQLUpload.mjs"' has no exported member 'FileUpload'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "module": "esnext", "moduleResolution": "bundler", "allowJs": true, "strict": true, "noEmit": true, "maxNodeModuleJsDepth": 10, "paths": { "*": ["./*"] } } }
+==== lib/a.ts (1 errors) ====
+    import type { FileUpload } from 'graphql-upload/GraphQLUpload.mjs';
+                  ~~~~~~~~~~
+!!! error TS2305: Module '"graphql-upload/GraphQLUpload.mjs"' has no exported member 'FileUpload'.
+==== node_modules/graphql-upload/package.json (0 errors) ====
+    {"name": "graphql-upload", "version": "16.0.2", "exports": {"./GraphQLUpload.mjs": "./GraphQLUpload.mjs"}}
+==== node_modules/graphql-upload/GraphQLUpload.mjs (0 errors) ====
+    export {};
+    

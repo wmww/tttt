@@ -1,0 +1,24 @@
+a.ts(1,15): error TS6196: 'Serve' is declared but never used.
+a.ts(3,14): error TS6133: 'options' is declared but its value is never read.
+a.ts(3,43): error TS2709: Cannot use namespace 'Serve' as a type.
+
+
+==== bun.d.ts (0 errors) ====
+    declare module "bun" {
+        namespace Serve {
+            interface Options { port?: number }
+        }
+        interface ServeOptions { hostname?: string }
+    }
+==== a.ts (3 errors) ====
+    import type { Serve, ServeOptions } from "bun";
+                  ~~~~~
+!!! error TS6196: 'Serve' is declared but never used.
+    export class App {
+        serve<T>(options: Omit<ServeOptions & Serve<T>, "fetch">): void {}
+                 ~~~~~~~
+!!! error TS6133: 'options' is declared but its value is never read.
+                                              ~~~~~
+!!! error TS2709: Cannot use namespace 'Serve' as a type.
+    }
+    

@@ -1160,12 +1160,13 @@ def cmd_clean(seed, everything, keep):
         p = os.path.join(base, d)
         if not (os.path.isdir(p) and re.match(r'^\d{4}-', d)):
             continue
-        if everything or (compared.get(d) == 'same' and d not in keep):
+        # (--except holds back a clone under --all too: a kept divergence whose repro is still being cut)
+        if d not in keep and (everything or compared.get(d) == 'same'):
             shutil.rmtree(p)
             removed += 1
         else:
             kept.append(f'{d} ({compared.get(d, "not compared")})')
-    if everything:
+    if everything and not kept:
         for f in ('tsc.jsonl', 'compare.json'):
             if os.path.exists(os.path.join(base, f)):
                 os.remove(os.path.join(base, f))

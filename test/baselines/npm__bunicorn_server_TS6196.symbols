@@ -1,0 +1,35 @@
+//// [test/cases/npm__bunicorn_server_TS6196.ts] ////
+
+=== bun.d.ts ===
+declare module "bun" {
+>"bun" : Symbol("bun", Decl(bun.d.ts, 0, 0))
+
+    namespace Serve {
+>Serve : Symbol(Serve, Decl(bun.d.ts, 0, 22))
+
+        interface Options { port?: number }
+>Options : Symbol(Options, Decl(bun.d.ts, 1, 21))
+>port : Symbol(Options.port, Decl(bun.d.ts, 2, 27))
+    }
+    interface ServeOptions { hostname?: string }
+>ServeOptions : Symbol(ServeOptions, Decl(bun.d.ts, 3, 5))
+>hostname : Symbol(ServeOptions.hostname, Decl(bun.d.ts, 4, 28))
+}
+=== a.ts ===
+import type { Serve, ServeOptions } from "bun";
+>Serve : Symbol(Serve, Decl(a.ts, 0, 13))
+>ServeOptions : Symbol(ServeOptions, Decl(a.ts, 0, 20))
+
+export class App {
+>App : Symbol(App, Decl(a.ts, 0, 47))
+
+    serve<T>(options: Omit<ServeOptions & Serve<T>, "fetch">): void {}
+>serve : Symbol(App.serve, Decl(a.ts, 1, 18))
+>T : Symbol(T, Decl(a.ts, 2, 10))
+>options : Symbol(options, Decl(a.ts, 2, 13))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>ServeOptions : Symbol(ServeOptions, Decl(a.ts, 0, 20))
+>Serve : Symbol(Serve)
+>T : Symbol(T, Decl(a.ts, 2, 10))
+}
+

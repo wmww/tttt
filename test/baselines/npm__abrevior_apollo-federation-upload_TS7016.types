@@ -1,0 +1,10 @@
+//// [test/cases/npm__abrevior_apollo-federation-upload_TS7016.ts] ////
+
+=== lib/a.ts ===
+import type { FileUpload } from 'graphql-upload/GraphQLUpload.mjs';
+>FileUpload : any
+
+=== node_modules/graphql-upload/GraphQLUpload.mjs ===
+
+export {};
+

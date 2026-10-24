@@ -1,0 +1,62 @@
+//// [test/cases/npm__fireproof_core-types-protocols-cloud_TS18048.ts] ////
+
+=== npm__fireproof_core-types-protocols-cloud_TS18048.ts ===
+// origin: npm @fireproof/core-types-protocols-cloud@0.24.19 https://github.com/fireproof-storage/fireproof tsconfig.json seed 20261201
+// flip: no
+// zod 4 SafeParseResult destructured: `!success || !data` narrows the parent union to the error member (the success
+// member's data is never falsy), so `error` is defined in the true branch; either test alone agrees with tsgo, the
+// `||` of the two does not (spurious TS18048).
+type SafeParseSuccess<T> = { success: true; data: T; error?: never };
+>SafeParseSuccess : SafeParseSuccess<T>
+>success : true
+>true : true
+>data : T
+>error : undefined
+
+type SafeParseError<T> = { success: false; data?: never; error: { message: string } };
+>SafeParseError : SafeParseError<T>
+>success : false
+>false : false
+>data : undefined
+>error : { message: string; }
+>message : string
+
+type SafeParseResult<T> = SafeParseSuccess<T> | SafeParseError<T>;
+>SafeParseResult : SafeParseResult<T>
+
+declare function safeParse(x: unknown): SafeParseResult<{ kty: string }>;
+>safeParse : (x: unknown) => SafeParseResult<{ kty: string; }>
+>x : unknown
+>kty : string
+
+export function f(x: unknown) {
+>f : (x: unknown) => { kty: string; }
+>x : unknown
+
+  const { success, data, error } = safeParse(x);
+>success : boolean
+>data : { kty: string; } | undefined
+>error : { message: string; } | undefined
+>safeParse(x) : SafeParseResult<{ kty: string; }>
+>safeParse : (x: unknown) => SafeParseResult<{ kty: string; }>
+>x : unknown
+
+  if (!success || !data) {
+>!success || !data : boolean
+>!success : boolean
+>success : boolean
+>!data : false
+>data : { kty: string; }
+
+    throw new Error(`Invalid public JWK: ${error.message}`);
+>new Error(`Invalid public JWK: ${error.message}`) : Error
+>Error : ErrorConstructor
+>`Invalid public JWK: ${error.message}` : string
+>error.message : string
+>error : { message: string; }
+>message : string
+  }
+  return data;
+>data : { kty: string; }
+}
+
