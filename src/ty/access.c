@@ -340,14 +340,21 @@ static Ty const* access_uncached(Checker* me, Ty const* object, Ty const* index,
 // (Memoized for a union like tsc's union property cache, resolveUnionTypeMembers' propertyCache: reading `node.type` of
 // babel's 260-member Node union again built and ordered the union of the 260 property types each time. At depth 0
 // only: the depth cutoff makes a deeper call's answer differ)
+// (So is an intersection object's and a union index's, whose answers are as large: babel's NodePath
+// `(MemberExpression & Partial<...>)[keyof MemberExpression]`, the constraint of an indexed access that the identity
+// relation reaches through conditional types again and again, react-scan's path-references-import.ts. tsc memoizes every
+// getIndexedAccessType (indexedAccessTypes); these only when their computation was clean, no taint event: a mapped type
+// whose members were in flight answered null for its index signature, bun95-Z2's recursive `M<S>`)
 static Ty const access_none;
 static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 depth, u32 flags) {
-    if (depth || object->kind != TY_UNION) return access_uncached(me, object, index, depth, flags);
+    bool by_parts = object->kind == TY_INTERSECTION || (index->kind == TY_UNION && !(index->flags & TYF_BOOLEAN));
+    if (depth || (object->kind != TY_UNION && !by_parts)) return access_uncached(me, object, index, depth, flags);
     u64 key[4] = { KEY_UNION_ACCESS, object->id, index->id, flags };
     Ty const* cached = intern_get(&my links, key, 4);
     if (cached) return cached == &access_none ? nullptr : cached;
+    u64 taint = graph_taint_now;
     Ty const* ret = access_uncached(me, object, index, depth, flags);
-    *intern_slot(me, &my links, key, 4) = ret ? ret : &access_none;
+    if (object->kind == TY_UNION || graph_taint_now == taint) *intern_slot(me, &my links, key, 4) = ret ? ret : &access_none;
     return ret;
 }
 
