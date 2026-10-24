@@ -1,0 +1,22 @@
+//// [test/cases/npm_task-definition-ts_TS2339.ts] ////
+
+=== dist/index.d.mts ===
+export declare const f: () => string;
+>f : Symbol(f, Decl(index.d.mts, 0, 20))
+
+=== dist/index.d.cts ===
+export declare const g: () => string;
+>g : Symbol(g, Decl(index.d.cts, 0, 20))
+
+=== dist/other.d.mts ===
+export declare const h: number;
+>h : Symbol(h, Decl(other.d.mts, 0, 20))
+
+=== dist/other.js ===
+export const h = 1;
+>h : Symbol(h, Decl(other.js, 0, 12))
+
+=== src/a.ts ===
+export const x = 1;
+>x : Symbol(x, Decl(a.ts, 0, 12))
+
