@@ -294,7 +294,7 @@ for flips); a separate file so the three boxes never conflict.
   error type. A conditional type stops at that one. tttt kept the alias, so xstate's `SnapshotFrom<T>` (`R extends
   Actor<infer TLogic> ? SnapshotFrom<TLogic>`) went SnapshotFrom<AnyActorLogic> -> any -> again, until the tail limit.
   lower.c ty_implied_infer_constraint() now returns the plain error (or any) for a single any constraint. Tests
-  npm__sanity_comlink_TS2589 and ttttInferImpliedErrorConstraint. [flip] [fixed PENDING]
+  npm__sanity_comlink_TS2589 and ttttInferImpliedErrorConstraint. [flip] [fixed e89481d59]
 - Large seed 20261403, akash-network/console@main (commit aa01c1469), apps/deploy-web (tsconfig.json): +58 tttt
   errors (tsgo 94, tttt 152, so not a flip). Many have `unknown`/`{}` where tsgo has a type: TS7006 "Parameter
   'stripe' implicitly has an 'any' type" at src/components/billing-usage/AddCreditsWalletButton/AddCreditsWalletButton.tsx:94
