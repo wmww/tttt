@@ -1,0 +1,27 @@
+npm__point0_compiler_TS2345.ts(11,11): error TS2322: Type 'void | InputRaw' is not assignable to type 'InputRaw'.
+  Type 'void' is not assignable to type 'InputRaw'.
+
+
+==== npm__point0_compiler_TS2345.ts (1 errors) ====
+    // origin: npm @point0/compiler@0.4.2 https://github.com/1gr14/point0 packages/compiler/tsconfig.bench.json seed 20261106
+    // flip: no
+    // A binding element with a default under a written type loses undefined and void alike (tsc's getNonUndefinedType is
+    // getTypeWithFacts(NEUndefined), and void's facts are undefined's): `{ input = {} }: { input: X | undefined | void }`
+    // is X. A parameter's own default keeps void (tsc's parameter initializer only removes undefined)
+    type InputRaw = { a?: string };
+    export function f({ input = {} }: { input: InputRaw | undefined | void }) {
+        const x: InputRaw = input;
+    }
+    export function g(input: InputRaw | void = {}) {
+        const x: InputRaw = input;
+              ~
+!!! error TS2322: Type 'void | InputRaw' is not assignable to type 'InputRaw'.
+!!! error TS2322:   Type 'void' is not assignable to type 'InputRaw'.
+    }
+    export function h([v = 1]: [number | void]) {
+        const n: number = v;
+    }
+    declare const o: { p: string | void };
+    const { p = "x" } = o;
+    export const q: string = p;
+    

@@ -1,0 +1,53 @@
+//// [test/cases/npm__point0_compiler_TS2345.ts] ////
+
+=== npm__point0_compiler_TS2345.ts ===
+// origin: npm @point0/compiler@0.4.2 https://github.com/1gr14/point0 packages/compiler/tsconfig.bench.json seed 20261106
+// flip: no
+// A binding element with a default under a written type loses undefined and void alike (tsc's getNonUndefinedType is
+// getTypeWithFacts(NEUndefined), and void's facts are undefined's): `{ input = {} }: { input: X | undefined | void }`
+// is X. A parameter's own default keeps void (tsc's parameter initializer only removes undefined)
+type InputRaw = { a?: string };
+>InputRaw : Symbol(InputRaw, Decl(npm__point0_compiler_TS2345.ts, 0, 0))
+>a : Symbol(a, Decl(npm__point0_compiler_TS2345.ts, 5, 17))
+
+export function f({ input = {} }: { input: InputRaw | undefined | void }) {
+>f : Symbol(f, Decl(npm__point0_compiler_TS2345.ts, 5, 31))
+>input : Symbol(input, Decl(npm__point0_compiler_TS2345.ts, 6, 19))
+>input : Symbol(input, Decl(npm__point0_compiler_TS2345.ts, 6, 35))
+>InputRaw : Symbol(InputRaw, Decl(npm__point0_compiler_TS2345.ts, 0, 0))
+
+    const x: InputRaw = input;
+>x : Symbol(x, Decl(npm__point0_compiler_TS2345.ts, 7, 9))
+>InputRaw : Symbol(InputRaw, Decl(npm__point0_compiler_TS2345.ts, 0, 0))
+>input : Symbol(input, Decl(npm__point0_compiler_TS2345.ts, 6, 19))
+}
+export function g(input: InputRaw | void = {}) {
+>g : Symbol(g, Decl(npm__point0_compiler_TS2345.ts, 8, 1))
+>input : Symbol(input, Decl(npm__point0_compiler_TS2345.ts, 9, 18))
+>InputRaw : Symbol(InputRaw, Decl(npm__point0_compiler_TS2345.ts, 0, 0))
+
+    const x: InputRaw = input;
+>x : Symbol(x, Decl(npm__point0_compiler_TS2345.ts, 10, 9))
+>InputRaw : Symbol(InputRaw, Decl(npm__point0_compiler_TS2345.ts, 0, 0))
+>input : Symbol(input, Decl(npm__point0_compiler_TS2345.ts, 9, 18))
+}
+export function h([v = 1]: [number | void]) {
+>h : Symbol(h, Decl(npm__point0_compiler_TS2345.ts, 11, 1))
+>v : Symbol(v, Decl(npm__point0_compiler_TS2345.ts, 12, 19))
+
+    const n: number = v;
+>n : Symbol(n, Decl(npm__point0_compiler_TS2345.ts, 13, 9))
+>v : Symbol(v, Decl(npm__point0_compiler_TS2345.ts, 12, 19))
+}
+declare const o: { p: string | void };
+>o : Symbol(o, Decl(npm__point0_compiler_TS2345.ts, 15, 13))
+>p : Symbol(p, Decl(npm__point0_compiler_TS2345.ts, 15, 18))
+
+const { p = "x" } = o;
+>p : Symbol(p, Decl(npm__point0_compiler_TS2345.ts, 16, 7))
+>o : Symbol(o, Decl(npm__point0_compiler_TS2345.ts, 15, 13))
+
+export const q: string = p;
+>q : Symbol(q, Decl(npm__point0_compiler_TS2345.ts, 17, 12))
+>p : Symbol(p, Decl(npm__point0_compiler_TS2345.ts, 16, 7))
+

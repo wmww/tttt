@@ -1,0 +1,53 @@
+//// [test/cases/npm__point0_compiler_TS2345.ts] ////
+
+=== npm__point0_compiler_TS2345.ts ===
+// origin: npm @point0/compiler@0.4.2 https://github.com/1gr14/point0 packages/compiler/tsconfig.bench.json seed 20261106
+// flip: no
+// A binding element with a default under a written type loses undefined and void alike (tsc's getNonUndefinedType is
+// getTypeWithFacts(NEUndefined), and void's facts are undefined's): `{ input = {} }: { input: X | undefined | void }`
+// is X. A parameter's own default keeps void (tsc's parameter initializer only removes undefined)
+type InputRaw = { a?: string };
+>InputRaw : InputRaw
+>a : string | undefined
+
+export function f({ input = {} }: { input: InputRaw | undefined | void }) {
+>f : ({ input }: { input: InputRaw | undefined | void; }) => void
+>input : InputRaw
+>{} : {}
+>input : void | InputRaw | undefined
+
+    const x: InputRaw = input;
+>x : InputRaw
+>input : InputRaw
+}
+export function g(input: InputRaw | void = {}) {
+>g : (input?: InputRaw | void) => void
+>input : void | InputRaw
+>{} : {}
+
+    const x: InputRaw = input;
+>x : InputRaw
+>input : void | InputRaw
+}
+export function h([v = 1]: [number | void]) {
+>h : ([v]: [number | void]) => void
+>v : number
+>1 : 1
+
+    const n: number = v;
+>n : number
+>v : number
+}
+declare const o: { p: string | void };
+>o : { p: string | void; }
+>p : void | string
+
+const { p = "x" } = o;
+>p : string
+>"x" : "x"
+>o : { p: string | void; }
+
+export const q: string = p;
+>q : string
+>p : string
+

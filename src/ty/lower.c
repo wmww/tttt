@@ -3280,7 +3280,23 @@ static Ty const* non_undefined_type(Checker* me, Ty const* ty) {
         ty = ty_union(me, mapped.data, mapped.len, nullptr, (TyList){0});
         ty_buf_drop(&mapped);
     }
-    return ty_without_undefined(me, ty);
+    ty = ty_without_undefined(me, ty);
+    // (void too: tsc's getTypeWithFacts(NEUndefined), void's facts are undefined's. `{ input = {} }: { input: X | void }`
+    // is X, @point0/compiler)
+    bool has_void = ty->flags & TYF_VOID;
+    for (u32 i = 0; ty->kind == TY_UNION && i < ty->composite.types.len && !has_void; i++) has_void = ty->composite.types.data[i]->flags & TYF_VOID;
+    if (has_void) {
+        if (ty->kind != TY_UNION) return ty_intrinsic(me, TY_NEVER);
+        Ty const** kept = malloc(sizeof(Ty const*) * ty->composite.types.len);
+        panic_if(!kept, "out of memory");
+        u32 len = 0;
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (!(ty->composite.types.data[i]->flags & TYF_VOID)) kept[len++] = ty->composite.types.data[i];
+        }
+        ty = ty_union_filtered(me, ty, kept, len);
+        free(kept);
+    }
+    return ty;
 }
 
 // Whether a key of type `key` names the property `name` (tsc's getRestType: the property's literal key type is
