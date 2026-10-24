@@ -1,0 +1,26 @@
+ttttWriteConstraintIntersectionProperty.ts(8,9): error TS2322: Type 'Comp' is not assignable to type 'T["other"]'.
+  'Comp' is assignable to the constraint of type 'T["other"]', but 'T["other"]' could be instantiated with a different subtype of constraint 'unknown'.
+ttttWriteConstraintIntersectionProperty.ts(11,9): error TS2322: Type 'number' is not assignable to type 'N["b"]'.
+  'number' is assignable to the constraint of type 'N["b"]', but 'N["b"]' could be instantiated with a different subtype of constraint 'number'.
+
+
+==== ttttWriteConstraintIntersectionProperty.ts (2 errors) ====
+    // Writing T["default"] through an intersection constraint whose member declares the property is the property, not the
+    // other member's string index signature (tsc's getPropertyOfType on the intersection)
+    type Comp = (props: {}) => string;
+    type Mod = Record<string, unknown> & { default?: Comp | null | undefined; };
+    type Num = { [k: string]: number } & { a: number };
+    export function f<T extends Mod, N extends Num>(c: Comp, n: number) {
+      const x: T["default"] = c;
+      const y: T["other"] = c;
+            ~
+!!! error TS2322: Type 'Comp' is not assignable to type 'T["other"]'.
+!!! error TS2322:   'Comp' is assignable to the constraint of type 'T["other"]', but 'T["other"]' could be instantiated with a different subtype of constraint 'unknown'.
+      const z: NonNullable<T["default"]> = c;
+      const a: N["a"] = n;
+      const b: N["b"] = n;
+            ~
+!!! error TS2322: Type 'number' is not assignable to type 'N["b"]'.
+!!! error TS2322:   'number' is assignable to the constraint of type 'N["b"]', but 'N["b"]' could be instantiated with a different subtype of constraint 'number'.
+    }
+    

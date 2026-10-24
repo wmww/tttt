@@ -1,0 +1,44 @@
+//// [test/cases/ttttWriteConstraintIntersectionProperty.ts] ////
+
+=== ttttWriteConstraintIntersectionProperty.ts ===
+// Writing T["default"] through an intersection constraint whose member declares the property is the property, not the
+// other member's string index signature (tsc's getPropertyOfType on the intersection)
+type Comp = (props: {}) => string;
+>Comp : Comp
+>props : {}
+
+type Mod = Record<string, unknown> & { default?: Comp | null | undefined; };
+>Mod : Mod
+>default : Comp | null | undefined
+
+type Num = { [k: string]: number } & { a: number };
+>Num : Num
+>k : string
+>a : number
+
+export function f<T extends Mod, N extends Num>(c: Comp, n: number) {
+>f : <T extends Mod, N extends Num>(c: Comp, n: number) => void
+>c : Comp
+>n : number
+
+  const x: T["default"] = c;
+>x : T["default"]
+>c : Comp
+
+  const y: T["other"] = c;
+>y : T["other"]
+>c : Comp
+
+  const z: NonNullable<T["default"]> = c;
+>z : NonNullable<T["default"]>
+>c : Comp
+
+  const a: N["a"] = n;
+>a : N["a"]
+>n : number
+
+  const b: N["b"] = n;
+>b : N["b"]
+>n : number
+}
+

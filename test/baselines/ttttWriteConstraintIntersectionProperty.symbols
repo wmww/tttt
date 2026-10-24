@@ -1,0 +1,57 @@
+//// [test/cases/ttttWriteConstraintIntersectionProperty.ts] ////
+
+=== ttttWriteConstraintIntersectionProperty.ts ===
+// Writing T["default"] through an intersection constraint whose member declares the property is the property, not the
+// other member's string index signature (tsc's getPropertyOfType on the intersection)
+type Comp = (props: {}) => string;
+>Comp : Symbol(Comp, Decl(ttttWriteConstraintIntersectionProperty.ts, 0, 0))
+>props : Symbol(props, Decl(ttttWriteConstraintIntersectionProperty.ts, 2, 13))
+
+type Mod = Record<string, unknown> & { default?: Comp | null | undefined; };
+>Mod : Symbol(Mod, Decl(ttttWriteConstraintIntersectionProperty.ts, 2, 34))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>default : Symbol(default, Decl(ttttWriteConstraintIntersectionProperty.ts, 3, 38))
+>Comp : Symbol(Comp, Decl(ttttWriteConstraintIntersectionProperty.ts, 0, 0))
+
+type Num = { [k: string]: number } & { a: number };
+>Num : Symbol(Num, Decl(ttttWriteConstraintIntersectionProperty.ts, 3, 76))
+>k : Symbol(k, Decl(ttttWriteConstraintIntersectionProperty.ts, 4, 14))
+>a : Symbol(a, Decl(ttttWriteConstraintIntersectionProperty.ts, 4, 38))
+
+export function f<T extends Mod, N extends Num>(c: Comp, n: number) {
+>f : Symbol(f, Decl(ttttWriteConstraintIntersectionProperty.ts, 4, 51))
+>T : Symbol(T, Decl(ttttWriteConstraintIntersectionProperty.ts, 5, 18))
+>Mod : Symbol(Mod, Decl(ttttWriteConstraintIntersectionProperty.ts, 2, 34))
+>N : Symbol(N, Decl(ttttWriteConstraintIntersectionProperty.ts, 5, 32))
+>Num : Symbol(Num, Decl(ttttWriteConstraintIntersectionProperty.ts, 3, 76))
+>c : Symbol(c, Decl(ttttWriteConstraintIntersectionProperty.ts, 5, 48))
+>Comp : Symbol(Comp, Decl(ttttWriteConstraintIntersectionProperty.ts, 0, 0))
+>n : Symbol(n, Decl(ttttWriteConstraintIntersectionProperty.ts, 5, 56))
+
+  const x: T["default"] = c;
+>x : Symbol(x, Decl(ttttWriteConstraintIntersectionProperty.ts, 6, 7))
+>T : Symbol(T, Decl(ttttWriteConstraintIntersectionProperty.ts, 5, 18))
+>c : Symbol(c, Decl(ttttWriteConstraintIntersectionProperty.ts, 5, 48))
+
+  const y: T["other"] = c;
+>y : Symbol(y, Decl(ttttWriteConstraintIntersectionProperty.ts, 7, 7))
+>T : Symbol(T, Decl(ttttWriteConstraintIntersectionProperty.ts, 5, 18))
+>c : Symbol(c, Decl(ttttWriteConstraintIntersectionProperty.ts, 5, 48))
+
+  const z: NonNullable<T["default"]> = c;
+>z : Symbol(z, Decl(ttttWriteConstraintIntersectionProperty.ts, 8, 7))
+>NonNullable : Symbol(NonNullable, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttWriteConstraintIntersectionProperty.ts, 5, 18))
+>c : Symbol(c, Decl(ttttWriteConstraintIntersectionProperty.ts, 5, 48))
+
+  const a: N["a"] = n;
+>a : Symbol(a, Decl(ttttWriteConstraintIntersectionProperty.ts, 9, 7))
+>N : Symbol(N, Decl(ttttWriteConstraintIntersectionProperty.ts, 5, 32))
+>n : Symbol(n, Decl(ttttWriteConstraintIntersectionProperty.ts, 5, 56))
+
+  const b: N["b"] = n;
+>b : Symbol(b, Decl(ttttWriteConstraintIntersectionProperty.ts, 10, 7))
+>N : Symbol(N, Decl(ttttWriteConstraintIntersectionProperty.ts, 5, 32))
+>n : Symbol(n, Decl(ttttWriteConstraintIntersectionProperty.ts, 5, 56))
+}
+

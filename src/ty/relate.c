@@ -4734,7 +4734,7 @@ static Ternary generic_mapped_target_related(
     if (key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL)) {
         bool is_number = false;
         Atom const* name = key->kind == TY_LITERAL ? ty_property_name_of_key(me, key, &is_number) : nullptr;
-        if (name && ty_get_prop(me, object, name)) return false;
+        if (name && ty_property_of_type(me, object, name)) return false;
     }
     IndexInfo const* info = ty_applicable_index_info(me, object, key);
     return info && !(info->key->flags & TYF_NUMBER);
