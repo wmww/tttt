@@ -1,0 +1,64 @@
+//// [test/cases/npm_rocicorp_mono_TS2339.ts] ////
+
+=== npm_rocicorp_mono_TS2339.ts ===
+// origin: npm rocicorp/mono@main https://github.com/rocicorp/mono packages/zero-cache/tsconfig.json seed 20261401
+// flip: yes
+// A const array destructuring of a tuple union, `const [tag] = change`, narrows `change` by the destructured
+// discriminant in tsgo (switch (tag) / case 'begin' leaves the 'begin' tuple). tttt narrows only `tag`, so
+// `change[2]` stays the union of every third element (42 errors on zero-cache: TS2339, TS2532, TS2345...).
+type Change =
+>Change : Change
+
+  | ['begin', { tag: 'begin' }, { commitWatermark: string }]
+>tag : "begin"
+>commitWatermark : string
+
+  | ['data', { tag: 'insert' }]
+>tag : "insert"
+
+  | ['commit', { tag: 'commit' }, { watermark: string }];
+>tag : "commit"
+>watermark : string
+
+declare const changes: Change[];
+>changes : Change[]
+
+export function f() {
+>f : () => string | undefined
+
+  for (const change of changes) {
+>change : Change
+>changes : Change[]
+
+    const [tag] = change;
+>tag : "begin" | "commit" | "data"
+>change : Change
+
+    switch (tag) {
+>tag : "begin" | "commit" | "data"
+
+      case 'begin': {
+>'begin' : "begin"
+
+        const { commitWatermark } = change[2];
+>commitWatermark : string
+>change[2] : { commitWatermark: string; }
+>change : ["begin", { tag: 'begin'; }, { commitWatermark: string; }]
+>2 : 2
+
+        return commitWatermark;
+>commitWatermark : string
+      }
+      case 'commit':
+>'commit' : "commit"
+
+        return change[2].watermark;
+>change[2].watermark : string
+>change[2] : { watermark: string; }
+>change : ["commit", { tag: 'commit'; }, { watermark: string; }]
+>2 : 2
+>watermark : string
+    }
+  }
+}
+

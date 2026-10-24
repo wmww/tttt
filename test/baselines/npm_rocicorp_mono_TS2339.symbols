@@ -1,0 +1,59 @@
+//// [test/cases/npm_rocicorp_mono_TS2339.ts] ////
+
+=== npm_rocicorp_mono_TS2339.ts ===
+// origin: npm rocicorp/mono@main https://github.com/rocicorp/mono packages/zero-cache/tsconfig.json seed 20261401
+// flip: yes
+// A const array destructuring of a tuple union, `const [tag] = change`, narrows `change` by the destructured
+// discriminant in tsgo (switch (tag) / case 'begin' leaves the 'begin' tuple). tttt narrows only `tag`, so
+// `change[2]` stays the union of every third element (42 errors on zero-cache: TS2339, TS2532, TS2345...).
+type Change =
+>Change : Symbol(Change, Decl(npm_rocicorp_mono_TS2339.ts, 0, 0))
+
+  | ['begin', { tag: 'begin' }, { commitWatermark: string }]
+>tag : Symbol(tag, Decl(npm_rocicorp_mono_TS2339.ts, 6, 15))
+>commitWatermark : Symbol(commitWatermark, Decl(npm_rocicorp_mono_TS2339.ts, 6, 33))
+
+  | ['data', { tag: 'insert' }]
+>tag : Symbol(tag, Decl(npm_rocicorp_mono_TS2339.ts, 7, 14))
+
+  | ['commit', { tag: 'commit' }, { watermark: string }];
+>tag : Symbol(tag, Decl(npm_rocicorp_mono_TS2339.ts, 8, 16))
+>watermark : Symbol(watermark, Decl(npm_rocicorp_mono_TS2339.ts, 8, 35))
+
+declare const changes: Change[];
+>changes : Symbol(changes, Decl(npm_rocicorp_mono_TS2339.ts, 9, 13))
+>Change : Symbol(Change, Decl(npm_rocicorp_mono_TS2339.ts, 0, 0))
+
+export function f() {
+>f : Symbol(f, Decl(npm_rocicorp_mono_TS2339.ts, 9, 32))
+
+  for (const change of changes) {
+>change : Symbol(change, Decl(npm_rocicorp_mono_TS2339.ts, 11, 12))
+>changes : Symbol(changes, Decl(npm_rocicorp_mono_TS2339.ts, 9, 13))
+
+    const [tag] = change;
+>tag : Symbol(tag, Decl(npm_rocicorp_mono_TS2339.ts, 12, 11))
+>change : Symbol(change, Decl(npm_rocicorp_mono_TS2339.ts, 11, 12))
+
+    switch (tag) {
+>tag : Symbol(tag, Decl(npm_rocicorp_mono_TS2339.ts, 12, 11))
+
+      case 'begin': {
+        const { commitWatermark } = change[2];
+>commitWatermark : Symbol(commitWatermark, Decl(npm_rocicorp_mono_TS2339.ts, 15, 15))
+>change : Symbol(change, Decl(npm_rocicorp_mono_TS2339.ts, 11, 12))
+>2 : Symbol(2)
+
+        return commitWatermark;
+>commitWatermark : Symbol(commitWatermark, Decl(npm_rocicorp_mono_TS2339.ts, 15, 15))
+      }
+      case 'commit':
+        return change[2].watermark;
+>change[2].watermark : Symbol(watermark, Decl(npm_rocicorp_mono_TS2339.ts, 8, 35))
+>change : Symbol(change, Decl(npm_rocicorp_mono_TS2339.ts, 11, 12))
+>2 : Symbol(2)
+>watermark : Symbol(watermark, Decl(npm_rocicorp_mono_TS2339.ts, 8, 35))
+    }
+  }
+}
+

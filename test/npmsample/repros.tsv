@@ -72,3 +72,4 @@ npm_lightdash_TS2367	yes	lightdash@3.52.0	https://github.com/lightdash/lightdash
 npm__pentest-harness_cordis_TS2313	no	@pentest-harness/cordis@4.0.1	https://github.com/S1N6H/pentest-harness	94	97	TS2313 TS2456 TS2536
 npm_akashnetwork_console-api_TS2345	no	@akashnetwork/console-api@3.32.0	https://github.com/akash-network/console	3	19	TS2322 TS2345 TS2352 TS2877
 npm_akashnetwork_console-web_TS7022	no	@akashnetwork/console-web@3.31.0	https://github.com/akash-network/console	94	410	TS7022 TS7006 TS2339 TS2345
+npm_rocicorp_mono_TS2339	yes	rocicorp/mono@main	https://github.com/rocicorp/mono	0	42	+TS2322 +TS2339 +TS2345 +TS2349 +TS2532 +TS2722
