@@ -145,6 +145,8 @@ typedef struct SourceFile {
     u32 id;
     cstr canonical_path; // The canonical path of this file relative to the current working directory
     cstr contents;
+    // Whether contents holds "@link" anywhere: 0 not asked yet, 1 no, 2 yes (source_file_has_link_tag(), benign race: idempotent)
+    uint8_t has_link_tag;
     // Not 0: contents is a private read-only mapping of the file (source_text_map()), unmapped by source_file_drop()
     u32 text_mapping;
     // Offset of the first character of each line, for span_line_index(). Diagnostics are sorted and printed by line,

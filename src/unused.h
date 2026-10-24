@@ -45,6 +45,8 @@ extern thread_local u32 unused_marking_suppressed;
 void unused_mark_referenced(Scope const* scope, Symbol* found, u32 meaning);
 // The names of the file's JSDoc `{@link X}` tags are uses. Part of name resolution, before checking
 void unused_mark_jsdoc_links(SourceFile const* file);
+// Whether the file's text mentions "@link" at all (decided once): without it no statement's leading JSDoc has a link
+bool unused_file_has_link_tag(struct SourceFile const* file);
 void unused_mark_leading_jsdoc_links(struct Scope const* names, char const* statement_start, char const* file_start);
 // Everything registered in the file that nothing referenced
 void unused_report(SourceFile const* file, ErrorCtx* errs, u32 order); // order: its index among the checked files

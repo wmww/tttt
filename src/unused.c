@@ -1,3 +1,4 @@
+#define _GNU_SOURCE // memrchr
 #include "unused.h"
 #include <stdatomic.h>
 #include "scope.h"
@@ -390,6 +391,21 @@ void unused_mark_jsdoc_links(SourceFile const* file) {
     }
 }
 
+bool unused_file_has_link_tag(SourceFile const* file) {
+    SourceFile* f = (SourceFile*)file;
+    if (!f->has_link_tag) {
+        // (memchr for the '@' at vector speed, then compare: far fewer instructions than strstr over a megabyte of text)
+        char const* text = cstr_str(&f->contents);
+        char const* end = text + cstr_size(&f->contents);
+        uint8_t found = 1;
+        for (char const* at = text; (at = memchr(at, '@', end - at)); at++) {
+            if (end - at >= 5 && !memcmp(at, "@link", 5)) { found = 2; break; }
+        }
+        f->has_link_tag = found;
+    }
+    return f->has_link_tag == 2;
+}
+
 // The `{@link X}` tags of the JSDoc comments right before a statement in a block, resolved where the statement is: a
 // local only a link names is used (tsc resolves the link names of the node the JSDoc belongs to, from there). The
 // file's own statements' links are unused_mark_jsdoc_links()'s, which looks from the file's scope
@@ -400,10 +416,19 @@ void unused_mark_leading_jsdoc_links(Scope const* names, char const* statement_s
         while (at > file_start && (at[-1] == ' ' || at[-1] == '\t' || at[-1] == '\n' || at[-1] == '\r')) at--;
         if (at - file_start < 5 || at[-1] != '/' || at[-2] != '*') return;
         char const* open = at - 2;
-        while (open > file_start && !(open[0] == '/' && open[1] == '*')) open--;
-        if (open[0] != '/' || open[1] != '*') return;
+        // (memrchr/memchr: a long comment before every statement of a file with links is scanned at vector speed)
+        while (open >= file_start) {
+            char const* slash = memrchr(file_start, '/', open + 1 - file_start);
+            if (!slash) { open = file_start - 1; break; }
+            open = slash;
+            if (open[1] == '*') break;
+            open--;
+        }
+        if (open < file_start) return;
         bool jsdoc = open[2] == '*' && open[3] != '/';
         for (char const* p = open; jsdoc && p + 5 < at; p++) {
+            p = memchr(p, '@', at - 5 - p);
+            if (!p) break;
             if (memcmp(p, "@link", 5)) continue;
             char const* name = p + 5;
             if (!strncmp(name, "code", 4)) name += 4;

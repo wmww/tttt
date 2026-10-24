@@ -58,7 +58,9 @@ void block_lookup_names_as(Block const* me, Scope* names, ErrorCtx* errs) {
         flow->statement_list = &my statements;
         flow->lookup_statements = &my statements;
         // (A JSDoc `{@link x}` before it names x from here: see unused_mark_leading_jsdoc_links())
-        if (names->kind != SCOPE_MODULE && names->kind != SCOPE_SCRIPT && span_valid(i->span) && span_source(i->span)) {
+        if (names->kind != SCOPE_MODULE && names->kind != SCOPE_SCRIPT && span_valid(i->span) && span_source(i->span) &&
+            unused_file_has_link_tag(span_source(i->span))
+        ) {
             unused_mark_leading_jsdoc_links(names, span_start_ptr(i->span), cstr_str(&span_source(i->span)->contents));
         }
         statement_resolve_names(i, names, errs);
