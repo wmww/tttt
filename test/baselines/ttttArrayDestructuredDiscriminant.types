@@ -1,0 +1,106 @@
+//// [test/cases/ttttArrayDestructuredDiscriminant.ts] ////
+
+=== ttttArrayDestructuredDiscriminant.ts ===
+// A const array pattern element (or a numeric key of an object pattern) of an unannotated variable is a discriminant alias of
+// its initializer: `const [t] = c; if (t === "a") c[2]` narrows c (tsc's getCandidateDiscriminantPropertyAccess)
+type C = ['a', 1, string] | ['b', 2, number];
+>C : C
+
+declare const o: { c: C };
+>o : { c: C; }
+>c : C
+
+export function f(c: C, d: [0, 'x', string] | [1, 'y', number]) {
+>f : (c: C, d: [0, 'x', string] | [1, 'y', number]) => void
+>c : C
+>d : [0, "x", string] | [1, "y", number]
+
+  const [t] = c;
+>t : "a" | "b"
+>c : C
+
+  if (t === 'a') { const s: string = c[2]; }
+>t === 'a' : boolean
+>t : "a" | "b"
+>'a' : "a"
+>s : string
+>c[2] : string
+>c : ["a", 1, string]
+>2 : 2
+
+  const [, k] = d;
+>k : "x" | "y"
+>d : [0, "x", string] | [1, "y", number]
+
+  if (k === 'x') { const s: string = d[2]; }
+>k === 'x' : boolean
+>k : "x" | "y"
+>'x' : "x"
+>s : string
+>d[2] : string
+>d : [0, "x", string]
+>2 : 2
+
+  const [u] = o.c;
+>u : "a" | "b"
+>o.c : C
+>o : { c: C; }
+>c : C
+
+  if (u === 'b') { const n: number = o.c[2]; }
+>u === 'b' : boolean
+>u : "a" | "b"
+>'b' : "b"
+>n : number
+>o.c[2] : number
+>o.c : ["b", 2, number]
+>o : { c: C; }
+>c : ["b", 2, number]
+>2 : 2
+
+  let [v] = c;
+>v : "a" | "b"
+>c : C
+
+  if (v === 'a') { const s: string = c[2]; }
+>v === 'a' : boolean
+>v : "a" | "b"
+>'a' : "a"
+>s : string
+>c[2] : string | number
+>c : C
+>2 : 2
+
+  const [[w]] = [c];
+>w : "a" | "b"
+>[c] : [C]
+>c : C
+
+  const [x = 'a'] = c;
+>x : "a" | "b"
+>'a' : "a"
+>c : C
+
+  if (x === 'a') { const s: string = c[2]; }
+>x === 'a' : boolean
+>x : "a" | "b"
+>'a' : "a"
+>s : string
+>c[2] : string | number
+>c : C
+>2 : 2
+
+  const { 0: y } = c;
+>y : "a" | "b"
+>c : C
+
+  if (y === 'a') { const s: string = c[2]; }
+>y === 'a' : boolean
+>y : "a" | "b"
+>'a' : "a"
+>s : string
+>c[2] : string
+>c : ["a", 1, string]
+>2 : 2
+}
+

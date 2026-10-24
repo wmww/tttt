@@ -1,0 +1,88 @@
+//// [test/cases/ttttArrayDestructuredDiscriminant.ts] ////
+
+=== ttttArrayDestructuredDiscriminant.ts ===
+// A const array pattern element (or a numeric key of an object pattern) of an unannotated variable is a discriminant alias of
+// its initializer: `const [t] = c; if (t === "a") c[2]` narrows c (tsc's getCandidateDiscriminantPropertyAccess)
+type C = ['a', 1, string] | ['b', 2, number];
+>C : Symbol(C, Decl(ttttArrayDestructuredDiscriminant.ts, 0, 0))
+
+declare const o: { c: C };
+>o : Symbol(o, Decl(ttttArrayDestructuredDiscriminant.ts, 3, 13))
+>c : Symbol(c, Decl(ttttArrayDestructuredDiscriminant.ts, 3, 18))
+>C : Symbol(C, Decl(ttttArrayDestructuredDiscriminant.ts, 0, 0))
+
+export function f(c: C, d: [0, 'x', string] | [1, 'y', number]) {
+>f : Symbol(f, Decl(ttttArrayDestructuredDiscriminant.ts, 3, 26))
+>c : Symbol(c, Decl(ttttArrayDestructuredDiscriminant.ts, 4, 18))
+>C : Symbol(C, Decl(ttttArrayDestructuredDiscriminant.ts, 0, 0))
+>d : Symbol(d, Decl(ttttArrayDestructuredDiscriminant.ts, 4, 23))
+
+  const [t] = c;
+>t : Symbol(t, Decl(ttttArrayDestructuredDiscriminant.ts, 5, 9))
+>c : Symbol(c, Decl(ttttArrayDestructuredDiscriminant.ts, 4, 18))
+
+  if (t === 'a') { const s: string = c[2]; }
+>t : Symbol(t, Decl(ttttArrayDestructuredDiscriminant.ts, 5, 9))
+>s : Symbol(s, Decl(ttttArrayDestructuredDiscriminant.ts, 6, 24))
+>c : Symbol(c, Decl(ttttArrayDestructuredDiscriminant.ts, 4, 18))
+>2 : Symbol(2)
+
+  const [, k] = d;
+>k : Symbol(k, Decl(ttttArrayDestructuredDiscriminant.ts, 7, 10))
+>d : Symbol(d, Decl(ttttArrayDestructuredDiscriminant.ts, 4, 23))
+
+  if (k === 'x') { const s: string = d[2]; }
+>k : Symbol(k, Decl(ttttArrayDestructuredDiscriminant.ts, 7, 10))
+>s : Symbol(s, Decl(ttttArrayDestructuredDiscriminant.ts, 8, 24))
+>d : Symbol(d, Decl(ttttArrayDestructuredDiscriminant.ts, 4, 23))
+>2 : Symbol(2)
+
+  const [u] = o.c;
+>u : Symbol(u, Decl(ttttArrayDestructuredDiscriminant.ts, 9, 9))
+>o.c : Symbol(c, Decl(ttttArrayDestructuredDiscriminant.ts, 3, 18))
+>o : Symbol(o, Decl(ttttArrayDestructuredDiscriminant.ts, 3, 13))
+>c : Symbol(c, Decl(ttttArrayDestructuredDiscriminant.ts, 3, 18))
+
+  if (u === 'b') { const n: number = o.c[2]; }
+>u : Symbol(u, Decl(ttttArrayDestructuredDiscriminant.ts, 9, 9))
+>n : Symbol(n, Decl(ttttArrayDestructuredDiscriminant.ts, 10, 24))
+>o.c : Symbol(c, Decl(ttttArrayDestructuredDiscriminant.ts, 3, 18))
+>o : Symbol(o, Decl(ttttArrayDestructuredDiscriminant.ts, 3, 13))
+>c : Symbol(c, Decl(ttttArrayDestructuredDiscriminant.ts, 3, 18))
+>2 : Symbol(2)
+
+  let [v] = c;
+>v : Symbol(v, Decl(ttttArrayDestructuredDiscriminant.ts, 11, 7))
+>c : Symbol(c, Decl(ttttArrayDestructuredDiscriminant.ts, 4, 18))
+
+  if (v === 'a') { const s: string = c[2]; }
+>v : Symbol(v, Decl(ttttArrayDestructuredDiscriminant.ts, 11, 7))
+>s : Symbol(s, Decl(ttttArrayDestructuredDiscriminant.ts, 12, 24))
+>c : Symbol(c, Decl(ttttArrayDestructuredDiscriminant.ts, 4, 18))
+>2 : Symbol(2)
+
+  const [[w]] = [c];
+>w : Symbol(w, Decl(ttttArrayDestructuredDiscriminant.ts, 13, 10))
+>c : Symbol(c, Decl(ttttArrayDestructuredDiscriminant.ts, 4, 18))
+
+  const [x = 'a'] = c;
+>x : Symbol(x, Decl(ttttArrayDestructuredDiscriminant.ts, 14, 9))
+>c : Symbol(c, Decl(ttttArrayDestructuredDiscriminant.ts, 4, 18))
+
+  if (x === 'a') { const s: string = c[2]; }
+>x : Symbol(x, Decl(ttttArrayDestructuredDiscriminant.ts, 14, 9))
+>s : Symbol(s, Decl(ttttArrayDestructuredDiscriminant.ts, 15, 24))
+>c : Symbol(c, Decl(ttttArrayDestructuredDiscriminant.ts, 4, 18))
+>2 : Symbol(2)
+
+  const { 0: y } = c;
+>y : Symbol(y, Decl(ttttArrayDestructuredDiscriminant.ts, 16, 9))
+>c : Symbol(c, Decl(ttttArrayDestructuredDiscriminant.ts, 4, 18))
+
+  if (y === 'a') { const s: string = c[2]; }
+>y : Symbol(y, Decl(ttttArrayDestructuredDiscriminant.ts, 16, 9))
+>s : Symbol(s, Decl(ttttArrayDestructuredDiscriminant.ts, 17, 24))
+>c : Symbol(c, Decl(ttttArrayDestructuredDiscriminant.ts, 4, 18))
+>2 : Symbol(2)
+}
+

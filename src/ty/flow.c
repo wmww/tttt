@@ -2159,11 +2159,17 @@ static Atom const* pattern_element_name(Checker* me, Binding const* pattern, Sym
         return ty_index_atom(me, (u32)binding->parent_index);
     }
     ObjectBindingItem const* item = binding->parent_item;
-    if (!item || item->computed_key || item->source.tag != VALUE_STRING) return nullptr;
+    if (!item || item->computed_key) return nullptr;
+    // (`{ 0: tag }` names element 0, like `[tag]`)
+    if (item->source.tag == VALUE_NUMBER) {
+        f64 n = item->source.number;
+        return n >= 0 && n < 4294967295.0 && n == (f64)(u32)n ? ty_index_atom(me, (u32)n) : nullptr;
+    }
+    if (item->source.tag != VALUE_STRING) return nullptr;
     return checker_atom(me, cstr_sv(&item->source.string));
 }
 
-// `const { kind } = x`, `const { kind: k } = x.y`: a const element of an unannotated variable's object pattern,
+// `const { kind } = x`, `const { kind: k } = x.y`, `const [tag] = x`: a const element of an unannotated variable's pattern,
 // without a default, whose initializer is the reference (tsc's getCandidateDiscriminantPropertyAccess). The name
 static Atom const* destructured_alias_name(FlowQuery* q, Expr const* expr) {
     Checker* me = q->me;
@@ -2172,15 +2178,15 @@ static Atom const* destructured_alias_name(FlowQuery* q, Expr const* expr) {
     if (!symbol || !symbol->is_const || symbol->decl_count != 1 || symbol->decls[0].kind != SYMBOL_DECL_VARIABLE) return nullptr;
     Binding const* binding = symbol->decls[0].node;
     Binding const* pattern = binding->parent;
-    if (!pattern || pattern->tag != BINDING_OBJECT || pattern->parent || binding->default_value || binding->rest) return nullptr;
+    if (!pattern || pattern->parent || binding->default_value || binding->rest) return nullptr;
     if (pattern->has_explicit_type || !pattern->source || pattern->source->tag != LAZY_TYPE_INITIALIZED_BINDING) return nullptr;
-    ObjectBindingItem const* item = binding->parent_item;
-    if (!item || item->computed_key || item->source.tag != VALUE_STRING) return nullptr;
+    Atom const* name = pattern_element_name(me, pattern, symbol);
+    if (!name) return nullptr;
     InitializedBinding const* initialized = c_container_of(pattern->source, InitializedBinding, lazy_type);
     Expr const* init = initialized_binding_value(initialized);
     if (init->tag != EXPR_IDENTIFIER && init->tag != EXPR_PROPERTY) return nullptr;
     if (!query_matches(q, init)) return nullptr;
-    return checker_atom(me, cstr_sv(&item->source.string));
+    return name;
 }
 
 // The type whose properties tell whether a name is a discriminant: the declared type while the computed one is a subset
