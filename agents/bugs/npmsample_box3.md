@@ -129,4 +129,9 @@ for flips); a separate file so the three boxes never conflict.
   ty/lower.c alias_instance(), `check(count <= c_arraylen(stack_key))`: the alias-instance intern key is a fixed
   32-word stack array (2 + the argument count), and xstate 6's `Next_MachineConfig` has 36 type parameters. tsgo
   reports 2 errors there. Fix: a heap (or arena) key when the arguments outrun the array, as other intern keys do.
-  Repro test/cases/npm__lute-lang_player_crash.ts (a 32-parameter alias). [flip] [open]
+  Repro test/cases/npm__lute-lang_player_crash.ts (a 32-parameter alias). [crash] [open]
+- Seed 20261212, cfdude/mcp-namecheap (mcp-namecheap@1.0.0): spurious TS2883 "The inferred type of '(Missing)'
+  cannot be named without a reference to 'Server'..." in a `// @ts-nocheck` file under declaration: true. tsgo
+  reports no diagnostics for a nocheck file, declaration diagnostics included, and tttt's declaration walk reports
+  them anyway. A second oddity: the anonymous `export default function` is named '(Missing)'. Repro
+  test/cases/npm_mcp-namecheap_TS2883.ts (reduce.py, then by hand). [flip] [open]

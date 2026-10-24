@@ -1,0 +1,34 @@
+//// [test/cases/npm_mcp-namecheap_TS2883.ts] ////
+
+=== node_modules/sdk/dist/server/index.d.ts ===
+export declare class Server { x: number }
+>Server : Server
+>x : number
+
+=== node_modules/sdk/dist/server/mcp.d.ts ===
+import { Server } from './index.js';
+>Server : typeof Server
+
+export declare class McpServer {
+>McpServer : McpServer
+
+    readonly server: Server;
+>server : Server
+}
+=== src/index.ts ===
+// @ts-nocheck - the SDK's types are too deep
+import { McpServer } from "sdk/server/mcp.js";
+>McpServer : typeof McpServer
+
+export default function () {
+  const server = new McpServer();
+>server : McpServer
+>new McpServer() : McpServer
+>McpServer : typeof McpServer
+
+  return server.server;
+>server.server : import("../node_modules/sdk/dist/server").Server
+>server : McpServer
+>server : import("../node_modules/sdk/dist/server").Server
+}
+
