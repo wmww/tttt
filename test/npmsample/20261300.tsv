@@ -1,0 +1,13 @@
+0000-ahpxex-read-aware#apps/landing	0000-ahpxex-read-aware/apps/landing/tsconfig.bench.json
+0000-ahpxex-read-aware#packages/ui	0000-ahpxex-read-aware/packages/ui/tsconfig.bench.json
+0001-Zoo-Code-Org-Zoo-Code#src	0001-Zoo-Code-Org-Zoo-Code/src/tsconfig.bench.json
+0001-Zoo-Code-Org-Zoo-Code#webview-ui	0001-Zoo-Code-Org-Zoo-Code/webview-ui/tsconfig.bench.json
+0003-provos-ironcurtain#packages/web-ui	0003-provos-ironcurtain/packages/web-ui/tsconfig.bench.json
+0003-provos-ironcurtain#packages/memory-mcp-server	0003-provos-ironcurtain/packages/memory-mcp-server/tsconfig.bench.json
+0004-lklynet-aurral#.	0004-lklynet-aurral/tsconfig.bench.json
+0005-tiann-hapi#web	0005-tiann-hapi/web/tsconfig.bench.json
+0005-tiann-hapi#cli	0005-tiann-hapi/cli/tsconfig.bench.json
+0006-madarco-agentbox#packages/config	0006-madarco-agentbox/packages/config/tsconfig.bench.json
+0006-madarco-agentbox#packages/core	0006-madarco-agentbox/packages/core/tsconfig.bench.json
+0007-jesec-flood#.	0007-jesec-flood/tsconfig.bench.json
+0008-github-gh-aw-firewall#.	0008-github-gh-aw-firewall/tsconfig.bench.json

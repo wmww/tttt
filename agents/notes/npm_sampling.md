@@ -128,3 +128,7 @@ full_name, `version` = default branch, plus `large`, `stars`, `size_kb`, `ts_byt
   deletes it once all its sub-projects compared `same`.
 - Cost: one root install of a big monorepo is the expensive step (minutes, GBs); K sub-projects share it. Results of
   a large batch are biased toward big, workspace-heavy code; say so.
+- First run, seed 20261300 (`sample --large -n 20`, then `setup --large -N 4 --per-repo 2 -j 4`, `compare`): sample
+  63 min without a token (the languages API limit, and the machine's other GitHub users share the 60/h); setup 1m48
+  for 9 repositories (8 projects over 7 repos accepted, 1 rejected by the trial; overshoot of N as before); compare
+  13 s for 13 projects: 11 byte-identical, 2 with extra tttt TS2322/TS2345 (Zoo-Code webview-ui, aurral).
