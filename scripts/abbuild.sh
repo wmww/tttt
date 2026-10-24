@@ -30,9 +30,10 @@ if test "${1:-}" = --clean; then
         test -d "$d" || continue
         d=${d%/}
         # (Never one a process runs in or from: an oracle on a frozen tree, a build)
-        busy=$(for p in /proc/[0-9]*; do
+        # (the loop's last readlink failing on a vanished process must not fail the pipeline under pipefail)
+        busy=$({ for p in /proc/[0-9]*; do
             for l in "$p/cwd" "$p/exe"; do r=$(readlink "$l" 2>/dev/null) && case "$r/" in "$d/"*) echo "${p#/proc/}";; esac; done
-        done | sort -u | head -3 | tr '\n' ' ')
+        done; true; } | sort -u | head -3 | tr '\n' ' ')
         if test -n "$busy"; then
             echo "keeping $d: in use (pid $busy)" >&2
         elif test "${2:-}" = all || test -z "$(find "$d/.used" -mmin -1440 2>/dev/null)"; then
