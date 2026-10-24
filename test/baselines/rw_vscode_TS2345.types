@@ -1,0 +1,115 @@
+//// [test/cases/rw_vscode_TS2345.ts] ////
+
+=== rw_vscode_TS2345.ts ===
+// origin: microsoft/vscode at 2bc7d5ab, src/vs/platform/agentHost/node/agentService.ts (src/tsconfig.json, noEmit)
+// flip: no
+// Spreading after an object with an index signature keeps only the index signatures both sides have (tsc's
+// getSpreadType: getUnionIndexInfos). A union member undefined of what is spread second merges like an object without
+// any (`{}` here, which then subtype-reduces the literal's union on widening), and so does `{}` of `{} | undefined`
+// (tryMergeUnionOfObjectTypeAndEmptyObject returns the empty object). tttt kept `{ [x: string]: string | null }`.
+type V = { readonly source: Readonly<Record<string, string | null>> } | undefined;
+>V : V
+>source : Readonly<Record<string, string | null>>
+
+declare const a: V;
+>a : V
+
+declare const c: boolean;
+>c : boolean
+
+declare function p(): string;
+>p : () => string
+
+declare function take(m: { values?: V }): void;
+>take : (m: { values?: V; }) => void
+>m : { values?: V; }
+>values : V
+
+const b = c ? { source: c ? { configValues: p() } : {} } : undefined;
+>b : { source: { configValues: string; } | { configValues?: undefined; }; } | undefined
+>c ? { source: c ? { configValues: p() } : {} } : undefined : { source: { configValues: string; } | {}; } | undefined
+>c : boolean
+>{ source: c ? { configValues: p() } : {} } : { source: { configValues: string; } | {}; }
+>source : { configValues: string; } | {}
+>c ? { configValues: p() } : {} : { configValues: string; } | {}
+>c : true
+>{ configValues: p() } : { configValues: string; }
+>configValues : string
+>p() : string
+>p : () => string
+>{} : {}
+>undefined : undefined
+
+const move = { values: a || b ? { source: { ...a?.source, ...b?.source } } : undefined };
+>move : { values: { source: {}; } | undefined; }
+>{ values: a || b ? { source: { ...a?.source, ...b?.source } } : undefined } : { values: { source: {} | { configValues: string; } | { configValues?: undefined; }; } | undefined; }
+>values : { source: {} | { configValues: string; } | { configValues?: undefined; }; } | undefined
+>a || b ? { source: { ...a?.source, ...b?.source } } : undefined : { source: {} | { configValues: string; } | { configValues?: undefined; }; } | undefined
+>a || b : { readonly source: Readonly<Record<string, string | null>>; } | { source: { configValues: string; } | { configValues?: undefined; }; } | undefined
+>a : V
+>b : { source: { configValues: string; } | { configValues?: undefined; }; } | undefined
+>{ source: { ...a?.source, ...b?.source } } : { source: {} | { configValues: string; } | { configValues?: undefined; }; }
+>source : {} | { configValues: string; } | { configValues?: undefined; }
+>{ ...a?.source, ...b?.source } : {} | { configValues: string; } | { configValues?: undefined; }
+>a?.source : Readonly<Record<string, string | null>> | undefined
+>a : V
+>source : Readonly<Record<string, string | null>> | undefined
+>b?.source : { configValues: string; } | { configValues?: undefined; } | undefined
+>b : { source: { configValues: string; } | { configValues?: undefined; }; } | undefined
+>source : { configValues: string; } | { configValues?: undefined; } | undefined
+>undefined : undefined
+
+take(move);
+>take(move) : void
+>take : (m: { values?: V; }) => void
+>move : { values: { source: {}; } | undefined; }
+
+declare const rec: Record<string, string>;
+>rec : Record<string, string>
+
+declare const recu: Record<string, string> | undefined;
+>recu : Record<string, string> | undefined
+
+declare const e: {} | undefined;
+>e : {} | undefined
+
+declare const eu: {} | null;
+>eu : {} | null
+
+declare const ou: object | undefined;
+>ou : object | undefined
+
+const x1 = { ...recu, ...e };
+>x1 : {}
+>{ ...recu, ...e } : {}
+>recu : Record<string, string> | undefined
+>e : {} | undefined
+
+const x2 = { ...rec, ...e };
+>x2 : {}
+>{ ...rec, ...e } : {}
+>rec : Record<string, string>
+>e : {} | undefined
+
+const x3 = { ...eu, ...rec };
+>x3 : {}
+>{ ...eu, ...rec } : {}
+>eu : {} | null
+>rec : Record<string, string>
+
+const x4 = { ...rec, ...ou };
+>x4 : { [x: string]: string; }
+>{ ...rec, ...ou } : { [x: string]: string; }
+>rec : Record<string, string>
+>ou : object | undefined
+
+const n1: number = x1; const n2: number = x2; const n3: number = x3; const n4: number = x4;
+>n1 : number
+>x1 : {}
+>n2 : number
+>x2 : {}
+>n3 : number
+>x3 : {}
+>n4 : number
+>x4 : { [x: string]: string; }
+

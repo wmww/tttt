@@ -1,0 +1,105 @@
+//// [test/cases/rw_vscode_TS2345.ts] ////
+
+=== rw_vscode_TS2345.ts ===
+// origin: microsoft/vscode at 2bc7d5ab, src/vs/platform/agentHost/node/agentService.ts (src/tsconfig.json, noEmit)
+// flip: no
+// Spreading after an object with an index signature keeps only the index signatures both sides have (tsc's
+// getSpreadType: getUnionIndexInfos). A union member undefined of what is spread second merges like an object without
+// any (`{}` here, which then subtype-reduces the literal's union on widening), and so does `{}` of `{} | undefined`
+// (tryMergeUnionOfObjectTypeAndEmptyObject returns the empty object). tttt kept `{ [x: string]: string | null }`.
+type V = { readonly source: Readonly<Record<string, string | null>> } | undefined;
+>V : Symbol(V, Decl(rw_vscode_TS2345.ts, 0, 0))
+>source : Symbol(source, Decl(rw_vscode_TS2345.ts, 6, 10))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+declare const a: V;
+>a : Symbol(a, Decl(rw_vscode_TS2345.ts, 7, 13))
+>V : Symbol(V, Decl(rw_vscode_TS2345.ts, 0, 0))
+
+declare const c: boolean;
+>c : Symbol(c, Decl(rw_vscode_TS2345.ts, 8, 13))
+
+declare function p(): string;
+>p : Symbol(p, Decl(rw_vscode_TS2345.ts, 8, 25))
+
+declare function take(m: { values?: V }): void;
+>take : Symbol(take, Decl(rw_vscode_TS2345.ts, 9, 29))
+>m : Symbol(m, Decl(rw_vscode_TS2345.ts, 10, 22))
+>values : Symbol(values, Decl(rw_vscode_TS2345.ts, 10, 26))
+>V : Symbol(V, Decl(rw_vscode_TS2345.ts, 0, 0))
+
+const b = c ? { source: c ? { configValues: p() } : {} } : undefined;
+>b : Symbol(b, Decl(rw_vscode_TS2345.ts, 11, 5))
+>c : Symbol(c, Decl(rw_vscode_TS2345.ts, 8, 13))
+>source : Symbol(source, Decl(rw_vscode_TS2345.ts, 11, 15))
+>c : Symbol(c, Decl(rw_vscode_TS2345.ts, 8, 13))
+>configValues : Symbol(configValues, Decl(rw_vscode_TS2345.ts, 11, 29))
+>p : Symbol(p, Decl(rw_vscode_TS2345.ts, 8, 25))
+>undefined : Symbol(undefined)
+
+const move = { values: a || b ? { source: { ...a?.source, ...b?.source } } : undefined };
+>move : Symbol(move, Decl(rw_vscode_TS2345.ts, 12, 5))
+>values : Symbol(values, Decl(rw_vscode_TS2345.ts, 12, 14))
+>a : Symbol(a, Decl(rw_vscode_TS2345.ts, 7, 13))
+>b : Symbol(b, Decl(rw_vscode_TS2345.ts, 11, 5))
+>source : Symbol(source, Decl(rw_vscode_TS2345.ts, 12, 33))
+>a?.source : Symbol(source, Decl(rw_vscode_TS2345.ts, 6, 10))
+>a : Symbol(a, Decl(rw_vscode_TS2345.ts, 7, 13))
+>source : Symbol(source, Decl(rw_vscode_TS2345.ts, 6, 10))
+>b?.source : Symbol(source, Decl(rw_vscode_TS2345.ts, 11, 15))
+>b : Symbol(b, Decl(rw_vscode_TS2345.ts, 11, 5))
+>source : Symbol(source, Decl(rw_vscode_TS2345.ts, 11, 15))
+>undefined : Symbol(undefined)
+
+take(move);
+>take : Symbol(take, Decl(rw_vscode_TS2345.ts, 9, 29))
+>move : Symbol(move, Decl(rw_vscode_TS2345.ts, 12, 5))
+
+declare const rec: Record<string, string>;
+>rec : Symbol(rec, Decl(rw_vscode_TS2345.ts, 15, 13))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+declare const recu: Record<string, string> | undefined;
+>recu : Symbol(recu, Decl(rw_vscode_TS2345.ts, 16, 13))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+declare const e: {} | undefined;
+>e : Symbol(e, Decl(rw_vscode_TS2345.ts, 17, 13))
+
+declare const eu: {} | null;
+>eu : Symbol(eu, Decl(rw_vscode_TS2345.ts, 18, 13))
+
+declare const ou: object | undefined;
+>ou : Symbol(ou, Decl(rw_vscode_TS2345.ts, 19, 13))
+
+const x1 = { ...recu, ...e };
+>x1 : Symbol(x1, Decl(rw_vscode_TS2345.ts, 20, 5))
+>recu : Symbol(recu, Decl(rw_vscode_TS2345.ts, 16, 13))
+>e : Symbol(e, Decl(rw_vscode_TS2345.ts, 17, 13))
+
+const x2 = { ...rec, ...e };
+>x2 : Symbol(x2, Decl(rw_vscode_TS2345.ts, 21, 5))
+>rec : Symbol(rec, Decl(rw_vscode_TS2345.ts, 15, 13))
+>e : Symbol(e, Decl(rw_vscode_TS2345.ts, 17, 13))
+
+const x3 = { ...eu, ...rec };
+>x3 : Symbol(x3, Decl(rw_vscode_TS2345.ts, 22, 5))
+>eu : Symbol(eu, Decl(rw_vscode_TS2345.ts, 18, 13))
+>rec : Symbol(rec, Decl(rw_vscode_TS2345.ts, 15, 13))
+
+const x4 = { ...rec, ...ou };
+>x4 : Symbol(x4, Decl(rw_vscode_TS2345.ts, 23, 5))
+>rec : Symbol(rec, Decl(rw_vscode_TS2345.ts, 15, 13))
+>ou : Symbol(ou, Decl(rw_vscode_TS2345.ts, 19, 13))
+
+const n1: number = x1; const n2: number = x2; const n3: number = x3; const n4: number = x4;
+>n1 : Symbol(n1, Decl(rw_vscode_TS2345.ts, 24, 5))
+>x1 : Symbol(x1, Decl(rw_vscode_TS2345.ts, 20, 5))
+>n2 : Symbol(n2, Decl(rw_vscode_TS2345.ts, 24, 28))
+>x2 : Symbol(x2, Decl(rw_vscode_TS2345.ts, 21, 5))
+>n3 : Symbol(n3, Decl(rw_vscode_TS2345.ts, 24, 51))
+>x3 : Symbol(x3, Decl(rw_vscode_TS2345.ts, 22, 5))
+>n4 : Symbol(n4, Decl(rw_vscode_TS2345.ts, 24, 74))
+>x4 : Symbol(x4, Decl(rw_vscode_TS2345.ts, 23, 5))
+

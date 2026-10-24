@@ -64,6 +64,12 @@ passing tests).
   [open]
 
 ## Relations, instantiation, reduction
+- (det3, 2026-10-24) An object spread after one with an index signature kept it when what was spread second was
+  `{} | undefined` (tsc's tryMergeUnionOfObjectTypeAndEmptyObject returns the `{}`, whose missing index signature
+  getUnionIndexInfos then drops) or a union member undefined of the cross product (getSpreadType merges undefined like
+  an object without index signatures): microsoft/vscode at 2bc7d5ab, agentService.ts's two spurious TS2345 (the
+  literal's union subtype-reduces to `{}` in tsc on widening). spread_acc_type; test/cases/rw_vscode_TS2345.ts.
+  [fixed 2026-10-24]
 - (det, 2026-10-23, fixed; no cut-down repro) A generic function argument's instantiation in context ran its
   constraint check under whatever relation was in progress further up (`my relating`, ty_is_related_within): openclaw's
   zod `z.object({...}).transform(omitUndefinedFields)` (src/infra/restart-sentinel-store.ts) evaluated from inside an

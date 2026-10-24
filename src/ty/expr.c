@@ -4136,6 +4136,7 @@ static void spread_acc_type(Checker* me, SpreadAcc* acc, Ty const* type) {
     // A union of one object with things that spread into nothing is that object, every property optional (tsc's
     // tryMergeUnionOfObjectTypeAndEmptyObject)
     Ty const* partial = nullptr;
+    Ty const* empty = nullptr;
     if (members.len > 1) {
         u32 objects = 0;
         for (u32 i = 0; i < members.len; i++) {
@@ -4144,8 +4145,18 @@ static void spread_acc_type(Checker* me, SpreadAcc* acc, Ty const* type) {
                 partial = members.data[i];
             }
         }
-        if (objects == 0) return;
-        if (objects != 1) partial = nullptr;
+        // A union of only things that spread into nothing spreads its first empty object type, `{}` of `{} | undefined`,
+        // or `object` (tsc's tryMergeUnionOfObjectTypeAndEmptyObject: then getSpreadType keeps only the index
+        // signatures both sides have, none for `{}`, and returns the left side for `object`)
+        if (objects == 0) {
+            for (u32 i = 0; i < members.len && !empty; i++) {
+                Ty const* member = members.data[i];
+                if (member->flags & (TYF_OBJECT | TYF_NON_PRIMITIVE) || member->kind == TY_INTERSECTION) empty = member;
+            }
+            if (!empty) return;
+        }
+        if (objects > 1) partial = nullptr;
+        if (empty) members = (TyList){ .data = &empty, .len = 1 };
     }
     if (partial || members.len == 1) {
         Ty const* object = partial ? partial : members.data[0];
@@ -4184,7 +4195,12 @@ static void spread_acc_type(Checker* me, SpreadAcc* acc, Ty const* type) {
             SpreadAlt alt = spread_alt_clone(&acc->alts[i]);
             Ty const* member = members.data[j];
             if (!spreads_into_nothing(me, member)) spread_alt_type(me, &alt, member, false, acc->readonly);
-            else if (member->flags & (TYF_NULLABLE | TYF_VOID)) alt.nullable_spread = true;
+            else if (member->flags & (TYF_NULLABLE | TYF_VOID)) {
+                alt.nullable_spread = true;
+                // (tsc's getSpreadType merges null or undefined like an object, getUnionIndexInfos keeping the index
+                // signatures it has too: none. A generic left side is intersected with it instead, left alone here)
+                if (alt.part_count == 1 && !alt.parts[0].generic) alt.parts[0].object.index_count = 0;
+            }
             spread_acc_add_alt(&next, alt);
         }
         spread_alt_drop(&acc->alts[i]);

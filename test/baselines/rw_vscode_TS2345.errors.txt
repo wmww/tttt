@@ -1,0 +1,41 @@
+rw_vscode_TS2345.ts(25,7): error TS2322: Type '{}' is not assignable to type 'number'.
+rw_vscode_TS2345.ts(25,30): error TS2322: Type '{}' is not assignable to type 'number'.
+rw_vscode_TS2345.ts(25,53): error TS2322: Type '{}' is not assignable to type 'number'.
+rw_vscode_TS2345.ts(25,76): error TS2322: Type '{ [x: string]: string; }' is not assignable to type 'number'.
+
+
+==== rw_vscode_TS2345.ts (4 errors) ====
+    // origin: microsoft/vscode at 2bc7d5ab, src/vs/platform/agentHost/node/agentService.ts (src/tsconfig.json, noEmit)
+    // flip: no
+    // Spreading after an object with an index signature keeps only the index signatures both sides have (tsc's
+    // getSpreadType: getUnionIndexInfos). A union member undefined of what is spread second merges like an object without
+    // any (`{}` here, which then subtype-reduces the literal's union on widening), and so does `{}` of `{} | undefined`
+    // (tryMergeUnionOfObjectTypeAndEmptyObject returns the empty object). tttt kept `{ [x: string]: string | null }`.
+    type V = { readonly source: Readonly<Record<string, string | null>> } | undefined;
+    declare const a: V;
+    declare const c: boolean;
+    declare function p(): string;
+    declare function take(m: { values?: V }): void;
+    const b = c ? { source: c ? { configValues: p() } : {} } : undefined;
+    const move = { values: a || b ? { source: { ...a?.source, ...b?.source } } : undefined };
+    take(move);
+    
+    declare const rec: Record<string, string>;
+    declare const recu: Record<string, string> | undefined;
+    declare const e: {} | undefined;
+    declare const eu: {} | null;
+    declare const ou: object | undefined;
+    const x1 = { ...recu, ...e };
+    const x2 = { ...rec, ...e };
+    const x3 = { ...eu, ...rec };
+    const x4 = { ...rec, ...ou };
+    const n1: number = x1; const n2: number = x2; const n3: number = x3; const n4: number = x4;
+          ~~
+!!! error TS2322: Type '{}' is not assignable to type 'number'.
+                                 ~~
+!!! error TS2322: Type '{}' is not assignable to type 'number'.
+                                                        ~~
+!!! error TS2322: Type '{}' is not assignable to type 'number'.
+                                                                               ~~
+!!! error TS2322: Type '{ [x: string]: string; }' is not assignable to type 'number'.
+    
