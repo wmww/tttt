@@ -365,6 +365,9 @@ static u32 type_facts(Checker* me, Ty const* ty, u32 mask) {
     // Generic or not, like tsc's getTypeFacts: a mapping can be empty, a template like a non-empty literal
     if (flags & TYF_STRING_MAPPING) return primitive_facts(TF_TYPEOF_EQ_STRING, true, true);
     if (flags & TYF_TEMPLATE_LITERAL) return primitive_facts(TF_TYPEOF_EQ_STRING, true, false);
+    // (A substitution type, `NoInfer<X>` of an object X included, by its base constraint: the intersection of its base
+    // and constraint, tsc's getTypeFacts of an Instantiable type through computeBaseConstraint)
+    if (ty->kind == TY_SUBSTITUTION) return type_facts(me, ty_substitution_intersection(me, ty), mask);
     if (flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) {
         Ty const* constraint = ty_base_constraint(me, ty);
         if (!constraint || constraint == ty || (constraint->flags & (TYF_TYPE_PARAM | TYF_DEFERRED))) {
@@ -380,7 +383,13 @@ static u32 type_facts(Checker* me, Ty const* ty, u32 mask) {
     if (flags & TYF_INTERSECTION) {
         // A generic one goes by its base constraint as a whole (`string & T` with an object constraint is a string)
         bool generic = false;
-        for (u32 i = 0; i < ty->composite.types.len; i++) generic |= (ty->composite.types.data[i]->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) != 0;
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            Ty const* t = ty->composite.types.data[i];
+            // (A substitution type of a non-generic type, `NoInfer<X>` of an object X, isn't generic: its facts are
+            // its intersection's, see above)
+            if (t->kind == TY_SUBSTITUTION && !(ty_substitution_intersection(me, t)->flags & (TYF_TYPE_PARAM | TYF_DEFERRED))) continue;
+            generic |= (t->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) != 0;
+        }
         if (generic) {
             Ty const* constraint = ty_base_constraint(me, ty);
             if (!constraint) return TF_ALL & ~TF_IS_UNDEFINED_OR_NULL;

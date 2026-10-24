@@ -1,0 +1,30 @@
+ttttNoInferIntersectionDestructure.ts(7,57): error TS2322: Type 'string | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+ttttNoInferIntersectionDestructure.ts(8,48): error TS2322: Type 'string | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+ttttNoInferIntersectionDestructure.ts(9,70): error TS2322: Type 'string | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+
+
+==== ttttNoInferIntersectionDestructure.ts (3 errors) ====
+    // A substitution type of a non-generic type (`NoInfer<P>` instantiated with an object, which stays a substitution type:
+    // tsc's isNoInferTargetType) has the facts of its base: an intersection `Ctx & NoInfer<Props>` isn't possibly nullish,
+    // so destructuring it reads the property (styled-components' `${({ $align }) => ...}`, fui-fancyui)
+    type Props = { $align?: 'left' | 'right' };
+    interface Ctx { x?: number }
+    declare function call<P extends object>(s: string, cb: (ctx: Ctx & NoInfer<P>) => unknown): void;
+    call<Props>('a', ({ $align }) => { const z: [number] = [$align]; });
+                                                            ~~~~~~
+!!! error TS2322: Type 'string | undefined' is not assignable to type 'number'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'number'.
+    call<Props>('a', (c) => { const z: [number] = [c.$align]; });
+                                                   ~~~~~~~~
+!!! error TS2322: Type 'string | undefined' is not assignable to type 'number'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'number'.
+    call<Props>('a', (c) => { const { $align } = c; const z: [number] = [$align]; });
+                                                                         ~~~~~~
+!!! error TS2322: Type 'string | undefined' is not assignable to type 'number'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'number'.
+    
+    export {};
+    

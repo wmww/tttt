@@ -1,0 +1,55 @@
+//// [test/cases/ttttNoInferIntersectionDestructure.ts] ////
+
+=== ttttNoInferIntersectionDestructure.ts ===
+// A substitution type of a non-generic type (`NoInfer<P>` instantiated with an object, which stays a substitution type:
+// tsc's isNoInferTargetType) has the facts of its base: an intersection `Ctx & NoInfer<Props>` isn't possibly nullish,
+// so destructuring it reads the property (styled-components' `${({ $align }) => ...}`, fui-fancyui)
+type Props = { $align?: 'left' | 'right' };
+>Props : Props
+>$align : "left" | "right" | undefined
+
+interface Ctx { x?: number }
+>x : number | undefined
+
+declare function call<P extends object>(s: string, cb: (ctx: Ctx & NoInfer<P>) => unknown): void;
+>call : <P extends object>(s: string, cb: (ctx: Ctx & NoInfer<P>) => unknown) => void
+>s : string
+>cb : (ctx: Ctx & NoInfer<P>) => unknown
+>ctx : Ctx & NoInfer<P>
+
+call<Props>('a', ({ $align }) => { const z: [number] = [$align]; });
+>call<Props>('a', ({ $align }) => { const z: [number] = [$align]; }) : void
+>call : <P extends object>(s: string, cb: (ctx: Ctx & NoInfer<P>) => unknown) => void
+>'a' : "a"
+>({ $align }) => { const z: [number] = [$align]; } : ({ $align }: Ctx & NoInfer<Props>) => void
+>$align : "left" | "right" | undefined
+>z : [number]
+>[$align] : ["left" | "right" | undefined]
+>$align : "left" | "right" | undefined
+
+call<Props>('a', (c) => { const z: [number] = [c.$align]; });
+>call<Props>('a', (c) => { const z: [number] = [c.$align]; }) : void
+>call : <P extends object>(s: string, cb: (ctx: Ctx & NoInfer<P>) => unknown) => void
+>'a' : "a"
+>(c) => { const z: [number] = [c.$align]; } : (c: Ctx & NoInfer<Props>) => void
+>c : Ctx & NoInfer<Props>
+>z : [number]
+>[c.$align] : ["left" | "right" | undefined]
+>c.$align : "left" | "right" | undefined
+>c : Ctx & NoInfer<Props>
+>$align : "left" | "right" | undefined
+
+call<Props>('a', (c) => { const { $align } = c; const z: [number] = [$align]; });
+>call<Props>('a', (c) => { const { $align } = c; const z: [number] = [$align]; }) : void
+>call : <P extends object>(s: string, cb: (ctx: Ctx & NoInfer<P>) => unknown) => void
+>'a' : "a"
+>(c) => { const { $align } = c; const z: [number] = [$align]; } : (c: Ctx & NoInfer<Props>) => void
+>c : Ctx & NoInfer<Props>
+>$align : "left" | "right" | undefined
+>c : Ctx & NoInfer<Props>
+>z : [number]
+>[$align] : ["left" | "right" | undefined]
+>$align : "left" | "right" | undefined
+
+export {};
+
