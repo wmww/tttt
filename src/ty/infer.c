@@ -1421,7 +1421,11 @@ static void const* anonymous_declaration(Ty const* ty) {
 }
 
 static bool is_closely_matched(Ty const* source, Ty const* target) {
-    if (source->kind == TY_REFERENCE && target->kind == TY_REFERENCE && source->reference.target == target->reference.target) {
+    // (A tuple's target type has no symbol, so tuples of one arity aren't: `[{ ... }]` to `P | [boolean]` goes to P as
+    // directly as to [boolean], tsc's s.symbol === t.symbol; unified's `use(plugin, options)`)
+    if (source->kind == TY_REFERENCE && target->kind == TY_REFERENCE && source->reference.target == target->reference.target &&
+        !ty_tuple_shape(source)
+    ) {
         return true;
     }
     // (Instantiations of one type literal: tsc's isTypeCloselyMatchedBy, s.symbol === t.symbol)

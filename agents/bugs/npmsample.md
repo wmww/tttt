@@ -103,7 +103,11 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   [boolean])`): tsgo's inference takes P from the arguments (no excess property check against Options), tttt the
   plugin's parameters `[options?: Readonly<Options> | null | undefined]`. Cut-down probes without unified's Plugin
   conditional return type and CallableInstance base didn't reproduce. Repro test/cases/npm__nirholas_crypto-news_TS2345.ts
-  (11 files from reduce.py). (claimed: cor10) [open]
+  (11 files from reduce.py). (claimed: cor10) Cause: tttt's infer_to_union took two tuples of one arity as closely
+  matched (one tuple target), so `[{ detect, ignoreMissing }]` was used up by `[boolean]` and reached P only at the
+  naked-type-variable priority, below the plugin's contravariant candidate. tsc's isTypeCloselyMatchedBy needs a
+  symbol, which a tuple target lacks: the argument tuple goes to P directly, and the covariant inference wins. Fixed in
+  is_closely_matched (src/ty/infer.c). [fixed 2026-10-24]
 - Seed 20261028, tamagui/tamagui (@tamagui/codemod-flat-values@3.1.3, code/core/codemod-flat-values): spurious
   TS2339 "Property 'replaceWithText' does not exist on type 'never'" and TS2349 at src/transition.ts:302 (tsgo 0
   errors, tttt 2). `let node: A | B | null = null`, assigned in a loop after a type-predicate `continue`
