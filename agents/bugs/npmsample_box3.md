@@ -242,7 +242,7 @@ for flips); a separate file so the three boxes never conflict.
   element of an annotated pattern asks whether the initializer can be undefined (tsc's getBindingElementTypeFromParentType
   via getTypeOfInitializer = getTypeOfExpression, quick type first); tttt checked the whole call, callback included.
   Now ty_quick_expr_type() first (lower.c binding_assigned_type). Repro ttttAnnotatedPatternQuickInitializer. [flip]
-  [fixed PENDING]
+  [fixed 602d18e4c]
 - Seed 20261217, lambda-direct/datalayer (@lambda-team/datalayer@1.0.11, commit cc98e7158, root tsconfig.json):
   missing TS2345 at src/builders/highLvlBuilders/insertRequestBuilder.ts:63 "Argument of type '{ [name in keyof
   ExtractModel<TTable>]: AbstractColumn<ColumnType<{}>, true, false>; }' is not assignable to parameter of type '{
