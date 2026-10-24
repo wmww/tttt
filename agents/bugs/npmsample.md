@@ -396,7 +396,7 @@ K-dependent.
       string; }` (getIndexedAccessType reports on getReducedApparentType), tttt named the alias `ProjectAgent`.
       check.c report_no_property() takes ty_apparent_intersection_for_display() for a binding element. Test
       test/cases/rw_n8n_TS2339.ts. [fixed 17d84c588]
-    - TS2353 x9 with the EventEmitter truncation (as in nodes-base, below). [open]
+    - TS2353 x9 with the EventEmitter truncation (as in nodes-base, below). [fixed PENDING]
     - One TS2322 elaboration at promotion-binding-preflight.service.test.ts:83: `{ name: "w", nodes, ...overrides }` with
       `nodes: INode[]` (an unresolved module's type) and `overrides: Partial<Pick<WorkflowEntity, ...>>` (WorkflowEntity
       unresolved too). tsgo's head prints the spread's properties as their left declarations say (`nodes: INode[]`,
@@ -404,8 +404,8 @@ K-dependent.
       `{ name: any; nodes: any; settings?: any; }`); tttt prints `{ name: string; nodes: any; ... }` in both. Cut down
       (6 lines): `import type { Entity, INode } from "missing"; type Content = Pick<Entity, "name" | "nodes" | "settings">;
       function make(nodes: INode[], o: Partial<Content> = {}): { content: Content } { return { content: { name: "w",
-      nodes, ...o } }; }`. A printer question (how tsgo serializes a spread property with leftSpread/rightSpread links),
-      not investigated further. [open]
+      nodes, ...o } }; }` (test/cases/rw_n8n_TS2322.ts, known failing). A printer question (how tsgo serializes a spread
+      property with leftSpread/rightSpread links), not investigated further. [open]
 - n8n-nodes-base (packages/nodes-base, bench: composite -> false, declaration true; tsBuildInfoFile -> null): tsgo 7138 /
   tttt 7138, same (file, line, code), 8 text-only lines:
   - TS2684 x3 (Airtop agent.utils.ts:15, run.operation.ts:175, methods/index.ts:46): tsgo prints `body?: IDataObject`
@@ -415,10 +415,14 @@ K-dependent.
     has no undefined, so the name stays (a `?` parameter's does print any in tsgo). members.c leaves such a parameter's
     error type alone. Test test/cases/rw_n8n_nodes_base_TS2684.ts. [fixed 17d84c588]
   - TS2353 x5 (FormTriggerV2.node.test.ts:308, 437, 540, 597, 638): where the long target type is truncated, tsgo
-    `{ [EventEmitter.captureRejectionSymbol]?: ...; ... 105 more ...`, tttt names `off?: ...` instead. tsgo's
-    approximateLength must count the first member (`[EventEmitter.captureRejectionSymbol]?: (<K>(error: Error, event:
-    string | symbol, ...args: AnyRest) => void) | undefined`, a method of express's Request through a mapped type) as more
-    than tttt's display_over() does; needs an instrumented tsgo to see which part. [open]
+    `{ [EventEmitter.captureRejectionSymbol]?: ...; ... 105 more ...`, tttt names `off?: ...` instead. An
+    instrumented tsgo (approximateLength printed per member of createTypeNodesFromResolvedType) gave 164 after that
+    first member where tttt counted 128: the unique-symbol name. tsgo's addPropertyToElementList counts the escaped
+    name, "\xFE@" + name + "@" + a 15-digit symbol id (BlockIdOffset 2^48 plus a count), and the computed name, printed by
+    createExpressionFromSymbolChain, adds one more than each part's length (`EventEmitter.captureRejectionSymbol`: 13 +
+    23). ty_display.c prop_symbol_name_length() counted tsc 6's `__@name@` with six digits and the name's expression
+    nothing; now both like tsgo (approx_add_expression_text()). Test test/cases/rw_n8n_nodes_base_TS2353.ts; nodes-base is
+    byte-identical with tsgo now, cli's 9 too. [fixed PENDING]
 
 Seed 20269002 (fixF): vue (vuejs/core head, packages/vue) tsgo 5 / tttt 3, only the known pluginScoped.ts TS7006
 [design]; firecrawl and immich-server set up by hand (npmsample's trial rejected them on TS2307 counts from unbuilt

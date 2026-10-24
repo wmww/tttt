@@ -1,0 +1,74 @@
+//// [test/cases/rw_n8n_nodes_base_TS2353.ts] ////
+
+=== rw_n8n_nodes_base_TS2353.ts ===
+// origin: n8n-io/n8n at 3c7a553dc packages/nodes-base (named projects, seed 20269001), nodes/Form/test/FormTriggerV2.node.test.ts:308 (express's Request)
+// A unique-symbol-keyed member counts toward the truncation length as tsgo counts it: its escaped name ("\xFE@name@" and a
+// 15-digit symbol id) and the computed name's expression parts (createExpressionFromSymbolChain), so the long type is
+// cut after it.
+type AnyRest = [...args: any[]];
+>AnyRest : AnyRest
+
+declare class EventEmitter { static readonly captureRejectionSymbol: unique symbol; }
+>EventEmitter : EventEmitter
+>captureRejectionSymbol : unique symbol
+
+interface Big {
+    [EventEmitter.captureRejectionSymbol]?<K>(error: Error, event: string | symbol, ...args: AnyRest): void;
+>[EventEmitter.captureRejectionSymbol] : (<K>(error: Error, event: string | symbol, ...args: AnyRest) => void) | undefined
+>EventEmitter.captureRejectionSymbol : unique symbol
+>EventEmitter : typeof EventEmitter
+>captureRejectionSymbol : unique symbol
+>error : Error
+>event : string | symbol
+>args : AnyRest
+
+    off<K>(eventName: string | symbol, listener: (...args: any[]) => void): this;
+>off : <K>(eventName: string | symbol, listener: (...args: any[]) => void) => this
+>eventName : string | symbol
+>listener : (...args: any[]) => void
+>args : any[]
+
+    p0?: number;
+>p0 : number | undefined
+
+    p1?: number;
+>p1 : number | undefined
+
+    p2?: number;
+>p2 : number | undefined
+
+    p3?: number;
+>p3 : number | undefined
+
+    p4?: number;
+>p4 : number | undefined
+
+    p5?: number;
+>p5 : number | undefined
+
+    p6?: number;
+>p6 : number | undefined
+
+    p7?: number;
+>p7 : number | undefined
+
+    p8?: number;
+>p8 : number | undefined
+
+    p9?: number;
+>p9 : number | undefined
+
+    last?: number;
+>last : number | undefined
+}
+declare function f(r: { [K in keyof Big]?: Big[K] }): void;
+>f : (r: { [K in keyof Big]?: Big[K]; }) => void
+>r : { [EventEmitter.captureRejectionSymbol]?: (<K>(error: Error, event: string | symbol, ...args: AnyRest) => void) | undefined; off?: (<K>(eventName: string | symbol, listener: (...args: any[]) => void) => Big) | undefined; p0?: number; p1?: number; p2?: number; p3?: number; p4?: number; p5?: number; p6?: number; p7?: number; p8?: number; p9?: number; last?: number; }
+
+f({ contentType: 1 });
+>f({ contentType: 1 }) : void
+>f : (r: { [K in keyof Big]?: Big[K]; }) => void
+>{ contentType: 1 } : { contentType: number; }
+>contentType : number
+>1 : 1
+

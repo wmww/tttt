@@ -1,0 +1,36 @@
+//// [test/cases/rw_n8n_TS2322.ts] ////
+
+=== rw_n8n_TS2322.ts ===
+// origin: n8n-io/n8n at 3c7a553dc packages/cli (named projects, seed 20269001), promotion-binding-preflight.service.test.ts:83
+// Known failing (text only): tsgo's head prints a spread's properties by their left declarations (`nodes: INode[]`),
+// its chain line as the spread made them (`string | any` is any); tttt prints `nodes: any` in both
+import type { Entity, INode } from "missing-module";
+>Entity : Symbol(Entity, Decl(rw_n8n_TS2322.ts, 3, 13))
+>INode : Symbol(INode, Decl(rw_n8n_TS2322.ts, 3, 21))
+
+type Content = Pick<Entity, "name" | "nodes" | "settings">;
+>Content : Symbol(Content, Decl(rw_n8n_TS2322.ts, 3, 52))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>Entity : Symbol(Entity, Decl(rw_n8n_TS2322.ts, 3, 13))
+
+interface Inv { content: Content }
+>Inv : Symbol(Inv, Decl(rw_n8n_TS2322.ts, 4, 59))
+>content : Symbol(Inv.content, Decl(rw_n8n_TS2322.ts, 5, 15))
+>Content : Symbol(Content, Decl(rw_n8n_TS2322.ts, 3, 52))
+
+function make(nodes: INode[], overrides: Partial<Inv["content"]> = {}): Inv {
+>make : Symbol(make, Decl(rw_n8n_TS2322.ts, 5, 34))
+>nodes : Symbol(nodes, Decl(rw_n8n_TS2322.ts, 6, 14))
+>INode : Symbol(INode, Decl(rw_n8n_TS2322.ts, 3, 21))
+>overrides : Symbol(overrides, Decl(rw_n8n_TS2322.ts, 6, 29))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Inv : Symbol(Inv, Decl(rw_n8n_TS2322.ts, 4, 59))
+>Inv : Symbol(Inv, Decl(rw_n8n_TS2322.ts, 4, 59))
+
+    return { content: { name: "w", nodes, ...overrides } };
+>content : Symbol(content, Decl(rw_n8n_TS2322.ts, 7, 12))
+>name : Symbol(name, Decl(rw_n8n_TS2322.ts, 7, 23))
+>nodes : Symbol(nodes, Decl(rw_n8n_TS2322.ts, 7, 34))
+>overrides : Symbol(overrides, Decl(rw_n8n_TS2322.ts, 6, 29))
+}
+

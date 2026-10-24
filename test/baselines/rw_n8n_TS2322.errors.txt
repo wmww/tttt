@@ -1,0 +1,22 @@
+rw_n8n_TS2322.ts(4,36): error TS2307: Cannot find module 'missing-module' or its corresponding type declarations.
+rw_n8n_TS2322.ts(8,14): error TS2322: Type '{ name: string; nodes: INode[]; settings?: any; }' is not assignable to type 'Content'.
+  Property 'settings' is optional in type '{ name: any; nodes: any; settings?: any; }' but required in type 'Content'.
+
+
+==== rw_n8n_TS2322.ts (2 errors) ====
+    // origin: n8n-io/n8n at 3c7a553dc packages/cli (named projects, seed 20269001), promotion-binding-preflight.service.test.ts:83
+    // Known failing (text only): tsgo's head prints a spread's properties by their left declarations (`nodes: INode[]`),
+    // its chain line as the spread made them (`string | any` is any); tttt prints `nodes: any` in both
+    import type { Entity, INode } from "missing-module";
+                                       ~~~~~~~~~~~~~~~~
+!!! error TS2307: Cannot find module 'missing-module' or its corresponding type declarations.
+    type Content = Pick<Entity, "name" | "nodes" | "settings">;
+    interface Inv { content: Content }
+    function make(nodes: INode[], overrides: Partial<Inv["content"]> = {}): Inv {
+        return { content: { name: "w", nodes, ...overrides } };
+                 ~~~~~~~
+!!! error TS2322: Type '{ name: string; nodes: INode[]; settings?: any; }' is not assignable to type 'Content'.
+!!! error TS2322:   Property 'settings' is optional in type '{ name: any; nodes: any; settings?: any; }' but required in type 'Content'.
+!!! related TS6500 rw_n8n_TS2322.ts:6:17: The expected type comes from property 'content' which is declared here on type 'Inv'
+    }
+    

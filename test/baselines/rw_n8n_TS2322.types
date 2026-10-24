@@ -1,0 +1,32 @@
+//// [test/cases/rw_n8n_TS2322.ts] ////
+
+=== rw_n8n_TS2322.ts ===
+// origin: n8n-io/n8n at 3c7a553dc packages/cli (named projects, seed 20269001), promotion-binding-preflight.service.test.ts:83
+// Known failing (text only): tsgo's head prints a spread's properties by their left declarations (`nodes: INode[]`),
+// its chain line as the spread made them (`string | any` is any); tttt prints `nodes: any` in both
+import type { Entity, INode } from "missing-module";
+>Entity : any
+>INode : any
+
+type Content = Pick<Entity, "name" | "nodes" | "settings">;
+>Content : Content
+
+interface Inv { content: Content }
+>content : Content
+
+function make(nodes: INode[], overrides: Partial<Inv["content"]> = {}): Inv {
+>make : (nodes: INode[], overrides?: Partial<Inv["content"]>) => Inv
+>nodes : INode[]
+>overrides : Partial<Content>
+>{} : {}
+
+    return { content: { name: "w", nodes, ...overrides } };
+>{ content: { name: "w", nodes, ...overrides } } : { content: { name: string; nodes: INode[]; settings?: any; }; }
+>content : { name: string; nodes: INode[]; settings?: any; }
+>{ name: "w", nodes, ...overrides } : { name: string; nodes: INode[]; settings?: any; }
+>name : string
+>"w" : "w"
+>nodes : INode[]
+>overrides : Partial<Content>
+}
+

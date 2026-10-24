@@ -1509,9 +1509,33 @@ static void display_member_name(Checker* me, TyDisplay d, Prop const* prop) {
     else display_quoted_string(d, sv, single, true);
 }
 
+// What tsgo's createExpressionFromSymbolChain counts for a computed name it printed as `text`: each `.`-separated part
+// one more than its length, an element access part its length and two
+static void approx_add_expression_text(TyDisplay d, csview text) {
+    if (!d.approx) return;
+    u32 part = 0;
+    for (isize i = 0; i <= text.size; i++) {
+        if (i == text.size || text.buf[i] == '.' || text.buf[i] == '[') {
+            if (part) approx_add(d, part + 1);
+            part = 0;
+            if (i < text.size && text.buf[i] == '[') {
+                isize end = i;
+                while (end < text.size && text.buf[end] != ']') end++;
+                approx_add(d, (u32)(end - i - 1) + 2);
+                i = end;
+            }
+            continue;
+        }
+        part++;
+    }
+}
+
 static void display_prop_name(Checker* me, TyDisplay d, Atom const* name) {
     Ty const* unique = ty_unique_symbol_of_name(me, name);
     if (unique) {
+        // (The expression's parts count toward the truncation length, see approx_add_expression_text(): measured on
+        // what was written, so not where nothing is)
+        isize start = d.target ? cstr_size(d.target) + 1 : 0;
         out_lit(d, "[");
         // A computed name is an expression (tsc's symbolToExpression): a chain that would start at a module isn't
         // yielded, the variable prints by its bare name
@@ -1520,6 +1544,7 @@ static void display_prop_name(Checker* me, TyDisplay d, Atom const* name) {
             SymbolChain chain = display_chain_at(d, decl->owner, SYMBOL_VALUE, true);
             if (chain.len && chain.items[0]->is_module) {
                 out(d, span_sv(ty_symbol_display_name(decl->owner)));
+                approx_add_expression_text(d, span_sv(ty_symbol_display_name(decl->owner)));
                 out_lit(d, "]");
                 return;
             }
@@ -1528,6 +1553,9 @@ static void display_prop_name(Checker* me, TyDisplay d, Atom const* name) {
         // addPropertyToElementList makes it the enclosing declaration, `[Symbol.toStringTag]`)
         d.typeof_unique_symbols = false;
         out_unique_symbol_name(me, d, decl);
+        if (d.target && d.approx) {
+            approx_add_expression_text(d, csview_subview(cstr_sv(d.target), start, cstr_size(d.target) - start));
+        }
         out_lit(d, "]");
         return;
     }
@@ -5025,13 +5053,15 @@ static Binding const* setter_value_parameter(FunctionImpl const* setter) {
 }
 
 // What tsc's addPropertyToElementList counts for a property's name: its symbol's name, which for a unique symbol's is
-// `__@name@` and the symbol's id (taken as six digits)
+// "\xFE@name@" and the symbol's id
 static u32 prop_symbol_name_length(Checker* me, Atom const* name) {
     Ty const* unique = ty_unique_symbol_of_name(me, name);
     if (!unique) return (u32)atom_sv(name).size;
     UniqueSymbolDecl const* decl = unique->literal.unique;
     u32 own = span_valid(decl->member) ? (u32)decl->member.size : decl->owner ? (u32)ty_symbol_display_name(decl->owner).size : 0;
-    return 3 + own + 1 + 6;
+    // (tsgo's escaped name of a unique symbol, getESSymbolLikeTypeForNode: "\xFE@" + name + "@" + the symbol's id,
+    // which is BlockIdOffset (2^48) plus a small count, 15 digits)
+    return 2 + own + 1 + 15;
 }
 
 // tsgo's pseudo types (pseudo.h): where a declaration's type is printed (serializeTypeForDeclaration and
