@@ -10,7 +10,9 @@
 #                                                # `baseline_tests --summary --results-path THAT` lists what YOUR
 #                                                # change gained and lost, not main's unsaved drift
 #   scripts/abbuild.sh main --dir                # the export's root (to run scripts from there)
-#   scripts/abbuild.sh --clean                   # delete every build not used for a day (--clean all: every one)
+#   scripts/abbuild.sh --clean [MINUTES|all]     # delete every build not used for a day (MINUTES: that long; all: every one)
+#                                                # (each tree is ~15k inodes on /tmp's 1M-inode tmpfs: a bisect's ~8 trees
+#                                                # or several agents' gates fill it; clean with 30 between bisect steps)
 #
 # Builds are keyed by the tree hash (a --patch/--revert tree is written with a temporary index: a dangling tree
 # object, no ref), so equal trees share one build, and a lock (flock on /tmp/abbuild-<tree>.lock) makes two callers
@@ -36,7 +38,7 @@ if test "${1:-}" = --clean; then
         done; true; } | sort -u | head -3 | tr '\n' ' ')
         if test -n "$busy"; then
             echo "keeping $d: in use (pid $busy)" >&2
-        elif test "${2:-}" = all || test -z "$(find "$d/.used" -mmin -1440 2>/dev/null)"; then
+        elif test "${2:-}" = all || test -z "$(find "$d/.used" -mmin "-${2:-1440}" 2>/dev/null)"; then
             echo "removing $d" >&2
             ( flock 9; rm -rf "$d" ) 9> "$d.lock"
             rm -f "$d.lock"
