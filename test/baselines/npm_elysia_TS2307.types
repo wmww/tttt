@@ -1,0 +1,22 @@
+//// [test/cases/npm_elysia_TS2307.ts] ////
+
+=== /node_modules/selfpkg/dist/index.d.ts ===
+export declare class Elysia { get(path: string, h: string): this }
+>Elysia : Elysia
+>get : (path: string, h: string) => this
+>path : string
+>h : string
+
+=== /example/video.ts ===
+import { Elysia } from 'selfpkg'
+>Elysia : typeof Elysia
+
+new Elysia().get('/', 'x')
+>new Elysia().get('/', 'x') : Elysia
+>new Elysia().get : (path: string, h: string) => Elysia
+>new Elysia() : Elysia
+>Elysia : typeof Elysia
+>get : (path: string, h: string) => Elysia
+>'/' : "/"
+>'x' : "x"
+

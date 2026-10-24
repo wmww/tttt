@@ -1,0 +1,81 @@
+//// [test/cases/npm__ensnode_ensnode-sdk_TS2769.ts] ////
+
+=== npm__ensnode_ensnode-sdk_TS2769.ts ===
+// origin: npm @ensnode/ensnode-sdk@1.16.0 https://github.com/namehash/ensnode packages/ensnode-sdk/tsconfig.bench.json seed 20261110
+// flip: yes
+interface PriceEth { currency: "ETH"; amount: bigint }
+>PriceEth : Symbol(PriceEth, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 0, 0))
+>currency : Symbol(PriceEth.currency, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 2, 20))
+>amount : Symbol(PriceEth.amount, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 2, 37))
+
+interface PriceDai { currency: "DAI"; amount: bigint }
+>PriceDai : Symbol(PriceDai, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 2, 54))
+>currency : Symbol(PriceDai.currency, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 3, 20))
+>amount : Symbol(PriceDai.amount, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 3, 37))
+
+type Price = PriceEth | PriceDai;
+>Price : Symbol(Price, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 3, 54))
+>PriceEth : Symbol(PriceEth, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 0, 0))
+>PriceDai : Symbol(PriceDai, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 2, 54))
+
+export function addPrices<const PriceType extends Price = Price>(
+>addPrices : Symbol(addPrices, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 4, 33))
+>PriceType : Symbol(PriceType, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 6, 26))
+>Price : Symbol(Price, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 3, 54))
+>Price : Symbol(Price, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 3, 54))
+
+  ...prices: [PriceType, PriceType, ...PriceType[]]
+>prices : Symbol(prices, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 6, 65))
+>PriceType : Symbol(PriceType, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 6, 26))
+>PriceType : Symbol(PriceType, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 6, 26))
+>PriceType : Symbol(PriceType, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 6, 26))
+
+): PriceType {
+>PriceType : Symbol(PriceType, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 6, 26))
+
+  const firstPrice = prices[0];
+>firstPrice : Symbol(firstPrice, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 9, 7))
+>prices : Symbol(prices, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 6, 65))
+>0 : Symbol(0)
+
+  const { currency } = firstPrice;
+>currency : Symbol(currency, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 10, 9))
+>firstPrice : Symbol(firstPrice, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 9, 7))
+
+  return prices.reduce(
+>prices.reduce : Symbol(Array.reduce, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>prices : Symbol(prices, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 6, 65))
+>reduce : Symbol(Array.reduce, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+
+    (acc, price) => ({
+>acc : Symbol(acc, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 12, 5))
+>price : Symbol(price, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 12, 9))
+
+      amount: acc.amount + price.amount,
+>amount : Symbol(amount, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 12, 22))
+>acc.amount : Symbol(amount, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 16, 5))
+>acc : Symbol(acc, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 12, 5))
+>amount : Symbol(amount, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 16, 5))
+>price.amount : Symbol(amount, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 3, 37), Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 2, 37))
+>price : Symbol(price, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 12, 9))
+>amount : Symbol(amount, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 3, 37), Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 2, 37))
+
+      currency,
+>currency : Symbol(currency, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 13, 40))
+
+    }),
+    {
+      amount: 0n,
+>amount : Symbol(amount, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 16, 5))
+
+      currency: firstPrice.currency,
+>currency : Symbol(currency, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 17, 17))
+>firstPrice.currency : Symbol(currency, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 3, 20), Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 2, 20))
+>firstPrice : Symbol(firstPrice, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 9, 7))
+>currency : Symbol(currency, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 3, 20), Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 2, 20))
+
+    },
+  ) as PriceType;
+>PriceType : Symbol(PriceType, Decl(npm__ensnode_ensnode-sdk_TS2769.ts, 6, 26))
+}
+

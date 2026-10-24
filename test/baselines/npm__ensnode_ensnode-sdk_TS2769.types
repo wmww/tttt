@@ -1,0 +1,78 @@
+//// [test/cases/npm__ensnode_ensnode-sdk_TS2769.ts] ////
+
+=== npm__ensnode_ensnode-sdk_TS2769.ts ===
+// origin: npm @ensnode/ensnode-sdk@1.16.0 https://github.com/namehash/ensnode packages/ensnode-sdk/tsconfig.bench.json seed 20261110
+// flip: yes
+interface PriceEth { currency: "ETH"; amount: bigint }
+>currency : "ETH"
+>amount : bigint
+
+interface PriceDai { currency: "DAI"; amount: bigint }
+>currency : "DAI"
+>amount : bigint
+
+type Price = PriceEth | PriceDai;
+>Price : Price
+
+export function addPrices<const PriceType extends Price = Price>(
+>addPrices : <const PriceType extends Price = Price>(prices_0: PriceType, prices_1: PriceType, ...prices: PriceType[]) => PriceType
+
+  ...prices: [PriceType, PriceType, ...PriceType[]]
+>prices : [PriceType, PriceType, ...PriceType[]]
+
+): PriceType {
+  const firstPrice = prices[0];
+>firstPrice : PriceType
+>prices[0] : PriceType
+>prices : [PriceType, PriceType, ...PriceType[]]
+>0 : 0
+
+  const { currency } = firstPrice;
+>currency : "DAI" | "ETH"
+>firstPrice : Price
+
+  return prices.reduce(
+>prices.reduce(    (acc, price) => ({      amount: acc.amount + price.amount,      currency,    }),    {      amount: 0n,      currency: firstPrice.currency,    },  ) as PriceType : PriceType
+>prices.reduce(    (acc, price) => ({      amount: acc.amount + price.amount,      currency,    }),    {      amount: 0n,      currency: firstPrice.currency,    },  ) : { amount: bigint; currency: "DAI" | "ETH"; }
+>prices.reduce : { (callbackfn: (previousValue: PriceType, currentValue: PriceType, currentIndex: number, array: PriceType[]) => PriceType): PriceType; (callbackfn: (previousValue: PriceType, currentValue: PriceType, currentIndex: number, array: PriceType[]) => PriceType, initialValue: PriceType): PriceType; <U>(callbackfn: (previousValue: U, currentValue: PriceType, currentIndex: number, array: PriceType[]) => U, initialValue: U): U; }
+>prices : [PriceType, PriceType, ...PriceType[]]
+>reduce : { (callbackfn: (previousValue: PriceType, currentValue: PriceType, currentIndex: number, array: PriceType[]) => PriceType): PriceType; (callbackfn: (previousValue: PriceType, currentValue: PriceType, currentIndex: number, array: PriceType[]) => PriceType, initialValue: PriceType): PriceType; <U>(callbackfn: (previousValue: U, currentValue: PriceType, currentIndex: number, array: PriceType[]) => U, initialValue: U): U; }
+
+    (acc, price) => ({
+>(acc, price) => ({      amount: acc.amount + price.amount,      currency,    }) : (acc: { amount: bigint; currency: "DAI" | "ETH"; }, price: PriceType) => { amount: bigint; currency: "DAI" | "ETH"; }
+>acc : { amount: bigint; currency: "DAI" | "ETH"; }
+>price : PriceType
+>({      amount: acc.amount + price.amount,      currency,    }) : { amount: bigint; currency: "DAI" | "ETH"; }
+>{      amount: acc.amount + price.amount,      currency,    } : { amount: bigint; currency: "DAI" | "ETH"; }
+
+      amount: acc.amount + price.amount,
+>amount : bigint
+>acc.amount + price.amount : bigint
+>acc.amount : bigint
+>acc : { amount: bigint; currency: "DAI" | "ETH"; }
+>amount : bigint
+>price.amount : bigint
+>price : Price
+>amount : bigint
+
+      currency,
+>currency : "DAI" | "ETH"
+
+    }),
+    {
+>{      amount: 0n,      currency: firstPrice.currency,    } : { amount: bigint; currency: "DAI" | "ETH"; }
+
+      amount: 0n,
+>amount : bigint
+>0n : 0n
+
+      currency: firstPrice.currency,
+>currency : "DAI" | "ETH"
+>firstPrice.currency : "DAI" | "ETH"
+>firstPrice : Price
+>currency : "DAI" | "ETH"
+
+    },
+  ) as PriceType;
+}
+

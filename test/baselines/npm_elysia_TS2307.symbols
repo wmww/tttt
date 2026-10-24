@@ -1,0 +1,18 @@
+//// [test/cases/npm_elysia_TS2307.ts] ////
+
+=== /node_modules/selfpkg/dist/index.d.ts ===
+export declare class Elysia { get(path: string, h: string): this }
+>Elysia : Symbol(Elysia, Decl(index.d.ts, 0, 0))
+>get : Symbol(Elysia.get, Decl(index.d.ts, 0, 29))
+>path : Symbol(path, Decl(index.d.ts, 0, 34))
+>h : Symbol(h, Decl(index.d.ts, 0, 47))
+
+=== /example/video.ts ===
+import { Elysia } from 'selfpkg'
+>Elysia : Symbol(Elysia, Decl(video.ts, 0, 8))
+
+new Elysia().get('/', 'x')
+>new Elysia().get : Symbol(Elysia.get, Decl(index.d.ts, 0, 29))
+>Elysia : Symbol(Elysia, Decl(video.ts, 0, 8))
+>get : Symbol(Elysia.get, Decl(index.d.ts, 0, 29))
+
