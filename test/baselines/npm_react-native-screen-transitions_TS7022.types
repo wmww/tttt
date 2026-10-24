@@ -1,0 +1,65 @@
+//// [test/cases/npm_react-native-screen-transitions_TS7022.ts] ////
+
+=== npm_react-native-screen-transitions_TS7022.ts ===
+// origin: npm react-native-screen-transitions@4.0.0 https://github.com/eds2002/react-native-screen-transitions packages/react-native-screen-transitions/tsconfig.json seed 20261217
+// flip: yes
+// An annotated destructuring, `export const { useOptional, ... }: ReturnType<typeof createAnim> = createAnim(cb)`,
+// whose callback calls one of the destructured bindings. The annotation gives the bindings their types, so tsgo
+// sees no circularity. tttt reports TS7022/TS7024 (15 errors on the project, each provider of that shape).
+declare function createProvider(name: string): <P, V>(fn: (props: P) => V) => { Provider: (p: P) => null; useOptional: () => V | null; use: () => V };
+>createProvider : (name: string) => <P, V>(fn: (props: P) => V) => { Provider: (p: P) => null; useOptional: () => V | null; use: () => V; }
+>name : string
+>fn : (props: P) => V
+>props : P
+>Provider : (p: P) => null
+>p : P
+>useOptional : () => V | null
+>use : () => V
+
+type Ctx = { n: number };
+>Ctx : Ctx
+>n : number
+
+const createAnim = createProvider("A")<{}, Ctx>;
+>createAnim : (fn: (props: {}) => Ctx) => { Provider: (p: {}) => null; useOptional: () => Ctx | null; use: () => Ctx; }
+>createProvider("A")<{}, Ctx> : (fn: (props: {}) => Ctx) => { Provider: (p: {}) => null; useOptional: () => Ctx | null; use: () => Ctx; }
+>createProvider("A") : <P, V>(fn: (props: P) => V) => { Provider: (p: P) => null; useOptional: () => V | null; use: () => V; }
+>createProvider : (name: string) => <P, V>(fn: (props: P) => V) => { Provider: (p: P) => null; useOptional: () => V | null; use: () => V; }
+>"A" : "A"
+
+export const {
+  Provider,
+>Provider : (p: {}) => null
+
+  useOptional,
+>useOptional : () => Ctx | null
+
+  use,
+>use : () => Ctx
+
+}: ReturnType<typeof createAnim> = createAnim((_props) => {
+>createAnim : (fn: (props: {}) => Ctx) => { Provider: (p: {}) => null; useOptional: () => Ctx | null; use: () => Ctx; }
+>createAnim((_props) => {  const parent = useOptional();  return { n: parent ? parent.n + 1 : 0 };}) : { Provider: (p: {}) => null; useOptional: () => Ctx | null; use: () => Ctx; }
+>createAnim : (fn: (props: {}) => Ctx) => { Provider: (p: {}) => null; useOptional: () => Ctx | null; use: () => Ctx; }
+>(_props) => {  const parent = useOptional();  return { n: parent ? parent.n + 1 : 0 };} : (_props: {}) => { n: number; }
+>_props : {}
+
+  const parent = useOptional();
+>parent : Ctx | null
+>useOptional() : Ctx | null
+>useOptional : () => Ctx | null
+
+  return { n: parent ? parent.n + 1 : 0 };
+>{ n: parent ? parent.n + 1 : 0 } : { n: number; }
+>n : number
+>parent ? parent.n + 1 : 0 : number
+>parent : Ctx | null
+>parent.n + 1 : number
+>parent.n : number
+>parent : Ctx
+>n : number
+>1 : 1
+>0 : 0
+
+});
+

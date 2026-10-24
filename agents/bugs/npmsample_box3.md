@@ -228,3 +228,24 @@ for flips); a separate file so the three boxes never conflict.
   schema.ts:113, where tsgo also reports a depth diagnostic (TS5114 "Instantiations of type 'ZodType' appear
   infinitely circular"), which tttt reports too. An extra limit error next to tsgo's own, in the depth-limit family
   (paseo's write-up in npmsample.md). No repro. [design]
+- Seed 20261217, eds2002/react-native-screen-transitions (react-native-screen-transitions@4.0.0, commit 80e7a54d6,
+  packages/react-native-screen-transitions): tsgo 0 errors, tttt 15 (TS7022, TS7024, TS7006). `export const { A,
+  useOptional, ... }: ReturnType<typeof createX> = createX((props) => { const parent = useOptional(); ... })`, where
+  createX is an instantiation expression `createProvider(...)<P, V>`. The binding pattern's annotation types the
+  bindings, so reading one inside the initializer's callback isn't circular, and tttt treats it as circular.
+  Repro test/cases/npm_react-native-screen-transitions_TS7022.ts (by hand, 11 lines). [flip] [open]
+- Seed 20261217, lambda-direct/datalayer (@lambda-team/datalayer@1.0.11, commit cc98e7158, root tsconfig.json):
+  missing TS2345 at src/builders/highLvlBuilders/insertRequestBuilder.ts:63 "Argument of type '{ [name in keyof
+  ExtractModel<TTable>]: AbstractColumn<ColumnType<{}>, true, false>; }' is not assignable to parameter of type '{
+  [x: string]: Column<ColumnType<{}>, true, false>; }'" (a generic mapped type against an index signature).
+  tsgo 32, tttt 31, not a flip. Not K-dependent. No repro. [open]
+- Seed 20261217, googlechrome/lighthouse (tybrs-lighthouse@1.0.0, commit 1a4ffa418, root tsconfig.json, checkJs):
+  +7 in JavaScript: TS7008 "Member '_frameNavigations' implicitly has an 'any[]' type" at
+  core/gather/driver/network-monitor.js:60 and :89 (a `this._frameNavigations = []` member), TS2339 "Property
+  'level' does not exist on type '{ fingerprint: any[]; tags: any; }'" at core/lib/sentry.js:131 and :141 (a
+  JS object literal later given properties), and TS7022. tsgo 57, tttt 64, not a flip. No repro. [open]
+- Seed 20261217, izumiz-dev/react-flow-chart (@izumiz-dev/react-flow-chart@0.1.7, commit c7a97a7e0): tsgo's TS2615
+  in @types/styled-components index.d.ts:196 (the defaultProps ForwardRefExoticBase circularity, like
+  rocket-slate's npm__rocket-slate_mentions_TS2615) is missing, and tttt reports TS2313 "Type parameter 'P' has a
+  circular constraint" at lib.es5.d.ts:1584 instead. Probably the same root as rocket-slate's entry. Not a flip.
+  No repro. [open]

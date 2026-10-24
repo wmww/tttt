@@ -1,0 +1,63 @@
+//// [test/cases/npm_react-native-screen-transitions_TS7022.ts] ////
+
+=== npm_react-native-screen-transitions_TS7022.ts ===
+// origin: npm react-native-screen-transitions@4.0.0 https://github.com/eds2002/react-native-screen-transitions packages/react-native-screen-transitions/tsconfig.json seed 20261217
+// flip: yes
+// An annotated destructuring, `export const { useOptional, ... }: ReturnType<typeof createAnim> = createAnim(cb)`,
+// whose callback calls one of the destructured bindings. The annotation gives the bindings their types, so tsgo
+// sees no circularity. tttt reports TS7022/TS7024 (15 errors on the project, each provider of that shape).
+declare function createProvider(name: string): <P, V>(fn: (props: P) => V) => { Provider: (p: P) => null; useOptional: () => V | null; use: () => V };
+>createProvider : Symbol(createProvider, Decl(npm_react-native-screen-transitions_TS7022.ts, 0, 0))
+>name : Symbol(name, Decl(npm_react-native-screen-transitions_TS7022.ts, 5, 32))
+>P : Symbol(P, Decl(npm_react-native-screen-transitions_TS7022.ts, 5, 48))
+>V : Symbol(V, Decl(npm_react-native-screen-transitions_TS7022.ts, 5, 50))
+>fn : Symbol(fn, Decl(npm_react-native-screen-transitions_TS7022.ts, 5, 54))
+>props : Symbol(props, Decl(npm_react-native-screen-transitions_TS7022.ts, 5, 59))
+>P : Symbol(P, Decl(npm_react-native-screen-transitions_TS7022.ts, 5, 48))
+>V : Symbol(V, Decl(npm_react-native-screen-transitions_TS7022.ts, 5, 50))
+>Provider : Symbol(Provider, Decl(npm_react-native-screen-transitions_TS7022.ts, 5, 79))
+>p : Symbol(p, Decl(npm_react-native-screen-transitions_TS7022.ts, 5, 91))
+>P : Symbol(P, Decl(npm_react-native-screen-transitions_TS7022.ts, 5, 48))
+>useOptional : Symbol(useOptional, Decl(npm_react-native-screen-transitions_TS7022.ts, 5, 105))
+>V : Symbol(V, Decl(npm_react-native-screen-transitions_TS7022.ts, 5, 50))
+>use : Symbol(use, Decl(npm_react-native-screen-transitions_TS7022.ts, 5, 134))
+>V : Symbol(V, Decl(npm_react-native-screen-transitions_TS7022.ts, 5, 50))
+
+type Ctx = { n: number };
+>Ctx : Symbol(Ctx, Decl(npm_react-native-screen-transitions_TS7022.ts, 5, 150))
+>n : Symbol(n, Decl(npm_react-native-screen-transitions_TS7022.ts, 6, 12))
+
+const createAnim = createProvider("A")<{}, Ctx>;
+>createAnim : Symbol(createAnim, Decl(npm_react-native-screen-transitions_TS7022.ts, 7, 5))
+>createProvider : Symbol(createProvider, Decl(npm_react-native-screen-transitions_TS7022.ts, 0, 0))
+>Ctx : Symbol(Ctx, Decl(npm_react-native-screen-transitions_TS7022.ts, 5, 150))
+
+export const {
+  Provider,
+>Provider : Symbol(Provider, Decl(npm_react-native-screen-transitions_TS7022.ts, 8, 14))
+
+  useOptional,
+>useOptional : Symbol(useOptional, Decl(npm_react-native-screen-transitions_TS7022.ts, 9, 11))
+
+  use,
+>use : Symbol(use, Decl(npm_react-native-screen-transitions_TS7022.ts, 10, 14))
+
+}: ReturnType<typeof createAnim> = createAnim((_props) => {
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>createAnim : Symbol(createAnim, Decl(npm_react-native-screen-transitions_TS7022.ts, 7, 5))
+>createAnim : Symbol(createAnim, Decl(npm_react-native-screen-transitions_TS7022.ts, 7, 5))
+>_props : Symbol(_props, Decl(npm_react-native-screen-transitions_TS7022.ts, 12, 47))
+
+  const parent = useOptional();
+>parent : Symbol(parent, Decl(npm_react-native-screen-transitions_TS7022.ts, 13, 7))
+>useOptional : Symbol(useOptional, Decl(npm_react-native-screen-transitions_TS7022.ts, 9, 11))
+
+  return { n: parent ? parent.n + 1 : 0 };
+>n : Symbol(n, Decl(npm_react-native-screen-transitions_TS7022.ts, 14, 10))
+>parent : Symbol(parent, Decl(npm_react-native-screen-transitions_TS7022.ts, 13, 7))
+>parent.n : Symbol(n, Decl(npm_react-native-screen-transitions_TS7022.ts, 6, 12))
+>parent : Symbol(parent, Decl(npm_react-native-screen-transitions_TS7022.ts, 13, 7))
+>n : Symbol(n, Decl(npm_react-native-screen-transitions_TS7022.ts, 6, 12))
+
+});
+
