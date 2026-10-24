@@ -296,3 +296,8 @@ for flips); a separate file so the three boxes never conflict.
   with the same first lines, so it isn't console-web's DI-container TS7022 cascade. [open]
 - Large seed 20261403, akash-network/console@main, apps/api: spurious TS2877 at tsup.config.ts:1 ("This import uses
   a '.ts' extension ... not a relative path"), the same as latitude-llm's apps/web entry above. Not a flip. Re-checked at 7a1056d63 (seed 20261490, the same commit aa01c1469): byte-identical. [fixed ee1a75319]
+- Seed 20261218, wakaztahir/solid-staggered-grid (solid-staggered-grid@1.0.22, commit 4bf293019, root tsconfig.json):
+  missing TS2322 at lib/src/StaggeredGridItem.tsx:89 "Type '{ component: "div" | T; } & IntrinsicElements[T] & {
+  children: Element; }' is not assignable to type 'IntrinsicAttributes & DynamicProps<"div" | T, ...>'" (solid-js's
+  `<Dynamic component={...}>` with a generic element type T). tsgo 13, tttt 12, not a flip. Not K-dependent. No
+  repro. [open]
