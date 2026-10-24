@@ -1,0 +1,4044 @@
+//// [test/cases/npm__taiyakihitotsu_foxp_TS2344.ts] ////
+
+=== node_modules/@taiyakihitotsu/cion/dist/bit.d.ts ===
+import type * as Peano from "./peano.js";
+>Peano : Symbol(Peano, Decl(bit.d.ts, 0, 11))
+
+export type MAX = Peano.T16;
+>MAX : Symbol(MAX, Decl(bit.d.ts, 0, 41))
+>Peano : Symbol(Peano, Decl(bit.d.ts, 0, 11))
+>T16 : Symbol(Peano.T16, Decl(peano.d.ts, 2, 36))
+
+export type BitZero = BitPadding<"0", MAX>;
+>BitZero : Symbol(BitZero, Decl(bit.d.ts, 1, 28))
+>BitPadding : Symbol(BitPadding, Decl(bit.d.ts, 9, 66))
+>MAX : Symbol(MAX, Decl(bit.d.ts, 0, 41))
+
+export type BitAnd<B, C> = B extends `${infer BH}${infer BR}` ? C extends `${infer CH}${infer CR}` ? CH extends `1` ? BH extends `1` ? `1${BitAnd<BR, CR>}` : `0${BitAnd<BR, CR>}` : `0${BitAnd<BR, CR>}` : `` : ``;
+>BitAnd : Symbol(BitAnd, Decl(bit.d.ts, 2, 43))
+>B : Symbol(B, Decl(bit.d.ts, 3, 19))
+>C : Symbol(C, Decl(bit.d.ts, 3, 21))
+>B : Symbol(B, Decl(bit.d.ts, 3, 19))
+>BH : Symbol(BH, Decl(bit.d.ts, 3, 45))
+>BR : Symbol(BR, Decl(bit.d.ts, 3, 56))
+>C : Symbol(C, Decl(bit.d.ts, 3, 21))
+>CH : Symbol(CH, Decl(bit.d.ts, 3, 82))
+>CR : Symbol(CR, Decl(bit.d.ts, 3, 93))
+>CH : Symbol(CH, Decl(bit.d.ts, 3, 82))
+>BH : Symbol(BH, Decl(bit.d.ts, 3, 45))
+>BitAnd : Symbol(BitAnd, Decl(bit.d.ts, 2, 43))
+>BR : Symbol(BR, Decl(bit.d.ts, 3, 56))
+>CR : Symbol(CR, Decl(bit.d.ts, 3, 93))
+>BitAnd : Symbol(BitAnd, Decl(bit.d.ts, 2, 43))
+>BR : Symbol(BR, Decl(bit.d.ts, 3, 56))
+>CR : Symbol(CR, Decl(bit.d.ts, 3, 93))
+>BitAnd : Symbol(BitAnd, Decl(bit.d.ts, 2, 43))
+>BR : Symbol(BR, Decl(bit.d.ts, 3, 56))
+>CR : Symbol(CR, Decl(bit.d.ts, 3, 93))
+
+export type BitXor<B, C> = B extends `${infer BH}${infer BR}` ? C extends `${infer CH}${infer CR}` ? CH extends BH ? `0${BitXor<BR, CR>}` : `1${BitXor<BR, CR>}` : `` : ``;
+>BitXor : Symbol(BitXor, Decl(bit.d.ts, 3, 212))
+>B : Symbol(B, Decl(bit.d.ts, 4, 19))
+>C : Symbol(C, Decl(bit.d.ts, 4, 21))
+>B : Symbol(B, Decl(bit.d.ts, 4, 19))
+>BH : Symbol(BH, Decl(bit.d.ts, 4, 45))
+>BR : Symbol(BR, Decl(bit.d.ts, 4, 56))
+>C : Symbol(C, Decl(bit.d.ts, 4, 21))
+>CH : Symbol(CH, Decl(bit.d.ts, 4, 82))
+>CR : Symbol(CR, Decl(bit.d.ts, 4, 93))
+>CH : Symbol(CH, Decl(bit.d.ts, 4, 82))
+>BH : Symbol(BH, Decl(bit.d.ts, 4, 45))
+>BitXor : Symbol(BitXor, Decl(bit.d.ts, 3, 212))
+>BR : Symbol(BR, Decl(bit.d.ts, 4, 56))
+>CR : Symbol(CR, Decl(bit.d.ts, 4, 93))
+>BitXor : Symbol(BitXor, Decl(bit.d.ts, 3, 212))
+>BR : Symbol(BR, Decl(bit.d.ts, 4, 56))
+>CR : Symbol(CR, Decl(bit.d.ts, 4, 93))
+
+export type BitShiftLeftOne<B> = B extends `${infer H}` ? `${H}0` extends `${infer C}${infer D}` ? D : never : never;
+>BitShiftLeftOne : Symbol(BitShiftLeftOne, Decl(bit.d.ts, 4, 171))
+>B : Symbol(B, Decl(bit.d.ts, 5, 28))
+>B : Symbol(B, Decl(bit.d.ts, 5, 28))
+>H : Symbol(H, Decl(bit.d.ts, 5, 51))
+>H : Symbol(H, Decl(bit.d.ts, 5, 51))
+>C : Symbol(C, Decl(bit.d.ts, 5, 82))
+>D : Symbol(D, Decl(bit.d.ts, 5, 92))
+>D : Symbol(D, Decl(bit.d.ts, 5, 92))
+
+export type BitNot<B> = B extends `0` ? `1` : B extends `1` ? `0` : B extends `${infer H}${infer T}` ? `${BitNot<H>}${BitNot<T>}` : never;
+>BitNot : Symbol(BitNot, Decl(bit.d.ts, 5, 117))
+>B : Symbol(B, Decl(bit.d.ts, 6, 19))
+>B : Symbol(B, Decl(bit.d.ts, 6, 19))
+>B : Symbol(B, Decl(bit.d.ts, 6, 19))
+>B : Symbol(B, Decl(bit.d.ts, 6, 19))
+>H : Symbol(H, Decl(bit.d.ts, 6, 86))
+>T : Symbol(T, Decl(bit.d.ts, 6, 96))
+>BitNot : Symbol(BitNot, Decl(bit.d.ts, 5, 117))
+>H : Symbol(H, Decl(bit.d.ts, 6, 86))
+>BitNot : Symbol(BitNot, Decl(bit.d.ts, 5, 117))
+>T : Symbol(T, Decl(bit.d.ts, 6, 96))
+
+export type BitEq<B, C> = B extends "" ? C extends "" ? true : false : B extends `${infer HB}${infer TB}` ? C extends `${infer HC}${infer TC}` ? C extends B ? B extends C ? BitEq<TB, TC> : false : false : false : false;
+>BitEq : Symbol(BitEq, Decl(bit.d.ts, 6, 138))
+>B : Symbol(B, Decl(bit.d.ts, 7, 18))
+>C : Symbol(C, Decl(bit.d.ts, 7, 20))
+>B : Symbol(B, Decl(bit.d.ts, 7, 18))
+>C : Symbol(C, Decl(bit.d.ts, 7, 20))
+>B : Symbol(B, Decl(bit.d.ts, 7, 18))
+>HB : Symbol(HB, Decl(bit.d.ts, 7, 89))
+>TB : Symbol(TB, Decl(bit.d.ts, 7, 100))
+>C : Symbol(C, Decl(bit.d.ts, 7, 20))
+>HC : Symbol(HC, Decl(bit.d.ts, 7, 126))
+>TC : Symbol(TC, Decl(bit.d.ts, 7, 137))
+>C : Symbol(C, Decl(bit.d.ts, 7, 20))
+>B : Symbol(B, Decl(bit.d.ts, 7, 18))
+>B : Symbol(B, Decl(bit.d.ts, 7, 18))
+>C : Symbol(C, Decl(bit.d.ts, 7, 20))
+>BitEq : Symbol(BitEq, Decl(bit.d.ts, 6, 138))
+>TB : Symbol(TB, Decl(bit.d.ts, 7, 100))
+>TC : Symbol(TC, Decl(bit.d.ts, 7, 137))
+
+export type BitLen<B, count = Peano.T0> = B extends `${infer HB}${infer TB}` ? HB extends "0" | "1" ? BitLen<TB, Peano.inc<count>> : never : count;
+>BitLen : Symbol(BitLen, Decl(bit.d.ts, 7, 219))
+>B : Symbol(B, Decl(bit.d.ts, 8, 19))
+>count : Symbol(count, Decl(bit.d.ts, 8, 21))
+>Peano : Symbol(Peano, Decl(bit.d.ts, 0, 11))
+>T0 : Symbol(Peano.T0, Decl(peano.d.ts, 0, 0))
+>B : Symbol(B, Decl(bit.d.ts, 8, 19))
+>HB : Symbol(HB, Decl(bit.d.ts, 8, 60))
+>TB : Symbol(TB, Decl(bit.d.ts, 8, 71))
+>HB : Symbol(HB, Decl(bit.d.ts, 8, 60))
+>BitLen : Symbol(BitLen, Decl(bit.d.ts, 7, 219))
+>TB : Symbol(TB, Decl(bit.d.ts, 8, 71))
+>Peano : Symbol(Peano, Decl(bit.d.ts, 0, 11))
+>inc : Symbol(Peano.inc, Decl(peano.d.ts, 4, 108))
+>count : Symbol(count, Decl(bit.d.ts, 8, 21))
+>count : Symbol(count, Decl(bit.d.ts, 8, 21))
+
+export type BitLenGthan<B, C> = Peano.gthan<BitLen<B>, BitLen<C>>;
+>BitLenGthan : Symbol(BitLenGthan, Decl(bit.d.ts, 8, 147))
+>B : Symbol(B, Decl(bit.d.ts, 9, 24))
+>C : Symbol(C, Decl(bit.d.ts, 9, 26))
+>Peano : Symbol(Peano, Decl(bit.d.ts, 0, 11))
+>gthan : Symbol(Peano.gthan, Decl(peano.d.ts, 8, 165))
+>BitLen : Symbol(BitLen, Decl(bit.d.ts, 7, 219))
+>B : Symbol(B, Decl(bit.d.ts, 9, 24))
+>BitLen : Symbol(BitLen, Decl(bit.d.ts, 7, 219))
+>C : Symbol(C, Decl(bit.d.ts, 9, 26))
+
+export type BitPadding<B extends string, P = Peano.T0, F = "0"> = P extends Peano.T0 ? B : F extends "0" | "1" ? BitPadding<`${F}${B}`, Peano.dec<P>, F> : never;
+>BitPadding : Symbol(BitPadding, Decl(bit.d.ts, 9, 66))
+>B : Symbol(B, Decl(bit.d.ts, 10, 23))
+>P : Symbol(P, Decl(bit.d.ts, 10, 40))
+>Peano : Symbol(Peano, Decl(bit.d.ts, 0, 11))
+>T0 : Symbol(Peano.T0, Decl(peano.d.ts, 0, 0))
+>F : Symbol(F, Decl(bit.d.ts, 10, 54))
+>P : Symbol(P, Decl(bit.d.ts, 10, 40))
+>Peano : Symbol(Peano, Decl(bit.d.ts, 0, 11))
+>T0 : Symbol(Peano.T0, Decl(peano.d.ts, 0, 0))
+>B : Symbol(B, Decl(bit.d.ts, 10, 23))
+>F : Symbol(F, Decl(bit.d.ts, 10, 54))
+>BitPadding : Symbol(BitPadding, Decl(bit.d.ts, 9, 66))
+>F : Symbol(F, Decl(bit.d.ts, 10, 54))
+>B : Symbol(B, Decl(bit.d.ts, 10, 23))
+>Peano : Symbol(Peano, Decl(bit.d.ts, 0, 11))
+>dec : Symbol(Peano.dec, Decl(peano.d.ts, 5, 25))
+>P : Symbol(P, Decl(bit.d.ts, 10, 40))
+>F : Symbol(F, Decl(bit.d.ts, 10, 54))
+
+export type BitUniform<B extends string, C extends string> = BitLenGthan<B, C> extends true ? [B, BitPadding<C, Peano.min<BitLen<B>, BitLen<C>>>] : [BitPadding<B, Peano.min<BitLen<C>, BitLen<B>>>, C];
+>BitUniform : Symbol(BitUniform, Decl(bit.d.ts, 10, 161))
+>B : Symbol(B, Decl(bit.d.ts, 11, 23))
+>C : Symbol(C, Decl(bit.d.ts, 11, 40))
+>BitLenGthan : Symbol(BitLenGthan, Decl(bit.d.ts, 8, 147))
+>B : Symbol(B, Decl(bit.d.ts, 11, 23))
+>C : Symbol(C, Decl(bit.d.ts, 11, 40))
+>B : Symbol(B, Decl(bit.d.ts, 11, 23))
+>BitPadding : Symbol(BitPadding, Decl(bit.d.ts, 9, 66))
+>C : Symbol(C, Decl(bit.d.ts, 11, 40))
+>Peano : Symbol(Peano, Decl(bit.d.ts, 0, 11))
+>min : Symbol(Peano.min, Decl(peano.d.ts, 6, 53))
+>BitLen : Symbol(BitLen, Decl(bit.d.ts, 7, 219))
+>B : Symbol(B, Decl(bit.d.ts, 11, 23))
+>BitLen : Symbol(BitLen, Decl(bit.d.ts, 7, 219))
+>C : Symbol(C, Decl(bit.d.ts, 11, 40))
+>BitPadding : Symbol(BitPadding, Decl(bit.d.ts, 9, 66))
+>B : Symbol(B, Decl(bit.d.ts, 11, 23))
+>Peano : Symbol(Peano, Decl(bit.d.ts, 0, 11))
+>min : Symbol(Peano.min, Decl(peano.d.ts, 6, 53))
+>BitLen : Symbol(BitLen, Decl(bit.d.ts, 7, 219))
+>C : Symbol(C, Decl(bit.d.ts, 11, 40))
+>BitLen : Symbol(BitLen, Decl(bit.d.ts, 7, 219))
+>B : Symbol(B, Decl(bit.d.ts, 11, 23))
+>C : Symbol(C, Decl(bit.d.ts, 11, 40))
+
+export type BitCut<B, P = Peano.T0> = P extends Peano.T0 ? B : B extends `${infer H}${infer T}` ? BitCut<T, Peano.dec<P>> : never;
+>BitCut : Symbol(BitCut, Decl(bit.d.ts, 11, 200))
+>B : Symbol(B, Decl(bit.d.ts, 12, 19))
+>P : Symbol(P, Decl(bit.d.ts, 12, 21))
+>Peano : Symbol(Peano, Decl(bit.d.ts, 0, 11))
+>T0 : Symbol(Peano.T0, Decl(peano.d.ts, 0, 0))
+>P : Symbol(P, Decl(bit.d.ts, 12, 21))
+>Peano : Symbol(Peano, Decl(bit.d.ts, 0, 11))
+>T0 : Symbol(Peano.T0, Decl(peano.d.ts, 0, 0))
+>B : Symbol(B, Decl(bit.d.ts, 12, 19))
+>B : Symbol(B, Decl(bit.d.ts, 12, 19))
+>H : Symbol(H, Decl(bit.d.ts, 12, 81))
+>T : Symbol(T, Decl(bit.d.ts, 12, 91))
+>BitCut : Symbol(BitCut, Decl(bit.d.ts, 11, 200))
+>T : Symbol(T, Decl(bit.d.ts, 12, 91))
+>Peano : Symbol(Peano, Decl(bit.d.ts, 0, 11))
+>dec : Symbol(Peano.dec, Decl(peano.d.ts, 5, 25))
+>P : Symbol(P, Decl(bit.d.ts, 12, 21))
+
+export type BitIsZero<B extends string> = BitUniform<BitZero, B> extends [
+>BitIsZero : Symbol(BitIsZero, Decl(bit.d.ts, 12, 130))
+>B : Symbol(B, Decl(bit.d.ts, 13, 22))
+>BitUniform : Symbol(BitUniform, Decl(bit.d.ts, 10, 161))
+>BitZero : Symbol(BitZero, Decl(bit.d.ts, 1, 28))
+>B : Symbol(B, Decl(bit.d.ts, 13, 22))
+
+    infer Z,
+>Z : Symbol(Z, Decl(bit.d.ts, 14, 9))
+
+    infer U
+>U : Symbol(U, Decl(bit.d.ts, 15, 9))
+
+] ? BitEq<BitZero, U> : never;
+>BitEq : Symbol(BitEq, Decl(bit.d.ts, 6, 138))
+>BitZero : Symbol(BitZero, Decl(bit.d.ts, 1, 28))
+>U : Symbol(U, Decl(bit.d.ts, 15, 9))
+
+export type BitFill<B extends string, M = MAX, tB extends string = BitPadding<B, M>> = BitCut<tB, Peano.min<BitLen<tB>, M>>;
+>BitFill : Symbol(BitFill, Decl(bit.d.ts, 16, 30))
+>B : Symbol(B, Decl(bit.d.ts, 17, 20))
+>M : Symbol(M, Decl(bit.d.ts, 17, 37))
+>MAX : Symbol(MAX, Decl(bit.d.ts, 0, 41))
+>tB : Symbol(tB, Decl(bit.d.ts, 17, 46))
+>BitPadding : Symbol(BitPadding, Decl(bit.d.ts, 9, 66))
+>B : Symbol(B, Decl(bit.d.ts, 17, 20))
+>M : Symbol(M, Decl(bit.d.ts, 17, 37))
+>BitCut : Symbol(BitCut, Decl(bit.d.ts, 11, 200))
+>tB : Symbol(tB, Decl(bit.d.ts, 17, 46))
+>Peano : Symbol(Peano, Decl(bit.d.ts, 0, 11))
+>min : Symbol(Peano.min, Decl(peano.d.ts, 6, 53))
+>BitLen : Symbol(BitLen, Decl(bit.d.ts, 7, 219))
+>tB : Symbol(tB, Decl(bit.d.ts, 17, 46))
+>M : Symbol(M, Decl(bit.d.ts, 17, 37))
+
+export type _BitAdd<B, C> = BitXor<B, C> extends infer _Xor ? BitAnd<B, C> extends infer _And ? BitShiftLeftOne<_And> extends string & infer _Carry extends string ? BitIsZero<BitUniform<_Carry, "0"> extends [infer _C extends string, infer _R] ? _C : never> extends true ? _Xor : _BitAdd<_Xor, _Carry> : 0 : 1 : 2;
+>_BitAdd : Symbol(_BitAdd, Decl(bit.d.ts, 17, 124))
+>B : Symbol(B, Decl(bit.d.ts, 18, 20))
+>C : Symbol(C, Decl(bit.d.ts, 18, 22))
+>BitXor : Symbol(BitXor, Decl(bit.d.ts, 3, 212))
+>B : Symbol(B, Decl(bit.d.ts, 18, 20))
+>C : Symbol(C, Decl(bit.d.ts, 18, 22))
+>_Xor : Symbol(_Xor, Decl(bit.d.ts, 18, 54))
+>BitAnd : Symbol(BitAnd, Decl(bit.d.ts, 2, 43))
+>B : Symbol(B, Decl(bit.d.ts, 18, 20))
+>C : Symbol(C, Decl(bit.d.ts, 18, 22))
+>_And : Symbol(_And, Decl(bit.d.ts, 18, 88))
+>BitShiftLeftOne : Symbol(BitShiftLeftOne, Decl(bit.d.ts, 4, 171))
+>_And : Symbol(_And, Decl(bit.d.ts, 18, 88))
+>_Carry : Symbol(_Carry, Decl(bit.d.ts, 18, 140))
+>BitIsZero : Symbol(BitIsZero, Decl(bit.d.ts, 12, 130))
+>BitUniform : Symbol(BitUniform, Decl(bit.d.ts, 10, 161))
+>_Carry : Symbol(_Carry, Decl(bit.d.ts, 18, 140))
+>_C : Symbol(_C, Decl(bit.d.ts, 18, 213))
+>_R : Symbol(_R, Decl(bit.d.ts, 18, 238))
+>_C : Symbol(_C, Decl(bit.d.ts, 18, 213))
+>_Xor : Symbol(_Xor, Decl(bit.d.ts, 18, 54))
+>_BitAdd : Symbol(_BitAdd, Decl(bit.d.ts, 17, 124))
+>_Xor : Symbol(_Xor, Decl(bit.d.ts, 18, 54))
+>_Carry : Symbol(_Carry, Decl(bit.d.ts, 18, 140))
+
+export type BitAdd<B extends string, C extends string, M = MAX> = BitFill<B, M> extends infer _tB ? BitFill<C, M> extends infer _tC ? _BitAdd<_tB, _tC> : never : never;
+>BitAdd : Symbol(BitAdd, Decl(bit.d.ts, 18, 313))
+>B : Symbol(B, Decl(bit.d.ts, 19, 19))
+>C : Symbol(C, Decl(bit.d.ts, 19, 36))
+>M : Symbol(M, Decl(bit.d.ts, 19, 54))
+>MAX : Symbol(MAX, Decl(bit.d.ts, 0, 41))
+>BitFill : Symbol(BitFill, Decl(bit.d.ts, 16, 30))
+>B : Symbol(B, Decl(bit.d.ts, 19, 19))
+>M : Symbol(M, Decl(bit.d.ts, 19, 54))
+>_tB : Symbol(_tB, Decl(bit.d.ts, 19, 93))
+>BitFill : Symbol(BitFill, Decl(bit.d.ts, 16, 30))
+>C : Symbol(C, Decl(bit.d.ts, 19, 36))
+>M : Symbol(M, Decl(bit.d.ts, 19, 54))
+>_tC : Symbol(_tC, Decl(bit.d.ts, 19, 127))
+>_BitAdd : Symbol(_BitAdd, Decl(bit.d.ts, 17, 124))
+>_tB : Symbol(_tB, Decl(bit.d.ts, 19, 93))
+>_tC : Symbol(_tC, Decl(bit.d.ts, 19, 127))
+
+export type BitSub<B extends string, C extends string, M = MAX> = BitAdd<BitFill<B, M>, BitAdd<BitNot<BitFill<C, M>>, BitFill<"1", M>>>;
+>BitSub : Symbol(BitSub, Decl(bit.d.ts, 19, 168))
+>B : Symbol(B, Decl(bit.d.ts, 20, 19))
+>C : Symbol(C, Decl(bit.d.ts, 20, 36))
+>M : Symbol(M, Decl(bit.d.ts, 20, 54))
+>MAX : Symbol(MAX, Decl(bit.d.ts, 0, 41))
+>BitAdd : Symbol(BitAdd, Decl(bit.d.ts, 18, 313))
+>BitFill : Symbol(BitFill, Decl(bit.d.ts, 16, 30))
+>B : Symbol(B, Decl(bit.d.ts, 20, 19))
+>M : Symbol(M, Decl(bit.d.ts, 20, 54))
+>BitAdd : Symbol(BitAdd, Decl(bit.d.ts, 18, 313))
+>BitNot : Symbol(BitNot, Decl(bit.d.ts, 5, 117))
+>BitFill : Symbol(BitFill, Decl(bit.d.ts, 16, 30))
+>C : Symbol(C, Decl(bit.d.ts, 20, 36))
+>M : Symbol(M, Decl(bit.d.ts, 20, 54))
+>BitFill : Symbol(BitFill, Decl(bit.d.ts, 16, 30))
+>M : Symbol(M, Decl(bit.d.ts, 20, 54))
+
+export type BitGTE<B extends string, C extends string> = BitSub<B, C> extends `${infer H}${infer _}` ? H extends '1' ? false : true : never;
+>BitGTE : Symbol(BitGTE, Decl(bit.d.ts, 20, 136))
+>B : Symbol(B, Decl(bit.d.ts, 21, 19))
+>C : Symbol(C, Decl(bit.d.ts, 21, 36))
+>BitSub : Symbol(BitSub, Decl(bit.d.ts, 19, 168))
+>B : Symbol(B, Decl(bit.d.ts, 21, 19))
+>C : Symbol(C, Decl(bit.d.ts, 21, 36))
+>H : Symbol(H, Decl(bit.d.ts, 21, 86))
+>_ : Symbol(_, Decl(bit.d.ts, 21, 96))
+>H : Symbol(H, Decl(bit.d.ts, 21, 86))
+
+export type BitGT<B extends string, C extends string> = BitGTE<B, C> extends true ? B extends C ? C extends B ? false : true : true : false;
+>BitGT : Symbol(BitGT, Decl(bit.d.ts, 21, 140))
+>B : Symbol(B, Decl(bit.d.ts, 22, 18))
+>C : Symbol(C, Decl(bit.d.ts, 22, 35))
+>BitGTE : Symbol(BitGTE, Decl(bit.d.ts, 20, 136))
+>B : Symbol(B, Decl(bit.d.ts, 22, 18))
+>C : Symbol(C, Decl(bit.d.ts, 22, 35))
+>B : Symbol(B, Decl(bit.d.ts, 22, 18))
+>C : Symbol(C, Decl(bit.d.ts, 22, 35))
+>C : Symbol(C, Decl(bit.d.ts, 22, 35))
+>B : Symbol(B, Decl(bit.d.ts, 22, 18))
+
+export type BitLTE<B extends string, C extends string> = BitGT<B, C> extends true ? false : true;
+>BitLTE : Symbol(BitLTE, Decl(bit.d.ts, 22, 140))
+>B : Symbol(B, Decl(bit.d.ts, 23, 19))
+>C : Symbol(C, Decl(bit.d.ts, 23, 36))
+>BitGT : Symbol(BitGT, Decl(bit.d.ts, 21, 140))
+>B : Symbol(B, Decl(bit.d.ts, 23, 19))
+>C : Symbol(C, Decl(bit.d.ts, 23, 36))
+
+export type BitInc<B extends string> = BitAdd<B, "0000000000000001">;
+>BitInc : Symbol(BitInc, Decl(bit.d.ts, 23, 97))
+>B : Symbol(B, Decl(bit.d.ts, 24, 19))
+>BitAdd : Symbol(BitAdd, Decl(bit.d.ts, 18, 313))
+>B : Symbol(B, Decl(bit.d.ts, 24, 19))
+
+export * as Bit from './bit.js';
+>Bit : Symbol(Bit, Decl(bit.d.ts, 25, 6))
+
+=== node_modules/@taiyakihitotsu/cion/dist/compiler.d.ts ===
+import type * as Decimal from './decimal.js';
+>Decimal : Symbol(Decimal, Decl(compiler.d.ts, 0, 11))
+
+export type SPad<S extends string> = S extends ` ${infer SS}` ? SS : ` ${S}`;
+>SPad : Symbol(SPad, Decl(compiler.d.ts, 0, 45))
+>S : Symbol(S, Decl(compiler.d.ts, 1, 17))
+>S : Symbol(S, Decl(compiler.d.ts, 1, 17))
+>SS : Symbol(SS, Decl(compiler.d.ts, 1, 56))
+>SS : Symbol(SS, Decl(compiler.d.ts, 1, 56))
+>S : Symbol(S, Decl(compiler.d.ts, 1, 17))
+
+type internalRec<T> = T extends {
+>internalRec : Symbol(internalRec, Decl(compiler.d.ts, 1, 77))
+>T : Symbol(T, Decl(compiler.d.ts, 2, 17))
+>T : Symbol(T, Decl(compiler.d.ts, 2, 17))
+
+    r: infer U;
+>r : Symbol(r, Decl(compiler.d.ts, 2, 33))
+>U : Symbol(U, Decl(compiler.d.ts, 3, 12))
+
+} ? U : T;
+>U : Symbol(U, Decl(compiler.d.ts, 3, 12))
+>T : Symbol(T, Decl(compiler.d.ts, 2, 17))
+
+export type CompilerRec<T> = T extends {
+>CompilerRec : Symbol(CompilerRec, Decl(compiler.d.ts, 4, 10))
+>T : Symbol(T, Decl(compiler.d.ts, 5, 24))
+>T : Symbol(T, Decl(compiler.d.ts, 5, 24))
+
+    r: unknown;
+>r : Symbol(r, Decl(compiler.d.ts, 5, 40))
+
+} ? CompilerRec<internalRec<T>> : T;
+>CompilerRec : Symbol(CompilerRec, Decl(compiler.d.ts, 4, 10))
+>internalRec : Symbol(internalRec, Decl(compiler.d.ts, 1, 77))
+>T : Symbol(T, Decl(compiler.d.ts, 5, 24))
+>T : Symbol(T, Decl(compiler.d.ts, 5, 24))
+
+export type ReadString<S extends string, ident extends `"` | `'`> = S extends `${ident}${infer P}${ident}${infer R}` ? [`${ident}${P}${ident}`, ` ${R}`] : never;
+>ReadString : Symbol(ReadString, Decl(compiler.d.ts, 7, 36))
+>S : Symbol(S, Decl(compiler.d.ts, 8, 23))
+>ident : Symbol(ident, Decl(compiler.d.ts, 8, 40))
+>S : Symbol(S, Decl(compiler.d.ts, 8, 23))
+>ident : Symbol(ident, Decl(compiler.d.ts, 8, 40))
+>P : Symbol(P, Decl(compiler.d.ts, 8, 94))
+>ident : Symbol(ident, Decl(compiler.d.ts, 8, 40))
+>R : Symbol(R, Decl(compiler.d.ts, 8, 112))
+>ident : Symbol(ident, Decl(compiler.d.ts, 8, 40))
+>P : Symbol(P, Decl(compiler.d.ts, 8, 94))
+>ident : Symbol(ident, Decl(compiler.d.ts, 8, 40))
+>R : Symbol(R, Decl(compiler.d.ts, 8, 112))
+
+export type recp<Sexpr, R extends string[] = []> = Sexpr extends `  ${infer U}` | ` \n${infer U}` ? {
+>recp : Symbol(recp, Decl(compiler.d.ts, 8, 161))
+>Sexpr : Symbol(Sexpr, Decl(compiler.d.ts, 9, 17))
+>R : Symbol(R, Decl(compiler.d.ts, 9, 23))
+>Sexpr : Symbol(Sexpr, Decl(compiler.d.ts, 9, 17))
+>U : Symbol(U, Decl(compiler.d.ts, 9, 75), Decl(compiler.d.ts, 9, 93))
+>U : Symbol(U, Decl(compiler.d.ts, 9, 75), Decl(compiler.d.ts, 9, 93))
+
+    r: recp<` ${U}`, R>;
+>r : Symbol(r, Decl(compiler.d.ts, 9, 101))
+>recp : Symbol(recp, Decl(compiler.d.ts, 8, 161))
+>U : Symbol(U, Decl(compiler.d.ts, 9, 75), Decl(compiler.d.ts, 9, 93))
+>R : Symbol(R, Decl(compiler.d.ts, 9, 23))
+
+} : Sexpr extends ` (${infer U}` ? {
+>Sexpr : Symbol(Sexpr, Decl(compiler.d.ts, 9, 17))
+>U : Symbol(U, Decl(compiler.d.ts, 11, 28))
+
+    r: recp<` ${U}`, [...R, '(']>;
+>r : Symbol(r, Decl(compiler.d.ts, 11, 36))
+>recp : Symbol(recp, Decl(compiler.d.ts, 8, 161))
+>U : Symbol(U, Decl(compiler.d.ts, 11, 28))
+>R : Symbol(R, Decl(compiler.d.ts, 9, 23))
+
+} : Sexpr extends ` [${infer U}` ? {
+>Sexpr : Symbol(Sexpr, Decl(compiler.d.ts, 9, 17))
+>U : Symbol(U, Decl(compiler.d.ts, 13, 28))
+
+    r: recp<` ${U}`, [...R, '[']>;
+>r : Symbol(r, Decl(compiler.d.ts, 13, 36))
+>recp : Symbol(recp, Decl(compiler.d.ts, 8, 161))
+>U : Symbol(U, Decl(compiler.d.ts, 13, 28))
+>R : Symbol(R, Decl(compiler.d.ts, 9, 23))
+
+} : Sexpr extends ` '${infer U}` ? {
+>Sexpr : Symbol(Sexpr, Decl(compiler.d.ts, 9, 17))
+>U : Symbol(U, Decl(compiler.d.ts, 15, 28))
+
+    r: recp<ReadString<`'${U}`, `'`>[1], [...R, ReadString<`'${U}`, `'`>[0]]>;
+>r : Symbol(r, Decl(compiler.d.ts, 15, 36))
+>recp : Symbol(recp, Decl(compiler.d.ts, 8, 161))
+>ReadString : Symbol(ReadString, Decl(compiler.d.ts, 7, 36))
+>U : Symbol(U, Decl(compiler.d.ts, 15, 28))
+>R : Symbol(R, Decl(compiler.d.ts, 9, 23))
+>ReadString : Symbol(ReadString, Decl(compiler.d.ts, 7, 36))
+>U : Symbol(U, Decl(compiler.d.ts, 15, 28))
+
+} : Sexpr extends ` ${infer fU} ${infer Next}` ? fU extends `${infer ffU}}` ? ffU extends '' ? {
+>Sexpr : Symbol(Sexpr, Decl(compiler.d.ts, 9, 17))
+>fU : Symbol(fU, Decl(compiler.d.ts, 17, 27))
+>Next : Symbol(Next, Decl(compiler.d.ts, 17, 39))
+>fU : Symbol(fU, Decl(compiler.d.ts, 17, 27))
+>ffU : Symbol(ffU, Decl(compiler.d.ts, 17, 68))
+>ffU : Symbol(ffU, Decl(compiler.d.ts, 17, 68))
+
+} : {
+} : fU extends `${infer ffU}]` ? ffU extends '' ? {
+>fU : Symbol(fU, Decl(compiler.d.ts, 17, 27))
+>ffU : Symbol(ffU, Decl(compiler.d.ts, 19, 23))
+>ffU : Symbol(ffU, Decl(compiler.d.ts, 19, 23))
+
+    r: recp<` ${Next}`, [...R, ']']>;
+>r : Symbol(r, Decl(compiler.d.ts, 19, 51))
+>recp : Symbol(recp, Decl(compiler.d.ts, 8, 161))
+>Next : Symbol(Next, Decl(compiler.d.ts, 17, 39))
+>R : Symbol(R, Decl(compiler.d.ts, 9, 23))
+
+} : {
+    r: recp<` ${ffU} ] ${Next}`, R>;
+>r : Symbol(r, Decl(compiler.d.ts, 21, 5))
+>recp : Symbol(recp, Decl(compiler.d.ts, 8, 161))
+>ffU : Symbol(ffU, Decl(compiler.d.ts, 19, 23))
+>Next : Symbol(Next, Decl(compiler.d.ts, 17, 39))
+>R : Symbol(R, Decl(compiler.d.ts, 9, 23))
+
+} : fU extends `${infer ffU})` ? ffU extends '' ? {
+>fU : Symbol(fU, Decl(compiler.d.ts, 17, 27))
+>ffU : Symbol(ffU, Decl(compiler.d.ts, 23, 23))
+>ffU : Symbol(ffU, Decl(compiler.d.ts, 23, 23))
+
+    r: recp<` ${Next}`, [...R, ')']>;
+>r : Symbol(r, Decl(compiler.d.ts, 23, 51))
+>recp : Symbol(recp, Decl(compiler.d.ts, 8, 161))
+>Next : Symbol(Next, Decl(compiler.d.ts, 17, 39))
+>R : Symbol(R, Decl(compiler.d.ts, 9, 23))
+
+} : {
+    r: recp<` ${ffU} ) ${Next}`, R>;
+>r : Symbol(r, Decl(compiler.d.ts, 25, 5))
+>recp : Symbol(recp, Decl(compiler.d.ts, 8, 161))
+>ffU : Symbol(ffU, Decl(compiler.d.ts, 23, 23))
+>Next : Symbol(Next, Decl(compiler.d.ts, 17, 39))
+>R : Symbol(R, Decl(compiler.d.ts, 9, 23))
+
+} : {
+    r: recp<` ${Next}`, [...R, fU]>;
+>r : Symbol(r, Decl(compiler.d.ts, 27, 5))
+>recp : Symbol(recp, Decl(compiler.d.ts, 8, 161))
+>Next : Symbol(Next, Decl(compiler.d.ts, 17, 39))
+>R : Symbol(R, Decl(compiler.d.ts, 9, 23))
+>fU : Symbol(fU, Decl(compiler.d.ts, 17, 27))
+
+} : Sexpr extends ` ${infer U})` ? {
+>Sexpr : Symbol(Sexpr, Decl(compiler.d.ts, 9, 17))
+>U : Symbol(U, Decl(compiler.d.ts, 29, 27))
+
+    r: recp<` ${U} ) `, R>;
+>r : Symbol(r, Decl(compiler.d.ts, 29, 36))
+>recp : Symbol(recp, Decl(compiler.d.ts, 8, 161))
+>U : Symbol(U, Decl(compiler.d.ts, 29, 27))
+>R : Symbol(R, Decl(compiler.d.ts, 9, 23))
+
+} : {
+    r: R;
+>r : Symbol(r, Decl(compiler.d.ts, 31, 5))
+>R : Symbol(R, Decl(compiler.d.ts, 9, 23))
+
+};
+export type SParser<Sexpr extends string> = CompilerRec<recp<Sexpr>>;
+>SParser : Symbol(SParser, Decl(compiler.d.ts, 33, 2))
+>Sexpr : Symbol(Sexpr, Decl(compiler.d.ts, 34, 20))
+>CompilerRec : Symbol(CompilerRec, Decl(compiler.d.ts, 4, 10))
+>recp : Symbol(recp, Decl(compiler.d.ts, 8, 161))
+>Sexpr : Symbol(Sexpr, Decl(compiler.d.ts, 34, 20))
+
+type NumUnion = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
+>NumUnion : Symbol(NumUnion, Decl(compiler.d.ts, 34, 69))
+
+type ReadRationalFail = [];
+>ReadRationalFail : Symbol(ReadRationalFail, Decl(compiler.d.ts, 35, 74))
+
+export type ReadRational<S extends string, Ret extends string[] = [], SS extends string = ''> = S extends '' ? SS extends '' ? ReadRationalFail : SIsNum<SS> extends true ? [...Ret, SS] : ReadRationalFail : S extends `${infer H}${infer R}` ? H extends NumUnion | '-' ? ReadRational<R, Ret, `${SS}${H}`> : H extends '/' ? SIsNum<SS> extends true ? ReadRational<R, [...Ret, SS], ''> : ReadRationalFail : ReadRationalFail : never;
+>ReadRational : Symbol(ReadRational, Decl(compiler.d.ts, 36, 27))
+>S : Symbol(S, Decl(compiler.d.ts, 37, 25))
+>Ret : Symbol(Ret, Decl(compiler.d.ts, 37, 42))
+>SS : Symbol(SS, Decl(compiler.d.ts, 37, 69))
+>S : Symbol(S, Decl(compiler.d.ts, 37, 25))
+>SS : Symbol(SS, Decl(compiler.d.ts, 37, 69))
+>ReadRationalFail : Symbol(ReadRationalFail, Decl(compiler.d.ts, 35, 74))
+>SIsNum : Symbol(SIsNum)
+>SS : Symbol(SS, Decl(compiler.d.ts, 37, 69))
+>Ret : Symbol(Ret, Decl(compiler.d.ts, 37, 42))
+>SS : Symbol(SS, Decl(compiler.d.ts, 37, 69))
+>ReadRationalFail : Symbol(ReadRationalFail, Decl(compiler.d.ts, 35, 74))
+>S : Symbol(S, Decl(compiler.d.ts, 37, 25))
+>H : Symbol(H, Decl(compiler.d.ts, 37, 224))
+>R : Symbol(R, Decl(compiler.d.ts, 37, 234))
+>H : Symbol(H, Decl(compiler.d.ts, 37, 224))
+>NumUnion : Symbol(NumUnion, Decl(compiler.d.ts, 34, 69))
+>ReadRational : Symbol(ReadRational, Decl(compiler.d.ts, 36, 27))
+>R : Symbol(R, Decl(compiler.d.ts, 37, 234))
+>Ret : Symbol(Ret, Decl(compiler.d.ts, 37, 42))
+>SS : Symbol(SS, Decl(compiler.d.ts, 37, 69))
+>H : Symbol(H, Decl(compiler.d.ts, 37, 224))
+>H : Symbol(H, Decl(compiler.d.ts, 37, 224))
+>SIsNum : Symbol(SIsNum)
+>SS : Symbol(SS, Decl(compiler.d.ts, 37, 69))
+>ReadRational : Symbol(ReadRational, Decl(compiler.d.ts, 36, 27))
+>R : Symbol(R, Decl(compiler.d.ts, 37, 234))
+>Ret : Symbol(Ret, Decl(compiler.d.ts, 37, 42))
+>SS : Symbol(SS, Decl(compiler.d.ts, 37, 69))
+>ReadRationalFail : Symbol(ReadRationalFail, Decl(compiler.d.ts, 35, 74))
+>ReadRationalFail : Symbol(ReadRationalFail, Decl(compiler.d.ts, 35, 74))
+
+export type SSymlator<MSym> = MSym extends `${infer H}${infer R}` ? H extends "'" | '"' ? [`prim`, MSym] : ReadRational<MSym> extends [`${infer F}${infer Fs}`, ...infer rD extends string[]] ? rD extends [`${infer _D}${infer _Ds}`] ? F extends '-' ? ['prim', [Bit.BitRevSign<Decimal.DecimalToBit<Fs>>, Decimal.DecimalToBit<`${_D}${_Ds}`>]] : ['prim', [Decimal.DecimalToBit<`${F}${Fs}`>, Decimal.DecimalToBit<`${_D}${_Ds}`>]] : F extends '-' ? ['prim', Bit.BitRevSign<Decimal.DecimalToBit<Fs>>] : ['prim', Decimal.DecimalToBit<`${F}${Fs}`>] : MSym extends 'if' | 'let' | 'fn' ? MSym : MSym extends 'true' ? [`prim`, true] : MSym extends 'false' ? [`prim`, false] : MSym extends 'nil' ? [`prim`, 'nil'] : [`sym`, MSym] : never;
+>SSymlator : Symbol(SSymlator, Decl(compiler.d.ts, 37, 426))
+>MSym : Symbol(MSym, Decl(compiler.d.ts, 38, 22))
+>MSym : Symbol(MSym, Decl(compiler.d.ts, 38, 22))
+>H : Symbol(H, Decl(compiler.d.ts, 38, 51))
+>R : Symbol(R, Decl(compiler.d.ts, 38, 61))
+>H : Symbol(H, Decl(compiler.d.ts, 38, 51))
+>MSym : Symbol(MSym, Decl(compiler.d.ts, 38, 22))
+>ReadRational : Symbol(ReadRational, Decl(compiler.d.ts, 36, 27))
+>MSym : Symbol(MSym, Decl(compiler.d.ts, 38, 22))
+>F : Symbol(F, Decl(compiler.d.ts, 38, 143))
+>Fs : Symbol(Fs, Decl(compiler.d.ts, 38, 153))
+>rD : Symbol(rD, Decl(compiler.d.ts, 38, 168))
+>rD : Symbol(rD, Decl(compiler.d.ts, 38, 168))
+>_D : Symbol(_D, Decl(compiler.d.ts, 38, 212))
+>_Ds : Symbol(_Ds, Decl(compiler.d.ts, 38, 223))
+>F : Symbol(F, Decl(compiler.d.ts, 38, 143))
+>Bit : Symbol(Bit)
+>BitRevSign : Symbol(Bit.BitRevSign)
+>Decimal : Symbol(Decimal, Decl(compiler.d.ts, 0, 11))
+>DecimalToBit : Symbol(Decimal.DecimalToBit)
+>Fs : Symbol(Fs, Decl(compiler.d.ts, 38, 153))
+>Decimal : Symbol(Decimal, Decl(compiler.d.ts, 0, 11))
+>DecimalToBit : Symbol(Decimal.DecimalToBit)
+>_D : Symbol(_D, Decl(compiler.d.ts, 38, 212))
+>_Ds : Symbol(_Ds, Decl(compiler.d.ts, 38, 223))
+>Decimal : Symbol(Decimal, Decl(compiler.d.ts, 0, 11))
+>DecimalToBit : Symbol(Decimal.DecimalToBit)
+>F : Symbol(F, Decl(compiler.d.ts, 38, 143))
+>Fs : Symbol(Fs, Decl(compiler.d.ts, 38, 153))
+>Decimal : Symbol(Decimal, Decl(compiler.d.ts, 0, 11))
+>DecimalToBit : Symbol(Decimal.DecimalToBit)
+>_D : Symbol(_D, Decl(compiler.d.ts, 38, 212))
+>_Ds : Symbol(_Ds, Decl(compiler.d.ts, 38, 223))
+>F : Symbol(F, Decl(compiler.d.ts, 38, 143))
+>Bit : Symbol(Bit)
+>BitRevSign : Symbol(Bit.BitRevSign)
+>Decimal : Symbol(Decimal, Decl(compiler.d.ts, 0, 11))
+>DecimalToBit : Symbol(Decimal.DecimalToBit)
+>Fs : Symbol(Fs, Decl(compiler.d.ts, 38, 153))
+>Decimal : Symbol(Decimal, Decl(compiler.d.ts, 0, 11))
+>DecimalToBit : Symbol(Decimal.DecimalToBit)
+>F : Symbol(F, Decl(compiler.d.ts, 38, 143))
+>Fs : Symbol(Fs, Decl(compiler.d.ts, 38, 153))
+>MSym : Symbol(MSym, Decl(compiler.d.ts, 38, 22))
+>MSym : Symbol(MSym, Decl(compiler.d.ts, 38, 22))
+>MSym : Symbol(MSym, Decl(compiler.d.ts, 38, 22))
+>MSym : Symbol(MSym, Decl(compiler.d.ts, 38, 22))
+>MSym : Symbol(MSym, Decl(compiler.d.ts, 38, 22))
+>MSym : Symbol(MSym, Decl(compiler.d.ts, 38, 22))
+
+type IsStrValue<S extends string> = S extends `"${infer _}"` ? true : false;
+>IsStrValue : Symbol(IsStrValue, Decl(compiler.d.ts, 38, 724))
+>S : Symbol(S, Decl(compiler.d.ts, 39, 16))
+>S : Symbol(S, Decl(compiler.d.ts, 39, 16))
+>_ : Symbol(_, Decl(compiler.d.ts, 39, 55))
+
+export type SCompiler<Parsed extends Array<unknown>, Current extends Array<unknown> = [], Stack extends Array<Array<unknown>> = [], StrStack extends string = "", IsLetVec extends boolean = false> = Parsed extends [] ? Current : Parsed extends [infer H extends string, ...infer R extends string[]] ? R extends [] ? IsStrValue<H> extends true ? [`prim`, H] : H extends "}" ? ['map', Current] : Current extends [] ? SSymlator<H> : Current : H extends ')' | ']' ? SCompiler<R, Stack extends unknown[] ? [...Stack[0], Current extends ['vec', never] ? ['vec'] : Current] : never, Stack extends [infer _, ...infer R extends unknown[][]] ? R : never> : H extends '}' ? SCompiler<R, Stack extends Array<unknown> ? [...Stack[0], ['map', Current]] : never, Stack extends [infer _, ...infer R extends unknown[][]] ? R : never> : H extends '(' ? SCompiler<R, [], [Current, ...Stack]> : H extends '[' ? SCompiler<R, IsLetVec extends true ? [] : ['vec'], [Current, ...Stack], StrStack> : H extends '{' ? SCompiler<R, [], [Current, ...Stack]> : H extends `:${infer _}` ? SCompiler<R, [...Current, [`key`, H]], Stack> : SCompiler<R, [...Current, SSymlator<H>], Stack, StrStack, H extends 'let' | 'fn' ? true : false> : never;
+>SCompiler : Symbol(SCompiler, Decl(compiler.d.ts, 39, 76))
+>Parsed : Symbol(Parsed, Decl(compiler.d.ts, 40, 22))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 2 more)
+>Current : Symbol(Current, Decl(compiler.d.ts, 40, 52))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 2 more)
+>Stack : Symbol(Stack, Decl(compiler.d.ts, 40, 89))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 2 more)
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 2 more)
+>StrStack : Symbol(StrStack, Decl(compiler.d.ts, 40, 131))
+>IsLetVec : Symbol(IsLetVec, Decl(compiler.d.ts, 40, 161))
+>Parsed : Symbol(Parsed, Decl(compiler.d.ts, 40, 22))
+>Current : Symbol(Current, Decl(compiler.d.ts, 40, 52))
+>Parsed : Symbol(Parsed, Decl(compiler.d.ts, 40, 22))
+>H : Symbol(H, Decl(compiler.d.ts, 40, 249))
+>R : Symbol(R, Decl(compiler.d.ts, 40, 276))
+>R : Symbol(R, Decl(compiler.d.ts, 40, 276))
+>IsStrValue : Symbol(IsStrValue, Decl(compiler.d.ts, 38, 724))
+>H : Symbol(H, Decl(compiler.d.ts, 40, 249))
+>H : Symbol(H, Decl(compiler.d.ts, 40, 249))
+>H : Symbol(H, Decl(compiler.d.ts, 40, 249))
+>Current : Symbol(Current, Decl(compiler.d.ts, 40, 52))
+>Current : Symbol(Current, Decl(compiler.d.ts, 40, 52))
+>SSymlator : Symbol(SSymlator, Decl(compiler.d.ts, 37, 426))
+>H : Symbol(H, Decl(compiler.d.ts, 40, 249))
+>Current : Symbol(Current, Decl(compiler.d.ts, 40, 52))
+>H : Symbol(H, Decl(compiler.d.ts, 40, 249))
+>SCompiler : Symbol(SCompiler, Decl(compiler.d.ts, 39, 76))
+>R : Symbol(R, Decl(compiler.d.ts, 40, 276))
+>Stack : Symbol(Stack, Decl(compiler.d.ts, 40, 89))
+>Stack : Symbol(Stack, Decl(compiler.d.ts, 40, 89))
+>Current : Symbol(Current, Decl(compiler.d.ts, 40, 52))
+>Current : Symbol(Current, Decl(compiler.d.ts, 40, 52))
+>Stack : Symbol(Stack, Decl(compiler.d.ts, 40, 89))
+>_ : Symbol(_, Decl(compiler.d.ts, 40, 594))
+>R : Symbol(R, Decl(compiler.d.ts, 40, 606))
+>R : Symbol(R, Decl(compiler.d.ts, 40, 606))
+>H : Symbol(H, Decl(compiler.d.ts, 40, 249))
+>SCompiler : Symbol(SCompiler, Decl(compiler.d.ts, 39, 76))
+>R : Symbol(R, Decl(compiler.d.ts, 40, 276))
+>Stack : Symbol(Stack, Decl(compiler.d.ts, 40, 89))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 2 more)
+>Stack : Symbol(Stack, Decl(compiler.d.ts, 40, 89))
+>Current : Symbol(Current, Decl(compiler.d.ts, 40, 52))
+>Stack : Symbol(Stack, Decl(compiler.d.ts, 40, 89))
+>_ : Symbol(_, Decl(compiler.d.ts, 40, 766))
+>R : Symbol(R, Decl(compiler.d.ts, 40, 778))
+>R : Symbol(R, Decl(compiler.d.ts, 40, 778))
+>H : Symbol(H, Decl(compiler.d.ts, 40, 249))
+>SCompiler : Symbol(SCompiler, Decl(compiler.d.ts, 39, 76))
+>R : Symbol(R, Decl(compiler.d.ts, 40, 276))
+>Current : Symbol(Current, Decl(compiler.d.ts, 40, 52))
+>Stack : Symbol(Stack, Decl(compiler.d.ts, 40, 89))
+>H : Symbol(H, Decl(compiler.d.ts, 40, 249))
+>SCompiler : Symbol(SCompiler, Decl(compiler.d.ts, 39, 76))
+>R : Symbol(R, Decl(compiler.d.ts, 40, 276))
+>IsLetVec : Symbol(IsLetVec, Decl(compiler.d.ts, 40, 161))
+>Current : Symbol(Current, Decl(compiler.d.ts, 40, 52))
+>Stack : Symbol(Stack, Decl(compiler.d.ts, 40, 89))
+>StrStack : Symbol(StrStack, Decl(compiler.d.ts, 40, 131))
+>H : Symbol(H, Decl(compiler.d.ts, 40, 249))
+>SCompiler : Symbol(SCompiler, Decl(compiler.d.ts, 39, 76))
+>R : Symbol(R, Decl(compiler.d.ts, 40, 276))
+>Current : Symbol(Current, Decl(compiler.d.ts, 40, 52))
+>Stack : Symbol(Stack, Decl(compiler.d.ts, 40, 89))
+>H : Symbol(H, Decl(compiler.d.ts, 40, 249))
+>_ : Symbol(_, Decl(compiler.d.ts, 40, 1048))
+>SCompiler : Symbol(SCompiler, Decl(compiler.d.ts, 39, 76))
+>R : Symbol(R, Decl(compiler.d.ts, 40, 276))
+>Current : Symbol(Current, Decl(compiler.d.ts, 40, 52))
+>H : Symbol(H, Decl(compiler.d.ts, 40, 249))
+>Stack : Symbol(Stack, Decl(compiler.d.ts, 40, 89))
+>SCompiler : Symbol(SCompiler, Decl(compiler.d.ts, 39, 76))
+>R : Symbol(R, Decl(compiler.d.ts, 40, 276))
+>Current : Symbol(Current, Decl(compiler.d.ts, 40, 52))
+>SSymlator : Symbol(SSymlator, Decl(compiler.d.ts, 37, 426))
+>H : Symbol(H, Decl(compiler.d.ts, 40, 249))
+>Stack : Symbol(Stack, Decl(compiler.d.ts, 40, 89))
+>StrStack : Symbol(StrStack, Decl(compiler.d.ts, 40, 131))
+>H : Symbol(H, Decl(compiler.d.ts, 40, 249))
+
+export type _Unparse<AST, Type extends 'vec' | 'list' | 'map' | 'atom' = 'list'> = AST extends infer H ? H extends ['prim' | 'sym' | 'key', infer r0 extends boolean | string] ? r0 extends string ? Decimal.IsBitExpr<r0> extends true ? Decimal.BitToDecimal<r0> : `${r0}` : `${r0}` : H extends ['prim', [string, string]] ? SNumberString<H> : H extends ['vec', ...infer r] ? r extends [] ? '[]' : _Unparse<r, 'vec'> : H extends ['map', infer r] ? _Unparse<r, 'map'> : H extends ['fn', infer r0, infer r1] ? CloseBracket<`fn ${(_Unparse<r0, 'vec'> extends infer s ? s extends string ? s : '' : '')} ${(_Unparse<r1> extends infer s ? s extends string ? s : '' : '')}`, 'list'> : H extends ['let', infer r0, infer r1] ? CloseBracket<`let ${(_Unparse<r0, 'vec'> extends infer s ? s extends string ? s : '' : '')} ${(_Unparse<r1> extends infer s ? s extends string ? s : '' : '')}`, 'list'> : H extends ['if', infer r0, infer r1, ...infer r2] ? CloseBracket<`if ${(_Unparse<r0> extends infer s ? s extends string ? s : '' : '')} ${(_Unparse<r1> extends infer s ? s extends string ? s : '' : '')}${r2 extends [] ? '' : ' '}${(_Unparse<r2, 'atom'> extends infer s ? s extends string ? s : '' : '')}`, Type> : H extends [infer H extends unknown[], ...infer T] ? CloseBracket<`${(_Unparse<H> extends infer s ? s extends string ? s : '' : '')}${T extends [] ? '' : ' '}${(_Unparse<T, 'atom'> extends infer s ? s extends string ? s : '' : '')}`, Type> : H extends [] ? '' : {
+>_Unparse : Symbol(_Unparse, Decl(compiler.d.ts, 40, 1208))
+>AST : Symbol(AST, Decl(compiler.d.ts, 41, 21))
+>Type : Symbol(Type, Decl(compiler.d.ts, 41, 25))
+>AST : Symbol(AST, Decl(compiler.d.ts, 41, 21))
+>H : Symbol(H, Decl(compiler.d.ts, 41, 100))
+>H : Symbol(H, Decl(compiler.d.ts, 41, 100))
+>r0 : Symbol(r0, Decl(compiler.d.ts, 41, 145))
+>r0 : Symbol(r0, Decl(compiler.d.ts, 41, 145))
+>Decimal : Symbol(Decimal, Decl(compiler.d.ts, 0, 11))
+>IsBitExpr : Symbol(Decimal.IsBitExpr, Decl(decimal.d.ts, 12, 225))
+>r0 : Symbol(r0, Decl(compiler.d.ts, 41, 145))
+>Decimal : Symbol(Decimal, Decl(compiler.d.ts, 0, 11))
+>BitToDecimal : Symbol(Decimal.BitToDecimal, Decl(decimal.d.ts, 11, 201))
+>r0 : Symbol(r0, Decl(compiler.d.ts, 41, 145))
+>r0 : Symbol(r0, Decl(compiler.d.ts, 41, 145))
+>r0 : Symbol(r0, Decl(compiler.d.ts, 41, 145))
+>H : Symbol(H, Decl(compiler.d.ts, 41, 100))
+>SNumberString : Symbol(SNumberString)
+>H : Symbol(H, Decl(compiler.d.ts, 41, 100))
+>H : Symbol(H, Decl(compiler.d.ts, 41, 100))
+>r : Symbol(r, Decl(compiler.d.ts, 41, 365))
+>r : Symbol(r, Decl(compiler.d.ts, 41, 365))
+>_Unparse : Symbol(_Unparse, Decl(compiler.d.ts, 40, 1208))
+>r : Symbol(r, Decl(compiler.d.ts, 41, 365))
+>H : Symbol(H, Decl(compiler.d.ts, 41, 100))
+>r : Symbol(r, Decl(compiler.d.ts, 41, 437))
+>_Unparse : Symbol(_Unparse, Decl(compiler.d.ts, 40, 1208))
+>r : Symbol(r, Decl(compiler.d.ts, 41, 437))
+>H : Symbol(H, Decl(compiler.d.ts, 41, 100))
+>r0 : Symbol(r0, Decl(compiler.d.ts, 41, 486))
+>r1 : Symbol(r1, Decl(compiler.d.ts, 41, 496))
+>CloseBracket : Symbol(CloseBracket)
+>_Unparse : Symbol(_Unparse, Decl(compiler.d.ts, 40, 1208))
+>r0 : Symbol(r0, Decl(compiler.d.ts, 41, 486))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 556))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 556))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 556))
+>_Unparse : Symbol(_Unparse, Decl(compiler.d.ts, 40, 1208))
+>r1 : Symbol(r1, Decl(compiler.d.ts, 41, 496))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 623))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 623))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 623))
+>H : Symbol(H, Decl(compiler.d.ts, 41, 100))
+>r0 : Symbol(r0, Decl(compiler.d.ts, 41, 696))
+>r1 : Symbol(r1, Decl(compiler.d.ts, 41, 706))
+>CloseBracket : Symbol(CloseBracket)
+>_Unparse : Symbol(_Unparse, Decl(compiler.d.ts, 40, 1208))
+>r0 : Symbol(r0, Decl(compiler.d.ts, 41, 696))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 767))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 767))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 767))
+>_Unparse : Symbol(_Unparse, Decl(compiler.d.ts, 40, 1208))
+>r1 : Symbol(r1, Decl(compiler.d.ts, 41, 706))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 834))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 834))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 834))
+>H : Symbol(H, Decl(compiler.d.ts, 41, 100))
+>r0 : Symbol(r0, Decl(compiler.d.ts, 41, 906))
+>r1 : Symbol(r1, Decl(compiler.d.ts, 41, 916))
+>r2 : Symbol(r2, Decl(compiler.d.ts, 41, 929))
+>CloseBracket : Symbol(CloseBracket)
+>_Unparse : Symbol(_Unparse, Decl(compiler.d.ts, 40, 1208))
+>r0 : Symbol(r0, Decl(compiler.d.ts, 41, 906))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 982))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 982))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 982))
+>_Unparse : Symbol(_Unparse, Decl(compiler.d.ts, 40, 1208))
+>r1 : Symbol(r1, Decl(compiler.d.ts, 41, 916))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 1049))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 1049))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 1049))
+>r2 : Symbol(r2, Decl(compiler.d.ts, 41, 929))
+>_Unparse : Symbol(_Unparse, Decl(compiler.d.ts, 40, 1208))
+>r2 : Symbol(r2, Decl(compiler.d.ts, 41, 929))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 1150))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 1150))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 1150))
+>Type : Symbol(Type, Decl(compiler.d.ts, 41, 25))
+>H : Symbol(H, Decl(compiler.d.ts, 41, 100))
+>H : Symbol(H, Decl(compiler.d.ts, 41, 1214))
+>T : Symbol(T, Decl(compiler.d.ts, 41, 1244))
+>CloseBracket : Symbol(CloseBracket)
+>_Unparse : Symbol(_Unparse, Decl(compiler.d.ts, 40, 1208))
+>H : Symbol(H, Decl(compiler.d.ts, 41, 1214))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 1292))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 1292))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 1292))
+>T : Symbol(T, Decl(compiler.d.ts, 41, 1244))
+>_Unparse : Symbol(_Unparse, Decl(compiler.d.ts, 40, 1208))
+>T : Symbol(T, Decl(compiler.d.ts, 41, 1244))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 1391))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 1391))
+>s : Symbol(s, Decl(compiler.d.ts, 41, 1391))
+>Type : Symbol(Type, Decl(compiler.d.ts, 41, 25))
+>H : Symbol(H, Decl(compiler.d.ts, 41, 100))
+
+} : never;
+export type Unparse<AST> = _Unparse<AST> extends infer r ? r extends '' ? 'nil' : r : never;
+>Unparse : Symbol(Unparse, Decl(compiler.d.ts, 42, 10))
+>AST : Symbol(AST, Decl(compiler.d.ts, 43, 20))
+>_Unparse : Symbol(_Unparse, Decl(compiler.d.ts, 40, 1208))
+>AST : Symbol(AST, Decl(compiler.d.ts, 43, 20))
+>r : Symbol(r, Decl(compiler.d.ts, 43, 54))
+>r : Symbol(r, Decl(compiler.d.ts, 43, 54))
+>r : Symbol(r, Decl(compiler.d.ts, 43, 54))
+
+=== node_modules/@taiyakihitotsu/cion/dist/decimal.d.ts ===
+import type * as Bit from "./bit.js";
+>Bit : Symbol(Bit, Decl(decimal.d.ts, 0, 11))
+
+import type * as Peano from "./peano.js";
+>Peano : Symbol(Peano, Decl(decimal.d.ts, 1, 11))
+
+type D10 = '0000000000001010';
+>D10 : Symbol(D10, Decl(decimal.d.ts, 1, 41))
+
+type D100 = '0000000001100100';
+>D100 : Symbol(D100, Decl(decimal.d.ts, 2, 30))
+
+type D1000 = '0000001111101000';
+>D1000 : Symbol(D1000, Decl(decimal.d.ts, 3, 31))
+
+type D10000 = '0010011100010000';
+>D10000 : Symbol(D10000, Decl(decimal.d.ts, 4, 32))
+
+type PeanoToDecimal<N> = N extends null ? 0 : N extends [null] ? 1 : N extends [[null]] ? 2 : N extends [[[null]]] ? 3 : N extends [[[[null]]]] ? 4 : N extends [[[[[null]]]]] ? 5 : N extends [[[[[[null]]]]]] ? 6 : N extends [[[[[[[null]]]]]]] ? 7 : N extends [[[[[[[[null]]]]]]]] ? 8 : N extends [[[[[[[[[null]]]]]]]]] ? 9 : never;
+>PeanoToDecimal : Symbol(PeanoToDecimal, Decl(decimal.d.ts, 5, 33))
+>N : Symbol(N, Decl(decimal.d.ts, 6, 20))
+>N : Symbol(N, Decl(decimal.d.ts, 6, 20))
+>N : Symbol(N, Decl(decimal.d.ts, 6, 20))
+>N : Symbol(N, Decl(decimal.d.ts, 6, 20))
+>N : Symbol(N, Decl(decimal.d.ts, 6, 20))
+>N : Symbol(N, Decl(decimal.d.ts, 6, 20))
+>N : Symbol(N, Decl(decimal.d.ts, 6, 20))
+>N : Symbol(N, Decl(decimal.d.ts, 6, 20))
+>N : Symbol(N, Decl(decimal.d.ts, 6, 20))
+>N : Symbol(N, Decl(decimal.d.ts, 6, 20))
+>N : Symbol(N, Decl(decimal.d.ts, 6, 20))
+
+type DigitTable = ['1', D10, D100, D1000, D10000];
+>DigitTable : Symbol(DigitTable, Decl(decimal.d.ts, 6, 331))
+>D10 : Symbol(D10, Decl(decimal.d.ts, 1, 41))
+>D100 : Symbol(D100, Decl(decimal.d.ts, 2, 30))
+>D1000 : Symbol(D1000, Decl(decimal.d.ts, 3, 31))
+>D10000 : Symbol(D10000, Decl(decimal.d.ts, 4, 32))
+
+type _DigitKeys = [4, 3, 2, 1, 0];
+>_DigitKeys : Symbol(_DigitKeys, Decl(decimal.d.ts, 7, 50))
+
+type _BitToDecimal<S extends string, Ret extends string = '0', Keys = _DigitKeys, Cul = null> = Keys extends [infer K, ...infer R] ? Bit.BitSub<S, DigitTable[K extends DigitKidx ? K : never]> extends infer u ? Bit.BitLTE<u extends string ? u : never, '0'> extends true ? _BitToDecimal<S, `${Ret}${PeanoToDecimal<Cul>}`, R> : _BitToDecimal<u extends string ? u : never, Ret, Keys, Peano.inc<Cul>> : never : Ret extends string ? Ret : never;
+>_BitToDecimal : Symbol(_BitToDecimal, Decl(decimal.d.ts, 8, 34))
+>S : Symbol(S, Decl(decimal.d.ts, 9, 19))
+>Ret : Symbol(Ret, Decl(decimal.d.ts, 9, 36))
+>Keys : Symbol(Keys, Decl(decimal.d.ts, 9, 62))
+>_DigitKeys : Symbol(_DigitKeys, Decl(decimal.d.ts, 7, 50))
+>Cul : Symbol(Cul, Decl(decimal.d.ts, 9, 81))
+>Keys : Symbol(Keys, Decl(decimal.d.ts, 9, 62))
+>K : Symbol(K, Decl(decimal.d.ts, 9, 115))
+>R : Symbol(R, Decl(decimal.d.ts, 9, 127))
+>Bit : Symbol(Bit, Decl(decimal.d.ts, 0, 11))
+>BitSub : Symbol(Bit.BitSub, Decl(bit.d.ts, 19, 168))
+>S : Symbol(S, Decl(decimal.d.ts, 9, 19))
+>DigitTable : Symbol(DigitTable, Decl(decimal.d.ts, 6, 331))
+>K : Symbol(K, Decl(decimal.d.ts, 9, 115))
+>DigitKidx : Symbol(DigitKidx)
+>K : Symbol(K, Decl(decimal.d.ts, 9, 115))
+>u : Symbol(u, Decl(decimal.d.ts, 9, 205))
+>Bit : Symbol(Bit, Decl(decimal.d.ts, 0, 11))
+>BitLTE : Symbol(Bit.BitLTE, Decl(bit.d.ts, 22, 140))
+>u : Symbol(u, Decl(decimal.d.ts, 9, 205))
+>u : Symbol(u, Decl(decimal.d.ts, 9, 205))
+>_BitToDecimal : Symbol(_BitToDecimal, Decl(decimal.d.ts, 8, 34))
+>S : Symbol(S, Decl(decimal.d.ts, 9, 19))
+>Ret : Symbol(Ret, Decl(decimal.d.ts, 9, 36))
+>PeanoToDecimal : Symbol(PeanoToDecimal, Decl(decimal.d.ts, 5, 33))
+>Cul : Symbol(Cul, Decl(decimal.d.ts, 9, 81))
+>R : Symbol(R, Decl(decimal.d.ts, 9, 127))
+>_BitToDecimal : Symbol(_BitToDecimal, Decl(decimal.d.ts, 8, 34))
+>u : Symbol(u, Decl(decimal.d.ts, 9, 205))
+>u : Symbol(u, Decl(decimal.d.ts, 9, 205))
+>Ret : Symbol(Ret, Decl(decimal.d.ts, 9, 36))
+>Keys : Symbol(Keys, Decl(decimal.d.ts, 9, 62))
+>Peano : Symbol(Peano, Decl(decimal.d.ts, 1, 11))
+>inc : Symbol(Peano.inc, Decl(peano.d.ts, 4, 108))
+>Cul : Symbol(Cul, Decl(decimal.d.ts, 9, 81))
+>Ret : Symbol(Ret, Decl(decimal.d.ts, 9, 36))
+>Ret : Symbol(Ret, Decl(decimal.d.ts, 9, 36))
+
+type TrimZero<S extends string> = S extends `${infer H}${infer T}` ? H extends '0' ? TrimZero<T> : S : S;
+>TrimZero : Symbol(TrimZero, Decl(decimal.d.ts, 9, 439))
+>S : Symbol(S, Decl(decimal.d.ts, 10, 14))
+>S : Symbol(S, Decl(decimal.d.ts, 10, 14))
+>H : Symbol(H, Decl(decimal.d.ts, 10, 52))
+>T : Symbol(T, Decl(decimal.d.ts, 10, 62))
+>H : Symbol(H, Decl(decimal.d.ts, 10, 52))
+>TrimZero : Symbol(TrimZero, Decl(decimal.d.ts, 9, 439))
+>T : Symbol(T, Decl(decimal.d.ts, 10, 62))
+>S : Symbol(S, Decl(decimal.d.ts, 10, 14))
+>S : Symbol(S, Decl(decimal.d.ts, 10, 14))
+
+export type rBitToDecimal<S extends string> = _BitToDecimal<S> extends string & infer s ? TrimZero<s extends string ? s : never> extends infer trimed ? trimed extends '' ? '0' : trimed : never : never;
+>rBitToDecimal : Symbol(rBitToDecimal, Decl(decimal.d.ts, 10, 105))
+>S : Symbol(S, Decl(decimal.d.ts, 11, 26))
+>_BitToDecimal : Symbol(_BitToDecimal, Decl(decimal.d.ts, 8, 34))
+>S : Symbol(S, Decl(decimal.d.ts, 11, 26))
+>s : Symbol(s, Decl(decimal.d.ts, 11, 85))
+>TrimZero : Symbol(TrimZero, Decl(decimal.d.ts, 9, 439))
+>s : Symbol(s, Decl(decimal.d.ts, 11, 85))
+>s : Symbol(s, Decl(decimal.d.ts, 11, 85))
+>trimed : Symbol(trimed, Decl(decimal.d.ts, 11, 142))
+>trimed : Symbol(trimed, Decl(decimal.d.ts, 11, 142))
+>trimed : Symbol(trimed, Decl(decimal.d.ts, 11, 142))
+
+export type BitToDecimal<S extends string> = Bit.BitFill<S, Peano.T16> extends `${infer H}${infer T}` ? H extends '1' ? `-${rBitToDecimal<Bit.BitAdd<'1', Bit.BitSub<'0111111111111111', `0${T}`>>>}` : rBitToDecimal<S> : never;
+>BitToDecimal : Symbol(BitToDecimal, Decl(decimal.d.ts, 11, 201))
+>S : Symbol(S, Decl(decimal.d.ts, 12, 25))
+>Bit : Symbol(Bit, Decl(decimal.d.ts, 0, 11))
+>BitFill : Symbol(Bit.BitFill, Decl(bit.d.ts, 16, 30))
+>S : Symbol(S, Decl(decimal.d.ts, 12, 25))
+>Peano : Symbol(Peano, Decl(decimal.d.ts, 1, 11))
+>T16 : Symbol(Peano.T16, Decl(peano.d.ts, 2, 36))
+>H : Symbol(H, Decl(decimal.d.ts, 12, 87))
+>T : Symbol(T, Decl(decimal.d.ts, 12, 97))
+>H : Symbol(H, Decl(decimal.d.ts, 12, 87))
+>rBitToDecimal : Symbol(rBitToDecimal, Decl(decimal.d.ts, 10, 105))
+>Bit : Symbol(Bit, Decl(decimal.d.ts, 0, 11))
+>BitAdd : Symbol(Bit.BitAdd, Decl(bit.d.ts, 18, 313))
+>Bit : Symbol(Bit, Decl(decimal.d.ts, 0, 11))
+>BitSub : Symbol(Bit.BitSub, Decl(bit.d.ts, 19, 168))
+>T : Symbol(T, Decl(decimal.d.ts, 12, 97))
+>rBitToDecimal : Symbol(rBitToDecimal, Decl(decimal.d.ts, 10, 105))
+>S : Symbol(S, Decl(decimal.d.ts, 12, 25))
+
+export type IsBitExpr<S extends string> = S extends `${infer H}${infer T}` ? H extends '0' | '1' ? T extends '' ? H extends '0' | '1' ? true : false : IsBitExpr<T> : false : false;
+>IsBitExpr : Symbol(IsBitExpr, Decl(decimal.d.ts, 12, 225))
+>S : Symbol(S, Decl(decimal.d.ts, 13, 22))
+>S : Symbol(S, Decl(decimal.d.ts, 13, 22))
+>H : Symbol(H, Decl(decimal.d.ts, 13, 60))
+>T : Symbol(T, Decl(decimal.d.ts, 13, 70))
+>H : Symbol(H, Decl(decimal.d.ts, 13, 60))
+>T : Symbol(T, Decl(decimal.d.ts, 13, 70))
+>H : Symbol(H, Decl(decimal.d.ts, 13, 60))
+>IsBitExpr : Symbol(IsBitExpr, Decl(decimal.d.ts, 12, 225))
+>T : Symbol(T, Decl(decimal.d.ts, 13, 70))
+
+=== node_modules/@taiyakihitotsu/cion/dist/index.d.ts ===
+import type * as Bit from './bit.js';
+>Bit : Symbol(Bit, Decl(index.d.ts, 0, 11))
+
+import type * as Compiler from './compiler.js';
+>Compiler : Symbol(Compiler, Decl(index.d.ts, 1, 11))
+
+import type { regex } from './regex.js';
+>regex : Symbol(regex, Decl(index.d.ts, 2, 13))
+
+import type { LetVal, LetForm, Each, Atom, TMap, Sexpr, TNil, Keyword, Sym, PrimString, PrimNumber, BitString, RatioString, NumString, Prim, Fn, Vector, Var, Env, TNotMatch, IfForm, Falsy } from './sexprtypes.js';
+>LetVal : Symbol(LetVal, Decl(index.d.ts, 3, 13))
+>LetForm : Symbol(LetForm, Decl(index.d.ts, 3, 21))
+>Each : Symbol(Each, Decl(index.d.ts, 3, 30))
+>Atom : Symbol(Atom, Decl(index.d.ts, 3, 36))
+>TMap : Symbol(TMap, Decl(index.d.ts, 3, 42))
+>Sexpr : Symbol(Sexpr, Decl(index.d.ts, 3, 48))
+>TNil : Symbol(TNil, Decl(index.d.ts, 3, 55))
+>Keyword : Symbol(Keyword, Decl(index.d.ts, 3, 61))
+>Sym : Symbol(Sym, Decl(index.d.ts, 3, 70))
+>PrimString : Symbol(PrimString, Decl(index.d.ts, 3, 75))
+>PrimNumber : Symbol(PrimNumber, Decl(index.d.ts, 3, 87))
+>BitString : Symbol(BitString, Decl(index.d.ts, 3, 99))
+>RatioString : Symbol(RatioString, Decl(index.d.ts, 3, 110))
+>NumString : Symbol(NumString, Decl(index.d.ts, 3, 123))
+>Prim : Symbol(Prim, Decl(index.d.ts, 3, 134))
+>Fn : Symbol(Fn, Decl(index.d.ts, 3, 140))
+>Vector : Symbol(Vector, Decl(index.d.ts, 3, 144))
+>Var : Symbol(Var, Decl(index.d.ts, 3, 152))
+>Env : Symbol(Env, Decl(index.d.ts, 3, 157))
+>TNotMatch : Symbol(TNotMatch, Decl(index.d.ts, 3, 162))
+>IfForm : Symbol(IfForm, Decl(index.d.ts, 3, 173))
+>Falsy : Symbol(Falsy, Decl(index.d.ts, 3, 181))
+
+export type MakeVar<N, V> = {
+>MakeVar : Symbol(MakeVar, Decl(index.d.ts, 3, 213))
+>N : Symbol(N, Decl(index.d.ts, 4, 20))
+>V : Symbol(V, Decl(index.d.ts, 4, 22))
+
+    name: N;
+>name : Symbol(name, Decl(index.d.ts, 4, 29))
+>N : Symbol(N, Decl(index.d.ts, 4, 20))
+
+    value: V;
+>value : Symbol(value, Decl(index.d.ts, 5, 12))
+>V : Symbol(V, Decl(index.d.ts, 4, 22))
+
+};
+type GetVar<T, E> = E extends Env ? E extends [infer U, ...infer R] ? U extends Var ? U["name"] extends T ? U["value"] : GetVar<T, R> : TNotMatch : TNotMatch : TNotMatch;
+>GetVar : Symbol(GetVar, Decl(index.d.ts, 7, 2))
+>T : Symbol(T, Decl(index.d.ts, 8, 12))
+>E : Symbol(E, Decl(index.d.ts, 8, 14))
+>E : Symbol(E, Decl(index.d.ts, 8, 14))
+>Env : Symbol(Env, Decl(index.d.ts, 3, 157))
+>E : Symbol(E, Decl(index.d.ts, 8, 14))
+>U : Symbol(U, Decl(index.d.ts, 8, 52))
+>R : Symbol(R, Decl(index.d.ts, 8, 64))
+>U : Symbol(U, Decl(index.d.ts, 8, 52))
+>Var : Symbol(Var, Decl(index.d.ts, 3, 152))
+>U : Symbol(U, Decl(index.d.ts, 8, 52))
+>T : Symbol(T, Decl(index.d.ts, 8, 12))
+>U : Symbol(U, Decl(index.d.ts, 8, 52))
+>GetVar : Symbol(GetVar, Decl(index.d.ts, 7, 2))
+>T : Symbol(T, Decl(index.d.ts, 8, 12))
+>R : Symbol(R, Decl(index.d.ts, 8, 64))
+>TNotMatch : Symbol(TNotMatch, Decl(index.d.ts, 3, 162))
+>TNotMatch : Symbol(TNotMatch, Decl(index.d.ts, 3, 162))
+>TNotMatch : Symbol(TNotMatch, Decl(index.d.ts, 3, 162))
+
+type Let<N, V, EnvLifo = Env[]> = EnvLifo extends Env[] ? [...EnvLifo, [MakeVar<N, V>]] : LetError0;
+>Let : Symbol(Let, Decl(index.d.ts, 8, 170))
+>N : Symbol(N, Decl(index.d.ts, 9, 9))
+>V : Symbol(V, Decl(index.d.ts, 9, 11))
+>EnvLifo : Symbol(EnvLifo, Decl(index.d.ts, 9, 14))
+>Env : Symbol(Env, Decl(index.d.ts, 3, 157))
+>EnvLifo : Symbol(EnvLifo, Decl(index.d.ts, 9, 14))
+>Env : Symbol(Env, Decl(index.d.ts, 3, 157))
+>EnvLifo : Symbol(EnvLifo, Decl(index.d.ts, 9, 14))
+>MakeVar : Symbol(MakeVar, Decl(index.d.ts, 3, 213))
+>N : Symbol(N, Decl(index.d.ts, 9, 9))
+>V : Symbol(V, Decl(index.d.ts, 9, 11))
+>LetError0 : Symbol(LetError0)
+
+type ReadLet<N, EnvLifo = [[]]> = EnvLifo extends [...infer HS, infer L] ? L extends Env ? GetVar<N, L> extends TNotMatch ? ReadLet<N, HS> : GetVar<N, L> : TNotMatch : TNotMatch;
+>ReadLet : Symbol(ReadLet, Decl(index.d.ts, 9, 100))
+>N : Symbol(N, Decl(index.d.ts, 10, 13))
+>EnvLifo : Symbol(EnvLifo, Decl(index.d.ts, 10, 15))
+>EnvLifo : Symbol(EnvLifo, Decl(index.d.ts, 10, 15))
+>HS : Symbol(HS, Decl(index.d.ts, 10, 59))
+>L : Symbol(L, Decl(index.d.ts, 10, 69))
+>L : Symbol(L, Decl(index.d.ts, 10, 69))
+>Env : Symbol(Env, Decl(index.d.ts, 3, 157))
+>GetVar : Symbol(GetVar, Decl(index.d.ts, 7, 2))
+>N : Symbol(N, Decl(index.d.ts, 10, 13))
+>L : Symbol(L, Decl(index.d.ts, 10, 69))
+>TNotMatch : Symbol(TNotMatch, Decl(index.d.ts, 3, 162))
+>ReadLet : Symbol(ReadLet, Decl(index.d.ts, 9, 100))
+>N : Symbol(N, Decl(index.d.ts, 10, 13))
+>HS : Symbol(HS, Decl(index.d.ts, 10, 59))
+>GetVar : Symbol(GetVar, Decl(index.d.ts, 7, 2))
+>N : Symbol(N, Decl(index.d.ts, 10, 13))
+>L : Symbol(L, Decl(index.d.ts, 10, 69))
+>TNotMatch : Symbol(TNotMatch, Decl(index.d.ts, 3, 162))
+>TNotMatch : Symbol(TNotMatch, Decl(index.d.ts, 3, 162))
+
+type ReadAtom<A, EnvLifo = [[]], prev = 0> = A extends [`sym`, infer S] ? ReadLet<S, EnvLifo> : Eval<A, EnvLifo, [prev]>;
+>ReadAtom : Symbol(ReadAtom, Decl(index.d.ts, 10, 178))
+>A : Symbol(A, Decl(index.d.ts, 11, 14))
+>EnvLifo : Symbol(EnvLifo, Decl(index.d.ts, 11, 16))
+>prev : Symbol(prev, Decl(index.d.ts, 11, 32))
+>A : Symbol(A, Decl(index.d.ts, 11, 14))
+>S : Symbol(S, Decl(index.d.ts, 11, 68))
+>ReadLet : Symbol(ReadLet, Decl(index.d.ts, 9, 100))
+>S : Symbol(S, Decl(index.d.ts, 11, 68))
+>EnvLifo : Symbol(EnvLifo, Decl(index.d.ts, 11, 16))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>A : Symbol(A, Decl(index.d.ts, 11, 14))
+>EnvLifo : Symbol(EnvLifo, Decl(index.d.ts, 11, 16))
+>prev : Symbol(prev, Decl(index.d.ts, 11, 32))
+
+type Reading<AS, EnvList = [[]], prev = 0, R = []> = R extends Atom[] ? AS extends [infer H, ...infer T] ? H extends Sym & ['sym', infer _ extends BuiltinsUnion] ? Reading<T, EnvList, prev, [...R, H]> : H extends Fn & ['fn', infer Syms extends Sym[], infer Body] ? Reading<T, EnvList, prev, [...R, ['fn', Syms, ReadLetRecur<Body, ReduceDelEnv<Syms, EnvList extends EnvLifo ? EnvList : never>>]]> : H extends Atom ? Reading<T, EnvList, prev, [...R, ReadAtom<H, EnvList, prev>]> : H extends Sexpr | LetForm | IfForm ? Reading<T, EnvList, prev, [...R, Eval<H, EnvList, prev>]> : ErrorCase<ReadingError1, "Atom but not able to read.", [EnvList, H]> : R : ErrorCase<ReadingError0, 'sexpr is not atom list.', R>;
+>Reading : Symbol(Reading, Decl(index.d.ts, 11, 121))
+>AS : Symbol(AS, Decl(index.d.ts, 12, 13))
+>EnvList : Symbol(EnvList, Decl(index.d.ts, 12, 16))
+>prev : Symbol(prev, Decl(index.d.ts, 12, 32))
+>R : Symbol(R, Decl(index.d.ts, 12, 42))
+>R : Symbol(R, Decl(index.d.ts, 12, 42))
+>Atom : Symbol(Atom, Decl(index.d.ts, 3, 36))
+>AS : Symbol(AS, Decl(index.d.ts, 12, 13))
+>H : Symbol(H, Decl(index.d.ts, 12, 89))
+>T : Symbol(T, Decl(index.d.ts, 12, 101))
+>H : Symbol(H, Decl(index.d.ts, 12, 89))
+>Sym : Symbol(Sym, Decl(index.d.ts, 3, 70))
+>_ : Symbol(_, Decl(index.d.ts, 12, 136))
+>BuiltinsUnion : Symbol(BuiltinsUnion, Decl(index.d.ts, 18, 202))
+>Reading : Symbol(Reading, Decl(index.d.ts, 11, 121))
+>T : Symbol(T, Decl(index.d.ts, 12, 101))
+>EnvList : Symbol(EnvList, Decl(index.d.ts, 12, 16))
+>prev : Symbol(prev, Decl(index.d.ts, 12, 32))
+>R : Symbol(R, Decl(index.d.ts, 12, 42))
+>H : Symbol(H, Decl(index.d.ts, 12, 89))
+>H : Symbol(H, Decl(index.d.ts, 12, 89))
+>Fn : Symbol(Fn, Decl(index.d.ts, 3, 140))
+>Syms : Symbol(Syms, Decl(index.d.ts, 12, 230))
+>Sym : Symbol(Sym, Decl(index.d.ts, 3, 70))
+>Body : Symbol(Body, Decl(index.d.ts, 12, 256))
+>Reading : Symbol(Reading, Decl(index.d.ts, 11, 121))
+>T : Symbol(T, Decl(index.d.ts, 12, 101))
+>EnvList : Symbol(EnvList, Decl(index.d.ts, 12, 16))
+>prev : Symbol(prev, Decl(index.d.ts, 12, 32))
+>R : Symbol(R, Decl(index.d.ts, 12, 42))
+>Syms : Symbol(Syms, Decl(index.d.ts, 12, 230))
+>ReadLetRecur : Symbol(ReadLetRecur)
+>Body : Symbol(Body, Decl(index.d.ts, 12, 256))
+>ReduceDelEnv : Symbol(ReduceDelEnv)
+>Syms : Symbol(Syms, Decl(index.d.ts, 12, 230))
+>EnvList : Symbol(EnvList, Decl(index.d.ts, 12, 16))
+>EnvLifo : Symbol(EnvLifo)
+>EnvList : Symbol(EnvList, Decl(index.d.ts, 12, 16))
+>H : Symbol(H, Decl(index.d.ts, 12, 89))
+>Atom : Symbol(Atom, Decl(index.d.ts, 3, 36))
+>Reading : Symbol(Reading, Decl(index.d.ts, 11, 121))
+>T : Symbol(T, Decl(index.d.ts, 12, 101))
+>EnvList : Symbol(EnvList, Decl(index.d.ts, 12, 16))
+>prev : Symbol(prev, Decl(index.d.ts, 12, 32))
+>R : Symbol(R, Decl(index.d.ts, 12, 42))
+>ReadAtom : Symbol(ReadAtom, Decl(index.d.ts, 10, 178))
+>H : Symbol(H, Decl(index.d.ts, 12, 89))
+>EnvList : Symbol(EnvList, Decl(index.d.ts, 12, 16))
+>prev : Symbol(prev, Decl(index.d.ts, 12, 32))
+>H : Symbol(H, Decl(index.d.ts, 12, 89))
+>Sexpr : Symbol(Sexpr, Decl(index.d.ts, 3, 48))
+>LetForm : Symbol(LetForm, Decl(index.d.ts, 3, 21))
+>IfForm : Symbol(IfForm, Decl(index.d.ts, 3, 173))
+>Reading : Symbol(Reading, Decl(index.d.ts, 11, 121))
+>T : Symbol(T, Decl(index.d.ts, 12, 101))
+>EnvList : Symbol(EnvList, Decl(index.d.ts, 12, 16))
+>prev : Symbol(prev, Decl(index.d.ts, 12, 32))
+>R : Symbol(R, Decl(index.d.ts, 12, 42))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>H : Symbol(H, Decl(index.d.ts, 12, 89))
+>EnvList : Symbol(EnvList, Decl(index.d.ts, 12, 16))
+>prev : Symbol(prev, Decl(index.d.ts, 12, 32))
+>ErrorCase : Symbol(ErrorCase)
+>ReadingError1 : Symbol(ReadingError1)
+>EnvList : Symbol(EnvList, Decl(index.d.ts, 12, 16))
+>H : Symbol(H, Decl(index.d.ts, 12, 89))
+>R : Symbol(R, Decl(index.d.ts, 12, 42))
+>ErrorCase : Symbol(ErrorCase)
+>ReadingError0 : Symbol(ReadingError0)
+>R : Symbol(R, Decl(index.d.ts, 12, 42))
+
+export type LispRefind<S> = S extends [[`prim`, `'${infer regex}'`], [`prim`, `'${infer searched}'`]] ? regex.RegexFind<searched, regex> extends [infer _, infer match extends string, infer _] ? ['prim', `'${match}'`] : ['prim', `''`] : S;
+>LispRefind : Symbol(LispRefind, Decl(index.d.ts, 12, 706))
+>S : Symbol(S, Decl(index.d.ts, 13, 23))
+>S : Symbol(S, Decl(index.d.ts, 13, 23))
+>regex : Symbol(regex, Decl(index.d.ts, 13, 57))
+>searched : Symbol(searched, Decl(index.d.ts, 13, 87))
+>regex : Symbol(regex, Decl(index.d.ts, 2, 13))
+>RegexFind : Symbol(regex.RegexFind, Decl(regex.d.ts, 2, 363))
+>searched : Symbol(searched, Decl(index.d.ts, 13, 87))
+>regex : Symbol(regex, Decl(index.d.ts, 13, 57))
+>_ : Symbol(_, Decl(index.d.ts, 13, 151), Decl(index.d.ts, 13, 188))
+>match : Symbol(match, Decl(index.d.ts, 13, 160))
+>_ : Symbol(_, Decl(index.d.ts, 13, 151), Decl(index.d.ts, 13, 188))
+>match : Symbol(match, Decl(index.d.ts, 13, 160))
+>S : Symbol(S, Decl(index.d.ts, 13, 23))
+
+export type Split<Regex extends string, String extends string> = regex.RegexFind<String, Regex> extends [infer prev extends string, infer _match, infer next extends string] ? prev extends '' ? [...Split<Regex, next>] : [['prim', `'${prev}'`], ...Split<Regex, next>] : String extends '' ? [] : [['prim', `'${String}'`]];
+>Split : Symbol(Split, Decl(index.d.ts, 13, 238))
+>Regex : Symbol(Regex, Decl(index.d.ts, 14, 18))
+>String : Symbol(String, Decl(index.d.ts, 14, 39))
+>regex : Symbol(regex, Decl(index.d.ts, 2, 13))
+>RegexFind : Symbol(regex.RegexFind, Decl(regex.d.ts, 2, 363))
+>String : Symbol(String, Decl(index.d.ts, 14, 39))
+>Regex : Symbol(Regex, Decl(index.d.ts, 14, 18))
+>prev : Symbol(prev, Decl(index.d.ts, 14, 110))
+>_match : Symbol(_match, Decl(index.d.ts, 14, 137))
+>next : Symbol(next, Decl(index.d.ts, 14, 151))
+>prev : Symbol(prev, Decl(index.d.ts, 14, 110))
+>Split : Symbol(Split, Decl(index.d.ts, 13, 238))
+>Regex : Symbol(Regex, Decl(index.d.ts, 14, 18))
+>next : Symbol(next, Decl(index.d.ts, 14, 151))
+>prev : Symbol(prev, Decl(index.d.ts, 14, 110))
+>Split : Symbol(Split, Decl(index.d.ts, 13, 238))
+>Regex : Symbol(Regex, Decl(index.d.ts, 14, 18))
+>next : Symbol(next, Decl(index.d.ts, 14, 151))
+>String : Symbol(String, Decl(index.d.ts, 14, 39))
+>String : Symbol(String, Decl(index.d.ts, 14, 39))
+
+export type LispSplit<S> = S extends [[`prim`, `'${infer searched}'`], [`prim`, `'${infer regex}'`]] ? ['vec', ...Split<regex, searched>] : LispSplitError0;
+>LispSplit : Symbol(LispSplit, Decl(index.d.ts, 14, 319))
+>S : Symbol(S, Decl(index.d.ts, 15, 22))
+>S : Symbol(S, Decl(index.d.ts, 15, 22))
+>searched : Symbol(searched, Decl(index.d.ts, 15, 56))
+>regex : Symbol(regex, Decl(index.d.ts, 15, 89))
+>Split : Symbol(Split, Decl(index.d.ts, 13, 238))
+>regex : Symbol(regex, Decl(index.d.ts, 15, 89))
+>searched : Symbol(searched, Decl(index.d.ts, 15, 56))
+>LispSplitError0 : Symbol(LispSplitError0)
+
+type If<A, B, C> = A extends [`prim`, false] | TNil ? C : B;
+>If : Symbol(If, Decl(index.d.ts, 15, 156))
+>A : Symbol(A, Decl(index.d.ts, 16, 8))
+>B : Symbol(B, Decl(index.d.ts, 16, 10))
+>C : Symbol(C, Decl(index.d.ts, 16, 13))
+>A : Symbol(A, Decl(index.d.ts, 16, 8))
+>TNil : Symbol(TNil, Decl(index.d.ts, 3, 55))
+>C : Symbol(C, Decl(index.d.ts, 16, 13))
+>B : Symbol(B, Decl(index.d.ts, 16, 10))
+
+export type Count<S extends unknown[], I extends string = '0'> = S extends [infer _, ...infer R] ? R extends [] ? Bit.BitAdd<I, '1'> : Count<R, Bit.BitAdd<I, '1'>> : ErrorCase<CountError0, '1st should be an array as an inner expression.', S>;
+>Count : Symbol(Count, Decl(index.d.ts, 16, 60))
+>S : Symbol(S, Decl(index.d.ts, 17, 18))
+>I : Symbol(I, Decl(index.d.ts, 17, 38))
+>S : Symbol(S, Decl(index.d.ts, 17, 18))
+>_ : Symbol(_, Decl(index.d.ts, 17, 81))
+>R : Symbol(R, Decl(index.d.ts, 17, 93))
+>R : Symbol(R, Decl(index.d.ts, 17, 93))
+>Bit : Symbol(Bit, Decl(index.d.ts, 0, 11))
+>BitAdd : Symbol(Bit.BitAdd, Decl(bit.d.ts, 18, 313))
+>I : Symbol(I, Decl(index.d.ts, 17, 38))
+>Count : Symbol(Count, Decl(index.d.ts, 16, 60))
+>R : Symbol(R, Decl(index.d.ts, 17, 93))
+>Bit : Symbol(Bit, Decl(index.d.ts, 0, 11))
+>BitAdd : Symbol(Bit.BitAdd, Decl(bit.d.ts, 18, 313))
+>I : Symbol(I, Decl(index.d.ts, 17, 38))
+>ErrorCase : Symbol(ErrorCase)
+>CountError0 : Symbol(CountError0)
+>S : Symbol(S, Decl(index.d.ts, 17, 18))
+
+export type LispCount<S> = S extends [Vector] & [['vec']] ? ['prim', '0'] : S extends [Vector] & [['vec', ...infer V]] ? ['prim', Count<V>] : ErrorCase<CountError1, 'Arg of count should be vector.', S>;
+>LispCount : Symbol(LispCount, Decl(index.d.ts, 17, 242))
+>S : Symbol(S, Decl(index.d.ts, 18, 22))
+>S : Symbol(S, Decl(index.d.ts, 18, 22))
+>Vector : Symbol(Vector, Decl(index.d.ts, 3, 144))
+>S : Symbol(S, Decl(index.d.ts, 18, 22))
+>Vector : Symbol(Vector, Decl(index.d.ts, 3, 144))
+>V : Symbol(V, Decl(index.d.ts, 18, 114))
+>Count : Symbol(Count, Decl(index.d.ts, 16, 60))
+>V : Symbol(V, Decl(index.d.ts, 18, 114))
+>ErrorCase : Symbol(ErrorCase)
+>CountError1 : Symbol(CountError1)
+>S : Symbol(S, Decl(index.d.ts, 18, 22))
+
+export type BuiltinsUnion = 'if' | 'let' | 'fn' | '->' | '->>' | 'some->' | 'some->>' | 'str' | 'vector' | 'map' | 'filter' | 'remove' | 'reduce' | 'count' | 'concat' | 'conj' | 'join' | 'first' | 'second' | 'third' | 'last' | 'rest' | 'butlast' | 'reverse' | 'repeat' | 'range' | 'interleave' | 'take' | 'drop' | 'assoc-in' | 'update-in' | 'assoc' | 'update' | 'get' | 'get-in' | 'keys' | 'eq' | '=' | 'not' | 'and' | 'or' | 'inc' | 'dec' | '+' | '-' | '*' | '/' | 'trunc' | 'floor' | '%' | 'rem' | 'mod' | 'abs' | '>' | '<' | '>=' | '<=' | 'number?' | 'string?' | 'vector?' | 'map?' | 'fn?' | 'keyword?' | 'ifn?' | 'pos-int?' | 'neg-int?' | 'pos?' | 'neg?' | 'int?' | 'nat?' | 'odd?' | 'even?' | 'zero?' | 'empty?' | 'every?' | 'ratio?' | 'some' | 'nil?' | 'some?' | 'boolean?' | 'any?' | 'prim?' | 'type' | 're-find' | 'split' | 'replace' | 'subs-all' | 'subs' | 'min' | 'max' | 'zipmap' | 'apply';
+>BuiltinsUnion : Symbol(BuiltinsUnion, Decl(index.d.ts, 18, 202))
+
+type Builtins<U, OPR extends unknown[], env, prev> = Reading<OPR, env, [[prev]]> extends infer R ? U extends '->' ? Eval<LispThreadFirst<OPR>, env, [[prev]]> : U extends '->>' ? Eval<LispThreadLast<OPR>, env, [[prev]]> : U extends 'some->' ? Eval<LispSomeThreadFirst<OPR>, env, [[prev]]> : U extends 'some->>' ? Eval<LispSomeThreadLast<OPR>, env, [[prev]]> : U extends `str` ? Str<R> : U extends `re-find` ? LispRefind<R> : U extends `split` ? LispSplit<R> : U extends `subs-all` ? LispStrSubsAll<R> : U extends `subs` ? LispCljSubs<R> : U extends `replace` ? LispReplace<R> : U extends `vector` ? LispVector<R> : U extends `map` ? LispMap<R> : U extends `filter` ? LispFilter<R> : U extends `remove` ? LispRemove<R> : U extends `reduce` ? LispReduce<R> : U extends `count` ? LispCount<R> : U extends `concat` ? LispConcat<R> : U extends `conj` ? LispConj<R> : U extends `join` ? LispJoin<R> : U extends `first` ? LispFirst<R> : U extends `second` ? LispSecond<R> : U extends `third` ? LispThird<R> : U extends `last` ? LispLast<R> : U extends `rest` ? LispRest<R> : U extends `butlast` ? LispButlast<R> : U extends `reverse` ? LispReverse<R> : U extends `repeat` ? LispRepeat<R> : U extends 'range' ? LispRange<R> : U extends `interleave` ? LispInterleave<R> : U extends `take` ? LispTake<R> : U extends `drop` ? LispDrop<R> : U extends `assoc-in` ? LispAssocIn<R> : U extends `update-in` ? LispUpdateIn<R> : U extends `assoc` ? LispAssoc<R> : U extends `update` ? LispUpdate<R> : U extends `get` ? LispGet<R> : U extends `get-in` ? LispGetIn<R> : U extends `keys` ? LispKeys<R> : U extends `eq` | `=` ? LispEq<R> : U extends `not` ? LispNot<R> : U extends `and` ? LispAnd<R> : U extends `or` ? LispOr<R> : U extends `inc` ? LispInc<R> : U extends `dec` ? LispDec<R> : U extends `+` ? LispAdd<R> : U extends `-` ? LispSub<R> : U extends `*` ? LispMul<R> : U extends `/` ? LispDiv<R> : U extends `trunc` ? LispTrunc<R> : U extends `floor` ? LispFloor<R> : U extends `rem` | `%` ? LispRem<R> : U extends `mod` ? LispMod<R> : U extends `abs` ? LispAbs<R> : U extends `>` | `<` | `>=` | `<=` ? LispRelation<U, R> : U extends `number?` ? LispIsNumber<R> : U extends `string?` ? LispIsString<R> : U extends `vector?` ? LispIsVector<R> : U extends `map?` ? LispIsMap<R> : U extends `fn?` ? LispIsFn<R> : U extends `keyword?` ? LispIsKeyword<R> : U extends `ifn?` ? LispIsIfn<R> : U extends `pos-int?` ? LispIsPosInt<R> : U extends `neg-int?` ? LispIsNegInt<R> : U extends `pos?` ? LispIsPos<R> : U extends `neg?` ? LispIsNeg<R> : U extends `int?` ? LispIsInt<R> : U extends `ratio?` ? LispIsRatio<R> : U extends `nat?` ? LispIsNat<R> : U extends `odd?` ? LispIsOdd<R> : U extends `even?` ? LispIsEven<R> : U extends `zero?` ? LispIsZero<R> : U extends `empty?` ? LispIsEmpty<R> : U extends `every?` ? LispIsEvery<R> : U extends `some` ? LispSome<R> : U extends `nil?` ? LispIsNil<R> : U extends `boolean?` ? LispIsBoolean<R> : U extends `type` ? LispType<R> : U extends `some?` ? LispIsSome<R> : U extends `any?` ? LispIsAny<R> : U extends `prim?` ? LispIsPrim<R> : U extends `min` ? LispMin<R> : U extends `max` ? LispMax<R> : U extends `zipmap` ? LispZipmap<R> : U extends `apply` ? LispApply<R> : Eval<[ReadLet<U, env>, OPR[0]], env, [prev]> : never;
+>Builtins : Symbol(Builtins, Decl(index.d.ts, 19, 901))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>OPR : Symbol(OPR, Decl(index.d.ts, 20, 16))
+>env : Symbol(env, Decl(index.d.ts, 20, 39))
+>prev : Symbol(prev, Decl(index.d.ts, 20, 44))
+>Reading : Symbol(Reading, Decl(index.d.ts, 11, 121))
+>OPR : Symbol(OPR, Decl(index.d.ts, 20, 16))
+>env : Symbol(env, Decl(index.d.ts, 20, 39))
+>prev : Symbol(prev, Decl(index.d.ts, 20, 44))
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>LispThreadFirst : Symbol(LispThreadFirst)
+>OPR : Symbol(OPR, Decl(index.d.ts, 20, 16))
+>env : Symbol(env, Decl(index.d.ts, 20, 39))
+>prev : Symbol(prev, Decl(index.d.ts, 20, 44))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>LispThreadLast : Symbol(LispThreadLast)
+>OPR : Symbol(OPR, Decl(index.d.ts, 20, 16))
+>env : Symbol(env, Decl(index.d.ts, 20, 39))
+>prev : Symbol(prev, Decl(index.d.ts, 20, 44))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>LispSomeThreadFirst : Symbol(LispSomeThreadFirst)
+>OPR : Symbol(OPR, Decl(index.d.ts, 20, 16))
+>env : Symbol(env, Decl(index.d.ts, 20, 39))
+>prev : Symbol(prev, Decl(index.d.ts, 20, 44))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>LispSomeThreadLast : Symbol(LispSomeThreadLast)
+>OPR : Symbol(OPR, Decl(index.d.ts, 20, 16))
+>env : Symbol(env, Decl(index.d.ts, 20, 39))
+>prev : Symbol(prev, Decl(index.d.ts, 20, 44))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>Str : Symbol(Str)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispRefind : Symbol(LispRefind, Decl(index.d.ts, 12, 706))
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispSplit : Symbol(LispSplit, Decl(index.d.ts, 14, 319))
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispStrSubsAll : Symbol(LispStrSubsAll)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispCljSubs : Symbol(LispCljSubs)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispReplace : Symbol(LispReplace)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispVector : Symbol(LispVector)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispMap : Symbol(LispMap)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispFilter : Symbol(LispFilter)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispRemove : Symbol(LispRemove)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispReduce : Symbol(LispReduce)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispCount : Symbol(LispCount, Decl(index.d.ts, 17, 242))
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispConcat : Symbol(LispConcat)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispConj : Symbol(LispConj)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispJoin : Symbol(LispJoin)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispFirst : Symbol(LispFirst)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispSecond : Symbol(LispSecond)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispThird : Symbol(LispThird)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispLast : Symbol(LispLast)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispRest : Symbol(LispRest)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispButlast : Symbol(LispButlast)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispReverse : Symbol(LispReverse)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispRepeat : Symbol(LispRepeat)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispRange : Symbol(LispRange)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispInterleave : Symbol(LispInterleave)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispTake : Symbol(LispTake)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispDrop : Symbol(LispDrop)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispAssocIn : Symbol(LispAssocIn)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispUpdateIn : Symbol(LispUpdateIn)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispAssoc : Symbol(LispAssoc)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispUpdate : Symbol(LispUpdate)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispGet : Symbol(LispGet)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispGetIn : Symbol(LispGetIn)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispKeys : Symbol(LispKeys)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispEq : Symbol(LispEq)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispNot : Symbol(LispNot)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispAnd : Symbol(LispAnd)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispOr : Symbol(LispOr)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispInc : Symbol(LispInc)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispDec : Symbol(LispDec)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispAdd : Symbol(LispAdd)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispSub : Symbol(LispSub)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispMul : Symbol(LispMul)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispDiv : Symbol(LispDiv)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispTrunc : Symbol(LispTrunc)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispFloor : Symbol(LispFloor)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispRem : Symbol(LispRem)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispMod : Symbol(LispMod)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispAbs : Symbol(LispAbs)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispRelation : Symbol(LispRelation)
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispIsNumber : Symbol(LispIsNumber)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispIsString : Symbol(LispIsString)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispIsVector : Symbol(LispIsVector)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispIsMap : Symbol(LispIsMap)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispIsFn : Symbol(LispIsFn)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispIsKeyword : Symbol(LispIsKeyword)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispIsIfn : Symbol(LispIsIfn)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispIsPosInt : Symbol(LispIsPosInt)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispIsNegInt : Symbol(LispIsNegInt)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispIsPos : Symbol(LispIsPos)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispIsNeg : Symbol(LispIsNeg)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispIsInt : Symbol(LispIsInt)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispIsRatio : Symbol(LispIsRatio)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispIsNat : Symbol(LispIsNat)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispIsOdd : Symbol(LispIsOdd)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispIsEven : Symbol(LispIsEven)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispIsZero : Symbol(LispIsZero)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispIsEmpty : Symbol(LispIsEmpty)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispIsEvery : Symbol(LispIsEvery)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispSome : Symbol(LispSome)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispIsNil : Symbol(LispIsNil)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispIsBoolean : Symbol(LispIsBoolean)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispType : Symbol(LispType)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispIsSome : Symbol(LispIsSome)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispIsAny : Symbol(LispIsAny)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispIsPrim : Symbol(LispIsPrim)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispMin : Symbol(LispMin)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispMax : Symbol(LispMax)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispZipmap : Symbol(LispZipmap)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>LispApply : Symbol(LispApply)
+>R : Symbol(R, Decl(index.d.ts, 20, 94))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>ReadLet : Symbol(ReadLet, Decl(index.d.ts, 9, 100))
+>U : Symbol(U, Decl(index.d.ts, 20, 14))
+>env : Symbol(env, Decl(index.d.ts, 20, 39))
+>OPR : Symbol(OPR, Decl(index.d.ts, 20, 16))
+>env : Symbol(env, Decl(index.d.ts, 20, 39))
+>prev : Symbol(prev, Decl(index.d.ts, 20, 44))
+
+export type Eval<A, env = [[]], prev = 0, Vscope extends boolean = false> = A extends Sexpr ? A extends [infer OPC, ...infer OPR] ? env extends EnvLifo ? OPC extends Fn & [`fn`, infer syms, infer D] ? Eval<[`let`, Interleave<syms, OPR>, D], env, [prev]> : OPC extends IfForm & [`if`, infer IFCond, infer IFT, infer IFF] ? Eval<[If<Eval<IFCond, env, [[prev]]>, IFT, IFF>, OPR[0]], env, [prev]> : OPC extends Sym & [`sym`, infer U] ? ReadLet<U, env> extends TNotMatch ? Builtins<U, OPR, env, prev> : ReadLet<U, env> extends Fn | Keyword | TMap & infer UU ? Eval<[UU, ...OPR], env, [prev]> : ReadLet<U, env> extends ['sym', BuiltinsUnion] & infer UU ? Eval<[UU, ...OPR], env, [prev]> : ErrorCase<EvalError3, `1st arg should be fn/keyword/map.`, A, env> : IsKeyMapSexpr<ReadLetRecur<A, env>, env> extends true ? IsKeyword<OPC> extends true ? LispGet<Reading<[...OPR, OPC], env, [[prev]]>> : LispGet<Reading<[OPC, ...OPR], env, [[prev]]>> : OPC extends LetForm ? Eval<[Eval<OPC, env, [[prev]]>, ...OPR], env, [prev]> : OPC extends Sexpr ? Eval<[Eval<OPC, env, [[prev]]>, ...OPR], env, [prev]> : ErrorCase<EvalError4, `the 1st is not a symbol but it should be.`, A, env> : env extends unknown[][] ? ErrorCase<EvalError9, `env should be arr of arr.`, env> : ErrorCase<EvalError6, `env 1st should not be [].`, env> : ErrorCase<EvalError2, ``, A, env> : A extends IfForm & [`if`, infer IFCond, infer IFT, infer IFF] ? Eval<If<Eval<IFCond, env, [[prev]]>, IFT, IFF>, env, [prev]> : A extends Atom ? A extends Prim ? A : A extends Vector & ['vec', ...infer vr] ? vr extends [] ? Vscope extends true ? [] : ['vec'] : vr extends [infer va, ...infer vb] ? [
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>A : Symbol(A, Decl(index.d.ts, 21, 17))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>Vscope : Symbol(Vscope, Decl(index.d.ts, 21, 41))
+>A : Symbol(A, Decl(index.d.ts, 21, 17))
+>Sexpr : Symbol(Sexpr, Decl(index.d.ts, 3, 48))
+>A : Symbol(A, Decl(index.d.ts, 21, 17))
+>OPC : Symbol(OPC, Decl(index.d.ts, 21, 110))
+>OPR : Symbol(OPR, Decl(index.d.ts, 21, 124))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>EnvLifo : Symbol(EnvLifo)
+>OPC : Symbol(OPC, Decl(index.d.ts, 21, 110))
+>Fn : Symbol(Fn, Decl(index.d.ts, 3, 140))
+>syms : Symbol(syms, Decl(index.d.ts, 21, 183))
+>D : Symbol(D, Decl(index.d.ts, 21, 195))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>Interleave : Symbol(Interleave)
+>syms : Symbol(syms, Decl(index.d.ts, 21, 183))
+>OPR : Symbol(OPR, Decl(index.d.ts, 21, 124))
+>D : Symbol(D, Decl(index.d.ts, 21, 195))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>OPC : Symbol(OPC, Decl(index.d.ts, 21, 110))
+>IfForm : Symbol(IfForm, Decl(index.d.ts, 3, 173))
+>IFCond : Symbol(IFCond, Decl(index.d.ts, 21, 289))
+>IFT : Symbol(IFT, Decl(index.d.ts, 21, 303))
+>IFF : Symbol(IFF, Decl(index.d.ts, 21, 314))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>If : Symbol(If, Decl(index.d.ts, 15, 156))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>IFCond : Symbol(IFCond, Decl(index.d.ts, 21, 289))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>IFT : Symbol(IFT, Decl(index.d.ts, 21, 303))
+>IFF : Symbol(IFF, Decl(index.d.ts, 21, 314))
+>OPR : Symbol(OPR, Decl(index.d.ts, 21, 124))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>OPC : Symbol(OPC, Decl(index.d.ts, 21, 110))
+>Sym : Symbol(Sym, Decl(index.d.ts, 3, 70))
+>U : Symbol(U, Decl(index.d.ts, 21, 426))
+>ReadLet : Symbol(ReadLet, Decl(index.d.ts, 9, 100))
+>U : Symbol(U, Decl(index.d.ts, 21, 426))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>TNotMatch : Symbol(TNotMatch, Decl(index.d.ts, 3, 162))
+>Builtins : Symbol(Builtins, Decl(index.d.ts, 19, 901))
+>U : Symbol(U, Decl(index.d.ts, 21, 426))
+>OPR : Symbol(OPR, Decl(index.d.ts, 21, 124))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>ReadLet : Symbol(ReadLet, Decl(index.d.ts, 9, 100))
+>U : Symbol(U, Decl(index.d.ts, 21, 426))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>Fn : Symbol(Fn, Decl(index.d.ts, 3, 140))
+>Keyword : Symbol(Keyword, Decl(index.d.ts, 3, 61))
+>TMap : Symbol(TMap, Decl(index.d.ts, 3, 42))
+>UU : Symbol(UU, Decl(index.d.ts, 21, 549))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>UU : Symbol(UU, Decl(index.d.ts, 21, 549))
+>OPR : Symbol(OPR, Decl(index.d.ts, 21, 124))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>ReadLet : Symbol(ReadLet, Decl(index.d.ts, 9, 100))
+>U : Symbol(U, Decl(index.d.ts, 21, 426))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>BuiltinsUnion : Symbol(BuiltinsUnion, Decl(index.d.ts, 18, 202))
+>UU : Symbol(UU, Decl(index.d.ts, 21, 643))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>UU : Symbol(UU, Decl(index.d.ts, 21, 643))
+>OPR : Symbol(OPR, Decl(index.d.ts, 21, 124))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>ErrorCase : Symbol(ErrorCase)
+>EvalError3 : Symbol(EvalError3)
+>A : Symbol(A, Decl(index.d.ts, 21, 17))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>IsKeyMapSexpr : Symbol(IsKeyMapSexpr)
+>ReadLetRecur : Symbol(ReadLetRecur)
+>A : Symbol(A, Decl(index.d.ts, 21, 17))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>IsKeyword : Symbol(IsKeyword)
+>OPC : Symbol(OPC, Decl(index.d.ts, 21, 110))
+>LispGet : Symbol(LispGet)
+>Reading : Symbol(Reading, Decl(index.d.ts, 11, 121))
+>OPR : Symbol(OPR, Decl(index.d.ts, 21, 124))
+>OPC : Symbol(OPC, Decl(index.d.ts, 21, 110))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>LispGet : Symbol(LispGet)
+>Reading : Symbol(Reading, Decl(index.d.ts, 11, 121))
+>OPC : Symbol(OPC, Decl(index.d.ts, 21, 110))
+>OPR : Symbol(OPR, Decl(index.d.ts, 21, 124))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>OPC : Symbol(OPC, Decl(index.d.ts, 21, 110))
+>LetForm : Symbol(LetForm, Decl(index.d.ts, 3, 21))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>OPC : Symbol(OPC, Decl(index.d.ts, 21, 110))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>OPR : Symbol(OPR, Decl(index.d.ts, 21, 124))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>OPC : Symbol(OPC, Decl(index.d.ts, 21, 110))
+>Sexpr : Symbol(Sexpr, Decl(index.d.ts, 3, 48))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>OPC : Symbol(OPC, Decl(index.d.ts, 21, 110))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>OPR : Symbol(OPR, Decl(index.d.ts, 21, 124))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>ErrorCase : Symbol(ErrorCase)
+>EvalError4 : Symbol(EvalError4)
+>A : Symbol(A, Decl(index.d.ts, 21, 17))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>ErrorCase : Symbol(ErrorCase)
+>EvalError9 : Symbol(EvalError9)
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>ErrorCase : Symbol(ErrorCase)
+>EvalError6 : Symbol(EvalError6)
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>ErrorCase : Symbol(ErrorCase)
+>EvalError2 : Symbol(EvalError2)
+>A : Symbol(A, Decl(index.d.ts, 21, 17))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>A : Symbol(A, Decl(index.d.ts, 21, 17))
+>IfForm : Symbol(IfForm, Decl(index.d.ts, 3, 173))
+>IFCond : Symbol(IFCond, Decl(index.d.ts, 21, 1376))
+>IFT : Symbol(IFT, Decl(index.d.ts, 21, 1390))
+>IFF : Symbol(IFF, Decl(index.d.ts, 21, 1401))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>If : Symbol(If, Decl(index.d.ts, 15, 156))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>IFCond : Symbol(IFCond, Decl(index.d.ts, 21, 1376))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>IFT : Symbol(IFT, Decl(index.d.ts, 21, 1390))
+>IFF : Symbol(IFF, Decl(index.d.ts, 21, 1401))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>A : Symbol(A, Decl(index.d.ts, 21, 17))
+>Atom : Symbol(Atom, Decl(index.d.ts, 3, 36))
+>A : Symbol(A, Decl(index.d.ts, 21, 17))
+>Prim : Symbol(Prim, Decl(index.d.ts, 3, 134))
+>A : Symbol(A, Decl(index.d.ts, 21, 17))
+>A : Symbol(A, Decl(index.d.ts, 21, 17))
+>Vector : Symbol(Vector, Decl(index.d.ts, 3, 144))
+>vr : Symbol(vr, Decl(index.d.ts, 21, 1545))
+>vr : Symbol(vr, Decl(index.d.ts, 21, 1545))
+>Vscope : Symbol(Vscope, Decl(index.d.ts, 21, 41))
+>vr : Symbol(vr, Decl(index.d.ts, 21, 1545))
+>va : Symbol(va, Decl(index.d.ts, 21, 1622))
+>vb : Symbol(vb, Decl(index.d.ts, 21, 1635))
+
+] : [] : A extends Sym & [`sym`, infer SS] ? ReadLet<SS, env> extends infer U ? U extends Atom ? U : U extends TNotMatch ? A : [`prim`, U] : ErrorCase<EvalError1, 'sym is not desconstructed well as an inner expression.', A, env> : ReadLetRecur<A, env> extends infer a ? a : never : A extends LetForm ? A extends [`let`, [Sym[], LetVal[]], Sexpr] ? A extends [`let`, [infer letsyms, infer letvals], infer LC] ? Eval<[`let`, Interleave<letsyms, letvals>, LC], env, [prev]> : ErrorCase<EvalError5, '', A, env> : A extends [`let`, [[`sym`, infer LN], infer LV, ...infer LRest], infer LC] ? LRest extends [[`sym`, infer LRLN], infer LRLV, ...infer RRest] ? Eval<[`let`, [[`sym`, LN], LV], [`let`, [[`sym`, LRLN], LRLV, ...RRest], LC]], env, [prev]> : LV extends Prim & [`prim`, infer _] ? Eval<LC, Let<LN, LV, env>, [prev]> : LV extends Sym & [`sym`, infer LP] ? LP extends BuiltinsUnion ? Eval<LC, Let<LN, LV, env>, [prev]> : Eval<LC, Let<LN, ReadLet<LP, env>, env>, [prev]> : LV extends LetForm ? Eval<[`let`, [[`sym`, LN], Eval<LV, env, [prev]>], LC], env, [prev]> : LV extends Fn ? Eval<LC, Let<LN, Reading<[LV], env, [[prev]]> extends infer a extends [Fn] ? a[0] : never, env>, [prev]> : LV extends Sexpr | Atom ? Eval<LV, env, [[prev]]> extends infer ValueEvaluated ? ValueEvaluated extends {
+>A : Symbol(A, Decl(index.d.ts, 21, 17))
+>Sym : Symbol(Sym, Decl(index.d.ts, 3, 70))
+>SS : Symbol(SS, Decl(index.d.ts, 22, 38))
+>ReadLet : Symbol(ReadLet, Decl(index.d.ts, 9, 100))
+>SS : Symbol(SS, Decl(index.d.ts, 22, 38))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>U : Symbol(U, Decl(index.d.ts, 22, 75))
+>U : Symbol(U, Decl(index.d.ts, 22, 75))
+>Atom : Symbol(Atom, Decl(index.d.ts, 3, 36))
+>U : Symbol(U, Decl(index.d.ts, 22, 75))
+>U : Symbol(U, Decl(index.d.ts, 22, 75))
+>TNotMatch : Symbol(TNotMatch, Decl(index.d.ts, 3, 162))
+>A : Symbol(A, Decl(index.d.ts, 21, 17))
+>U : Symbol(U, Decl(index.d.ts, 22, 75))
+>ErrorCase : Symbol(ErrorCase)
+>EvalError1 : Symbol(EvalError1)
+>A : Symbol(A, Decl(index.d.ts, 21, 17))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>ReadLetRecur : Symbol(ReadLetRecur)
+>A : Symbol(A, Decl(index.d.ts, 21, 17))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>a : Symbol(a, Decl(index.d.ts, 22, 265))
+>a : Symbol(a, Decl(index.d.ts, 22, 265))
+>A : Symbol(A, Decl(index.d.ts, 21, 17))
+>LetForm : Symbol(LetForm, Decl(index.d.ts, 3, 21))
+>A : Symbol(A, Decl(index.d.ts, 21, 17))
+>Sym : Symbol(Sym, Decl(index.d.ts, 3, 70))
+>LetVal : Symbol(LetVal, Decl(index.d.ts, 3, 13))
+>Sexpr : Symbol(Sexpr, Decl(index.d.ts, 3, 48))
+>A : Symbol(A, Decl(index.d.ts, 21, 17))
+>letsyms : Symbol(letsyms, Decl(index.d.ts, 22, 372))
+>letvals : Symbol(letvals, Decl(index.d.ts, 22, 387))
+>LC : Symbol(LC, Decl(index.d.ts, 22, 403))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>Interleave : Symbol(Interleave)
+>letsyms : Symbol(letsyms, Decl(index.d.ts, 22, 372))
+>letvals : Symbol(letvals, Decl(index.d.ts, 22, 387))
+>LC : Symbol(LC, Decl(index.d.ts, 22, 403))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>ErrorCase : Symbol(ErrorCase)
+>EvalError5 : Symbol(EvalError5)
+>A : Symbol(A, Decl(index.d.ts, 21, 17))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>A : Symbol(A, Decl(index.d.ts, 21, 17))
+>LN : Symbol(LN, Decl(index.d.ts, 22, 541))
+>LV : Symbol(LV, Decl(index.d.ts, 22, 552))
+>LRest : Symbol(LRest, Decl(index.d.ts, 22, 565))
+>LC : Symbol(LC, Decl(index.d.ts, 22, 579))
+>LRest : Symbol(LRest, Decl(index.d.ts, 22, 565))
+>LRLN : Symbol(LRLN, Decl(index.d.ts, 22, 614))
+>LRLV : Symbol(LRLV, Decl(index.d.ts, 22, 627))
+>RRest : Symbol(RRest, Decl(index.d.ts, 22, 642))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>LN : Symbol(LN, Decl(index.d.ts, 22, 541))
+>LV : Symbol(LV, Decl(index.d.ts, 22, 552))
+>LRLN : Symbol(LRLN, Decl(index.d.ts, 22, 614))
+>LRLV : Symbol(LRLV, Decl(index.d.ts, 22, 627))
+>RRest : Symbol(RRest, Decl(index.d.ts, 22, 642))
+>LC : Symbol(LC, Decl(index.d.ts, 22, 579))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>LV : Symbol(LV, Decl(index.d.ts, 22, 552))
+>Prim : Symbol(Prim, Decl(index.d.ts, 3, 134))
+>_ : Symbol(_, Decl(index.d.ts, 22, 778))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>LC : Symbol(LC, Decl(index.d.ts, 22, 579))
+>Let : Symbol(Let, Decl(index.d.ts, 8, 170))
+>LN : Symbol(LN, Decl(index.d.ts, 22, 541))
+>LV : Symbol(LV, Decl(index.d.ts, 22, 552))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>LV : Symbol(LV, Decl(index.d.ts, 22, 552))
+>Sym : Symbol(Sym, Decl(index.d.ts, 3, 70))
+>LP : Symbol(LP, Decl(index.d.ts, 22, 851))
+>LP : Symbol(LP, Decl(index.d.ts, 22, 851))
+>BuiltinsUnion : Symbol(BuiltinsUnion, Decl(index.d.ts, 18, 202))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>LC : Symbol(LC, Decl(index.d.ts, 22, 579))
+>Let : Symbol(Let, Decl(index.d.ts, 8, 170))
+>LN : Symbol(LN, Decl(index.d.ts, 22, 541))
+>LV : Symbol(LV, Decl(index.d.ts, 22, 552))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>LC : Symbol(LC, Decl(index.d.ts, 22, 579))
+>Let : Symbol(Let, Decl(index.d.ts, 8, 170))
+>LN : Symbol(LN, Decl(index.d.ts, 22, 541))
+>ReadLet : Symbol(ReadLet, Decl(index.d.ts, 9, 100))
+>LP : Symbol(LP, Decl(index.d.ts, 22, 851))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>LV : Symbol(LV, Decl(index.d.ts, 22, 552))
+>LetForm : Symbol(LetForm, Decl(index.d.ts, 3, 21))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>LN : Symbol(LN, Decl(index.d.ts, 22, 541))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>LV : Symbol(LV, Decl(index.d.ts, 22, 552))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>LC : Symbol(LC, Decl(index.d.ts, 22, 579))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>LV : Symbol(LV, Decl(index.d.ts, 22, 552))
+>Fn : Symbol(Fn, Decl(index.d.ts, 3, 140))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>LC : Symbol(LC, Decl(index.d.ts, 22, 579))
+>Let : Symbol(Let, Decl(index.d.ts, 8, 170))
+>LN : Symbol(LN, Decl(index.d.ts, 22, 541))
+>Reading : Symbol(Reading, Decl(index.d.ts, 11, 121))
+>LV : Symbol(LV, Decl(index.d.ts, 22, 552))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>a : Symbol(a, Decl(index.d.ts, 22, 1140))
+>Fn : Symbol(Fn, Decl(index.d.ts, 3, 140))
+>a : Symbol(a, Decl(index.d.ts, 22, 1140))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>LV : Symbol(LV, Decl(index.d.ts, 22, 552))
+>Sexpr : Symbol(Sexpr, Decl(index.d.ts, 3, 48))
+>Atom : Symbol(Atom, Decl(index.d.ts, 3, 36))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>LV : Symbol(LV, Decl(index.d.ts, 22, 552))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>ValueEvaluated : Symbol(ValueEvaluated, Decl(index.d.ts, 22, 1251))
+>ValueEvaluated : Symbol(ValueEvaluated, Decl(index.d.ts, 22, 1251))
+
+    error: string;
+>error : Symbol(error, Decl(index.d.ts, 22, 1293))
+
+} ? {
+} : Eval<LC, Let<LN, ValueEvaluated, env>, [prev]> : never : LV extends IfForm ? Eval<LC, Let<LN, Eval<LV, env, [[prev]]>, env>, [[prev]]> : ErrorCase<EvalError7, '', LV, env> : A extends ['let', [], infer Sexpr] ? Eval<Sexpr, env, [prev]> : ErrorCase<EvalError8, 'this is not proper let-form.', A, env> : {
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>LC : Symbol(LC, Decl(index.d.ts, 22, 579))
+>Let : Symbol(Let, Decl(index.d.ts, 8, 170))
+>LN : Symbol(LN, Decl(index.d.ts, 22, 541))
+>ValueEvaluated : Symbol(ValueEvaluated, Decl(index.d.ts, 22, 1251))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>LV : Symbol(LV, Decl(index.d.ts, 22, 552))
+>IfForm : Symbol(IfForm, Decl(index.d.ts, 3, 173))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>LC : Symbol(LC, Decl(index.d.ts, 22, 579))
+>Let : Symbol(Let, Decl(index.d.ts, 8, 170))
+>LN : Symbol(LN, Decl(index.d.ts, 22, 541))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>LV : Symbol(LV, Decl(index.d.ts, 22, 552))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>ErrorCase : Symbol(ErrorCase)
+>EvalError7 : Symbol(EvalError7)
+>LV : Symbol(LV, Decl(index.d.ts, 22, 552))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>A : Symbol(A, Decl(index.d.ts, 21, 17))
+>Sexpr : Symbol(Sexpr, Decl(index.d.ts, 25, 205))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>Sexpr : Symbol(Sexpr, Decl(index.d.ts, 25, 205))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+>prev : Symbol(prev, Decl(index.d.ts, 21, 31))
+>ErrorCase : Symbol(ErrorCase)
+>EvalError8 : Symbol(EvalError8)
+>A : Symbol(A, Decl(index.d.ts, 21, 17))
+>env : Symbol(env, Decl(index.d.ts, 21, 19))
+
+};
+export declare namespace Cion {
+>Cion : Symbol(Cion, Decl(index.d.ts, 26, 2))
+
+    type RawLisp<S extends string> = Eval<Compiler.SCompiler<Compiler.SParser<Compiler.SPad<S>>>>;
+>RawLisp : Symbol(RawLisp, Decl(index.d.ts, 27, 31))
+>S : Symbol(S, Decl(index.d.ts, 28, 17))
+>Eval : Symbol(Eval, Decl(index.d.ts, 20, 3247))
+>Compiler : Symbol(Compiler, Decl(index.d.ts, 1, 11))
+>SCompiler : Symbol(Compiler.SCompiler, Decl(compiler.d.ts, 39, 76))
+>Compiler : Symbol(Compiler, Decl(index.d.ts, 1, 11))
+>SParser : Symbol(Compiler.SParser, Decl(compiler.d.ts, 33, 2))
+>Compiler : Symbol(Compiler, Decl(index.d.ts, 1, 11))
+>SPad : Symbol(Compiler.SPad, Decl(compiler.d.ts, 0, 45))
+>S : Symbol(S, Decl(index.d.ts, 28, 17))
+
+    type Lisp<S extends string> = Compiler.Unparse<RawLisp<S>>;
+>Lisp : Symbol(Lisp, Decl(index.d.ts, 28, 98))
+>S : Symbol(S, Decl(index.d.ts, 29, 14))
+>Compiler : Symbol(Compiler, Decl(index.d.ts, 1, 11))
+>Unparse : Symbol(Compiler.Unparse, Decl(compiler.d.ts, 42, 10))
+>RawLisp : Symbol(RawLisp, Decl(index.d.ts, 27, 31))
+>S : Symbol(S, Decl(index.d.ts, 29, 14))
+}
+export default Cion;
+>Cion : Symbol(Cion, Decl(index.d.ts, 26, 2))
+
+=== node_modules/@taiyakihitotsu/cion/dist/peano.d.ts ===
+export type T0 = null;
+>T0 : Symbol(T0, Decl(peano.d.ts, 0, 0))
+
+export type T1 = [T0];
+>T1 : Symbol(T1, Decl(peano.d.ts, 0, 22))
+>T0 : Symbol(T0, Decl(peano.d.ts, 0, 0))
+
+export type T8 = [[[[[[[[T0]]]]]]]];
+>T8 : Symbol(T8, Decl(peano.d.ts, 1, 22))
+>T0 : Symbol(T0, Decl(peano.d.ts, 0, 0))
+
+export type T16 = mul<T8, [[null]]>;
+>T16 : Symbol(T16, Decl(peano.d.ts, 2, 36))
+>mul : Symbol(mul, Decl(peano.d.ts, 7, 91))
+>T8 : Symbol(T8, Decl(peano.d.ts, 1, 22))
+
+export type add<T, TT> = TT extends T0 ? T : T extends T0 ? TT : TT extends [infer U] ? add<[T], U> : never;
+>add : Symbol(add, Decl(peano.d.ts, 3, 36))
+>T : Symbol(T, Decl(peano.d.ts, 4, 16))
+>TT : Symbol(TT, Decl(peano.d.ts, 4, 18))
+>TT : Symbol(TT, Decl(peano.d.ts, 4, 18))
+>T0 : Symbol(T0, Decl(peano.d.ts, 0, 0))
+>T : Symbol(T, Decl(peano.d.ts, 4, 16))
+>T : Symbol(T, Decl(peano.d.ts, 4, 16))
+>T0 : Symbol(T0, Decl(peano.d.ts, 0, 0))
+>TT : Symbol(TT, Decl(peano.d.ts, 4, 18))
+>TT : Symbol(TT, Decl(peano.d.ts, 4, 18))
+>U : Symbol(U, Decl(peano.d.ts, 4, 82))
+>add : Symbol(add, Decl(peano.d.ts, 3, 36))
+>T : Symbol(T, Decl(peano.d.ts, 4, 16))
+>U : Symbol(U, Decl(peano.d.ts, 4, 82))
+
+export type inc<T> = [T];
+>inc : Symbol(inc, Decl(peano.d.ts, 4, 108))
+>T : Symbol(T, Decl(peano.d.ts, 5, 16))
+>T : Symbol(T, Decl(peano.d.ts, 5, 16))
+
+export type dec<T> = T extends [infer U] ? U : never;
+>dec : Symbol(dec, Decl(peano.d.ts, 5, 25))
+>T : Symbol(T, Decl(peano.d.ts, 6, 16))
+>T : Symbol(T, Decl(peano.d.ts, 6, 16))
+>U : Symbol(U, Decl(peano.d.ts, 6, 37))
+>U : Symbol(U, Decl(peano.d.ts, 6, 37))
+
+export type min<T, TT> = TT extends T0 ? T : TT extends [infer U] ? min<dec<T>, U> : never;
+>min : Symbol(min, Decl(peano.d.ts, 6, 53))
+>T : Symbol(T, Decl(peano.d.ts, 7, 16))
+>TT : Symbol(TT, Decl(peano.d.ts, 7, 18))
+>TT : Symbol(TT, Decl(peano.d.ts, 7, 18))
+>T0 : Symbol(T0, Decl(peano.d.ts, 0, 0))
+>T : Symbol(T, Decl(peano.d.ts, 7, 16))
+>TT : Symbol(TT, Decl(peano.d.ts, 7, 18))
+>U : Symbol(U, Decl(peano.d.ts, 7, 62))
+>min : Symbol(min, Decl(peano.d.ts, 6, 53))
+>dec : Symbol(dec, Decl(peano.d.ts, 5, 25))
+>T : Symbol(T, Decl(peano.d.ts, 7, 16))
+>U : Symbol(U, Decl(peano.d.ts, 7, 62))
+
+export type mul<T, TT, I = T> = T extends T1 ? TT : TT extends T1 ? T : T extends T0 ? T0 : TT extends T0 ? T0 : TT extends [infer U] ? mul<add<T, I>, U, I> : never;
+>mul : Symbol(mul, Decl(peano.d.ts, 7, 91))
+>T : Symbol(T, Decl(peano.d.ts, 8, 16))
+>TT : Symbol(TT, Decl(peano.d.ts, 8, 18))
+>I : Symbol(I, Decl(peano.d.ts, 8, 22))
+>T : Symbol(T, Decl(peano.d.ts, 8, 16))
+>T : Symbol(T, Decl(peano.d.ts, 8, 16))
+>T1 : Symbol(T1, Decl(peano.d.ts, 0, 22))
+>TT : Symbol(TT, Decl(peano.d.ts, 8, 18))
+>TT : Symbol(TT, Decl(peano.d.ts, 8, 18))
+>T1 : Symbol(T1, Decl(peano.d.ts, 0, 22))
+>T : Symbol(T, Decl(peano.d.ts, 8, 16))
+>T : Symbol(T, Decl(peano.d.ts, 8, 16))
+>T0 : Symbol(T0, Decl(peano.d.ts, 0, 0))
+>T0 : Symbol(T0, Decl(peano.d.ts, 0, 0))
+>TT : Symbol(TT, Decl(peano.d.ts, 8, 18))
+>T0 : Symbol(T0, Decl(peano.d.ts, 0, 0))
+>T0 : Symbol(T0, Decl(peano.d.ts, 0, 0))
+>TT : Symbol(TT, Decl(peano.d.ts, 8, 18))
+>U : Symbol(U, Decl(peano.d.ts, 8, 130))
+>mul : Symbol(mul, Decl(peano.d.ts, 7, 91))
+>add : Symbol(add, Decl(peano.d.ts, 3, 36))
+>T : Symbol(T, Decl(peano.d.ts, 8, 16))
+>I : Symbol(I, Decl(peano.d.ts, 8, 22))
+>U : Symbol(U, Decl(peano.d.ts, 8, 130))
+>I : Symbol(I, Decl(peano.d.ts, 8, 22))
+
+export type gthan<T, U> = U extends TLesserUnion<T> ? true : false;
+>gthan : Symbol(gthan, Decl(peano.d.ts, 8, 165))
+>T : Symbol(T, Decl(peano.d.ts, 9, 18))
+>U : Symbol(U, Decl(peano.d.ts, 9, 20))
+>U : Symbol(U, Decl(peano.d.ts, 9, 20))
+>TLesserUnion : Symbol(TLesserUnion)
+>T : Symbol(T, Decl(peano.d.ts, 9, 18))
+
+=== node_modules/@taiyakihitotsu/cion/dist/regex-compiler.d.ts ===
+import type { StrUtil as str } from './strutil.js';
+>StrUtil : Symbol(str.StrUtil, Decl(strutil.d.ts, 8, 11))
+>str : Symbol(str, Decl(regex-compiler.d.ts, 0, 13))
+
+import type { VecUtil as vec } from './vecutil.js';
+>VecUtil : Symbol(vec.VecUtil, Decl(vecutil.d.ts, 10, 11))
+>vec : Symbol(vec, Decl(regex-compiler.d.ts, 1, 13))
+
+import type { regexConst } from './regex-const.js';
+>regexConst : Symbol(regexConst, Decl(regex-compiler.d.ts, 2, 13))
+
+import type { Util as u } from './util.js';
+>Util : Symbol(u.Util, Decl(util.d.ts, 10, 11))
+>u : Symbol(u, Decl(regex-compiler.d.ts, 3, 13))
+
+export type InitCompEnv = {
+>InitCompEnv : Symbol(InitCompEnv, Decl(regex-compiler.d.ts, 3, 43))
+
+    state: '';
+>state : Symbol(state, Decl(regex-compiler.d.ts, 4, 27))
+
+    tapes: [];
+>tapes : Symbol(tapes, Decl(regex-compiler.d.ts, 5, 14))
+
+    frames: [];
+>frames : Symbol(frames, Decl(regex-compiler.d.ts, 6, 14))
+
+};
+type InitLast = '';
+>InitLast : Symbol(InitLast, Decl(regex-compiler.d.ts, 8, 2))
+
+type InitCondition = '';
+>InitCondition : Symbol(InitCondition, Decl(regex-compiler.d.ts, 9, 19))
+
+export type ReadInter<S extends string> = S extends `${infer f extends keyof regexConst.TransNumber}-${infer s extends keyof regexConst.TransNumber}${infer _rest}` ? vec.BitInter<regexConst.ASCII, regexConst.TransNumber[f], regexConst.TransNumber[s]> : never;
+>ReadInter : Symbol(ReadInter, Decl(regex-compiler.d.ts, 10, 24))
+>S : Symbol(S, Decl(regex-compiler.d.ts, 11, 22))
+>S : Symbol(S, Decl(regex-compiler.d.ts, 11, 22))
+>f : Symbol(f, Decl(regex-compiler.d.ts, 11, 60))
+>regexConst : Symbol(regexConst, Decl(regex-compiler.d.ts, 2, 13))
+>TransNumber : Symbol(regexConst.TransNumber, Decl(regex-const.d.ts, 0, 0))
+>s : Symbol(s, Decl(regex-compiler.d.ts, 11, 108))
+>regexConst : Symbol(regexConst, Decl(regex-compiler.d.ts, 2, 13))
+>TransNumber : Symbol(regexConst.TransNumber, Decl(regex-const.d.ts, 0, 0))
+>_rest : Symbol(_rest, Decl(regex-compiler.d.ts, 11, 155))
+>vec : Symbol(vec, Decl(regex-compiler.d.ts, 1, 13))
+>BitInter : Symbol(vec.BitInter, Decl(vecutil.d.ts, 8, 220))
+>regexConst : Symbol(regexConst, Decl(regex-compiler.d.ts, 2, 13))
+>ASCII : Symbol(regexConst.ASCII, Decl(regex-const.d.ts, 54, 61))
+>regexConst : Symbol(regexConst, Decl(regex-compiler.d.ts, 2, 13))
+>TransNumber : Symbol(regexConst.TransNumber, Decl(regex-const.d.ts, 0, 0))
+>f : Symbol(f, Decl(regex-compiler.d.ts, 11, 60))
+>regexConst : Symbol(regexConst, Decl(regex-compiler.d.ts, 2, 13))
+>TransNumber : Symbol(regexConst.TransNumber, Decl(regex-const.d.ts, 0, 0))
+>s : Symbol(s, Decl(regex-compiler.d.ts, 11, 108))
+
+type ReturnCC<Sig extends '[' | '[^', R extends (keyof regexConst.TransNumber)[]> = Sig extends '[' ? R : NegCharaClass<R>;
+>ReturnCC : Symbol(ReturnCC, Decl(regex-compiler.d.ts, 11, 259))
+>Sig : Symbol(Sig, Decl(regex-compiler.d.ts, 12, 14))
+>R : Symbol(R, Decl(regex-compiler.d.ts, 12, 37))
+>regexConst : Symbol(regexConst, Decl(regex-compiler.d.ts, 2, 13))
+>TransNumber : Symbol(regexConst.TransNumber, Decl(regex-const.d.ts, 0, 0))
+>Sig : Symbol(Sig, Decl(regex-compiler.d.ts, 12, 14))
+>R : Symbol(R, Decl(regex-compiler.d.ts, 12, 37))
+>NegCharaClass : Symbol(NegCharaClass)
+>R : Symbol(R, Decl(regex-compiler.d.ts, 12, 37))
+
+export type CompCharaClass<S extends string, Sig extends '[' | '[^', Option extends CompOption = InitCompOption> = _CompCharaClass<S, Sig, Option>;
+>CompCharaClass : Symbol(CompCharaClass, Decl(regex-compiler.d.ts, 12, 123))
+>S : Symbol(S, Decl(regex-compiler.d.ts, 13, 27))
+>Sig : Symbol(Sig, Decl(regex-compiler.d.ts, 13, 44))
+>Option : Symbol(Option, Decl(regex-compiler.d.ts, 13, 68))
+>CompOption : Symbol(CompOption)
+>InitCompOption : Symbol(InitCompOption)
+>_CompCharaClass : Symbol(_CompCharaClass, Decl(regex-compiler.d.ts, 13, 147))
+>S : Symbol(S, Decl(regex-compiler.d.ts, 13, 27))
+>Sig : Symbol(Sig, Decl(regex-compiler.d.ts, 13, 44))
+>Option : Symbol(Option, Decl(regex-compiler.d.ts, 13, 68))
+
+type _CompCharaClass<S extends string, Sig extends '[' | '[^', Option extends CompOption = InitCompOption, R extends (keyof regexConst.TransNumber)[] = [], IsReading extends boolean = false> = S extends '' ? [['chara-class', true extends (Option['negExpand']) ? ReturnCC<Sig, R> : R], ''] : str.RegCut<S> extends [
+>_CompCharaClass : Symbol(_CompCharaClass, Decl(regex-compiler.d.ts, 13, 147))
+>S : Symbol(S, Decl(regex-compiler.d.ts, 14, 21))
+>Sig : Symbol(Sig, Decl(regex-compiler.d.ts, 14, 38))
+>Option : Symbol(Option, Decl(regex-compiler.d.ts, 14, 62))
+>CompOption : Symbol(CompOption)
+>InitCompOption : Symbol(InitCompOption)
+>R : Symbol(R, Decl(regex-compiler.d.ts, 14, 106))
+>regexConst : Symbol(regexConst, Decl(regex-compiler.d.ts, 2, 13))
+>TransNumber : Symbol(regexConst.TransNumber, Decl(regex-const.d.ts, 0, 0))
+>IsReading : Symbol(IsReading, Decl(regex-compiler.d.ts, 14, 155))
+>S : Symbol(S, Decl(regex-compiler.d.ts, 14, 21))
+>Option : Symbol(Option, Decl(regex-compiler.d.ts, 14, 62))
+>ReturnCC : Symbol(ReturnCC, Decl(regex-compiler.d.ts, 11, 259))
+>Sig : Symbol(Sig, Decl(regex-compiler.d.ts, 14, 38))
+>R : Symbol(R, Decl(regex-compiler.d.ts, 14, 106))
+>R : Symbol(R, Decl(regex-compiler.d.ts, 14, 106))
+>str : Symbol(str, Decl(regex-compiler.d.ts, 0, 13))
+>RegCut : Symbol(str.RegCut, Decl(strutil.d.ts, 3, 723))
+>S : Symbol(S, Decl(regex-compiler.d.ts, 14, 21))
+
+    infer regFirst extends string,
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 15, 9))
+
+    infer regRest extends string
+>regRest : Symbol(regRest, Decl(regex-compiler.d.ts, 16, 9))
+
+] ? regFirst extends ']' ? [['chara-class', true extends (Option['negExpand']) ? ReturnCC<Sig, R> : R], regRest] : regFirst extends '[' | '[^' ? IsReading extends false ? _CompCharaClass<regRest, Sig, Option, R, true> : _CompCharaClass<regRest, Sig, Option, [...R, ...(regFirst extends '[' ? ['['] : ['[', '^'])], true> : regFirst extends `\\${infer Escaped}` ? regFirst extends keyof regexConst.MetaChars ? _CompCharaClass<regRest, Sig, Option, [...R, ...regexConst.MetaChars[regFirst]], IsReading> : Escaped extends keyof regexConst.TransNumber ? _CompCharaClass<regRest, Sig, Option, [...R, Escaped], IsReading> : 'never6' : regFirst extends keyof regexConst.MetaChars ? _CompCharaClass<regRest, Sig, Option, [...R, ...regexConst.MetaChars[regFirst]], IsReading> : regFirst extends keyof regexConst.TransNumber ? _CompCharaClass<regRest, Sig, Option, [...R, regFirst], IsReading> : regFirst extends `${infer _fst}-${infer _trd}${infer _rest}` ? ReadInter<regFirst> extends infer Range extends (keyof regexConst.TransNumber)[] ? _CompCharaClass<regRest, Sig, Option, [...R, ...Range], IsReading> : never : never : never;
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 15, 9))
+>Option : Symbol(Option, Decl(regex-compiler.d.ts, 14, 62))
+>ReturnCC : Symbol(ReturnCC, Decl(regex-compiler.d.ts, 11, 259))
+>Sig : Symbol(Sig, Decl(regex-compiler.d.ts, 14, 38))
+>R : Symbol(R, Decl(regex-compiler.d.ts, 14, 106))
+>R : Symbol(R, Decl(regex-compiler.d.ts, 14, 106))
+>regRest : Symbol(regRest, Decl(regex-compiler.d.ts, 16, 9))
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 15, 9))
+>IsReading : Symbol(IsReading, Decl(regex-compiler.d.ts, 14, 155))
+>_CompCharaClass : Symbol(_CompCharaClass, Decl(regex-compiler.d.ts, 13, 147))
+>regRest : Symbol(regRest, Decl(regex-compiler.d.ts, 16, 9))
+>Sig : Symbol(Sig, Decl(regex-compiler.d.ts, 14, 38))
+>Option : Symbol(Option, Decl(regex-compiler.d.ts, 14, 62))
+>R : Symbol(R, Decl(regex-compiler.d.ts, 14, 106))
+>_CompCharaClass : Symbol(_CompCharaClass, Decl(regex-compiler.d.ts, 13, 147))
+>regRest : Symbol(regRest, Decl(regex-compiler.d.ts, 16, 9))
+>Sig : Symbol(Sig, Decl(regex-compiler.d.ts, 14, 38))
+>Option : Symbol(Option, Decl(regex-compiler.d.ts, 14, 62))
+>R : Symbol(R, Decl(regex-compiler.d.ts, 14, 106))
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 15, 9))
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 15, 9))
+>Escaped : Symbol(Escaped, Decl(regex-compiler.d.ts, 17, 349))
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 15, 9))
+>regexConst : Symbol(regexConst, Decl(regex-compiler.d.ts, 2, 13))
+>MetaChars : Symbol(regexConst.MetaChars, Decl(regex-const.d.ts, 49, 2))
+>_CompCharaClass : Symbol(_CompCharaClass, Decl(regex-compiler.d.ts, 13, 147))
+>regRest : Symbol(regRest, Decl(regex-compiler.d.ts, 16, 9))
+>Sig : Symbol(Sig, Decl(regex-compiler.d.ts, 14, 38))
+>Option : Symbol(Option, Decl(regex-compiler.d.ts, 14, 62))
+>R : Symbol(R, Decl(regex-compiler.d.ts, 14, 106))
+>regexConst : Symbol(regexConst, Decl(regex-compiler.d.ts, 2, 13))
+>MetaChars : Symbol(regexConst.MetaChars, Decl(regex-const.d.ts, 49, 2))
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 15, 9))
+>IsReading : Symbol(IsReading, Decl(regex-compiler.d.ts, 14, 155))
+>Escaped : Symbol(Escaped, Decl(regex-compiler.d.ts, 17, 349))
+>regexConst : Symbol(regexConst, Decl(regex-compiler.d.ts, 2, 13))
+>TransNumber : Symbol(regexConst.TransNumber, Decl(regex-const.d.ts, 0, 0))
+>_CompCharaClass : Symbol(_CompCharaClass, Decl(regex-compiler.d.ts, 13, 147))
+>regRest : Symbol(regRest, Decl(regex-compiler.d.ts, 16, 9))
+>Sig : Symbol(Sig, Decl(regex-compiler.d.ts, 14, 38))
+>Option : Symbol(Option, Decl(regex-compiler.d.ts, 14, 62))
+>R : Symbol(R, Decl(regex-compiler.d.ts, 14, 106))
+>Escaped : Symbol(Escaped, Decl(regex-compiler.d.ts, 17, 349))
+>IsReading : Symbol(IsReading, Decl(regex-compiler.d.ts, 14, 155))
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 15, 9))
+>regexConst : Symbol(regexConst, Decl(regex-compiler.d.ts, 2, 13))
+>MetaChars : Symbol(regexConst.MetaChars, Decl(regex-const.d.ts, 49, 2))
+>_CompCharaClass : Symbol(_CompCharaClass, Decl(regex-compiler.d.ts, 13, 147))
+>regRest : Symbol(regRest, Decl(regex-compiler.d.ts, 16, 9))
+>Sig : Symbol(Sig, Decl(regex-compiler.d.ts, 14, 38))
+>Option : Symbol(Option, Decl(regex-compiler.d.ts, 14, 62))
+>R : Symbol(R, Decl(regex-compiler.d.ts, 14, 106))
+>regexConst : Symbol(regexConst, Decl(regex-compiler.d.ts, 2, 13))
+>MetaChars : Symbol(regexConst.MetaChars, Decl(regex-const.d.ts, 49, 2))
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 15, 9))
+>IsReading : Symbol(IsReading, Decl(regex-compiler.d.ts, 14, 155))
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 15, 9))
+>regexConst : Symbol(regexConst, Decl(regex-compiler.d.ts, 2, 13))
+>TransNumber : Symbol(regexConst.TransNumber, Decl(regex-const.d.ts, 0, 0))
+>_CompCharaClass : Symbol(_CompCharaClass, Decl(regex-compiler.d.ts, 13, 147))
+>regRest : Symbol(regRest, Decl(regex-compiler.d.ts, 16, 9))
+>Sig : Symbol(Sig, Decl(regex-compiler.d.ts, 14, 38))
+>Option : Symbol(Option, Decl(regex-compiler.d.ts, 14, 62))
+>R : Symbol(R, Decl(regex-compiler.d.ts, 14, 106))
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 15, 9))
+>IsReading : Symbol(IsReading, Decl(regex-compiler.d.ts, 14, 155))
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 15, 9))
+>_fst : Symbol(_fst, Decl(regex-compiler.d.ts, 17, 910))
+>_trd : Symbol(_trd, Decl(regex-compiler.d.ts, 17, 924))
+>_rest : Symbol(_rest, Decl(regex-compiler.d.ts, 17, 937))
+>ReadInter : Symbol(ReadInter, Decl(regex-compiler.d.ts, 10, 24))
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 15, 9))
+>Range : Symbol(Range, Decl(regex-compiler.d.ts, 17, 981))
+>regexConst : Symbol(regexConst, Decl(regex-compiler.d.ts, 2, 13))
+>TransNumber : Symbol(regexConst.TransNumber, Decl(regex-const.d.ts, 0, 0))
+>_CompCharaClass : Symbol(_CompCharaClass, Decl(regex-compiler.d.ts, 13, 147))
+>regRest : Symbol(regRest, Decl(regex-compiler.d.ts, 16, 9))
+>Sig : Symbol(Sig, Decl(regex-compiler.d.ts, 14, 38))
+>Option : Symbol(Option, Decl(regex-compiler.d.ts, 14, 62))
+>R : Symbol(R, Decl(regex-compiler.d.ts, 14, 106))
+>Range : Symbol(Range, Decl(regex-compiler.d.ts, 17, 981))
+>IsReading : Symbol(IsReading, Decl(regex-compiler.d.ts, 14, 155))
+
+type FrameToTape<F extends CompEnv> = F extends {
+>FrameToTape : Symbol(FrameToTape, Decl(regex-compiler.d.ts, 17, 1122))
+>F : Symbol(F, Decl(regex-compiler.d.ts, 18, 17))
+>CompEnv : Symbol(CompEnv)
+>F : Symbol(F, Decl(regex-compiler.d.ts, 18, 17))
+
+    state: infer State extends CompState;
+>state : Symbol(state, Decl(regex-compiler.d.ts, 18, 49))
+>State : Symbol(State, Decl(regex-compiler.d.ts, 19, 16))
+>CompState : Symbol(CompState)
+
+    tapes: infer Tapes extends CompTape[];
+>tapes : Symbol(tapes, Decl(regex-compiler.d.ts, 19, 41))
+>Tapes : Symbol(Tapes, Decl(regex-compiler.d.ts, 20, 16))
+>CompTape : Symbol(CompTape)
+
+    frames: infer Frames extends CompFrame[];
+>frames : Symbol(frames, Decl(regex-compiler.d.ts, 20, 42))
+>Frames : Symbol(Frames, Decl(regex-compiler.d.ts, 21, 17))
+>CompFrame : Symbol(CompFrame)
+
+} ? {
+    state: State;
+>state : Symbol(state, Decl(regex-compiler.d.ts, 22, 5))
+>State : Symbol(State, Decl(regex-compiler.d.ts, 19, 16))
+
+    tapes: [...Tapes, ...Frames];
+>tapes : Symbol(tapes, Decl(regex-compiler.d.ts, 23, 17))
+>Tapes : Symbol(Tapes, Decl(regex-compiler.d.ts, 20, 16))
+>Frames : Symbol(Frames, Decl(regex-compiler.d.ts, 21, 17))
+
+    frames: [];
+>frames : Symbol(frames, Decl(regex-compiler.d.ts, 24, 33))
+
+} : never;
+type CompFraming<F extends CompEnv, Fr extends CompFrame> = F extends {
+>CompFraming : Symbol(CompFraming, Decl(regex-compiler.d.ts, 26, 10))
+>F : Symbol(F, Decl(regex-compiler.d.ts, 27, 17))
+>CompEnv : Symbol(CompEnv)
+>Fr : Symbol(Fr, Decl(regex-compiler.d.ts, 27, 35))
+>CompFrame : Symbol(CompFrame)
+>F : Symbol(F, Decl(regex-compiler.d.ts, 27, 17))
+
+    state: infer State extends CompState;
+>state : Symbol(state, Decl(regex-compiler.d.ts, 27, 71))
+>State : Symbol(State, Decl(regex-compiler.d.ts, 28, 16))
+>CompState : Symbol(CompState)
+
+    tapes: infer Tapes extends CompTape[];
+>tapes : Symbol(tapes, Decl(regex-compiler.d.ts, 28, 41))
+>Tapes : Symbol(Tapes, Decl(regex-compiler.d.ts, 29, 16))
+>CompTape : Symbol(CompTape)
+
+    frames: infer Frames extends CompFrame[];
+>frames : Symbol(frames, Decl(regex-compiler.d.ts, 29, 42))
+>Frames : Symbol(Frames, Decl(regex-compiler.d.ts, 30, 17))
+>CompFrame : Symbol(CompFrame)
+
+} ? {
+    state: State;
+>state : Symbol(state, Decl(regex-compiler.d.ts, 31, 5))
+>State : Symbol(State, Decl(regex-compiler.d.ts, 28, 16))
+
+    tapes: Tapes;
+>tapes : Symbol(tapes, Decl(regex-compiler.d.ts, 32, 17))
+>Tapes : Symbol(Tapes, Decl(regex-compiler.d.ts, 29, 16))
+
+    frames: [...Frames, Fr];
+>frames : Symbol(frames, Decl(regex-compiler.d.ts, 33, 17))
+>Frames : Symbol(Frames, Decl(regex-compiler.d.ts, 30, 17))
+>Fr : Symbol(Fr, Decl(regex-compiler.d.ts, 27, 35))
+
+} : never;
+export type recComp<S extends string, Option extends CompOption = InitCompOption, Stack extends CompEnv[] = InitStack, env extends CompEnv = InitCompEnv, Last extends CompFrame = InitLast, condition extends string = InitCondition> = S extends '' ? Last extends '' ? {
+>recComp : Symbol(recComp, Decl(regex-compiler.d.ts, 35, 10))
+>S : Symbol(S, Decl(regex-compiler.d.ts, 36, 20))
+>Option : Symbol(Option, Decl(regex-compiler.d.ts, 36, 37))
+>CompOption : Symbol(CompOption)
+>InitCompOption : Symbol(InitCompOption)
+>Stack : Symbol(Stack, Decl(regex-compiler.d.ts, 36, 81))
+>CompEnv : Symbol(CompEnv)
+>InitStack : Symbol(InitStack)
+>env : Symbol(env, Decl(regex-compiler.d.ts, 36, 118))
+>CompEnv : Symbol(CompEnv)
+>InitCompEnv : Symbol(InitCompEnv, Decl(regex-compiler.d.ts, 3, 43))
+>Last : Symbol(Last, Decl(regex-compiler.d.ts, 36, 153))
+>CompFrame : Symbol(CompFrame)
+>InitLast : Symbol(InitLast, Decl(regex-compiler.d.ts, 8, 2))
+>condition : Symbol(condition, Decl(regex-compiler.d.ts, 36, 188))
+>InitCondition : Symbol(InitCondition, Decl(regex-compiler.d.ts, 9, 19))
+>S : Symbol(S, Decl(regex-compiler.d.ts, 36, 20))
+>Last : Symbol(Last, Decl(regex-compiler.d.ts, 36, 153))
+
+} extends infer r ? r : never : {
+>r : Symbol(r, Decl(regex-compiler.d.ts, 37, 15))
+>r : Symbol(r, Decl(regex-compiler.d.ts, 37, 15))
+
+        condition: condition;
+>condition : Symbol(condition, Decl(regex-compiler.d.ts, 37, 33))
+>condition : Symbol(condition, Decl(regex-compiler.d.ts, 36, 188))
+
+        tapes: [...env['tapes'], ...[...env['frames'], Last]];
+>tapes : Symbol(tapes, Decl(regex-compiler.d.ts, 38, 29))
+>env : Symbol(env, Decl(regex-compiler.d.ts, 36, 118))
+>env : Symbol(env, Decl(regex-compiler.d.ts, 36, 118))
+>Last : Symbol(Last, Decl(regex-compiler.d.ts, 36, 153))
+
+} extends infer r ? r : never : env extends {
+>r : Symbol(r, Decl(regex-compiler.d.ts, 40, 15))
+>r : Symbol(r, Decl(regex-compiler.d.ts, 40, 15))
+>env : Symbol(env, Decl(regex-compiler.d.ts, 36, 118))
+
+    state: infer State extends CompState;
+>state : Symbol(state, Decl(regex-compiler.d.ts, 40, 45))
+>State : Symbol(State, Decl(regex-compiler.d.ts, 41, 16))
+>CompState : Symbol(CompState)
+
+    tapes: infer Tapes extends CompTape[];
+>tapes : Symbol(tapes, Decl(regex-compiler.d.ts, 41, 41))
+>Tapes : Symbol(Tapes, Decl(regex-compiler.d.ts, 42, 16))
+>CompTape : Symbol(CompTape)
+
+    frames: infer Frames extends CompFrame[];
+>frames : Symbol(frames, Decl(regex-compiler.d.ts, 42, 42))
+>Frames : Symbol(Frames, Decl(regex-compiler.d.ts, 43, 17))
+>CompFrame : Symbol(CompFrame)
+
+} ? str.RegCut<S> extends [
+>str : Symbol(str, Decl(regex-compiler.d.ts, 0, 13))
+>RegCut : Symbol(str.RegCut, Decl(strutil.d.ts, 3, 723))
+>S : Symbol(S, Decl(regex-compiler.d.ts, 36, 20))
+
+    infer regFirst extends string,
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 45, 9))
+
+    infer regRest extends string
+>regRest : Symbol(regRest, Decl(regex-compiler.d.ts, 46, 9))
+
+] ? regFirst extends '^' | '$' ? {
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 45, 9))
+
+    r: recComp<regRest, Option, Stack, env, Last, `${condition}${regFirst}`>;
+>r : Symbol(r, Decl(regex-compiler.d.ts, 47, 34))
+>recComp : Symbol(recComp, Decl(regex-compiler.d.ts, 35, 10))
+>regRest : Symbol(regRest, Decl(regex-compiler.d.ts, 46, 9))
+>Option : Symbol(Option, Decl(regex-compiler.d.ts, 36, 37))
+>Stack : Symbol(Stack, Decl(regex-compiler.d.ts, 36, 81))
+>env : Symbol(env, Decl(regex-compiler.d.ts, 36, 118))
+>Last : Symbol(Last, Decl(regex-compiler.d.ts, 36, 153))
+>condition : Symbol(condition, Decl(regex-compiler.d.ts, 36, 188))
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 45, 9))
+
+} : regFirst extends '[' | '[^' ? CompCharaClass<S, regFirst, Option> extends [infer classComped extends FrameCharaClass, infer classRest extends string] ? FrameToTape<CompFraming<env, Last>> extends infer FramedEnv extends CompEnv ? {
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 45, 9))
+>CompCharaClass : Symbol(CompCharaClass, Decl(regex-compiler.d.ts, 12, 123))
+>S : Symbol(S, Decl(regex-compiler.d.ts, 36, 20))
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 45, 9))
+>Option : Symbol(Option, Decl(regex-compiler.d.ts, 36, 37))
+>classComped : Symbol(classComped, Decl(regex-compiler.d.ts, 49, 84))
+>FrameCharaClass : Symbol(FrameCharaClass)
+>classRest : Symbol(classRest, Decl(regex-compiler.d.ts, 49, 127))
+>FrameToTape : Symbol(FrameToTape, Decl(regex-compiler.d.ts, 17, 1122))
+>CompFraming : Symbol(CompFraming, Decl(regex-compiler.d.ts, 26, 10))
+>env : Symbol(env, Decl(regex-compiler.d.ts, 36, 118))
+>Last : Symbol(Last, Decl(regex-compiler.d.ts, 36, 153))
+>FramedEnv : Symbol(FramedEnv, Decl(regex-compiler.d.ts, 49, 205))
+>CompEnv : Symbol(CompEnv)
+
+    r: recComp<classRest, Option, Stack, Last extends '' ? env : FramedEnv, classComped, condition>;
+>r : Symbol(r, Decl(regex-compiler.d.ts, 49, 235))
+>recComp : Symbol(recComp, Decl(regex-compiler.d.ts, 35, 10))
+>classRest : Symbol(classRest, Decl(regex-compiler.d.ts, 49, 127))
+>Option : Symbol(Option, Decl(regex-compiler.d.ts, 36, 37))
+>Stack : Symbol(Stack, Decl(regex-compiler.d.ts, 36, 81))
+>Last : Symbol(Last, Decl(regex-compiler.d.ts, 36, 153))
+>env : Symbol(env, Decl(regex-compiler.d.ts, 36, 118))
+>FramedEnv : Symbol(FramedEnv, Decl(regex-compiler.d.ts, 49, 205))
+>classComped : Symbol(classComped, Decl(regex-compiler.d.ts, 49, 84))
+>condition : Symbol(condition, Decl(regex-compiler.d.ts, 36, 188))
+
+} extends infer a ? a : never : never : never : regFirst extends '(' ? {
+>a : Symbol(a, Decl(regex-compiler.d.ts, 51, 15))
+>a : Symbol(a, Decl(regex-compiler.d.ts, 51, 15))
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 45, 9))
+
+    r: recComp<regRest, Option, [Last extends InitLast ? env : CompFraming<env, Last>, ...Stack], {
+>r : Symbol(r, Decl(regex-compiler.d.ts, 51, 72))
+>recComp : Symbol(recComp, Decl(regex-compiler.d.ts, 35, 10))
+>regRest : Symbol(regRest, Decl(regex-compiler.d.ts, 46, 9))
+>Option : Symbol(Option, Decl(regex-compiler.d.ts, 36, 37))
+>Last : Symbol(Last, Decl(regex-compiler.d.ts, 36, 153))
+>InitLast : Symbol(InitLast, Decl(regex-compiler.d.ts, 8, 2))
+>env : Symbol(env, Decl(regex-compiler.d.ts, 36, 118))
+>CompFraming : Symbol(CompFraming, Decl(regex-compiler.d.ts, 26, 10))
+>env : Symbol(env, Decl(regex-compiler.d.ts, 36, 118))
+>Last : Symbol(Last, Decl(regex-compiler.d.ts, 36, 153))
+>Stack : Symbol(Stack, Decl(regex-compiler.d.ts, 36, 81))
+
+        state: 'group';
+>state : Symbol(state, Decl(regex-compiler.d.ts, 52, 99))
+
+        tapes: [];
+>tapes : Symbol(tapes, Decl(regex-compiler.d.ts, 53, 23))
+
+        frames: [];
+>frames : Symbol(frames, Decl(regex-compiler.d.ts, 54, 18))
+
+    }, InitLast, condition>;
+>InitLast : Symbol(InitLast, Decl(regex-compiler.d.ts, 8, 2))
+>condition : Symbol(condition, Decl(regex-compiler.d.ts, 36, 188))
+
+} : regFirst extends ')' ? Stack extends [
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 45, 9))
+>Stack : Symbol(Stack, Decl(regex-compiler.d.ts, 36, 81))
+
+    infer stackFirst extends CompEnv,
+>stackFirst : Symbol(stackFirst, Decl(regex-compiler.d.ts, 58, 9))
+>CompEnv : Symbol(CompEnv)
+
+    ...infer stackRest extends CompEnv[]
+>stackRest : Symbol(stackRest, Decl(regex-compiler.d.ts, 59, 12))
+>CompEnv : Symbol(CompEnv)
+
+] ? {
+    r: recComp<regRest, Option, stackRest, stackFirst, [State, ...Tapes, ...(Last extends InitLast ? Frames : [[...Frames, Last]])], condition>;
+>r : Symbol(r, Decl(regex-compiler.d.ts, 60, 5))
+>recComp : Symbol(recComp, Decl(regex-compiler.d.ts, 35, 10))
+>regRest : Symbol(regRest, Decl(regex-compiler.d.ts, 46, 9))
+>Option : Symbol(Option, Decl(regex-compiler.d.ts, 36, 37))
+>stackRest : Symbol(stackRest, Decl(regex-compiler.d.ts, 59, 12))
+>stackFirst : Symbol(stackFirst, Decl(regex-compiler.d.ts, 58, 9))
+>State : Symbol(State, Decl(regex-compiler.d.ts, 41, 16))
+>Tapes : Symbol(Tapes, Decl(regex-compiler.d.ts, 42, 16))
+>Last : Symbol(Last, Decl(regex-compiler.d.ts, 36, 153))
+>InitLast : Symbol(InitLast, Decl(regex-compiler.d.ts, 8, 2))
+>Frames : Symbol(Frames, Decl(regex-compiler.d.ts, 43, 17))
+>Frames : Symbol(Frames, Decl(regex-compiler.d.ts, 43, 17))
+>Last : Symbol(Last, Decl(regex-compiler.d.ts, 36, 153))
+>condition : Symbol(condition, Decl(regex-compiler.d.ts, 36, 188))
+
+} : never : regFirst extends '|' ? {
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 45, 9))
+
+} : regFirst extends '?' | '*' ? {
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 45, 9))
+
+    r: recComp<regRest, Option, Stack, CompFraming<FrameToTape<env>, [regFirst, Last]>, InitLast, condition>;
+>r : Symbol(r, Decl(regex-compiler.d.ts, 63, 34))
+>recComp : Symbol(recComp, Decl(regex-compiler.d.ts, 35, 10))
+>regRest : Symbol(regRest, Decl(regex-compiler.d.ts, 46, 9))
+>Option : Symbol(Option, Decl(regex-compiler.d.ts, 36, 37))
+>Stack : Symbol(Stack, Decl(regex-compiler.d.ts, 36, 81))
+>CompFraming : Symbol(CompFraming, Decl(regex-compiler.d.ts, 26, 10))
+>FrameToTape : Symbol(FrameToTape, Decl(regex-compiler.d.ts, 17, 1122))
+>env : Symbol(env, Decl(regex-compiler.d.ts, 36, 118))
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 45, 9))
+>Last : Symbol(Last, Decl(regex-compiler.d.ts, 36, 153))
+>InitLast : Symbol(InitLast, Decl(regex-compiler.d.ts, 8, 2))
+>condition : Symbol(condition, Decl(regex-compiler.d.ts, 36, 188))
+
+} : regFirst extends '+' ? {
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 45, 9))
+
+    r: recComp<regRest, Option, Stack, {
+>r : Symbol(r, Decl(regex-compiler.d.ts, 65, 28))
+>recComp : Symbol(recComp, Decl(regex-compiler.d.ts, 35, 10))
+>regRest : Symbol(regRest, Decl(regex-compiler.d.ts, 46, 9))
+>Option : Symbol(Option, Decl(regex-compiler.d.ts, 36, 37))
+>Stack : Symbol(Stack, Decl(regex-compiler.d.ts, 36, 81))
+
+        state: State;
+>state : Symbol(state, Decl(regex-compiler.d.ts, 66, 40))
+>State : Symbol(State, Decl(regex-compiler.d.ts, 41, 16))
+
+        tapes: [...Tapes, ...Frames, Last, ['*', Last]];
+>tapes : Symbol(tapes, Decl(regex-compiler.d.ts, 67, 21))
+>Tapes : Symbol(Tapes, Decl(regex-compiler.d.ts, 42, 16))
+>Frames : Symbol(Frames, Decl(regex-compiler.d.ts, 43, 17))
+>Last : Symbol(Last, Decl(regex-compiler.d.ts, 36, 153))
+>Last : Symbol(Last, Decl(regex-compiler.d.ts, 36, 153))
+
+        frames: [];
+>frames : Symbol(frames, Decl(regex-compiler.d.ts, 68, 56))
+
+    }, InitLast, condition>;
+>InitLast : Symbol(InitLast, Decl(regex-compiler.d.ts, 8, 2))
+>condition : Symbol(condition, Decl(regex-compiler.d.ts, 36, 188))
+
+} : regFirst extends '{' ? CompMinMax<S> extends [
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 45, 9))
+>CompMinMax : Symbol(CompMinMax)
+>S : Symbol(S, Decl(regex-compiler.d.ts, 36, 20))
+
+] ? ExpandMinMax<Last, Min, Max> extends infer _Delay extends CompFrame ? {
+>ExpandMinMax : Symbol(ExpandMinMax)
+>Last : Symbol(Last, Decl(regex-compiler.d.ts, 36, 153))
+>Min : Symbol(Min)
+>Max : Symbol(Max)
+>_Delay : Symbol(_Delay, Decl(regex-compiler.d.ts, 72, 46))
+>CompFrame : Symbol(CompFrame)
+
+} : never : never : {
+    r: recComp<regRest, Option, Stack, Last extends "" ? env : CompFraming<env, Last>, regFirst, condition>;
+>r : Symbol(r, Decl(regex-compiler.d.ts, 73, 21))
+>recComp : Symbol(recComp, Decl(regex-compiler.d.ts, 35, 10))
+>regRest : Symbol(regRest, Decl(regex-compiler.d.ts, 46, 9))
+>Option : Symbol(Option, Decl(regex-compiler.d.ts, 36, 37))
+>Stack : Symbol(Stack, Decl(regex-compiler.d.ts, 36, 81))
+>Last : Symbol(Last, Decl(regex-compiler.d.ts, 36, 153))
+>env : Symbol(env, Decl(regex-compiler.d.ts, 36, 118))
+>CompFraming : Symbol(CompFraming, Decl(regex-compiler.d.ts, 26, 10))
+>env : Symbol(env, Decl(regex-compiler.d.ts, 36, 118))
+>Last : Symbol(Last, Decl(regex-compiler.d.ts, 36, 153))
+>regFirst : Symbol(regFirst, Decl(regex-compiler.d.ts, 45, 9))
+>condition : Symbol(condition, Decl(regex-compiler.d.ts, 36, 188))
+
+} : never : never;
+export type Comp<S extends string, Option extends CompOption = InitCompOption> = u.Rec<recComp<S, u.AssocWith<InitCompOption, Option>>>;
+>Comp : Symbol(Comp, Decl(regex-compiler.d.ts, 75, 18))
+>S : Symbol(S, Decl(regex-compiler.d.ts, 76, 17))
+>Option : Symbol(Option, Decl(regex-compiler.d.ts, 76, 34))
+>CompOption : Symbol(CompOption)
+>InitCompOption : Symbol(InitCompOption)
+>u : Symbol(u, Decl(regex-compiler.d.ts, 3, 13))
+>Rec : Symbol(u.Rec, Decl(util.d.ts, 6, 10))
+>recComp : Symbol(recComp, Decl(regex-compiler.d.ts, 35, 10))
+>S : Symbol(S, Decl(regex-compiler.d.ts, 76, 17))
+>u : Symbol(u, Decl(regex-compiler.d.ts, 3, 13))
+>AssocWith : Symbol(u.AssocWith)
+>InitCompOption : Symbol(InitCompOption)
+>Option : Symbol(Option, Decl(regex-compiler.d.ts, 76, 34))
+
+export type * as regexCompiler from './regex-compiler.js';
+>regexCompiler : Symbol(regexCompiler, Decl(regex-compiler.d.ts, 77, 11))
+
+=== node_modules/@taiyakihitotsu/cion/dist/regex-const.d.ts ===
+export type TransNumber = Words & Signs;
+>TransNumber : Symbol(TransNumber, Decl(regex-const.d.ts, 0, 0))
+>Words : Symbol(Words, Decl(regex-const.d.ts, 0, 40))
+>Signs : Symbol(Signs, Decl(regex-const.d.ts, 45, 2))
+
+export type Words = {
+>Words : Symbol(Words, Decl(regex-const.d.ts, 0, 40))
+
+    'a': '0000000000001010';
+>'a' : Symbol('a', Decl(regex-const.d.ts, 1, 21))
+
+    'k': '0000000000010100';
+>'k' : Symbol('k', Decl(regex-const.d.ts, 2, 28))
+
+    'l': '0000000000010101';
+>'l' : Symbol('l', Decl(regex-const.d.ts, 3, 28))
+
+    'm': '0000000000010110';
+>'m' : Symbol('m', Decl(regex-const.d.ts, 4, 28))
+
+    'n': '0000000000010111';
+>'n' : Symbol('n', Decl(regex-const.d.ts, 5, 28))
+
+    'o': '0000000000011000';
+>'o' : Symbol('o', Decl(regex-const.d.ts, 6, 28))
+
+    'p': '0000000000011001';
+>'p' : Symbol('p', Decl(regex-const.d.ts, 7, 28))
+
+    'q': '0000000000011010';
+>'q' : Symbol('q', Decl(regex-const.d.ts, 8, 28))
+
+    'r': '0000000000011011';
+>'r' : Symbol('r', Decl(regex-const.d.ts, 9, 28))
+
+    's': '0000000000011100';
+>'s' : Symbol('s', Decl(regex-const.d.ts, 10, 28))
+
+    't': '0000000000011101';
+>'t' : Symbol('t', Decl(regex-const.d.ts, 11, 28))
+
+    'u': '0000000000011110';
+>'u' : Symbol('u', Decl(regex-const.d.ts, 12, 28))
+
+    'v': '0000000000011111';
+>'v' : Symbol('v', Decl(regex-const.d.ts, 13, 28))
+
+    'w': '0000000000100000';
+>'w' : Symbol('w', Decl(regex-const.d.ts, 14, 28))
+
+    'x': '0000000000100001';
+>'x' : Symbol('x', Decl(regex-const.d.ts, 15, 28))
+
+    'y': '0000000000100010';
+>'y' : Symbol('y', Decl(regex-const.d.ts, 16, 28))
+
+    'z': '0000000000100011';
+>'z' : Symbol('z', Decl(regex-const.d.ts, 17, 28))
+
+    'A': '0000000000100100';
+>'A' : Symbol('A', Decl(regex-const.d.ts, 18, 28))
+
+    'B': '0000000000100101';
+>'B' : Symbol('B', Decl(regex-const.d.ts, 19, 28))
+
+    'C': '0000000000100110';
+>'C' : Symbol('C', Decl(regex-const.d.ts, 20, 28))
+
+    'D': '0000000000100111';
+>'D' : Symbol('D', Decl(regex-const.d.ts, 21, 28))
+
+    'E': '0000000000101000';
+>'E' : Symbol('E', Decl(regex-const.d.ts, 22, 28))
+
+    'F': '0000000000101001';
+>'F' : Symbol('F', Decl(regex-const.d.ts, 23, 28))
+
+    'G': '0000000000101010';
+>'G' : Symbol('G', Decl(regex-const.d.ts, 24, 28))
+
+    'H': '0000000000101011';
+>'H' : Symbol('H', Decl(regex-const.d.ts, 25, 28))
+
+    'I': '0000000000101100';
+>'I' : Symbol('I', Decl(regex-const.d.ts, 26, 28))
+
+    'J': '0000000000101101';
+>'J' : Symbol('J', Decl(regex-const.d.ts, 27, 28))
+
+    'K': '0000000000101110';
+>'K' : Symbol('K', Decl(regex-const.d.ts, 28, 28))
+
+    'L': '0000000000101111';
+>'L' : Symbol('L', Decl(regex-const.d.ts, 29, 28))
+
+    'M': '0000000000110000';
+>'M' : Symbol('M', Decl(regex-const.d.ts, 30, 28))
+
+    'N': '0000000000110001';
+>'N' : Symbol('N', Decl(regex-const.d.ts, 31, 28))
+
+    'O': '0000000000110010';
+>'O' : Symbol('O', Decl(regex-const.d.ts, 32, 28))
+
+    'P': '0000000000110011';
+>'P' : Symbol('P', Decl(regex-const.d.ts, 33, 28))
+
+    'Q': '0000000000110100';
+>'Q' : Symbol('Q', Decl(regex-const.d.ts, 34, 28))
+
+    'R': '0000000000110101';
+>'R' : Symbol('R', Decl(regex-const.d.ts, 35, 28))
+
+    'S': '0000000000110110';
+>'S' : Symbol('S', Decl(regex-const.d.ts, 36, 28))
+
+    'T': '0000000000110111';
+>'T' : Symbol('T', Decl(regex-const.d.ts, 37, 28))
+
+    'U': '0000000000111000';
+>'U' : Symbol('U', Decl(regex-const.d.ts, 38, 28))
+
+    'V': '0000000000111001';
+>'V' : Symbol('V', Decl(regex-const.d.ts, 39, 28))
+
+    'W': '0000000000111010';
+>'W' : Symbol('W', Decl(regex-const.d.ts, 40, 28))
+
+    'X': '0000000000111011';
+>'X' : Symbol('X', Decl(regex-const.d.ts, 41, 28))
+
+    'Y': '0000000000111100';
+>'Y' : Symbol('Y', Decl(regex-const.d.ts, 42, 28))
+
+    'Z': '0000000000111101';
+>'Z' : Symbol('Z', Decl(regex-const.d.ts, 43, 28))
+
+};
+export type Signs = {
+>Signs : Symbol(Signs, Decl(regex-const.d.ts, 45, 2))
+
+    '_': '0000000001000010';
+>'_' : Symbol('_', Decl(regex-const.d.ts, 46, 21))
+
+    '-': '0000000001010101';
+>'-' : Symbol('-', Decl(regex-const.d.ts, 47, 28))
+
+};
+export type MetaChars = {
+>MetaChars : Symbol(MetaChars, Decl(regex-const.d.ts, 49, 2))
+
+};
+export type WordLittleList = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
+>WordLittleList : Symbol(WordLittleList, Decl(regex-const.d.ts, 51, 2))
+
+export type WordLargeList = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+>WordLargeList : Symbol(WordLargeList, Decl(regex-const.d.ts, 52, 160))
+
+export type WordList = [...WordLittleList, ...WordLargeList];
+>WordList : Symbol(WordList, Decl(regex-const.d.ts, 53, 159))
+>WordLittleList : Symbol(WordLittleList, Decl(regex-const.d.ts, 51, 2))
+>WordLargeList : Symbol(WordLargeList, Decl(regex-const.d.ts, 52, 160))
+
+export type ASCII = [
+>ASCII : Symbol(ASCII, Decl(regex-const.d.ts, 54, 61))
+
+    ...WordList,
+>WordList : Symbol(WordList, Decl(regex-const.d.ts, 53, 159))
+
+];
+export type * as regexConst from './regex-const.js';
+>regexConst : Symbol(regexConst, Decl(regex-const.d.ts, 58, 11))
+
+=== node_modules/@taiyakihitotsu/cion/dist/regex-eval.d.ts ===
+import type { StrUtil as str } from './strutil.js';
+>StrUtil : Symbol(str.StrUtil, Decl(strutil.d.ts, 8, 11))
+>str : Symbol(str, Decl(regex-eval.d.ts, 0, 13))
+
+export type Unmatch = [];
+>Unmatch : Symbol(Unmatch, Decl(regex-eval.d.ts, 0, 51))
+
+export type OrMatch<S extends string, Pat extends string[], Forward extends string, Flag extends '!wildcard' | 'wildcard' = 'wildcard'> = Pat extends [] ? Unmatch : Pat extends [infer First extends string, ...infer Rest extends string[]] ? str.StrSearchAll<S, First, '^', Forward, Flag> extends [infer M extends string, infer Re extends string] ? [M, Re] : OrMatch<S, Rest, Forward, Flag> : Unmatch;
+>OrMatch : Symbol(OrMatch, Decl(regex-eval.d.ts, 1, 25))
+>S : Symbol(S, Decl(regex-eval.d.ts, 2, 20))
+>Pat : Symbol(Pat, Decl(regex-eval.d.ts, 2, 37))
+>Forward : Symbol(Forward, Decl(regex-eval.d.ts, 2, 59))
+>Flag : Symbol(Flag, Decl(regex-eval.d.ts, 2, 83))
+>Pat : Symbol(Pat, Decl(regex-eval.d.ts, 2, 37))
+>Unmatch : Symbol(Unmatch, Decl(regex-eval.d.ts, 0, 51))
+>Pat : Symbol(Pat, Decl(regex-eval.d.ts, 2, 37))
+>First : Symbol(First, Decl(regex-eval.d.ts, 2, 183))
+>Rest : Symbol(Rest, Decl(regex-eval.d.ts, 2, 214))
+>str : Symbol(str, Decl(regex-eval.d.ts, 0, 13))
+>StrSearchAll : Symbol(str.StrSearchAll, Decl(strutil.d.ts, 6, 601))
+>S : Symbol(S, Decl(regex-eval.d.ts, 2, 20))
+>First : Symbol(First, Decl(regex-eval.d.ts, 2, 183))
+>Forward : Symbol(Forward, Decl(regex-eval.d.ts, 2, 59))
+>Flag : Symbol(Flag, Decl(regex-eval.d.ts, 2, 83))
+>M : Symbol(M, Decl(regex-eval.d.ts, 2, 301))
+>Re : Symbol(Re, Decl(regex-eval.d.ts, 2, 325))
+>M : Symbol(M, Decl(regex-eval.d.ts, 2, 301))
+>Re : Symbol(Re, Decl(regex-eval.d.ts, 2, 325))
+>OrMatch : Symbol(OrMatch, Decl(regex-eval.d.ts, 1, 25))
+>S : Symbol(S, Decl(regex-eval.d.ts, 2, 20))
+>Rest : Symbol(Rest, Decl(regex-eval.d.ts, 2, 214))
+>Forward : Symbol(Forward, Decl(regex-eval.d.ts, 2, 59))
+>Flag : Symbol(Flag, Decl(regex-eval.d.ts, 2, 83))
+>Unmatch : Symbol(Unmatch, Decl(regex-eval.d.ts, 0, 51))
+
+export type OrGroupMatch<S extends string, Pat extends rc.CompTape[], Forward extends string> = Pat extends [] ? Unmatch : Pat extends [infer First extends rc.CompTape, ...infer Rest extends rc.CompTape[]] ? _TapeEval<S, First, Forward, []> extends [infer M extends string, infer Re extends string, infer Tp extends rc.CompTape] ? [M, Re, Tp] : OrGroupMatch<S, Rest, Forward> : {
+>OrGroupMatch : Symbol(OrGroupMatch, Decl(regex-eval.d.ts, 2, 399))
+>S : Symbol(S, Decl(regex-eval.d.ts, 3, 25))
+>Pat : Symbol(Pat, Decl(regex-eval.d.ts, 3, 42))
+>rc : Symbol(rc)
+>CompTape : Symbol(rc.CompTape)
+>Forward : Symbol(Forward, Decl(regex-eval.d.ts, 3, 69))
+>Pat : Symbol(Pat, Decl(regex-eval.d.ts, 3, 42))
+>Unmatch : Symbol(Unmatch, Decl(regex-eval.d.ts, 0, 51))
+>Pat : Symbol(Pat, Decl(regex-eval.d.ts, 3, 42))
+>First : Symbol(First, Decl(regex-eval.d.ts, 3, 141))
+>rc : Symbol(rc)
+>CompTape : Symbol(rc.CompTape)
+>Rest : Symbol(Rest, Decl(regex-eval.d.ts, 3, 177))
+>rc : Symbol(rc)
+>CompTape : Symbol(rc.CompTape)
+>_TapeEval : Symbol(_TapeEval, Decl(regex-eval.d.ts, 6, 96))
+>S : Symbol(S, Decl(regex-eval.d.ts, 3, 25))
+>First : Symbol(First, Decl(regex-eval.d.ts, 3, 141))
+>Forward : Symbol(Forward, Decl(regex-eval.d.ts, 3, 69))
+>M : Symbol(M, Decl(regex-eval.d.ts, 3, 255))
+>Re : Symbol(Re, Decl(regex-eval.d.ts, 3, 279))
+>Tp : Symbol(Tp, Decl(regex-eval.d.ts, 3, 304))
+>rc : Symbol(rc)
+>CompTape : Symbol(rc.CompTape)
+>M : Symbol(M, Decl(regex-eval.d.ts, 3, 255))
+>Re : Symbol(Re, Decl(regex-eval.d.ts, 3, 279))
+>Tp : Symbol(Tp, Decl(regex-eval.d.ts, 3, 304))
+>OrGroupMatch : Symbol(OrGroupMatch, Decl(regex-eval.d.ts, 2, 399))
+>S : Symbol(S, Decl(regex-eval.d.ts, 3, 25))
+>Rest : Symbol(Rest, Decl(regex-eval.d.ts, 3, 177))
+>Forward : Symbol(Forward, Decl(regex-eval.d.ts, 3, 69))
+
+};
+export type AstaMatch<S extends string, Pat extends rc.CompTape[], Forward extends string> = Pat extends [] ? [Forward, S] : Pat extends [infer First extends rc.CompTape, ...infer _Rest extends rc.CompTape[]] ? _TapeEval<S, [First], Forward, []> extends [infer M extends string, infer Re extends string, infer _Tp extends rc.CompTape] ? AstaMatch<Re, Pat, M> : [Forward, S] : [Forward, S];
+>AstaMatch : Symbol(AstaMatch, Decl(regex-eval.d.ts, 4, 2))
+>S : Symbol(S, Decl(regex-eval.d.ts, 5, 22))
+>Pat : Symbol(Pat, Decl(regex-eval.d.ts, 5, 39))
+>rc : Symbol(rc)
+>CompTape : Symbol(rc.CompTape)
+>Forward : Symbol(Forward, Decl(regex-eval.d.ts, 5, 66))
+>Pat : Symbol(Pat, Decl(regex-eval.d.ts, 5, 39))
+>Forward : Symbol(Forward, Decl(regex-eval.d.ts, 5, 66))
+>S : Symbol(S, Decl(regex-eval.d.ts, 5, 22))
+>Pat : Symbol(Pat, Decl(regex-eval.d.ts, 5, 39))
+>First : Symbol(First, Decl(regex-eval.d.ts, 5, 143))
+>rc : Symbol(rc)
+>CompTape : Symbol(rc.CompTape)
+>_Rest : Symbol(_Rest, Decl(regex-eval.d.ts, 5, 179))
+>rc : Symbol(rc)
+>CompTape : Symbol(rc.CompTape)
+>_TapeEval : Symbol(_TapeEval, Decl(regex-eval.d.ts, 6, 96))
+>S : Symbol(S, Decl(regex-eval.d.ts, 5, 22))
+>First : Symbol(First, Decl(regex-eval.d.ts, 5, 143))
+>Forward : Symbol(Forward, Decl(regex-eval.d.ts, 5, 66))
+>M : Symbol(M, Decl(regex-eval.d.ts, 5, 260))
+>Re : Symbol(Re, Decl(regex-eval.d.ts, 5, 284))
+>_Tp : Symbol(_Tp, Decl(regex-eval.d.ts, 5, 309))
+>rc : Symbol(rc)
+>CompTape : Symbol(rc.CompTape)
+>AstaMatch : Symbol(AstaMatch, Decl(regex-eval.d.ts, 4, 2))
+>Re : Symbol(Re, Decl(regex-eval.d.ts, 5, 284))
+>Pat : Symbol(Pat, Decl(regex-eval.d.ts, 5, 39))
+>M : Symbol(M, Decl(regex-eval.d.ts, 5, 260))
+>Forward : Symbol(Forward, Decl(regex-eval.d.ts, 5, 66))
+>S : Symbol(S, Decl(regex-eval.d.ts, 5, 22))
+>Forward : Symbol(Forward, Decl(regex-eval.d.ts, 5, 66))
+>S : Symbol(S, Decl(regex-eval.d.ts, 5, 22))
+
+export type TapeEval<S extends string, Tape extends rc.CompTape[]> = _TapeEval<S, Tape, '', []>;
+>TapeEval : Symbol(TapeEval, Decl(regex-eval.d.ts, 5, 389))
+>S : Symbol(S, Decl(regex-eval.d.ts, 6, 21))
+>Tape : Symbol(Tape, Decl(regex-eval.d.ts, 6, 38))
+>rc : Symbol(rc)
+>CompTape : Symbol(rc.CompTape)
+>_TapeEval : Symbol(_TapeEval, Decl(regex-eval.d.ts, 6, 96))
+>S : Symbol(S, Decl(regex-eval.d.ts, 6, 21))
+>Tape : Symbol(Tape, Decl(regex-eval.d.ts, 6, 38))
+
+type _TapeEval<String extends string, Tape extends rc.CompTape, Forward extends string, Stack extends rc.CompTape[]> = Tape extends [] ? Stack extends [
+>_TapeEval : Symbol(_TapeEval, Decl(regex-eval.d.ts, 6, 96))
+>String : Symbol(String, Decl(regex-eval.d.ts, 7, 15))
+>Tape : Symbol(Tape, Decl(regex-eval.d.ts, 7, 37))
+>rc : Symbol(rc)
+>CompTape : Symbol(rc.CompTape)
+>Forward : Symbol(Forward, Decl(regex-eval.d.ts, 7, 63))
+>Stack : Symbol(Stack, Decl(regex-eval.d.ts, 7, 87))
+>rc : Symbol(rc)
+>CompTape : Symbol(rc.CompTape)
+>Tape : Symbol(Tape, Decl(regex-eval.d.ts, 7, 37))
+>Stack : Symbol(Stack, Decl(regex-eval.d.ts, 7, 87))
+
+    infer stackFirst extends rc.CompTape,
+>stackFirst : Symbol(stackFirst, Decl(regex-eval.d.ts, 8, 9))
+>rc : Symbol(rc)
+>CompTape : Symbol(rc.CompTape)
+
+    ...infer stackRest extends rc.CompTape[]
+>stackRest : Symbol(stackRest, Decl(regex-eval.d.ts, 9, 12))
+>rc : Symbol(rc)
+>CompTape : Symbol(rc.CompTape)
+
+] ? _TapeEval<String, stackFirst, Forward, stackRest> : [Forward, String, Tape] : Tape extends [
+>_TapeEval : Symbol(_TapeEval, Decl(regex-eval.d.ts, 6, 96))
+>String : Symbol(String, Decl(regex-eval.d.ts, 7, 15))
+>stackFirst : Symbol(stackFirst, Decl(regex-eval.d.ts, 8, 9))
+>Forward : Symbol(Forward, Decl(regex-eval.d.ts, 7, 63))
+>stackRest : Symbol(stackRest, Decl(regex-eval.d.ts, 9, 12))
+>Forward : Symbol(Forward, Decl(regex-eval.d.ts, 7, 63))
+>String : Symbol(String, Decl(regex-eval.d.ts, 7, 15))
+>Tape : Symbol(Tape, Decl(regex-eval.d.ts, 7, 37))
+>Tape : Symbol(Tape, Decl(regex-eval.d.ts, 7, 37))
+
+    infer firstTape extends rc.CompTape,
+>firstTape : Symbol(firstTape, Decl(regex-eval.d.ts, 11, 9))
+>rc : Symbol(rc)
+>CompTape : Symbol(rc.CompTape)
+
+    ...infer restTape extends rc.CompTape[]
+>restTape : Symbol(restTape, Decl(regex-eval.d.ts, 12, 12))
+>rc : Symbol(rc)
+>CompTape : Symbol(rc.CompTape)
+
+] ? firstTape extends string ? str.StrSearchAll<String, firstTape, '^', Forward> extends [infer Matched extends string, infer Next extends string] ? _TapeEval<Next, restTape, Matched, Stack> : {
+>firstTape : Symbol(firstTape, Decl(regex-eval.d.ts, 11, 9))
+>str : Symbol(str, Decl(regex-eval.d.ts, 0, 13))
+>StrSearchAll : Symbol(str.StrSearchAll, Decl(strutil.d.ts, 6, 601))
+>String : Symbol(String, Decl(regex-eval.d.ts, 7, 15))
+>firstTape : Symbol(firstTape, Decl(regex-eval.d.ts, 11, 9))
+>Forward : Symbol(Forward, Decl(regex-eval.d.ts, 7, 63))
+>Matched : Symbol(Matched, Decl(regex-eval.d.ts, 13, 95))
+>Next : Symbol(Next, Decl(regex-eval.d.ts, 13, 125))
+>_TapeEval : Symbol(_TapeEval, Decl(regex-eval.d.ts, 6, 96))
+>Next : Symbol(Next, Decl(regex-eval.d.ts, 13, 125))
+>restTape : Symbol(restTape, Decl(regex-eval.d.ts, 12, 12))
+>Matched : Symbol(Matched, Decl(regex-eval.d.ts, 13, 95))
+>Stack : Symbol(Stack, Decl(regex-eval.d.ts, 7, 87))
+
+} : firstTape extends [
+>firstTape : Symbol(firstTape, Decl(regex-eval.d.ts, 11, 9))
+
+    infer tapeSig extends ('?' | '*'),
+>tapeSig : Symbol(tapeSig, Decl(regex-eval.d.ts, 15, 9))
+
+    infer tapeArg extends rc.CompTape
+>tapeArg : Symbol(tapeArg, Decl(regex-eval.d.ts, 16, 9))
+>rc : Symbol(rc)
+>CompTape : Symbol(rc.CompTape)
+
+] ? tapeSig extends '*' ? AstaMatch<String, [tapeArg], Forward> extends [infer nextForward extends string, infer NextString extends string] ? _TapeEval<NextString, restTape, nextForward, Stack> : never : tapeSig extends '?' ? _TapeEval<String, [tapeArg], Forward, [restTape, ...Stack]> extends [infer Matched extends string, infer NextString extends string, infer NextTape extends rc.CompTape] ? _TapeEval<NextString, NextTape, Matched, Stack> : _TapeEval<String, restTape, Forward, Stack> : never : firstTape extends [
+>tapeSig : Symbol(tapeSig, Decl(regex-eval.d.ts, 15, 9))
+>AstaMatch : Symbol(AstaMatch, Decl(regex-eval.d.ts, 4, 2))
+>String : Symbol(String, Decl(regex-eval.d.ts, 7, 15))
+>tapeArg : Symbol(tapeArg, Decl(regex-eval.d.ts, 16, 9))
+>Forward : Symbol(Forward, Decl(regex-eval.d.ts, 7, 63))
+>nextForward : Symbol(nextForward, Decl(regex-eval.d.ts, 17, 78))
+>NextString : Symbol(NextString, Decl(regex-eval.d.ts, 17, 112))
+>_TapeEval : Symbol(_TapeEval, Decl(regex-eval.d.ts, 6, 96))
+>NextString : Symbol(NextString, Decl(regex-eval.d.ts, 17, 112))
+>restTape : Symbol(restTape, Decl(regex-eval.d.ts, 12, 12))
+>nextForward : Symbol(nextForward, Decl(regex-eval.d.ts, 17, 78))
+>Stack : Symbol(Stack, Decl(regex-eval.d.ts, 7, 87))
+>tapeSig : Symbol(tapeSig, Decl(regex-eval.d.ts, 15, 9))
+>_TapeEval : Symbol(_TapeEval, Decl(regex-eval.d.ts, 6, 96))
+>String : Symbol(String, Decl(regex-eval.d.ts, 7, 15))
+>tapeArg : Symbol(tapeArg, Decl(regex-eval.d.ts, 16, 9))
+>Forward : Symbol(Forward, Decl(regex-eval.d.ts, 7, 63))
+>restTape : Symbol(restTape, Decl(regex-eval.d.ts, 12, 12))
+>Stack : Symbol(Stack, Decl(regex-eval.d.ts, 7, 87))
+>Matched : Symbol(Matched, Decl(regex-eval.d.ts, 17, 300))
+>NextString : Symbol(NextString, Decl(regex-eval.d.ts, 17, 330))
+>NextTape : Symbol(NextTape, Decl(regex-eval.d.ts, 17, 363))
+>rc : Symbol(rc)
+>CompTape : Symbol(rc.CompTape)
+>_TapeEval : Symbol(_TapeEval, Decl(regex-eval.d.ts, 6, 96))
+>NextString : Symbol(NextString, Decl(regex-eval.d.ts, 17, 330))
+>NextTape : Symbol(NextTape, Decl(regex-eval.d.ts, 17, 363))
+>Matched : Symbol(Matched, Decl(regex-eval.d.ts, 17, 300))
+>Stack : Symbol(Stack, Decl(regex-eval.d.ts, 7, 87))
+>_TapeEval : Symbol(_TapeEval, Decl(regex-eval.d.ts, 6, 96))
+>String : Symbol(String, Decl(regex-eval.d.ts, 7, 15))
+>restTape : Symbol(restTape, Decl(regex-eval.d.ts, 12, 12))
+>Forward : Symbol(Forward, Decl(regex-eval.d.ts, 7, 63))
+>Stack : Symbol(Stack, Decl(regex-eval.d.ts, 7, 87))
+>firstTape : Symbol(firstTape, Decl(regex-eval.d.ts, 11, 9))
+
+] ? OrGroupMatch<String, tapeArg, Forward> extends [infer Matched extends string, infer NextString extends string, infer _NextTape extends rc.CompTape] ? _TapeEval<NextString, restTape, Matched, Stack> : {
+>OrGroupMatch : Symbol(OrGroupMatch, Decl(regex-eval.d.ts, 2, 399))
+>String : Symbol(String, Decl(regex-eval.d.ts, 7, 15))
+>tapeArg : Symbol(tapeArg)
+>Forward : Symbol(Forward, Decl(regex-eval.d.ts, 7, 63))
+>Matched : Symbol(Matched, Decl(regex-eval.d.ts, 18, 57))
+>NextString : Symbol(NextString, Decl(regex-eval.d.ts, 18, 87))
+>_NextTape : Symbol(_NextTape, Decl(regex-eval.d.ts, 18, 120))
+>rc : Symbol(rc)
+>CompTape : Symbol(rc.CompTape)
+>_TapeEval : Symbol(_TapeEval, Decl(regex-eval.d.ts, 6, 96))
+>NextString : Symbol(NextString, Decl(regex-eval.d.ts, 18, 87))
+>restTape : Symbol(restTape, Decl(regex-eval.d.ts, 12, 12))
+>Matched : Symbol(Matched, Decl(regex-eval.d.ts, 18, 57))
+>Stack : Symbol(Stack, Decl(regex-eval.d.ts, 7, 87))
+
+} : firstTape extends ['group', ...infer tapeArg extends rc.CompTape[]] ? OrGroupMatch<String, [tapeArg], Forward> extends [infer Matched extends string, infer NextString extends string, infer _NextTape extends rc.CompTape] ? _TapeEval<NextString, restTape, Matched, Stack> : {
+>firstTape : Symbol(firstTape, Decl(regex-eval.d.ts, 11, 9))
+>tapeArg : Symbol(tapeArg, Decl(regex-eval.d.ts, 19, 40))
+>rc : Symbol(rc)
+>CompTape : Symbol(rc.CompTape)
+>OrGroupMatch : Symbol(OrGroupMatch, Decl(regex-eval.d.ts, 2, 399))
+>String : Symbol(String, Decl(regex-eval.d.ts, 7, 15))
+>tapeArg : Symbol(tapeArg, Decl(regex-eval.d.ts, 19, 40))
+>Forward : Symbol(Forward, Decl(regex-eval.d.ts, 7, 63))
+>Matched : Symbol(Matched, Decl(regex-eval.d.ts, 19, 129))
+>NextString : Symbol(NextString, Decl(regex-eval.d.ts, 19, 159))
+>_NextTape : Symbol(_NextTape, Decl(regex-eval.d.ts, 19, 192))
+>rc : Symbol(rc)
+>CompTape : Symbol(rc.CompTape)
+>_TapeEval : Symbol(_TapeEval, Decl(regex-eval.d.ts, 6, 96))
+>NextString : Symbol(NextString, Decl(regex-eval.d.ts, 19, 159))
+>restTape : Symbol(restTape, Decl(regex-eval.d.ts, 12, 12))
+>Matched : Symbol(Matched, Decl(regex-eval.d.ts, 19, 129))
+>Stack : Symbol(Stack, Decl(regex-eval.d.ts, 7, 87))
+
+} : firstTape extends ['chara-class', infer tapeArg extends string[]] ? OrMatch<String, tapeArg, Forward, '!wildcard'> extends [infer Matched extends string, infer Next extends string] ? _TapeEval<Next, restTape, Matched, Stack> : {
+>firstTape : Symbol(firstTape, Decl(regex-eval.d.ts, 11, 9))
+>tapeArg : Symbol(tapeArg, Decl(regex-eval.d.ts, 20, 43))
+>OrMatch : Symbol(OrMatch, Decl(regex-eval.d.ts, 1, 25))
+>String : Symbol(String, Decl(regex-eval.d.ts, 7, 15))
+>tapeArg : Symbol(tapeArg, Decl(regex-eval.d.ts, 20, 43))
+>Forward : Symbol(Forward, Decl(regex-eval.d.ts, 7, 63))
+>Matched : Symbol(Matched, Decl(regex-eval.d.ts, 20, 133))
+>Next : Symbol(Next, Decl(regex-eval.d.ts, 20, 163))
+>_TapeEval : Symbol(_TapeEval, Decl(regex-eval.d.ts, 6, 96))
+>Next : Symbol(Next, Decl(regex-eval.d.ts, 20, 163))
+>restTape : Symbol(restTape, Decl(regex-eval.d.ts, 12, 12))
+>Matched : Symbol(Matched, Decl(regex-eval.d.ts, 20, 133))
+>Stack : Symbol(Stack, Decl(regex-eval.d.ts, 7, 87))
+
+} : {
+} : never;
+export type * as regexEval from './regex-eval.js';
+>regexEval : Symbol(regexEval, Decl(regex-eval.d.ts, 23, 11))
+
+=== node_modules/@taiyakihitotsu/cion/dist/regex.d.ts ===
+import type { regexCompiler as rc } from './regex-compiler.js';
+>regexCompiler : Symbol(rc.regexCompiler, Decl(regex-compiler.d.ts, 77, 11))
+>rc : Symbol(rc, Decl(regex.d.ts, 0, 13))
+
+import type { regexEval as re } from './regex-eval.js';
+>regexEval : Symbol(re.regexEval, Decl(regex-eval.d.ts, 23, 11))
+>re : Symbol(re, Decl(regex.d.ts, 1, 13))
+
+export type TapeEvalLoop<S extends string, Tape extends TapeType, Consumed extends string = ''> = S extends '' ? re.Unmatch : re.TapeEval<S, Tape> extends [infer M extends string, infer Rest extends string, infer _List extends string[]] ? [Consumed, M, Rest] : S extends `${infer sFirst}${infer sRest}` ? TapeEvalLoop<sRest, Tape, `${Consumed}${sFirst}`> : never;
+>TapeEvalLoop : Symbol(TapeEvalLoop, Decl(regex.d.ts, 1, 55))
+>S : Symbol(S, Decl(regex.d.ts, 2, 25))
+>Tape : Symbol(Tape, Decl(regex.d.ts, 2, 42))
+>TapeType : Symbol(TapeType)
+>Consumed : Symbol(Consumed, Decl(regex.d.ts, 2, 65))
+>S : Symbol(S, Decl(regex.d.ts, 2, 25))
+>re : Symbol(re, Decl(regex.d.ts, 1, 13))
+>Unmatch : Symbol(re.Unmatch, Decl(regex-eval.d.ts, 0, 51))
+>re : Symbol(re, Decl(regex.d.ts, 1, 13))
+>TapeEval : Symbol(re.TapeEval, Decl(regex-eval.d.ts, 5, 389))
+>S : Symbol(S, Decl(regex.d.ts, 2, 25))
+>Tape : Symbol(Tape, Decl(regex.d.ts, 2, 42))
+>M : Symbol(M, Decl(regex.d.ts, 2, 161))
+>Rest : Symbol(Rest, Decl(regex.d.ts, 2, 185))
+>_List : Symbol(_List, Decl(regex.d.ts, 2, 212))
+>Consumed : Symbol(Consumed, Decl(regex.d.ts, 2, 65))
+>M : Symbol(M, Decl(regex.d.ts, 2, 161))
+>Rest : Symbol(Rest, Decl(regex.d.ts, 2, 185))
+>S : Symbol(S, Decl(regex.d.ts, 2, 25))
+>sFirst : Symbol(sFirst, Decl(regex.d.ts, 2, 279))
+>sRest : Symbol(sRest, Decl(regex.d.ts, 2, 294))
+>TapeEvalLoop : Symbol(TapeEvalLoop, Decl(regex.d.ts, 1, 55))
+>sRest : Symbol(sRest, Decl(regex.d.ts, 2, 294))
+>Tape : Symbol(Tape, Decl(regex.d.ts, 2, 42))
+>Consumed : Symbol(Consumed, Decl(regex.d.ts, 2, 65))
+>sFirst : Symbol(sFirst, Decl(regex.d.ts, 2, 279))
+
+export type RegexFind<String extends string, Regex extends string> = rc.Comp<Regex> extends {
+>RegexFind : Symbol(RegexFind, Decl(regex.d.ts, 2, 363))
+>String : Symbol(String, Decl(regex.d.ts, 3, 22))
+>Regex : Symbol(Regex, Decl(regex.d.ts, 3, 44))
+>rc : Symbol(rc, Decl(regex.d.ts, 0, 13))
+>Comp : Symbol(rc.Comp, Decl(regex-compiler.d.ts, 75, 18))
+>Regex : Symbol(Regex, Decl(regex.d.ts, 3, 44))
+
+    condition: infer Condition extends string;
+>condition : Symbol(condition, Decl(regex.d.ts, 3, 93))
+>Condition : Symbol(Condition, Decl(regex.d.ts, 4, 20))
+
+    tapes: infer Tape extends TapeType;
+>tapes : Symbol(tapes, Decl(regex.d.ts, 4, 46))
+>Tape : Symbol(Tape, Decl(regex.d.ts, 5, 16))
+>TapeType : Symbol(TapeType)
+
+} ? Condition extends '^' | '^$' ? re.TapeEval<String, Tape> extends [infer M extends string, infer Rest extends string, infer _ extends string[]] ? [Condition, Rest & ''] extends ['^$', never] ? re.Unmatch : ['', M, Rest] : re.Unmatch : Condition extends '$' | '^$' ? TapeEvalLoop<String, Tape> extends [infer Consumed extends string, infer M extends string, infer Rest extends string] ? Rest extends '' ? [Consumed, M, Rest] : re.Unmatch : re.Unmatch : TapeEvalLoop<String, Tape> : never;
+>Condition : Symbol(Condition, Decl(regex.d.ts, 4, 20))
+>re : Symbol(re, Decl(regex.d.ts, 1, 13))
+>TapeEval : Symbol(re.TapeEval, Decl(regex-eval.d.ts, 5, 389))
+>String : Symbol(String, Decl(regex.d.ts, 3, 22))
+>Tape : Symbol(Tape, Decl(regex.d.ts, 5, 16))
+>M : Symbol(M, Decl(regex.d.ts, 6, 75))
+>Rest : Symbol(Rest, Decl(regex.d.ts, 6, 99))
+>_ : Symbol(_, Decl(regex.d.ts, 6, 126))
+>Condition : Symbol(Condition, Decl(regex.d.ts, 4, 20))
+>Rest : Symbol(Rest, Decl(regex.d.ts, 6, 99))
+>re : Symbol(re, Decl(regex.d.ts, 1, 13))
+>Unmatch : Symbol(re.Unmatch, Decl(regex-eval.d.ts, 0, 51))
+>M : Symbol(M, Decl(regex.d.ts, 6, 75))
+>Rest : Symbol(Rest, Decl(regex.d.ts, 6, 99))
+>re : Symbol(re, Decl(regex.d.ts, 1, 13))
+>Unmatch : Symbol(re.Unmatch, Decl(regex-eval.d.ts, 0, 51))
+>Condition : Symbol(Condition, Decl(regex.d.ts, 4, 20))
+>TapeEvalLoop : Symbol(TapeEvalLoop, Decl(regex.d.ts, 1, 55))
+>String : Symbol(String, Decl(regex.d.ts, 3, 22))
+>Tape : Symbol(Tape, Decl(regex.d.ts, 5, 16))
+>Consumed : Symbol(Consumed, Decl(regex.d.ts, 6, 310))
+>M : Symbol(M, Decl(regex.d.ts, 6, 341))
+>Rest : Symbol(Rest, Decl(regex.d.ts, 6, 365))
+>Rest : Symbol(Rest, Decl(regex.d.ts, 6, 365))
+>Consumed : Symbol(Consumed, Decl(regex.d.ts, 6, 310))
+>M : Symbol(M, Decl(regex.d.ts, 6, 341))
+>Rest : Symbol(Rest, Decl(regex.d.ts, 6, 365))
+>re : Symbol(re, Decl(regex.d.ts, 1, 13))
+>Unmatch : Symbol(re.Unmatch, Decl(regex-eval.d.ts, 0, 51))
+>re : Symbol(re, Decl(regex.d.ts, 1, 13))
+>Unmatch : Symbol(re.Unmatch, Decl(regex-eval.d.ts, 0, 51))
+>TapeEvalLoop : Symbol(TapeEvalLoop, Decl(regex.d.ts, 1, 55))
+>String : Symbol(String, Decl(regex.d.ts, 3, 22))
+>Tape : Symbol(Tape, Decl(regex.d.ts, 5, 16))
+
+export type * as regex from './regex.js';
+>regex : Symbol(regex, Decl(regex.d.ts, 7, 11))
+
+=== node_modules/@taiyakihitotsu/cion/dist/sexprtypes.d.ts ===
+export type LetForm = [`let`, LetArg, Each | Each[] | Sexpr];
+>LetForm : Symbol(LetForm, Decl(sexprtypes.d.ts, 0, 0))
+>LetArg : Symbol(LetArg)
+>Each : Symbol(Each, Decl(sexprtypes.d.ts, 0, 61))
+>Each : Symbol(Each, Decl(sexprtypes.d.ts, 0, 61))
+>Sexpr : Symbol(Sexpr, Decl(sexprtypes.d.ts, 2, 79))
+
+export type Each = LetForm | IfForm | Atom;
+>Each : Symbol(Each, Decl(sexprtypes.d.ts, 0, 61))
+>LetForm : Symbol(LetForm, Decl(sexprtypes.d.ts, 0, 0))
+>IfForm : Symbol(IfForm, Decl(sexprtypes.d.ts, 16, 35))
+>Atom : Symbol(Atom, Decl(sexprtypes.d.ts, 1, 43))
+
+export type Atom = ['map', Atom[]] | Sym | Prim | Fn | Vector | Keyword | TNil;
+>Atom : Symbol(Atom, Decl(sexprtypes.d.ts, 1, 43))
+>Atom : Symbol(Atom, Decl(sexprtypes.d.ts, 1, 43))
+>Sym : Symbol(Sym, Decl(sexprtypes.d.ts, 5, 38))
+>Prim : Symbol(Prim, Decl(sexprtypes.d.ts, 12, 46))
+>Fn : Symbol(Fn, Decl(sexprtypes.d.ts, 13, 74))
+>Vector : Symbol(Vector, Decl(sexprtypes.d.ts, 14, 63))
+>Keyword : Symbol(Keyword, Decl(sexprtypes.d.ts, 4, 35))
+>TNil : Symbol(TNil, Decl(sexprtypes.d.ts, 3, 49))
+
+export type Sexpr = Array<Each | Each[] | Sexpr>;
+>Sexpr : Symbol(Sexpr, Decl(sexprtypes.d.ts, 2, 79))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 2 more)
+>Each : Symbol(Each, Decl(sexprtypes.d.ts, 0, 61))
+>Each : Symbol(Each, Decl(sexprtypes.d.ts, 0, 61))
+>Sexpr : Symbol(Sexpr, Decl(sexprtypes.d.ts, 2, 79))
+
+export type TNil = ['prim', 'nil'];
+>TNil : Symbol(TNil, Decl(sexprtypes.d.ts, 3, 49))
+
+export type Keyword = [`key`, string];
+>Keyword : Symbol(Keyword, Decl(sexprtypes.d.ts, 4, 35))
+
+export type Sym = [`sym`, string];
+>Sym : Symbol(Sym, Decl(sexprtypes.d.ts, 5, 38))
+
+export type PrimString = ['prim', string];
+>PrimString : Symbol(PrimString, Decl(sexprtypes.d.ts, 6, 34))
+
+export type PrimBoolean = ['prim', boolean];
+>PrimBoolean : Symbol(PrimBoolean, Decl(sexprtypes.d.ts, 7, 42))
+
+export type PrimTestNumber = ['prim', number];
+>PrimTestNumber : Symbol(PrimTestNumber, Decl(sexprtypes.d.ts, 8, 44))
+
+export type PrimNumber = PrimNut | PrimRatio;
+>PrimNumber : Symbol(PrimNumber, Decl(sexprtypes.d.ts, 9, 46))
+>PrimNut : Symbol(PrimNut, Decl(sexprtypes.d.ts, 10, 45))
+>PrimRatio : Symbol(PrimRatio, Decl(sexprtypes.d.ts, 11, 42))
+
+export type PrimNut = ['prim', BitString];
+>PrimNut : Symbol(PrimNut, Decl(sexprtypes.d.ts, 10, 45))
+>BitString : Symbol(BitString)
+
+export type PrimRatio = ['prim', RatioString];
+>PrimRatio : Symbol(PrimRatio, Decl(sexprtypes.d.ts, 11, 42))
+>RatioString : Symbol(RatioString)
+
+export type Prim = PrimString | PrimBoolean | PrimNumber | PrimTestNumber;
+>Prim : Symbol(Prim, Decl(sexprtypes.d.ts, 12, 46))
+>PrimString : Symbol(PrimString, Decl(sexprtypes.d.ts, 6, 34))
+>PrimBoolean : Symbol(PrimBoolean, Decl(sexprtypes.d.ts, 7, 42))
+>PrimNumber : Symbol(PrimNumber, Decl(sexprtypes.d.ts, 9, 46))
+>PrimTestNumber : Symbol(PrimTestNumber, Decl(sexprtypes.d.ts, 8, 44))
+
+export type Fn = [`fn`, Args, Each | Each[] | Sexpr | Sexpr[]];
+>Fn : Symbol(Fn, Decl(sexprtypes.d.ts, 13, 74))
+>Args : Symbol(Args)
+>Each : Symbol(Each, Decl(sexprtypes.d.ts, 0, 61))
+>Each : Symbol(Each, Decl(sexprtypes.d.ts, 0, 61))
+>Sexpr : Symbol(Sexpr, Decl(sexprtypes.d.ts, 2, 79))
+>Sexpr : Symbol(Sexpr, Decl(sexprtypes.d.ts, 2, 79))
+
+export type Vector = [`vec`, ...(Sexpr | LetForm | Atom)[]] | [`vec`];
+>Vector : Symbol(Vector, Decl(sexprtypes.d.ts, 14, 63))
+>Sexpr : Symbol(Sexpr, Decl(sexprtypes.d.ts, 2, 79))
+>LetForm : Symbol(LetForm, Decl(sexprtypes.d.ts, 0, 0))
+>Atom : Symbol(Atom, Decl(sexprtypes.d.ts, 1, 43))
+
+export type TNotMatch = "NotMatch";
+>TNotMatch : Symbol(TNotMatch, Decl(sexprtypes.d.ts, 15, 70))
+
+export type IfForm = [`if`, Each | Sexpr, Each | Sexpr, Each | Sexpr];
+>IfForm : Symbol(IfForm, Decl(sexprtypes.d.ts, 16, 35))
+>Each : Symbol(Each, Decl(sexprtypes.d.ts, 0, 61))
+>Sexpr : Symbol(Sexpr, Decl(sexprtypes.d.ts, 2, 79))
+>Each : Symbol(Each, Decl(sexprtypes.d.ts, 0, 61))
+>Sexpr : Symbol(Sexpr, Decl(sexprtypes.d.ts, 2, 79))
+>Each : Symbol(Each, Decl(sexprtypes.d.ts, 0, 61))
+>Sexpr : Symbol(Sexpr, Decl(sexprtypes.d.ts, 2, 79))
+
+=== node_modules/@taiyakihitotsu/cion/dist/strutil.d.ts ===
+import type * as regexConst from './regex-const.js';
+>regexConst : Symbol(regexConst, Decl(strutil.d.ts, 0, 11))
+
+export type InternalMetaChars = 'd' | 'w' | 'l' | 'u' | 'D' | 'W' | 'L' | 'U';
+>InternalMetaChars : Symbol(InternalMetaChars, Decl(strutil.d.ts, 0, 52))
+
+type Quantifiers = '[' | ']' | '(' | ')' | '{' | '}' | '.' | '*' | '+' | '?' | '^' | '$' | '|' | '\\';
+>Quantifiers : Symbol(Quantifiers, Decl(strutil.d.ts, 1, 78))
+
+export type MatchChar<S extends string, T extends string> = S extends `${infer sF}${infer sRest}` ? T extends '\\.' ? sF extends '.' ? true : false : T extends `\\d` ? sF extends Digit ? true : false : T extends `\\w` ? sF extends WordChar ? true : false : T extends `\\l` ? sF extends Lower ? true : false : T extends `\\u` ? sF extends Upper ? true : false : T extends `\\D` ? sF extends NonDigit ? true : false : T extends `\\W` ? sF extends NonWordChar ? true : false : T extends `\\L` ? sF extends NonLower ? true : false : T extends `\\U` ? sF extends NonUpper ? true : false : T extends `${infer tF}${infer tRest}` ? sRest extends '' ? tRest extends '' ? sF extends tF ? true : false : false : false : false : false;
+>MatchChar : Symbol(MatchChar, Decl(strutil.d.ts, 2, 102))
+>S : Symbol(S, Decl(strutil.d.ts, 3, 22))
+>T : Symbol(T, Decl(strutil.d.ts, 3, 39))
+>S : Symbol(S, Decl(strutil.d.ts, 3, 22))
+>sF : Symbol(sF, Decl(strutil.d.ts, 3, 78))
+>sRest : Symbol(sRest, Decl(strutil.d.ts, 3, 89))
+>T : Symbol(T, Decl(strutil.d.ts, 3, 39))
+>sF : Symbol(sF, Decl(strutil.d.ts, 3, 78))
+>T : Symbol(T, Decl(strutil.d.ts, 3, 39))
+>sF : Symbol(sF, Decl(strutil.d.ts, 3, 78))
+>Digit : Symbol(Digit)
+>T : Symbol(T, Decl(strutil.d.ts, 3, 39))
+>sF : Symbol(sF, Decl(strutil.d.ts, 3, 78))
+>WordChar : Symbol(WordChar)
+>T : Symbol(T, Decl(strutil.d.ts, 3, 39))
+>sF : Symbol(sF, Decl(strutil.d.ts, 3, 78))
+>Lower : Symbol(Lower)
+>T : Symbol(T, Decl(strutil.d.ts, 3, 39))
+>sF : Symbol(sF, Decl(strutil.d.ts, 3, 78))
+>Upper : Symbol(Upper)
+>T : Symbol(T, Decl(strutil.d.ts, 3, 39))
+>sF : Symbol(sF, Decl(strutil.d.ts, 3, 78))
+>NonDigit : Symbol(NonDigit)
+>T : Symbol(T, Decl(strutil.d.ts, 3, 39))
+>sF : Symbol(sF, Decl(strutil.d.ts, 3, 78))
+>NonWordChar : Symbol(NonWordChar)
+>T : Symbol(T, Decl(strutil.d.ts, 3, 39))
+>sF : Symbol(sF, Decl(strutil.d.ts, 3, 78))
+>NonLower : Symbol(NonLower)
+>T : Symbol(T, Decl(strutil.d.ts, 3, 39))
+>sF : Symbol(sF, Decl(strutil.d.ts, 3, 78))
+>NonUpper : Symbol(NonUpper)
+>T : Symbol(T, Decl(strutil.d.ts, 3, 39))
+>tF : Symbol(tF, Decl(strutil.d.ts, 3, 602))
+>tRest : Symbol(tRest, Decl(strutil.d.ts, 3, 613))
+>sRest : Symbol(sRest, Decl(strutil.d.ts, 3, 89))
+>tRest : Symbol(tRest, Decl(strutil.d.ts, 3, 613))
+>sF : Symbol(sF, Decl(strutil.d.ts, 3, 78))
+>tF : Symbol(tF, Decl(strutil.d.ts, 3, 602))
+
+export type RegCut<S extends string> = S extends `${infer f}${infer s}${infer th}${infer rest}` ? [f, s] extends ['\\', InternalMetaChars | Quantifiers] ? [`\\${s}`, `${th}${rest}`] : f extends `*` ? s extends `?` ? [`*?`, `${th}${rest}`] : [`*`, `${s}${th}${rest}`] : f extends `+` ? s extends `?` ? [`+?`, `${th}${rest}`] : [`+`, `${s}${th}${rest}`] : [f, s, th] extends [keyof regexConst.Words, '-', keyof regexConst.Words] ? [`${f}-${th}`, rest] : `${f}${s}` extends `[^` ? ['[^', `${th}${rest}`] : [f, `${s}${th}${rest}`] : S extends `${infer f}${infer s}${infer rest}` ? f extends '\\' ? s extends InternalMetaChars | Quantifiers ? [`\\${s}`, `${rest}`] : never : f extends `*` ? s extends `?` ? [`*?`, `${rest}`] : [`*`, `${s}${rest}`] : f extends `+` ? s extends `?` ? [`+?`, `${rest}`] : [`+`, `${s}${rest}`] : `${f}${s}` extends `[^` ? ['[^', rest] : f extends '\\' ? [`\\${s}`, rest] : [f, `${s}${rest}`] : S extends `${infer f}${infer _rest}` ? f extends `*` ? [`*`, ''] : f extends `+` ? [`+`, ''] : [f, ''] : never;
+>RegCut : Symbol(RegCut, Decl(strutil.d.ts, 3, 723))
+>S : Symbol(S, Decl(strutil.d.ts, 4, 19))
+>S : Symbol(S, Decl(strutil.d.ts, 4, 19))
+>f : Symbol(f, Decl(strutil.d.ts, 4, 57))
+>s : Symbol(s, Decl(strutil.d.ts, 4, 67))
+>th : Symbol(th, Decl(strutil.d.ts, 4, 77))
+>rest : Symbol(rest, Decl(strutil.d.ts, 4, 88))
+>f : Symbol(f, Decl(strutil.d.ts, 4, 57))
+>s : Symbol(s, Decl(strutil.d.ts, 4, 67))
+>InternalMetaChars : Symbol(InternalMetaChars, Decl(strutil.d.ts, 0, 52))
+>Quantifiers : Symbol(Quantifiers, Decl(strutil.d.ts, 1, 78))
+>s : Symbol(s, Decl(strutil.d.ts, 4, 67))
+>th : Symbol(th, Decl(strutil.d.ts, 4, 77))
+>rest : Symbol(rest, Decl(strutil.d.ts, 4, 88))
+>f : Symbol(f, Decl(strutil.d.ts, 4, 57))
+>s : Symbol(s, Decl(strutil.d.ts, 4, 67))
+>th : Symbol(th, Decl(strutil.d.ts, 4, 77))
+>rest : Symbol(rest, Decl(strutil.d.ts, 4, 88))
+>s : Symbol(s, Decl(strutil.d.ts, 4, 67))
+>th : Symbol(th, Decl(strutil.d.ts, 4, 77))
+>rest : Symbol(rest, Decl(strutil.d.ts, 4, 88))
+>f : Symbol(f, Decl(strutil.d.ts, 4, 57))
+>s : Symbol(s, Decl(strutil.d.ts, 4, 67))
+>th : Symbol(th, Decl(strutil.d.ts, 4, 77))
+>rest : Symbol(rest, Decl(strutil.d.ts, 4, 88))
+>s : Symbol(s, Decl(strutil.d.ts, 4, 67))
+>th : Symbol(th, Decl(strutil.d.ts, 4, 77))
+>rest : Symbol(rest, Decl(strutil.d.ts, 4, 88))
+>f : Symbol(f, Decl(strutil.d.ts, 4, 57))
+>s : Symbol(s, Decl(strutil.d.ts, 4, 67))
+>th : Symbol(th, Decl(strutil.d.ts, 4, 77))
+>regexConst : Symbol(regexConst, Decl(strutil.d.ts, 0, 11))
+>Words : Symbol(regexConst.Words, Decl(regex-const.d.ts, 0, 40))
+>regexConst : Symbol(regexConst, Decl(strutil.d.ts, 0, 11))
+>Words : Symbol(regexConst.Words, Decl(regex-const.d.ts, 0, 40))
+>f : Symbol(f, Decl(strutil.d.ts, 4, 57))
+>th : Symbol(th, Decl(strutil.d.ts, 4, 77))
+>rest : Symbol(rest, Decl(strutil.d.ts, 4, 88))
+>f : Symbol(f, Decl(strutil.d.ts, 4, 57))
+>s : Symbol(s, Decl(strutil.d.ts, 4, 67))
+>th : Symbol(th, Decl(strutil.d.ts, 4, 77))
+>rest : Symbol(rest, Decl(strutil.d.ts, 4, 88))
+>f : Symbol(f, Decl(strutil.d.ts, 4, 57))
+>s : Symbol(s, Decl(strutil.d.ts, 4, 67))
+>th : Symbol(th, Decl(strutil.d.ts, 4, 77))
+>rest : Symbol(rest, Decl(strutil.d.ts, 4, 88))
+>S : Symbol(S, Decl(strutil.d.ts, 4, 19))
+>f : Symbol(f, Decl(strutil.d.ts, 4, 547))
+>s : Symbol(s, Decl(strutil.d.ts, 4, 557))
+>rest : Symbol(rest, Decl(strutil.d.ts, 4, 567))
+>f : Symbol(f, Decl(strutil.d.ts, 4, 547))
+>s : Symbol(s, Decl(strutil.d.ts, 4, 557))
+>InternalMetaChars : Symbol(InternalMetaChars, Decl(strutil.d.ts, 0, 52))
+>Quantifiers : Symbol(Quantifiers, Decl(strutil.d.ts, 1, 78))
+>s : Symbol(s, Decl(strutil.d.ts, 4, 557))
+>rest : Symbol(rest, Decl(strutil.d.ts, 4, 567))
+>f : Symbol(f, Decl(strutil.d.ts, 4, 547))
+>s : Symbol(s, Decl(strutil.d.ts, 4, 557))
+>rest : Symbol(rest, Decl(strutil.d.ts, 4, 567))
+>s : Symbol(s, Decl(strutil.d.ts, 4, 557))
+>rest : Symbol(rest, Decl(strutil.d.ts, 4, 567))
+>f : Symbol(f, Decl(strutil.d.ts, 4, 547))
+>s : Symbol(s, Decl(strutil.d.ts, 4, 557))
+>rest : Symbol(rest, Decl(strutil.d.ts, 4, 567))
+>s : Symbol(s, Decl(strutil.d.ts, 4, 557))
+>rest : Symbol(rest, Decl(strutil.d.ts, 4, 567))
+>f : Symbol(f, Decl(strutil.d.ts, 4, 547))
+>s : Symbol(s, Decl(strutil.d.ts, 4, 557))
+>rest : Symbol(rest, Decl(strutil.d.ts, 4, 567))
+>f : Symbol(f, Decl(strutil.d.ts, 4, 547))
+>s : Symbol(s, Decl(strutil.d.ts, 4, 557))
+>rest : Symbol(rest, Decl(strutil.d.ts, 4, 567))
+>f : Symbol(f, Decl(strutil.d.ts, 4, 547))
+>s : Symbol(s, Decl(strutil.d.ts, 4, 557))
+>rest : Symbol(rest, Decl(strutil.d.ts, 4, 567))
+>S : Symbol(S, Decl(strutil.d.ts, 4, 19))
+>f : Symbol(f, Decl(strutil.d.ts, 4, 936))
+>_rest : Symbol(_rest, Decl(strutil.d.ts, 4, 946))
+>f : Symbol(f, Decl(strutil.d.ts, 4, 936))
+>f : Symbol(f, Decl(strutil.d.ts, 4, 936))
+>f : Symbol(f, Decl(strutil.d.ts, 4, 936))
+
+export type RegFirstSplit<S extends string, N extends 0 | 1> = S extends `${infer f}${infer rest}` ? S extends `\\${infer escapedFirst}${infer escapedRest}` ? escapedFirst extends '.' ? [`\\.`, escapedRest][N] : escapedFirst extends InternalMetaChars ? [`\\${escapedFirst}`, escapedRest][N] : escapedFirst extends Quantifiers ? [`${escapedFirst}`, escapedRest][N] : never : [f, rest][N] : never;
+>RegFirstSplit : Symbol(RegFirstSplit, Decl(strutil.d.ts, 4, 1029))
+>S : Symbol(S, Decl(strutil.d.ts, 5, 26))
+>N : Symbol(N, Decl(strutil.d.ts, 5, 43))
+>S : Symbol(S, Decl(strutil.d.ts, 5, 26))
+>f : Symbol(f, Decl(strutil.d.ts, 5, 81))
+>rest : Symbol(rest, Decl(strutil.d.ts, 5, 91))
+>S : Symbol(S, Decl(strutil.d.ts, 5, 26))
+>escapedFirst : Symbol(escapedFirst, Decl(strutil.d.ts, 5, 121))
+>escapedRest : Symbol(escapedRest, Decl(strutil.d.ts, 5, 142))
+>escapedFirst : Symbol(escapedFirst, Decl(strutil.d.ts, 5, 121))
+>escapedRest : Symbol(escapedRest, Decl(strutil.d.ts, 5, 142))
+>N : Symbol(N, Decl(strutil.d.ts, 5, 43))
+>escapedFirst : Symbol(escapedFirst, Decl(strutil.d.ts, 5, 121))
+>InternalMetaChars : Symbol(InternalMetaChars, Decl(strutil.d.ts, 0, 52))
+>escapedFirst : Symbol(escapedFirst, Decl(strutil.d.ts, 5, 121))
+>escapedRest : Symbol(escapedRest, Decl(strutil.d.ts, 5, 142))
+>N : Symbol(N, Decl(strutil.d.ts, 5, 43))
+>escapedFirst : Symbol(escapedFirst, Decl(strutil.d.ts, 5, 121))
+>Quantifiers : Symbol(Quantifiers, Decl(strutil.d.ts, 1, 78))
+>escapedFirst : Symbol(escapedFirst, Decl(strutil.d.ts, 5, 121))
+>escapedRest : Symbol(escapedRest, Decl(strutil.d.ts, 5, 142))
+>N : Symbol(N, Decl(strutil.d.ts, 5, 43))
+>f : Symbol(f, Decl(strutil.d.ts, 5, 81))
+>rest : Symbol(rest, Decl(strutil.d.ts, 5, 91))
+>N : Symbol(N, Decl(strutil.d.ts, 5, 43))
+
+export type StrSearchHead<S extends string, Pattern extends string, Complete extends string = '', Forward extends string = '', Flag extends '!wildcard' | 'wildcard' = 'wildcard'> = S extends `${infer sf}${infer srest}` ? ([RegFirstSplit<Pattern, 0>, Flag] extends ['.', 'wildcard'] ? true : false) | MatchChar<sf, RegFirstSplit<Pattern, 0>> extends false ? [] : RegFirstSplit<Pattern, 1> extends '' ? Complete extends 'complete' ? sf extends '' ? [`${Forward}${sf}`, srest] : [] : [`${Forward}${sf}`, srest] : StrSearchHead<srest, RegFirstSplit<Pattern, 1>, Complete, `${Forward}${sf}`, Flag> : never;
+>StrSearchHead : Symbol(StrSearchHead, Decl(strutil.d.ts, 5, 395))
+>S : Symbol(S, Decl(strutil.d.ts, 6, 26))
+>Pattern : Symbol(Pattern, Decl(strutil.d.ts, 6, 43))
+>Complete : Symbol(Complete, Decl(strutil.d.ts, 6, 67))
+>Forward : Symbol(Forward, Decl(strutil.d.ts, 6, 97))
+>Flag : Symbol(Flag, Decl(strutil.d.ts, 6, 126))
+>S : Symbol(S, Decl(strutil.d.ts, 6, 26))
+>sf : Symbol(sf, Decl(strutil.d.ts, 6, 199))
+>srest : Symbol(srest, Decl(strutil.d.ts, 6, 210))
+>RegFirstSplit : Symbol(RegFirstSplit, Decl(strutil.d.ts, 4, 1029))
+>Pattern : Symbol(Pattern, Decl(strutil.d.ts, 6, 43))
+>Flag : Symbol(Flag, Decl(strutil.d.ts, 6, 126))
+>MatchChar : Symbol(MatchChar, Decl(strutil.d.ts, 2, 102))
+>sf : Symbol(sf, Decl(strutil.d.ts, 6, 199))
+>RegFirstSplit : Symbol(RegFirstSplit, Decl(strutil.d.ts, 4, 1029))
+>Pattern : Symbol(Pattern, Decl(strutil.d.ts, 6, 43))
+>RegFirstSplit : Symbol(RegFirstSplit, Decl(strutil.d.ts, 4, 1029))
+>Pattern : Symbol(Pattern, Decl(strutil.d.ts, 6, 43))
+>Complete : Symbol(Complete, Decl(strutil.d.ts, 6, 67))
+>sf : Symbol(sf, Decl(strutil.d.ts, 6, 199))
+>Forward : Symbol(Forward, Decl(strutil.d.ts, 6, 97))
+>sf : Symbol(sf, Decl(strutil.d.ts, 6, 199))
+>srest : Symbol(srest, Decl(strutil.d.ts, 6, 210))
+>Forward : Symbol(Forward, Decl(strutil.d.ts, 6, 97))
+>sf : Symbol(sf, Decl(strutil.d.ts, 6, 199))
+>srest : Symbol(srest, Decl(strutil.d.ts, 6, 210))
+>StrSearchHead : Symbol(StrSearchHead, Decl(strutil.d.ts, 5, 395))
+>srest : Symbol(srest, Decl(strutil.d.ts, 6, 210))
+>RegFirstSplit : Symbol(RegFirstSplit, Decl(strutil.d.ts, 4, 1029))
+>Pattern : Symbol(Pattern, Decl(strutil.d.ts, 6, 43))
+>Complete : Symbol(Complete, Decl(strutil.d.ts, 6, 67))
+>Forward : Symbol(Forward, Decl(strutil.d.ts, 6, 97))
+>sf : Symbol(sf, Decl(strutil.d.ts, 6, 199))
+>Flag : Symbol(Flag, Decl(strutil.d.ts, 6, 126))
+
+export type StrSearchAll<S extends string, Pattern extends string, Tag extends string = '', Forward extends string = '', Flag extends '!wildcard' | 'wildcard' = 'wildcard'> = S extends '' ? [] : S extends `${infer F}${infer Rest}` ? Tag extends 'Head' | '^' ? StrSearchHead<S, Pattern, '^', Forward, Flag> : StrSearchHead<S, Pattern, '^', Forward, Flag> extends [infer Matched extends string, infer Rest extends string] ? Tag extends 'Tail' | '$' ? StrLen<S> extends StrLen<Pattern> ? [Matched, Rest] : StrSearchAll<Rest, Pattern, Tag, `${Forward}${F}`, Flag> : [Matched, Rest] : StrSearchAll<Rest, Pattern, Tag, `${Forward}${F}`, Flag> : 'not all';
+>StrSearchAll : Symbol(StrSearchAll, Decl(strutil.d.ts, 6, 601))
+>S : Symbol(S, Decl(strutil.d.ts, 7, 25))
+>Pattern : Symbol(Pattern, Decl(strutil.d.ts, 7, 42))
+>Tag : Symbol(Tag, Decl(strutil.d.ts, 7, 66))
+>Forward : Symbol(Forward, Decl(strutil.d.ts, 7, 91))
+>Flag : Symbol(Flag, Decl(strutil.d.ts, 7, 120))
+>S : Symbol(S, Decl(strutil.d.ts, 7, 25))
+>S : Symbol(S, Decl(strutil.d.ts, 7, 25))
+>F : Symbol(F, Decl(strutil.d.ts, 7, 213))
+>Rest : Symbol(Rest, Decl(strutil.d.ts, 7, 223))
+>Tag : Symbol(Tag, Decl(strutil.d.ts, 7, 66))
+>StrSearchHead : Symbol(StrSearchHead, Decl(strutil.d.ts, 5, 395))
+>S : Symbol(S, Decl(strutil.d.ts, 7, 25))
+>Pattern : Symbol(Pattern, Decl(strutil.d.ts, 7, 42))
+>Forward : Symbol(Forward, Decl(strutil.d.ts, 7, 91))
+>Flag : Symbol(Flag, Decl(strutil.d.ts, 7, 120))
+>StrSearchHead : Symbol(StrSearchHead, Decl(strutil.d.ts, 5, 395))
+>S : Symbol(S, Decl(strutil.d.ts, 7, 25))
+>Pattern : Symbol(Pattern, Decl(strutil.d.ts, 7, 42))
+>Forward : Symbol(Forward, Decl(strutil.d.ts, 7, 91))
+>Flag : Symbol(Flag, Decl(strutil.d.ts, 7, 120))
+>Matched : Symbol(Matched, Decl(strutil.d.ts, 7, 368))
+>Rest : Symbol(Rest, Decl(strutil.d.ts, 7, 398))
+>Tag : Symbol(Tag, Decl(strutil.d.ts, 7, 66))
+>StrLen : Symbol(StrLen)
+>S : Symbol(S, Decl(strutil.d.ts, 7, 25))
+>StrLen : Symbol(StrLen)
+>Pattern : Symbol(Pattern, Decl(strutil.d.ts, 7, 42))
+>Matched : Symbol(Matched, Decl(strutil.d.ts, 7, 368))
+>Rest : Symbol(Rest, Decl(strutil.d.ts, 7, 398))
+>StrSearchAll : Symbol(StrSearchAll, Decl(strutil.d.ts, 6, 601))
+>Rest : Symbol(Rest, Decl(strutil.d.ts, 7, 398))
+>Pattern : Symbol(Pattern, Decl(strutil.d.ts, 7, 42))
+>Tag : Symbol(Tag, Decl(strutil.d.ts, 7, 66))
+>Forward : Symbol(Forward, Decl(strutil.d.ts, 7, 91))
+>F : Symbol(F, Decl(strutil.d.ts, 7, 213))
+>Flag : Symbol(Flag, Decl(strutil.d.ts, 7, 120))
+>Matched : Symbol(Matched, Decl(strutil.d.ts, 7, 368))
+>Rest : Symbol(Rest, Decl(strutil.d.ts, 7, 398))
+>StrSearchAll : Symbol(StrSearchAll, Decl(strutil.d.ts, 6, 601))
+>Rest : Symbol(Rest, Decl(strutil.d.ts, 7, 223))
+>Pattern : Symbol(Pattern, Decl(strutil.d.ts, 7, 42))
+>Tag : Symbol(Tag, Decl(strutil.d.ts, 7, 66))
+>Forward : Symbol(Forward, Decl(strutil.d.ts, 7, 91))
+>F : Symbol(F, Decl(strutil.d.ts, 7, 213))
+>Flag : Symbol(Flag, Decl(strutil.d.ts, 7, 120))
+
+export type * as StrUtil from './strutil.js';
+>StrUtil : Symbol(StrUtil, Decl(strutil.d.ts, 8, 11))
+
+=== node_modules/@taiyakihitotsu/cion/dist/util.d.ts ===
+export type Equal<A, B> = [
+>Equal : Symbol(Equal, Decl(util.d.ts, 0, 0))
+>A : Symbol(A, Decl(util.d.ts, 0, 18))
+>B : Symbol(B, Decl(util.d.ts, 0, 20))
+
+] extends [B, A] ? _IsEqual<A, B> : false;
+>B : Symbol(B, Decl(util.d.ts, 0, 20))
+>A : Symbol(A, Decl(util.d.ts, 0, 18))
+>_IsEqual : Symbol(_IsEqual)
+>A : Symbol(A, Decl(util.d.ts, 0, 18))
+>B : Symbol(B, Decl(util.d.ts, 0, 20))
+
+type _rec<T> = T extends {
+>_rec : Symbol(_rec, Decl(util.d.ts, 1, 42))
+>T : Symbol(T, Decl(util.d.ts, 2, 10))
+>T : Symbol(T, Decl(util.d.ts, 2, 10))
+
+    r: never;
+>r : Symbol(r, Decl(util.d.ts, 2, 26))
+
+} ? never : T extends {
+>T : Symbol(T, Decl(util.d.ts, 2, 10))
+
+    r: infer U;
+>r : Symbol(r, Decl(util.d.ts, 4, 23))
+>U : Symbol(U, Decl(util.d.ts, 5, 12))
+
+} ? U : T;
+>U : Symbol(U, Decl(util.d.ts, 5, 12))
+>T : Symbol(T, Decl(util.d.ts, 2, 10))
+
+export type Rec<T> = T extends {
+>Rec : Symbol(Rec, Decl(util.d.ts, 6, 10))
+>T : Symbol(T, Decl(util.d.ts, 7, 16))
+>T : Symbol(T, Decl(util.d.ts, 7, 16))
+
+    r: unknown;
+>r : Symbol(r, Decl(util.d.ts, 7, 32))
+
+} ? Rec<_rec<T>> : T;
+>Rec : Symbol(Rec, Decl(util.d.ts, 6, 10))
+>_rec : Symbol(_rec, Decl(util.d.ts, 1, 42))
+>T : Symbol(T, Decl(util.d.ts, 7, 16))
+>T : Symbol(T, Decl(util.d.ts, 7, 16))
+
+export type * as Util from './util.js';
+>Util : Symbol(Util, Decl(util.d.ts, 10, 11))
+
+=== node_modules/@taiyakihitotsu/cion/dist/vecutil.d.ts ===
+import type { Bit } from './bit.js';
+>Bit : Symbol(Bit, Decl(vecutil.d.ts, 0, 13))
+
+/**
+*/
+export type BitDrop<N extends string, V extends unknown[]> = _BitDrop<N, V>;
+>BitDrop : Symbol(BitDrop, Decl(vecutil.d.ts, 0, 36))
+>N : Symbol(N, Decl(vecutil.d.ts, 3, 20))
+>V : Symbol(V, Decl(vecutil.d.ts, 3, 37))
+>_BitDrop : Symbol(_BitDrop, Decl(vecutil.d.ts, 3, 76))
+>N : Symbol(N, Decl(vecutil.d.ts, 3, 20))
+>V : Symbol(V, Decl(vecutil.d.ts, 3, 37))
+
+type _BitDrop<N extends string, V extends unknown[]> = V extends [] ? V : true extends Bit.BitGTE<"0", N> ? V : V extends [infer _, ...infer T extends unknown[]] ? _BitDrop<Bit.BitSub<N, "1">, T> : 0;
+>_BitDrop : Symbol(_BitDrop, Decl(vecutil.d.ts, 3, 76))
+>N : Symbol(N, Decl(vecutil.d.ts, 4, 14))
+>V : Symbol(V, Decl(vecutil.d.ts, 4, 31))
+>V : Symbol(V, Decl(vecutil.d.ts, 4, 31))
+>V : Symbol(V, Decl(vecutil.d.ts, 4, 31))
+>Bit : Symbol(Bit, Decl(vecutil.d.ts, 0, 13))
+>BitGTE : Symbol(Bit.BitGTE, Decl(bit.d.ts, 20, 136))
+>N : Symbol(N, Decl(vecutil.d.ts, 4, 14))
+>V : Symbol(V, Decl(vecutil.d.ts, 4, 31))
+>V : Symbol(V, Decl(vecutil.d.ts, 4, 31))
+>_ : Symbol(_, Decl(vecutil.d.ts, 4, 128))
+>T : Symbol(T, Decl(vecutil.d.ts, 4, 140))
+>_BitDrop : Symbol(_BitDrop, Decl(vecutil.d.ts, 3, 76))
+>Bit : Symbol(Bit, Decl(vecutil.d.ts, 0, 13))
+>BitSub : Symbol(Bit.BitSub, Decl(bit.d.ts, 19, 168))
+>N : Symbol(N, Decl(vecutil.d.ts, 4, 14))
+>T : Symbol(T, Decl(vecutil.d.ts, 4, 140))
+
+/**
+*/
+export type BitTake<N extends string, V extends unknown[]> = _BitTake<N, V>;
+>BitTake : Symbol(BitTake, Decl(vecutil.d.ts, 4, 200))
+>N : Symbol(N, Decl(vecutil.d.ts, 7, 20))
+>V : Symbol(V, Decl(vecutil.d.ts, 7, 37))
+>_BitTake : Symbol(_BitTake, Decl(vecutil.d.ts, 7, 76))
+>N : Symbol(N, Decl(vecutil.d.ts, 7, 20))
+>V : Symbol(V, Decl(vecutil.d.ts, 7, 37))
+
+type _BitTake<N extends string, V extends unknown[], R extends unknown[] = []> = V extends [] ? R : Bit.BitGTE<"0", N> extends true ? R : V extends [infer F, ...infer T] ? _BitTake<Bit.BitSub<N, "1">, T, [...R, F]> : [];
+>_BitTake : Symbol(_BitTake, Decl(vecutil.d.ts, 7, 76))
+>N : Symbol(N, Decl(vecutil.d.ts, 8, 14))
+>V : Symbol(V, Decl(vecutil.d.ts, 8, 31))
+>R : Symbol(R, Decl(vecutil.d.ts, 8, 52))
+>V : Symbol(V, Decl(vecutil.d.ts, 8, 31))
+>R : Symbol(R, Decl(vecutil.d.ts, 8, 52))
+>Bit : Symbol(Bit, Decl(vecutil.d.ts, 0, 13))
+>BitGTE : Symbol(Bit.BitGTE, Decl(bit.d.ts, 20, 136))
+>N : Symbol(N, Decl(vecutil.d.ts, 8, 14))
+>R : Symbol(R, Decl(vecutil.d.ts, 8, 52))
+>V : Symbol(V, Decl(vecutil.d.ts, 8, 31))
+>F : Symbol(F, Decl(vecutil.d.ts, 8, 154))
+>T : Symbol(T, Decl(vecutil.d.ts, 8, 166))
+>_BitTake : Symbol(_BitTake, Decl(vecutil.d.ts, 7, 76))
+>Bit : Symbol(Bit, Decl(vecutil.d.ts, 0, 13))
+>BitSub : Symbol(Bit.BitSub, Decl(bit.d.ts, 19, 168))
+>N : Symbol(N, Decl(vecutil.d.ts, 8, 14))
+>T : Symbol(T, Decl(vecutil.d.ts, 8, 166))
+>R : Symbol(R, Decl(vecutil.d.ts, 8, 52))
+>F : Symbol(F, Decl(vecutil.d.ts, 8, 154))
+
+export type BitInter<V extends unknown[], N extends string, M extends string> = BitDrop<N, BitTake<Bit.BitInc<M>, V>>;
+>BitInter : Symbol(BitInter, Decl(vecutil.d.ts, 8, 220))
+>V : Symbol(V, Decl(vecutil.d.ts, 9, 21))
+>N : Symbol(N, Decl(vecutil.d.ts, 9, 41))
+>M : Symbol(M, Decl(vecutil.d.ts, 9, 59))
+>BitDrop : Symbol(BitDrop, Decl(vecutil.d.ts, 0, 36))
+>N : Symbol(N, Decl(vecutil.d.ts, 9, 41))
+>BitTake : Symbol(BitTake, Decl(vecutil.d.ts, 4, 200))
+>Bit : Symbol(Bit, Decl(vecutil.d.ts, 0, 13))
+>BitInc : Symbol(Bit.BitInc, Decl(bit.d.ts, 23, 97))
+>M : Symbol(M, Decl(vecutil.d.ts, 9, 59))
+>V : Symbol(V, Decl(vecutil.d.ts, 9, 21))
+
+export type * as VecUtil from './vecutil.js';
+>VecUtil : Symbol(VecUtil, Decl(vecutil.d.ts, 10, 11))
+
+=== src/pre.ts ===
+import { N4, T4 } from './type-util.js'
+>N4 : Symbol(N4, Decl(pre.ts, 0, 8))
+>T4 : Symbol(T4, Decl(pre.ts, 0, 12))
+
+import type Cion from '@taiyakihitotsu/cion'
+>Cion : Symbol(Cion, Decl(pre.ts, 1, 6))
+
+type ArgReg = '([a-Z_-]+)?( [a-Z_-]+)*'
+>ArgReg : Symbol(ArgReg, Decl(pre.ts, 1, 44))
+
+export type pickArgs<
+>pickArgs : Symbol(pickArgs, Decl(pre.ts, 2, 39))
+
+  Fn extends string> =
+>Fn : Symbol(Fn, Decl(pre.ts, 3, 21))
+
+  Fn extends string
+>Fn : Symbol(Fn, Decl(pre.ts, 3, 21))
+
+    ? Cion.Lisp<`(re-find '\\[${ArgReg}\\]' (re-find '^\\(fn \\[${ArgReg}\\]' '${Fn}'))`> extends infer r extends string
+>Cion : Symbol(Cion, Decl(pre.ts, 1, 6))
+>Lisp : Symbol(Cion.Lisp, Decl(index.d.ts, 28, 98))
+>ArgReg : Symbol(ArgReg, Decl(pre.ts, 1, 44))
+>ArgReg : Symbol(ArgReg, Decl(pre.ts, 1, 44))
+>Fn : Symbol(Fn, Decl(pre.ts, 3, 21))
+>r : Symbol(r, Decl(pre.ts, 6, 103))
+
+      ? r extends `''`
+>r : Symbol(r, Decl(pre.ts, 6, 103))
+
+        ? never
+      : r
+>r : Symbol(r, Decl(pre.ts, 6, 103))
+
+    : never
+  : never
+type makeArgs<
+>makeArgs : Symbol(makeArgs, Decl(pre.ts, 11, 9))
+
+  N extends N4> =
+>N : Symbol(N, Decl(pre.ts, 12, 14))
+>N4 : Symbol(N4, Decl(pre.ts, 0, 8))
+
+  N extends 0
+>N : Symbol(N, Decl(pre.ts, 12, 14))
+
+    ? ''
+  : never 
+type expandArgs<
+>expandArgs : Symbol(expandArgs, Decl(pre.ts, 16, 9))
+
+  S extends string
+>S : Symbol(S, Decl(pre.ts, 17, 16))
+
+, N extends N4> =
+>N : Symbol(N, Decl(pre.ts, 19, 1))
+>N4 : Symbol(N4, Decl(pre.ts, 0, 8))
+
+`(fn [${makeArgs<N>}] (${S} ${makeArgs<N>}))`
+>makeArgs : Symbol(makeArgs, Decl(pre.ts, 11, 9))
+>N : Symbol(N, Decl(pre.ts, 19, 1))
+>S : Symbol(S, Decl(pre.ts, 17, 16))
+>makeArgs : Symbol(makeArgs, Decl(pre.ts, 11, 9))
+>N : Symbol(N, Decl(pre.ts, 19, 1))
+
+export type resolveLambda<
+>resolveLambda : Symbol(resolveLambda, Decl(pre.ts, 20, 45))
+
+  S extends string> =
+>S : Symbol(S, Decl(pre.ts, 21, 26))
+
+  S extends keyof bi
+>S : Symbol(S, Decl(pre.ts, 21, 26))
+>bi : Symbol(bi, Decl(pre.ts, 101, 2))
+
+    ? expandArgs<S, countArgs<S> extends infer r extends N4 ? r : never>
+>expandArgs : Symbol(expandArgs, Decl(pre.ts, 16, 9))
+>S : Symbol(S, Decl(pre.ts, 21, 26))
+>countArgs : Symbol(countArgs, Decl(pre.ts, 36, 52))
+>S : Symbol(S, Decl(pre.ts, 21, 26))
+>r : Symbol(r, Decl(pre.ts, 24, 46))
+>N4 : Symbol(N4, Decl(pre.ts, 0, 8))
+>r : Symbol(r, Decl(pre.ts, 24, 46))
+
+  : S
+>S : Symbol(S, Decl(pre.ts, 21, 26))
+
+type resolveLambdaPre<
+>resolveLambdaPre : Symbol(resolveLambdaPre, Decl(pre.ts, 25, 5))
+
+  S extends string> =
+>S : Symbol(S, Decl(pre.ts, 26, 22))
+
+  S extends keyof bi
+>S : Symbol(S, Decl(pre.ts, 26, 22))
+>bi : Symbol(bi, Decl(pre.ts, 101, 2))
+
+    ? bi[S] extends keyof bi
+>bi : Symbol(bi, Decl(pre.ts, 101, 2))
+>S : Symbol(S, Decl(pre.ts, 26, 22))
+>bi : Symbol(bi, Decl(pre.ts, 101, 2))
+
+      ? resolveLambdaPre<bi[S]>
+>resolveLambdaPre : Symbol(resolveLambdaPre, Decl(pre.ts, 25, 5))
+>bi : Symbol(bi, Decl(pre.ts, 101, 2))
+>S : Symbol(S, Decl(pre.ts, 26, 22))
+
+    : bi[S]
+>bi : Symbol(bi, Decl(pre.ts, 101, 2))
+>S : Symbol(S, Decl(pre.ts, 26, 22))
+
+  : S
+>S : Symbol(S, Decl(pre.ts, 26, 22))
+
+export type countArgsString<
+>countArgsString : Symbol(countArgsString, Decl(pre.ts, 32, 5))
+
+  S extends string> =
+>S : Symbol(S, Decl(pre.ts, 33, 28))
+
+Cion.Lisp<`(let [r (split ${S} ' ')] (if (= r ['[]']) 0 (count r)))`> 
+>Cion : Symbol(Cion, Decl(pre.ts, 1, 6))
+>Lisp : Symbol(Cion.Lisp, Decl(index.d.ts, 28, 98))
+>S : Symbol(S, Decl(pre.ts, 33, 28))
+
+type _snmap = {'0':0, '1':1, '2': 2, '3': 3, '4': 4}
+>_snmap : Symbol(_snmap, Decl(pre.ts, 35, 69))
+>'0' : Symbol('0', Decl(pre.ts, 36, 15))
+>'1' : Symbol('1', Decl(pre.ts, 36, 21))
+>'2' : Symbol('2', Decl(pre.ts, 36, 28))
+>'3' : Symbol('3', Decl(pre.ts, 36, 36))
+>'4' : Symbol('4', Decl(pre.ts, 36, 44))
+
+export type countArgs<
+>countArgs : Symbol(countArgs, Decl(pre.ts, 36, 52))
+
+  S extends string> =
+>S : Symbol(S, Decl(pre.ts, 37, 22))
+
+  countArgsString<pickArgs<resolveLambdaPre<S>>> extends infer C extends keyof _snmap
+>countArgsString : Symbol(countArgsString, Decl(pre.ts, 32, 5))
+>pickArgs : Symbol(pickArgs, Decl(pre.ts, 2, 39))
+>resolveLambdaPre : Symbol(resolveLambdaPre, Decl(pre.ts, 25, 5))
+>S : Symbol(S, Decl(pre.ts, 37, 22))
+>C : Symbol(C, Decl(pre.ts, 39, 62))
+>_snmap : Symbol(_snmap, Decl(pre.ts, 35, 69))
+
+    ? _snmap[C]
+>_snmap : Symbol(_snmap, Decl(pre.ts, 35, 69))
+>C : Symbol(C, Decl(pre.ts, 39, 62))
+
+  : never
+type _MergeTuple<
+>_MergeTuple : Symbol(_MergeTuple, Decl(pre.ts, 41, 9))
+
+  Fns extends T4
+>Fns : Symbol(Fns, Decl(pre.ts, 42, 17))
+>T4 : Symbol(T4, Decl(pre.ts, 0, 12))
+
+, Args extends string[] = ['a', 'b', 'c', 'd', 'e', 'f']
+>Args : Symbol(Args, Decl(pre.ts, 44, 1))
+
+, Used extends string = ''
+>Used : Symbol(Used, Decl(pre.ts, 45, 1))
+
+, SS extends string = ''> =
+>SS : Symbol(SS, Decl(pre.ts, 46, 1))
+
+  Fns extends [infer F extends string, ...infer R extends T4]
+>Fns : Symbol(Fns, Decl(pre.ts, 42, 17))
+>F : Symbol(F, Decl(pre.ts, 47, 20))
+>R : Symbol(R, Decl(pre.ts, 47, 47))
+>T4 : Symbol(T4, Decl(pre.ts, 0, 12))
+
+    ? Args extends [infer AF extends string, ...infer AR extends string[]]
+>Args : Symbol(Args, Decl(pre.ts, 44, 1))
+>AF : Symbol(AF, Decl(pre.ts, 48, 25))
+>AR : Symbol(AR, Decl(pre.ts, 48, 53))
+
+      ? _MergeTuple<R, AR, `${Used}${Used extends '' ? '' : ' '}${AF}`, `${SS} (${F} ${AF})`>
+>_MergeTuple : Symbol(_MergeTuple, Decl(pre.ts, 41, 9))
+>R : Symbol(R, Decl(pre.ts, 47, 47))
+>AR : Symbol(AR, Decl(pre.ts, 48, 53))
+>Used : Symbol(Used, Decl(pre.ts, 45, 1))
+>Used : Symbol(Used, Decl(pre.ts, 45, 1))
+>AF : Symbol(AF, Decl(pre.ts, 48, 25))
+>SS : Symbol(SS, Decl(pre.ts, 46, 1))
+>F : Symbol(F, Decl(pre.ts, 47, 20))
+>AF : Symbol(AF, Decl(pre.ts, 48, 25))
+
+    : never
+  : [] extends Fns
+>Fns : Symbol(Fns, Decl(pre.ts, 42, 17))
+
+    ? `(fn [${Used}] (and${SS}))`
+>Used : Symbol(Used, Decl(pre.ts, 45, 1))
+>SS : Symbol(SS, Decl(pre.ts, 46, 1))
+
+  : never
+export type MergePreStr<XPre extends string, YPre extends string> = _MergePreStr<XPre, YPre>
+>MergePreStr : Symbol(MergePreStr, Decl(pre.ts, 53, 9))
+>XPre : Symbol(XPre, Decl(pre.ts, 54, 24))
+>YPre : Symbol(YPre, Decl(pre.ts, 54, 44))
+>_MergePreStr : Symbol(_MergePreStr, Decl(pre.ts, 54, 92))
+>XPre : Symbol(XPre, Decl(pre.ts, 54, 24))
+>YPre : Symbol(YPre, Decl(pre.ts, 54, 44))
+
+export type _MergePreStr<
+>_MergePreStr : Symbol(_MergePreStr, Decl(pre.ts, 54, 92))
+
+  XPre extends string
+>XPre : Symbol(XPre, Decl(pre.ts, 55, 25))
+
+, YPre extends string
+>YPre : Symbol(YPre, Decl(pre.ts, 57, 1))
+
+, shrinkX extends string = ''
+>shrinkX : Symbol(shrinkX, Decl(pre.ts, 58, 1))
+
+, shrinkY extends string = ''> =
+>shrinkY : Symbol(shrinkY, Decl(pre.ts, 59, 1))
+
+  countArgs<XPre> & countArgs<YPre> extends never
+>countArgs : Symbol(countArgs, Decl(pre.ts, 36, 52))
+>XPre : Symbol(XPre, Decl(pre.ts, 55, 25))
+>countArgs : Symbol(countArgs, Decl(pre.ts, 36, 52))
+>YPre : Symbol(YPre, Decl(pre.ts, 57, 1))
+
+    ? false
+  : XPre extends '' | 'any?'
+>XPre : Symbol(XPre, Decl(pre.ts, 55, 25))
+
+    ? _MergePreStr<XPre, resolveLambda<YPre>, shrinkX, YPre>
+>_MergePreStr : Symbol(_MergePreStr, Decl(pre.ts, 54, 92))
+>XPre : Symbol(XPre, Decl(pre.ts, 55, 25))
+>resolveLambda : Symbol(resolveLambda, Decl(pre.ts, 20, 45))
+>YPre : Symbol(YPre, Decl(pre.ts, 57, 1))
+>shrinkX : Symbol(shrinkX, Decl(pre.ts, 58, 1))
+>YPre : Symbol(YPre, Decl(pre.ts, 57, 1))
+
+  : pickArgs<XPre> extends `'[${infer Args}]'`
+>pickArgs : Symbol(pickArgs, Decl(pre.ts, 2, 39))
+>XPre : Symbol(XPre, Decl(pre.ts, 55, 25))
+>Args : Symbol(Args, Decl(pre.ts, 64, 37))
+
+    ? `(fn [${Args}] (and (${shrinkX extends '' ? XPre : shrinkX} ${Args}) (${shrinkY extends '' ? YPre : shrinkY} ${Args})))`
+>Args : Symbol(Args, Decl(pre.ts, 64, 37))
+>shrinkX : Symbol(shrinkX, Decl(pre.ts, 58, 1))
+>XPre : Symbol(XPre, Decl(pre.ts, 55, 25))
+>shrinkX : Symbol(shrinkX, Decl(pre.ts, 58, 1))
+>Args : Symbol(Args, Decl(pre.ts, 64, 37))
+>shrinkY : Symbol(shrinkY, Decl(pre.ts, 59, 1))
+>YPre : Symbol(YPre, Decl(pre.ts, 57, 1))
+>shrinkY : Symbol(shrinkY, Decl(pre.ts, 59, 1))
+>Args : Symbol(Args, Decl(pre.ts, 64, 37))
+
+  : never
+type checkPreMap<
+>checkPreMap : Symbol(checkPreMap, Decl(pre.ts, 66, 9))
+
+  Map extends Record<string, string>> =
+>Map : Symbol(Map, Decl(pre.ts, 67, 17))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+Map
+>Map : Symbol(Map, Decl(pre.ts, 67, 17))
+
+export type arithmetic2 = `(fn [x y] (and (number? x) (number? y)))`
+>arithmetic2 : Symbol(arithmetic2, Decl(pre.ts, 69, 3))
+
+export type compare = arithmetic2
+>compare : Symbol(compare, Decl(pre.ts, 70, 68))
+>arithmetic2 : Symbol(arithmetic2, Decl(pre.ts, 69, 3))
+
+type arithmetic =
+>arithmetic : Symbol(arithmetic, Decl(pre.ts, 71, 33))
+
+checkPreMap<{
+>checkPreMap : Symbol(checkPreMap, Decl(pre.ts, 66, 9))
+
+  add: arithmetic2
+>add : Symbol(add, Decl(pre.ts, 73, 13))
+>arithmetic2 : Symbol(arithmetic2, Decl(pre.ts, 69, 3))
+
+  , lte: compare
+>lte : Symbol(lte, Decl(pre.ts, 75, 3))
+>compare : Symbol(compare, Decl(pre.ts, 70, 68))
+
+}>
+type signs =
+>signs : Symbol(signs, Decl(pre.ts, 76, 2))
+
+checkPreMap<
+>checkPreMap : Symbol(checkPreMap, Decl(pre.ts, 66, 9))
+
+  { "+":  bi['add']
+>"+" : Symbol("+", Decl(pre.ts, 79, 3))
+>bi : Symbol(bi, Decl(pre.ts, 101, 2))
+
+  , "<=": bi['lte']}>
+>"<=" : Symbol("<=", Decl(pre.ts, 80, 3))
+>bi : Symbol(bi, Decl(pre.ts, 101, 2))
+
+type checker =
+>checker : Symbol(checker, Decl(pre.ts, 80, 21))
+
+checkPreMap<{
+>checkPreMap : Symbol(checkPreMap, Decl(pre.ts, 66, 9))
+
+}>
+type checkPrim = `(fn [x] (or (number? x) (string? x) (boolean? x)))`
+>checkPrim : Symbol(checkPrim, Decl(pre.ts, 83, 2))
+
+type stringf =
+>stringf : Symbol(stringf, Decl(pre.ts, 84, 69))
+
+checkPreMap<
+>checkPreMap : Symbol(checkPreMap, Decl(pre.ts, 66, 9))
+
+  { str1: checkPrim
+>str1 : Symbol(str1, Decl(pre.ts, 87, 3))
+>checkPrim : Symbol(checkPrim, Decl(pre.ts, 83, 2))
+
+}>
+type logical =
+>logical : Symbol(logical, Decl(pre.ts, 88, 2))
+
+checkPreMap<{
+>checkPreMap : Symbol(checkPreMap, Decl(pre.ts, 66, 9))
+
+}>
+type data =
+>data : Symbol(data, Decl(pre.ts, 91, 2))
+
+checkPreMap<
+>checkPreMap : Symbol(checkPreMap, Decl(pre.ts, 66, 9))
+
+  { get: `(fn [x y] (some? (get x y)))`
+>get : Symbol(get, Decl(pre.ts, 94, 3))
+
+  , assocLax:    `(fn [x y z] (not (and (vector? x) (keyword? y))))`
+>assocLax : Symbol(assocLax, Decl(pre.ts, 95, 3))
+
+}>
+type _get3 = `(fn [x y z] (get x y))`
+>_get3 : Symbol(_get3, Decl(pre.ts, 96, 2))
+
+type dataStrict =
+>dataStrict : Symbol(dataStrict, Decl(pre.ts, 97, 37))
+
+checkPreMap<
+>checkPreMap : Symbol(checkPreMap, Decl(pre.ts, 66, 9))
+
+ { assoc: MergePreStr<_get3, MergePreStr<data['assocLax'], '(fn [x y z] (= (type z) (type (get x y))))'>>
+>assoc : Symbol(assoc, Decl(pre.ts, 100, 2))
+>MergePreStr : Symbol(MergePreStr, Decl(pre.ts, 53, 9))
+>_get3 : Symbol(_get3, Decl(pre.ts, 96, 2))
+>MergePreStr : Symbol(MergePreStr, Decl(pre.ts, 53, 9))
+>data : Symbol(data, Decl(pre.ts, 91, 2))
+
+}>
+export type bi = arithmetic & signs & checker & logical & data & dataStrict & stringf
+>bi : Symbol(bi, Decl(pre.ts, 101, 2))
+>arithmetic : Symbol(arithmetic, Decl(pre.ts, 71, 33))
+>signs : Symbol(signs, Decl(pre.ts, 76, 2))
+>checker : Symbol(checker, Decl(pre.ts, 80, 21))
+>logical : Symbol(logical, Decl(pre.ts, 88, 2))
+>data : Symbol(data, Decl(pre.ts, 91, 2))
+>dataStrict : Symbol(dataStrict, Decl(pre.ts, 97, 37))
+>stringf : Symbol(stringf, Decl(pre.ts, 84, 69))
+
+export type getPre<
+>getPre : Symbol(getPre, Decl(pre.ts, 102, 85))
+
+  S extends string> =
+>S : Symbol(S, Decl(pre.ts, 103, 19))
+
+  S extends keyof bi
+>S : Symbol(S, Decl(pre.ts, 103, 19))
+>bi : Symbol(bi, Decl(pre.ts, 101, 2))
+
+    ? bi[S]
+>bi : Symbol(bi, Decl(pre.ts, 101, 2))
+>S : Symbol(S, Decl(pre.ts, 103, 19))
+
+  : S
+>S : Symbol(S, Decl(pre.ts, 103, 19))
+
+=== src/type-util.ts ===
+export type UnionToIntersection<
+>UnionToIntersection : Symbol(UnionToIntersection, Decl(type-util.ts, 0, 0))
+
+  U> =
+>U : Symbol(U, Decl(type-util.ts, 0, 32))
+
+  (U extends any ? (k: U) => void : never) extends ((k: infer I) => void)
+>U : Symbol(U, Decl(type-util.ts, 0, 32))
+>k : Symbol(k, Decl(type-util.ts, 2, 20))
+>U : Symbol(U, Decl(type-util.ts, 0, 32))
+>k : Symbol(k, Decl(type-util.ts, 2, 53))
+>I : Symbol(I, Decl(type-util.ts, 2, 61))
+
+    ? I
+>I : Symbol(I, Decl(type-util.ts, 2, 61))
+
+  : never
+export type LastOf<
+>LastOf : Symbol(LastOf, Decl(type-util.ts, 4, 9))
+
+  T> =
+>T : Symbol(T, Decl(type-util.ts, 5, 19))
+
+  UnionToIntersection<T extends any ? () => T : never> extends () => (infer R)
+>UnionToIntersection : Symbol(UnionToIntersection, Decl(type-util.ts, 0, 0))
+>T : Symbol(T, Decl(type-util.ts, 5, 19))
+>T : Symbol(T, Decl(type-util.ts, 5, 19))
+>R : Symbol(R, Decl(type-util.ts, 7, 75))
+
+    ? R
+>R : Symbol(R, Decl(type-util.ts, 7, 75))
+
+  : never
+export type Primitive = string|number|boolean
+>Primitive : Symbol(Primitive, Decl(type-util.ts, 9, 9))
+
+export type Equal<
+>Equal : Symbol(Equal, Decl(type-util.ts, 10, 45))
+
+  X
+>X : Symbol(X, Decl(type-util.ts, 11, 18))
+
+, Y> =
+>Y : Symbol(Y, Decl(type-util.ts, 13, 1))
+
+  (<T>() => T extends X & T | T ? 1 : 2) extends (<T>() => T extends Y & T | T ? 1 : 2)
+>T : Symbol(T, Decl(type-util.ts, 14, 4))
+>T : Symbol(T, Decl(type-util.ts, 14, 4))
+>X : Symbol(X, Decl(type-util.ts, 11, 18))
+>T : Symbol(T, Decl(type-util.ts, 14, 4))
+>T : Symbol(T, Decl(type-util.ts, 14, 4))
+>T : Symbol(T, Decl(type-util.ts, 14, 51))
+>T : Symbol(T, Decl(type-util.ts, 14, 51))
+>Y : Symbol(Y, Decl(type-util.ts, 13, 1))
+>T : Symbol(T, Decl(type-util.ts, 14, 51))
+>T : Symbol(T, Decl(type-util.ts, 14, 51))
+
+    ? true
+  : false
+export type UnionKVStrToString<
+>UnionKVStrToString : Symbol(UnionKVStrToString, Decl(type-util.ts, 16, 9))
+
+  T
+>T : Symbol(T, Decl(type-util.ts, 17, 31))
+
+, Start extends string = '{'
+>Start : Symbol(Start, Decl(type-util.ts, 19, 1))
+
+, L = LastOf<T>
+>L : Symbol(L, Decl(type-util.ts, 20, 1))
+>LastOf : Symbol(LastOf, Decl(type-util.ts, 4, 9))
+>T : Symbol(T, Decl(type-util.ts, 17, 31))
+
+, N = [T] extends [never] ? true : false> =
+>N : Symbol(N, Decl(type-util.ts, 21, 1))
+>T : Symbol(T, Decl(type-util.ts, 17, 31))
+
+  true extends N
+>N : Symbol(N, Decl(type-util.ts, 21, 1))
+
+    ? "}"
+  : `${Start}:${L extends Primitive ? L : ''}${UnionKVStrToString<Exclude<T,L>, ' '>}`
+>Start : Symbol(Start, Decl(type-util.ts, 19, 1))
+>L : Symbol(L, Decl(type-util.ts, 20, 1))
+>Primitive : Symbol(Primitive, Decl(type-util.ts, 9, 9))
+>L : Symbol(L, Decl(type-util.ts, 20, 1))
+>UnionKVStrToString : Symbol(UnionKVStrToString, Decl(type-util.ts, 16, 9))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(type-util.ts, 17, 31))
+>L : Symbol(L, Decl(type-util.ts, 20, 1))
+
+export type ForceTuple<
+>ForceTuple : Symbol(ForceTuple, Decl(type-util.ts, 24, 86))
+
+  S> =
+>S : Symbol(S, Decl(type-util.ts, 25, 23))
+
+  S extends readonly [infer a, infer b, infer c, infer d, infer e,infer f,infer g,infer h] | [infer a, infer b, infer c, infer d, infer e,infer f,infer g,infer h]
+>S : Symbol(S, Decl(type-util.ts, 25, 23))
+>a : Symbol(a, Decl(type-util.ts, 27, 27), Decl(type-util.ts, 27, 99))
+>b : Symbol(b, Decl(type-util.ts, 27, 36), Decl(type-util.ts, 27, 108))
+>c : Symbol(c, Decl(type-util.ts, 27, 45), Decl(type-util.ts, 27, 117))
+>d : Symbol(d, Decl(type-util.ts, 27, 54), Decl(type-util.ts, 27, 126))
+>e : Symbol(e, Decl(type-util.ts, 27, 63), Decl(type-util.ts, 27, 135))
+>f : Symbol(f, Decl(type-util.ts, 27, 71), Decl(type-util.ts, 27, 143))
+>g : Symbol(g, Decl(type-util.ts, 27, 79), Decl(type-util.ts, 27, 151))
+>h : Symbol(h, Decl(type-util.ts, 27, 87), Decl(type-util.ts, 27, 159))
+>a : Symbol(a, Decl(type-util.ts, 27, 27), Decl(type-util.ts, 27, 99))
+>b : Symbol(b, Decl(type-util.ts, 27, 36), Decl(type-util.ts, 27, 108))
+>c : Symbol(c, Decl(type-util.ts, 27, 45), Decl(type-util.ts, 27, 117))
+>d : Symbol(d, Decl(type-util.ts, 27, 54), Decl(type-util.ts, 27, 126))
+>e : Symbol(e, Decl(type-util.ts, 27, 63), Decl(type-util.ts, 27, 135))
+>f : Symbol(f, Decl(type-util.ts, 27, 71), Decl(type-util.ts, 27, 143))
+>g : Symbol(g, Decl(type-util.ts, 27, 79), Decl(type-util.ts, 27, 151))
+>h : Symbol(h, Decl(type-util.ts, 27, 87), Decl(type-util.ts, 27, 159))
+
+    ? [a,b,c,d,e,f,g,h] extends S
+>a : Symbol(a, Decl(type-util.ts, 27, 27), Decl(type-util.ts, 27, 99))
+>b : Symbol(b, Decl(type-util.ts, 27, 36), Decl(type-util.ts, 27, 108))
+>c : Symbol(c, Decl(type-util.ts, 27, 45), Decl(type-util.ts, 27, 117))
+>d : Symbol(d, Decl(type-util.ts, 27, 54), Decl(type-util.ts, 27, 126))
+>e : Symbol(e, Decl(type-util.ts, 27, 63), Decl(type-util.ts, 27, 135))
+>f : Symbol(f, Decl(type-util.ts, 27, 71), Decl(type-util.ts, 27, 143))
+>g : Symbol(g, Decl(type-util.ts, 27, 79), Decl(type-util.ts, 27, 151))
+>h : Symbol(h, Decl(type-util.ts, 27, 87), Decl(type-util.ts, 27, 159))
+>S : Symbol(S, Decl(type-util.ts, 25, 23))
+
+      ? S
+>S : Symbol(S, Decl(type-util.ts, 25, 23))
+
+    : never
+  : never
+export type N0 = 0
+>N0 : Symbol(N0, Decl(type-util.ts, 31, 9))
+
+export type N1 = N0 | 1
+>N1 : Symbol(N1, Decl(type-util.ts, 32, 18))
+>N0 : Symbol(N0, Decl(type-util.ts, 31, 9))
+
+export type N2 = N1 | 2
+>N2 : Symbol(N2, Decl(type-util.ts, 33, 23))
+>N1 : Symbol(N1, Decl(type-util.ts, 32, 18))
+
+export type N3 = N2 | 3
+>N3 : Symbol(N3, Decl(type-util.ts, 34, 23))
+>N2 : Symbol(N2, Decl(type-util.ts, 33, 23))
+
+export type N4 = N3 | 4
+>N4 : Symbol(N4, Decl(type-util.ts, 35, 23))
+>N3 : Symbol(N3, Decl(type-util.ts, 34, 23))
+
+export type T4 =
+>T4 : Symbol(T4, Decl(type-util.ts, 36, 23))
+
+[string, string, string, string] | readonly [string, string, string, string]
+

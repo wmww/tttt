@@ -1,0 +1,533 @@
+// origin: npm @taiyakihitotsu/foxp@0.5.11 https://github.com/taiyakihitotsu/foxp tsconfig.json seed 20261208
+// flip: yes
+// @exactOptionalPropertyTypes: true
+// @forceConsistentCasingInFileNames: true
+// @module: node16
+// @moduleResolution: node16
+// @noImplicitAny: true
+// @noPropertyAccessFromIndexSignature: true
+// @noUncheckedIndexedAccess: true
+// @skipLibCheck: true
+// @strict: true
+// @strictFunctionTypes: true
+// @strictNullChecks: true
+// @target: es2020
+// @esModuleInterop: true
+// @moduleDetection: force
+// @useDefineForClassFields: false
+// @resolveJsonModule: false
+// foxp is a type-level Lisp over @taiyakihitotsu/cion, whose evaluator is cut to the parts this needs. tsgo checks
+// the project clean. tttt reports TS2344 for `resolveLambdaPre<S>` against `string` (src/pre.ts) and for the
+// `{ assoc: false }` map against `Record<string, string>`: tttt takes _MergePreStr's `countArgs<X> & countArgs<Y>
+// extends never ? false` branch, so countArgs (cion.Lisp over template-literal inference) evaluates to never in tttt.
+// On the real project, 97 errors follow from it (TS2345, TS7006).
+// @filename: node_modules/@taiyakihitotsu/cion/dist/bit.d.ts
+import type * as Peano from "./peano.js";
+export type MAX = Peano.T16;
+export type BitZero = BitPadding<"0", MAX>;
+export type BitAnd<B, C> = B extends `${infer BH}${infer BR}` ? C extends `${infer CH}${infer CR}` ? CH extends `1` ? BH extends `1` ? `1${BitAnd<BR, CR>}` : `0${BitAnd<BR, CR>}` : `0${BitAnd<BR, CR>}` : `` : ``;
+export type BitXor<B, C> = B extends `${infer BH}${infer BR}` ? C extends `${infer CH}${infer CR}` ? CH extends BH ? `0${BitXor<BR, CR>}` : `1${BitXor<BR, CR>}` : `` : ``;
+export type BitShiftLeftOne<B> = B extends `${infer H}` ? `${H}0` extends `${infer C}${infer D}` ? D : never : never;
+export type BitNot<B> = B extends `0` ? `1` : B extends `1` ? `0` : B extends `${infer H}${infer T}` ? `${BitNot<H>}${BitNot<T>}` : never;
+export type BitEq<B, C> = B extends "" ? C extends "" ? true : false : B extends `${infer HB}${infer TB}` ? C extends `${infer HC}${infer TC}` ? C extends B ? B extends C ? BitEq<TB, TC> : false : false : false : false;
+export type BitLen<B, count = Peano.T0> = B extends `${infer HB}${infer TB}` ? HB extends "0" | "1" ? BitLen<TB, Peano.inc<count>> : never : count;
+export type BitLenGthan<B, C> = Peano.gthan<BitLen<B>, BitLen<C>>;
+export type BitPadding<B extends string, P = Peano.T0, F = "0"> = P extends Peano.T0 ? B : F extends "0" | "1" ? BitPadding<`${F}${B}`, Peano.dec<P>, F> : never;
+export type BitUniform<B extends string, C extends string> = BitLenGthan<B, C> extends true ? [B, BitPadding<C, Peano.min<BitLen<B>, BitLen<C>>>] : [BitPadding<B, Peano.min<BitLen<C>, BitLen<B>>>, C];
+export type BitCut<B, P = Peano.T0> = P extends Peano.T0 ? B : B extends `${infer H}${infer T}` ? BitCut<T, Peano.dec<P>> : never;
+export type BitIsZero<B extends string> = BitUniform<BitZero, B> extends [
+    infer Z,
+    infer U
+] ? BitEq<BitZero, U> : never;
+export type BitFill<B extends string, M = MAX, tB extends string = BitPadding<B, M>> = BitCut<tB, Peano.min<BitLen<tB>, M>>;
+export type _BitAdd<B, C> = BitXor<B, C> extends infer _Xor ? BitAnd<B, C> extends infer _And ? BitShiftLeftOne<_And> extends string & infer _Carry extends string ? BitIsZero<BitUniform<_Carry, "0"> extends [infer _C extends string, infer _R] ? _C : never> extends true ? _Xor : _BitAdd<_Xor, _Carry> : 0 : 1 : 2;
+export type BitAdd<B extends string, C extends string, M = MAX> = BitFill<B, M> extends infer _tB ? BitFill<C, M> extends infer _tC ? _BitAdd<_tB, _tC> : never : never;
+export type BitSub<B extends string, C extends string, M = MAX> = BitAdd<BitFill<B, M>, BitAdd<BitNot<BitFill<C, M>>, BitFill<"1", M>>>;
+export type BitGTE<B extends string, C extends string> = BitSub<B, C> extends `${infer H}${infer _}` ? H extends '1' ? false : true : never;
+export type BitGT<B extends string, C extends string> = BitGTE<B, C> extends true ? B extends C ? C extends B ? false : true : true : false;
+export type BitLTE<B extends string, C extends string> = BitGT<B, C> extends true ? false : true;
+export type BitInc<B extends string> = BitAdd<B, "0000000000000001">;
+export * as Bit from './bit.js';
+// @filename: node_modules/@taiyakihitotsu/cion/dist/compiler.d.ts
+import type * as Decimal from './decimal.js';
+export type SPad<S extends string> = S extends ` ${infer SS}` ? SS : ` ${S}`;
+type internalRec<T> = T extends {
+    r: infer U;
+} ? U : T;
+export type CompilerRec<T> = T extends {
+    r: unknown;
+} ? CompilerRec<internalRec<T>> : T;
+export type ReadString<S extends string, ident extends `"` | `'`> = S extends `${ident}${infer P}${ident}${infer R}` ? [`${ident}${P}${ident}`, ` ${R}`] : never;
+export type recp<Sexpr, R extends string[] = []> = Sexpr extends `  ${infer U}` | ` \n${infer U}` ? {
+    r: recp<` ${U}`, R>;
+} : Sexpr extends ` (${infer U}` ? {
+    r: recp<` ${U}`, [...R, '(']>;
+} : Sexpr extends ` [${infer U}` ? {
+    r: recp<` ${U}`, [...R, '[']>;
+} : Sexpr extends ` '${infer U}` ? {
+    r: recp<ReadString<`'${U}`, `'`>[1], [...R, ReadString<`'${U}`, `'`>[0]]>;
+} : Sexpr extends ` ${infer fU} ${infer Next}` ? fU extends `${infer ffU}}` ? ffU extends '' ? {
+} : {
+} : fU extends `${infer ffU}]` ? ffU extends '' ? {
+    r: recp<` ${Next}`, [...R, ']']>;
+} : {
+    r: recp<` ${ffU} ] ${Next}`, R>;
+} : fU extends `${infer ffU})` ? ffU extends '' ? {
+    r: recp<` ${Next}`, [...R, ')']>;
+} : {
+    r: recp<` ${ffU} ) ${Next}`, R>;
+} : {
+    r: recp<` ${Next}`, [...R, fU]>;
+} : Sexpr extends ` ${infer U})` ? {
+    r: recp<` ${U} ) `, R>;
+} : {
+    r: R;
+};
+export type SParser<Sexpr extends string> = CompilerRec<recp<Sexpr>>;
+type NumUnion = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
+type ReadRationalFail = [];
+export type ReadRational<S extends string, Ret extends string[] = [], SS extends string = ''> = S extends '' ? SS extends '' ? ReadRationalFail : SIsNum<SS> extends true ? [...Ret, SS] : ReadRationalFail : S extends `${infer H}${infer R}` ? H extends NumUnion | '-' ? ReadRational<R, Ret, `${SS}${H}`> : H extends '/' ? SIsNum<SS> extends true ? ReadRational<R, [...Ret, SS], ''> : ReadRationalFail : ReadRationalFail : never;
+export type SSymlator<MSym> = MSym extends `${infer H}${infer R}` ? H extends "'" | '"' ? [`prim`, MSym] : ReadRational<MSym> extends [`${infer F}${infer Fs}`, ...infer rD extends string[]] ? rD extends [`${infer _D}${infer _Ds}`] ? F extends '-' ? ['prim', [Bit.BitRevSign<Decimal.DecimalToBit<Fs>>, Decimal.DecimalToBit<`${_D}${_Ds}`>]] : ['prim', [Decimal.DecimalToBit<`${F}${Fs}`>, Decimal.DecimalToBit<`${_D}${_Ds}`>]] : F extends '-' ? ['prim', Bit.BitRevSign<Decimal.DecimalToBit<Fs>>] : ['prim', Decimal.DecimalToBit<`${F}${Fs}`>] : MSym extends 'if' | 'let' | 'fn' ? MSym : MSym extends 'true' ? [`prim`, true] : MSym extends 'false' ? [`prim`, false] : MSym extends 'nil' ? [`prim`, 'nil'] : [`sym`, MSym] : never;
+type IsStrValue<S extends string> = S extends `"${infer _}"` ? true : false;
+export type SCompiler<Parsed extends Array<unknown>, Current extends Array<unknown> = [], Stack extends Array<Array<unknown>> = [], StrStack extends string = "", IsLetVec extends boolean = false> = Parsed extends [] ? Current : Parsed extends [infer H extends string, ...infer R extends string[]] ? R extends [] ? IsStrValue<H> extends true ? [`prim`, H] : H extends "}" ? ['map', Current] : Current extends [] ? SSymlator<H> : Current : H extends ')' | ']' ? SCompiler<R, Stack extends unknown[] ? [...Stack[0], Current extends ['vec', never] ? ['vec'] : Current] : never, Stack extends [infer _, ...infer R extends unknown[][]] ? R : never> : H extends '}' ? SCompiler<R, Stack extends Array<unknown> ? [...Stack[0], ['map', Current]] : never, Stack extends [infer _, ...infer R extends unknown[][]] ? R : never> : H extends '(' ? SCompiler<R, [], [Current, ...Stack]> : H extends '[' ? SCompiler<R, IsLetVec extends true ? [] : ['vec'], [Current, ...Stack], StrStack> : H extends '{' ? SCompiler<R, [], [Current, ...Stack]> : H extends `:${infer _}` ? SCompiler<R, [...Current, [`key`, H]], Stack> : SCompiler<R, [...Current, SSymlator<H>], Stack, StrStack, H extends 'let' | 'fn' ? true : false> : never;
+export type _Unparse<AST, Type extends 'vec' | 'list' | 'map' | 'atom' = 'list'> = AST extends infer H ? H extends ['prim' | 'sym' | 'key', infer r0 extends boolean | string] ? r0 extends string ? Decimal.IsBitExpr<r0> extends true ? Decimal.BitToDecimal<r0> : `${r0}` : `${r0}` : H extends ['prim', [string, string]] ? SNumberString<H> : H extends ['vec', ...infer r] ? r extends [] ? '[]' : _Unparse<r, 'vec'> : H extends ['map', infer r] ? _Unparse<r, 'map'> : H extends ['fn', infer r0, infer r1] ? CloseBracket<`fn ${(_Unparse<r0, 'vec'> extends infer s ? s extends string ? s : '' : '')} ${(_Unparse<r1> extends infer s ? s extends string ? s : '' : '')}`, 'list'> : H extends ['let', infer r0, infer r1] ? CloseBracket<`let ${(_Unparse<r0, 'vec'> extends infer s ? s extends string ? s : '' : '')} ${(_Unparse<r1> extends infer s ? s extends string ? s : '' : '')}`, 'list'> : H extends ['if', infer r0, infer r1, ...infer r2] ? CloseBracket<`if ${(_Unparse<r0> extends infer s ? s extends string ? s : '' : '')} ${(_Unparse<r1> extends infer s ? s extends string ? s : '' : '')}${r2 extends [] ? '' : ' '}${(_Unparse<r2, 'atom'> extends infer s ? s extends string ? s : '' : '')}`, Type> : H extends [infer H extends unknown[], ...infer T] ? CloseBracket<`${(_Unparse<H> extends infer s ? s extends string ? s : '' : '')}${T extends [] ? '' : ' '}${(_Unparse<T, 'atom'> extends infer s ? s extends string ? s : '' : '')}`, Type> : H extends [] ? '' : {
+} : never;
+export type Unparse<AST> = _Unparse<AST> extends infer r ? r extends '' ? 'nil' : r : never;
+// @filename: node_modules/@taiyakihitotsu/cion/dist/decimal.d.ts
+import type * as Bit from "./bit.js";
+import type * as Peano from "./peano.js";
+type D10 = '0000000000001010';
+type D100 = '0000000001100100';
+type D1000 = '0000001111101000';
+type D10000 = '0010011100010000';
+type PeanoToDecimal<N> = N extends null ? 0 : N extends [null] ? 1 : N extends [[null]] ? 2 : N extends [[[null]]] ? 3 : N extends [[[[null]]]] ? 4 : N extends [[[[[null]]]]] ? 5 : N extends [[[[[[null]]]]]] ? 6 : N extends [[[[[[[null]]]]]]] ? 7 : N extends [[[[[[[[null]]]]]]]] ? 8 : N extends [[[[[[[[[null]]]]]]]]] ? 9 : never;
+type DigitTable = ['1', D10, D100, D1000, D10000];
+type _DigitKeys = [4, 3, 2, 1, 0];
+type _BitToDecimal<S extends string, Ret extends string = '0', Keys = _DigitKeys, Cul = null> = Keys extends [infer K, ...infer R] ? Bit.BitSub<S, DigitTable[K extends DigitKidx ? K : never]> extends infer u ? Bit.BitLTE<u extends string ? u : never, '0'> extends true ? _BitToDecimal<S, `${Ret}${PeanoToDecimal<Cul>}`, R> : _BitToDecimal<u extends string ? u : never, Ret, Keys, Peano.inc<Cul>> : never : Ret extends string ? Ret : never;
+type TrimZero<S extends string> = S extends `${infer H}${infer T}` ? H extends '0' ? TrimZero<T> : S : S;
+export type rBitToDecimal<S extends string> = _BitToDecimal<S> extends string & infer s ? TrimZero<s extends string ? s : never> extends infer trimed ? trimed extends '' ? '0' : trimed : never : never;
+export type BitToDecimal<S extends string> = Bit.BitFill<S, Peano.T16> extends `${infer H}${infer T}` ? H extends '1' ? `-${rBitToDecimal<Bit.BitAdd<'1', Bit.BitSub<'0111111111111111', `0${T}`>>>}` : rBitToDecimal<S> : never;
+export type IsBitExpr<S extends string> = S extends `${infer H}${infer T}` ? H extends '0' | '1' ? T extends '' ? H extends '0' | '1' ? true : false : IsBitExpr<T> : false : false;
+// @filename: node_modules/@taiyakihitotsu/cion/dist/index.d.ts
+import type * as Bit from './bit.js';
+import type * as Compiler from './compiler.js';
+import type { regex } from './regex.js';
+import type { LetVal, LetForm, Each, Atom, TMap, Sexpr, TNil, Keyword, Sym, PrimString, PrimNumber, BitString, RatioString, NumString, Prim, Fn, Vector, Var, Env, TNotMatch, IfForm, Falsy } from './sexprtypes.js';
+export type MakeVar<N, V> = {
+    name: N;
+    value: V;
+};
+type GetVar<T, E> = E extends Env ? E extends [infer U, ...infer R] ? U extends Var ? U["name"] extends T ? U["value"] : GetVar<T, R> : TNotMatch : TNotMatch : TNotMatch;
+type Let<N, V, EnvLifo = Env[]> = EnvLifo extends Env[] ? [...EnvLifo, [MakeVar<N, V>]] : LetError0;
+type ReadLet<N, EnvLifo = [[]]> = EnvLifo extends [...infer HS, infer L] ? L extends Env ? GetVar<N, L> extends TNotMatch ? ReadLet<N, HS> : GetVar<N, L> : TNotMatch : TNotMatch;
+type ReadAtom<A, EnvLifo = [[]], prev = 0> = A extends [`sym`, infer S] ? ReadLet<S, EnvLifo> : Eval<A, EnvLifo, [prev]>;
+type Reading<AS, EnvList = [[]], prev = 0, R = []> = R extends Atom[] ? AS extends [infer H, ...infer T] ? H extends Sym & ['sym', infer _ extends BuiltinsUnion] ? Reading<T, EnvList, prev, [...R, H]> : H extends Fn & ['fn', infer Syms extends Sym[], infer Body] ? Reading<T, EnvList, prev, [...R, ['fn', Syms, ReadLetRecur<Body, ReduceDelEnv<Syms, EnvList extends EnvLifo ? EnvList : never>>]]> : H extends Atom ? Reading<T, EnvList, prev, [...R, ReadAtom<H, EnvList, prev>]> : H extends Sexpr | LetForm | IfForm ? Reading<T, EnvList, prev, [...R, Eval<H, EnvList, prev>]> : ErrorCase<ReadingError1, "Atom but not able to read.", [EnvList, H]> : R : ErrorCase<ReadingError0, 'sexpr is not atom list.', R>;
+export type LispRefind<S> = S extends [[`prim`, `'${infer regex}'`], [`prim`, `'${infer searched}'`]] ? regex.RegexFind<searched, regex> extends [infer _, infer match extends string, infer _] ? ['prim', `'${match}'`] : ['prim', `''`] : S;
+export type Split<Regex extends string, String extends string> = regex.RegexFind<String, Regex> extends [infer prev extends string, infer _match, infer next extends string] ? prev extends '' ? [...Split<Regex, next>] : [['prim', `'${prev}'`], ...Split<Regex, next>] : String extends '' ? [] : [['prim', `'${String}'`]];
+export type LispSplit<S> = S extends [[`prim`, `'${infer searched}'`], [`prim`, `'${infer regex}'`]] ? ['vec', ...Split<regex, searched>] : LispSplitError0;
+type If<A, B, C> = A extends [`prim`, false] | TNil ? C : B;
+export type Count<S extends unknown[], I extends string = '0'> = S extends [infer _, ...infer R] ? R extends [] ? Bit.BitAdd<I, '1'> : Count<R, Bit.BitAdd<I, '1'>> : ErrorCase<CountError0, '1st should be an array as an inner expression.', S>;
+export type LispCount<S> = S extends [Vector] & [['vec']] ? ['prim', '0'] : S extends [Vector] & [['vec', ...infer V]] ? ['prim', Count<V>] : ErrorCase<CountError1, 'Arg of count should be vector.', S>;
+export type BuiltinsUnion = 'if' | 'let' | 'fn' | '->' | '->>' | 'some->' | 'some->>' | 'str' | 'vector' | 'map' | 'filter' | 'remove' | 'reduce' | 'count' | 'concat' | 'conj' | 'join' | 'first' | 'second' | 'third' | 'last' | 'rest' | 'butlast' | 'reverse' | 'repeat' | 'range' | 'interleave' | 'take' | 'drop' | 'assoc-in' | 'update-in' | 'assoc' | 'update' | 'get' | 'get-in' | 'keys' | 'eq' | '=' | 'not' | 'and' | 'or' | 'inc' | 'dec' | '+' | '-' | '*' | '/' | 'trunc' | 'floor' | '%' | 'rem' | 'mod' | 'abs' | '>' | '<' | '>=' | '<=' | 'number?' | 'string?' | 'vector?' | 'map?' | 'fn?' | 'keyword?' | 'ifn?' | 'pos-int?' | 'neg-int?' | 'pos?' | 'neg?' | 'int?' | 'nat?' | 'odd?' | 'even?' | 'zero?' | 'empty?' | 'every?' | 'ratio?' | 'some' | 'nil?' | 'some?' | 'boolean?' | 'any?' | 'prim?' | 'type' | 're-find' | 'split' | 'replace' | 'subs-all' | 'subs' | 'min' | 'max' | 'zipmap' | 'apply';
+type Builtins<U, OPR extends unknown[], env, prev> = Reading<OPR, env, [[prev]]> extends infer R ? U extends '->' ? Eval<LispThreadFirst<OPR>, env, [[prev]]> : U extends '->>' ? Eval<LispThreadLast<OPR>, env, [[prev]]> : U extends 'some->' ? Eval<LispSomeThreadFirst<OPR>, env, [[prev]]> : U extends 'some->>' ? Eval<LispSomeThreadLast<OPR>, env, [[prev]]> : U extends `str` ? Str<R> : U extends `re-find` ? LispRefind<R> : U extends `split` ? LispSplit<R> : U extends `subs-all` ? LispStrSubsAll<R> : U extends `subs` ? LispCljSubs<R> : U extends `replace` ? LispReplace<R> : U extends `vector` ? LispVector<R> : U extends `map` ? LispMap<R> : U extends `filter` ? LispFilter<R> : U extends `remove` ? LispRemove<R> : U extends `reduce` ? LispReduce<R> : U extends `count` ? LispCount<R> : U extends `concat` ? LispConcat<R> : U extends `conj` ? LispConj<R> : U extends `join` ? LispJoin<R> : U extends `first` ? LispFirst<R> : U extends `second` ? LispSecond<R> : U extends `third` ? LispThird<R> : U extends `last` ? LispLast<R> : U extends `rest` ? LispRest<R> : U extends `butlast` ? LispButlast<R> : U extends `reverse` ? LispReverse<R> : U extends `repeat` ? LispRepeat<R> : U extends 'range' ? LispRange<R> : U extends `interleave` ? LispInterleave<R> : U extends `take` ? LispTake<R> : U extends `drop` ? LispDrop<R> : U extends `assoc-in` ? LispAssocIn<R> : U extends `update-in` ? LispUpdateIn<R> : U extends `assoc` ? LispAssoc<R> : U extends `update` ? LispUpdate<R> : U extends `get` ? LispGet<R> : U extends `get-in` ? LispGetIn<R> : U extends `keys` ? LispKeys<R> : U extends `eq` | `=` ? LispEq<R> : U extends `not` ? LispNot<R> : U extends `and` ? LispAnd<R> : U extends `or` ? LispOr<R> : U extends `inc` ? LispInc<R> : U extends `dec` ? LispDec<R> : U extends `+` ? LispAdd<R> : U extends `-` ? LispSub<R> : U extends `*` ? LispMul<R> : U extends `/` ? LispDiv<R> : U extends `trunc` ? LispTrunc<R> : U extends `floor` ? LispFloor<R> : U extends `rem` | `%` ? LispRem<R> : U extends `mod` ? LispMod<R> : U extends `abs` ? LispAbs<R> : U extends `>` | `<` | `>=` | `<=` ? LispRelation<U, R> : U extends `number?` ? LispIsNumber<R> : U extends `string?` ? LispIsString<R> : U extends `vector?` ? LispIsVector<R> : U extends `map?` ? LispIsMap<R> : U extends `fn?` ? LispIsFn<R> : U extends `keyword?` ? LispIsKeyword<R> : U extends `ifn?` ? LispIsIfn<R> : U extends `pos-int?` ? LispIsPosInt<R> : U extends `neg-int?` ? LispIsNegInt<R> : U extends `pos?` ? LispIsPos<R> : U extends `neg?` ? LispIsNeg<R> : U extends `int?` ? LispIsInt<R> : U extends `ratio?` ? LispIsRatio<R> : U extends `nat?` ? LispIsNat<R> : U extends `odd?` ? LispIsOdd<R> : U extends `even?` ? LispIsEven<R> : U extends `zero?` ? LispIsZero<R> : U extends `empty?` ? LispIsEmpty<R> : U extends `every?` ? LispIsEvery<R> : U extends `some` ? LispSome<R> : U extends `nil?` ? LispIsNil<R> : U extends `boolean?` ? LispIsBoolean<R> : U extends `type` ? LispType<R> : U extends `some?` ? LispIsSome<R> : U extends `any?` ? LispIsAny<R> : U extends `prim?` ? LispIsPrim<R> : U extends `min` ? LispMin<R> : U extends `max` ? LispMax<R> : U extends `zipmap` ? LispZipmap<R> : U extends `apply` ? LispApply<R> : Eval<[ReadLet<U, env>, OPR[0]], env, [prev]> : never;
+export type Eval<A, env = [[]], prev = 0, Vscope extends boolean = false> = A extends Sexpr ? A extends [infer OPC, ...infer OPR] ? env extends EnvLifo ? OPC extends Fn & [`fn`, infer syms, infer D] ? Eval<[`let`, Interleave<syms, OPR>, D], env, [prev]> : OPC extends IfForm & [`if`, infer IFCond, infer IFT, infer IFF] ? Eval<[If<Eval<IFCond, env, [[prev]]>, IFT, IFF>, OPR[0]], env, [prev]> : OPC extends Sym & [`sym`, infer U] ? ReadLet<U, env> extends TNotMatch ? Builtins<U, OPR, env, prev> : ReadLet<U, env> extends Fn | Keyword | TMap & infer UU ? Eval<[UU, ...OPR], env, [prev]> : ReadLet<U, env> extends ['sym', BuiltinsUnion] & infer UU ? Eval<[UU, ...OPR], env, [prev]> : ErrorCase<EvalError3, `1st arg should be fn/keyword/map.`, A, env> : IsKeyMapSexpr<ReadLetRecur<A, env>, env> extends true ? IsKeyword<OPC> extends true ? LispGet<Reading<[...OPR, OPC], env, [[prev]]>> : LispGet<Reading<[OPC, ...OPR], env, [[prev]]>> : OPC extends LetForm ? Eval<[Eval<OPC, env, [[prev]]>, ...OPR], env, [prev]> : OPC extends Sexpr ? Eval<[Eval<OPC, env, [[prev]]>, ...OPR], env, [prev]> : ErrorCase<EvalError4, `the 1st is not a symbol but it should be.`, A, env> : env extends unknown[][] ? ErrorCase<EvalError9, `env should be arr of arr.`, env> : ErrorCase<EvalError6, `env 1st should not be [].`, env> : ErrorCase<EvalError2, ``, A, env> : A extends IfForm & [`if`, infer IFCond, infer IFT, infer IFF] ? Eval<If<Eval<IFCond, env, [[prev]]>, IFT, IFF>, env, [prev]> : A extends Atom ? A extends Prim ? A : A extends Vector & ['vec', ...infer vr] ? vr extends [] ? Vscope extends true ? [] : ['vec'] : vr extends [infer va, ...infer vb] ? [
+] : [] : A extends Sym & [`sym`, infer SS] ? ReadLet<SS, env> extends infer U ? U extends Atom ? U : U extends TNotMatch ? A : [`prim`, U] : ErrorCase<EvalError1, 'sym is not desconstructed well as an inner expression.', A, env> : ReadLetRecur<A, env> extends infer a ? a : never : A extends LetForm ? A extends [`let`, [Sym[], LetVal[]], Sexpr] ? A extends [`let`, [infer letsyms, infer letvals], infer LC] ? Eval<[`let`, Interleave<letsyms, letvals>, LC], env, [prev]> : ErrorCase<EvalError5, '', A, env> : A extends [`let`, [[`sym`, infer LN], infer LV, ...infer LRest], infer LC] ? LRest extends [[`sym`, infer LRLN], infer LRLV, ...infer RRest] ? Eval<[`let`, [[`sym`, LN], LV], [`let`, [[`sym`, LRLN], LRLV, ...RRest], LC]], env, [prev]> : LV extends Prim & [`prim`, infer _] ? Eval<LC, Let<LN, LV, env>, [prev]> : LV extends Sym & [`sym`, infer LP] ? LP extends BuiltinsUnion ? Eval<LC, Let<LN, LV, env>, [prev]> : Eval<LC, Let<LN, ReadLet<LP, env>, env>, [prev]> : LV extends LetForm ? Eval<[`let`, [[`sym`, LN], Eval<LV, env, [prev]>], LC], env, [prev]> : LV extends Fn ? Eval<LC, Let<LN, Reading<[LV], env, [[prev]]> extends infer a extends [Fn] ? a[0] : never, env>, [prev]> : LV extends Sexpr | Atom ? Eval<LV, env, [[prev]]> extends infer ValueEvaluated ? ValueEvaluated extends {
+    error: string;
+} ? {
+} : Eval<LC, Let<LN, ValueEvaluated, env>, [prev]> : never : LV extends IfForm ? Eval<LC, Let<LN, Eval<LV, env, [[prev]]>, env>, [[prev]]> : ErrorCase<EvalError7, '', LV, env> : A extends ['let', [], infer Sexpr] ? Eval<Sexpr, env, [prev]> : ErrorCase<EvalError8, 'this is not proper let-form.', A, env> : {
+};
+export declare namespace Cion {
+    type RawLisp<S extends string> = Eval<Compiler.SCompiler<Compiler.SParser<Compiler.SPad<S>>>>;
+    type Lisp<S extends string> = Compiler.Unparse<RawLisp<S>>;
+}
+export default Cion;
+// @filename: node_modules/@taiyakihitotsu/cion/dist/peano.d.ts
+export type T0 = null;
+export type T1 = [T0];
+export type T8 = [[[[[[[[T0]]]]]]]];
+export type T16 = mul<T8, [[null]]>;
+export type add<T, TT> = TT extends T0 ? T : T extends T0 ? TT : TT extends [infer U] ? add<[T], U> : never;
+export type inc<T> = [T];
+export type dec<T> = T extends [infer U] ? U : never;
+export type min<T, TT> = TT extends T0 ? T : TT extends [infer U] ? min<dec<T>, U> : never;
+export type mul<T, TT, I = T> = T extends T1 ? TT : TT extends T1 ? T : T extends T0 ? T0 : TT extends T0 ? T0 : TT extends [infer U] ? mul<add<T, I>, U, I> : never;
+export type gthan<T, U> = U extends TLesserUnion<T> ? true : false;
+// @filename: node_modules/@taiyakihitotsu/cion/dist/regex-compiler.d.ts
+import type { StrUtil as str } from './strutil.js';
+import type { VecUtil as vec } from './vecutil.js';
+import type { regexConst } from './regex-const.js';
+import type { Util as u } from './util.js';
+export type InitCompEnv = {
+    state: '';
+    tapes: [];
+    frames: [];
+};
+type InitLast = '';
+type InitCondition = '';
+export type ReadInter<S extends string> = S extends `${infer f extends keyof regexConst.TransNumber}-${infer s extends keyof regexConst.TransNumber}${infer _rest}` ? vec.BitInter<regexConst.ASCII, regexConst.TransNumber[f], regexConst.TransNumber[s]> : never;
+type ReturnCC<Sig extends '[' | '[^', R extends (keyof regexConst.TransNumber)[]> = Sig extends '[' ? R : NegCharaClass<R>;
+export type CompCharaClass<S extends string, Sig extends '[' | '[^', Option extends CompOption = InitCompOption> = _CompCharaClass<S, Sig, Option>;
+type _CompCharaClass<S extends string, Sig extends '[' | '[^', Option extends CompOption = InitCompOption, R extends (keyof regexConst.TransNumber)[] = [], IsReading extends boolean = false> = S extends '' ? [['chara-class', true extends (Option['negExpand']) ? ReturnCC<Sig, R> : R], ''] : str.RegCut<S> extends [
+    infer regFirst extends string,
+    infer regRest extends string
+] ? regFirst extends ']' ? [['chara-class', true extends (Option['negExpand']) ? ReturnCC<Sig, R> : R], regRest] : regFirst extends '[' | '[^' ? IsReading extends false ? _CompCharaClass<regRest, Sig, Option, R, true> : _CompCharaClass<regRest, Sig, Option, [...R, ...(regFirst extends '[' ? ['['] : ['[', '^'])], true> : regFirst extends `\\${infer Escaped}` ? regFirst extends keyof regexConst.MetaChars ? _CompCharaClass<regRest, Sig, Option, [...R, ...regexConst.MetaChars[regFirst]], IsReading> : Escaped extends keyof regexConst.TransNumber ? _CompCharaClass<regRest, Sig, Option, [...R, Escaped], IsReading> : 'never6' : regFirst extends keyof regexConst.MetaChars ? _CompCharaClass<regRest, Sig, Option, [...R, ...regexConst.MetaChars[regFirst]], IsReading> : regFirst extends keyof regexConst.TransNumber ? _CompCharaClass<regRest, Sig, Option, [...R, regFirst], IsReading> : regFirst extends `${infer _fst}-${infer _trd}${infer _rest}` ? ReadInter<regFirst> extends infer Range extends (keyof regexConst.TransNumber)[] ? _CompCharaClass<regRest, Sig, Option, [...R, ...Range], IsReading> : never : never : never;
+type FrameToTape<F extends CompEnv> = F extends {
+    state: infer State extends CompState;
+    tapes: infer Tapes extends CompTape[];
+    frames: infer Frames extends CompFrame[];
+} ? {
+    state: State;
+    tapes: [...Tapes, ...Frames];
+    frames: [];
+} : never;
+type CompFraming<F extends CompEnv, Fr extends CompFrame> = F extends {
+    state: infer State extends CompState;
+    tapes: infer Tapes extends CompTape[];
+    frames: infer Frames extends CompFrame[];
+} ? {
+    state: State;
+    tapes: Tapes;
+    frames: [...Frames, Fr];
+} : never;
+export type recComp<S extends string, Option extends CompOption = InitCompOption, Stack extends CompEnv[] = InitStack, env extends CompEnv = InitCompEnv, Last extends CompFrame = InitLast, condition extends string = InitCondition> = S extends '' ? Last extends '' ? {
+} extends infer r ? r : never : {
+        condition: condition;
+        tapes: [...env['tapes'], ...[...env['frames'], Last]];
+} extends infer r ? r : never : env extends {
+    state: infer State extends CompState;
+    tapes: infer Tapes extends CompTape[];
+    frames: infer Frames extends CompFrame[];
+} ? str.RegCut<S> extends [
+    infer regFirst extends string,
+    infer regRest extends string
+] ? regFirst extends '^' | '$' ? {
+    r: recComp<regRest, Option, Stack, env, Last, `${condition}${regFirst}`>;
+} : regFirst extends '[' | '[^' ? CompCharaClass<S, regFirst, Option> extends [infer classComped extends FrameCharaClass, infer classRest extends string] ? FrameToTape<CompFraming<env, Last>> extends infer FramedEnv extends CompEnv ? {
+    r: recComp<classRest, Option, Stack, Last extends '' ? env : FramedEnv, classComped, condition>;
+} extends infer a ? a : never : never : never : regFirst extends '(' ? {
+    r: recComp<regRest, Option, [Last extends InitLast ? env : CompFraming<env, Last>, ...Stack], {
+        state: 'group';
+        tapes: [];
+        frames: [];
+    }, InitLast, condition>;
+} : regFirst extends ')' ? Stack extends [
+    infer stackFirst extends CompEnv,
+    ...infer stackRest extends CompEnv[]
+] ? {
+    r: recComp<regRest, Option, stackRest, stackFirst, [State, ...Tapes, ...(Last extends InitLast ? Frames : [[...Frames, Last]])], condition>;
+} : never : regFirst extends '|' ? {
+} : regFirst extends '?' | '*' ? {
+    r: recComp<regRest, Option, Stack, CompFraming<FrameToTape<env>, [regFirst, Last]>, InitLast, condition>;
+} : regFirst extends '+' ? {
+    r: recComp<regRest, Option, Stack, {
+        state: State;
+        tapes: [...Tapes, ...Frames, Last, ['*', Last]];
+        frames: [];
+    }, InitLast, condition>;
+} : regFirst extends '{' ? CompMinMax<S> extends [
+] ? ExpandMinMax<Last, Min, Max> extends infer _Delay extends CompFrame ? {
+} : never : never : {
+    r: recComp<regRest, Option, Stack, Last extends "" ? env : CompFraming<env, Last>, regFirst, condition>;
+} : never : never;
+export type Comp<S extends string, Option extends CompOption = InitCompOption> = u.Rec<recComp<S, u.AssocWith<InitCompOption, Option>>>;
+export type * as regexCompiler from './regex-compiler.js';
+// @filename: node_modules/@taiyakihitotsu/cion/dist/regex-const.d.ts
+export type TransNumber = Words & Signs;
+export type Words = {
+    'a': '0000000000001010';
+    'k': '0000000000010100';
+    'l': '0000000000010101';
+    'm': '0000000000010110';
+    'n': '0000000000010111';
+    'o': '0000000000011000';
+    'p': '0000000000011001';
+    'q': '0000000000011010';
+    'r': '0000000000011011';
+    's': '0000000000011100';
+    't': '0000000000011101';
+    'u': '0000000000011110';
+    'v': '0000000000011111';
+    'w': '0000000000100000';
+    'x': '0000000000100001';
+    'y': '0000000000100010';
+    'z': '0000000000100011';
+    'A': '0000000000100100';
+    'B': '0000000000100101';
+    'C': '0000000000100110';
+    'D': '0000000000100111';
+    'E': '0000000000101000';
+    'F': '0000000000101001';
+    'G': '0000000000101010';
+    'H': '0000000000101011';
+    'I': '0000000000101100';
+    'J': '0000000000101101';
+    'K': '0000000000101110';
+    'L': '0000000000101111';
+    'M': '0000000000110000';
+    'N': '0000000000110001';
+    'O': '0000000000110010';
+    'P': '0000000000110011';
+    'Q': '0000000000110100';
+    'R': '0000000000110101';
+    'S': '0000000000110110';
+    'T': '0000000000110111';
+    'U': '0000000000111000';
+    'V': '0000000000111001';
+    'W': '0000000000111010';
+    'X': '0000000000111011';
+    'Y': '0000000000111100';
+    'Z': '0000000000111101';
+};
+export type Signs = {
+    '_': '0000000001000010';
+    '-': '0000000001010101';
+};
+export type MetaChars = {
+};
+export type WordLittleList = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
+export type WordLargeList = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+export type WordList = [...WordLittleList, ...WordLargeList];
+export type ASCII = [
+    ...WordList,
+];
+export type * as regexConst from './regex-const.js';
+// @filename: node_modules/@taiyakihitotsu/cion/dist/regex-eval.d.ts
+import type { StrUtil as str } from './strutil.js';
+export type Unmatch = [];
+export type OrMatch<S extends string, Pat extends string[], Forward extends string, Flag extends '!wildcard' | 'wildcard' = 'wildcard'> = Pat extends [] ? Unmatch : Pat extends [infer First extends string, ...infer Rest extends string[]] ? str.StrSearchAll<S, First, '^', Forward, Flag> extends [infer M extends string, infer Re extends string] ? [M, Re] : OrMatch<S, Rest, Forward, Flag> : Unmatch;
+export type OrGroupMatch<S extends string, Pat extends rc.CompTape[], Forward extends string> = Pat extends [] ? Unmatch : Pat extends [infer First extends rc.CompTape, ...infer Rest extends rc.CompTape[]] ? _TapeEval<S, First, Forward, []> extends [infer M extends string, infer Re extends string, infer Tp extends rc.CompTape] ? [M, Re, Tp] : OrGroupMatch<S, Rest, Forward> : {
+};
+export type AstaMatch<S extends string, Pat extends rc.CompTape[], Forward extends string> = Pat extends [] ? [Forward, S] : Pat extends [infer First extends rc.CompTape, ...infer _Rest extends rc.CompTape[]] ? _TapeEval<S, [First], Forward, []> extends [infer M extends string, infer Re extends string, infer _Tp extends rc.CompTape] ? AstaMatch<Re, Pat, M> : [Forward, S] : [Forward, S];
+export type TapeEval<S extends string, Tape extends rc.CompTape[]> = _TapeEval<S, Tape, '', []>;
+type _TapeEval<String extends string, Tape extends rc.CompTape, Forward extends string, Stack extends rc.CompTape[]> = Tape extends [] ? Stack extends [
+    infer stackFirst extends rc.CompTape,
+    ...infer stackRest extends rc.CompTape[]
+] ? _TapeEval<String, stackFirst, Forward, stackRest> : [Forward, String, Tape] : Tape extends [
+    infer firstTape extends rc.CompTape,
+    ...infer restTape extends rc.CompTape[]
+] ? firstTape extends string ? str.StrSearchAll<String, firstTape, '^', Forward> extends [infer Matched extends string, infer Next extends string] ? _TapeEval<Next, restTape, Matched, Stack> : {
+} : firstTape extends [
+    infer tapeSig extends ('?' | '*'),
+    infer tapeArg extends rc.CompTape
+] ? tapeSig extends '*' ? AstaMatch<String, [tapeArg], Forward> extends [infer nextForward extends string, infer NextString extends string] ? _TapeEval<NextString, restTape, nextForward, Stack> : never : tapeSig extends '?' ? _TapeEval<String, [tapeArg], Forward, [restTape, ...Stack]> extends [infer Matched extends string, infer NextString extends string, infer NextTape extends rc.CompTape] ? _TapeEval<NextString, NextTape, Matched, Stack> : _TapeEval<String, restTape, Forward, Stack> : never : firstTape extends [
+] ? OrGroupMatch<String, tapeArg, Forward> extends [infer Matched extends string, infer NextString extends string, infer _NextTape extends rc.CompTape] ? _TapeEval<NextString, restTape, Matched, Stack> : {
+} : firstTape extends ['group', ...infer tapeArg extends rc.CompTape[]] ? OrGroupMatch<String, [tapeArg], Forward> extends [infer Matched extends string, infer NextString extends string, infer _NextTape extends rc.CompTape] ? _TapeEval<NextString, restTape, Matched, Stack> : {
+} : firstTape extends ['chara-class', infer tapeArg extends string[]] ? OrMatch<String, tapeArg, Forward, '!wildcard'> extends [infer Matched extends string, infer Next extends string] ? _TapeEval<Next, restTape, Matched, Stack> : {
+} : {
+} : never;
+export type * as regexEval from './regex-eval.js';
+// @filename: node_modules/@taiyakihitotsu/cion/dist/regex.d.ts
+import type { regexCompiler as rc } from './regex-compiler.js';
+import type { regexEval as re } from './regex-eval.js';
+export type TapeEvalLoop<S extends string, Tape extends TapeType, Consumed extends string = ''> = S extends '' ? re.Unmatch : re.TapeEval<S, Tape> extends [infer M extends string, infer Rest extends string, infer _List extends string[]] ? [Consumed, M, Rest] : S extends `${infer sFirst}${infer sRest}` ? TapeEvalLoop<sRest, Tape, `${Consumed}${sFirst}`> : never;
+export type RegexFind<String extends string, Regex extends string> = rc.Comp<Regex> extends {
+    condition: infer Condition extends string;
+    tapes: infer Tape extends TapeType;
+} ? Condition extends '^' | '^$' ? re.TapeEval<String, Tape> extends [infer M extends string, infer Rest extends string, infer _ extends string[]] ? [Condition, Rest & ''] extends ['^$', never] ? re.Unmatch : ['', M, Rest] : re.Unmatch : Condition extends '$' | '^$' ? TapeEvalLoop<String, Tape> extends [infer Consumed extends string, infer M extends string, infer Rest extends string] ? Rest extends '' ? [Consumed, M, Rest] : re.Unmatch : re.Unmatch : TapeEvalLoop<String, Tape> : never;
+export type * as regex from './regex.js';
+// @filename: node_modules/@taiyakihitotsu/cion/dist/sexprtypes.d.ts
+export type LetForm = [`let`, LetArg, Each | Each[] | Sexpr];
+export type Each = LetForm | IfForm | Atom;
+export type Atom = ['map', Atom[]] | Sym | Prim | Fn | Vector | Keyword | TNil;
+export type Sexpr = Array<Each | Each[] | Sexpr>;
+export type TNil = ['prim', 'nil'];
+export type Keyword = [`key`, string];
+export type Sym = [`sym`, string];
+export type PrimString = ['prim', string];
+export type PrimBoolean = ['prim', boolean];
+export type PrimTestNumber = ['prim', number];
+export type PrimNumber = PrimNut | PrimRatio;
+export type PrimNut = ['prim', BitString];
+export type PrimRatio = ['prim', RatioString];
+export type Prim = PrimString | PrimBoolean | PrimNumber | PrimTestNumber;
+export type Fn = [`fn`, Args, Each | Each[] | Sexpr | Sexpr[]];
+export type Vector = [`vec`, ...(Sexpr | LetForm | Atom)[]] | [`vec`];
+export type TNotMatch = "NotMatch";
+export type IfForm = [`if`, Each | Sexpr, Each | Sexpr, Each | Sexpr];
+// @filename: node_modules/@taiyakihitotsu/cion/dist/strutil.d.ts
+import type * as regexConst from './regex-const.js';
+export type InternalMetaChars = 'd' | 'w' | 'l' | 'u' | 'D' | 'W' | 'L' | 'U';
+type Quantifiers = '[' | ']' | '(' | ')' | '{' | '}' | '.' | '*' | '+' | '?' | '^' | '$' | '|' | '\\';
+export type MatchChar<S extends string, T extends string> = S extends `${infer sF}${infer sRest}` ? T extends '\\.' ? sF extends '.' ? true : false : T extends `\\d` ? sF extends Digit ? true : false : T extends `\\w` ? sF extends WordChar ? true : false : T extends `\\l` ? sF extends Lower ? true : false : T extends `\\u` ? sF extends Upper ? true : false : T extends `\\D` ? sF extends NonDigit ? true : false : T extends `\\W` ? sF extends NonWordChar ? true : false : T extends `\\L` ? sF extends NonLower ? true : false : T extends `\\U` ? sF extends NonUpper ? true : false : T extends `${infer tF}${infer tRest}` ? sRest extends '' ? tRest extends '' ? sF extends tF ? true : false : false : false : false : false;
+export type RegCut<S extends string> = S extends `${infer f}${infer s}${infer th}${infer rest}` ? [f, s] extends ['\\', InternalMetaChars | Quantifiers] ? [`\\${s}`, `${th}${rest}`] : f extends `*` ? s extends `?` ? [`*?`, `${th}${rest}`] : [`*`, `${s}${th}${rest}`] : f extends `+` ? s extends `?` ? [`+?`, `${th}${rest}`] : [`+`, `${s}${th}${rest}`] : [f, s, th] extends [keyof regexConst.Words, '-', keyof regexConst.Words] ? [`${f}-${th}`, rest] : `${f}${s}` extends `[^` ? ['[^', `${th}${rest}`] : [f, `${s}${th}${rest}`] : S extends `${infer f}${infer s}${infer rest}` ? f extends '\\' ? s extends InternalMetaChars | Quantifiers ? [`\\${s}`, `${rest}`] : never : f extends `*` ? s extends `?` ? [`*?`, `${rest}`] : [`*`, `${s}${rest}`] : f extends `+` ? s extends `?` ? [`+?`, `${rest}`] : [`+`, `${s}${rest}`] : `${f}${s}` extends `[^` ? ['[^', rest] : f extends '\\' ? [`\\${s}`, rest] : [f, `${s}${rest}`] : S extends `${infer f}${infer _rest}` ? f extends `*` ? [`*`, ''] : f extends `+` ? [`+`, ''] : [f, ''] : never;
+export type RegFirstSplit<S extends string, N extends 0 | 1> = S extends `${infer f}${infer rest}` ? S extends `\\${infer escapedFirst}${infer escapedRest}` ? escapedFirst extends '.' ? [`\\.`, escapedRest][N] : escapedFirst extends InternalMetaChars ? [`\\${escapedFirst}`, escapedRest][N] : escapedFirst extends Quantifiers ? [`${escapedFirst}`, escapedRest][N] : never : [f, rest][N] : never;
+export type StrSearchHead<S extends string, Pattern extends string, Complete extends string = '', Forward extends string = '', Flag extends '!wildcard' | 'wildcard' = 'wildcard'> = S extends `${infer sf}${infer srest}` ? ([RegFirstSplit<Pattern, 0>, Flag] extends ['.', 'wildcard'] ? true : false) | MatchChar<sf, RegFirstSplit<Pattern, 0>> extends false ? [] : RegFirstSplit<Pattern, 1> extends '' ? Complete extends 'complete' ? sf extends '' ? [`${Forward}${sf}`, srest] : [] : [`${Forward}${sf}`, srest] : StrSearchHead<srest, RegFirstSplit<Pattern, 1>, Complete, `${Forward}${sf}`, Flag> : never;
+export type StrSearchAll<S extends string, Pattern extends string, Tag extends string = '', Forward extends string = '', Flag extends '!wildcard' | 'wildcard' = 'wildcard'> = S extends '' ? [] : S extends `${infer F}${infer Rest}` ? Tag extends 'Head' | '^' ? StrSearchHead<S, Pattern, '^', Forward, Flag> : StrSearchHead<S, Pattern, '^', Forward, Flag> extends [infer Matched extends string, infer Rest extends string] ? Tag extends 'Tail' | '$' ? StrLen<S> extends StrLen<Pattern> ? [Matched, Rest] : StrSearchAll<Rest, Pattern, Tag, `${Forward}${F}`, Flag> : [Matched, Rest] : StrSearchAll<Rest, Pattern, Tag, `${Forward}${F}`, Flag> : 'not all';
+export type * as StrUtil from './strutil.js';
+// @filename: node_modules/@taiyakihitotsu/cion/dist/util.d.ts
+export type Equal<A, B> = [
+] extends [B, A] ? _IsEqual<A, B> : false;
+type _rec<T> = T extends {
+    r: never;
+} ? never : T extends {
+    r: infer U;
+} ? U : T;
+export type Rec<T> = T extends {
+    r: unknown;
+} ? Rec<_rec<T>> : T;
+export type * as Util from './util.js';
+// @filename: node_modules/@taiyakihitotsu/cion/dist/vecutil.d.ts
+import type { Bit } from './bit.js';
+/**
+*/
+export type BitDrop<N extends string, V extends unknown[]> = _BitDrop<N, V>;
+type _BitDrop<N extends string, V extends unknown[]> = V extends [] ? V : true extends Bit.BitGTE<"0", N> ? V : V extends [infer _, ...infer T extends unknown[]] ? _BitDrop<Bit.BitSub<N, "1">, T> : 0;
+/**
+*/
+export type BitTake<N extends string, V extends unknown[]> = _BitTake<N, V>;
+type _BitTake<N extends string, V extends unknown[], R extends unknown[] = []> = V extends [] ? R : Bit.BitGTE<"0", N> extends true ? R : V extends [infer F, ...infer T] ? _BitTake<Bit.BitSub<N, "1">, T, [...R, F]> : [];
+export type BitInter<V extends unknown[], N extends string, M extends string> = BitDrop<N, BitTake<Bit.BitInc<M>, V>>;
+export type * as VecUtil from './vecutil.js';
+// @filename: node_modules/@taiyakihitotsu/cion/package.json
+{"name": "@taiyakihitotsu/cion", "version": "0.3.4", "type": "module", "types": "./dist/index.d.ts", "exports": {".": {"types": "./dist/index.d.ts"}}}
+// @filename: package.json
+{"name": "@taiyakihitotsu/foxp", "version": "0.5.11", "type": "module", "main": "dist/index.js"}
+// @filename: src/pre.ts
+import { N4, T4 } from './type-util.js'
+import type Cion from '@taiyakihitotsu/cion'
+type ArgReg = '([a-Z_-]+)?( [a-Z_-]+)*'
+export type pickArgs<
+  Fn extends string> =
+  Fn extends string
+    ? Cion.Lisp<`(re-find '\\[${ArgReg}\\]' (re-find '^\\(fn \\[${ArgReg}\\]' '${Fn}'))`> extends infer r extends string
+      ? r extends `''`
+        ? never
+      : r
+    : never
+  : never
+type makeArgs<
+  N extends N4> =
+  N extends 0
+    ? ''
+  : never 
+type expandArgs<
+  S extends string
+, N extends N4> =
+`(fn [${makeArgs<N>}] (${S} ${makeArgs<N>}))`
+export type resolveLambda<
+  S extends string> =
+  S extends keyof bi
+    ? expandArgs<S, countArgs<S> extends infer r extends N4 ? r : never>
+  : S
+type resolveLambdaPre<
+  S extends string> =
+  S extends keyof bi
+    ? bi[S] extends keyof bi
+      ? resolveLambdaPre<bi[S]>
+    : bi[S]
+  : S
+export type countArgsString<
+  S extends string> =
+Cion.Lisp<`(let [r (split ${S} ' ')] (if (= r ['[]']) 0 (count r)))`> 
+type _snmap = {'0':0, '1':1, '2': 2, '3': 3, '4': 4}
+export type countArgs<
+  S extends string> =
+  countArgsString<pickArgs<resolveLambdaPre<S>>> extends infer C extends keyof _snmap
+    ? _snmap[C]
+  : never
+type _MergeTuple<
+  Fns extends T4
+, Args extends string[] = ['a', 'b', 'c', 'd', 'e', 'f']
+, Used extends string = ''
+, SS extends string = ''> =
+  Fns extends [infer F extends string, ...infer R extends T4]
+    ? Args extends [infer AF extends string, ...infer AR extends string[]]
+      ? _MergeTuple<R, AR, `${Used}${Used extends '' ? '' : ' '}${AF}`, `${SS} (${F} ${AF})`>
+    : never
+  : [] extends Fns
+    ? `(fn [${Used}] (and${SS}))`
+  : never
+export type MergePreStr<XPre extends string, YPre extends string> = _MergePreStr<XPre, YPre>
+export type _MergePreStr<
+  XPre extends string
+, YPre extends string
+, shrinkX extends string = ''
+, shrinkY extends string = ''> =
+  countArgs<XPre> & countArgs<YPre> extends never
+    ? false
+  : XPre extends '' | 'any?'
+    ? _MergePreStr<XPre, resolveLambda<YPre>, shrinkX, YPre>
+  : pickArgs<XPre> extends `'[${infer Args}]'`
+    ? `(fn [${Args}] (and (${shrinkX extends '' ? XPre : shrinkX} ${Args}) (${shrinkY extends '' ? YPre : shrinkY} ${Args})))`
+  : never
+type checkPreMap<
+  Map extends Record<string, string>> =
+Map
+export type arithmetic2 = `(fn [x y] (and (number? x) (number? y)))`
+export type compare = arithmetic2
+type arithmetic =
+checkPreMap<{
+  add: arithmetic2
+  , lte: compare
+}>
+type signs =
+checkPreMap<
+  { "+":  bi['add']
+  , "<=": bi['lte']}>
+type checker =
+checkPreMap<{
+}>
+type checkPrim = `(fn [x] (or (number? x) (string? x) (boolean? x)))`
+type stringf =
+checkPreMap<
+  { str1: checkPrim
+}>
+type logical =
+checkPreMap<{
+}>
+type data =
+checkPreMap<
+  { get: `(fn [x y] (some? (get x y)))`
+  , assocLax:    `(fn [x y z] (not (and (vector? x) (keyword? y))))`
+}>
+type _get3 = `(fn [x y z] (get x y))`
+type dataStrict =
+checkPreMap<
+ { assoc: MergePreStr<_get3, MergePreStr<data['assocLax'], '(fn [x y z] (= (type z) (type (get x y))))'>>
+}>
+export type bi = arithmetic & signs & checker & logical & data & dataStrict & stringf
+export type getPre<
+  S extends string> =
+  S extends keyof bi
+    ? bi[S]
+  : S
+// @filename: src/type-util.ts
+export type UnionToIntersection<
+  U> =
+  (U extends any ? (k: U) => void : never) extends ((k: infer I) => void)
+    ? I
+  : never
+export type LastOf<
+  T> =
+  UnionToIntersection<T extends any ? () => T : never> extends () => (infer R)
+    ? R
+  : never
+export type Primitive = string|number|boolean
+export type Equal<
+  X
+, Y> =
+  (<T>() => T extends X & T | T ? 1 : 2) extends (<T>() => T extends Y & T | T ? 1 : 2)
+    ? true
+  : false
+export type UnionKVStrToString<
+  T
+, Start extends string = '{'
+, L = LastOf<T>
+, N = [T] extends [never] ? true : false> =
+  true extends N
+    ? "}"
+  : `${Start}:${L extends Primitive ? L : ''}${UnionKVStrToString<Exclude<T,L>, ' '>}`
+export type ForceTuple<
+  S> =
+  S extends readonly [infer a, infer b, infer c, infer d, infer e,infer f,infer g,infer h] | [infer a, infer b, infer c, infer d, infer e,infer f,infer g,infer h]
+    ? [a,b,c,d,e,f,g,h] extends S
+      ? S
+    : never
+  : never
+export type N0 = 0
+export type N1 = N0 | 1
+export type N2 = N1 | 2
+export type N3 = N2 | 3
+export type N4 = N3 | 4
+export type T4 =
+[string, string, string, string] | readonly [string, string, string, string]

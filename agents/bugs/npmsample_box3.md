@@ -69,3 +69,11 @@ for flips); a separate file so the three boxes never conflict.
   Params comes through the package's `export type { Params } from "./utils"` and the record interface through
   `export *`. Guess: the alias's variance for Key (a mapped type's key) is measured in a different state or order.
   Repro test/cases/npm__vkontakte_vk-mini-apps-router_TS2322.ts. [open]
+- Seed 20261208, taiyakihitotsu/foxp (@taiyakihitotsu/foxp@0.5.11): tsgo 0 errors, tttt 97 (TS2344, TS2345, TS7006).
+  foxp is a type-level Lisp over @taiyakihitotsu/cion (a type-level evaluator built on template-literal inference and
+  Peano/bit arithmetic). tttt takes `_MergePreStr`'s `countArgs<X> & countArgs<Y> extends never ? false` branch, so
+  `countArgs` (cion.Lisp of `(count (split ...))` over regex-found argument lists) evaluates to never or another
+  number where tsgo gets 0-4. Then the `{ assoc: false }` premap fails `Record<string, string>` (TS2344), and
+  resolveLambdaPre<S> is `string | false`. Guess: a template-literal inference or string-recursion step in cion's
+  evaluator, or an instantiation depth limit, that differs. Repro test/cases/npm__taiyakihitotsu_foxp_TS2344.ts
+  (532 lines: reduce.py with --tsgo-clean, own files then the package's). [flip] [open]

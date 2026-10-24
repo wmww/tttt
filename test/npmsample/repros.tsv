@@ -54,3 +54,4 @@ npm_payload-storage-cloudinary_TS2322	yes	payload-storage-cloudinary@1.3.0	https
 ttttNoInferUnionRemainder	no	lklynet/aurral@main	https://github.com/lklynet/aurral	9	10	+TS2345
 npm_Zoo-Code-Org_Zoo-Code_TS2322	yes	Zoo-Code-Org/Zoo-Code@main	https://github.com/Zoo-Code-Org/Zoo-Code	0	2	TS2322,TS2345
 npm__vkontakte_vk-mini-apps-router_TS2322	no	@vkontakte/vk-mini-apps-router@1.8.6	https://github.com/VKCOM/vk-mini-apps-router	5	4	-TS2322
+npm__taiyakihitotsu_foxp_TS2344	yes	@taiyakihitotsu/foxp@0.5.11	https://github.com/taiyakihitotsu/foxp	0	97	+TS2344 +TS2345 +TS7006
