@@ -176,6 +176,9 @@ for flips); a separate file so the three boxes never conflict.
   group first, but a class's own methods had no group (only interface members did), so the class's overloads stayed
   first. Now a class merged with an interface gives its methods the group of its declaration (members.c). Repro
   ttttClassInterfaceMergedOverloadOrder. [flip] [fixed 6a3029342]
+- Large seed 20261401, bytecodealliance/jco@39b2b63e packages/jco-std (tsconfig.bench.json): tsgo 0 errors, tttt 1,
+  TS18046 "'stream.params' is of type 'unknown'" at src/wasi/0.2.x/node/24.x.x/zlib/host-worker.ts:88, after
+  `if (!("params" in stream)) throw ...` (`in` narrowing with a throw guard). Not reduced yet. (claimed: fixE) [flip] [open]
 - Large seed 20261402, cellajs/cella@main backend and frontend: spurious TS2322/TS2345 "'{}' is not assignable to
   'string'". `Object.entries(o)` with `o: Partial<Record<keyof T, string>>` (T a type parameter) infers U for
   `{ [s: string]: U }` as `Record<keyof T, string>[string] | undefined` in tsgo (an index signature read off the
