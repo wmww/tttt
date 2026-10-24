@@ -364,7 +364,7 @@ rest element; a spread instantiated to `undefined`). Left:
   (742, `PluginInterceptContext`-like context) where `--checkers 1` doesn't: which cycle is entered first depends on
   the files a checker saw (scripts/kdiff.py territory, plan 62). Fixed by acb8dfe7f (an any/unknown target property
   no longer asks for the source property's type, tsc's isPropertySymbolTypeRelated): the same at K1-K16. Remaining: TS2578 at
-  tests/types/order-by-relations.ts:24,26 (uninvestigated). [open]
+  tests/types/order-by-relations.ts:24,26 (uninvestigated). (claimed: fixE) [open]
 
 ## Refresh 6 leftovers (2026-10-23, corG: tanstack-ai, node-pg-migrate, portabase)
 - **tanstack-ai/packages/ai-harness -TS2615** (`Type of property 'agents' circularly references itself in mapped type
