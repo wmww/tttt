@@ -88,3 +88,8 @@ boxes' appends never conflict. One section per seed, one bullet per repro, statu
   and `c.status: "queued"|"running"|"masked-pass"`: tttt reports TS2532 "Object is possibly 'undefined'" for the compound assignment target, tsgo nothing. Guess: tsgo
   doesn't add `| undefined` for the read of an element-access write target (compound assignment reads) when the key is a union over an intersection with an optional member,
   or its optional-member `undefined` is removed by the assignment's read type (getTypeOfExpression of the target under `CheckMode`); tttt keeps it. Cause: a compound assignment target is written too (tsc: AccessFlags.Writing for any assignment target), so a union key gives the intersection of the keys' write types, `number`; tttt read it as the union. [fixed 16c3cbbd5]
+
+## Seed 20261112
+- No divergence: 63 accepted, 62 byte-identical, 63/63 same (file, line, code), clean agreement 63/63, no K-dependence. The one text-only difference (0088-coinset-liquid:
+  a TS7016 "There are types at ..." message naming a path under node_modules/.pnpm) is not a divergence here. No repros. (Set up without `--prefer-large`: the flag
+  arrived after this seed's setup had started.)
