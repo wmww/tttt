@@ -283,8 +283,6 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   or protected members (isSpreadableProperty). lower.c's with_synthetic_default() copied every property; it now
   filters with ty_is_spreadable_prop(). [fixed det3]
 
-- Seed 20261036, theodo/serverless-openapi (serverless-openapi@1.1.2), tsconfig.bench.json, src/parse.ts:50, TS2339: tsgo reports "Property 'bundle' does not exist on type 'typeof $RefParser'" for `import * as $RefParser` of an `export =` class (json-schema-ref-parser) with a static `bundle`; tttt resolves the static (the reduced test then reports TS2554 on the call instead). Test npm_serverless-openapi_TS2339. [open]
-
 ## Seed 20261038
 
 - Seed 20261038, @0xsonic/sdk@0.2.6 (sahilpabale/sonic-sdk), tsconfig.bench.json, src/components/Connect.tsx:69 (reduced: User.tsx:2), TS2590: tsgo reports "Expression produces a union type that is too complex to represent" for a JSX `<Text>` of @chakra-ui/react (system props types); tttt reports nothing (complexity limit not reached or counted differently). Test npm__0xsonic_sdk_TS2590. [flip] [open]
