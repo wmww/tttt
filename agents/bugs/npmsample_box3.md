@@ -139,3 +139,15 @@ for flips); a separate file so the three boxes never conflict.
   reports no diagnostics for a nocheck file, declaration diagnostics included, and tttt's declaration walk reports
   them anyway. A second oddity: the anonymous `export default function` is named '(Missing)'. Repro
   test/cases/npm_mcp-namecheap_TS2883.ts (reduce.py, then by hand). (claimed: fixF) [flip] [open]
+- Large seed 20261400, ChatbotXIO/ChatbotX@main apps/builder: two spurious TS7006 "Parameter 'template' implicitly
+  has an 'any' type" on `fkMatcher: (template) => ...` in the second branch of a conditional initializer of a
+  destructuring annotated `{ fkMatcher: (template: TemplateCandidate) => boolean }`, inside a useMemo callback.
+  (tsgo's other difference there, a TS5115 in zod 4's IsOptionalIn, is the paseo [design] family; reduce.py deleted
+  that file and the TS7006 stayed, so the two are independent.) The own file reduced to 19 lines, with no imports
+  (it becomes a global script, so names may bind to globals of the program's packages: React 19.2 / @types/react
+  19.2.14 among 16k program files). Standalone, with local declarations, it agrees with tsgo. The package pass over
+  53k files didn't finish in 50 minutes, so there's no test. The own file, for a fixer rebuilding the dependency
+  set from the clone's lockfile:
+  `function RuleBuilder({}: RuleBuilderProps) { const templateOptions = useMemo(() => { const { list }: {
+  fkMatcher: (template: TemplateCandidate) => boolean } = channel === "messenger" ? {} : { fkMatcher: (template) =>
+  template.integrationId === selectedIntegrationId }; return list }, []) }`. [open]
