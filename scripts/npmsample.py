@@ -755,7 +755,9 @@ def setup_one_steps(seed, c, listed, t, per_repo=0):
     if left:
         return {**rec, 'status': 'reject', 'reason': 'option errors left: ' +
                 '; '.join(f'TS{c} {m[:80]}' for c, m in left[:3])}
-    if own < 1 or len(diags) > 100 or codes[2307] > 5:
+    # (NPMSAMPLE_ANY_TRIAL=1: a project asked for by name is checked whatever the trial says, unresolved packages and
+    # all: both compilers see the same tree)
+    if (own < 1 or len(diags) > 100 or codes[2307] > 5) and not os.environ.get('NPMSAMPLE_ANY_TRIAL'):
         return {**rec, 'status': 'reject', 'reason': f'trial: {own} own files, {len(diags)} errors, '
                                                      f'{codes[2307]} TS2307'}
     return {**rec, 'status': 'accepted'}
