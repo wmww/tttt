@@ -22,10 +22,22 @@ boxes' appends never conflict. One section per seed, one bullet per repro, statu
   https://github.com/LeCarbonator/discordjs-choice-selectmenu-builder at 63ad5355, candidate i=93 of
   test/npmsample/20261107.candidates.jsonl (setup.jsonl has its install and bench-config changes); `scripts/projdiff.py`
   on the clone shows both runs. Fixed by cor10's base-cycle change (members.c, "An interface's base cycle is found by its bases alone"), verified on a scratch install of discord-api-types 0.33.5 at K1..16, the defaults and --checker-memory 0. [fixed 2026-10-24]
-- Unreduced, non-flip (the clones are kept): vuejs-core packages/compiler-sfc/src/style/pluginScoped.ts(190) missing 2
-  TS7006 (tsgo 5, tttt 3); renzosunico/adonis5-gigya adonis-typings/index.ts(48) 2 extra TS2308 "Module
-  'gigya/dist/lib/gigya' has already exported a member named 'RequestParams'"; menglimu/ml-components 8 extra
-  TS2339/TS2551 (src/components/BaseInfo/index.tsx(75) "Property 'data_' does not exist on type 'Vue'"). [open]
+- **npm_adonis5-gigya_TS2308** (seed 20261107, adonis5-gigya@2.0.0, renzosunico/adonis5-gigya adonis-typings/index.ts; tsgo 65, tttt
+  67, +2 TS2308) (no flip): `declare module 'ioc' { export * from 'ga'; export * from 'gb' }` where both packages export a type
+  alias `RequestParams` (one generic): tttt reports "has already exported a member named" TS2308, tsgo nothing. Guess: tsgo
+  reports the export-star conflict only for a module file / non-ambient module (or when the two aliases are identical in kind),
+  tttt checks it inside an ambient module declaration too. 15 lines. [open]
+- **npm_ml-component_TS2551** (seed 20261107, ml-component@1.0.8, menglimu/ml-components src/components/BaseInfo/index.tsx; tsgo 15,
+  tttt 23, +8 TS2339/TS2551) (no flip): `Vue.extend({ data() { return { data_: {} } }, methods: { m() { this.data_ } } })`
+  with Vue 2's types (reduced to 176 lines, mostly vue/types): tttt reports "Property 'data_' does not exist on type 'Vue'"
+  where tsgo infers `this` from `data()`'s return. Guess: the `ThisType<CombinedVueInstance<...>>` of `Vue.extend`'s overload is
+  resolved against a different overload (or its contextual `this` lost) when `data` is a method with no parameters under
+  `strictNullChecks: false`/`noImplicitAny: false`. [open]
+- **vuejs-core TS7006** (seed 20261107, vuejs/core packages/compiler-sfc/src/style/pluginScoped.ts(190), tsgo 5, tttt 3, 2
+  tsgo-only TS7006 "Parameter 'ss' implicitly has an 'any' type") (no flip) UNREDUCED: `n.nodes[0].each(ss => { selector.insertAfter(last, ss); last = ss })`
+  with `let last: selectorParser.Selector['nodes'][0] = n`; reduce.py kept all 209 files whole in 15 minutes, and the file's
+  functions plus postcss-selector-parser's d.ts alone in one test file don't reproduce it (neither side reports it). Clone deleted;
+  rerun from seed 20261107's records if wanted. [open]
 - The batch's first compare crashed on the varies project (fixed: npmsample.py's NameError) after deleting the
   identical clones, so 20261107.results.jsonl has only the 5 kept projects; the other 52 of 57 were identical.
 

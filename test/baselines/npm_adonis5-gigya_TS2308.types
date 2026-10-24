@@ -1,0 +1,27 @@
+//// [test/cases/npm_adonis5-gigya_TS2308.ts] ////
+
+=== node_modules/ga/index.d.ts ===
+export type RequestParams = { a: string } & Partial<{ b: string }>
+>RequestParams : RequestParams
+>a : string
+>b : string
+
+export declare class Gigya {}
+>Gigya : Gigya
+
+=== node_modules/gb/index.d.ts ===
+export type RequestParams<P = {}> = { a: string } & P
+>RequestParams : RequestParams<P>
+>a : string
+
+export declare class Factory {}
+>Factory : Factory
+
+=== index.ts ===
+declare module 'ioc' {
+>'ioc' : typeof import("ioc")
+
+  export * from 'ga'
+  export * from 'gb'
+}
+

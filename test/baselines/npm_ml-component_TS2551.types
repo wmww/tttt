@@ -1,0 +1,343 @@
+//// [test/cases/npm_ml-component_TS2551.ts] ////
+
+=== node_modules/element-ui/types/component.d.ts ===
+import Vue from 'vue'
+>Vue : import("vue/types/vue.js").VueConstructor<Vue>
+
+export declare class ElementUIComponent extends Vue {
+>ElementUIComponent : ElementUIComponent
+>Vue : import("vue/types/vue").CombinedVueInstance<Vue, object, object, object, Record<never, any>>
+}
+export type ElementUIHorizontalAlignment = 'left' | 'center' | 'right'
+>ElementUIHorizontalAlignment : ElementUIHorizontalAlignment
+
+=== node_modules/element-ui/types/table-column.d.ts ===
+import { ElementUIComponent, ElementUIHorizontalAlignment } from './component'
+>ElementUIComponent : typeof ElementUIComponent
+>ElementUIHorizontalAlignment : any
+
+export declare class ElTableColumn extends ElementUIComponent {
+>ElTableColumn : ElTableColumn
+>ElementUIComponent : ElementUIComponent
+}
+=== node_modules/element-ui/types/table.d.ts ===
+import { ElementUIComponent } from './component'
+>ElementUIComponent : typeof ElementUIComponent
+
+export declare class ElTable extends ElementUIComponent {
+>ElTable : ElTable
+>ElementUIComponent : ElementUIComponent
+}
+=== node_modules/vue/types/index.d.ts ===
+import { Vue } from "./vue";
+>Vue : import("./vue").VueConstructor<Vue>
+
+export default Vue;
+>Vue : Vue
+
+export {
+  CreateElement,
+>CreateElement : any
+
+} from "./vue";
+export {
+} from "./vnode";
+=== node_modules/vue/types/options.d.ts ===
+import { Vue, CreateElement, CombinedVueInstance } from "./vue";
+>Vue : import("./vue").VueConstructor<Vue>
+>CreateElement : any
+>CombinedVueInstance : any
+
+export type Component<Data=DefaultData<never>, Methods=DefaultMethods<never>, Computed=DefaultComputed, Props=DefaultProps> =
+>Component : ComponentOptions<never, Data, Methods, Computed, Props, DefaultProps>
+
+  | ComponentOptions<never, Data, Methods, Computed, Props>
+type EsModule<T> = T | { default: T }
+>EsModule : EsModule<T>
+>default : T
+
+type ImportedComponent<Data=DefaultData<never>, Methods=DefaultMethods<never>, Computed=DefaultComputed, Props=DefaultProps>
+>ImportedComponent : ImportedComponent<Data, Methods, Computed, Props>
+
+  = EsModule<Component<Data, Methods, Computed, Props>>
+export type AsyncComponent<Data=DefaultData<never>, Methods=DefaultMethods<never>, Computed=DefaultComputed, Props=DefaultProps>
+>AsyncComponent : AsyncComponent<Data, Methods, Computed, Props>
+
+  = AsyncComponentPromise<Data, Methods, Computed, Props>
+export type AsyncComponentPromise<Data=DefaultData<never>, Methods=DefaultMethods<never>, Computed=DefaultComputed, Props=DefaultProps> = (
+>AsyncComponentPromise : AsyncComponentPromise<Data, Methods, Computed, Props>
+
+) => Promise<ImportedComponent<Data, Methods, Computed, Props>> | void;
+export type Accessors<T> = {
+>Accessors : Accessors<T>
+}
+type DataDef<Data, Props, V> = Data | ((this: Readonly<Props> & V) => Data)
+>DataDef : DataDef<Data, Props, V>
+>this : Readonly<Props> & V
+
+export type ThisTypedComponentOptionsWithArrayProps<V extends Vue, Data, Methods, Computed, PropNames extends string> =
+>ThisTypedComponentOptionsWithArrayProps : ThisTypedComponentOptionsWithArrayProps<V, Data, Methods, Computed, PropNames>
+
+  ThisType<CombinedVueInstance<V, Data, Methods, Computed, Readonly<Record<PropNames, any>>>>;
+export type ThisTypedComponentOptionsWithRecordProps<V extends Vue, Data, Methods, Computed, Props> =
+>ThisTypedComponentOptionsWithRecordProps : ThisTypedComponentOptionsWithRecordProps<V, Data, Methods, Computed, Props>
+
+  ComponentOptions<V, DataDef<Data, Props, V>, Methods, Computed, RecordPropsDefinition<Props>, Props> &
+  ThisType<CombinedVueInstance<V, Data, Methods, Computed, Readonly<Props>>>;
+type DefaultData<V> =  object | ((this: V) => object);
+>DefaultData : DefaultData<V>
+>this : V
+
+type DefaultProps = Record<string, any>;
+>DefaultProps : DefaultProps
+
+type DefaultMethods<V> =  { [key: string]: (this: V, ...args: any[]) => any };
+>DefaultMethods : DefaultMethods<V>
+>key : string
+>this : V
+>args : any[]
+
+type DefaultComputed = { [key: string]: any };
+>DefaultComputed : DefaultComputed
+>key : string
+
+export interface ComponentOptions<
+  V extends Vue,
+  Data=DefaultData<V>,
+  Methods=DefaultMethods<V>,
+  Computed=DefaultComputed,
+  PropsDef=PropsDefinition<DefaultProps>,
+  Props=DefaultProps> {
+  data?: Data;
+>data : Data
+
+  props?: PropsDef;
+>props : PropsDef
+
+  computed?: Accessors<Computed>;
+>computed : Accessors<Computed>
+
+  methods?: Methods;
+>methods : Methods
+}
+export interface FunctionalComponentOptions<Props = DefaultProps, PropDefs = PropsDefinition<Props>> {
+}
+export interface RenderContext<Props=DefaultProps> {
+}
+export type Prop<T> = { (): T } | { new(...args: never[]): T & object } | { new(...args: string[]): Function }
+>Prop : Prop<T>
+>args : never[]
+>args : string[]
+
+export type PropType<T> = Prop<T> | Prop<T>[];
+>PropType : PropType<T>
+
+export type PropValidator<T> = PropOptions<T> | PropType<T>;
+>PropValidator : PropValidator<T>
+
+export interface PropOptions<T=any> {
+  default?: T | null | undefined | (() => T | null | undefined);
+>default : T | (() => T | null | undefined)
+}
+export type RecordPropsDefinition<T> = {
+>RecordPropsDefinition : RecordPropsDefinition<T>
+
+  [K in keyof T]: PropValidator<T[K]>
+}
+export type ArrayPropsDefinition<T> = (keyof T)[];
+>ArrayPropsDefinition : ArrayPropsDefinition<T>
+
+export type PropsDefinition<T> = ArrayPropsDefinition<T> | RecordPropsDefinition<T>;
+>PropsDefinition : PropsDefinition<T>
+
+export interface ComputedOptions<T> {
+}
+export interface WatchOptions {
+}
+export interface WatchOptionsWithHandler<T> extends WatchOptions {
+}
+export type DirectiveFunction = (
+>DirectiveFunction : DirectiveFunction
+
+) => void;
+export interface DirectiveOptions {
+}
+=== node_modules/vue/types/umd.d.ts ===
+import * as V from "./index";
+>V : typeof V
+
+  export type CreateElement = V.CreateElement;
+>CreateElement : V.CreateElement
+>V : any
+
+=== node_modules/vue/types/vnode.d.ts ===
+export type ScopedSlot = (props: any) => ScopedSlotReturnValue;
+>ScopedSlot : ScopedSlot
+>props : any
+
+type ScopedSlotReturnValue = VNode | string | boolean | null | undefined | ScopedSlotReturnArray;
+>ScopedSlotReturnValue : ScopedSlotReturnValue
+
+interface ScopedSlotReturnArray extends Array<ScopedSlotReturnValue> {}
+export type VNodeChildren = VNodeChildrenArrayContents | [ScopedSlot] | string | boolean | null | undefined;
+>VNodeChildren : VNodeChildren
+
+export interface VNodeChildrenArrayContents extends Array<VNodeChildren | VNode> {}
+export interface VNode {
+}
+export interface VNodeComponentOptions {
+}
+export interface VNodeData {
+}
+export interface VNodeDirective {
+}
+=== node_modules/vue/types/vue.d.ts ===
+import {
+  ComponentOptions,
+>ComponentOptions : any
+
+  ThisTypedComponentOptionsWithArrayProps,
+>ThisTypedComponentOptionsWithArrayProps : any
+
+  ThisTypedComponentOptionsWithRecordProps,
+>ThisTypedComponentOptionsWithRecordProps : any
+
+} from "./options";
+export interface CreateElement {
+}
+export interface Vue {
+  readonly $data: Record<string, any>;
+>$data : Record<string, any>
+}
+export type CombinedVueInstance<Instance extends Vue, Data, Methods, Computed, Props> =  Data & Methods & Computed & Props & Instance;
+>CombinedVueInstance : CombinedVueInstance<Instance, Data, Methods, Computed, Props>
+
+export type ExtendedVue<Instance extends Vue, Data, Methods, Computed, Props> = VueConstructor<CombinedVueInstance<Instance, Data, Methods, Computed, Props> & Vue>;
+>ExtendedVue : ExtendedVue<Instance, Data, Methods, Computed, Props>
+
+export interface VueConstructor<V extends Vue = Vue> {
+  new <Data = object, Methods = object, Computed = object, PropNames extends string = never>(options?: ThisTypedComponentOptionsWithArrayProps<V, Data, Methods, Computed, PropNames>): CombinedVueInstance<V, Data, Methods, Computed, Record<PropNames, any>>;
+>options : ThisTypedComponentOptionsWithArrayProps<V, Data, Methods, Computed, PropNames>
+
+  extend<Data, Methods, Computed, Props>(options?: ThisTypedComponentOptionsWithRecordProps<V, Data, Methods, Computed, Props>): ExtendedVue<V, Data, Methods, Computed, Props>;
+>extend : { <Data, Methods, Computed, Props>(options?: ThisTypedComponentOptionsWithRecordProps<V, Data, Methods, Computed, Props>): ExtendedVue<V, Data, Methods, Computed, Props>; (options?: ComponentOptions<V>): ExtendedVue<V, {}, {}, {}, {}>; }
+>options : ThisTypedComponentOptionsWithRecordProps<V, Data, Methods, Computed, Props>
+
+  extend(options?: ComponentOptions<V>): ExtendedVue<V, {}, {}, {}, {}>;
+>extend : { <Data, Methods, Computed, Props>(options?: ThisTypedComponentOptionsWithRecordProps<V, Data, Methods, Computed, Props>): ExtendedVue<V, Data, Methods, Computed, Props>; (options?: ComponentOptions<V>): ExtendedVue<V, {}, {}, {}, {}>; }
+>options : ComponentOptions<V, import("./options").DefaultData<V>, import("./options").DefaultMethods<V>, import("./options").DefaultComputed, import("./options").PropsDefinition<import("./options").DefaultProps>, import("./options").DefaultProps>
+}
+export const Vue: VueConstructor;
+>Vue : VueConstructor<Vue>
+
+=== src/components/BaseInfo/index.tsx ===
+/**
+ */
+import { MlInfoColumn } from "../../../types/info";
+>MlInfoColumn : any
+
+import Vue from "vue";
+>Vue : import("vue/types/vue.js").VueConstructor<Vue>
+
+import { CreateElement } from "vue/types/umd";
+>CreateElement : any
+
+export default Vue.extend({
+>Vue.extend({  props: {    columns: {      default: (): MlInfoColumn[] => [],    },  },  data() {    return {      data_: {},    };  },  computed: {    columns_() {      return this.columns.map((column) => {      });    },  },  methods: {    getValue(h: CreateElement, column: MlInfoColumn) {      let value = this.data_?.[column.prop];    },  },}) : import("vue/types/vue").ExtendedVue<Vue, { data_: {}; }, { getValue(h: CreateElement, column: MlInfoColumn): void; }, unknown, { columns: MlInfoColumn<AnyObj>[]; }>
+>Vue.extend : { <Data, Methods, Computed, Props>(options?: import("vue/types/options").ThisTypedComponentOptionsWithRecordProps<Vue, Data, Methods, Computed, Props>): import("vue/types/vue").ExtendedVue<Vue, Data, Methods, Computed, Props>; (options?: import("vue/types/options").ComponentOptions<Vue, import("vue/types/options").DefaultData<Vue>, import("vue/types/options").DefaultMethods<Vue>, import("vue/types/options").DefaultComputed, import("vue/types/options").PropsDefinition<import("vue/types/options").DefaultProps>, import("vue/types/options").DefaultProps>): import("vue/types/vue").ExtendedVue<Vue, {}, {}, {}, {}>; }
+>Vue : import("vue/types/vue").VueConstructor<Vue>
+>extend : { <Data, Methods, Computed, Props>(options?: import("vue/types/options").ThisTypedComponentOptionsWithRecordProps<Vue, Data, Methods, Computed, Props>): import("vue/types/vue").ExtendedVue<Vue, Data, Methods, Computed, Props>; (options?: import("vue/types/options").ComponentOptions<Vue, import("vue/types/options").DefaultData<Vue>, import("vue/types/options").DefaultMethods<Vue>, import("vue/types/options").DefaultComputed, import("vue/types/options").PropsDefinition<import("vue/types/options").DefaultProps>, import("vue/types/options").DefaultProps>): import("vue/types/vue").ExtendedVue<Vue, {}, {}, {}, {}>; }
+>{  props: {    columns: {      default: (): MlInfoColumn[] => [],    },  },  data() {    return {      data_: {},    };  },  computed: {    columns_() {      return this.columns.map((column) => {      });    },  },  methods: {    getValue(h: CreateElement, column: MlInfoColumn) {      let value = this.data_?.[column.prop];    },  },} : { props: { columns: { default: () => MlInfoColumn[]; }; }; data(): { data_: {}; }; computed: { columns_(): void[]; }; methods: { getValue(h: CreateElement, column: MlInfoColumn): void; }; }
+
+  props: {
+>props : { columns: { default: () => MlInfoColumn[]; }; }
+>{    columns: {      default: (): MlInfoColumn[] => [],    },  } : { columns: { default: () => MlInfoColumn[]; }; }
+
+    columns: {
+>columns : { default: () => MlInfoColumn[]; }
+>{      default: (): MlInfoColumn[] => [],    } : { default: () => MlInfoColumn[]; }
+
+      default: (): MlInfoColumn[] => [],
+>default : () => MlInfoColumn[]
+>(): MlInfoColumn[] => [] : () => MlInfoColumn[]
+>[] : undefined[]
+
+    },
+  },
+  data() {
+>data : () => { data_: {}; }
+
+    return {
+>{      data_: {},    } : { data_: {}; }
+
+      data_: {},
+>data_ : {}
+>{} : {}
+
+    };
+  },
+  computed: {
+>computed : { columns_(): void[]; }
+>{    columns_() {      return this.columns.map((column) => {      });    },  } : { columns_(): void[]; }
+
+    columns_() {
+>columns_ : () => void[]
+
+      return this.columns.map((column) => {
+>this.columns.map((column) => {      }) : void[]
+>this.columns.map : <U>(callbackfn: (value: MlInfoColumn<AnyObj>, index: number, array: MlInfoColumn<AnyObj>[]) => U, thisArg?: any) => U[]
+>this.columns : MlInfoColumn<AnyObj>[]
+>this : import("vue/types/vue").CombinedVueInstance<Vue, { data_: {}; }, { getValue(h: CreateElement, column: MlInfoColumn): void; }, unknown, Readonly<{ columns: MlInfoColumn<AnyObj>[]; }>>
+>columns : MlInfoColumn<AnyObj>[]
+>map : <U>(callbackfn: (value: MlInfoColumn<AnyObj>, index: number, array: MlInfoColumn<AnyObj>[]) => U, thisArg?: any) => U[]
+>(column) => {      } : (column: MlInfoColumn<AnyObj>) => void
+>column : MlInfoColumn<AnyObj>
+
+      });
+    },
+  },
+  methods: {
+>methods : { getValue(h: CreateElement, column: MlInfoColumn): void; }
+>{    getValue(h: CreateElement, column: MlInfoColumn) {      let value = this.data_?.[column.prop];    },  } : { getValue(h: CreateElement, column: MlInfoColumn): void; }
+
+    getValue(h: CreateElement, column: MlInfoColumn) {
+>getValue : (h: CreateElement, column: MlInfoColumn) => void
+>h : import("vue").CreateElement
+>column : MlInfoColumn<AnyObj>
+
+      let value = this.data_?.[column.prop];
+>value : error
+>this.data_?.[column.prop] : error
+>this.data_ : {}
+>this : import("vue/types/vue").CombinedVueInstance<Vue, { data_: {}; }, { getValue(h: CreateElement, column: MlInfoColumn): void; }, unknown, Readonly<{ columns: MlInfoColumn<AnyObj>[]; }>>
+>data_ : {}
+>column.prop : string
+>column : MlInfoColumn<AnyObj>
+>prop : string
+
+    },
+  },
+});
+=== src/shim-global.d.ts ===
+
+interface AnyObj {
+}
+=== types/common.d.ts ===
+export interface MlOptions<O = AnyObj> {
+  /** 树形的children取值 默认children
+   */
+}
+export interface AnyObj {
+}
+export type Partial<T> = {
+>Partial : Partial<T>
+
+};
+=== types/info.d.ts ===
+import { MlOptions } from "./common";
+>MlOptions : any
+
+interface MlInfoColumn<D = AnyObj> extends MlOptions {
+  prop?: string;
+>prop : string
+}
