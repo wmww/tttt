@@ -125,3 +125,8 @@ for flips); a separate file so the three boxes never conflict.
   `"./*"` (a pattern) before the exact `"./typescript"`. Exact keys win over patterns whatever their order (tsgo
   resolves it), and tttt apparently takes the pattern first. The lost base options then cost tsgo's TS2883 and add a
   zod TS5115 on the project. Repro test/cases/npm__pixpilot_cost-calculator_TS6053.ts. [open]
+- Seed 20261212, journeyWorker/lute packages/player (@lute-lang/player@0.48.1): tttt aborts (exit 134) at
+  ty/lower.c alias_instance(), `check(count <= c_arraylen(stack_key))`: the alias-instance intern key is a fixed
+  32-word stack array (2 + the argument count), and xstate 6's `Next_MachineConfig` has 36 type parameters. tsgo
+  reports 2 errors there. Fix: a heap (or arena) key when the arguments outrun the array, as other intern keys do.
+  Repro test/cases/npm__lute-lang_player_crash.ts (a 32-parameter alias). [flip] [open]
