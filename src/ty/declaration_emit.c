@@ -163,6 +163,9 @@ typedef struct Walk {
     // The syntactic builder fell back to the checker's type somewhere in the declaration being emitted: its type is
     // printed (the node builder's serializeTypeOfDeclaration and friends)
     bool fell_back;
+    // The symbol tracker had an error to report but nowhere to report it (tsgo's errorLocation nil): the type printed now is
+    // `any` all the same (the node builder's encounteredError)
+    bool unlocated_error;
     // Walking a type node the syntactic builder reuses (an assertion's, a function expression's annotations): a name
     // that isn't accessible from here makes it fall back instead (trackExistingEntityName)
     bool reusing;
@@ -572,7 +575,14 @@ static void print_type(Walk* me, Ty const* type, bool reports) {
         TyDisplay d = emit_display(me, &text);
         d.param_names = &names;
         d.suppress_fallback = !reports;
+        bool outer_unlocated = my unlocated_error;
+        my unlocated_error = false;
         ty_display(my checker, d, type);
+        if (my unlocated_error) {
+            cstr_clear(&text);
+            cstr_append(&text, "any");
+        }
+        my unlocated_error = outer_unlocated;
         ty_param_names_drop(&names);
         cstr_append_s(target, text);
         cstr_drop(&text);
@@ -672,6 +682,10 @@ static Span error_name_node(Walk* me, csview* name) {
         return e->name;
     }
     *name = e->kind == EMIT_DEFAULT_EXPORT && !e->missing_name ? c_sv("default") : c_sv("(Missing)");
+    // (Neither, tsgo's errorLocation is nil and the tracker reports nothing: the return type of an anonymous
+    // `export default function`, whose FunctionDeclaration has no name and pushes no fallback node. An export
+    // assignment and a class declaration push themselves)
+    if (!span_valid(e->fallback) && e->kind != EMIT_DEFAULT_EXPORT && !e->in_class) return span_null;
     return span_valid(e->fallback) ? e->fallback : e->at;
 }
 
@@ -693,6 +707,10 @@ static void tracker_report(DeclTracker* tracker, DeclTrackReport kind, csview pr
     if (my emitting.kind == EMIT_NONE) return;
     csview name;
     Span at = error_name_node(me, &name);
+    if (!span_valid(at)) {
+        my unlocated_error = true;
+        return;
+    }
     switch (kind) {
         case DECL_REPORT_PRIVATE_IN_CLASS_LITERAL: {
             Error* error = report_once(me, at, 4094, cstr_d("Property '", property,
@@ -804,6 +822,10 @@ static void track_module_file(DeclTracker* tracker, SourceFile const* target, Sy
     if (!unsafe.size) return;
     csview name;
     Span at = error_name_node(me, &name);
+    if (!span_valid(at)) {
+        my unlocated_error = true;
+        return;
+    }
     // (A module's own symbol is named like tsc's: its file's path without the extension, in double quotes)
     cstr module_name = symbol->is_module && symbol->module && symbol->module->file ? module_name_for_error(symbol, nullptr, false) : cstr_init();
     report_once(me, at, 2883, cstr_d("The inferred type of '", name, "' cannot be named without a reference to '",

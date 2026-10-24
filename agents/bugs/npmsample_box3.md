@@ -139,7 +139,12 @@ for flips); a separate file so the three boxes never conflict.
   cannot be named without a reference to 'Server'..." in a `// @ts-nocheck` file under declaration: true. tsgo
   reports no diagnostics for a nocheck file, declaration diagnostics included, and tttt's declaration walk reports
   them anyway. A second oddity: the anonymous `export default function` is named '(Missing)'. Repro
-  test/cases/npm_mcp-namecheap_TS2883.ts (reduce.py, then by hand). (claimed: fixF) [flip] [open]
+  test/cases/npm_mcp-namecheap_TS2883.ts (reduce.py, then by hand). (claimed: fixF) Cause: not the nocheck (tsgo reports
+  nothing without it either): the function has no name and tsgo's FunctionDeclaration pushes no error fallback node, so
+  the symbol tracker's errorLocation is nil and ReportLikelyUnsafeImportRequiredError reports nothing; the type is
+  emitted as `any` (encounteredError). tttt's error_name_node() fell back to the declaration; now no location there
+  outside classes and export assignments, and the printed type is `any`. Repro
+  ttttDeclarationAnonymousDefaultUnsafeImport. [flip] [fixed PENDING]
 - Large seed 20261400, ChatbotXIO/ChatbotX@main apps/builder: two spurious TS7006 "Parameter 'template' implicitly
   has an 'any' type" on `fkMatcher: (template) => ...` in the second branch of a conditional initializer of a
   destructuring annotated `{ fkMatcher: (template: TemplateCandidate) => boolean }`, inside a useMemo callback.
