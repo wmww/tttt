@@ -97,3 +97,21 @@ boxes' appends never conflict. One section per seed, one bullet per repro, statu
 ## Seed 20261113
 - No divergence (set up with --prefer-large): 56 accepted, 56 byte-identical modulo lib paths, 56/56 same (file, line, code),
   clean agreement 56/56, no K-dependence, no flips. No repros.
+
+## Seed 20261115 (--prefer-large)
+53 accepted, 52 byte-identical, clean agreement 52/53, no K-dependence.
+- **FLIP, unreduced**, 0004-youra-h-soldy (@soldy-ui/webc 0.3.0-alpha.2, https://github.com/youra-h/soldy at a399d8d3,
+  packages/ui/webc/tsconfig.bench.json, candidate i=4 of test/npmsample/20261115.candidates.jsonl; setup.jsonl has its
+  install): tsgo 0 errors, tttt 203, all TS2883, e.g. `../../setup/content/descriptors/components/button.descriptor.ts(12)`
+  "The inferred type of 'ButtonDescriptor' cannot be named without a reference to 'TReadyPlugin' from
+  '../../../../../node_modules/@soldy-ui/plugins/src'" (the file `export const ButtonDescriptor = defineDescriptor(() =>
+  defineComponent({...}))`; `declaration: true` from tsconfig.base.json). The workspace is npm-linked: node_modules/@soldy-ui/*
+  are symlinks to packages/*, and tsconfig `paths` maps `@soldy-ui/plugins` to `../../plugins/src` (the package has no
+  dist, so only paths resolves it). tttt names TReadyPlugin's file by the symlink path (node_modules/@soldy-ui/plugins/src)
+  and finds no specifier; tsgo names it. Not reduced: reduce.py's copy turns symlinks into regular files and then does NOT
+  reproduce (tsgo and tttt agree on the copy), so the trigger is the symlink/realpath handling in module-specifier
+  generation (getSymbolChain/containers: the symlink-cache candidate, `TTTT_DEBUG_CONTAINERS=1`), and a scratch project
+  with a symlinked workspace package, paths, a deep re-export and a declaration-emitting inferred type did not reproduce it
+  (the real call goes through `defineDescriptor`/`defineComponent` generics). The clone is kept on the second box at
+  thirdparty/npmsample/20261115/0004-youra-h-soldy; `scripts/projdiff.py <clone>/packages/ui/webc/tsconfig.bench.json`
+  shows it. [open] [flip]
