@@ -1009,6 +1009,22 @@ bool ty_array_like_with_literal_length(Checker* me, Ty const* ty) {
 // createNormalizedTupleType keeping InstantiableNonPrimitive variadic elements)
 // (A generic mapped type too: createNormalizedTupleType keeps isGenericMappedType variadic elements, `[...x, y]` with
 // `x: { [P in keyof E]: X }` is `[...{ [P in keyof E]: X }, Y]`, its elements `{ ... }[number]` in an array)
+// An object type that is array-like (assignable to `readonly any[]`) but not an array or tuple, spread into an array
+// literal: its number index signature's type, else the error type (tsc's checkArrayLiteral takes it as a variadic
+// element, which createNormalizedTupleType makes a rest element of `getIndexTypeOfType(t, number) ?? errorType`,
+// not what iterating it gives: `[...p]` with `p: Pick<[D, D], Exclude<keyof [D, D], number>>` is any[]). Null otherwise
+static Ty const* array_like_element(Checker* me, Ty const* operand) {
+    if (!(operand->flags & (TYF_OBJECT | TYF_INTERSECTION)) || (operand->flags & (TYF_TYPE_PARAM | TYF_DEFERRED | TYF_COULD_CONTAIN_TYPE_VARIABLES))) {
+        return nullptr;
+    }
+    if (ty_is_array(me, operand) || ty_is_tuple(operand) || operand->kind == TY_UNION) return nullptr;
+    if (operand->kind == TY_DECLARED && operand->declared.kind == TY_DECLARED_TUPLE_TARGET) return nullptr;
+    if (!ty_extends_array(me, operand)) return nullptr;
+    Ty const* apparent = ty_apparent_type(me, operand);
+    IndexInfo const* index = ty_applicable_index_info(me, apparent, ty_intrinsic(me, TY_NUMBER));
+    return index ? index->value : ty_intrinsic(me, TY_ERROR);
+}
+
 static bool is_generic_array_like(Checker* me, Ty const* ty) {
     bool generic = (ty->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) != 0;
     if (!generic && ty->kind == TY_ANONYMOUS && (ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
@@ -5285,17 +5301,21 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
                 spreads_never |= (operand->flags & TYF_NEVER) != 0;
                 // (The empty tuple is the tuple target, which spreads nothing)
                 bool empty_tuple = operand->kind == TY_DECLARED && operand->declared.kind == TY_DECLARED_TUPLE_TARGET;
+                Ty const* like = array_like_element(me, operand);
                 elements[count++] = ty_is_array(me, operand) || ty_is_tuple(operand) || empty_tuple ||
                     is_generic_array_like(me, operand) || is_union_of_arrays(me, operand) ?
-                    operand : ty_array(me, ty_iterated_type(me, ITERATION_SPREAD, operand, expr_outer_span(i->spread), nullptr), false);
+                    operand : like ? ty_array(me, like, false) :
+                    ty_array(me, ty_iterated_type(me, ITERATION_SPREAD, operand, expr_outer_span(i->spread), nullptr), false);
             } else {
                 // (never is array-like, its element never: tsc's checkArrayLiteral, getIndexedAccessTypeOrUndefined.
                 // The spread expression itself is what iterating gives, any)
                 // (A generic array-like one is its `[number]`: tsc's getIndexedAccessTypeOrUndefined of a variadic
                 // element, `[...arg]` with arg: T & {} is (T & {})[number][])
+                Ty const* like = operand->flags & TYF_NEVER ? nullptr : array_like_element(me, operand);
                 elements[count++] = operand->flags & TYF_NEVER ? operand :
                     (is_generic_array_like(me, operand) || (operand->kind == TY_INTERSECTION && is_generic_type(me, operand) &&
-                        ty_extends_array(me, operand))) ? ty_indexed(me, operand, ty_intrinsic(me, TY_NUMBER)) : ty_expr_type(me, i);
+                        ty_extends_array(me, operand))) ? ty_indexed(me, operand, ty_intrinsic(me, TY_NUMBER)) :
+                    like ? like : ty_expr_type(me, i);
             }
             continue;
         }
