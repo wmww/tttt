@@ -160,7 +160,7 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
     `export type First = Pick<G2, 'id'>;` above the declarations of test/cases/ttttBaseReadsDerivedThroughPick.ts. [open]
 
 ## Seed 20261103 (second box)
-- npm_task-definition-ts_TS2339 (task-definition-ts@1.0.18, config tsconfig.bench.json, allowJs+checkJs, no include): tttt's default wildcard include adds `dist/index.mjs` although `dist/index.d.mts` sits beside it, and checks it (TS2339/TS7006 x6); tsgo drops the .mjs (same-basename extension priority: a declaration file beats the JS file), as tttt already does for `index.cjs` next to `index.d.cts`. Guess: the priority removal in tttt's wildcard expansion knows .d.cts/.cjs but not .d.mts/.mjs. [flip] [open]
+- npm_task-definition-ts_TS2339 (task-definition-ts@1.0.18, config tsconfig.bench.json, allowJs+checkJs, no include): tttt's default wildcard include adds `dist/index.mjs` although `dist/index.d.mts` sits beside it, and checks it (TS2339/TS7006 x6); tsgo drops the .mjs (same-basename extension priority: a declaration file beats the JS file), as tttt already does for `index.cjs` next to `index.d.cts`. Guess: the priority removal in tttt's wildcard expansion knows .d.cts/.cjs but not .d.mts/.mjs. Fixed: tsgo's LEGACY BEHAVIOR keeps only a `.js`/`.jsx` next to its `.d.ts`; tttt kept every JS file next to any declaration (has_higher_priority_sibling). [flip] [fixed corF 2026-10-24]
 - **npm__skastr0_quartz-engine_TS2719** (seed 20261025, @skastr0/quartz-engine@0.2.3, skastr0/quartz
   apps/opencode-plugin/src/server.ts:22): a generic arrow's return type annotation `V extends undefined ?
   Record<never, never> : { readonly [P in K]?: V }`, with an `as` to the same conditional type written again in its

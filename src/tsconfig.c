@@ -1224,7 +1224,7 @@ static void remove_lower_priority_siblings(HMapPathKind* files, csview path) {
 
 // tsc's hasFileWithHigherPriorityExtension: a file include patterns found is left out when the same name with an
 // extension before its own in its group is there too (literal or found): `a.d.ts` (an output) next to `a.ts`, `a.js`
-// next to `a.ts` with allowJs. Not a `.js` for a `.d.ts` (tsc's legacy behaviour)
+// next to `a.ts` with allowJs, `a.mjs` next to `a.d.mts`. Not a `.js` for a `.d.ts` (tsc's legacy behaviour)
 static bool has_higher_priority_sibling(ConfigLoad* me, HMapPathKind const* files, csview path) {
     for (isize g = 0; g < (isize)c_arraylen(extension_groups); g++) {
         // The file's own extension in the group: the longest that matches (`.d.ts` before `.ts`)
@@ -1241,7 +1241,9 @@ static bool has_higher_priority_sibling(ConfigLoad* me, HMapPathKind const* file
         csview stem = csview_slice(path, 0, path.size - (isize)strlen(extension_groups[g][own]));
         for (isize e = 0; e < own; e++) {
             char const* extension = extension_groups[g][e];
-            if (is_js && !strncmp(extension, ".d.", 3)) continue;
+            // (tsgo's LEGACY BEHAVIOR: only a `.d.ts` is loaded alongside its `.js`/`.jsx`; a `.d.mts` or `.d.cts` hides its
+            // `.mjs`/`.cjs`)
+            if (!strcmp(extension, ".d.ts") && (csview_ends_with(path, ".js") || csview_ends_with(path, ".jsx"))) continue;
             if (!allows_js(my options) && (!strcmp(extension, ".js") || !strcmp(extension, ".jsx"))) continue;
             cstr sibling = cstr_d(stem, extension);
             bool there = hmap_path_kind_get(files, cstr_sv(&sibling)) != nullptr;
