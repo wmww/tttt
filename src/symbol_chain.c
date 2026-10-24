@@ -781,9 +781,12 @@ static u32 program_modules_exporting(ChainCtx* me, Symbol const* symbol, Symbol 
 
 // The import or export whose specifier the name being printed is part of (TyDisplay.usage_ref), on this thread
 static thread_local ModuleRef const* chain_usage_ref;
+// ... and whether it is the originalModuleSpecifier too (not inside a signature's fake scope: TyDisplay.usage_in_fake_scope)
+static thread_local bool chain_usage_for_specifier;
 
-void symbol_chain_set_usage(ModuleRef const* usage_ref) {
+void symbol_chain_set_usage(ModuleRef const* usage_ref, bool for_specifier) {
     chain_usage_ref = usage_ref;
+    chain_usage_for_specifier = for_specifier;
 }
 
 // What tsgo's resolveExternalModuleName(enclosingDeclaration, import) finds the import to be again: an ambient module
@@ -954,8 +957,12 @@ static cstr parent_specifier(Symbol const* parent, SourceFile const* from) {
     if (ambient.size) return cstr_from_sv(ambient);
     if (module_specifier_fn) return module_specifier_fn(module_specifier_ctx, file);
     // (tsc 6 always has a host where there is an enclosing file: the specifier from there)
+    // (Inside an import or export, its usage mode decides the ending as when the module is printed, tsc's
+    // getSpecifierForModuleSymbol with the originalModuleSpecifier: `./types/index.js` and `./types/shared.js` tie on
+    // components where `./types` would win)
     if (from && current_checker) {
-        return program_module_specifier(current_checker->program, from, file, SPECIFIER_MODE_NONE);
+        SpecifierMode ending = chain_usage_ref && chain_usage_for_specifier ? program_usage_mode(current_checker->program, from, chain_usage_ref) : SPECIFIER_MODE_NONE;
+        return program_module_specifier_ending(current_checker->program, from, file, SPECIFIER_MODE_NONE, ending);
     }
     // (without one: the file's name, absolute; the files of a program are all below its directory, or have `..`s
     // that count as components alike)

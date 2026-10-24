@@ -3329,6 +3329,10 @@ typedef struct TyDisplay {
     // ... and its import attributes (`with { type: "json" }`), which an `import("m")` naming that module repeats (tsgo's
     // getSpecifierForModuleSymbol: originalImportAttributesType)
     struct ImportAttributes const* usage_attributes;
+    // Inside a declared signature with parameters or type parameters: the node builder's enclosing declaration is a fake
+    // scope (tsc's enterNewScope), so `usage_ref` no longer gives the originalModuleSpecifier (its ending and
+    // attributes), though finding the imports again still goes through the import it is in
+    bool usage_in_fake_scope;
     bool fully_qualified;
     // ... reprinting list members whose names collide (tsc's mapToTypeNodes keeps the message's
     // UseAliasDefinedOutsideCurrentScope, so getSymbolChain doesn't yield a module: a module's export is its bare name)

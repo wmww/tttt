@@ -1,0 +1,51 @@
+//// [test/cases/ttttImportUsageModeSpecifierScope.ts] ////
+
+=== src/types/shared.ts ===
+export type MF = { a: 1 };
+>MF : MF
+>a : 1
+
+=== src/types/index.ts ===
+
+export * from './shared';
+=== src/cm.ts ===
+import { MF } from './types';
+>MF : any
+
+export declare function cm<T extends MF>(x: T): T;
+>cm : <T extends MF>(x: T) => T
+>x : T
+
+export declare function cm0<T extends MF>(): T;
+>cm0 : <T extends MF>() => T
+
+export declare const v: MF;
+>v : MF
+
+export declare const g: { f(x: number): MF; h(): MF };
+>g : { f(x: number): MF; h(): MF; }
+>f : (x: number) => MF
+>x : number
+>h : () => MF
+
+=== src/index.ts ===
+export { cm, cm0, v, g } from './cm';
+>cm : <T extends import("./types").MF>(x: T) => T
+>cm0 : <T extends import("./types").MF>() => T
+>v : import("./types/shared.js").MF
+>g : { f(x: number): import("./types").MF; h(): import("./types/shared.js").MF; }
+
+=== demo/index.ts ===
+import { cm, cm0, v, g } from '../src';
+>cm : <T extends import("../src/types").MF>(x: T) => T
+>cm0 : <T extends import("../src/types").MF>() => T
+>v : import("../src/types/shared.js").MF
+>g : { f(x: number): import("../src/types").MF; h(): import("../src/types/shared.js").MF; }
+
+cm({ a: 1 });
+>cm({ a: 1 }) : { a: 1; }
+>cm : <T extends import("../src/types").MF>(x: T) => T
+>{ a: 1 } : { a: 1; }
+>a : 1
+>1 : 1
+

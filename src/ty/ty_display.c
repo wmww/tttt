@@ -662,9 +662,9 @@ static void out_module_attributes(TyDisplay d, Symbol const* module) {
 
 // symbol_chain_at() from where the display is, inside the import or export whose name is printed if it is
 static SymbolChain display_chain_at(TyDisplay d, Symbol const* symbol, u32 meaning, bool yield_module) {
-    if (d.usage_ref) symbol_chain_set_usage(d.usage_ref);
+    if (d.usage_ref) symbol_chain_set_usage(d.usage_ref, !d.usage_in_fake_scope);
     SymbolChain chain = symbol_chain_at(d.enclosing, symbol, meaning, yield_module);
-    if (d.usage_ref) symbol_chain_set_usage(nullptr);
+    if (d.usage_ref) symbol_chain_set_usage(nullptr, false);
     return chain;
 }
 
@@ -681,10 +681,11 @@ static void out_module_import(Checker* me, TyDisplay d, Symbol const* module) {
     // (Remembered: computing a module specifier walks the package's exports, paths and symlinks, and a printed
     // declaration type can name the same module hundreds of times)
     SpecifierMode override = resolution_mode ? SPECIFIER_MODE_ESM : SPECIFIER_MODE_NONE;
-    u64 key[5] = { KEY_MODULE_DISPLAY_NAME, (u64)(uintptr_t)module, (u64)(uintptr_t)context, override, (u64)(uintptr_t)d.usage_ref };
+    ModuleRef const* usage = d.usage_in_fake_scope ? nullptr : d.usage_ref;
+    u64 key[5] = { KEY_MODULE_DISPLAY_NAME, (u64)(uintptr_t)module, (u64)(uintptr_t)context, override, (u64)(uintptr_t)usage };
     csview const* cached = intern_get(&my links, key, 5);
     if (!cached) {
-        cstr computed = program_module_display_name(my program, module, context, override, d.usage_ref);
+        cstr computed = program_module_display_name(my program, module, context, override, usage);
         csview* copy = arena_new(&my arena, csview);
         char* chars = arena_new_n(&my arena, char, cstr_size(&computed) + 1);
         memcpy(chars, cstr_str(&computed), (size_t)cstr_size(&computed));
@@ -705,7 +706,7 @@ static void out_module_import(Checker* me, TyDisplay d, Symbol const* module) {
     }
     // The attributes of the import or export the name is printed for, when its specifier is this module (tsgo's
     // createImportAttributesForModuleSpecifier: `resolution-mode` first, then the string-valued ones by name)
-    ImportAttributes const* attributes = d.usage_attributes && d.usage_ref && d.usage_ref->module == module ?
+    ImportAttributes const* attributes = d.usage_attributes && usage && usage->module == module ?
         d.usage_attributes : nullptr;
     struct { csview name; csview value; } found[16];
     u32 count = 0;
@@ -2092,7 +2093,7 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
                     module = chain.items[0];
                 }
             }
-            cstr name = program_module_display_name(my program, module, here, SPECIFIER_MODE_NONE, d.usage_ref);
+            cstr name = program_module_display_name(my program, module, here, SPECIFIER_MODE_NONE, d.usage_in_fake_scope ? nullptr : d.usage_ref);
             // (The same specifier as written: the node itself is reused, its quotes kept: tsgo's rewriteModuleSpecifier)
             csview named = cstr_sv(&name);
             bool single = span_valid(ref->span) && ref->span.size && ref->span.buf[0] == '\'';
@@ -4262,6 +4263,11 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         }
     }
     SigResolved const* root_res = signature_resolve(me, root);
+    // Inside a declared signature with parameters or type parameters the node builder's enclosing declaration is a fake
+    // scope for them (tsc's enterNewScope; type parameters under GenerateNamesForShadowedTypeParams, which printing
+    // sets), so no import or export around supplies the originalModuleSpecifier: modules print as from the file, by its
+    // default resolution mode (`import("./types")` where the import's ESM usage would add `/index.js`)
+    if ((sig_rs->param_count || sig_rs->type_params.len) && (root->function || root->declared_by)) d.usage_in_fake_scope = true;
     bool sibling_mapped = d.sibling_mentions_mapped;
     d.sibling_mentions_mapped = false;
     // (Unless its own type parameters were instantiated away: a call's candidate with what was inferred)
