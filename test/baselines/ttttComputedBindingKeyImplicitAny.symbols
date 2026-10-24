@@ -1,0 +1,35 @@
+//// [test/cases/ttttComputedBindingKeyImplicitAny.ts] ////
+
+=== ttttComputedBindingKeyImplicitAny.ts ===
+// An unannotated parameter pattern's element with a computed key: one usable as a property name (a literal, a unique
+// symbol) is in the implied type and implicitly any (TS7031); another one isn't, the element is the implied type indexed
+// by the key (tsc's getTypeFromObjectBindingPattern, isTypeUsableAsPropertyName)
+export function f1({ ["a"]: a, b }) { return [a, b]; }
+>f1 : Symbol(f1, Decl(ttttComputedBindingKeyImplicitAny.ts, 0, 0))
+>"a" : Symbol(a, Decl(ttttComputedBindingKeyImplicitAny.ts, 3, 20))
+>a : Symbol(a, Decl(ttttComputedBindingKeyImplicitAny.ts, 3, 20))
+>b : Symbol(b, Decl(ttttComputedBindingKeyImplicitAny.ts, 3, 30))
+>a : Symbol(a, Decl(ttttComputedBindingKeyImplicitAny.ts, 3, 20))
+>b : Symbol(b, Decl(ttttComputedBindingKeyImplicitAny.ts, 3, 30))
+
+export function f2({ [0]: a, ...r }) { return [a, r]; }
+>f2 : Symbol(f2, Decl(ttttComputedBindingKeyImplicitAny.ts, 3, 54))
+>0 : Symbol(a, Decl(ttttComputedBindingKeyImplicitAny.ts, 4, 20))
+>a : Symbol(a, Decl(ttttComputedBindingKeyImplicitAny.ts, 4, 20))
+>r : Symbol(r, Decl(ttttComputedBindingKeyImplicitAny.ts, 4, 28))
+>a : Symbol(a, Decl(ttttComputedBindingKeyImplicitAny.ts, 4, 20))
+>r : Symbol(r, Decl(ttttComputedBindingKeyImplicitAny.ts, 4, 28))
+
+export function f3({ [`x`]: a }) { return a; }
+>f3 : Symbol(f3, Decl(ttttComputedBindingKeyImplicitAny.ts, 4, 55))
+>`x` : Symbol(a, Decl(ttttComputedBindingKeyImplicitAny.ts, 5, 20))
+>a : Symbol(a, Decl(ttttComputedBindingKeyImplicitAny.ts, 5, 20))
+>a : Symbol(a, Decl(ttttComputedBindingKeyImplicitAny.ts, 5, 20))
+
+export function f5(k: string, { [k]: { x } }) { return x; }
+>f5 : Symbol(f5, Decl(ttttComputedBindingKeyImplicitAny.ts, 5, 46))
+>k : Symbol(k, Decl(ttttComputedBindingKeyImplicitAny.ts, 6, 19))
+>k : Symbol(k, Decl(ttttComputedBindingKeyImplicitAny.ts, 6, 19))
+>x : Symbol(x, Decl(ttttComputedBindingKeyImplicitAny.ts, 6, 38))
+>x : Symbol(x, Decl(ttttComputedBindingKeyImplicitAny.ts, 6, 38))
+

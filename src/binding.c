@@ -271,6 +271,10 @@ void binding_add_implicit_any_type_errors(Binding const* me, Span parameter, boo
             for_each (i, vec_object_binding_item, &my object) {
                 // (An object rest element is an index signature to any: getTypeFromObjectBindingPattern)
                 if (i->target.rest) continue;
+                // (A computed key whose type isn't usable as a property name isn't in the implied type either: the
+                // element is the implied type indexed by the key, any with a rest element, else TS2537 and the error
+                // type, not implicitly any: tsc's getTypeFromObjectBindingPattern, isTypeUsableAsPropertyName)
+                if (i->computed_key && !ty_literal_name(current_checker, ty_binding_computed_key_type(current_checker, i))) continue;
                 bool renaming = i->target.tag == BINDING_IDENTIFIER && !i->target.rest &&
                     !span_eq(i->source_span, i->target.content_span);
                 if (bodiless && renaming) continue;

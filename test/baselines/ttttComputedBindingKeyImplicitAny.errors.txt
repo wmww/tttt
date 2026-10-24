@@ -1,0 +1,26 @@
+ttttComputedBindingKeyImplicitAny.ts(4,29): error TS7031: Binding element 'a' implicitly has an 'any' type.
+ttttComputedBindingKeyImplicitAny.ts(4,32): error TS7031: Binding element 'b' implicitly has an 'any' type.
+ttttComputedBindingKeyImplicitAny.ts(5,27): error TS7031: Binding element 'a' implicitly has an 'any' type.
+ttttComputedBindingKeyImplicitAny.ts(6,29): error TS7031: Binding element 'a' implicitly has an 'any' type.
+ttttComputedBindingKeyImplicitAny.ts(7,34): error TS2537: Type '{}' has no matching index signature for type 'string'.
+
+
+==== ttttComputedBindingKeyImplicitAny.ts (5 errors) ====
+    // An unannotated parameter pattern's element with a computed key: one usable as a property name (a literal, a unique
+    // symbol) is in the implied type and implicitly any (TS7031); another one isn't, the element is the implied type indexed
+    // by the key (tsc's getTypeFromObjectBindingPattern, isTypeUsableAsPropertyName)
+    export function f1({ ["a"]: a, b }) { return [a, b]; }
+                                ~
+!!! error TS7031: Binding element 'a' implicitly has an 'any' type.
+                                   ~
+!!! error TS7031: Binding element 'b' implicitly has an 'any' type.
+    export function f2({ [0]: a, ...r }) { return [a, r]; }
+                              ~
+!!! error TS7031: Binding element 'a' implicitly has an 'any' type.
+    export function f3({ [`x`]: a }) { return a; }
+                                ~
+!!! error TS7031: Binding element 'a' implicitly has an 'any' type.
+    export function f5(k: string, { [k]: { x } }) { return x; }
+                                     ~
+!!! error TS2537: Type '{}' has no matching index signature for type 'string'.
+    
