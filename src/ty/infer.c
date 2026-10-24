@@ -2121,19 +2121,17 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         bool same_reference = source->kind == TY_REFERENCE && target->kind == TY_REFERENCE &&
             (source->reference.target == target->reference.target || (ty_is_array(me, source) && ty_is_array(me, target))) &&
             !(source->reference.deferred && target->reference.deferred);
-        if (same_reference) {
-            // By type argument without going on the stack below: nested references to one type (`Box<Box<T>>`) aren't
-            // deeply nested objects (tsc's inferFromTypes; only two deferred references go through invokeOnce). An array
-            // on the stack made a nested pair of deferred arrays look deeply nested: tanstack-table's columns array
-            // literal to `ReadonlyArray<ColumnDef<...>>` cut its `aggregationFn: readonly Item<F>[]` short
-            infer_from_type_args(me, inf, source, target);
-        } else if ((source->flags & (TYF_OBJECT | TYF_INTERSECTION)) && !visited_add(inf, source, target)) {
+        // (Two references to one generic type go by type argument, through the same once-per-pair walk with its stack
+        // as other objects: tsgo 7.1's inferFromTypes calls invokeOnce with inferFromReferenceTypeArguments, so
+        // `Promise<IteratorResult<X>>` inside `Promise<AsyncGenerator<X>>` against `Promise<AsyncIterable<T>>` is two
+        // Promises deep on both sides and infers nothing: sixb's readValues)
+        if ((same_reference || (source->flags & (TYF_OBJECT | TYF_INTERSECTION))) && !visited_add(inf, source, target)) {
             for (u32 i = 0; i < inf->object_depth && !inf->circularity; i++) {
                 inf->circularity = inf->object_sources[i] == source && inf->object_targets[i] == target;
             }
             VisitKey key = visited_key(inf, source, target);
             for (u32 i = 0; i < inf->circular_len && !inf->circularity; i++) inf->circularity = visit_key_eq(inf->circular[i], key);
-        } else if (source->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
+        } else if (same_reference || (source->flags & (TYF_OBJECT | TYF_INTERSECTION))) {
             u32 saved_hit = inf->hit_priority;
             inf->hit_priority = UINT32_MAX;
             bool outer_circularity = inf->circularity;
@@ -2149,7 +2147,8 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
                 // (What it is taken apart into is no array literal, a slice of a tuple that is all of it included)
                 Ty const* saved_literal = inf->arg_tuple_literal;
                 inf->arg_tuple_literal = nullptr;
-                infer_from_objects(me, inf, source, target);
+                if (same_reference) infer_from_type_args(me, inf, source, target);
+                else infer_from_objects(me, inf, source, target);
                 inf->arg_tuple_literal = saved_literal;
                 inf->object_depth--;
             } else {
