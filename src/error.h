@@ -41,6 +41,11 @@ typedef struct Error {
     // A declaration diagnostic (tsc's getDeclarationDiagnostics, TS4xxx/TS9xxx): emit reports them whatever gated the
     // semantic ones
     bool declaration;
+    // A history-dependent diagnostic (error_is_history_dependent()) reported in another file than the one its checker was
+    // checking (error_checking_file), or a circularity while a cycle through another file's declarations was found
+    // (error_cycle_foreign): what it is about was reached from elsewhere, where one checker in program order may reach it
+    // first from a third file (program.c's history_dependent_matters())
+    bool history_foreign;
     // A diagnostic tsc reports once per program, from whichever file asks first (a checker-wide memo): non-zero, what
     // it is about. Each checker reports it once; error_ctx_keep_first_once() keeps the one with the lowest once_order
     // (the index of the file being checked), which is the one a single checker reports
@@ -102,6 +107,11 @@ void error_ctx_drop(ErrorCtx* me);
 // the checker saw before is reported into any context (error_is_history_dependent(): program_typecheck()'s rerun in one
 // checker)
 extern thread_local _Atomic bool* error_history_flag;
+// The file the thread's checker is checking (program.c's check_file()), null outside one: see Error.history_foreign
+extern thread_local struct SourceFile const* error_checking_file;
+// A cycle found while checking error_checking_file went through another file's declarations (ty/checker.c's
+// resolving_mark_cycle()): a circularity reported then is Error.history_foreign. Reset per checked file
+extern thread_local bool error_cycle_foreign;
 // The diagnostics a checker reports where it first runs into something it then caches: the instantiation and relation
 // limits (TS2589, TS5114, TS5115, TS2590, TS2321, TS2859) and the circularities (TS2615, TS7022, TS7023, TS7024, TS2456,
 // TS2502). Which file reaches it first decides where, and what the cached error type silences afterwards
@@ -113,6 +123,10 @@ static inline bool error_is_history_dependent(unsigned ts_code) {
         default:
             return false;
     }
+}
+// The circularities among them (the rest are the limits)
+static inline bool error_is_circularity(unsigned ts_code) {
+    return ts_code == 2615 || ts_code == 7022 || ts_code == 7023 || ts_code == 7024 || ts_code == 2456 || ts_code == 2502;
 }
 // tsc's formatDiagnosticsWithColorAndContext (`--pretty`) of one diagnostic, lines ending in nl, file_name naming the
 // files of the diagnostic and its related information

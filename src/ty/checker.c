@@ -12,6 +12,8 @@
 #include "ty/graph.h"
 #include "ty/atom_table.h"
 #include "ty/shared_table.h"
+#include "binding.h"
+#include "class_decl.h"
 
 // Arena
 
@@ -4778,12 +4780,69 @@ void rollback_cycle(void const* key) {
     rollback_cycle_count++;
 }
 
+// The file a resolution entry's declaration is in, null when it can't say (program.c's history_dependent_matters())
+static SourceFile const* resolving_entry_file(Resolving const* entry) {
+    Span span = span_null;
+    switch ((ResolvingKind)entry->kind) {
+        case RESOLVING_DECLARATION:
+        case RESOLVING_PATTERN:
+            if (entry->key_type == RESOLVING_KEY_SYMBOL_DECL) {
+                span = ((SymbolDecl const*)entry->key)->full;
+            } else if (entry->key_type == RESOLVING_KEY_SYMBOL) {
+                Symbol const* symbol = entry->key;
+                if (symbol->decl_count) span = symbol->decls[0].full;
+            } else {
+                LazyType const* lazy = entry->key;
+                switch (lazy->tag) {
+                    case LAZY_TYPE_EXPR: span = c_container_of(lazy, Expr, lazy_type)->inner_span; break;
+                    case LAZY_TYPE_INITIALIZED_BINDING: span = c_container_of(lazy, InitializedBinding, lazy_type)->binding.content_span; break;
+                    case LAZY_TYPE_CLASS_ITEM_FIELD: span = c_container_of(lazy, ClassItem, field.lazy_type)->span; break;
+                    case LAZY_TYPE_CLASS_ITEM_ACCESSOR: span = c_container_of(lazy, ClassItem, method.accessor_type)->span; break;
+                    default: break;
+                }
+            }
+            break;
+        case RESOLVING_FUNCTION_RETURN:
+        case RESOLVING_ARGUMENT_RETURN:
+            span = function_error_span(entry->key);
+            break;
+        case RESOLVING_BINDING: span = ((Binding const*)entry->key)->content_span; break;
+        case RESOLVING_ALIAS: {
+            Symbol const* symbol = entry->key;
+            if (symbol->decl_count) span = symbol->decls[0].full;
+        }   break;
+        case RESOLVING_PROP: span = ((Prop const*)entry->key)->decl->name_span; break;
+        case RESOLVING_SIGNATURE_RETURN: {
+            Signature const* sig = entry->key;
+            span = span_valid(sig->decl_span) ? sig->decl_span : sig->function ? function_error_span(sig->function) : span_null;
+        }   break;
+        case RESOLVING_BASES: {
+            Ty const* ty = entry->key;
+            Symbol const* symbol = ty->kind == TY_DECLARED ? ty->declared.symbol : nullptr;
+            if (symbol && symbol->decl_count) span = symbol->decls[0].full;
+        }   break;
+        default: break;
+    }
+    return span_valid(span) ? span_source(span) : nullptr;
+}
+
+// A cycle among the entries from `first` on: when one of them is in another file than the one being checked (or its file
+// is unknown), what is reported about it depends on where the cycle was entered (error_cycle_foreign)
+static void resolving_mark_cycle(Checker* me, u32 first) {
+    bool foreign = false;
+    for (u32 j = first; j < my resolving_len; j++) {
+        my resolving[j].circular = true;
+        if (!foreign && error_checking_file) foreign = resolving_entry_file(&my resolving[j]) != error_checking_file;
+    }
+    if (foreign) error_cycle_foreign = true;
+}
+
 void ty_resolving_cycle(Checker* me, ResolvingKind kind, void const* key) {
     for (u32 i = my resolving_len; i-- > my resolving_start;) {
         if (my resolving[i].key == key && my resolving[i].kind == kind) {
             TAINT_EVENT(TAINT_CYCLE);
             if (__builtin_expect(debug_env.rollback_stats, 0)) rollback_cycle(key);
-            for (u32 j = i; j < my resolving_len; j++) my resolving[j].circular = true;
+            resolving_mark_cycle(me, i);
             return;
         }
     }
@@ -4794,7 +4853,7 @@ void ty_resolving_cycle_across_calls(Checker* me, ResolvingKind kind, void const
         if (my resolving[i].key == key && my resolving[i].kind == kind) {
             TAINT_EVENT(TAINT_CYCLE);
             if (__builtin_expect(debug_env.rollback_stats, 0)) rollback_cycle(key);
-            for (u32 j = i; j < my resolving_len; j++) my resolving[j].circular = true;
+            resolving_mark_cycle(me, i);
             return;
         }
     }
@@ -4812,7 +4871,7 @@ void ty_resolving_pattern_cycle(Checker* me, void const* key, Binding const* pat
             if (root != pattern) continue;
             TAINT_EVENT(TAINT_CYCLE);
             if (__builtin_expect(debug_env.rollback_stats, 0)) rollback_cycle(key);
-            for (u32 k = j; k < my resolving_len; k++) my resolving[k].circular = true;
+            resolving_mark_cycle(me, j);
             return;
         }
         return;

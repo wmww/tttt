@@ -5057,11 +5057,24 @@ bool program_limit_history_dependent(Program const* me) {
     return atomic_load(&my history_reported) && (my checker_count > 1 || program_recycled(me));
 }
 
-// Whether the checkers' errors hold a history-dependent diagnostic (error_is_history_dependent()) that the output will
-// show: not in an unchecked or excluded file (error_ctx_remove_unchecked()), not under a @ts-expect-error/@ts-ignore
-// (program_apply_comment_directives()). type-fest's and effect's `// @ts-expect-error` over a type that runs into
-// TS2589/TS2590 reran their programs in one checker for a diagnostic nobody sees (2.5-6x their wall)
-static bool history_dependent_shown(ErrorCtx const* checker_errs, u32 count) {
+// Whether the parallel pass's output may differ from one checker's because of a history-dependent diagnostic
+// (error_is_history_dependent()), which is what the one-checker rerun is for. Only diagnostics the output shows count:
+// not in an unchecked or excluded file (error_ctx_remove_unchecked()), not under a @ts-expect-error/@ts-ignore
+// (program_apply_comment_directives()); type-fest's and effect's suppressed TS2589/TS2590 reran their programs for a
+// diagnostic nobody sees. Of those, one says the history mattered when (agents/notes/one_checker_rerun.md):
+// - it is about another file than the one its checker was checking (Error.history_foreign): what it is about was
+//   reached from elsewhere, and one checker may reach it first from a third file. appflare's TS5115 (every checker
+//   trips the same types at the first site its own files reach), bun 92-R16b's TS2615 pair across two files;
+// - two checkers report a limit (sunmao-ui's TS2590 at each checker's first union of that size);
+// - a checker was recycled, or the diagnostic has no file.
+// - it is an implicit-any circularity (TS7022, TS7023, TS7024), even inside the file being checked: sequelize's
+//   `models` field forms its cycle only where no earlier file resolved the class first.
+// The other circularities and a lone checker's limit in the file it was checking are what one checker reports too:
+// vue's TS5115 (75 of the 87 source sweep configs that reran on 2026-10-24 had output identical to --checkers 1 without
+// the rerun)
+static bool history_dependent_matters(Program* me, ErrorCtx const* checker_errs, u32 count) {
+    bool recycled = program_recycled(me);
+    u32 limit_checker = UINT32_MAX;
     for (u32 c = 0; c < count; c++) {
         for_each (e, vec_error, &checker_errs[c].errors) {
             if (!error_is_history_dependent(e->ts_code) || e->suggestion) continue;
@@ -5069,7 +5082,17 @@ static bool history_dependent_shown(ErrorCtx const* checker_errs, u32 count) {
             if (!span_valid(e->span) || !source) return true;
             if (source->excluded || source->unchecked) continue;
             if (preceding_comment_directive(source, e->span)) continue;
-            return true;
+            if (recycled || e->history_foreign) return true;
+            // (An implicit-any circularity, TS7022/TS7023/TS7024, always: whether it forms at all can depend on an earlier
+            // file having resolved its class first, with every entry of the cycle in this file: sequelize's `models` field,
+            // 3 of 15 runs at the defaults without this)
+            if (e->ts_code == 7022 || e->ts_code == 7023 || e->ts_code == 7024) return true;
+            if (e->ts_code == 2589 || e->ts_code == 5114 || e->ts_code == 5115 || e->ts_code == 2590 ||
+                e->ts_code == 2321 || e->ts_code == 2859
+            ) {
+                if (limit_checker != UINT32_MAX && limit_checker != c) return true;
+                limit_checker = c;
+            }
         }
     }
     return false;
@@ -5775,6 +5798,8 @@ static bool pool_recycle_due(Program* me, Checker* checker, u32 c, u32 count) {
 
 // A file's check by `checker`
 static void check_file(Program* me, Checker* checker, SourceFile* source, u32 at) {
+    error_checking_file = source;
+    error_cycle_foreign = false;
     __atomic_store_n(&checker->file_order, at, __ATOMIC_RELAXED);
     checker->member_ref_order = at;
 #ifdef TTTT_SURVIVORS
@@ -6238,6 +6263,7 @@ static void check_share(Program* me, u32 c, u32 count) {
     if (checker->graph) graph_memo_flush(checker);
     checker_make_current(nullptr);
     error_history_flag = nullptr;
+    error_checking_file = nullptr;
     graph_epoch_leave(me, count);
     timespec_get(&end, TIME_UTC);
     checker->check_ms = (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
@@ -6747,7 +6773,7 @@ again:
     // checker count
     // (Not with --no-rerun: program_set_history_rerun())
     if (!limit_rerun && !my graph && !my no_rerun && program_limit_history_dependent(me) &&
-        history_dependent_shown(checker_errs, count)
+        history_dependent_matters(me, checker_errs, count)
     ) {
         if (getenv("TTTT_DEBUG_LIMIT_RERUN")) eprintln("tttt: limit rerun in one checker");
         typecheck_pass_drop(me, checker_errs, count);

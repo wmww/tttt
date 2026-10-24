@@ -2704,15 +2704,21 @@ typedef struct MembersInFlight {
     u32 resolving_len;
     u32 instantiation_depth;
 } MembersInFlight;
+// What a RESOLVING_DECLARATION key is (only asked when a cycle is found, to tell which file each part is in)
+enum { RESOLVING_KEY_LAZY = 0, RESOLVING_KEY_SYMBOL_DECL, RESOLVING_KEY_SYMBOL };
 typedef struct Resolving {
     void const* key;
     u32 kind;
     bool circular;
+    uint8_t key_type; // RESOLVING_DECLARATION: RESOLVING_KEY_*
 } Resolving;
 void ty_resolving_grow(Checker* me);
-static inline void ty_resolving_push(Checker* me, ResolvingKind kind, void const* key) {
+static inline void ty_resolving_push_keyed(Checker* me, ResolvingKind kind, void const* key, uint8_t key_type) {
     if (my resolving_len == my resolving_cap) ty_resolving_grow(me);
-    my resolving[my resolving_len++] = (Resolving){ .key = key, .kind = kind };
+    my resolving[my resolving_len++] = (Resolving){ .key = key, .kind = kind, .key_type = key_type };
+}
+static inline void ty_resolving_push(Checker* me, ResolvingKind kind, void const* key) {
+    ty_resolving_push_keyed(me, kind, key, RESOLVING_KEY_LAZY);
 }
 // This checker's innermost entry of `key` anywhere on the stack, barriers or not: whether the computation is the
 // checker's own (a lazy field's IN_FLIGHT state only says that someone has it in flight), and the entry is its in-flight

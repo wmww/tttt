@@ -1915,7 +1915,7 @@ static Ty const* export_expression_type(Checker* me, Symbol const* symbol, Symbo
         ty_resolving_cycle(me, RESOLVING_DECLARATION, decl);
         return circular;
     }
-    ty_resolving_push(me, RESOLVING_DECLARATION, decl);
+    ty_resolving_push_keyed(me, RESOLVING_DECLARATION, decl, RESOLVING_KEY_SYMBOL_DECL);
     Ty const* type = ty_regular(me, ty_widened_objects(me, ty_expr_type(me, decl->node)));
     if (ty_resolving_pop(me)) {
         my circular_bindings = true;
@@ -2584,7 +2584,7 @@ static Ty const* guarded_assignment_symbol_type(Checker* me, Symbol const* symbo
         ty_resolving_cycle(me, RESOLVING_DECLARATION, decl);
         return circular;
     }
-    ty_resolving_push(me, RESOLVING_DECLARATION, decl);
+    ty_resolving_push_keyed(me, RESOLVING_DECLARATION, decl, RESOLVING_KEY_SYMBOL_DECL);
     Ty const* type = single ? value_entry_type(me, symbol, decl) : assignment_symbol_type(me, symbol);
     if (ty_resolving_pop(me)) {
         my circular_bindings = true;
@@ -2642,7 +2642,7 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
         TY_WORKER_STATE(me);
         return ty_intrinsic(me, TY_ERROR);
     }
-    ty_resolving_push(me, RESOLVING_DECLARATION, symbol);
+    ty_resolving_push_keyed(me, RESOLVING_DECLARATION, symbol, RESOLVING_KEY_SYMBOL);
     Ty const* ret = alias_type_of_symbol(me, symbol);
     if (ty_resolving_pop(me)) {
         TY_WORKER_STATE(me);
