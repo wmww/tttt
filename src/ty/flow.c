@@ -2172,6 +2172,13 @@ static Atom const* destructured_alias_name(FlowQuery* q, Expr const* expr) {
     return checker_atom(me, cstr_sv(&item->source.string));
 }
 
+// The type whose properties tell whether a name is a discriminant: the declared type while the computed one is a subset
+// of it, `!success || !data` of a destructured union still finds `data` one where `!success` left a single member
+// (tsc's getDiscriminantPropertyAccess)
+static Ty const* discriminant_candidate(FlowQuery* q, Ty const* computed) {
+    return q->declared->kind == TY_UNION && query_subset_of(q, computed, q->declared) ? q->declared : computed;
+}
+
 // tsc's getDiscriminantPropertyAccess(): `expr` if it is `reference.name` for a discriminant property, or a const alias
 // of that (`const k = x.kind`, `const { kind } = x`)
 static DiscriminantAccess discriminant_access(FlowQuery* q, Expr const* expr, Ty const* computed) {
@@ -2186,17 +2193,19 @@ static DiscriminantAccess discriminant_access(FlowQuery* q, Expr const* expr, Ty
         if (symbol && symbol->is_parameter && parameter_index(q->parameters_of, symbol, &index)) {
             name = ty_index_atom(me, (u32)index);
         }
-        return name && is_discriminant_property(me, computed, name) ? (DiscriminantAccess){ nullptr, name } : none;
+        return name && is_discriminant_property(me, discriminant_candidate(q, computed), name) ?
+            (DiscriminantAccess){ nullptr, name } : none;
     }
     if (q->pattern) {
         // An element of the pattern, without a default (tsc's getCandidateDiscriminantPropertyAccess)
         Atom const* name = expr->tag == EXPR_IDENTIFIER ? pattern_element_name(me, q->pattern, expr->identifier.target) : nullptr;
-        return name && is_discriminant_property(me, computed, name) ? (DiscriminantAccess){ nullptr, name } : none;
+        return name && is_discriminant_property(me, discriminant_candidate(q, computed), name) ?
+            (DiscriminantAccess){ nullptr, name } : none;
     }
     Expr const* aliased = aliased_access(expr);
     Atom const* destructured = aliased ? nullptr : destructured_alias_name(q, expr);
     if (aliased) expr = aliased;
-    Ty const* type = q->declared->kind == TY_UNION && query_subset_of(q, computed, q->declared) ? q->declared : computed;
+    Ty const* type = discriminant_candidate(q, computed);
     if (destructured) {
         return is_discriminant_property(me, type, destructured) ? (DiscriminantAccess){ nullptr, destructured } : none;
     }

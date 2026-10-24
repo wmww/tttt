@@ -1,0 +1,132 @@
+//// [test/cases/ttttDiscriminantAfterNarrowing.ts] ////
+
+=== ttttDiscriminantAfterNarrowing.ts ===
+// A name is a discriminant by the declared union while the computed type is a subset of it: the second test of an `||`
+// still narrows where the first left a single member
+type Ok = { ok: true; value: { v: string }; err?: never };
+>Ok : Symbol(Ok, Decl(ttttDiscriminantAfterNarrowing.ts, 0, 0))
+>ok : Symbol(ok, Decl(ttttDiscriminantAfterNarrowing.ts, 2, 11))
+>value : Symbol(value, Decl(ttttDiscriminantAfterNarrowing.ts, 2, 21))
+>v : Symbol(v, Decl(ttttDiscriminantAfterNarrowing.ts, 2, 30))
+>err : Symbol(err, Decl(ttttDiscriminantAfterNarrowing.ts, 2, 43))
+
+type Bad = { ok: false; value?: never; err: { message: string } };
+>Bad : Symbol(Bad, Decl(ttttDiscriminantAfterNarrowing.ts, 2, 58))
+>ok : Symbol(ok, Decl(ttttDiscriminantAfterNarrowing.ts, 3, 12))
+>value : Symbol(value, Decl(ttttDiscriminantAfterNarrowing.ts, 3, 23))
+>err : Symbol(err, Decl(ttttDiscriminantAfterNarrowing.ts, 3, 38))
+>message : Symbol(message, Decl(ttttDiscriminantAfterNarrowing.ts, 3, 45))
+
+declare function get(): Ok | Bad;
+>get : Symbol(get, Decl(ttttDiscriminantAfterNarrowing.ts, 3, 66))
+>Ok : Symbol(Ok, Decl(ttttDiscriminantAfterNarrowing.ts, 0, 0))
+>Bad : Symbol(Bad, Decl(ttttDiscriminantAfterNarrowing.ts, 2, 58))
+
+export function destructured() {
+>destructured : Symbol(destructured, Decl(ttttDiscriminantAfterNarrowing.ts, 4, 33))
+
+    const { ok, value, err } = get();
+>ok : Symbol(ok, Decl(ttttDiscriminantAfterNarrowing.ts, 7, 11))
+>value : Symbol(value, Decl(ttttDiscriminantAfterNarrowing.ts, 7, 15))
+>err : Symbol(err, Decl(ttttDiscriminantAfterNarrowing.ts, 7, 22))
+>get : Symbol(get, Decl(ttttDiscriminantAfterNarrowing.ts, 3, 66))
+
+    if (!ok || !value) {
+>ok : Symbol(ok, Decl(ttttDiscriminantAfterNarrowing.ts, 7, 11))
+>value : Symbol(value, Decl(ttttDiscriminantAfterNarrowing.ts, 7, 15))
+
+        return err.message;
+>err.message : Symbol(message, Decl(ttttDiscriminantAfterNarrowing.ts, 3, 45))
+>err : Symbol(err, Decl(ttttDiscriminantAfterNarrowing.ts, 7, 22))
+>message : Symbol(message, Decl(ttttDiscriminantAfterNarrowing.ts, 3, 45))
+    }
+    return value.v;
+>value.v : Symbol(v, Decl(ttttDiscriminantAfterNarrowing.ts, 2, 30))
+>value : Symbol(value, Decl(ttttDiscriminantAfterNarrowing.ts, 7, 15))
+>v : Symbol(v, Decl(ttttDiscriminantAfterNarrowing.ts, 2, 30))
+}
+
+export function parameters(...[ok, value, err]: [true, { v: string }, undefined] | [false, undefined, Error]) {
+>parameters : Symbol(parameters, Decl(ttttDiscriminantAfterNarrowing.ts, 12, 1))
+>ok : Symbol(ok, Decl(ttttDiscriminantAfterNarrowing.ts, 14, 31))
+>value : Symbol(value, Decl(ttttDiscriminantAfterNarrowing.ts, 14, 34))
+>err : Symbol(err, Decl(ttttDiscriminantAfterNarrowing.ts, 14, 41))
+>v : Symbol(v, Decl(ttttDiscriminantAfterNarrowing.ts, 14, 56))
+>Error : Symbol(Error, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2022.error.d.ts, --, --))
+
+    if (!ok || !value) {
+>ok : Symbol(ok, Decl(ttttDiscriminantAfterNarrowing.ts, 14, 31))
+>value : Symbol(value, Decl(ttttDiscriminantAfterNarrowing.ts, 14, 34))
+
+        return err.message;
+>err.message : Symbol(Error.message, Decl(lib.es5.d.ts, --, --))
+>err : Symbol(err, Decl(ttttDiscriminantAfterNarrowing.ts, 14, 41))
+>message : Symbol(Error.message, Decl(lib.es5.d.ts, --, --))
+    }
+    return value.v;
+>value.v : Symbol(v, Decl(ttttDiscriminantAfterNarrowing.ts, 14, 56))
+>value : Symbol(value, Decl(ttttDiscriminantAfterNarrowing.ts, 14, 34))
+>v : Symbol(v, Decl(ttttDiscriminantAfterNarrowing.ts, 14, 56))
+}
+
+export function aliased() {
+>aliased : Symbol(aliased, Decl(ttttDiscriminantAfterNarrowing.ts, 19, 1))
+
+    const r = get();
+>r : Symbol(r, Decl(ttttDiscriminantAfterNarrowing.ts, 22, 9))
+>get : Symbol(get, Decl(ttttDiscriminantAfterNarrowing.ts, 3, 66))
+
+    const { ok, value } = r;
+>ok : Symbol(ok, Decl(ttttDiscriminantAfterNarrowing.ts, 23, 11))
+>value : Symbol(value, Decl(ttttDiscriminantAfterNarrowing.ts, 23, 15))
+>r : Symbol(r, Decl(ttttDiscriminantAfterNarrowing.ts, 22, 9))
+
+    if (!ok || !value) {
+>ok : Symbol(ok, Decl(ttttDiscriminantAfterNarrowing.ts, 23, 11))
+>value : Symbol(value, Decl(ttttDiscriminantAfterNarrowing.ts, 23, 15))
+
+        return r.err.message;
+>r.err.message : Symbol(message, Decl(ttttDiscriminantAfterNarrowing.ts, 3, 45))
+>r.err : Symbol(err, Decl(ttttDiscriminantAfterNarrowing.ts, 3, 38))
+>r : Symbol(r, Decl(ttttDiscriminantAfterNarrowing.ts, 22, 9))
+>err : Symbol(err, Decl(ttttDiscriminantAfterNarrowing.ts, 3, 38))
+>message : Symbol(message, Decl(ttttDiscriminantAfterNarrowing.ts, 3, 45))
+    }
+    return r.value.v;
+>r.value.v : Symbol(v, Decl(ttttDiscriminantAfterNarrowing.ts, 2, 30))
+>r.value : Symbol(value, Decl(ttttDiscriminantAfterNarrowing.ts, 2, 21))
+>r : Symbol(r, Decl(ttttDiscriminantAfterNarrowing.ts, 22, 9))
+>value : Symbol(value, Decl(ttttDiscriminantAfterNarrowing.ts, 2, 21))
+>v : Symbol(v, Decl(ttttDiscriminantAfterNarrowing.ts, 2, 30))
+}
+
+export function access() {
+>access : Symbol(access, Decl(ttttDiscriminantAfterNarrowing.ts, 28, 1))
+
+    const r = get();
+>r : Symbol(r, Decl(ttttDiscriminantAfterNarrowing.ts, 31, 9))
+>get : Symbol(get, Decl(ttttDiscriminantAfterNarrowing.ts, 3, 66))
+
+    if (!r.ok || !r.value) {
+>r.ok : Symbol(ok, Decl(ttttDiscriminantAfterNarrowing.ts, 3, 12), Decl(ttttDiscriminantAfterNarrowing.ts, 2, 11))
+>r : Symbol(r, Decl(ttttDiscriminantAfterNarrowing.ts, 31, 9))
+>ok : Symbol(ok, Decl(ttttDiscriminantAfterNarrowing.ts, 3, 12), Decl(ttttDiscriminantAfterNarrowing.ts, 2, 11))
+>r.value : Symbol(value, Decl(ttttDiscriminantAfterNarrowing.ts, 2, 21))
+>r : Symbol(r, Decl(ttttDiscriminantAfterNarrowing.ts, 31, 9))
+>value : Symbol(value, Decl(ttttDiscriminantAfterNarrowing.ts, 2, 21))
+
+        return r.err.message;
+>r.err.message : Symbol(message, Decl(ttttDiscriminantAfterNarrowing.ts, 3, 45))
+>r.err : Symbol(err, Decl(ttttDiscriminantAfterNarrowing.ts, 3, 38))
+>r : Symbol(r, Decl(ttttDiscriminantAfterNarrowing.ts, 31, 9))
+>err : Symbol(err, Decl(ttttDiscriminantAfterNarrowing.ts, 3, 38))
+>message : Symbol(message, Decl(ttttDiscriminantAfterNarrowing.ts, 3, 45))
+    }
+    return r.value.v;
+>r.value.v : Symbol(v, Decl(ttttDiscriminantAfterNarrowing.ts, 2, 30))
+>r.value : Symbol(value, Decl(ttttDiscriminantAfterNarrowing.ts, 2, 21))
+>r : Symbol(r, Decl(ttttDiscriminantAfterNarrowing.ts, 31, 9))
+>value : Symbol(value, Decl(ttttDiscriminantAfterNarrowing.ts, 2, 21))
+>v : Symbol(v, Decl(ttttDiscriminantAfterNarrowing.ts, 2, 30))
+}
+

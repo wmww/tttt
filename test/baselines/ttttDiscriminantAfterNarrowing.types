@@ -1,0 +1,148 @@
+//// [test/cases/ttttDiscriminantAfterNarrowing.ts] ////
+
+=== ttttDiscriminantAfterNarrowing.ts ===
+// A name is a discriminant by the declared union while the computed type is a subset of it: the second test of an `||`
+// still narrows where the first left a single member
+type Ok = { ok: true; value: { v: string }; err?: never };
+>Ok : Ok
+>ok : true
+>true : true
+>value : { v: string; }
+>v : string
+>err : undefined
+
+type Bad = { ok: false; value?: never; err: { message: string } };
+>Bad : Bad
+>ok : false
+>false : false
+>value : undefined
+>err : { message: string; }
+>message : string
+
+declare function get(): Ok | Bad;
+>get : () => Ok | Bad
+
+export function destructured() {
+>destructured : () => string
+
+    const { ok, value, err } = get();
+>ok : boolean
+>value : { v: string; } | undefined
+>err : { message: string; } | undefined
+>get() : Bad | Ok
+>get : () => Ok | Bad
+
+    if (!ok || !value) {
+>!ok || !value : boolean
+>!ok : boolean
+>ok : boolean
+>!value : false
+>value : { v: string; }
+
+        return err.message;
+>err.message : string
+>err : { message: string; }
+>message : string
+    }
+    return value.v;
+>value.v : string
+>value : { v: string; }
+>v : string
+}
+
+export function parameters(...[ok, value, err]: [true, { v: string }, undefined] | [false, undefined, Error]) {
+>parameters : (...[ok, value, err]: [true, { v: string; }, undefined] | [false, undefined, Error]) => string
+>ok : boolean
+>value : { v: string; } | undefined
+>err : Error | undefined
+>true : true
+>v : string
+>false : false
+
+    if (!ok || !value) {
+>!ok || !value : boolean
+>!ok : boolean
+>ok : boolean
+>!value : false
+>value : { v: string; }
+
+        return err.message;
+>err.message : string
+>err : Error
+>message : string
+    }
+    return value.v;
+>value.v : string
+>value : { v: string; }
+>v : string
+}
+
+export function aliased() {
+>aliased : () => string
+
+    const r = get();
+>r : Bad | Ok
+>get() : Bad | Ok
+>get : () => Ok | Bad
+
+    const { ok, value } = r;
+>ok : boolean
+>value : { v: string; } | undefined
+>r : Bad | Ok
+
+    if (!ok || !value) {
+>!ok || !value : boolean
+>!ok : boolean
+>ok : boolean
+>!value : false
+>value : { v: string; }
+
+        return r.err.message;
+>r.err.message : string
+>r.err : { message: string; }
+>r : Bad
+>err : { message: string; }
+>message : string
+    }
+    return r.value.v;
+>r.value.v : string
+>r.value : { v: string; }
+>r : Ok
+>value : { v: string; }
+>v : string
+}
+
+export function access() {
+>access : () => string
+
+    const r = get();
+>r : Bad | Ok
+>get() : Bad | Ok
+>get : () => Ok | Bad
+
+    if (!r.ok || !r.value) {
+>!r.ok || !r.value : boolean
+>!r.ok : boolean
+>r.ok : boolean
+>r : Bad | Ok
+>ok : boolean
+>!r.value : false
+>r.value : { v: string; }
+>r : Ok
+>value : { v: string; }
+
+        return r.err.message;
+>r.err.message : string
+>r.err : { message: string; }
+>r : Bad
+>err : { message: string; }
+>message : string
+    }
+    return r.value.v;
+>r.value.v : string
+>r.value : { v: string; }
+>r : Ok
+>value : { v: string; }
+>v : string
+}
+
