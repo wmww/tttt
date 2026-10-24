@@ -6,6 +6,7 @@ by tsgo and tttt, and every difference is a tttt bug (or a formatting-only one, 
 
   scripts/npmsample.py --seed S [-N 50]       # sample, setup, compare, clean: the whole batch
   scripts/npmsample.py sample --seed S [-n 2000]   # test/npmsample/S.candidates.jsonl (TS packages, GitHub repos)
+  scripts/npmsample.py stats --seed S              # setup's timing summary from S.setup.jsonl (t_* fields)
   scripts/npmsample.py setup --seed S [-N 50]      # clone + install + bench config + tsgo trial, resumable
         [--prefer-large] [--skip-monorepos]        # the trees listed first (precheck(): skips before any checkout),
                                                    # largest first; workspaces skipped (opt-in, see npm_sampling.md)
@@ -616,11 +617,16 @@ def list_one(seed, c, skip_monorepos=False):
         return None, {}
     if os.path.exists(repo):
         shutil.rmtree(repo)
+    t0 = time.time()
     p = clone_tree(c['repo'], repo)
+    t_clone = time.time() - t0
     if p.returncode != 0:
         shutil.rmtree(repo, ignore_errors=True)
-        return {**rec, 'status': 'skip', 'reason': 'clone: ' + (p.stderr.strip().splitlines() or [''])[-1][:200]}, {}
+        return {**rec, 'status': 'skip', 'reason': 'clone: ' + (p.stderr.strip().splitlines() or [''])[-1][:200],
+                't_clone': t_clone}, {}
+    t0 = time.time()
     reason, info = precheck(repo, c['directory'])
+    info = {**info, 't_clone': t_clone, 't_precheck': time.time() - t0}
     if not reason and skip_monorepos and info.get('monorepo'):
         reason = 'monorepo (--skip-monorepos)'
     if reason:
@@ -630,16 +636,34 @@ def list_one(seed, c, skip_monorepos=False):
 
 
 def setup_one(seed, c, listed=None, skip_monorepos=False):
-    """`listed`: list_one()'s result if it ran already"""
+    """`listed`: list_one()'s result if it ran already. The record carries the wall-clock seconds of its steps
+    (t_clone: clone and checkout, t_precheck, t_install, t_trial: the bench config and tsgo's run) and t_total"""
+    pre = listed is not None
+    if not pre:
+        listed = list_one(seed, c, skip_monorepos)
+    t0 = time.time()
+    t = {}
+    r = setup_one_steps(seed, c, listed, t)
+    # (list_one's steps are in the record already: its skip record, or the info merged into it; a listing done
+    # before this call (--prefer-large) is not in this call's wall time)
+    t['t_total'] = time.time() - t0 + (sum(listed[1].get(k, 0.0) for k in ('t_clone', 't_precheck')) if pre else 0.0)
+    for k in ('t_clone', 't_precheck', 't_install', 't_trial'):
+        t[k] = t.get(k, r.get(k, 0.0))
+    return {**r, **{k: round(v, 3) for k, v in t.items()}}
+
+
+def setup_one_steps(seed, c, listed, t):
     rec = {k: c[k] for k in ('i', 'name', 'version', 'repo', 'directory')}
     repo = os.path.join(NS, str(seed), repo_dirname(c))
     marker = os.path.join(repo, '.npmsample-installed')
-    skip, info = listed if listed else list_one(seed, c, skip_monorepos)
+    skip, info = listed
     if skip:
         return skip
     rec.update(info)
     if not os.path.exists(marker):
+        t0 = time.time()
         p = checkout(repo)
+        rec['t_clone'] = rec.get('t_clone', 0.0) + time.time() - t0
         if p.returncode != 0:
             shutil.rmtree(repo, ignore_errors=True)
             return {**rec, 'status': 'skip', 'reason': 'checkout: ' + (p.stderr.strip().splitlines() or [''])[-1][:200]}
@@ -657,7 +681,9 @@ def setup_one(seed, c, listed=None, skip_monorepos=False):
         # (A cache per install, deleted after it: a batch's shared caches reached 7-9 GB, more than its clones; pnpm's
         # store files stay in node_modules as hardlinks)
         cache = os.path.join(seed_cache(seed), repo_dirname(c))
+        t0 = time.time()
         r = sb.install(repo, pkg, cache, corepack_home=COREPACK)
+        t['t_install'] = time.time() - t0
         shutil.rmtree(cache, ignore_errors=True)
         rec['install'] = {k: r[k] for k in ('pm', 'dir', 'notes', 'changes', 'commands')}
         if r['refused']:
@@ -668,12 +694,14 @@ def setup_one(seed, c, listed=None, skip_monorepos=False):
         with open(marker, 'w') as f:
             f.write(json.dumps(rec['install']) + '\n')
     rec['pm'] = json.loads(open(marker).read())['pm'] if open(marker).read().startswith('{') else open(marker).read().strip()
+    t0 = time.time()
     bench, changes = make_bench(config, repo)
     rec['changes'] = changes
     if bench is None:
         return {**rec, 'status': 'skip', 'reason': changes}
     rec['config'] = os.path.relpath(bench, os.path.join(NS, str(seed)))
     text, status = tsgo_run('tsconfig.bench.json', os.path.dirname(bench))
+    t['t_trial'] = time.time() - t0
     diags = tscformat.parse(text)
     codes = collections.Counter(d[3] for d in diags)
     own = own_files(bench, repo)
@@ -713,6 +741,49 @@ def write_tsv(seed, n):
         for r in acc:
             f.write(f'{repo_dirname(r)}\t{r["config"]}\n')
     return acc
+
+
+def outcome(r):
+    if r['status'] == 'accepted':
+        return 'accepted'
+    if r['status'] == 'reject':
+        return 'rejected by trial'
+    if str(r.get('reason', '')).startswith('install'):
+        return 'install failed'
+    return 'skipped'
+
+
+def timing_summary(recs, what='candidates'):
+    """Time spent by outcome and the five longest candidates, from setup records with a t_total (older records
+    have none: counted, not summarized)"""
+    timed = [r for r in recs if 't_total' in r]
+    out = [f'timing: {len(timed)} of {len(recs)} {what} timed' +
+           (f' ({len(recs) - len(timed)} older records lack the fields, skipped)' if len(timed) < len(recs) else '')]
+    if not timed:
+        return '\n'.join(out)
+    steps = ('t_clone', 't_precheck', 't_install', 't_trial')
+    out.append(f'  {"outcome":18} {"n":>4} {"total s":>9} {"mean s":>8}  ' + ' '.join(f'{k[2:]:>9}' for k in steps))
+    for o in ('accepted', 'rejected by trial', 'install failed', 'skipped'):
+        rs = [r for r in timed if outcome(r) == o]
+        if rs:
+            tot = sum(r['t_total'] for r in rs)
+            out.append(f'  {o:18} {len(rs):4} {tot:9.0f} {tot / len(rs):8.1f}  ' +
+                       ' '.join(f'{sum(r.get(k, 0.0) for r in rs):9.0f}' for k in steps))
+    tot = sum(r['t_total'] for r in timed)
+    out.append(f'  {"all":18} {len(timed):4} {tot:9.0f} {tot / len(timed):8.1f}  (summed over candidates, run in parallel)')
+    out.append('  longest:')
+    for r in sorted(timed, key=lambda r: -r['t_total'])[:5]:
+        why = r.get('reason') or ''
+        out.append(f'    {r["t_total"]:7.0f}s {r["name"][:36]:36} {outcome(r):17} ts_files {r.get("ts_files", "?")}' +
+                   (f'  {str(why)[:50]}' if r['status'] != 'accepted' else ''))
+    return '\n'.join(out)
+
+
+def cmd_stats(seed):
+    recs = read_jsonl(files(seed, 'setup.jsonl'))
+    if not recs:
+        sys.exit(f'stats: no setup records for seed {seed}')
+    print(timing_summary(recs))
 
 
 def cmd_setup(seed, n, jobs, prefer_large=False, skip_monorepos=False):
@@ -811,6 +882,7 @@ def cmd_setup(seed, n, jobs, prefer_large=False, skip_monorepos=False):
     os.remove(pid_file)
     acc = write_tsv(seed, n)
     print(f'setup: {len(acc)}/{n} accepted -> {os.path.relpath(files(seed, "tsv"), ROOT)}')
+    print(timing_summary([r for r in read_jsonl(log) if r['i'] not in done], 'candidates of this run'))
     return len(acc) >= n
 
 
@@ -1001,7 +1073,7 @@ def cmd_clean(seed, everything, keep):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('command', nargs='?', choices=('sample', 'setup', 'compare', 'clean'))
+    ap.add_argument('command', nargs='?', choices=('sample', 'setup', 'compare', 'clean', 'stats'))
     ap.add_argument('--seed', type=int, required=True)
     ap.add_argument('-n', type=int, default=2000, help='names to sample')
     ap.add_argument('-N', type=int, default=50, help='projects to accept')
@@ -1022,6 +1094,8 @@ def main():
     if c in ('setup', 'compare', None) and not args.last:
         # (The pinned tsgo: a stale checkout fails here instead of filling tsc.jsonl with another version's output)
         subprocess.run([os.path.join(ROOT, 'thirdparty/ensure-typescript.sh')], check=True, stdout=subprocess.DEVNULL)
+    if c == 'stats':
+        return cmd_stats(args.seed)
     if c == 'sample' or (c is None and not os.path.exists(files(args.seed, 'candidates.jsonl'))):
         cmd_sample(args.seed, args.n)
     if c in ('setup', None):
