@@ -37,7 +37,10 @@ for flips); a separate file so the three boxes never conflict.
   type while root is being resolved. tsgo doesn't hit the circularity there (the declared type stands in for the
   assignment, or the reference's flow is cached differently). Reduced by hand from the reduce.py copy: --tsgo-clean
   kept all 149 package files whole, since deleting one breaks tsgo's imports. Repro
-  test/cases/npm__octanejs_sanity-icons_TS7022.ts. (claimed: fixF) [flip] [open]
+  test/cases/npm__octanejs_sanity-icons_TS7022.ts. Cause: tttt checked a do-while's condition before its body (the
+  parser makes it a for loop); tsc's checkDoStatement checks the body first, so `contains(candidate)` puts the loop in
+  flight and root's initializer (getQuickTypeOfExpression, outside checkExpressionCached) gets its partial type. Repro
+  of the rule: ttttDoWhileBodyBeforeCondition. [flip] [fixed PENDING]
 - Seed 20261205, akveo/nebular (@nbholleweger/eva-icons@0.0.5): an Angular schematics template checked as TypeScript,
   `export class <%= classify(className) %>Component {`. tsgo parses the `<` after `class` as the type parameter
   list of a nameless class (TS1139 at the `%`, then TS1005 '>' expected). tttt reports TS1005 '{' expected and TS1110

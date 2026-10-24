@@ -2730,14 +2730,21 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
         }
 
         case STATEMENT_FOR_LOOP: {
+            // A do-while's body is checked before its condition (tsc's checkDoStatement), which matters to what is in
+            // flight first: `do { f(c); const r = c.g(); c = r.h; } while (c)` reads `c` at the loop head first, so the
+            // back edge's `r` is resolved with that loop in progress (its partial type), not from the condition's
+            // assignment straight to `r` and around the loop again (a TS7022 on `r`)
+            bool do_while = my for_loop->is_do_while;
             statement_typecheck(&my for_loop->initialization, ctx, errs);
+            BlockTypecheckCtx body_ctx = ctx;
+            body_ctx.break_allowed = true;
+            body_ctx.continue_allowed = true;
+            body_ctx.body = true;
+            if (do_while) statement_typecheck(&my for_loop->body, body_ctx, errs);
             expr_typecheck(&my for_loop->condition, errs);
             expr_check_truthiness(&my for_loop->condition, errs);
             expr_typecheck(&my for_loop->afterthought, errs);
-            ctx.break_allowed = true;
-            ctx.continue_allowed = true;
-            ctx.body = true;
-            statement_typecheck(&my for_loop->body, ctx, errs);
+            if (!do_while) statement_typecheck(&my for_loop->body, body_ctx, errs);
             break;
         }
 

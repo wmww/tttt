@@ -1,0 +1,59 @@
+//// [test/cases/ttttDoWhileBodyBeforeCondition.ts] ////
+
+=== ttttDoWhileBodyBeforeCondition.ts ===
+// A do-while's body is checked before its condition (tsc's checkDoStatement): the read of `c` at the loop head is in
+// flight when `r`'s initializer asks for `c` again, which answers the loop's partial type instead of walking from the
+// condition's assignment back to `r` (TS7022 on `r` otherwise)
+interface Item { parent(): Item | Root; }
+>Item : Symbol(Item, Decl(ttttDoWhileBodyBeforeCondition.ts, 0, 0))
+>parent : Symbol(Item.parent, Decl(ttttDoWhileBodyBeforeCondition.ts, 3, 16))
+>Item : Symbol(Item, Decl(ttttDoWhileBodyBeforeCondition.ts, 0, 0))
+>Root : Symbol(Root, Decl(ttttDoWhileBodyBeforeCondition.ts, 3, 41))
+
+interface Root { kind: number; host: Item; }
+>Root : Symbol(Root, Decl(ttttDoWhileBodyBeforeCondition.ts, 3, 41))
+>kind : Symbol(Root.kind, Decl(ttttDoWhileBodyBeforeCondition.ts, 4, 16))
+>host : Symbol(Root.host, Decl(ttttDoWhileBodyBeforeCondition.ts, 4, 30))
+>Item : Symbol(Item, Decl(ttttDoWhileBodyBeforeCondition.ts, 0, 0))
+
+declare function seen(i: Item | undefined): boolean;
+>seen : Symbol(seen, Decl(ttttDoWhileBodyBeforeCondition.ts, 4, 44))
+>i : Symbol(i, Decl(ttttDoWhileBodyBeforeCondition.ts, 5, 22))
+>Item : Symbol(Item, Decl(ttttDoWhileBodyBeforeCondition.ts, 0, 0))
+
+export function f(start: Item): boolean {
+>f : Symbol(f, Decl(ttttDoWhileBodyBeforeCondition.ts, 5, 52))
+>start : Symbol(start, Decl(ttttDoWhileBodyBeforeCondition.ts, 6, 18))
+>Item : Symbol(Item, Decl(ttttDoWhileBodyBeforeCondition.ts, 0, 0))
+
+    let c: Item | undefined = start;
+>c : Symbol(c, Decl(ttttDoWhileBodyBeforeCondition.ts, 7, 7))
+>Item : Symbol(Item, Decl(ttttDoWhileBodyBeforeCondition.ts, 0, 0))
+>start : Symbol(start, Decl(ttttDoWhileBodyBeforeCondition.ts, 6, 18))
+
+    do {
+        if (seen(c)) return true;
+>seen : Symbol(seen, Decl(ttttDoWhileBodyBeforeCondition.ts, 4, 44))
+>c : Symbol(c, Decl(ttttDoWhileBodyBeforeCondition.ts, 7, 7))
+
+        const r = c.parent();
+>r : Symbol(r, Decl(ttttDoWhileBodyBeforeCondition.ts, 10, 13))
+>c.parent : Symbol(Item.parent, Decl(ttttDoWhileBodyBeforeCondition.ts, 3, 16))
+>c : Symbol(c, Decl(ttttDoWhileBodyBeforeCondition.ts, 7, 7))
+>parent : Symbol(Item.parent, Decl(ttttDoWhileBodyBeforeCondition.ts, 3, 16))
+
+        c = "kind" in r ? r.host : undefined;
+>c : Symbol(c, Decl(ttttDoWhileBodyBeforeCondition.ts, 7, 7))
+>r : Symbol(r, Decl(ttttDoWhileBodyBeforeCondition.ts, 10, 13))
+>r.host : Symbol(Root.host, Decl(ttttDoWhileBodyBeforeCondition.ts, 4, 30))
+>r : Symbol(r, Decl(ttttDoWhileBodyBeforeCondition.ts, 10, 13))
+>host : Symbol(Root.host, Decl(ttttDoWhileBodyBeforeCondition.ts, 4, 30))
+>undefined : Symbol(undefined)
+
+    } while (c !== undefined);
+>c : Symbol(c, Decl(ttttDoWhileBodyBeforeCondition.ts, 7, 7))
+>undefined : Symbol(undefined)
+
+    return false;
+}
+

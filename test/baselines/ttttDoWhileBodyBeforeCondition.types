@@ -1,0 +1,60 @@
+//// [test/cases/ttttDoWhileBodyBeforeCondition.ts] ////
+
+=== ttttDoWhileBodyBeforeCondition.ts ===
+// A do-while's body is checked before its condition (tsc's checkDoStatement): the read of `c` at the loop head is in
+// flight when `r`'s initializer asks for `c` again, which answers the loop's partial type instead of walking from the
+// condition's assignment back to `r` (TS7022 on `r` otherwise)
+interface Item { parent(): Item | Root; }
+>parent : () => Item | Root
+
+interface Root { kind: number; host: Item; }
+>kind : number
+>host : Item
+
+declare function seen(i: Item | undefined): boolean;
+>seen : (i: Item | undefined) => boolean
+>i : Item | undefined
+
+export function f(start: Item): boolean {
+>f : (start: Item) => boolean
+>start : Item
+
+    let c: Item | undefined = start;
+>c : Item | undefined
+>start : Item
+
+    do {
+        if (seen(c)) return true;
+>seen(c) : boolean
+>seen : (i: Item | undefined) => boolean
+>c : Item
+>true : true
+
+        const r = c.parent();
+>r : Item | Root
+>c.parent() : Item | Root
+>c.parent : () => Item | Root
+>c : Item
+>parent : () => Item | Root
+
+        c = "kind" in r ? r.host : undefined;
+>c = "kind" in r ? r.host : undefined : Item | undefined
+>c : Item | undefined
+>"kind" in r ? r.host : undefined : Item | undefined
+>"kind" in r : boolean
+>"kind" : "kind"
+>r : Item | Root
+>r.host : Item
+>r : Root
+>host : Item
+>undefined : undefined
+
+    } while (c !== undefined);
+>c !== undefined : boolean
+>c : Item | undefined
+>undefined : undefined
+
+    return false;
+>false : false
+}
+
