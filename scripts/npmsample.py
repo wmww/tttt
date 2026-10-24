@@ -763,7 +763,8 @@ def compare_one(seed, name, config, tsc_cache, lock, delete_same):
     r['threads1_same'] = (normalize(runs[2][0]), runs[2][1]) == (normalize(d_text), d_code)
     if not r['runs_agree']:
         r['verdict'] = 'varies'
-        a, b = runs[0], next(x for x in runs[1:] if (normalize(x[0]), x[1], x[2]) != (normalize(a[0]), a[1], a[2]))
+        a = runs[0]
+        b = next(x for x in runs[1:] if (normalize(x[0]), x[1], x[2]) != (normalize(a[0]), a[1], a[2]))
         ka, kb = keys(a[0]), keys(b[0])
         r['varies'] = {'defaults_twice_same': (normalize(runs[1][0]), runs[1][1]) == (normalize(d_text), d_code),
                        'only_first': sorted(map(list, ka - kb))[:5], 'only_other': sorted(map(list, kb - ka))[:5],
