@@ -6130,6 +6130,10 @@ static void function_signature_params(Checker* me, Signature const* sig, SigReso
     for (u32 j = 0; j < count; j++) {
         if (!params[j].optional || params[j].rest) continue;
         Ty const* added = ty_optional_param_type(me, params[j].type);
+        // (An unresolved name's error type absorbs the undefined into any; the declared type is kept, which the
+        // parameter symbol's type is for an initializer and as good as any for the position: `body?: IDataObject`
+        // where `body: IDataObject = {}` names a type of a module that isn't there, tsc's getTypeOfSymbol)
+        if ((params[j].type->flags & TYF_ERROR) && params[j].decl && !params[j].decl->explicit_optional) continue;
         params[j].undefined_added = added != params[j].type;
         params[j].type = added;
     }

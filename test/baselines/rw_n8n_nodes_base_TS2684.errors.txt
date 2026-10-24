@@ -1,0 +1,31 @@
+rw_n8n_nodes_base_TS2684.ts(4,28): error TS2307: Cannot find module 'missing-module' or its corresponding type declarations.
+rw_n8n_nodes_base_TS2684.ts(6,7): error TS2322: Type '(this: any, body?: IData, n?: number) => void' is not assignable to type 'number'.
+rw_n8n_nodes_base_TS2684.ts(8,7): error TS2322: Type '(body?: IData) => void' is not assignable to type 'number'.
+rw_n8n_nodes_base_TS2684.ts(10,7): error TS2322: Type '(body?: IData) => IData' is not assignable to type 'number'.
+rw_n8n_nodes_base_TS2684.ts(12,7): error TS2322: Type '(body?: any) => void' is not assignable to type 'number'.
+
+
+==== rw_n8n_nodes_base_TS2684.ts (5 errors) ====
+    // origin: n8n-io/n8n at 3c7a553dc packages/nodes-base (named projects, seed 20269001), nodes/Airtop/actions/agent/agent.utils.ts:15
+    // An initialized parameter whose annotation names a type of a module that isn't there prints that name: the parameter
+    // symbol's type has no undefined for an initializer (tsc's getTypeOfSymbol), so the error type keeps its name
+    import type { IData } from "missing-module";
+                               ~~~~~~~~~~~~~~~~
+!!! error TS2307: Cannot find module 'missing-module' or its corresponding type declarations.
+    function f(this: any, body: IData = {}, n: number = 1) {}
+    const v: number = f;
+          ~
+!!! error TS2322: Type '(this: any, body?: IData, n?: number) => void' is not assignable to type 'number'.
+    class C { m(body: IData = {}) {} }
+    const w: number = new C().m;
+          ~
+!!! error TS2322: Type '(body?: IData) => void' is not assignable to type 'number'.
+    const arrow = (body: IData = {}) => body;
+    const u: number = arrow;
+          ~
+!!! error TS2322: Type '(body?: IData) => IData' is not assignable to type 'number'.
+    function g(body?: IData) {}
+    const t: number = g;
+          ~
+!!! error TS2322: Type '(body?: any) => void' is not assignable to type 'number'.
+    

@@ -1737,7 +1737,10 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
     // `{}` for `object`, the constraint's for a type parameter)
     u32 primitive = TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT | TYF_BIGINT_LITERAL | TYF_BOOLEAN |
         TYF_BOOLEAN_LITERAL | TYF_ES_SYMBOL_LIKE | TYF_NON_PRIMITIVE | TYF_TYPE_PARAM | TYF_DEFERRED;
-    cstr object_str = ty_to_cstr(me, destructured && (object->flags & primitive) ? ty_apparent_type(me, object) : object);
+    // (An intersection's apparent type is a new one without its alias when a member takes `this`: `const { id } = e` of
+    // `type PA = Agent & { p: string }` names `Agent & { p: string; }`)
+    cstr object_str = ty_to_cstr(me, destructured && (object->flags & primitive) ? ty_apparent_type(me, object) :
+        destructured ? ty_apparent_intersection_for_display(me, object) : object);
     Error* error;
     // (Nor does it suggest anything: tsc's getPropertyTypeForIndexType only does for element access expressions)
     Symbol const* class_symbol = ts_code == 2339 && !destructured ? instance_class(object) : nullptr;

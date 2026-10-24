@@ -1,0 +1,51 @@
+//// [test/cases/rw_n8n_TS2339.ts] ////
+
+=== rw_n8n_TS2339.ts ===
+// origin: n8n-io/n8n at 3c7a553dc packages/cli (named projects, seed 20269001), agent-config.service.ts:182 `const { id: agentId, projectId } = entity`
+// A binding element's missing property names the apparent type: an aliased intersection with a class member is a new
+// one without the alias there (tsc's getReducedApparentType in getIndexedAccessType), a property access keeps the alias
+class Agent { schema = ""; }
+>Agent : Agent
+>schema : string
+>"" : ""
+
+interface Thisless { schema: string }
+>schema : string
+
+type PA = Agent & { projectId: string };
+>PA : PA
+>projectId : string
+
+type PT = Thisless & { projectId: string };
+>PT : PT
+>projectId : string
+
+declare const e: PA;
+>e : PA
+
+declare const t: PT;
+>t : PT
+
+const { id } = e;
+>id : any
+>e : PA
+
+e.id;
+>e.id : any
+>e : PA
+>id : any
+
+e["id"];
+>e["id"] : any
+>e : PA
+>"id" : "id"
+
+const { id: id2 } = t;
+>id : any
+>id2 : any
+>t : PT
+
+function f({ nope }: PA) {}
+>f : ({ nope }: PA) => void
+>nope : any
+

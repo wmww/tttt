@@ -377,6 +377,9 @@ Ty const* ty_access_element(Checker* me, Ty const* object, Ty const* index, bool
 // Whether tsc makes a class or interface's declared type a TypeReference: a class, a generic one, an interface that
 // isn't thisless (members.c)
 bool ty_is_tsc_reference(Checker* me, Ty const* declared);
+// An intersection as tsc's getApparentTypeOfIntersectionType makes it, for messages: a new one without the alias when
+// a member is primitive, a type parameter, or a class or interface reference given `this` (relate.c)
+Ty const* ty_apparent_intersection_for_display(Checker* me, Ty const* ty);
 Ty const* ty_slice_tuple(Checker* me, TupleShape const* shape, TyList args, u32 from, u32 end_skip);
 
 // A generic function nested in a literal argument whose contextual type wants a single non-generic signature (tsc's

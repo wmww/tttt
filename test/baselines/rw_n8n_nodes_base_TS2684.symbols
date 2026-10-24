@@ -1,0 +1,51 @@
+//// [test/cases/rw_n8n_nodes_base_TS2684.ts] ////
+
+=== rw_n8n_nodes_base_TS2684.ts ===
+// origin: n8n-io/n8n at 3c7a553dc packages/nodes-base (named projects, seed 20269001), nodes/Airtop/actions/agent/agent.utils.ts:15
+// An initialized parameter whose annotation names a type of a module that isn't there prints that name: the parameter
+// symbol's type has no undefined for an initializer (tsc's getTypeOfSymbol), so the error type keeps its name
+import type { IData } from "missing-module";
+>IData : Symbol(IData, Decl(rw_n8n_nodes_base_TS2684.ts, 3, 13))
+
+function f(this: any, body: IData = {}, n: number = 1) {}
+>f : Symbol(f, Decl(rw_n8n_nodes_base_TS2684.ts, 3, 44))
+>this : Symbol(this, Decl(rw_n8n_nodes_base_TS2684.ts, 4, 11))
+>body : Symbol(body, Decl(rw_n8n_nodes_base_TS2684.ts, 4, 21))
+>IData : Symbol(IData, Decl(rw_n8n_nodes_base_TS2684.ts, 3, 13))
+>n : Symbol(n, Decl(rw_n8n_nodes_base_TS2684.ts, 4, 39))
+
+const v: number = f;
+>v : Symbol(v, Decl(rw_n8n_nodes_base_TS2684.ts, 5, 5))
+>f : Symbol(f, Decl(rw_n8n_nodes_base_TS2684.ts, 3, 44))
+
+class C { m(body: IData = {}) {} }
+>C : Symbol(C, Decl(rw_n8n_nodes_base_TS2684.ts, 5, 20))
+>m : Symbol(C.m, Decl(rw_n8n_nodes_base_TS2684.ts, 6, 9))
+>body : Symbol(body, Decl(rw_n8n_nodes_base_TS2684.ts, 6, 12))
+>IData : Symbol(IData, Decl(rw_n8n_nodes_base_TS2684.ts, 3, 13))
+
+const w: number = new C().m;
+>w : Symbol(w, Decl(rw_n8n_nodes_base_TS2684.ts, 7, 5))
+>new C().m : Symbol(C.m, Decl(rw_n8n_nodes_base_TS2684.ts, 6, 9))
+>C : Symbol(C, Decl(rw_n8n_nodes_base_TS2684.ts, 5, 20))
+>m : Symbol(C.m, Decl(rw_n8n_nodes_base_TS2684.ts, 6, 9))
+
+const arrow = (body: IData = {}) => body;
+>arrow : Symbol(arrow, Decl(rw_n8n_nodes_base_TS2684.ts, 8, 5))
+>body : Symbol(body, Decl(rw_n8n_nodes_base_TS2684.ts, 8, 15))
+>IData : Symbol(IData, Decl(rw_n8n_nodes_base_TS2684.ts, 3, 13))
+>body : Symbol(body, Decl(rw_n8n_nodes_base_TS2684.ts, 8, 15))
+
+const u: number = arrow;
+>u : Symbol(u, Decl(rw_n8n_nodes_base_TS2684.ts, 9, 5))
+>arrow : Symbol(arrow, Decl(rw_n8n_nodes_base_TS2684.ts, 8, 5))
+
+function g(body?: IData) {}
+>g : Symbol(g, Decl(rw_n8n_nodes_base_TS2684.ts, 9, 24))
+>body : Symbol(body, Decl(rw_n8n_nodes_base_TS2684.ts, 10, 11))
+>IData : Symbol(IData, Decl(rw_n8n_nodes_base_TS2684.ts, 3, 13))
+
+const t: number = g;
+>t : Symbol(t, Decl(rw_n8n_nodes_base_TS2684.ts, 11, 5))
+>g : Symbol(g, Decl(rw_n8n_nodes_base_TS2684.ts, 9, 24))
+

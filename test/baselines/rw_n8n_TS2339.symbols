@@ -1,0 +1,51 @@
+//// [test/cases/rw_n8n_TS2339.ts] ////
+
+=== rw_n8n_TS2339.ts ===
+// origin: n8n-io/n8n at 3c7a553dc packages/cli (named projects, seed 20269001), agent-config.service.ts:182 `const { id: agentId, projectId } = entity`
+// A binding element's missing property names the apparent type: an aliased intersection with a class member is a new
+// one without the alias there (tsc's getReducedApparentType in getIndexedAccessType), a property access keeps the alias
+class Agent { schema = ""; }
+>Agent : Symbol(Agent, Decl(rw_n8n_TS2339.ts, 0, 0))
+>schema : Symbol(Agent.schema, Decl(rw_n8n_TS2339.ts, 3, 13))
+
+interface Thisless { schema: string }
+>Thisless : Symbol(Thisless, Decl(rw_n8n_TS2339.ts, 3, 28))
+>schema : Symbol(Thisless.schema, Decl(rw_n8n_TS2339.ts, 4, 20))
+
+type PA = Agent & { projectId: string };
+>PA : Symbol(PA, Decl(rw_n8n_TS2339.ts, 4, 37))
+>Agent : Symbol(Agent, Decl(rw_n8n_TS2339.ts, 0, 0))
+>projectId : Symbol(projectId, Decl(rw_n8n_TS2339.ts, 5, 19))
+
+type PT = Thisless & { projectId: string };
+>PT : Symbol(PT, Decl(rw_n8n_TS2339.ts, 5, 40))
+>Thisless : Symbol(Thisless, Decl(rw_n8n_TS2339.ts, 3, 28))
+>projectId : Symbol(projectId, Decl(rw_n8n_TS2339.ts, 6, 22))
+
+declare const e: PA;
+>e : Symbol(e, Decl(rw_n8n_TS2339.ts, 7, 13))
+>PA : Symbol(PA, Decl(rw_n8n_TS2339.ts, 4, 37))
+
+declare const t: PT;
+>t : Symbol(t, Decl(rw_n8n_TS2339.ts, 8, 13))
+>PT : Symbol(PT, Decl(rw_n8n_TS2339.ts, 5, 40))
+
+const { id } = e;
+>id : Symbol(id, Decl(rw_n8n_TS2339.ts, 9, 7))
+>e : Symbol(e, Decl(rw_n8n_TS2339.ts, 7, 13))
+
+e.id;
+>e : Symbol(e, Decl(rw_n8n_TS2339.ts, 7, 13))
+
+e["id"];
+>e : Symbol(e, Decl(rw_n8n_TS2339.ts, 7, 13))
+
+const { id: id2 } = t;
+>id2 : Symbol(id2, Decl(rw_n8n_TS2339.ts, 12, 7))
+>t : Symbol(t, Decl(rw_n8n_TS2339.ts, 8, 13))
+
+function f({ nope }: PA) {}
+>f : Symbol(f, Decl(rw_n8n_TS2339.ts, 12, 22))
+>nope : Symbol(nope, Decl(rw_n8n_TS2339.ts, 13, 12))
+>PA : Symbol(PA, Decl(rw_n8n_TS2339.ts, 4, 37))
+

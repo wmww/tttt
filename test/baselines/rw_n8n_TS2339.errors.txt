@@ -1,0 +1,35 @@
+rw_n8n_TS2339.ts(10,9): error TS2339: Property 'id' does not exist on type 'Agent & { projectId: string; }'.
+rw_n8n_TS2339.ts(11,3): error TS2339: Property 'id' does not exist on type 'PA'.
+rw_n8n_TS2339.ts(12,1): error TS7053: Element implicitly has an 'any' type because expression of type '"id"' can't be used to index type 'Agent & { projectId: string; }'.
+  Property 'id' does not exist on type 'Agent & { projectId: string; }'.
+rw_n8n_TS2339.ts(13,9): error TS2339: Property 'id' does not exist on type 'PT'.
+rw_n8n_TS2339.ts(14,14): error TS2339: Property 'nope' does not exist on type 'Agent & { projectId: string; }'.
+
+
+==== rw_n8n_TS2339.ts (5 errors) ====
+    // origin: n8n-io/n8n at 3c7a553dc packages/cli (named projects, seed 20269001), agent-config.service.ts:182 `const { id: agentId, projectId } = entity`
+    // A binding element's missing property names the apparent type: an aliased intersection with a class member is a new
+    // one without the alias there (tsc's getReducedApparentType in getIndexedAccessType), a property access keeps the alias
+    class Agent { schema = ""; }
+    interface Thisless { schema: string }
+    type PA = Agent & { projectId: string };
+    type PT = Thisless & { projectId: string };
+    declare const e: PA;
+    declare const t: PT;
+    const { id } = e;
+            ~~
+!!! error TS2339: Property 'id' does not exist on type 'Agent & { projectId: string; }'.
+    e.id;
+      ~~
+!!! error TS2339: Property 'id' does not exist on type 'PA'.
+    e["id"];
+    ~~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '"id"' can't be used to index type 'Agent & { projectId: string; }'.
+!!! error TS7053:   Property 'id' does not exist on type 'Agent & { projectId: string; }'.
+    const { id: id2 } = t;
+            ~~
+!!! error TS2339: Property 'id' does not exist on type 'PT'.
+    function f({ nope }: PA) {}
+                 ~~~~
+!!! error TS2339: Property 'nope' does not exist on type 'Agent & { projectId: string; }'.
+    

@@ -390,17 +390,35 @@ K-dependent.
     unknown without an access node, so the destructured parameter falls back to its pattern's type silently. tttt's
     signature_type_at() gave nothing, and the parameter was typed as uncontextual (TS7031 / TS7006). Test
     test/cases/rw_n8n_TS7031.ts. [fixed a4d3ab492]
-  - Text only, after both fixes (projdiff: same (file, line, code), 28 lines): TS2339 x4 at a destructuring of an aliased
-    intersection (`const { id } = entity`, agent-config.service.ts:182, agent-task.service.ts:535, agent-tools.service.ts:1100,
-    :1219): tsgo names the apparent type `Agent & { projectId: string; }`, tttt the alias `ProjectAgent`; TS2353 x9 with
-    the EventEmitter truncation (as in nodes-base); one TS2322 elaboration at promotion-binding-preflight.service.test.ts:83
-    (tsgo's source `{ name: string; nodes: INode[]; ... }`, its chain line widened to `{ name: any; ... }`). [open]
+  - Text only, after both fixes (projdiff: same (file, line, code), 28 lines):
+    - TS2339 x4 at a destructuring of an aliased intersection (`const { id } = entity`, agent-config.service.ts:182,
+      agent-task.service.ts:535, agent-tools.service.ts:1100, :1219): tsgo names the apparent type `Agent & { projectId:
+      string; }` (getIndexedAccessType reports on getReducedApparentType), tttt named the alias `ProjectAgent`.
+      check.c report_no_property() takes ty_apparent_intersection_for_display() for a binding element. Test
+      test/cases/rw_n8n_TS2339.ts. [fixed PENDING]
+    - TS2353 x9 with the EventEmitter truncation (as in nodes-base, below). [open]
+    - One TS2322 elaboration at promotion-binding-preflight.service.test.ts:83: `{ name: "w", nodes, ...overrides }` with
+      `nodes: INode[]` (an unresolved module's type) and `overrides: Partial<Pick<WorkflowEntity, ...>>` (WorkflowEntity
+      unresolved too). tsgo's head prints the spread's properties as their left declarations say (`nodes: INode[]`,
+      `name: string`) while its chain line prints them as the spread made them (`string | any` is any:
+      `{ name: any; nodes: any; settings?: any; }`); tttt prints `{ name: string; nodes: any; ... }` in both. Cut down
+      (6 lines): `import type { Entity, INode } from "missing"; type Content = Pick<Entity, "name" | "nodes" | "settings">;
+      function make(nodes: INode[], o: Partial<Content> = {}): { content: Content } { return { content: { name: "w",
+      nodes, ...o } }; }`. A printer question (how tsgo serializes a spread property with leftSpread/rightSpread links),
+      not investigated further. [open]
 - n8n-nodes-base (packages/nodes-base, bench: composite -> false, declaration true; tsBuildInfoFile -> null): tsgo 7138 /
   tttt 7138, same (file, line, code), 8 text-only lines:
   - TS2684 x3 (Airtop agent.utils.ts:15, run.operation.ts:175, methods/index.ts:46): tsgo prints `body?: IDataObject`
-    in the 'this' context's signature, tttt `body?: any`. [open]
+    in the 'this' context's signature, tttt `body?: any`. `body: IDataObject = {}` with IDataObject from the unbuilt
+    n8n-workflow: tttt added undefined to the initialized parameter's type, which the named error type absorbs into
+    any, and the printer's declared type (undefined taken out) was any. tsc's getTypeOfSymbol of an initialized parameter
+    has no undefined, so the name stays (a `?` parameter's does print any in tsgo). members.c leaves such a parameter's
+    error type alone. Test test/cases/rw_n8n_nodes_base_TS2684.ts. [fixed PENDING]
   - TS2353 x5 (FormTriggerV2.node.test.ts:308, 437, 540, 597, 638): where the long target type is truncated, tsgo
-    `{ [EventEmitter.captureRejectionSymbol]?: ...; ... 105 more ...`, tttt names `off?: ...` instead. [open]
+    `{ [EventEmitter.captureRejectionSymbol]?: ...; ... 105 more ...`, tttt names `off?: ...` instead. tsgo's
+    approximateLength must count the first member (`[EventEmitter.captureRejectionSymbol]?: (<K>(error: Error, event:
+    string | symbol, ...args: AnyRest) => void) | undefined`, a method of express's Request through a mapped type) as more
+    than tttt's display_over() does; needs an instrumented tsgo to see which part. [open]
 
 Seed 20269002 (fixF): vue (vuejs/core head, packages/vue) tsgo 5 / tttt 3, only the known pluginScoped.ts TS7006
 [design]; firecrawl and immich-server set up by hand (npmsample's trial rejected them on TS2307 counts from unbuilt

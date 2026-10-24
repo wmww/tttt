@@ -887,6 +887,10 @@ static Ty const* apparent_intersection(Checker* me, Ty const* ty) {
     return ret;
 }
 
+Ty const* ty_apparent_intersection_for_display(Checker* me, Ty const* ty) {
+    return apparent_intersection(me, ty);
+}
+
 // tsc's isLiteralType: a unit type or a union of them (booleans and enums included)
 static bool is_literal_type(Ty const* ty) {
     u32 unit = TYF_LITERAL | TYF_ENUM_LITERAL | TYF_UNIQUE_ES_SYMBOL | TYF_NULLABLE | TYF_BOOLEAN;
