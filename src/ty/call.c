@@ -3338,6 +3338,17 @@ static Signature* jsx_synthetic_signature(Checker* me, Ty const* param, Ty const
 static Signature* const* jsx_signatures_of(Checker* me, JsxElement const* element, Ty const* type, u32 depth, u32* count_out);
 
 // tsc's getUnionSignatures of the members' JSX signatures
+// A tag type's apparent type for its signatures: a generic template literal (`h${T}`, T extends "1" | "2") is its base
+// constraint, "h1" | "h2", each member an intrinsic element (tsc's getApparentType of an instantiable type is of its
+// base constraint; tttt's ty_apparent_type() makes any string-like type String)
+static Ty const* jsx_apparent_type(Checker* me, Ty const* type) {
+    if (type->kind == TY_TEMPLATE_LITERAL) {
+        Ty const* base = ty_base_constraint(me, type);
+        if (base && (base->kind == TY_UNION || (base->flags & TYF_STRING_LITERAL))) return base;
+    }
+    return ty_apparent_type(me, type);
+}
+
 static Signature* const* jsx_union_signatures(Checker* me, JsxElement const* element, TyList types, u32 depth, u32* count_out) {
     Signature* const** lists = malloc(sizeof(Signature* const*) * types.len);
     u32* lens = malloc(sizeof(u32) * types.len);
@@ -3370,7 +3381,7 @@ static Signature* const* jsx_signatures_of(Checker* me, JsxElement const* elemen
         *count_out = 1;
         return ret;
     }
-    Ty const* apparent = ty_apparent_type(me, type);
+    Ty const* apparent = jsx_apparent_type(me, type);
     if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) && apparent->kind != TY_UNION) return nullptr;
     if (apparent->kind == TY_UNION) {
         Signature* const* ret = ty_union_signatures(me, apparent->composite.types, true, count_out);
@@ -3398,7 +3409,7 @@ JsxResolution ty_resolve_jsx_element(Checker* me, JsxElement const* element, Err
     JsxResolution ret = {0};
     Ty const* tag_type = element->fragment ? ty_jsx_fragment_type(me, element) : ty_expr_type(me, &element->tag_name);
     if (!tag_type) return ret;
-    Ty const* apparent = ty_apparent_type(me, tag_type);
+    Ty const* apparent = jsx_apparent_type(me, tag_type);
     Span at = element->fragment ? element->opening_span : element->tag_name.inner_span;
     if ((tag_type->flags & TYF_ANY) || (apparent->flags & TYF_ANY) || (tag_type->flags & TYF_STRING)) return ret;
     Signature* const* signatures = nullptr;
