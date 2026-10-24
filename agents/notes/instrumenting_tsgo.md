@@ -1,9 +1,20 @@
 # Instrumenting tsgo (and the tttt side of the comparison)
 When tttt and tsgo disagree and the mechanism isn't obvious from tsgo's Go sources, print what tsgo does. Recipe and
-hooks from the correctness workers cor and cor2 (2026-10-22); `scripts/variancetrace.py` and `scripts/reentrytrace.py`
-automate two such builds, and `scripts/tsgotrace.py CODE TARGET [--funcs f,g]` the most common one (the stack of every
+hooks from the correctness workers cor and cor2 (2026-10-22); `scripts/variancetrace.py`, `scripts/reentrytrace.py` and
+`scripts/reltrace.py` automate three such builds, and `scripts/tsgotrace.py CODE TARGET [--funcs f,g]` the most common one (the stack of every
 diagnostic with a code, `TSGO_DIAG_STACK` below, plus a stack at named functions) without writing any Go.
 `scripts/overlaycheck.sh` compiles every overlay: run it after a re-pin (patches match tsgo's text exactly and rot).
+
+## Relations, side by side: reltrace.py
+`scripts/reltrace.py FILE.ts|PROJECT [--filter TEXT] [-- OPTIONS]` logs every structured comparison tsgo makes
+(`recursiveTypeRelatedTo` as it finishes: depth, deep-nesting stack depths, result, `deep` when both sides expand),
+maybe-stack hits and top-level queries, and tttt's `TTTT_DEBUG_RELATE{,_NESTED}` output normalized to the same lines,
+then the first difference with depths left out. Use it when tttt and tsgo disagree on an assignability and the
+relation is too deep to reason through. It found nest-excalibur's TS2345 (2026-10-24): tsgo got False for
+`unknown -> T[P][P] extends ... ? 1 : QP<...>` where tttt got a deeply-nested Maybe, because tttt pushed the target on
+the deep-nesting stacks along a source constraint chain. Expect noise: tttt alone logs a unit type against a union,
+and it splits an indexed access over a union of keys (`T[P][string] | T[P][number] | ...`) that tsgo keeps as one.
+So read the results column, not every line. Keep the input to one function.
 
 ## The recipe
 1. Copy the Go files to patch into your scratch dir: `thirdparty/typescript/tsc/internal/checker/checker.go` and
