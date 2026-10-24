@@ -1,0 +1,42 @@
+//// [test/cases/npm_lightdash_TS2367.ts] ////
+
+=== npm_lightdash_TS2367.ts ===
+// origin: npm lightdash@3.52.0 https://github.com/lightdash/lightdash packages/common/tsconfig.bench.json seed 20261304
+// flip: yes
+export enum TableCalculationType {
+>TableCalculationType : Symbol(TableCalculationType, Decl(npm_lightdash_TS2367.ts, 0, 0))
+
+    BOOLEAN = 'boolean',
+>BOOLEAN : Symbol(TableCalculationType.BOOLEAN, Decl(npm_lightdash_TS2367.ts, 2, 34))
+}
+export enum DimensionType {
+>DimensionType : Symbol(DimensionType, Decl(npm_lightdash_TS2367.ts, 4, 1))
+
+    BOOLEAN = 'boolean',
+>BOOLEAN : Symbol(DimensionType.BOOLEAN, Decl(npm_lightdash_TS2367.ts, 5, 27))
+}
+export enum MetricType {
+>MetricType : Symbol(MetricType, Decl(npm_lightdash_TS2367.ts, 7, 1))
+}
+export const isBooleanType = (
+>isBooleanType : Symbol(isBooleanType, Decl(npm_lightdash_TS2367.ts, 10, 12))
+
+    type: DimensionType | MetricType | TableCalculationType,
+>type : Symbol(type, Decl(npm_lightdash_TS2367.ts, 10, 30))
+>DimensionType : Symbol(DimensionType, Decl(npm_lightdash_TS2367.ts, 4, 1))
+>MetricType : Symbol(MetricType, Decl(npm_lightdash_TS2367.ts, 7, 1))
+>TableCalculationType : Symbol(TableCalculationType, Decl(npm_lightdash_TS2367.ts, 0, 0))
+
+) =>
+    type === DimensionType.BOOLEAN ||
+>type : Symbol(type, Decl(npm_lightdash_TS2367.ts, 10, 30))
+>DimensionType.BOOLEAN : Symbol(DimensionType.BOOLEAN, Decl(npm_lightdash_TS2367.ts, 5, 27))
+>DimensionType : Symbol(DimensionType, Decl(npm_lightdash_TS2367.ts, 4, 1))
+>BOOLEAN : Symbol(DimensionType.BOOLEAN, Decl(npm_lightdash_TS2367.ts, 5, 27))
+
+    type === TableCalculationType.BOOLEAN;
+>type : Symbol(type, Decl(npm_lightdash_TS2367.ts, 10, 30))
+>TableCalculationType.BOOLEAN : Symbol(TableCalculationType.BOOLEAN, Decl(npm_lightdash_TS2367.ts, 2, 34))
+>TableCalculationType : Symbol(TableCalculationType, Decl(npm_lightdash_TS2367.ts, 0, 0))
+>BOOLEAN : Symbol(TableCalculationType.BOOLEAN, Decl(npm_lightdash_TS2367.ts, 2, 34))
+

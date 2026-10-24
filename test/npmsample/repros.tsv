@@ -68,3 +68,7 @@ npm_lumiverse_TS2322	yes	lumiverse-backend@1.2.5	https://github.com/prolix-oc/Lu
 npm__shepai_cli_TS2322	yes	@shepai/cli@1.247.0	https://github.com/shep-ai/shep	0	1	TS2322
 npm_react-native-reanimated_TS2578	no	react-native-reanimated@HEAD	https://github.com/software-mansion/react-native-reanimated	28	27	-TS2578
 npm__agnes_host_TS2769	no	@agnes/host@0.0.0	https://github.com/AgnesAI-Labs/agnes-harness	77	83	+TS2769 +TS7006
+npm_lightdash_TS2367	yes	lightdash@3.52.0	https://github.com/lightdash/lightdash	0	2	TS2367
+npm__pentest-harness_cordis_TS2313	no	@pentest-harness/cordis@4.0.1	https://github.com/S1N6H/pentest-harness	94	97	TS2313 TS2456 TS2536
+npm_akashnetwork_console-api_TS2345	no	@akashnetwork/console-api@3.32.0	https://github.com/akash-network/console	3	19	TS2322 TS2345 TS2352 TS2877
+npm_akashnetwork_console-web_TS7022	no	@akashnetwork/console-web@3.31.0	https://github.com/akash-network/console	94	410	TS7022 TS7006 TS2339 TS2345

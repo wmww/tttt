@@ -1,0 +1,91 @@
+//// [test/cases/npm_akashnetwork_console-api_TS2345.ts] ////
+
+=== npm_akashnetwork_console-api_TS2345.ts ===
+// origin: npm @akashnetwork/console-api@3.32.0 https://github.com/akash-network/console apps/api/tsconfig.bench.json seed 20261304
+// flip: no
+interface TableConfig { name: string; columns: Record<string, unknown> }
+>TableConfig : Symbol(TableConfig, Decl(npm_akashnetwork_console-api_TS2345.ts, 0, 0))
+>name : Symbol(TableConfig.name, Decl(npm_akashnetwork_console-api_TS2345.ts, 2, 23))
+>columns : Symbol(TableConfig.columns, Decl(npm_akashnetwork_console-api_TS2345.ts, 2, 37))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+declare class Table<T extends TableConfig = TableConfig> {
+>Table : Symbol(Table, Decl(npm_akashnetwork_console-api_TS2345.ts, 2, 72))
+>T : Symbol(T, Decl(npm_akashnetwork_console-api_TS2345.ts, 3, 20))
+>TableConfig : Symbol(TableConfig, Decl(npm_akashnetwork_console-api_TS2345.ts, 0, 0))
+>TableConfig : Symbol(TableConfig, Decl(npm_akashnetwork_console-api_TS2345.ts, 0, 0))
+
+    readonly $inferSelect: InferSelectModel<Table<T>>;
+>$inferSelect : Symbol(Table.$inferSelect, Decl(npm_akashnetwork_console-api_TS2345.ts, 3, 58))
+>InferSelectModel : Symbol(InferSelectModel, Decl(npm_akashnetwork_console-api_TS2345.ts, 5, 1))
+>Table : Symbol(Table, Decl(npm_akashnetwork_console-api_TS2345.ts, 2, 72))
+>T : Symbol(T, Decl(npm_akashnetwork_console-api_TS2345.ts, 3, 20))
+}
+type InferSelectModel<T extends Table> = { [K in keyof T["_"]["columns"]]: T["_"]["columns"][K] };
+>InferSelectModel : Symbol(InferSelectModel, Decl(npm_akashnetwork_console-api_TS2345.ts, 5, 1))
+>T : Symbol(T, Decl(npm_akashnetwork_console-api_TS2345.ts, 6, 22))
+>Table : Symbol(Table, Decl(npm_akashnetwork_console-api_TS2345.ts, 2, 72))
+>K : Symbol(K, Decl(npm_akashnetwork_console-api_TS2345.ts, 6, 44))
+>T : Symbol(T, Decl(npm_akashnetwork_console-api_TS2345.ts, 6, 22))
+>T : Symbol(T, Decl(npm_akashnetwork_console-api_TS2345.ts, 6, 22))
+>K : Symbol(K, Decl(npm_akashnetwork_console-api_TS2345.ts, 6, 44))
+
+declare class PgTable<T extends TableConfig = TableConfig> extends Table<T> {}
+>PgTable : Symbol(PgTable, Decl(npm_akashnetwork_console-api_TS2345.ts, 6, 98))
+>T : Symbol(T, Decl(npm_akashnetwork_console-api_TS2345.ts, 7, 22))
+>TableConfig : Symbol(TableConfig, Decl(npm_akashnetwork_console-api_TS2345.ts, 0, 0))
+>TableConfig : Symbol(TableConfig, Decl(npm_akashnetwork_console-api_TS2345.ts, 0, 0))
+>Table : Symbol(Table, Decl(npm_akashnetwork_console-api_TS2345.ts, 2, 72))
+>T : Symbol(T, Decl(npm_akashnetwork_console-api_TS2345.ts, 7, 22))
+
+type PgTableWithColumns<T extends TableConfig> = PgTable<T> & {
+>PgTableWithColumns : Symbol(PgTableWithColumns, Decl(npm_akashnetwork_console-api_TS2345.ts, 7, 78))
+>T : Symbol(T, Decl(npm_akashnetwork_console-api_TS2345.ts, 8, 24))
+>TableConfig : Symbol(TableConfig, Decl(npm_akashnetwork_console-api_TS2345.ts, 0, 0))
+>PgTable : Symbol(PgTable, Decl(npm_akashnetwork_console-api_TS2345.ts, 6, 98))
+>T : Symbol(T, Decl(npm_akashnetwork_console-api_TS2345.ts, 8, 24))
+
+    [Key in keyof T['columns']]: T['columns'][Key];
+>Key : Symbol(Key, Decl(npm_akashnetwork_console-api_TS2345.ts, 9, 5))
+>T : Symbol(T, Decl(npm_akashnetwork_console-api_TS2345.ts, 8, 24))
+>T : Symbol(T, Decl(npm_akashnetwork_console-api_TS2345.ts, 8, 24))
+>Key : Symbol(Key, Decl(npm_akashnetwork_console-api_TS2345.ts, 9, 5))
+
+};
+export interface BaseRecordOutput<T> {}
+>BaseRecordOutput : Symbol(BaseRecordOutput, Decl(npm_akashnetwork_console-api_TS2345.ts, 10, 2))
+>T : Symbol(T, Decl(npm_akashnetwork_console-api_TS2345.ts, 11, 34))
+
+export abstract class BaseRepository<
+>BaseRepository : Symbol(BaseRepository, Decl(npm_akashnetwork_console-api_TS2345.ts, 11, 39))
+
+  T extends PgTableWithColumns<any>,
+>T : Symbol(T, Decl(npm_akashnetwork_console-api_TS2345.ts, 12, 37))
+>PgTableWithColumns : Symbol(PgTableWithColumns, Decl(npm_akashnetwork_console-api_TS2345.ts, 7, 78))
+
+  Output extends BaseRecordOutput<string | number>
+>Output : Symbol(Output, Decl(npm_akashnetwork_console-api_TS2345.ts, 13, 36))
+>BaseRecordOutput : Symbol(BaseRecordOutput, Decl(npm_akashnetwork_console-api_TS2345.ts, 10, 2))
+
+> {
+  async deleteBy(query: Partial<Output>): Promise<void> {
+>deleteBy : Symbol(BaseRepository.deleteBy, Decl(npm_akashnetwork_console-api_TS2345.ts, 15, 3))
+>query : Symbol(query, Decl(npm_akashnetwork_console-api_TS2345.ts, 16, 17))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Output : Symbol(Output, Decl(npm_akashnetwork_console-api_TS2345.ts, 13, 36))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+
+    this.queryToWhere(query);
+>this.queryToWhere : Symbol(BaseRepository.queryToWhere, Decl(npm_akashnetwork_console-api_TS2345.ts, 18, 3))
+>this : Symbol(BaseRepository, Decl(npm_akashnetwork_console-api_TS2345.ts, 11, 39))
+>queryToWhere : Symbol(BaseRepository.queryToWhere, Decl(npm_akashnetwork_console-api_TS2345.ts, 18, 3))
+>query : Symbol(query, Decl(npm_akashnetwork_console-api_TS2345.ts, 16, 17))
+  }
+  protected queryToWhere(query: Partial<T["$inferSelect"]> | undefined) {
+>queryToWhere : Symbol(BaseRepository.queryToWhere, Decl(npm_akashnetwork_console-api_TS2345.ts, 18, 3))
+>query : Symbol(query, Decl(npm_akashnetwork_console-api_TS2345.ts, 19, 25))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(npm_akashnetwork_console-api_TS2345.ts, 12, 37))
+  }
+}
+

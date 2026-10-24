@@ -1,0 +1,45 @@
+//// [test/cases/npm_lightdash_TS2367.ts] ////
+
+=== npm_lightdash_TS2367.ts ===
+// origin: npm lightdash@3.52.0 https://github.com/lightdash/lightdash packages/common/tsconfig.bench.json seed 20261304
+// flip: yes
+export enum TableCalculationType {
+>TableCalculationType : TableCalculationType
+
+    BOOLEAN = 'boolean',
+>BOOLEAN : TableCalculationType.BOOLEAN
+>'boolean' : "boolean"
+}
+export enum DimensionType {
+>DimensionType : DimensionType
+
+    BOOLEAN = 'boolean',
+>BOOLEAN : DimensionType.BOOLEAN
+>'boolean' : "boolean"
+}
+export enum MetricType {
+>MetricType : MetricType
+}
+export const isBooleanType = (
+>isBooleanType : (type: DimensionType | MetricType | TableCalculationType) => type is TableCalculationType | DimensionType
+>(    type: DimensionType | MetricType | TableCalculationType,) =>    type === DimensionType.BOOLEAN ||    type === TableCalculationType.BOOLEAN : (type: DimensionType | MetricType | TableCalculationType) => type is TableCalculationType | DimensionType
+
+    type: DimensionType | MetricType | TableCalculationType,
+>type : TableCalculationType | DimensionType | MetricType
+
+) =>
+    type === DimensionType.BOOLEAN ||
+>type === DimensionType.BOOLEAN ||    type === TableCalculationType.BOOLEAN : boolean
+>type === DimensionType.BOOLEAN : boolean
+>type : TableCalculationType | DimensionType | MetricType
+>DimensionType.BOOLEAN : DimensionType
+>DimensionType : typeof DimensionType
+>BOOLEAN : DimensionType
+
+    type === TableCalculationType.BOOLEAN;
+>type === TableCalculationType.BOOLEAN : boolean
+>type : TableCalculationType | MetricType
+>TableCalculationType.BOOLEAN : TableCalculationType
+>TableCalculationType : typeof TableCalculationType
+>BOOLEAN : TableCalculationType
+

@@ -1,0 +1,51 @@
+//// [test/cases/npm_akashnetwork_console-api_TS2345.ts] ////
+
+=== npm_akashnetwork_console-api_TS2345.ts ===
+// origin: npm @akashnetwork/console-api@3.32.0 https://github.com/akash-network/console apps/api/tsconfig.bench.json seed 20261304
+// flip: no
+interface TableConfig { name: string; columns: Record<string, unknown> }
+>name : string
+>columns : Record<string, unknown>
+
+declare class Table<T extends TableConfig = TableConfig> {
+>Table : Table<T>
+
+    readonly $inferSelect: InferSelectModel<Table<T>>;
+>$inferSelect : InferSelectModel<Table<T>>
+}
+type InferSelectModel<T extends Table> = { [K in keyof T["_"]["columns"]]: T["_"]["columns"][K] };
+>InferSelectModel : InferSelectModel<T>
+
+declare class PgTable<T extends TableConfig = TableConfig> extends Table<T> {}
+>PgTable : PgTable<T>
+>Table : Table<T>
+
+type PgTableWithColumns<T extends TableConfig> = PgTable<T> & {
+>PgTableWithColumns : PgTableWithColumns<T>
+
+    [Key in keyof T['columns']]: T['columns'][Key];
+};
+export interface BaseRecordOutput<T> {}
+export abstract class BaseRepository<
+>BaseRepository : BaseRepository<T, Output>
+
+  T extends PgTableWithColumns<any>,
+  Output extends BaseRecordOutput<string | number>
+> {
+  async deleteBy(query: Partial<Output>): Promise<void> {
+>deleteBy : (query: Partial<Output>) => Promise<void>
+>query : Partial<Output>
+
+    this.queryToWhere(query);
+>this.queryToWhere(query) : void
+>this.queryToWhere : (query: Partial<T["$inferSelect"]> | undefined) => void
+>this : this
+>queryToWhere : (query: Partial<T["$inferSelect"]> | undefined) => void
+>query : Partial<Output>
+  }
+  protected queryToWhere(query: Partial<T["$inferSelect"]> | undefined) {
+>queryToWhere : (query: Partial<T["$inferSelect"]> | undefined) => void
+>query : Partial<T["$inferSelect"]> | undefined
+  }
+}
+

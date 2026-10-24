@@ -1,0 +1,126 @@
+//// [test/cases/npm_akashnetwork_console-web_TS7022.ts] ////
+
+=== app-di-container.ts ===
+import { createContainer } from "./createContainer";
+>createContainer : Symbol(createContainer, Decl(app-di-container.ts, 0, 8))
+
+  const container = createContainer({
+>container : Symbol(container, Decl(app-di-container.ts, 1, 7))
+>createContainer : Symbol(createContainer, Decl(app-di-container.ts, 0, 8))
+
+    applyAxiosInterceptors: (): typeof withInterceptors => {
+>applyAxiosInterceptors : Symbol(applyAxiosInterceptors, Decl(app-di-container.ts, 1, 37))
+>withInterceptors : Symbol(withInterceptors, Decl(app-di-container.ts, 25, 5))
+
+    },
+    stripe: () =>
+>stripe : Symbol(stripe, Decl(app-di-container.ts, 3, 6))
+
+      new HttpStripeService(
+      ),
+    stripeService: () =>
+>stripeService : Symbol(stripeService, Decl(app-di-container.ts, 6, 8))
+
+      new StripeService({
+      }),
+    providerProxy: () => {
+>providerProxy : Symbol(providerProxy, Decl(app-di-container.ts, 9, 9))
+
+      return new ProviderProxyService(
+        container.applyAxiosInterceptors(container.createAxios({ baseURL: "/" }), {
+>container.applyAxiosInterceptors : Symbol(applyAxiosInterceptors, Decl(app-di-container.ts, 1, 37))
+>container : Symbol(container, Decl(app-di-container.ts, 1, 7))
+>applyAxiosInterceptors : Symbol(applyAxiosInterceptors, Decl(app-di-container.ts, 1, 37))
+>container.createAxios : Symbol(createAxios, Decl(app-di-container.ts, 22, 9))
+>container : Symbol(container, Decl(app-di-container.ts, 1, 7))
+>createAxios : Symbol(createAxios, Decl(app-di-container.ts, 22, 9))
+>baseURL : Symbol(baseURL, Decl(app-di-container.ts, 12, 64))
+
+          request: [config => ({ ...config, baseURL: getBaseUrl() })]
+>request : Symbol(request, Decl(app-di-container.ts, 12, 83))
+>config : Symbol(config, Decl(app-di-container.ts, 13, 20))
+>config : Symbol(config, Decl(app-di-container.ts, 13, 20))
+>baseURL : Symbol(baseURL, Decl(app-di-container.ts, 13, 43))
+
+        }),
+      );
+    },
+    deploymentSetting: () =>
+>deploymentSetting : Symbol(deploymentSetting, Decl(app-di-container.ts, 16, 6))
+
+      container.applyAxiosInterceptors(new DeploymentSettingHttpService(apiConfig), {
+>container.applyAxiosInterceptors : Symbol(applyAxiosInterceptors, Decl(app-di-container.ts, 1, 37))
+>container : Symbol(container, Decl(app-di-container.ts, 1, 7))
+>applyAxiosInterceptors : Symbol(applyAxiosInterceptors, Decl(app-di-container.ts, 1, 37))
+
+      }),
+    apiKey: () =>
+>apiKey : Symbol(apiKey, Decl(app-di-container.ts, 19, 9))
+
+      container.applyAxiosInterceptors(new ApiKeyHttpService(apiConfig), {
+>container.applyAxiosInterceptors : Symbol(applyAxiosInterceptors, Decl(app-di-container.ts, 1, 37))
+>container : Symbol(container, Decl(app-di-container.ts, 1, 7))
+>applyAxiosInterceptors : Symbol(applyAxiosInterceptors, Decl(app-di-container.ts, 1, 37))
+
+      }),
+    createAxios:
+>createAxios : Symbol(createAxios, Decl(app-di-container.ts, 22, 9))
+
+        createHttpClient(options),
+  });
+export function withInterceptors<T extends Axios | AxiosInstance = AxiosInstance>(axios: T, interceptors?: Interceptors) {
+>withInterceptors : Symbol(withInterceptors, Decl(app-di-container.ts, 25, 5))
+>T : Symbol(T, Decl(app-di-container.ts, 26, 33))
+>Axios : Symbol(Axios)
+>AxiosInstance : Symbol(AxiosInstance)
+>AxiosInstance : Symbol(AxiosInstance)
+>axios : Symbol(axios, Decl(app-di-container.ts, 26, 82))
+>T : Symbol(T, Decl(app-di-container.ts, 26, 33))
+>interceptors : Symbol(interceptors, Decl(app-di-container.ts, 26, 91))
+>Interceptors : Symbol(Interceptors, Decl(app-di-container.ts, 28, 51))
+}
+type Interceptor<T> = (value: T) => T | Promise<T>;
+>Interceptor : Symbol(Interceptor, Decl(app-di-container.ts, 27, 1))
+>T : Symbol(T, Decl(app-di-container.ts, 28, 17))
+>value : Symbol(value, Decl(app-di-container.ts, 28, 23))
+>T : Symbol(T, Decl(app-di-container.ts, 28, 17))
+>T : Symbol(T, Decl(app-di-container.ts, 28, 17))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(app-di-container.ts, 28, 17))
+
+interface Interceptors {
+>Interceptors : Symbol(Interceptors, Decl(app-di-container.ts, 28, 51))
+
+  request?: Array<Interceptor<InternalAxiosRequestConfig> | undefined>;
+>request : Symbol(Interceptors.request, Decl(app-di-container.ts, 29, 24))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 3 more)
+>Interceptor : Symbol(Interceptor, Decl(app-di-container.ts, 27, 1))
+>InternalAxiosRequestConfig : Symbol(InternalAxiosRequestConfig)
+}
+=== createContainer.ts ===
+export function createContainer<T extends Factories>(factories: T): DIContainer<T> {
+>createContainer : Symbol(createContainer, Decl(createContainer.ts, 0, 0))
+>T : Symbol(T, Decl(createContainer.ts, 0, 32))
+>Factories : Symbol(Factories, Decl(createContainer.ts, 4, 2))
+>factories : Symbol(factories, Decl(createContainer.ts, 0, 53))
+>T : Symbol(T, Decl(createContainer.ts, 0, 32))
+>DIContainer : Symbol(DIContainer, Decl(createContainer.ts, 1, 1))
+>T : Symbol(T, Decl(createContainer.ts, 0, 32))
+}
+export type DIContainer<T extends Factories> = {
+>DIContainer : Symbol(DIContainer, Decl(createContainer.ts, 1, 1))
+>T : Symbol(T, Decl(createContainer.ts, 2, 24))
+>Factories : Symbol(Factories, Decl(createContainer.ts, 4, 2))
+
+  [K in keyof T]: ReturnType<T[K]>;
+>K : Symbol(K, Decl(createContainer.ts, 3, 3))
+>T : Symbol(T, Decl(createContainer.ts, 2, 24))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(createContainer.ts, 2, 24))
+>K : Symbol(K, Decl(createContainer.ts, 3, 3))
+
+};
+export type Factories = Record<string, () => any>;
+>Factories : Symbol(Factories, Decl(createContainer.ts, 4, 2))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
