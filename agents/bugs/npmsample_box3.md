@@ -29,3 +29,12 @@ for flips); a separate file so the three boxes never conflict.
   `serve<T>(options: Omit<ServeOptions & Serve<T>, "fetch">)`, where `Serve` is a namespace (TS2709). tsgo's
   checkTypeReferenceNode still checks the type arguments of a reference that fails to resolve, which marks T
   referenced. tttt skips them. Repro test/cases/npm__bunicorn_server_TS6196.ts. Fixed (det3): several_types.c's TS2709 return now looks up the type arguments first. [fixed det3]
+- Seed 20261201, octanejs/octane packages/sanity-icons (@octanejs/sanity-icons@0.1.16): spurious TS7022 on `const
+  root = candidate.getRootNode()` inside a do-while loop that reassigns the declared `let candidate: Element |
+  undefined` from root (`candidate = root.nodeType === 11 ? (root as ShadowRoot).host : undefined`). It is the
+  project's only error, so a flip. An earlier `contains(candidate)` read in the loop body is needed. Guess: the
+  loop's flow type of `candidate` at that earlier reference evaluates the back-edge assignment, which needs root's
+  type while root is being resolved. tsgo doesn't hit the circularity there (the declared type stands in for the
+  assignment, or the reference's flow is cached differently). Reduced by hand from the reduce.py copy: --tsgo-clean
+  kept all 149 package files whole, since deleting one breaks tsgo's imports. Repro
+  test/cases/npm__octanejs_sanity-icons_TS7022.ts. [flip] [open]

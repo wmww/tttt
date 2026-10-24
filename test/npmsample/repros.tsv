@@ -45,3 +45,4 @@ npm__bunicorn_server_TS6196	no	@bunicorn/server@0.0.30	https://github.com/ragoka
 npm__framelia_dashboard-server_TS2532	yes	@framelia/dashboard-server@0.0.5	https://github.com/hungify/framelia	0	1	TS2532
 npm__react-above_modal_TS2339	no	@react-above/modal@0.3.9	https://github.com/react-above/modal	12	8	-TS2339
 npm__bumblebee032_ng-feedback_TS2345	no	@bumblebee032/ng-feedback@2.0.97	https://github.com/DarrenLouw/feedback	64	67	+TS2345 +TS18046
+npm__octanejs_sanity-icons_TS7022	yes	@octanejs/sanity-icons@0.1.16	https://github.com/octanejs/octane	0	1	+TS7022

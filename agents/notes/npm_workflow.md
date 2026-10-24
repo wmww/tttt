@@ -90,3 +90,6 @@ Fixers take the top of `rank` when no flip is open; a finder checks `rank` befor
   clone went before its repro was cut. Fixed: --except holds a clone back under --all too.
 - Throughput with two seeds at once on 4 cores: 54, 62 and 70 projects accepted, each seed's setup and compare done in
   about 20-30 minutes; load stays around 5-10, RSS well under the 30 GB.
+- A reduce.py run with --tsgo-clean on a workspace package's sources can keep every file whole, because deleting one
+  breaks tsgo's imports, and its line pass over ~150 files then takes hours. When the diagnostic sits inside one
+  function, try that function alone in a test file first (octane's TS7022: 10 lines, in minutes).

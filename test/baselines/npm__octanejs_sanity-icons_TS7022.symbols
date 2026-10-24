@@ -1,0 +1,58 @@
+//// [test/cases/npm__octanejs_sanity-icons_TS7022.ts] ////
+
+=== npm__octanejs_sanity-icons_TS7022.ts ===
+// origin: npm @octanejs/sanity-icons@0.1.16 https://github.com/octanejs/octane packages/sanity-icons/tsconfig.json seed 20261201
+// flip: yes
+// From octane's src/dom-focused-move.ts: a do-while loop reassigning a declared `Element | undefined` from a const
+// initialized by a call on it. tsgo resolves `root` without a circularity; tttt reports TS7022 on it (the project's
+// only error: a flip). It needs the `contains(candidate)` read earlier in the loop body; without it both agree.
+export function f(node: Node, focused: Element | null): boolean {
+>f : Symbol(f, Decl(npm__octanejs_sanity-icons_TS7022.ts, 0, 0))
+>node : Symbol(node, Decl(npm__octanejs_sanity-icons_TS7022.ts, 5, 18))
+>Node : Symbol(Node, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>focused : Symbol(focused, Decl(npm__octanejs_sanity-icons_TS7022.ts, 5, 29))
+>Element : Symbol(Element, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+	if (focused !== null && node.nodeType === 1) {
+>focused : Symbol(focused, Decl(npm__octanejs_sanity-icons_TS7022.ts, 5, 29))
+>node.nodeType : Symbol(Node.nodeType, Decl(lib.dom.d.ts, --, --))
+>node : Symbol(node, Decl(npm__octanejs_sanity-icons_TS7022.ts, 5, 18))
+>nodeType : Symbol(Node.nodeType, Decl(lib.dom.d.ts, --, --))
+
+		let candidate: Element | undefined = focused;
+>candidate : Symbol(candidate, Decl(npm__octanejs_sanity-icons_TS7022.ts, 7, 5))
+>Element : Symbol(Element, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>focused : Symbol(focused, Decl(npm__octanejs_sanity-icons_TS7022.ts, 5, 29))
+
+		do {
+			if ((node as Element).contains(candidate)) return true;
+>(node as Element).contains : Symbol(Node.contains, Decl(lib.dom.d.ts, --, --))
+>node : Symbol(node, Decl(npm__octanejs_sanity-icons_TS7022.ts, 5, 18))
+>Element : Symbol(Element, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>contains : Symbol(Node.contains, Decl(lib.dom.d.ts, --, --))
+>candidate : Symbol(candidate, Decl(npm__octanejs_sanity-icons_TS7022.ts, 7, 5))
+
+			const root = candidate.getRootNode();
+>root : Symbol(root, Decl(npm__octanejs_sanity-icons_TS7022.ts, 10, 8))
+>candidate.getRootNode : Symbol(Node.getRootNode, Decl(lib.dom.d.ts, --, --))
+>candidate : Symbol(candidate, Decl(npm__octanejs_sanity-icons_TS7022.ts, 7, 5))
+>getRootNode : Symbol(Node.getRootNode, Decl(lib.dom.d.ts, --, --))
+
+			candidate = root.nodeType === 11 ? (root as ShadowRoot).host : undefined;
+>candidate : Symbol(candidate, Decl(npm__octanejs_sanity-icons_TS7022.ts, 7, 5))
+>root.nodeType : Symbol(Node.nodeType, Decl(lib.dom.d.ts, --, --))
+>root : Symbol(root, Decl(npm__octanejs_sanity-icons_TS7022.ts, 10, 8))
+>nodeType : Symbol(Node.nodeType, Decl(lib.dom.d.ts, --, --))
+>(root as ShadowRoot).host : Symbol(ShadowRoot.host, Decl(lib.dom.d.ts, --, --))
+>root : Symbol(root, Decl(npm__octanejs_sanity-icons_TS7022.ts, 10, 8))
+>ShadowRoot : Symbol(ShadowRoot, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>host : Symbol(ShadowRoot.host, Decl(lib.dom.d.ts, --, --))
+>undefined : Symbol(undefined)
+
+		} while (candidate !== undefined);
+>candidate : Symbol(candidate, Decl(npm__octanejs_sanity-icons_TS7022.ts, 7, 5))
+>undefined : Symbol(undefined)
+	}
+	return false;
+}
+
