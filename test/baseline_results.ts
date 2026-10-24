@@ -6823,7 +6823,7 @@ const baselines = {
     'bun35-C1f': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun35-C1g': {
         errors: true,
@@ -7591,9 +7591,9 @@ const baselines = {
         types: true,
     },
     'bun40-C8b': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun40-P3': {
         errors: true,
@@ -7606,9 +7606,9 @@ const baselines = {
         types: true,
     },
     'bun40-P4b': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'bun40-P5': {
         errors: false,
@@ -9461,7 +9461,7 @@ const baselines = {
         types: true,
     },
     'bun73-R01e': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -10151,9 +10151,9 @@ const baselines = {
         types: true,
     },
     'bun86-R08': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'bun86-R10a': {
         errors: true,
@@ -11550,15 +11550,75 @@ const baselines = {
         symbols: false,
         types: true,
     },
+    'npm_BigWhaleLabs-seal-hub-memorabilia-token-contracts_TS2344': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'npm_My-first-stencil-project-001_TS2320': {
         errors: true,
         symbols: false,
         types: false,
     },
+    'npm_Zoo-Code-Org_Zoo-Code_TS2322': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm__0xsonic_sdk_TS2590': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm__abrevior_apollo-federation-upload_TS7016': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm__augu_utils_TS2307': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm__bumblebee032_ng-feedback_TS2345': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm__bunicorn_server_TS6196': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'npm__devexpress_dx-react-grid-material-ui_TS1381': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm__ensnode_ensnode-sdk_TS2769': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm__fireproof_core-types-protocols-cloud_TS18048': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm__framelia_dashboard-server_TS2532': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm__gatsby-project-kb_transformer-wiki-references_TS2339': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm__iwatakeshi_chakra-prose_TS2590': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'npm__markw65_prettier-plugin-monkeyc_TS7034': {
         errors: true,
@@ -11566,6 +11626,11 @@ const baselines = {
         types: true,
     },
     'npm__mui-treasury_component-number-input_TS2353': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm__nbholleweger_eva-icons_TS1110': {
         errors: true,
         symbols: true,
         types: true,
@@ -11580,10 +11645,40 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'npm__octanejs_sanity-icons_TS7022': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm__overlastic_vue2_TS2339': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm__overlastic_vue2_TS2339_strictmode': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'npm__overture-stack_sqon_TS2345': {
         errors: true,
         symbols: true,
         types: false,
+    },
+    'npm__point0_compiler_TS2345': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm__point0_compiler_TS2349': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm__react-above_modal_TS2339': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'npm__skastr0_quartz-engine_TS2719': {
         errors: true,
@@ -11621,16 +11716,36 @@ const baselines = {
         types: true,
     },
     'npm__xneog_dsh-anonymous-user-id_TS2344': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
-    'npm_ciceksepeti_cui-listbox_TS7006': {
+    'npm_adonis5-gigya_TS2308': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_ag-sockets_TS2345': {
         errors: false,
         symbols: true,
         types: false,
     },
+    'npm_better-auth_TS2352': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_ciceksepeti_cui-listbox_TS7006': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'npm_dmptranscripts_TS2344': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_elysia_TS2307': {
         errors: true,
         symbols: true,
         types: true,
@@ -11640,7 +11755,37 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'npm_fui-fancyui_TS7053': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'npm_kirka_TS7006': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_ml-component_TS2551': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_mlok_TS2322': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_paseo-agent-todos_TS5115': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'npm_payload-storage-cloudinary_TS2322': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'npm_rabbitmq-pub-sub_TS2339': {
         errors: true,
         symbols: true,
         types: true,
@@ -11684,6 +11829,11 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
+    },
+    'rw_vue_TS7006': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'ttttAccessorJoinsPropertySymbol': {
         errors: true,
@@ -11747,7 +11897,17 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAliasedConditionConstantReference': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAliasedNarrowingNarrowedObject': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttAmbientExportStarConflictAsked': {
         errors: true,
         symbols: true,
         types: true,
@@ -12006,6 +12166,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttClassBaseTypeParamDynamic': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttClassExtendingAnyNormalizesToAny': {
         errors: true,
         symbols: true,
@@ -12027,6 +12192,11 @@ const baselines = {
         symbols: true,
         types: true,
         dts: true,
+    },
+    'ttttClassTypeParamListRecovery': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttClosureNarrowingUnwalkedAssignments': {
         errors: true,
@@ -12065,6 +12235,11 @@ const baselines = {
         types: true,
     },
     'ttttComplexityOverflowCachedAssign': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttCompoundUnionKeyWrite': {
         errors: true,
         symbols: true,
         types: true,
@@ -12151,6 +12326,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttConstContextFromRawParameter': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttConstMergedWithImportAssumedInitialized': {
         errors: true,
         symbols: true,
@@ -12200,6 +12380,21 @@ const baselines = {
         dts: true,
     },
     'ttttContextualReturnNotOnStack': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttContextualThisLaterOverload': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttContextualThisNotInSignature': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttContextualTypeParamBaseConstraint': {
         errors: true,
         symbols: true,
         types: true,
@@ -12697,6 +12892,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationPathsPatternParentDirs': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDeclarationPatternComments': {
         errors: true,
         symbols: true,
@@ -13004,6 +13204,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDiscriminantAfterNarrowing': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDiscriminateLargeUnionContext': {
         errors: true,
         symbols: true,
@@ -13030,6 +13235,11 @@ const baselines = {
         types: true,
     },
     'ttttDistributiveConstraintImmediateContextual': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttDoWhileBodyBeforeCondition': {
         errors: true,
         symbols: true,
         types: true,
@@ -13475,6 +13685,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttImportUsageModeSpecifierScope': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttImportedMappedAliasDefaults': {
         errors: true,
         symbols: true,
@@ -13906,6 +14121,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttJsxClosingTagPropertyChecked': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttJsxDuplicateAttributeTypes': {
         errors: true,
         symbols: true,
@@ -13962,7 +14182,7 @@ const baselines = {
         types: true,
     },
     'ttttJsxTemplateLiteralTag': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -14012,6 +14232,11 @@ const baselines = {
         types: true,
     },
     'ttttLateBoundMethodOverloadsBySymbol': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttLeadingBarConditionalDistributes': {
         errors: true,
         symbols: true,
         types: true,
@@ -14140,6 +14365,11 @@ const baselines = {
         dts: true,
     },
     'ttttMappedKeyCircularConstraint': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttMappedKeyEmptyTupleConstraint': {
         errors: true,
         symbols: true,
         types: true,
@@ -14328,7 +14558,17 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttNoInferIntersectionDestructure': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttNoInferUnionNotElaborated': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttNoInferUnionRemainder': {
         errors: true,
         symbols: true,
         types: true,
@@ -14399,7 +14639,22 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttOptionalPropIndexedConstraint': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttOverloadExactOptionalElaboration': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttOverloadFailureCachedInnerCall': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttOverloadFailureSkipsGenericCallResult': {
         errors: true,
         symbols: true,
         types: true,
@@ -14556,6 +14811,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttReducedIntersectionPropCrossProduct': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttReferenceFromTypeNodeRecursionIdentity': {
         errors: true,
         symbols: true,
@@ -14582,6 +14842,11 @@ const baselines = {
         types: true,
     },
     'ttttRestMappedOverEmptyTuple': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttRestOfInferredParametersNotCallback': {
         errors: true,
         symbols: true,
         types: true,
@@ -14854,8 +15119,13 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttThisInstantiatedAnnotatedImplementation': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttThisInstantiatedMethodErased': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -14900,6 +15170,11 @@ const baselines = {
         types: true,
     },
     'ttttTruncationReusedConstraint': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttTsconfigMaxNodeModuleJsDepth': {
         errors: true,
         symbols: true,
         types: true,
