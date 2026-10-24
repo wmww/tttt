@@ -1,0 +1,63 @@
+//// [test/cases/npm_sixb-ai_sixb_TS2339.ts] ////
+
+=== npm_sixb-ai_sixb_TS2339.ts ===
+// origin: npm sixb-ai/sixb@main https://github.com/sixb-ai/sixb packages/core/tsconfig.json seed 20261400
+// flip: no
+// TValue inferred from an async generator returned by an immediately invoked async function* inside an async arrow
+// (`readValues`). tsgo infers no candidate from it (TValue falls back to its constraint DatasetWriteValue, so
+// `item.account` is TS2339); tttt infers `{ value: string; account: string }` and reports nothing.
+export interface DatasetWriteValue {}
+export interface WriteDatasetInput<TValue extends DatasetWriteValue = DatasetWriteValue> {
+  readValues(): Promise<Iterable<TValue> | AsyncIterable<TValue>>
+>readValues : () => Promise<Iterable<TValue> | AsyncIterable<TValue>>
+
+  mapValidationError?(error: unknown, value: TValue, itemIndex: number): unknown
+>mapValidationError : ((error: unknown, value: TValue, itemIndex: number) => unknown) | undefined
+>error : unknown
+>value : TValue
+>itemIndex : number
+}
+declare function writeDataset<TValue extends DatasetWriteValue>(input: WriteDatasetInput<TValue>): void
+>writeDataset : <TValue extends DatasetWriteValue>(input: WriteDatasetInput<TValue>) => void
+>input : WriteDatasetInput<TValue>
+
+writeDataset({
+>writeDataset({  readValues: async () =>    (async function* () {      try {        yield { value: "x", account: "A" }      } finally {      }    })(),  mapValidationError(error, item, index) {    item.account  },}) : void
+>writeDataset : <TValue extends DatasetWriteValue>(input: WriteDatasetInput<TValue>) => void
+>{  readValues: async () =>    (async function* () {      try {        yield { value: "x", account: "A" }      } finally {      }    })(),  mapValidationError(error, item, index) {    item.account  },} : { readValues: () => Promise<AsyncGenerator<{ value: string; account: string; }, void, unknown>>; mapValidationError(error: unknown, item: DatasetWriteValue, index: number): void; }
+
+  readValues: async () =>
+>readValues : () => Promise<AsyncGenerator<{ value: string; account: string; }, void, unknown>>
+>async () =>    (async function* () {      try {        yield { value: "x", account: "A" }      } finally {      }    })() : () => Promise<AsyncGenerator<{ value: string; account: string; }, void, unknown>>
+
+    (async function* () {
+>(async function* () {      try {        yield { value: "x", account: "A" }      } finally {      }    })() : AsyncGenerator<{ value: string; account: string; }, void, unknown>
+>(async function* () {      try {        yield { value: "x", account: "A" }      } finally {      }    }) : () => AsyncGenerator<{ value: string; account: string; }, void, unknown>
+>async function* () {      try {        yield { value: "x", account: "A" }      } finally {      }    } : () => AsyncGenerator<{ value: string; account: string; }, void, unknown>
+
+      try {
+        yield { value: "x", account: "A" }
+>yield { value: "x", account: "A" } : any
+>{ value: "x", account: "A" } : { value: string; account: string; }
+>value : string
+>"x" : "x"
+>account : string
+>"A" : "A"
+
+      } finally {
+      }
+    })(),
+  mapValidationError(error, item, index) {
+>mapValidationError : (error: unknown, item: DatasetWriteValue, index: number) => void
+>error : unknown
+>item : DatasetWriteValue
+>index : number
+
+    item.account
+>item.account : any
+>item : DatasetWriteValue
+>account : any
+
+  },
+})
+

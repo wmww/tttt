@@ -1,0 +1,83 @@
+//// [test/cases/npm_amcharts_amcharts5_TS2339.ts] ////
+
+=== npm_amcharts_amcharts5_TS2339.ts ===
+// origin: npm amcharts/amcharts5@master https://github.com/amcharts/amcharts5 tsconfig.json seed 20261400
+// flip: no
+// amcharts' $object.entries: `Array<[Keyof<O>, O[Keyof<O>]]>` with `Keyof<T> = Extract<keyof T, string>`, over a
+// number-indexed `{ [id: number]: IParent }`. tsgo types the element as `[never, IParent]` (the indexed access keeps
+// the index signature's type), tttt as `[never, never]`, so every use of `parent` is TS2339 on never (35 errors
+// on the project, TS2322/TS2345 among them).
+type Keyof<T> = Extract<keyof T, string>;
+>Keyof : Symbol(Keyof, Decl(npm_amcharts_amcharts5_TS2339.ts, 0, 0))
+>T : Symbol(T, Decl(npm_amcharts_amcharts5_TS2339.ts, 6, 11))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(npm_amcharts_amcharts5_TS2339.ts, 6, 11))
+
+function entries<O>(object: O): Array<[Keyof<O>, O[Keyof<O>]]> {
+>entries : Symbol(entries, Decl(npm_amcharts_amcharts5_TS2339.ts, 6, 41))
+>O : Symbol(O, Decl(npm_amcharts_amcharts5_TS2339.ts, 7, 17))
+>object : Symbol(object, Decl(npm_amcharts_amcharts5_TS2339.ts, 7, 20))
+>O : Symbol(O, Decl(npm_amcharts_amcharts5_TS2339.ts, 7, 17))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 2 more)
+>Keyof : Symbol(Keyof, Decl(npm_amcharts_amcharts5_TS2339.ts, 0, 0))
+>O : Symbol(O, Decl(npm_amcharts_amcharts5_TS2339.ts, 7, 17))
+>O : Symbol(O, Decl(npm_amcharts_amcharts5_TS2339.ts, 7, 17))
+>Keyof : Symbol(Keyof, Decl(npm_amcharts_amcharts5_TS2339.ts, 0, 0))
+>O : Symbol(O, Decl(npm_amcharts_amcharts5_TS2339.ts, 7, 17))
+
+  return Object.entries(object as any) as Array<[Keyof<O>, O[Keyof<O>]]>;
+>Object.entries : Symbol(ObjectConstructor.entries, Decl(lib.es2017.object.d.ts, --, --), Decl(lib.es2017.object.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>entries : Symbol(ObjectConstructor.entries, Decl(lib.es2017.object.d.ts, --, --), Decl(lib.es2017.object.d.ts, --, --))
+>object : Symbol(object, Decl(npm_amcharts_amcharts5_TS2339.ts, 7, 20))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 2 more)
+>Keyof : Symbol(Keyof, Decl(npm_amcharts_amcharts5_TS2339.ts, 0, 0))
+>O : Symbol(O, Decl(npm_amcharts_amcharts5_TS2339.ts, 7, 17))
+>O : Symbol(O, Decl(npm_amcharts_amcharts5_TS2339.ts, 7, 17))
+>Keyof : Symbol(Keyof, Decl(npm_amcharts_amcharts5_TS2339.ts, 0, 0))
+>O : Symbol(O, Decl(npm_amcharts_amcharts5_TS2339.ts, 7, 17))
+}
+interface IParent { uid: number; isDisposed(): boolean }
+>IParent : Symbol(IParent, Decl(npm_amcharts_amcharts5_TS2339.ts, 9, 1))
+>uid : Symbol(IParent.uid, Decl(npm_amcharts_amcharts5_TS2339.ts, 10, 19))
+>isDisposed : Symbol(IParent.isDisposed, Decl(npm_amcharts_amcharts5_TS2339.ts, 10, 32))
+
+export class Root {
+>Root : Symbol(Root, Decl(npm_amcharts_amcharts5_TS2339.ts, 10, 56))
+
+  protected _dirtyParents: { [id: number]: IParent } = {};
+>_dirtyParents : Symbol(Root._dirtyParents, Decl(npm_amcharts_amcharts5_TS2339.ts, 11, 19))
+>id : Symbol(id, Decl(npm_amcharts_amcharts5_TS2339.ts, 12, 30))
+>IParent : Symbol(IParent, Decl(npm_amcharts_amcharts5_TS2339.ts, 9, 1))
+
+  run() {
+>run : Symbol(Root.run, Decl(npm_amcharts_amcharts5_TS2339.ts, 12, 58))
+
+    entries(this._dirtyParents).forEach(([key, parent]) => {
+>entries(this._dirtyParents).forEach : Symbol(Array.forEach, Decl(lib.es5.d.ts, --, --))
+>entries : Symbol(entries, Decl(npm_amcharts_amcharts5_TS2339.ts, 6, 41))
+>this._dirtyParents : Symbol(Root._dirtyParents, Decl(npm_amcharts_amcharts5_TS2339.ts, 11, 19))
+>this : Symbol(Root, Decl(npm_amcharts_amcharts5_TS2339.ts, 10, 56))
+>_dirtyParents : Symbol(Root._dirtyParents, Decl(npm_amcharts_amcharts5_TS2339.ts, 11, 19))
+>forEach : Symbol(Array.forEach, Decl(lib.es5.d.ts, --, --))
+>key : Symbol(key, Decl(npm_amcharts_amcharts5_TS2339.ts, 14, 42))
+>parent : Symbol(parent, Decl(npm_amcharts_amcharts5_TS2339.ts, 14, 46))
+
+      delete this._dirtyParents[key];
+>this._dirtyParents : Symbol(Root._dirtyParents, Decl(npm_amcharts_amcharts5_TS2339.ts, 11, 19))
+>this : Symbol(Root, Decl(npm_amcharts_amcharts5_TS2339.ts, 10, 56))
+>_dirtyParents : Symbol(Root._dirtyParents, Decl(npm_amcharts_amcharts5_TS2339.ts, 11, 19))
+>key : Symbol(key, Decl(npm_amcharts_amcharts5_TS2339.ts, 14, 42))
+
+      if (!parent.isDisposed()) parent.uid;
+>parent.isDisposed : Symbol(IParent.isDisposed, Decl(npm_amcharts_amcharts5_TS2339.ts, 10, 32))
+>parent : Symbol(parent, Decl(npm_amcharts_amcharts5_TS2339.ts, 14, 46))
+>isDisposed : Symbol(IParent.isDisposed, Decl(npm_amcharts_amcharts5_TS2339.ts, 10, 32))
+>parent.uid : Symbol(IParent.uid, Decl(npm_amcharts_amcharts5_TS2339.ts, 10, 19))
+>parent : Symbol(parent, Decl(npm_amcharts_amcharts5_TS2339.ts, 14, 46))
+>uid : Symbol(IParent.uid, Decl(npm_amcharts_amcharts5_TS2339.ts, 10, 19))
+
+    });
+  }
+}
+

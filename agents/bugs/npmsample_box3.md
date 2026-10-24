@@ -109,3 +109,14 @@ for flips); a separate file so the three boxes never conflict.
   complex" in voxel-three. tsgo hits neither limit. Not a placement difference: tsgo reports no depth error at all,
   so tttt's instantiation goes deeper or caches less. Repro test/cases/npm_voxel-three_TS2589.ts (reduce.py, 6
   files; the TS2590 is not reproduced separately). [open]
+- Large seed 20261400, amcharts/amcharts5@master (root tsconfig.json): +35 errors (TS2339 on never, TS2322,
+  TS2345) from `$object.entries(o): Array<[Keyof<O>, O[Keyof<O>]]>` with `Keyof<T> = Extract<keyof T, string>` over
+  a number-indexed `{ [id: number]: IParent }`. tsgo types the element `[never, IParent]` (the indexed access through
+  the conditional index keeps the index signature's type) and tttt `[never, never]`. Guess: instantiating
+  `O[Extract<keyof O, string>]` reduces the index to never first and then indexes, where tsgo keeps the
+  index-signature lookup. Repro test/cases/npm_amcharts_amcharts5_TS2339.ts (by hand, 18 lines). [open]
+- Large seed 20261400, sixb-ai/sixb@main packages/core: missing TS2339 `item.account` on DatasetWriteValue. A type
+  parameter inferred from `readValues: async () => (async function* () { try { yield {...} } finally {} })()`
+  (Promise<Iterable<T> | AsyncIterable<T>>) next to a context-sensitive method that uses T. tsgo gets no inference
+  from the generator and falls back to the constraint; tttt infers the yielded object. Repro
+  test/cases/npm_sixb-ai_sixb_TS2339.ts (reduce.py, then by hand). [open]

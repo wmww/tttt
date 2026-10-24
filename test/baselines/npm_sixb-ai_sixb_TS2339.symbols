@@ -1,0 +1,67 @@
+//// [test/cases/npm_sixb-ai_sixb_TS2339.ts] ////
+
+=== npm_sixb-ai_sixb_TS2339.ts ===
+// origin: npm sixb-ai/sixb@main https://github.com/sixb-ai/sixb packages/core/tsconfig.json seed 20261400
+// flip: no
+// TValue inferred from an async generator returned by an immediately invoked async function* inside an async arrow
+// (`readValues`). tsgo infers no candidate from it (TValue falls back to its constraint DatasetWriteValue, so
+// `item.account` is TS2339); tttt infers `{ value: string; account: string }` and reports nothing.
+export interface DatasetWriteValue {}
+>DatasetWriteValue : Symbol(DatasetWriteValue, Decl(npm_sixb-ai_sixb_TS2339.ts, 0, 0))
+
+export interface WriteDatasetInput<TValue extends DatasetWriteValue = DatasetWriteValue> {
+>WriteDatasetInput : Symbol(WriteDatasetInput, Decl(npm_sixb-ai_sixb_TS2339.ts, 5, 37))
+>TValue : Symbol(TValue, Decl(npm_sixb-ai_sixb_TS2339.ts, 6, 35))
+>DatasetWriteValue : Symbol(DatasetWriteValue, Decl(npm_sixb-ai_sixb_TS2339.ts, 0, 0))
+>DatasetWriteValue : Symbol(DatasetWriteValue, Decl(npm_sixb-ai_sixb_TS2339.ts, 0, 0))
+
+  readValues(): Promise<Iterable<TValue> | AsyncIterable<TValue>>
+>readValues : Symbol(WriteDatasetInput.readValues, Decl(npm_sixb-ai_sixb_TS2339.ts, 6, 90))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>Iterable : Symbol(Iterable, Decl(lib.es2015.iterable.d.ts, --, --))
+>TValue : Symbol(TValue, Decl(npm_sixb-ai_sixb_TS2339.ts, 6, 35))
+>AsyncIterable : Symbol(AsyncIterable, Decl(lib.es2018.asynciterable.d.ts, --, --))
+>TValue : Symbol(TValue, Decl(npm_sixb-ai_sixb_TS2339.ts, 6, 35))
+
+  mapValidationError?(error: unknown, value: TValue, itemIndex: number): unknown
+>mapValidationError : Symbol(WriteDatasetInput.mapValidationError, Decl(npm_sixb-ai_sixb_TS2339.ts, 7, 65))
+>error : Symbol(error, Decl(npm_sixb-ai_sixb_TS2339.ts, 8, 22))
+>value : Symbol(value, Decl(npm_sixb-ai_sixb_TS2339.ts, 8, 37))
+>TValue : Symbol(TValue, Decl(npm_sixb-ai_sixb_TS2339.ts, 6, 35))
+>itemIndex : Symbol(itemIndex, Decl(npm_sixb-ai_sixb_TS2339.ts, 8, 52))
+}
+declare function writeDataset<TValue extends DatasetWriteValue>(input: WriteDatasetInput<TValue>): void
+>writeDataset : Symbol(writeDataset, Decl(npm_sixb-ai_sixb_TS2339.ts, 9, 1))
+>TValue : Symbol(TValue, Decl(npm_sixb-ai_sixb_TS2339.ts, 10, 30))
+>DatasetWriteValue : Symbol(DatasetWriteValue, Decl(npm_sixb-ai_sixb_TS2339.ts, 0, 0))
+>input : Symbol(input, Decl(npm_sixb-ai_sixb_TS2339.ts, 10, 64))
+>WriteDatasetInput : Symbol(WriteDatasetInput, Decl(npm_sixb-ai_sixb_TS2339.ts, 5, 37))
+>TValue : Symbol(TValue, Decl(npm_sixb-ai_sixb_TS2339.ts, 10, 30))
+
+writeDataset({
+>writeDataset : Symbol(writeDataset, Decl(npm_sixb-ai_sixb_TS2339.ts, 9, 1))
+
+  readValues: async () =>
+>readValues : Symbol(readValues, Decl(npm_sixb-ai_sixb_TS2339.ts, 11, 14))
+
+    (async function* () {
+      try {
+        yield { value: "x", account: "A" }
+>value : Symbol(value, Decl(npm_sixb-ai_sixb_TS2339.ts, 15, 15))
+>account : Symbol(account, Decl(npm_sixb-ai_sixb_TS2339.ts, 15, 27))
+
+      } finally {
+      }
+    })(),
+  mapValidationError(error, item, index) {
+>mapValidationError : Symbol(mapValidationError, Decl(npm_sixb-ai_sixb_TS2339.ts, 18, 9))
+>error : Symbol(error, Decl(npm_sixb-ai_sixb_TS2339.ts, 19, 21))
+>item : Symbol(item, Decl(npm_sixb-ai_sixb_TS2339.ts, 19, 27))
+>index : Symbol(index, Decl(npm_sixb-ai_sixb_TS2339.ts, 19, 33))
+
+    item.account
+>item : Symbol(item, Decl(npm_sixb-ai_sixb_TS2339.ts, 19, 27))
+
+  },
+})
+

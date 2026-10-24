@@ -58,3 +58,5 @@ npm__taiyakihitotsu_foxp_TS2344	yes	@taiyakihitotsu/foxp@0.5.11	https://github.c
 npm_forgesteel_TS2345	yes	forgesteel@14.217.0	https://github.com/andyaiken/forgesteel	0	1	TS2345
 npm__rocket-slate_mentions_TS2615	no	@rocket-slate/mentions@0.2.26	https://github.com/rs-pro/rocket-slate	22	21	-TS2615
 npm_voxel-three_TS2589	no	voxel-three@0.3.0	https://github.com/tseijp/voxelizer	39	41	+TS2589 +TS2590
+npm_amcharts_amcharts5_TS2339	no	amcharts/amcharts5@master	https://github.com/amcharts/amcharts5	57	92	+TS2322 +TS2339 +TS2345
+npm_sixb-ai_sixb_TS2339	no	sixb-ai/sixb@main	https://github.com/sixb-ai/sixb	6	5	-TS2339

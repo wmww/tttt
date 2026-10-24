@@ -1,0 +1,75 @@
+//// [test/cases/npm_amcharts_amcharts5_TS2339.ts] ////
+
+=== npm_amcharts_amcharts5_TS2339.ts ===
+// origin: npm amcharts/amcharts5@master https://github.com/amcharts/amcharts5 tsconfig.json seed 20261400
+// flip: no
+// amcharts' $object.entries: `Array<[Keyof<O>, O[Keyof<O>]]>` with `Keyof<T> = Extract<keyof T, string>`, over a
+// number-indexed `{ [id: number]: IParent }`. tsgo types the element as `[never, IParent]` (the indexed access keeps
+// the index signature's type), tttt as `[never, never]`, so every use of `parent` is TS2339 on never (35 errors
+// on the project, TS2322/TS2345 among them).
+type Keyof<T> = Extract<keyof T, string>;
+>Keyof : Keyof<T>
+
+function entries<O>(object: O): Array<[Keyof<O>, O[Keyof<O>]]> {
+>entries : <O>(object: O) => Array<[Keyof<O>, O[Keyof<O>]]>
+>object : O
+
+  return Object.entries(object as any) as Array<[Keyof<O>, O[Keyof<O>]]>;
+>Object.entries(object as any) as Array<[Keyof<O>, O[Keyof<O>]]> : [Extract<keyof O, string>, O[Extract<keyof O, string>]][]
+>Object.entries(object as any) : [string, O[Extract<keyof O, string>]][]
+>Object.entries : { <T>(o: { [s: string]: T; } | ArrayLike<T>): [string, T][]; (o: {}): [string, any][]; }
+>Object : ObjectConstructor
+>entries : { <T>(o: { [s: string]: T; } | ArrayLike<T>): [string, T][]; (o: {}): [string, any][]; }
+>object as any : any
+>object : O
+}
+interface IParent { uid: number; isDisposed(): boolean }
+>uid : number
+>isDisposed : () => boolean
+
+export class Root {
+>Root : Root
+
+  protected _dirtyParents: { [id: number]: IParent } = {};
+>_dirtyParents : { [id: number]: IParent; }
+>id : number
+>{} : {}
+
+  run() {
+>run : () => void
+
+    entries(this._dirtyParents).forEach(([key, parent]) => {
+>entries(this._dirtyParents).forEach(([key, parent]) => {      delete this._dirtyParents[key];      if (!parent.isDisposed()) parent.uid;    }) : void
+>entries(this._dirtyParents).forEach : (callbackfn: (value: [never, IParent], index: number, array: [never, IParent][]) => void, thisArg?: any) => void
+>entries(this._dirtyParents) : [never, IParent][]
+>entries : <O>(object: O) => Array<[Keyof<O>, O[Keyof<O>]]>
+>this._dirtyParents : { [id: number]: IParent; }
+>this : this
+>_dirtyParents : { [id: number]: IParent; }
+>forEach : (callbackfn: (value: [never, IParent], index: number, array: [never, IParent][]) => void, thisArg?: any) => void
+>([key, parent]) => {      delete this._dirtyParents[key];      if (!parent.isDisposed()) parent.uid;    } : ([key, parent]: [never, IParent]) => void
+>key : never
+>parent : IParent
+
+      delete this._dirtyParents[key];
+>delete this._dirtyParents[key] : boolean
+>this._dirtyParents[key] : IParent
+>this._dirtyParents : { [id: number]: IParent; }
+>this : this
+>_dirtyParents : { [id: number]: IParent; }
+>key : never
+
+      if (!parent.isDisposed()) parent.uid;
+>!parent.isDisposed() : boolean
+>parent.isDisposed() : boolean
+>parent.isDisposed : () => boolean
+>parent : IParent
+>isDisposed : () => boolean
+>parent.uid : number
+>parent : IParent
+>uid : number
+
+    });
+  }
+}
+
