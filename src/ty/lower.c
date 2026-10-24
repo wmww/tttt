@@ -422,7 +422,8 @@ static bool identifier_in_js(IdentifierType const* identifier) {
 static TyList lower_type_args(
     Checker* me, TyList params, u32 outer, VecSpannedType const* written, LowerCtx ctx, Ty const* args[MAX_TYPE_ARGS], bool js
 ) {
-    panic_if(params.len > MAX_TYPE_ARGS, "too many type parameters");
+    // (More than the caller's stack buffer holds: in the arena, xstate 6's Next_MachineConfig takes 36)
+    if (params.len > MAX_TYPE_ARGS) args = arena_new_n(&my arena, Ty const*, params.len);
     u32 written_len = (u32)vec_spanned_type_size(written) + outer;
     // (Those not filled in yet are the error type while a default is instantiated: tsc's fillMissingTypeArguments)
     for (u32 i = 0; i < params.len; i++) args[i] = ty_intrinsic(me, TY_ERROR);
@@ -467,18 +468,21 @@ static bool distributes_over_union(Checker* me, Ty const* declared, TyList param
 static Ty const* alias_instance(Checker* me, Symbol const* decl, Ty const* body, TyList params, TyList args) {
     u64 stack_key[32];
     u32 count = 2 + args.len;
-    check(count <= c_arraylen(stack_key));
-    stack_key[0] = KEY_ALIAS_INSTANCE;
-    stack_key[1] = (u64)(uintptr_t)decl;
-    for (u32 i = 0; i < args.len; i++) stack_key[2 + i] = args.data[i]->id;
-    Ty const* ret = intern_get(&my links, stack_key, count);
+    // (A heap key past 30 arguments: xstate 6's Next_MachineConfig takes 36)
+    u64* key = count <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * count);
+    panic_if(!key, "out of memory");
+    key[0] = KEY_ALIAS_INSTANCE;
+    key[1] = (u64)(uintptr_t)decl;
+    for (u32 i = 0; i < args.len; i++) key[2 + i] = args.data[i]->id;
+    Ty const* ret = intern_get(&my links, key, count);
     if (!ret) {
         TyMapper const* mapper = ty_mapper_new(me, params, args);
         ret = ty_instantiate(me, body, mapper);
         // (Its type parameters unused, the body is itself: it still goes by these arguments)
         if (ret == body && body->alias == decl) ret = ty_realias(me, ret, decl, args);
-        *intern_slot(me, &my links, stack_key, count) = ret;
+        *intern_slot(me, &my links, key, count) = ret;
     }
+    if (key != stack_key) free(key);
     return ret;
 }
 
@@ -491,7 +495,8 @@ static bool symbol_is_generic_alias(Symbol const* symbol) {
 TyList ty_alias_args_filled(Checker* me, Ty const* ty, Ty const* buf[MAX_TYPE_ARGS]) {
     if (!ty->alias || !symbol_is_generic_alias(ty->alias)) return ty->alias_args;
     TyList params = ty_alias_type_params(me, ty->alias);
-    if (ty->alias_args.len >= params.len || params.len > MAX_TYPE_ARGS) return ty->alias_args;
+    if (ty->alias_args.len >= params.len) return ty->alias_args;
+    if (params.len > MAX_TYPE_ARGS) buf = arena_new_n(&my arena, Ty const*, params.len);
     VecSpannedType none = {0};
     if (!ty->alias_args.len) return lower_type_args(me, params, 0, &none, (LowerCtx){0}, buf, false);
     // (Those written, then the defaults: tsc's fillMissingTypeArguments, a default mentioning the parameters before it)

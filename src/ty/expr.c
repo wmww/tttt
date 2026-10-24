@@ -6668,11 +6668,11 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             // (A class's `extends B<T>` is a type reference's type arguments, what the class's base constructor type
             // and super calls make of them: tsc's getBaseConstructorTypeOfClass checks the expression alone)
             if (generic->heritage) return ty_expr_type(me, &generic->expr);
-            Ty const* args[32];
+            Ty const* stack_args[32];
+            u32 count = (u32)vec_spanned_type_size(&generic->params);
+            Ty const** args = count <= c_arraylen(stack_args) ? stack_args : arena_new_n(&my arena, Ty const*, count);
             u32 len = 0;
-            for_each (i, vec_spanned_type, &generic->params) {
-                if (len < c_arraylen(args)) args[len++] = ty_from_node(me, &i->type, expr_lower_ctx);
-            }
+            for_each (i, vec_spanned_type, &generic->params) args[len++] = ty_from_node(me, &i->type, expr_lower_ctx);
             return ty_apply_type_arguments(me, ty_expr_type(me, &generic->expr), (TyList){ .data = args, .len = len });
         }
 

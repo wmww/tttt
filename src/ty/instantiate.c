@@ -896,14 +896,15 @@ Ty const* ty_alias_body_mapped_instance(Checker* me, Ty const* ty, Symbol const*
     }
     u64 stack_key[40];
     u32 count = 4 + alias_args.len;
-    if (count > c_arraylen(stack_key)) return ty;
-    stack_key[0] = KEY_ANONYMOUS_INSTANCE;
-    stack_key[1] = ty->id;
-    stack_key[2] = UINT64_MAX - 2; // Not a type id: tells these apart from ordinary instantiations and ty_realias()'s
-    stack_key[3] = (u64)(uintptr_t)alias;
-    for (u32 i = 0; i < alias_args.len; i++) stack_key[4 + i] = alias_args.data[i]->id;
+    u64* key = count <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * count);
+    panic_if(!key, "out of memory");
+    key[0] = KEY_ANONYMOUS_INSTANCE;
+    key[1] = ty->id;
+    key[2] = UINT64_MAX - 2; // Not a type id: tells these apart from ordinary instantiations and ty_realias()'s
+    key[3] = (u64)(uintptr_t)alias;
+    for (u32 i = 0; i < alias_args.len; i++) key[4 + i] = alias_args.data[i]->id;
     InternMiss miss;
-    Ty const* ret = intern_lookup(&my types, stack_key, count, &miss);
+    Ty const* ret = intern_lookup(&my types, key, count, &miss);
     if (!ret) {
         Ty* fresh = ty_alloc(me, ty->kind, ty->flags);
         fresh->anonymous = ty->anonymous;
@@ -918,8 +919,9 @@ Ty const* ty_alias_body_mapped_instance(Checker* me, Ty const* ty, Symbol const*
         fresh->anonymous.state = arena_new(&my arena, TyObjectState);
         fresh->alias = ty->alias;
         fresh->alias_args = ty->alias_args;
-        ret = intern_set(me, &my types, intern_insert(me, &my types, &miss, stack_key, count), fresh);
+        ret = intern_set(me, &my types, intern_insert(me, &my types, &miss, key, count), fresh);
     }
+    if (key != stack_key) free(key);
     return ret;
 }
 
@@ -967,14 +969,15 @@ Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alia
     }
     u64 stack_key[40];
     u32 count = 4 + alias_args.len;
-    if (count > c_arraylen(stack_key)) return ty;
-    stack_key[0] = KEY_ANONYMOUS_INSTANCE;
-    stack_key[1] = ty->id;
-    stack_key[2] = UINT64_MAX - 1; // Not a type id: tells these apart from ordinary instantiations
-    stack_key[3] = (u64)(uintptr_t)alias;
-    for (u32 i = 0; i < alias_args.len; i++) stack_key[4 + i] = alias_args.data[i]->id;
+    u64* key = count <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * count);
+    panic_if(!key, "out of memory");
+    key[0] = KEY_ANONYMOUS_INSTANCE;
+    key[1] = ty->id;
+    key[2] = UINT64_MAX - 1; // Not a type id: tells these apart from ordinary instantiations
+    key[3] = (u64)(uintptr_t)alias;
+    for (u32 i = 0; i < alias_args.len; i++) key[4 + i] = alias_args.data[i]->id;
     InternMiss miss;
-    Ty const* ret = intern_lookup(&my types, stack_key, count, &miss);
+    Ty const* ret = intern_lookup(&my types, key, count, &miss);
     if (!ret) {
         Ty* fresh = ty_alloc(me, ty->kind, ty->flags);
         if (ty->kind == TY_INDEXED) {
@@ -998,8 +1001,9 @@ Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alia
         }
         fresh->alias = alias;
         fresh->alias_args = ty_list_copy(me, alias_args.data, alias_args.len);
-        ret = intern_set(me, &my types, intern_insert(me, &my types, &miss, stack_key, count), fresh);
+        ret = intern_set(me, &my types, intern_insert(me, &my types, &miss, key, count), fresh);
     }
+    if (key != stack_key) free(key);
     return ret;
 }
 

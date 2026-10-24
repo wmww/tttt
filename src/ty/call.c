@@ -3491,11 +3491,11 @@ JsxResolution ty_resolve_jsx_element(Checker* me, JsxElement const* element, Err
     Ty const* type_args[32];
     if (!vec_spanned_type_is_empty(&element->type_args)) {
         info.type_arg_nodes = &element->type_args;
+        u32 count = (u32)vec_spanned_type_size(info.type_arg_nodes);
+        Ty const** list = count <= c_arraylen(type_args) ? type_args : arena_new_n(&my arena, Ty const*, count);
         u32 len = 0;
-        for_each (i, vec_spanned_type, info.type_arg_nodes) {
-            if (len < c_arraylen(type_args)) type_args[len++] = ty_from_node(me, &i->type, (LowerCtx){ .generic = true });
-        }
-        info.type_args = (TyList){ .data = type_args, .len = len };
+        for_each (i, vec_spanned_type, info.type_arg_nodes) list[len++] = ty_from_node(me, &i->type, (LowerCtx){ .generic = true });
+        info.type_args = (TyList){ .data = list, .len = len };
     }
     Args args;
     args_init(&args);
@@ -3535,11 +3535,11 @@ static Ty const* resolve_into(
         info.type_arg_nodes = &call->callable.generic_params->params;
     }
     if (info.type_arg_nodes) {
+        u32 count = (u32)vec_spanned_type_size(info.type_arg_nodes);
+        Ty const** list = count <= c_arraylen(type_args) ? type_args : arena_new_n(&my arena, Ty const*, count);
         u32 len = 0;
-        for_each (i, vec_spanned_type, info.type_arg_nodes) {
-            if (len < c_arraylen(type_args)) type_args[len++] = ty_from_node(me, &i->type, (LowerCtx){ .generic = true });
-        }
-        info.type_args = (TyList){ .data = type_args, .len = len };
+        for_each (i, vec_spanned_type, info.type_arg_nodes) list[len++] = ty_from_node(me, &i->type, (LowerCtx){ .generic = true });
+        info.type_args = (TyList){ .data = list, .len = len };
     }
     return resolve_call(me, callee, &info, call_span, errs);
 }

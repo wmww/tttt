@@ -129,7 +129,11 @@ for flips); a separate file so the three boxes never conflict.
   ty/lower.c alias_instance(), `check(count <= c_arraylen(stack_key))`: the alias-instance intern key is a fixed
   32-word stack array (2 + the argument count), and xstate 6's `Next_MachineConfig` has 36 type parameters. tsgo
   reports 2 errors there. Fix: a heap (or arena) key when the arguments outrun the array, as other intern keys do.
-  Repro test/cases/npm__lute-lang_player_crash.ts (a 32-parameter alias). [crash] [open]
+  Repro test/cases/npm__lute-lang_player_crash.ts (a 32-parameter alias). Fixed (fixF): heap keys past the stack arrays in
+  alias_instance, ty_alias_body_mapped_instance and ty_realias (the last two silently skipped realiasing past 36 arguments), and
+  the 32-entry caps on type parameters (MergedTypeParams, now 63: the arity memo's 6 bits), lowered type arguments
+  (lower_type_args/ty_alias_args_filled: arena past MAX_TYPE_ARGS) and explicit call/JSX/instantiation-expression type arguments
+  (truncated before). Repro of the rest: ttttManyTypeArguments (40 parameters). [crash] [fixed PENDING]
 - Seed 20261212, cfdude/mcp-namecheap (mcp-namecheap@1.0.0): spurious TS2883 "The inferred type of '(Missing)'
   cannot be named without a reference to 'Server'..." in a `// @ts-nocheck` file under declaration: true. tsgo
   reports no diagnostics for a nocheck file, declaration diagnostics included, and tttt's declaration walk reports

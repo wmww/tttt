@@ -515,7 +515,9 @@ static Generic const* decl_generic(Symbol const* symbol, u32 d) {
 // parameter of a known name is the same one, tsc's binder merges them by name); else the first declaration's
 typedef struct MergedTypeParams {
     Generic const* first;
-    GenericItem const* items[32]; // Only filled when `merged`: else the first's
+    // Only filled when `merged`: else the first's. (63: what the arity memo's 6 bits hold, Symbol.type_args_arity; xstate 6's
+    // Next_MachineConfig takes 36)
+    GenericItem const* items[63];
     u32 count;
     bool merged;
 } MergedTypeParams;
@@ -547,7 +549,7 @@ static bool declared_type_params(Symbol const* symbol, u32* min, MergedTypeParam
     bool can_merge = symbol->decls[first_d].kind == SYMBOL_DECL_CLASS || symbol->decls[first_d].kind == SYMBOL_DECL_INTERFACE;
     uint8_t memo = __atomic_load_n(&symbol->type_params_merge, __ATOMIC_RELAXED);
     bool merges = memo == 2;
-    bool has_default[32] = {0};
+    bool has_default[c_arraylen(out->items)] = {0};
     if (!can_merge) memo = 1;
     for (u32 d = 0; d < symbol->decl_count && !merges; d++) {
         Generic const* generic = decl_generic(symbol, d);
