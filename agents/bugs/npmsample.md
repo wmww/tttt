@@ -389,7 +389,7 @@ K-dependent.
     T) => ...` with T the (object) row type; tsc's tryGetTypeAtPosition takes `T[0]` with getIndexedAccessType, which is
     unknown without an access node, so the destructured parameter falls back to its pattern's type silently. tttt's
     signature_type_at() gave nothing, and the parameter was typed as uncontextual (TS7031 / TS7006). Test
-    test/cases/rw_n8n_TS7031.ts. [fixed PENDING]
+    test/cases/rw_n8n_TS7031.ts. [fixed a4d3ab492]
   - Text only, after both fixes (projdiff: same (file, line, code), 28 lines): TS2339 x4 at a destructuring of an aliased
     intersection (`const { id } = entity`, agent-config.service.ts:182, agent-task.service.ts:535, agent-tools.service.ts:1100,
     :1219): tsgo names the apparent type `Agent & { projectId: string; }`, tttt the alias `ProjectAgent`; TS2353 x9 with
