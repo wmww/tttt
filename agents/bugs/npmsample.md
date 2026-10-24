@@ -383,7 +383,7 @@ K-dependent.
     new intersection without the alias, so the missing property's line names `Agent & { projectId: string; }`, which
     doesn't repeat the head's `ProjectAgent`, and the head stays (reportRelationError's chainArgsMatch). tttt's line
     named the alias and dropped the head. relate.c apparent_intersection() now drops the alias for such members.
-    Test test/cases/rw_n8n_TS2345.ts. [fixed PENDING]
+    Test test/cases/rw_n8n_TS2345.ts. [fixed dc6856bd0]
   - +TS7031 x7 (tttt only): agent-execution.service.test.ts:1911 ('allowed', x2), agent-background-job.service.test.ts:380
     ('expected', x5). [open]
 - n8n-nodes-base (packages/nodes-base, bench: composite -> false, declaration true; tsBuildInfoFile -> null): tsgo 7138 /
