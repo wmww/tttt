@@ -144,7 +144,7 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   | ...>` then gets TS2344 in tttt ("'icon' is not assignable to type 'keyof APIGuild'"). A base type that reads its
   own derived interface through Pick (keyof APIGuild while APIGuild's bases resolve): tttt's keyof APIGuild lacks the
   members inherited from APIPartialGuild, likely a member set cached while the base list was in flight. tsgo gives no
-  error at all (no TS2310 either). Cut-down: 2 files, 10 lines. [open]
+  error at all (no TS2310 either). Cut-down: 2 files, 10 lines. (claimed: cor10) [open]
 
 ## Seed 20261103 (second box)
 - npm_task-definition-ts_TS2339 (task-definition-ts@1.0.18, config tsconfig.bench.json, allowJs+checkJs, no include): tttt's default wildcard include adds `dist/index.mjs` although `dist/index.d.mts` sits beside it, and checks it (TS2339/TS7006 x6); tsgo drops the .mjs (same-basename extension priority: a declaration file beats the JS file), as tttt already does for `index.cjs` next to `index.d.cts`. Guess: the priority removal in tttt's wildcard expansion knows .d.cts/.cjs but not .d.mts/.mjs. [flip] [open]
