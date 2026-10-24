@@ -311,7 +311,19 @@ for flips); a separate file so the three boxes never conflict.
   are inferred: a self-referential initializer through deferred factory functions, the re-entry model's area
   (agents/notes/reentrancy.md; compare cor10's 2b43a7cd4 for console-web's DI case). The stripe/react-query errors
   are downstream (services any). Next step: reduce createContainer/createChildContainer (src/services/container/
-  createContainer.ts) with one self-referencing factory, then scripts/reentrytrace.py. [open]
+  createContainer.ts) with one self-referencing factory, then scripts/reentrytrace.py.
+  Later the same day: tsgo reports nothing at all in app-di-container.ts. tttt's stack at the cycle (gdb on
+  cycle_trace_print, TTTT_DEBUG_CYCLE=1, TTTT_CHECK_ONLY=app-di-container.ts): container's initializer ->
+  resolve createContainer -> infer_type_arguments -> check the literal argument -> check_object -> a factory's
+  ty_argument_return_type -> infer_return_type -> `container.applyAxiosInterceptors(...)` -> resolve_call ->
+  ty_calls_generic_function_returning_function -> `container` in flight. tsc computes a factory's return type there
+  too (contextuallyCheckFunctionExpressionOrObjectLiteralMethod: the contextual signature is Factories' `() => any`),
+  re-enters `container` below the call's barrier and gets the resolving signature's any for the nested evaluation;
+  which result (nested any or outer DIContainer) the declaration keeps, and why the `config => ...` arguments of the
+  inner `container.applyAxiosInterceptors(...)` aren't TS7006 in tsgo, is the re-entry model's stage C/D question.
+  Two self-contained mimics (createContainer + a self-referencing factory with a generic `typeof withInterceptors`
+  member) agree with tsgo, so the trigger needs more of the real types; reduce.py on the project was started and
+  stopped (slow: 1876 own files). [open]
 - Large seed 20261403, akash-network/console@main, apps/api: spurious TS2877 at tsup.config.ts:1 ("This import uses
   a '.ts' extension ... not a relative path"), the same as latitude-llm's apps/web entry above. Not a flip. Re-checked at 7a1056d63 (seed 20261490, the same commit aa01c1469): byte-identical. [fixed ee1a75319]
 - Seed 20261218, wakaztahir/solid-staggered-grid (solid-staggered-grid@1.0.22, commit 4bf293019, root tsconfig.json):
