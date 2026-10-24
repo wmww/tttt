@@ -1,0 +1,9 @@
+//// [test/cases/npm__pixpilot_cost-calculator_TS6053.ts] ////
+
+=== a.ts ===
+export const f = (x) => x;
+>f : (x: any) => any
+>(x) => x : (x: any) => any
+>x : any
+>x : any
+

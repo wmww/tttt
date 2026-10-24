@@ -120,3 +120,8 @@ for flips); a separate file so the three boxes never conflict.
   (Promise<Iterable<T> | AsyncIterable<T>>) next to a context-sensitive method that uses T. tsgo gets no inference
   from the generator and falls back to the constraint; tttt infers the yielded object. Repro
   test/cases/npm_sixb-ai_sixb_TS2339.ts (reduce.py, then by hand). [open]
+- Seed 20261211, pixpilot/credit-calculator (@pixpilot/cost-calculator@0.1.0): spurious TS6053 "File
+  '@pixpilot/dev-config/typescript' not found" for a tsconfig `extends` of a package subpath whose `exports` lists
+  `"./*"` (a pattern) before the exact `"./typescript"`. Exact keys win over patterns whatever their order (tsgo
+  resolves it), and tttt apparently takes the pattern first. The lost base options then cost tsgo's TS2883 and add a
+  zod TS5115 on the project. Repro test/cases/npm__pixpilot_cost-calculator_TS6053.ts. [open]

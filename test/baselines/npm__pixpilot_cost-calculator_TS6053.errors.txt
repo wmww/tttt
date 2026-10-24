@@ -1,0 +1,14 @@
+a.ts(1,19): error TS7006: Parameter 'x' implicitly has an 'any' type.
+
+
+==== tsconfig.json (0 errors) ====
+    { "extends": "@pixpilot/dev-config/typescript", "compilerOptions": { "noEmit": true }, "files": ["a.ts"] }
+==== a.ts (1 errors) ====
+    export const f = (x) => x;
+                      ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+    
+==== node_modules/@pixpilot/dev-config/package.json (0 errors) ====
+    {"name": "@pixpilot/dev-config", "version": "3.22.1", "exports": {".": {"import": {"types": "./dist/index.d.ts", "default": "./dist/index.js"}}, "./*": {"import": {"types": "./dist/*.d.ts", "default": "./dist/*.js"}}, "./typescript": "./dist/tsconfig-base.json"}}
+==== node_modules/@pixpilot/dev-config/dist/tsconfig-base.json (0 errors) ====
+    { "compilerOptions": { "strict": true } }

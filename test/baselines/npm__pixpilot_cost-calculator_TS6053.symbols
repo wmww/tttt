@@ -1,0 +1,8 @@
+//// [test/cases/npm__pixpilot_cost-calculator_TS6053.ts] ////
+
+=== a.ts ===
+export const f = (x) => x;
+>f : Symbol(f, Decl(a.ts, 0, 12))
+>x : Symbol(x, Decl(a.ts, 0, 18))
+>x : Symbol(x, Decl(a.ts, 0, 18))
+
