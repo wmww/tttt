@@ -57,6 +57,7 @@ enum {
     KEY_PROP_MAPPED_TYPE, // Prop with .mapped -> the mapped type it's a property of (members.c)
     KEY_PROP_WRITE_TYPE, // Prop -> prop_write_type() of it, null for none; present once known (members.c)
     KEY_UNION_ACCESS, // (union type id, index type id, flags) -> access() of it at depth 0, a sentinel for none (access.c)
+    KEY_CONSTRAINT_ACCESS, // (object id, union index id, include_undefined) -> indexed_or_null_flagged()'s access (relate.c)
     KEY_BASE_CONSTRAINT, // type (node_links) -> base_constraint() of it, the type itself for none, sentinels while computed and for circular (relate.c)
     KEY_INFERRED_TRUE_BRANCH, // (conditional type id) -> inferred_true_branch() of it (relate.c, tsc's resolvedInferredTrueType)
     KEY_DISTRIBUTION_DEPENDENT, // (root conditional type id) -> 1 + ty_conditional_distribution_dependent() (conditional.c)

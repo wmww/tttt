@@ -4434,7 +4434,16 @@ static Ty const* indexed_or_null_flagged(Checker* me, Ty const* object, Ty const
     ) {
         return ty_indexed_include_undefined(me, object, index, include_undefined);
     }
-    return ty_access_for_constraint(me, object, index, include_undefined);
+    // (A union of keys is a union of as many property types, rebuilt and sorted at each constraint query otherwise:
+    // monkeytype's setters.ts relates `Config[T]` (`T extends keyof Config`, ~90 keys) once per member of a large
+    // discriminated contextual union. Only what was found is kept)
+    if (index->kind != TY_UNION || (index->flags & TYF_BOOLEAN)) return ty_access_for_constraint(me, object, index, include_undefined);
+    u64 key[4] = { KEY_CONSTRAINT_ACCESS, object->id, index->id, include_undefined };
+    Ty const* cached = intern_get(&my links, key, 4);
+    if (cached) return cached;
+    Ty const* ret = ty_access_for_constraint(me, object, index, include_undefined);
+    if (ret) *intern_slot(me, &my links, key, 4) = ret;
+    return ret;
 }
 
 static Ty const* indexed_or_null(Checker* me, Ty const* object, Ty const* index) {
