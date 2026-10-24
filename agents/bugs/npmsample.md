@@ -403,8 +403,13 @@ K-dependent.
       `{ name: any; nodes: any; settings?: any; }`); tttt prints `{ name: string; nodes: any; ... }` in both. Cut down
       (6 lines): `import type { Entity, INode } from "missing"; type Content = Pick<Entity, "name" | "nodes" | "settings">;
       function make(nodes: INode[], o: Partial<Content> = {}): { content: Content } { return { content: { name: "w",
-      nodes, ...o } }; }` (test/cases/rw_n8n_TS2322.ts, known failing). A printer question (how tsgo serializes a spread
-      property with leftSpread/rightSpread links), not investigated further. [open]
+      nodes, ...o } }; }` (test/cases/rw_n8n_TS2322.ts, known failing). A printer question, looked at 2026-10-25 and left: the
+      spread's properties are `any` (getSpreadType's union `string | any`), but they keep the left declarations, so in the
+      head (the fresh literal) tsgo's addPropertyToElementList prints them through serializeTypeForDeclaration of the
+      declaration (`nodes` shorthand -> the parameter's `INode[]`, `name: "w"` -> `string`), while the chain's source is
+      the regular type, whose transient members (getRegularTypeOfObjectLiteral) have no declarations to reuse, so `any`.
+      Emulating it means tttt's pseudo-type reuse accepting an error-typed declaration for an `any` property and
+      dropping it for the regular type; rare (error types plus a spread), not a clean rule. [text]
 - n8n-nodes-base (packages/nodes-base, bench: composite -> false, declaration true; tsBuildInfoFile -> null): tsgo 7138 /
   tttt 7138, same (file, line, code), 8 text-only lines:
   - TS2684 x3 (Airtop agent.utils.ts:15, run.operation.ts:175, methods/index.ts:46): tsgo prints `body?: IDataObject`
