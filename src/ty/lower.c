@@ -700,6 +700,31 @@ void ty_check_export_equals_property_reference(Checker* me, IdentifierType const
 }
 
 // `body_of`: the alias whose body the reference is, if it is one
+// A namespace import of a module whose `export =` is a class, cloned (tsc's resolveESModuleSymbol ->
+// cloneTypeAsModuleType: the value has signatures), named as a type: getDeclaredTypeOfSymbol of the clone symbol, a
+// class type of its own with its own `this` type. Its own members are the original's symbols, whose `this` stays the
+// original's (resolve_declared_members() lowers `this` through the class's canonical declared type), so the original
+// instance isn't assignable to it where a method returns `this` (ag-sockets' `socket: ws` of @types/ws). Null if the
+// name isn't such an import
+static Ty const* namespace_import_type(Checker* me, Symbol const* symbol);
+static Ty const* namespace_import_class(Checker* me, Symbol const* alias, Symbol const* decl) {
+    if (!alias || alias == decl || !namespace_import_type(me, alias)) return nullptr;
+    Ty const* original = ty_declared_type_of(me, decl);
+    if (original->kind != TY_DECLARED || original->declared.kind != TY_DECLARED_CLASS_INSTANCE) return nullptr;
+    u64 key[2] = { KEY_CLONE_CLASS, (u64)(uintptr_t)alias };
+    void const* known = intern_get(&my links, key, 2);
+    if (known) return known;
+    Ty const* twin = make_declared(me, decl, TY_DECLARED_CLASS_INSTANCE);
+    intern_set(me, &my links, intern_slot(me, &my links, (u64[]){ KEY_CLONE_CLASS_ALIAS, (u64)(uintptr_t)twin }, 2), alias);
+    return intern_set(me, &my links, intern_slot(me, &my links, key, 2), twin);
+}
+
+// The namespace import a class type is the twin for (namespace_import_class()), else null
+Symbol const* ty_clone_class_import(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_DECLARED || ty->declared.kind != TY_DECLARED_CLASS_INSTANCE) return nullptr;
+    return intern_get(&my links, (u64[]){ KEY_CLONE_CLASS_ALIAS, (u64)(uintptr_t)ty }, 2);
+}
+
 static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx, Symbol const* body_of) {
     switch ((JsDocIntrinsic)identifier->jsdoc_intrinsic) {
         case JSDOC_INTRINSIC_NONE: break;
@@ -818,6 +843,11 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         return ty_intrinsic(me, TY_ERROR);
     }
 
+    if (!declared && !identifier->keyword && !identifier_type_namespace_count(identifier) &&
+        !span_valid(identifier_type_import_span(identifier)) && (decl->flags & SYMBOL_CLASS)
+    ) {
+        declared = namespace_import_class(me, identifier->symbol, decl);
+    }
     if (!declared) declared = ty_declared_type_of(me, decl);
     if (decl->flags & (SYMBOL_INTERFACE | SYMBOL_CLASS)) {
             // `this` is the class's or interface's own `this` type parameter

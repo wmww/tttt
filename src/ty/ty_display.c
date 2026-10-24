@@ -1058,6 +1058,15 @@ static void out_declared_name_impl(Checker* me, TyDisplay d, Ty const* declared,
     Symbol const* symbol = declared->declared.symbol;
     if (!symbol) symbol = declared->declared.merged_value;
     if (!symbol && declared->declared.kind == TY_DECLARED_NAMESPACE) symbol = declared->declared.namespace_symbol;
+    // A class's twin for a cloning namespace import: the clone symbol, reached through that import where it can be,
+    // else by its bare name (no parent leads to it: the module's `export =` is the original)
+    Symbol const* clone_import = symbol ? ty_clone_class_import(me, declared) : nullptr;
+    if (clone_import) {
+        SymbolChain chain = d.enclosing ? display_chain_at(d, clone_import, meaning, d.types_baseline || d.tracker) : (SymbolChain){0};
+        if (chain.len) out_symbol_name(me, d, clone_import, meaning);
+        else out(d, symbol->name);
+        return;
+    }
     // A module's object, also through `import * as ns` (whose symbol stands for the module): named from here like tsc
     if (d.enclosing && symbol && symbol != symbol_members(symbol) && namespace_import_is_clone(symbol)) {
         // The clone `import * as ns` makes is named by the import where that reaches it, else as the module

@@ -1751,6 +1751,7 @@ Ty const* ty_reference_with_this(Checker* me, Ty const* target, TyList args, Ty 
 // tsc's getTypeWithThisArgument: the type with `this` in its members being `this_arg`. The type itself if it has no
 // `this` type (or `this_arg` is the type itself)
 Ty const* ty_with_this_arg(Checker* me, Ty const* ty, Ty const* this_arg);
+Symbol const* ty_clone_class_import(Checker* me, Ty const* ty);
 Ty const* ty_array(Checker* me, Ty const* element, bool readonly);
 // tsc's autoArrayType: `any[]` of TY_AUTO (prints as `any[]`), the declared type of `let x = []`, which control flow
 // evolves (flow.c's TY_EVOLVING_ARRAY)
