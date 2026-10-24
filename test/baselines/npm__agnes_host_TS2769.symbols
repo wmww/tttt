@@ -1,0 +1,15 @@
+//// [test/cases/npm__agnes_host_TS2769.ts] ////
+
+=== npm__agnes_host_TS2769.ts ===
+// origin: npm @agnes/host@0.0.0 https://github.com/AgnesAI-Labs/agnes-harness packages/host/tsconfig.bench.json seed 20261302
+// flip: no
+const MAC_BROWSER_BUNDLES: ReadonlyMap<string, readonly string[]> = new Map([
+>MAC_BROWSER_BUNDLES : Symbol(MAC_BROWSER_BUNDLES, Decl(npm__agnes_host_TS2769.ts, 2, 5))
+>ReadonlyMap : Symbol(ReadonlyMap, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --))
+>Map : Symbol(Map, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+
+  ['com.google.Chrome', ['--new-window']],
+  ['com.apple.Safari', []],
+] as const)
+>const : Symbol(const)
+

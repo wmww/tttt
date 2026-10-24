@@ -1,0 +1,25 @@
+//// [test/cases/npm__agnes_host_TS2769.ts] ////
+
+=== npm__agnes_host_TS2769.ts ===
+// origin: npm @agnes/host@0.0.0 https://github.com/AgnesAI-Labs/agnes-harness packages/host/tsconfig.bench.json seed 20261302
+// flip: no
+const MAC_BROWSER_BUNDLES: ReadonlyMap<string, readonly string[]> = new Map([
+>MAC_BROWSER_BUNDLES : ReadonlyMap<string, readonly string[]>
+>new Map([  ['com.google.Chrome', ['--new-window']],  ['com.apple.Safari', []],] as const) : Map<"com.apple.Safari" | "com.google.Chrome", readonly [] | readonly ["--new-window"]>
+>Map : MapConstructor
+>[  ['com.google.Chrome', ['--new-window']],  ['com.apple.Safari', []],] as const : readonly [readonly ["com.google.Chrome", readonly ["--new-window"]], readonly ["com.apple.Safari", readonly []]]
+>[  ['com.google.Chrome', ['--new-window']],  ['com.apple.Safari', []],] : readonly [readonly ["com.google.Chrome", readonly ["--new-window"]], readonly ["com.apple.Safari", readonly []]]
+
+  ['com.google.Chrome', ['--new-window']],
+>['com.google.Chrome', ['--new-window']] : readonly ["com.google.Chrome", readonly ["--new-window"]]
+>'com.google.Chrome' : "com.google.Chrome"
+>['--new-window'] : readonly ["--new-window"]
+>'--new-window' : "--new-window"
+
+  ['com.apple.Safari', []],
+>['com.apple.Safari', []] : readonly ["com.apple.Safari", readonly []]
+>'com.apple.Safari' : "com.apple.Safari"
+>[] : readonly []
+
+] as const)
+

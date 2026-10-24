@@ -1,0 +1,21 @@
+//// [test/cases/npm_react-native-reanimated_TS2578.ts] ////
+
+=== docusaurus.config.js ===
+// @ts-check
+// @ts-expect-error -- .ts extension is intentional; not type-checked by tsc here.
+const { TOP } = require('./src/cfg.ts');
+>TOP : Symbol(TOP, Decl(docusaurus.config.js, 2, 7))
+>require : Symbol(require)
+>'./src/cfg.ts' : Symbol("./src/cfg.ts", Decl(cfg.ts, 0, 0))
+
+const z = TOP.zones[0];
+>z : Symbol(z, Decl(docusaurus.config.js, 3, 5))
+>TOP.zones : Symbol(zones, Decl(cfg.ts, 0, 20))
+>TOP : Symbol(TOP, Decl(docusaurus.config.js, 2, 7))
+>zones : Symbol(zones, Decl(cfg.ts, 0, 20))
+
+=== src/cfg.ts ===
+export const TOP = { zones: [] as string[] };
+>TOP : Symbol(TOP, Decl(cfg.ts, 0, 12))
+>zones : Symbol(zones, Decl(cfg.ts, 0, 20))
+

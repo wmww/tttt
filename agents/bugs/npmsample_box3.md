@@ -82,6 +82,7 @@ for flips); a separate file so the three boxes never conflict.
   resolveLambdaPre<S> is `string | false`. Guess: a template-literal inference or string-recursion step in cion's
   evaluator, or an instantiation depth limit, that differs. Repro test/cases/npm__taiyakihitotsu_foxp_TS2344.ts
   (532 lines: reduce.py with --tsgo-clean, own files then the package's). [flip] [fixed 939dbc038] Fixed (corB): conditional.c branch_type_with() composed the branch mapper before the `infer` mapper, so an inner resolution's own inferred `restTape` replaced the outer one held in cion's _TapeEval Stack argument; tsc's combinedMapper is combineTypeMappers(context.mapper, mapper). Now ty_compose_mappers(infer, branch->mapper); repro ttttConditionalOwnInferInBranchArgs.
+  Same rank key (TS7006 "Parameter implicitly has an any type"), seed 20261302: 0019-firecmsco-firecms#packages/firecms_core (tsgo 85, tttt 87), src/form/PropertyFieldBinding.tsx(102) `fieldProps`; not reduced (rank said repro). Possibly a different cause: check first when picked up. [open]
 - Seed 20261209, rs-pro/rocket-slate (@rocket-slate/mentions@0.2.26): missing TS2615 "Type of property
   'defaultProps' circularly references itself in mapped type 'ForwardRefExoticBase<...>'" on `styled(Toolbar)` with
   @types/styled-components (ts3.7) and @types/react 16. tsgo reports it twice at the same span, for the two

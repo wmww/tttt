@@ -66,3 +66,5 @@ npm__lute-lang_player_crash	yes	@lute-lang/player@0.48.1	https://github.com/jour
 npm_mcp-namecheap_TS2883	yes	mcp-namecheap@1.0.0	https://github.com/cfdude/mcp-namecheap	0	1	+TS2883
 npm_lumiverse_TS2322	yes	lumiverse-backend@1.2.5	https://github.com/prolix-oc/Lumiverse	0	1	TS2322
 npm__shepai_cli_TS2322	yes	@shepai/cli@1.247.0	https://github.com/shep-ai/shep	0	1	TS2322
+npm_react-native-reanimated_TS2578	no	react-native-reanimated@HEAD	https://github.com/software-mansion/react-native-reanimated	28	27	-TS2578
+npm__agnes_host_TS2769	no	@agnes/host@0.0.0	https://github.com/AgnesAI-Labs/agnes-harness	77	83	+TS2769 +TS7006

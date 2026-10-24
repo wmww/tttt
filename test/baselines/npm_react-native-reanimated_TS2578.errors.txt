@@ -1,0 +1,13 @@
+docusaurus.config.js(2,1): error TS2578: Unused '@ts-expect-error' directive.
+
+
+==== docusaurus.config.js (1 errors) ====
+    // @ts-check
+    // @ts-expect-error -- .ts extension is intentional; not type-checked by tsc here.
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2578: Unused '@ts-expect-error' directive.
+    const { TOP } = require('./src/cfg.ts');
+    const z = TOP.zones[0];
+    
+==== src/cfg.ts (0 errors) ====
+    export const TOP = { zones: [] as string[] };
