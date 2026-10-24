@@ -6284,8 +6284,10 @@ static Ty const* object_literal_access(Checker* me, Ty const* object, Ty const* 
 }
 
 // What `o[k] = v` takes for a union of keys: every key's property, the intersection of their (write) types (tsc's
-// getIndexedAccessType with AccessFlags.Writing). Null when a key has none (the read reports it)
-static Ty const* union_key_write_type(Checker* me, Ty const* object, Ty const* key) {
+// getIndexedAccessType with AccessFlags.Writing). Null when a key has none (the read reports it). `compound`: `o[k] += v`
+// reads it too, an index signature's value includes undefined under noUncheckedIndexedAccess (AccessFlags.Writing |
+// ExpressionPosition), still the intersection
+static Ty const* union_key_write_type(Checker* me, Ty const* object, Ty const* key, bool compound) {
     // (A generic object with keys that aren't: its apparent type's, like tsc's getIndexedAccessType of an element access
     // expression, which only defers for a generic index or tuple)
     if (ty_is_generic_object(me, object)) object = ty_apparent_type(me, object);
@@ -6299,7 +6301,7 @@ static Ty const* union_key_write_type(Checker* me, Ty const* object, Ty const* k
             return nullptr;
         }
         Ty const* part = ty_access_write_type(me, object, k);
-        if (!part) part = ty_access(me, object, k);
+        if (!part) part = compound ? ty_access_element(me, object, k, true) : ty_access(me, object, k);
         if (!part) {
             ty_buf_drop(&parts);
             return nullptr;
@@ -6541,7 +6543,13 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             Ty const* numeric_tuple = expr->property->form == PROPERTY_EXPR_BRACKET && !deferred_never && !deferred_tuple ?
                 tuple_numeric_name_access(me, object, ty_regular(me, key),
                     expr->property->assignment_target != FLOW_TARGET_DEFINITE) : nullptr;
-            Ty const* ret = numeric_tuple ? numeric_tuple : deferred_never ? nullptr :
+            // (A compound assignment to `o[k]` with a union of keys is written too: the intersection of what each key
+            // takes, `s[k] += 1` with one optional property among them isn't possibly undefined, tsc's
+            // checkElementAccessExpression takes AccessFlags.Writing for any assignment target)
+            Ty const* compound_union = expr->property->form == PROPERTY_EXPR_BRACKET && !numeric_tuple && !deferred_never &&
+                !deferred_tuple && expr->property->assignment_target == FLOW_TARGET_COMPOUND && key->kind == TY_UNION &&
+                !(key->flags & TYF_BOOLEAN) ? union_key_write_type(me, object, key, true) : nullptr;
+            Ty const* ret = compound_union ? compound_union : numeric_tuple ? numeric_tuple : deferred_never ? nullptr :
                 deferred_tuple ? ty_indexed_include_undefined(me, object, ty_regular(me, key),
                     compiler_options()->no_unchecked_indexed_access && expr->property->assignment_target != FLOW_TARGET_DEFINITE) :
                 expr->property->form == PROPERTY_EXPR_BRACKET ?
@@ -6583,7 +6591,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
                 // `o[k] ??= v` with a union key is the intersection: tsc's checkElementAccessExpression takes
                 // AccessFlags.Writing for isAssignmentTarget)
                 bool read_too = expr->property->read_target && expr->property->form == PROPERTY_EXPR_DOT;
-                Ty const* write = read_too ? nullptr : key->kind == TY_UNION ? union_key_write_type(me, object, key) :
+                Ty const* write = read_too ? nullptr : key->kind == TY_UNION ? union_key_write_type(me, object, key, false) :
                     ty_access_write_type(me, object, key);
                 if (write) ret = write;
                 ret = ty_remove_missing(me, ret, written_prop_is_optional(me, object, key)); // (tsc's getFlowTypeOfAccessExpression)

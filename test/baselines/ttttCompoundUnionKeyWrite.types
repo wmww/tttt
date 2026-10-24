@@ -1,0 +1,102 @@
+//// [test/cases/ttttCompoundUnionKeyWrite.ts] ////
+
+=== ttttCompoundUnionKeyWrite.ts ===
+// A compound assignment to an element access with a union of keys is written: the intersection of the keys' types
+declare const k: "a" | "b";
+>k : "a" | "b"
+
+declare const s: { a: number; b?: number };
+>s : { a: number; b?: number; }
+>a : number
+>b : number | undefined
+
+s[k] += 1;
+>s[k] += 1 : number
+>s[k] : number
+>s : { a: number; b?: number; }
+>k : "a" | "b"
+>1 : 1
+
+s[k]++;
+>s[k]++ : number
+>s[k] : number
+>s : { a: number; b?: number; }
+>k : "a" | "b"
+
+declare const both: { a?: number; b?: number };
+>both : { a?: number; b?: number; }
+>a : number | undefined
+>b : number | undefined
+
+both[k] += 1;
+>both[k] += 1 : number
+>both[k] : number | undefined
+>both : { a?: number; b?: number; }
+>k : "a" | "b"
+>1 : 1
+
+declare const dict: { [x: string]: number };
+>dict : { [x: string]: number; }
+>x : string
+
+dict[k] += 1;
+>dict[k] += 1 : number
+>dict[k] : number | undefined
+>dict : { [x: string]: number; }
+>k : "a" | "b"
+>1 : 1
+
+declare const mixed: { a: number; [x: string]: number };
+>mixed : { [x: string]: number; a: number; }
+>a : number
+>x : string
+
+mixed[k] += 1;
+>mixed[k] += 1 : number
+>mixed[k] : number
+>mixed : { [x: string]: number; a: number; }
+>k : "a" | "b"
+>1 : 1
+
+mixed[k]--;
+>mixed[k]-- : number
+>mixed[k] : number
+>mixed : { [x: string]: number; a: number; }
+>k : "a" | "b"
+
+declare const strs: { a: string; b?: string };
+>strs : { a: string; b?: string; }
+>a : string
+>b : string | undefined
+
+strs[k] += "x";
+>strs[k] += "x" : string
+>strs[k] : string
+>strs : { a: string; b?: string; }
+>k : "a" | "b"
+>"x" : "x"
+
+const r1 = s[k] += 1;
+>r1 : number
+>s[k] += 1 : number
+>s[k] : number
+>s : { a: number; b?: number; }
+>k : "a" | "b"
+>1 : 1
+
+declare const kk: "a" | "b" | "c";
+>kk : "a" | "b" | "c"
+
+declare const s3: { a: number; b: string; c?: number };
+>s3 : { a: number; b: string; c?: number; }
+>a : number
+>b : string
+>c : number | undefined
+
+s3[kk] += 1;
+>s3[kk] += 1 : number
+>s3[kk] : never
+>s3 : { a: number; b: string; c?: number; }
+>kk : "a" | "b" | "c"
+>1 : 1
+

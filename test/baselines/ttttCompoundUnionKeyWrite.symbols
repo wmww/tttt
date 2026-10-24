@@ -1,0 +1,77 @@
+//// [test/cases/ttttCompoundUnionKeyWrite.ts] ////
+
+=== ttttCompoundUnionKeyWrite.ts ===
+// A compound assignment to an element access with a union of keys is written: the intersection of the keys' types
+declare const k: "a" | "b";
+>k : Symbol(k, Decl(ttttCompoundUnionKeyWrite.ts, 1, 13))
+
+declare const s: { a: number; b?: number };
+>s : Symbol(s, Decl(ttttCompoundUnionKeyWrite.ts, 2, 13))
+>a : Symbol(a, Decl(ttttCompoundUnionKeyWrite.ts, 2, 18))
+>b : Symbol(b, Decl(ttttCompoundUnionKeyWrite.ts, 2, 29))
+
+s[k] += 1;
+>s : Symbol(s, Decl(ttttCompoundUnionKeyWrite.ts, 2, 13))
+>k : Symbol(k, Decl(ttttCompoundUnionKeyWrite.ts, 1, 13))
+
+s[k]++;
+>s : Symbol(s, Decl(ttttCompoundUnionKeyWrite.ts, 2, 13))
+>k : Symbol(k, Decl(ttttCompoundUnionKeyWrite.ts, 1, 13))
+
+declare const both: { a?: number; b?: number };
+>both : Symbol(both, Decl(ttttCompoundUnionKeyWrite.ts, 5, 13))
+>a : Symbol(a, Decl(ttttCompoundUnionKeyWrite.ts, 5, 21))
+>b : Symbol(b, Decl(ttttCompoundUnionKeyWrite.ts, 5, 33))
+
+both[k] += 1;
+>both : Symbol(both, Decl(ttttCompoundUnionKeyWrite.ts, 5, 13))
+>k : Symbol(k, Decl(ttttCompoundUnionKeyWrite.ts, 1, 13))
+
+declare const dict: { [x: string]: number };
+>dict : Symbol(dict, Decl(ttttCompoundUnionKeyWrite.ts, 7, 13))
+>x : Symbol(x, Decl(ttttCompoundUnionKeyWrite.ts, 7, 23))
+
+dict[k] += 1;
+>dict : Symbol(dict, Decl(ttttCompoundUnionKeyWrite.ts, 7, 13))
+>k : Symbol(k, Decl(ttttCompoundUnionKeyWrite.ts, 1, 13))
+
+declare const mixed: { a: number; [x: string]: number };
+>mixed : Symbol(mixed, Decl(ttttCompoundUnionKeyWrite.ts, 9, 13))
+>a : Symbol(a, Decl(ttttCompoundUnionKeyWrite.ts, 9, 22))
+>x : Symbol(x, Decl(ttttCompoundUnionKeyWrite.ts, 9, 35))
+
+mixed[k] += 1;
+>mixed : Symbol(mixed, Decl(ttttCompoundUnionKeyWrite.ts, 9, 13))
+>k : Symbol(k, Decl(ttttCompoundUnionKeyWrite.ts, 1, 13))
+
+mixed[k]--;
+>mixed : Symbol(mixed, Decl(ttttCompoundUnionKeyWrite.ts, 9, 13))
+>k : Symbol(k, Decl(ttttCompoundUnionKeyWrite.ts, 1, 13))
+
+declare const strs: { a: string; b?: string };
+>strs : Symbol(strs, Decl(ttttCompoundUnionKeyWrite.ts, 12, 13))
+>a : Symbol(a, Decl(ttttCompoundUnionKeyWrite.ts, 12, 21))
+>b : Symbol(b, Decl(ttttCompoundUnionKeyWrite.ts, 12, 32))
+
+strs[k] += "x";
+>strs : Symbol(strs, Decl(ttttCompoundUnionKeyWrite.ts, 12, 13))
+>k : Symbol(k, Decl(ttttCompoundUnionKeyWrite.ts, 1, 13))
+
+const r1 = s[k] += 1;
+>r1 : Symbol(r1, Decl(ttttCompoundUnionKeyWrite.ts, 14, 5))
+>s : Symbol(s, Decl(ttttCompoundUnionKeyWrite.ts, 2, 13))
+>k : Symbol(k, Decl(ttttCompoundUnionKeyWrite.ts, 1, 13))
+
+declare const kk: "a" | "b" | "c";
+>kk : Symbol(kk, Decl(ttttCompoundUnionKeyWrite.ts, 15, 13))
+
+declare const s3: { a: number; b: string; c?: number };
+>s3 : Symbol(s3, Decl(ttttCompoundUnionKeyWrite.ts, 16, 13))
+>a : Symbol(a, Decl(ttttCompoundUnionKeyWrite.ts, 16, 19))
+>b : Symbol(b, Decl(ttttCompoundUnionKeyWrite.ts, 16, 30))
+>c : Symbol(c, Decl(ttttCompoundUnionKeyWrite.ts, 16, 41))
+
+s3[kk] += 1;
+>s3 : Symbol(s3, Decl(ttttCompoundUnionKeyWrite.ts, 16, 13))
+>kk : Symbol(kk, Decl(ttttCompoundUnionKeyWrite.ts, 15, 13))
+
