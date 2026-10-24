@@ -1,0 +1,15 @@
+scripts/util/logging.ts(2,14): error TS2322: Type 'boolean' is not assignable to type 'string'.
+
+
+==== package.json (0 errors) ====
+    {"name": "@noelware/utils", "version": "2.5.1", "exports": {".": "./dist/index.js"}}
+==== node_modules/@noelware/utils/package.json (0 errors) ====
+    {"name": "@noelware/utils", "version": "2.5.1", "exports": {".": "./dist/index.js"}}
+==== node_modules/@noelware/utils/dist/index.d.ts (0 errors) ====
+    export declare function hasOwnProperty(o: object, key: string): boolean;
+==== scripts/util/logging.ts (1 errors) ====
+    import { hasOwnProperty } from "@noelware/utils";
+    export const y: string = hasOwnProperty({}, "a");
+                 ~
+!!! error TS2322: Type 'boolean' is not assignable to type 'string'.
+    

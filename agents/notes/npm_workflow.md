@@ -67,3 +67,19 @@ mid-fix: it finishes what it's on, and the coordinator points the next free fixe
 - A second box: 20261100-20261199, so records never collide; commit each seed's files under test/npmsample/ as here.
 
 Fixers take the top of `rank` when no flip is open; a finder checks `rank` before reducing a divergence whose key is already filed (`scripts/npmsample.py rank [--min N] [--json]`).
+
+## Remote finder box (box3, 2026-10-24: a throwaway box the human lent, driven over ssh, seeds 20261200-20261299)
+- The box: Ubuntu 26.10, kernel 7.3, 4 cores, 30 GB RAM, 225 GB disk. Installed with apt: bubblewrap (0.12.0), meson,
+  ninja-build, clang, lld, valgrind (python3, git, gcc 15, curl, tmux were there). Go comes from ensure-typescript.sh.
+- Everything runs as an unprivileged user (`finder`), not root: bwrap works for it with Ubuntu's
+  `kernel.apparmor_restrict_unprivileged_userns=1` (the bwrap AppArmor profile allows the namespaces). The deploy
+  key goes to that user's ~/.ssh (mode 600, github.com in known_hosts) and git user.name/email are set there.
+- The repo is cloned at /home/finder/tttt. `scripts/fasttest.sh -f '^nothing$'` took 3m36s, and that covered the
+  meson release build and ensure-typescript.sh (Go fetched, tsgo built). thirdparty/node (node v24.21.0, bun 1.4.3)
+  was copied from the main box with tar over ssh. ensure-sources.sh's fetch_node/fetch_bun would fetch the same.
+- The sandbox check: installsandbox.py `install` on a package.json whose postinstall writes to $HOME (it didn't run),
+  then `run` (empty $HOME, read-only /etc, no network, the repo invisible unless bound).
+- Seeds run in tmux sessions through a small wrapper (sample, then setup -N 50 --prefer-large, then compare). The
+  second seed's sample waits for the first's, so only one pacer hits the registry from the host at a time.
+- Writing test files over nested `ssh ... su -c "..."` quoting breaks on parentheses and apostrophes. Write them on
+  the driving box and scp them over.

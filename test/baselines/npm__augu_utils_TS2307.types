@@ -1,0 +1,19 @@
+//// [test/cases/npm__augu_utils_TS2307.ts] ////
+
+=== node_modules/@noelware/utils/dist/index.d.ts ===
+export declare function hasOwnProperty(o: object, key: string): boolean;
+>hasOwnProperty : (o: object, key: string) => boolean
+>o : object
+>key : string
+
+=== scripts/util/logging.ts ===
+import { hasOwnProperty } from "@noelware/utils";
+>hasOwnProperty : (o: object, key: string) => boolean
+
+export const y: string = hasOwnProperty({}, "a");
+>y : string
+>hasOwnProperty({}, "a") : boolean
+>hasOwnProperty : (o: object, key: string) => boolean
+>{} : {}
+>"a" : "a"
+
