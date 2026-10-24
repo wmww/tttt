@@ -369,4 +369,4 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   relate as types (BuildVisitor's alias variance: true) and not signature against signature as callbacks (false:
   `parent: never`). tttt's is_instantiated_generic_param read the any that param_type_at() gives for an element of a
   non-tuple rest, so Parameters<> came out never. Test npm_Zoo-Code-Org_Zoo-Code_TS2322; repro of the rule:
-  ttttRestOfInferredParametersNotCallback. (claimed: fixF) [flip] [fixed PENDING]
+  ttttRestOfInferredParametersNotCallback. (claimed: fixF) [flip] [fixed 5f3c08628]
