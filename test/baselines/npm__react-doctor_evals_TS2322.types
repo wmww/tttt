@@ -1,0 +1,59 @@
+//// [test/cases/npm__react-doctor_evals_TS2322.ts] ////
+
+=== npm__react-doctor_evals_TS2322.ts ===
+// origin: npm @react-doctor/evals@0.0.0 https://github.com/millionco/react-doctor packages/evals/tsconfig.bench.json seed 20261305
+// flip: yes
+declare function fn<T extends (...args: any[]) => any>(impl: T): { (...a: Parameters<T>): ReturnType<T>; mockResolvedValue(v: Awaited<ReturnType<T>>): void };
+>fn : <T extends (...args: any[]) => any>(impl: T) => { (...a: Parameters<T>): ReturnType<T>; mockResolvedValue(v: Awaited<ReturnType<T>>): void; }
+>args : any[]
+>impl : T
+>a : Parameters<T>
+>mockResolvedValue : (v: Awaited<ReturnType<T>>) => void
+>v : Awaited<ReturnType<T>>
+
+const run = fn(async () => ({
+>run : { (): Promise<{ exitCode: number; stdout: () => Promise<string>; stderr: () => Promise<string>; }>; mockResolvedValue(v: { exitCode: number; stdout: () => Promise<string>; stderr: () => Promise<string>; }): void; }
+>fn(async () => ({  exitCode: 0,  stdout: async () => "output",  stderr: async () => "",})) : { (): Promise<{ exitCode: number; stdout: () => Promise<string>; stderr: () => Promise<string>; }>; mockResolvedValue(v: { exitCode: number; stdout: () => Promise<string>; stderr: () => Promise<string>; }): void; }
+>fn : <T extends (...args: any[]) => any>(impl: T) => { (...a: Parameters<T>): ReturnType<T>; mockResolvedValue(v: Awaited<ReturnType<T>>): void; }
+>async () => ({  exitCode: 0,  stdout: async () => "output",  stderr: async () => "",}) : () => Promise<{ exitCode: number; stdout: () => Promise<string>; stderr: () => Promise<string>; }>
+>({  exitCode: 0,  stdout: async () => "output",  stderr: async () => "",}) : { exitCode: number; stdout: () => Promise<string>; stderr: () => Promise<string>; }
+>{  exitCode: 0,  stdout: async () => "output",  stderr: async () => "",} : { exitCode: number; stdout: () => Promise<string>; stderr: () => Promise<string>; }
+
+  exitCode: 0,
+>exitCode : number
+>0 : 0
+
+  stdout: async () => "output",
+>stdout : () => Promise<string>
+>async () => "output" : () => Promise<string>
+>"output" : "output"
+
+  stderr: async () => "",
+>stderr : () => Promise<string>
+>async () => "" : () => Promise<string>
+>"" : ""
+
+}));
+run.mockResolvedValue({
+>run.mockResolvedValue({  exitCode: 1,  stdout: async () => "",  stderr: async () => "build failed",}) : void
+>run.mockResolvedValue : (v: { exitCode: number; stdout: () => Promise<string>; stderr: () => Promise<string>; }) => void
+>run : { (): Promise<{ exitCode: number; stdout: () => Promise<string>; stderr: () => Promise<string>; }>; mockResolvedValue(v: { exitCode: number; stdout: () => Promise<string>; stderr: () => Promise<string>; }): void; }
+>mockResolvedValue : (v: { exitCode: number; stdout: () => Promise<string>; stderr: () => Promise<string>; }) => void
+>{  exitCode: 1,  stdout: async () => "",  stderr: async () => "build failed",} : { exitCode: number; stdout: () => Promise<string>; stderr: () => Promise<string>; }
+
+  exitCode: 1,
+>exitCode : number
+>1 : 1
+
+  stdout: async () => "",
+>stdout : () => Promise<string>
+>async () => "" : () => Promise<string>
+>"" : ""
+
+  stderr: async () => "build failed",
+>stderr : () => Promise<string>
+>async () => "build failed" : () => Promise<string>
+>"build failed" : "build failed"
+
+});
+

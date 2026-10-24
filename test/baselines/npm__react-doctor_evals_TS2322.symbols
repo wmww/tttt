@@ -1,0 +1,52 @@
+//// [test/cases/npm__react-doctor_evals_TS2322.ts] ////
+
+=== npm__react-doctor_evals_TS2322.ts ===
+// origin: npm @react-doctor/evals@0.0.0 https://github.com/millionco/react-doctor packages/evals/tsconfig.bench.json seed 20261305
+// flip: yes
+declare function fn<T extends (...args: any[]) => any>(impl: T): { (...a: Parameters<T>): ReturnType<T>; mockResolvedValue(v: Awaited<ReturnType<T>>): void };
+>fn : Symbol(fn, Decl(npm__react-doctor_evals_TS2322.ts, 0, 0))
+>T : Symbol(T, Decl(npm__react-doctor_evals_TS2322.ts, 2, 20))
+>args : Symbol(args, Decl(npm__react-doctor_evals_TS2322.ts, 2, 31))
+>impl : Symbol(impl, Decl(npm__react-doctor_evals_TS2322.ts, 2, 55))
+>T : Symbol(T, Decl(npm__react-doctor_evals_TS2322.ts, 2, 20))
+>a : Symbol(a, Decl(npm__react-doctor_evals_TS2322.ts, 2, 68))
+>Parameters : Symbol(Parameters, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(npm__react-doctor_evals_TS2322.ts, 2, 20))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(npm__react-doctor_evals_TS2322.ts, 2, 20))
+>mockResolvedValue : Symbol(mockResolvedValue, Decl(npm__react-doctor_evals_TS2322.ts, 2, 104))
+>v : Symbol(v, Decl(npm__react-doctor_evals_TS2322.ts, 2, 123))
+>Awaited : Symbol(Awaited, Decl(lib.es5.d.ts, --, --))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(npm__react-doctor_evals_TS2322.ts, 2, 20))
+
+const run = fn(async () => ({
+>run : Symbol(run, Decl(npm__react-doctor_evals_TS2322.ts, 3, 5))
+>fn : Symbol(fn, Decl(npm__react-doctor_evals_TS2322.ts, 0, 0))
+
+  exitCode: 0,
+>exitCode : Symbol(exitCode, Decl(npm__react-doctor_evals_TS2322.ts, 3, 29))
+
+  stdout: async () => "output",
+>stdout : Symbol(stdout, Decl(npm__react-doctor_evals_TS2322.ts, 4, 14))
+
+  stderr: async () => "",
+>stderr : Symbol(stderr, Decl(npm__react-doctor_evals_TS2322.ts, 5, 31))
+
+}));
+run.mockResolvedValue({
+>run.mockResolvedValue : Symbol(mockResolvedValue, Decl(npm__react-doctor_evals_TS2322.ts, 2, 104))
+>run : Symbol(run, Decl(npm__react-doctor_evals_TS2322.ts, 3, 5))
+>mockResolvedValue : Symbol(mockResolvedValue, Decl(npm__react-doctor_evals_TS2322.ts, 2, 104))
+
+  exitCode: 1,
+>exitCode : Symbol(exitCode, Decl(npm__react-doctor_evals_TS2322.ts, 8, 23))
+
+  stdout: async () => "",
+>stdout : Symbol(stdout, Decl(npm__react-doctor_evals_TS2322.ts, 9, 14))
+
+  stderr: async () => "build failed",
+>stderr : Symbol(stderr, Decl(npm__react-doctor_evals_TS2322.ts, 10, 25))
+
+});
+
