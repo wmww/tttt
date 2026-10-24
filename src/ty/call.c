@@ -480,6 +480,18 @@ static Ty const* mutable_array_or_tuple_union(Checker* me, Ty const* ty, bool si
             member = ty_tuple_target(me, &shape);
         } else if (ty_is_array(me, member)) {
             member = ty_array(me, ty_rest_element_type(me, member), false);
+        } else if (ty->kind == TY_UNION && (member->kind == TY_TYPE_PARAM || (member->flags & TYF_DEFERRED)) &&
+            ty_is_related(me, member, ty_array(me, ty_intrinsic(me, TY_ANY), true), TY_RELATION_ASSIGNABLE)
+        ) {
+            // A generic member whose base constraint is a mutable array or tuple stays itself, another array-like one
+            // is spread into a variadic tuple (tsc's getMutableArrayOrTupleType: `Parameters<A | B>` distributed into
+            // `Parameters<A> | Parameters<B>`, `X | Y` with Y extends readonly string[] as `X | [...Y]`)
+            Ty const* constraint = ty_base_constraint(me, member);
+            if (!constraint || !ty_is_mutable_array_or_tuple(me, constraint)) {
+                unsigned char flag = TUPLE_ELEMENT_REST;
+                TupleShape tuple = { .arity = 1, .flags = &flag };
+                member = ty_reference(me, ty_tuple_target(me, &tuple), (TyList){ .data = &member, .len = 1 });
+            }
         } else {
             ty_buf_drop(&parts);
             return nullptr;

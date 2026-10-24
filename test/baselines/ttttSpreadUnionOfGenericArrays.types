@@ -1,0 +1,99 @@
+//// [test/cases/ttttSpreadUnionOfGenericArrays.ts] ////
+
+=== ttttSpreadUnionOfGenericArrays.ts ===
+// A lone spread of a union whose generic members are constrained to mutable arrays or tuples spreads that union,
+// those members as they are (tsc's getMutableArrayOrTupleType): r(...v) infers `X | Z`, not `any[]`
+declare function r<A extends any[]>(...a: A): A;
+>r : <A extends any[]>(...a: A) => A
+>a : A
+
+declare function s(...a: string[]): void;
+>s : (...a: string[]) => void
+>a : string[]
+
+declare function n(a: number, b: string): void;
+>n : (a: number, b: string) => void
+>a : number
+>b : string
+
+export function f<X extends string[], Y extends readonly string[], Z extends [number, string]>(x: X, y: Y, z: Z, u: X | Y, v: X | Z, w: X | [string], t: Z | [number, string]) {
+>f : <X extends string[], Y extends readonly string[], Z extends [number, string]>(x: X, y: Y, z: Z, u: X | Y, v: X | Z, w: X | [string], t: Z | [number, string]) => void
+>x : X
+>y : Y
+>z : Z
+>u : X | Y
+>v : X | Z
+>w : X | [string]
+>t : Z | [number, string]
+
+  const a1 = r(...u);
+>a1 : X | [...Y]
+>r(...u) : X | [...Y]
+>r : <A extends any[]>(...a: A) => A
+>...u : string
+>u : X | Y
+
+  const a2 = r(...v);
+>a2 : X | Z
+>r(...v) : X | Z
+>r : <A extends any[]>(...a: A) => A
+>...v : string | number
+>v : X | Z
+
+  const a3 = r(...w);
+>a3 : X | [string]
+>r(...w) : X | [string]
+>r : <A extends any[]>(...a: A) => A
+>...w : string
+>w : X | [string]
+
+  s(...u); s(...v); s(...w);
+>s(...u) : void
+>s : (...a: string[]) => void
+>...u : string
+>u : X | Y
+>s(...v) : void
+>s : (...a: string[]) => void
+>...v : string | number
+>v : X | Z
+>s(...w) : void
+>s : (...a: string[]) => void
+>...w : string
+>w : X | [string]
+
+  n(...t); n(...v); n(...z);
+>n(...t) : void
+>n : (a: number, b: string) => void
+>...t : string | number
+>t : Z | [number, string]
+>n(...v) : void
+>n : (a: number, b: string) => void
+>...v : string | number
+>v : X | Z
+>n(...z) : void
+>n : (a: number, b: string) => void
+>...z : string | number
+>z : Z
+
+  const a4: [] = r(...v);
+>a4 : []
+>r(...v) : X | Z
+>r : <A extends any[]>(...a: A) => A
+>...v : string | number
+>v : X | Z
+
+  const a5: [] = r(...w);
+>a5 : []
+>r(...w) : X | [string]
+>r : <A extends any[]>(...a: A) => A
+>...w : string
+>w : X | [string]
+
+  const a6: [] = r(...t);
+>a6 : []
+>r(...t) : Z | [number, string]
+>r : <A extends any[]>(...a: A) => A
+>...t : string | number
+>t : Z | [number, string]
+}
+

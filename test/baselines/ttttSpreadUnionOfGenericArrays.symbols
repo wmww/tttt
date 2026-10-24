@@ -1,0 +1,90 @@
+//// [test/cases/ttttSpreadUnionOfGenericArrays.ts] ////
+
+=== ttttSpreadUnionOfGenericArrays.ts ===
+// A lone spread of a union whose generic members are constrained to mutable arrays or tuples spreads that union,
+// those members as they are (tsc's getMutableArrayOrTupleType): r(...v) infers `X | Z`, not `any[]`
+declare function r<A extends any[]>(...a: A): A;
+>r : Symbol(r, Decl(ttttSpreadUnionOfGenericArrays.ts, 0, 0))
+>A : Symbol(A, Decl(ttttSpreadUnionOfGenericArrays.ts, 2, 19))
+>a : Symbol(a, Decl(ttttSpreadUnionOfGenericArrays.ts, 2, 36))
+>A : Symbol(A, Decl(ttttSpreadUnionOfGenericArrays.ts, 2, 19))
+>A : Symbol(A, Decl(ttttSpreadUnionOfGenericArrays.ts, 2, 19))
+
+declare function s(...a: string[]): void;
+>s : Symbol(s, Decl(ttttSpreadUnionOfGenericArrays.ts, 2, 48))
+>a : Symbol(a, Decl(ttttSpreadUnionOfGenericArrays.ts, 3, 19))
+
+declare function n(a: number, b: string): void;
+>n : Symbol(n, Decl(ttttSpreadUnionOfGenericArrays.ts, 3, 41))
+>a : Symbol(a, Decl(ttttSpreadUnionOfGenericArrays.ts, 4, 19))
+>b : Symbol(b, Decl(ttttSpreadUnionOfGenericArrays.ts, 4, 29))
+
+export function f<X extends string[], Y extends readonly string[], Z extends [number, string]>(x: X, y: Y, z: Z, u: X | Y, v: X | Z, w: X | [string], t: Z | [number, string]) {
+>f : Symbol(f, Decl(ttttSpreadUnionOfGenericArrays.ts, 4, 47))
+>X : Symbol(X, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 18))
+>Y : Symbol(Y, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 37))
+>Z : Symbol(Z, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 66))
+>x : Symbol(x, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 95))
+>X : Symbol(X, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 18))
+>y : Symbol(y, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 100))
+>Y : Symbol(Y, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 37))
+>z : Symbol(z, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 106))
+>Z : Symbol(Z, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 66))
+>u : Symbol(u, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 112))
+>X : Symbol(X, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 18))
+>Y : Symbol(Y, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 37))
+>v : Symbol(v, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 122))
+>X : Symbol(X, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 18))
+>Z : Symbol(Z, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 66))
+>w : Symbol(w, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 132))
+>X : Symbol(X, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 18))
+>t : Symbol(t, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 149))
+>Z : Symbol(Z, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 66))
+
+  const a1 = r(...u);
+>a1 : Symbol(a1, Decl(ttttSpreadUnionOfGenericArrays.ts, 6, 7))
+>r : Symbol(r, Decl(ttttSpreadUnionOfGenericArrays.ts, 0, 0))
+>u : Symbol(u, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 112))
+
+  const a2 = r(...v);
+>a2 : Symbol(a2, Decl(ttttSpreadUnionOfGenericArrays.ts, 7, 7))
+>r : Symbol(r, Decl(ttttSpreadUnionOfGenericArrays.ts, 0, 0))
+>v : Symbol(v, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 122))
+
+  const a3 = r(...w);
+>a3 : Symbol(a3, Decl(ttttSpreadUnionOfGenericArrays.ts, 8, 7))
+>r : Symbol(r, Decl(ttttSpreadUnionOfGenericArrays.ts, 0, 0))
+>w : Symbol(w, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 132))
+
+  s(...u); s(...v); s(...w);
+>s : Symbol(s, Decl(ttttSpreadUnionOfGenericArrays.ts, 2, 48))
+>u : Symbol(u, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 112))
+>s : Symbol(s, Decl(ttttSpreadUnionOfGenericArrays.ts, 2, 48))
+>v : Symbol(v, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 122))
+>s : Symbol(s, Decl(ttttSpreadUnionOfGenericArrays.ts, 2, 48))
+>w : Symbol(w, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 132))
+
+  n(...t); n(...v); n(...z);
+>n : Symbol(n, Decl(ttttSpreadUnionOfGenericArrays.ts, 3, 41))
+>t : Symbol(t, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 149))
+>n : Symbol(n, Decl(ttttSpreadUnionOfGenericArrays.ts, 3, 41))
+>v : Symbol(v, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 122))
+>n : Symbol(n, Decl(ttttSpreadUnionOfGenericArrays.ts, 3, 41))
+>z : Symbol(z, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 106))
+
+  const a4: [] = r(...v);
+>a4 : Symbol(a4, Decl(ttttSpreadUnionOfGenericArrays.ts, 11, 7))
+>r : Symbol(r, Decl(ttttSpreadUnionOfGenericArrays.ts, 0, 0))
+>v : Symbol(v, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 122))
+
+  const a5: [] = r(...w);
+>a5 : Symbol(a5, Decl(ttttSpreadUnionOfGenericArrays.ts, 12, 7))
+>r : Symbol(r, Decl(ttttSpreadUnionOfGenericArrays.ts, 0, 0))
+>w : Symbol(w, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 132))
+
+  const a6: [] = r(...t);
+>a6 : Symbol(a6, Decl(ttttSpreadUnionOfGenericArrays.ts, 13, 7))
+>r : Symbol(r, Decl(ttttSpreadUnionOfGenericArrays.ts, 0, 0))
+>t : Symbol(t, Decl(ttttSpreadUnionOfGenericArrays.ts, 5, 149))
+}
+
