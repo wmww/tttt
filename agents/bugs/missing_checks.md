@@ -94,11 +94,11 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   the second (both wrong before and after: tsc has TS2683 there). Test ttttFunctionExpressionDefaultsAtFirstCheck. [fixed ffba37893]
 - (cor4, 2026-10-28, bun 99-V4 checkReturnStatement__01/02) Return statements were checked against the annotation as
   lowered after a circular signature return (`[any]`), not against tsc's getReturnTypeOfSignature result (any, TS2577):
-  a spurious TS2322. KEY_RETURN_ANNOTATION_CIRCULAR. Test ttttReturnCheckedAgainstCircularAnnotation. [fixed c85d7abec]
+  a spurious TS2322. KEY_RETURN_ANNOTATION_CIRCULAR. Test ttttReturnCheckedAgainstCircularAnnotation. [fixed 1429b874a]
 - (cor4, 2026-10-28) A variable initialized by a function expression wasn't typed before its initializer was checked
   (tsc's checkVariableLikeDeclaration asks getTypeOfSymbol first), so the function's first check ran with the variable
   settled and `const h = (a = h) => 1` missed TS7022. initialized_binding_typecheck() now asks the type first for
-  EXPR_FUNCTION initializers as it did for calls. Test ttttFunctionInitializerTypedFirst. [fixed d184f6f2c]
+  EXPR_FUNCTION initializers as it did for calls. Test ttttFunctionInitializerTypedFirst. [fixed 764ad7436]
 - (cor4, 2026-10-28) The return annotation of a function expression isn't lowered at its first check (tsc's
   checkSignatureDeclaration checks the return type node there): `const f = (): [ReturnType<typeof f>] => 1` is TS7022
   on f and TS2322 `number` to `[any]` in tsc, TS2577 alone in tttt. Lowering it in check_function_parameters_first()
@@ -113,7 +113,7 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   Checker.assigning_context_function/signature) for a plain name without default or rest. Left: the types baseline
   of that `b` (tsc's typeWriter rechecks it, number; tttt keeps the checked expression's T), and a later parameter with
   a default or `...` (getTypeForVariableLikeDeclaration's optionality and rest type) still goes through its lazy type.
-  Test ttttUnassignedContextualParameterRead (types component fails, that baseline). [fixed e71e1789a]
+  Test ttttUnassignedContextualParameterRead (types component fails, that baseline). [fixed bc0424527]
 - (cor4, 2026-10-30, bun 99-V4 checkVariableLikeDeclaration__01, getTypeFromBindingPattern__04/05) A default in an
   unannotated variable pattern reading a sibling through an IIFE, `const [a, b = (() => a)()] = [2]`: tsc checks the
   elements first (checkVariableLikeDeclaration -> checkBindingElement -> getTypeOfSymbol(a)), so a's type is in flight
