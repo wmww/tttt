@@ -88,7 +88,7 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   lateBindMember__07: `get [k]`, `set [k]`, `[k]: string`, `a()`, `get [k]` again with k = "a"): every declaration is
   TS2300 under both names, `'a'` (lateBindMember) and `'[k]'` (combineSymbolTables' mergeSymbol, and
   checkObjectTypeForDuplicateDeclarations' reportDuplicateMemberErrors); tttt deduplicated TS2300 by position alone.
-  Now per position and name (find_duplicate_named()); test ttttLateBoundDuplicateTwoNames (errors only) [fixed PENDING].
+  Now per position and name (find_duplicate_named()); test ttttLateBoundDuplicateTwoNames (errors only) [fixed 4c2f483cc].
   Left: tsc's symbols and types there: mergeSymbol fails and returns the late symbol, which combineSymbolTables keeps
   for the name, while `c.a` still reads the method (`() => void`) in tsc's output; tttt keeps the early symbol and
   types the late `[k]` as the method. Not traced. [open]
@@ -496,7 +496,7 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
 - Mutation testing (seed 20261030) also leaves: a duplicate type parameter (`<A, B extends Object A>`, TS2300) that
   tsc's appendTypeParameters counts once (getDeclaredTypeOfTypeParameter of the one merged symbol) and tttt's
   several_types.c declared_type_params() twice (spurious TS2314 for two arguments, genericContextualTypes2): low
-  value, only with a parse error. [open] discriminantPropertyInference's TS2842 x2 is the harness's post-emit count
+  value, only with a parse error. [fixed 2cddcaf93: re-probed, functions, signatures and types alike] discriminantPropertyInference's TS2842 x2 is the harness's post-emit count
   (tsc's pre-emit diagnostics have them too: the CLI reports them). [tsgo] errorInfoForRelatedIndexTypes...'s TS6053
   is mutate.py's harness (a `/.lib/react16.d.ts` reference it doesn't serve). [text]
 - Mutation testing, seed 20261031 (2000 mutants, 4 errors-component differences, 2 render): a conditional source is
