@@ -5897,7 +5897,7 @@ static bool report_missing_prefix(Scope const* me, Span name, ErrorCtx* errs) {
         if (!class_decl || !class_decl->symbol) continue;
         direct = first;
         // (tsc's getPropertyOfType: with the members of Function and Object)
-        if (ty_get_object_prop(checker, ty_static_type_of(checker, class_decl->symbol), atom)) {
+        if (ty_has_object_prop(checker, ty_static_type_of(checker, class_decl->symbol), atom)) {
             error_ctx_error_d(errs, name, 2662, "Cannot find name '", name, "'. Did you mean the static member '",
                 class_decl->symbol->name, ".", name, "'?");
             return true;

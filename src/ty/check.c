@@ -4677,7 +4677,7 @@ static bool base_has_both(Checker* me, Ty const* const* bases, u32 base_count, A
         Members const* members = ty_members(me, ty_apparent_type(me, bases[b]));
         bool has_first = false, has_index = false;
         if (prop) {
-            has_first = ty_get_prop(me, bases[b], prop) != nullptr;
+            has_first = ty_prop_exists(me, bases[b], prop);
         } else {
             for (u32 i = 0; i < members->index_count; i++) has_first |= members->index[i].key == key;
         }

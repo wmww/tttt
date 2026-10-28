@@ -710,7 +710,7 @@ static bool callable_definitely_related(Checker* me, Ty const* check_type, Ty co
     if (!any_function) {
         Ty const* function_type = ty_global_function_type(me);
         for (u32 i = 0; i < source->prop_count; i++) {
-            if (ty_get_prop(me, function_type, members_prop_name(source, i))) return false;
+            if (ty_prop_exists(me, function_type, members_prop_name(source, i))) return false;
         }
     }
     return true;

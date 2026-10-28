@@ -1115,7 +1115,7 @@ static bool context_is_tuple_like(Checker* me, Ty const* contextual, u32 depth) 
             return true;
         }
     }
-    if (contextual->kind == TY_ANONYMOUS) return ty_get_prop(me, contextual, my atoms.zero) != nullptr;
+    if (contextual->kind == TY_ANONYMOUS) return ty_prop_exists(me, contextual, my atoms.zero);
     return false;
 }
 

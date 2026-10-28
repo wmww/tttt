@@ -1576,30 +1576,40 @@ static Ty const* tuple_as_array(Checker* me, Ty const* tuple) {
 
 // A property of an object type, including those it has as a function (`Function`, or `CallableFunction` under
 // strictBindCallApply like tsc's globalCallableFunctionType) and as an object (`Object`)
-Prop const* ty_get_object_prop(Checker* me, Ty const* ty, Atom const* name) {
-    Prop const* prop = ty_get_prop(me, ty, name);
+// ty_get_object_prop() where the type itself has none: Function's or Object's (declared members: looking them up makes
+// nothing)
+static Prop const* object_prop_fallback(Checker* me, Ty const* ty, Atom const* name) {
     // The object of a const enum isn't a real object (tsc's skipObjectFunctionPropertyAugment)
     bool const_enum = ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_ENUM_OBJECT &&
         ty->declared.symbol && (ty->declared.symbol->flags & SYMBOL_CONST_ENUM);
-    if (!prop && !const_enum) {
-        Members const* members = ty_members(me, ty);
-        Ty const* fallback = nullptr;
-        // (tsc's anyFunctionType, what a context-sensitive function is while it's skipped, has Function's)
-        if (ty == my global_types[GLOBAL_ANY_FUNCTION]) {
-            fallback = global_type(me, GLOBAL_FUNCTION);
-        } else if (members->call_count || members->construct_count) {
-            if (compiler_options()->strict_bind_call_apply) {
-                fallback = global_type(me, members->call_count ? GLOBAL_CALLABLE_FUNCTION : GLOBAL_NEWABLE_FUNCTION);
-            }
-            if (!fallback) fallback = global_type(me, GLOBAL_FUNCTION);
+    if (const_enum) return nullptr;
+    Prop const* prop = nullptr;
+    Members const* members = ty_members(me, ty);
+    Ty const* fallback = nullptr;
+    // (tsc's anyFunctionType, what a context-sensitive function is while it's skipped, has Function's)
+    if (ty == my global_types[GLOBAL_ANY_FUNCTION]) {
+        fallback = global_type(me, GLOBAL_FUNCTION);
+    } else if (members->call_count || members->construct_count) {
+        if (compiler_options()->strict_bind_call_apply) {
+            fallback = global_type(me, members->call_count ? GLOBAL_CALLABLE_FUNCTION : GLOBAL_NEWABLE_FUNCTION);
         }
+        if (!fallback) fallback = global_type(me, GLOBAL_FUNCTION);
+    }
+    if (fallback && fallback != ty) prop = ty_get_prop(me, fallback, name);
+    if (!prop) {
+        fallback = global_type(me, GLOBAL_OBJECT);
         if (fallback && fallback != ty) prop = ty_get_prop(me, fallback, name);
-        if (!prop) {
-            fallback = global_type(me, GLOBAL_OBJECT);
-            if (fallback && fallback != ty) prop = ty_get_prop(me, fallback, name);
-        }
     }
     return prop;
+}
+
+bool ty_has_object_prop(Checker* me, Ty const* ty, Atom const* name) {
+    return ty_prop_exists(me, ty, name) || object_prop_fallback(me, ty, name);
+}
+
+Prop const* ty_get_object_prop(Checker* me, Ty const* ty, Atom const* name) {
+    Prop const* prop = ty_get_prop(me, ty, name);
+    return prop ? prop : object_prop_fallback(me, ty, name);
 }
 
 // `skip_augment`: only the types' own properties, not those of Object or Function (tsc's getPropertyOfType's
@@ -1741,7 +1751,7 @@ static bool is_static_private_name(Checker* me, Prop const* prop);
 // require_optional)
 static bool has_unmatched_target_prop(Checker* me, Ty const* source, Members const* target_members, u32 from, bool require_optional) {
     for (u32 i = from; i < target_members->prop_count; i++) {
-        Prop const* target_prop = members_prop(me, target_members, i);
+        Prop const* target_prop = members_prop_keyed(target_members, i); // (Its name and flags)
         if (target_prop->flags & PROP_PROTOTYPE) continue;
         if ((target_prop->flags & PROP_OPTIONAL) && !require_optional) continue;
         if (source_has_prop(me, source, target_prop->name, 0) || is_static_private_name(me, target_prop)) continue;
@@ -1762,7 +1772,7 @@ static bool source_has_prop(Checker* me, Ty const* ty, Atom const* name, u32 dep
         return members.len > 0;
     }
     if (!(ty->flags & TYF_OBJECT)) return false;
-    return ty_get_object_prop(me, ty, name) != nullptr;
+    return ty_has_object_prop(me, ty, name);
 }
 
 FoundProp ty_find_prop(Checker* me, Ty const* ty, Atom const* name) { return find_prop(me, ty, name, 0); }
@@ -2883,7 +2893,7 @@ static Ternary props_related_impl(
         u32 prop_count;
         SourceProp* props = source_props(me, source, source->kind == TY_INTERSECTION ? nullptr : ty_members(me, source), &prop_count);
         for (u32 i = 0; i < prop_count; i++) {
-            if (ty_get_prop(me, target, props[i].prop->name)) continue;
+            if (ty_prop_exists(me, target, props[i].prop->name)) continue;
             if (report) {
                 cstr name = ty_prop_written_name(me, props[i].prop);
                 cstr target_str = display_for_report(me, target);
@@ -5698,7 +5708,7 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
             Atom const* name = members_prop_name(member, i);
             // Each name once: at the first member that has it
             bool seen = false;
-            for (u32 earlier = 0; earlier < m && !seen; earlier++) seen = ty_get_prop(me, members.data[earlier], name) != nullptr;
+            for (u32 earlier = 0; earlier < m && !seen; earlier++) seen = ty_prop_exists(me, members.data[earlier], name);
             if (seen) continue;
             // (Only the members' own properties, not Object's: tsc's skipObjectFunctionPropertyAugment)
             Ty const* parts[16];
@@ -7557,7 +7567,7 @@ static bool is_known_property(Checker* me, Ty const* target, Atom const* name) {
         bool generic = false;
         MappedInfo const* mapped = members->mapped ? mapped_info_of(me, target, &generic) : nullptr;
         if (mapped && generic) return generic_mapped_knows(me, mapped, name);
-        if (ty_get_prop(me, target, name) || has_index_for_name(me, members, name)) return true;
+        if (ty_prop_exists(me, target, name) || has_index_for_name(me, members, name)) return true;
     }
     if ((target->kind == TY_UNION || target->kind == TY_INTERSECTION) && is_excess_property_check_target(target)) {
         for (u32 i = 0; i < target->composite.types.len; i++) {
@@ -7795,7 +7805,7 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
                 Members const* target_members = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty_members(me, apparent) : nullptr;
                 for (u32 p = 0; target_members && p < target_members->prop_count; p++) {
                     Atom const* name = members_prop_name(target_members, p);
-                    if (!ty_get_prop(me, source, name) && ty_applicable_index_info(me, source, ty_prop_name_literal(me, name))) count++;
+                    if (!ty_prop_exists(me, source, name) && ty_applicable_index_info(me, source, ty_prop_name_literal(me, name))) count++;
                 }
             }
             if ((count || (generic_keys && ty_keyof(me, keyed)->kind == TY_UNION)) && count >= best_count) {
@@ -7877,7 +7887,7 @@ static void collect_prop_names(Checker* me, Ty const* ty, csview** names, u32* c
             Atom const* name = checker_atom(me, (*names)[i]);
             for (u32 j = 1; j < ty->composite.types.len; j++) {
                 Ty const* member = ty_apparent_type(me, ty->composite.types.data[j]);
-                if (!ty_get_object_prop(me, member, name)) (*names)[i] = (csview){0};
+                if (!ty_has_object_prop(me, member, name)) (*names)[i] = (csview){0};
             }
         }
         return;

@@ -19,7 +19,7 @@ static bool define_property_readonly(Checker* me, Expr const* call) {
     // union properties: not done)
     if (type->kind == TY_UNION) return false;
     if (!(type->flags & (TYF_OBJECT | TYF_INTERSECTION))) return true;
-    if (!ty_get_prop(me, type, my atoms.value)) return !ty_get_prop(me, type, checker_atom(me, c_sv("set")));
+    if (!ty_prop_exists(me, type, my atoms.value)) return !ty_prop_exists(me, type, checker_atom(me, c_sv("set")));
     Prop const* writable = ty_get_prop(me, type, checker_atom(me, c_sv("writable")));
     if (!writable) return true;
     Ty const* flag = prop_type(me, writable);
@@ -5615,6 +5615,38 @@ Members const* ty_members_resolving(Checker* me, Ty const* ty) {
 bool ty_members_done(Checker* me, Ty const* ty) {
     TyObjectState* state = object_state(ty);
     return !state || ty_members_peek(me, state);
+}
+
+// ty_get_prop()'s lookup: the index of `name` in `members`, -1 if none
+static i32 members_find(Members const* members, Atom const* name) {
+    if (members->prop_count <= 8) {
+        u64 filter = members->props_filter;
+        if (filter && !(filter & ty_prop_filter_bit(name))) return -1;
+    } else if (members->by_name) {
+        PropNameIndex const* index = members->by_name;
+        u32 lo = 0, hi = members->prop_count;
+        while (lo < hi) {
+            u32 mid = lo + (hi - lo) / 2;
+            Atom const* mid_name = index->names[mid];
+            if (mid_name == name) return (i32)index->order[mid];
+            if ((uintptr_t)mid_name < (uintptr_t)name) lo = mid + 1; else hi = mid;
+        }
+        return -1;
+    }
+    for (u32 i = 0; i < members->prop_count; i++) {
+        if (members_prop_name(members, i) == name) return (i32)i;
+    }
+    return -1;
+}
+
+bool ty_prop_exists(Checker* me, Ty const* ty, Atom const* name) {
+    return members_find(ty_members(me, ty), name) >= 0;
+}
+
+Prop const* ty_get_prop_keyed(Checker* me, Ty const* ty, Atom const* name) {
+    Members const* members = ty_members(me, ty);
+    i32 i = members_find(members, name);
+    return i < 0 ? nullptr : members_prop_keyed(members, (u32)i);
 }
 
 Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name) {

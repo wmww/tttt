@@ -1215,17 +1215,17 @@ static void infer_to_tuple(Checker* me, Inference* inf, Ty const* source, Ty con
 // (tsc's getPropertyOfType). The source's property type is only read for a unit-typed target property: reading it
 // otherwise can be circular (`var crypto: typeof globalThis extends { crypto: infer T } ? ...`)
 static bool unmatched_prop_of(Checker* me, Ty const* source, Atom const* name, Ty const* target_type, bool discriminants) {
-    Prop const* prop = nullptr;
     if (source->kind == TY_INTERSECTION) {
         if (!ty_find_prop(me, source, name).found) return true;
-    } else {
-        prop = ty_get_object_prop(me, source, name);
-        if (!prop) return true;
+    } else if (!ty_has_object_prop(me, source, name)) {
+        return true;
     }
     if (!discriminants) return false;
     bool unit = (target_type->flags & (TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL | TYF_NULLABLE)) && target_type->kind != TY_UNION;
     if (!unit) return false;
-    Ty const* source_type = prop ? prop_type(me, prop) : ty_find_prop(me, source, name).type;
+    // (The source's prop made only now: most targets' aren't unit types)
+    Ty const* source_type = source->kind != TY_INTERSECTION ? prop_type(me, ty_get_object_prop(me, source, name)) :
+        ty_find_prop(me, source, name).type;
     return !(source_type->flags & TYF_ANY) && ty_regular(me, source_type) != ty_regular(me, target_type);
 }
 
@@ -1239,7 +1239,7 @@ static bool has_unmatched_prop(Checker* me, Ty const* source, Ty const* target, 
             Members const* members = ty_members(me, part);
             for (u32 i = 0; i < members->prop_count; i++) {
                 // (Required in one member is required in the intersection: its other members' copies are seen too)
-                Prop const* prop = members_prop(me, members, i);
+                Prop const* prop = members_prop_keyed(members, i); // (Its name and flags)
                 if (prop->flags & PROP_OPTIONAL) continue;
                 Ty const* target_type = discriminants ? ty_find_prop(me, target, prop->name).type : nullptr;
                 if (unmatched_prop_of(me, source, prop->name, target_type, discriminants)) return true;
@@ -1249,10 +1249,9 @@ static bool has_unmatched_prop(Checker* me, Ty const* source, Ty const* target, 
     }
     Members const* members = ty_members(me, target);
     for (u32 i = 0; i < members->prop_count; i++) {
-        Prop const* target_prop = members_prop(me, members, i);
-        if (target_prop->flags & PROP_OPTIONAL) continue;
-        Ty const* target_type = discriminants ? prop_type(me, target_prop) : nullptr;
-        if (unmatched_prop_of(me, source, target_prop->name, target_type, discriminants)) return true;
+        if (members_prop_flags(members, i) & PROP_OPTIONAL) continue;
+        Ty const* target_type = discriminants ? prop_type(me, members_prop(me, members, i)) : nullptr;
+        if (unmatched_prop_of(me, source, members_prop_name(members, i), target_type, discriminants)) return true;
     }
     return false;
 }
@@ -1822,7 +1821,7 @@ static void force_source_parts(Checker* me, Ty const* source, Ty const* target, 
     }
     for (u32 i = 0; i < targets->prop_count; i++) {
         Prop const* prop = members_prop(me, targets, i);
-        if (!ty_get_prop(me, source, prop->name)) continue;
+        if (!ty_prop_exists(me, source, prop->name)) continue;
         Ty const* part = ty_prop_type_of(me, source, prop->name);
         if (part) force_source_parts(me, part, ty_prop_type_of(me, target, prop->name), depth - 1);
     }

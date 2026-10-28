@@ -3485,7 +3485,7 @@ static Ty const* intersection_rest_type(Checker* me, Ty const* source, TyList pa
             // tsc's getSpreadSymbol)
             Prop const* single = members_prop(me, members, j);
             for (u32 k = i + 1; k < parts.len && single; k++) {
-                if (ty_get_prop(me, ty_apparent_type(me, parts.data[k]), name)) single = nullptr;
+                if (ty_prop_exists(me, ty_apparent_type(me, parts.data[k]), name)) single = nullptr;
             }
             if (single && !(single->flags & PROP_READONLY) && found.type == prop_type(me, single)) {
                 if (count == cap) {
@@ -3641,7 +3641,7 @@ static Ty const* with_pattern_props(Checker* me, Ty const* type, Ty const* patte
     for (u32 i = 0; i < have->prop_count; i++) props[count++] = (ObjectLiteralProp){ .reuse = members_prop(me, have, i) };
     bool added = false;
     for (u32 i = 0; i < implied->prop_count; i++) {
-        if (ty_get_object_prop(me, type, members_prop_name(implied, i))) continue;
+        if (ty_has_object_prop(me, type, members_prop_name(implied, i))) continue;
         props[count++] = (ObjectLiteralProp){ .reuse = members_prop(me, implied, i) };
         added = true;
     }

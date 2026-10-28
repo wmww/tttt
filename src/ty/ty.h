@@ -2018,6 +2018,11 @@ static inline void ty_members_init(TyObjectState* state, Members const* members)
 // reference them, they are free in every anonymous type made there (TypeFlow.owner, lower.c)
 bool ty_declared_is_merged(Ty const* declared);
 Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name);
+// Whether ty_get_prop() would find it, without making an instantiation's prop (members.c)
+bool ty_prop_exists(Checker* me, Ty const* ty, Atom const* name);
+// What ty_get_prop() finds, or for an instantiation's prop not made yet the one it would be made from (members_prop_keyed():
+// the same name, flags and declaration chain, prop_root()): for what reads only those
+Prop const* ty_get_prop_keyed(Checker* me, Ty const* ty, Atom const* name);
 // The member of a class's type that a field or method of its declaration declares (Prop.decl's spans: all of its
 // symbol's declarations), null for one of its own
 struct ClassItem;
@@ -2030,6 +2035,7 @@ bool ty_class_base_constructors_differ(Checker* me, struct ClassDecl const* clas
 bool ty_is_thenable(Checker* me, Ty const* ty); // call.c, tsc's isThenableType
 bool ty_awaits_thenable(Checker* me, Ty const* ty); // call.c: awaiting it meets a thenable that's no promise (TS1320...)
 Prop const* ty_get_object_prop(Checker* me, Ty const* ty, Atom const* name); // relate.c, with Function/Object members
+bool ty_has_object_prop(Checker* me, Ty const* ty, Atom const* name); // relate.c, whether it finds one, making none
 /// tsc's getPropertyOfType of any type (an intersection's from its first part that has it), null if none. relate.c
 Prop const* ty_property_of_type(Checker* me, Ty const* ty, Atom const* name);
 // A namespace's (or module's) type-only export, which isn't among the members of its value but is what the entity name

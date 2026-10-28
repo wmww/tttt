@@ -1841,7 +1841,7 @@ static bool has_conflicting_private(Checker* me, Prop const* prop, Ty const* con
     for (u32 j = i + 1; j < len; j++) {
         Ty const* b = types[j];
         if (!is_known_object_for_reduction(me, b)) continue;
-        Prop const* other = ty_get_prop(me, b, prop->name);
+        Prop const* other = ty_get_prop_keyed(me, b, prop->name); // (Name, flags and root: prop_root())
         // (Only declarations count: a mapped type's property, `Record<"m", unknown>`'s, has none, so with a class's
         // private `m` the property has that one value declaration and isn't conflicting, tsc's
         // createUnionOrIntersectionProperty hasNonUniformValueDeclaration)
@@ -2200,7 +2200,8 @@ static Atom const* never_reduced_prop_known(Checker* me, Ty const* const* types,
         if (!is_known_object_for_reduction(me, a)) continue;
         Members const* members = ty_members(me, a);
         for (u32 p = 0; p < members->prop_count; p++) {
-            Prop const* prop = members_prop(me, members, p);
+            // (Its name, flags and root until another member has it: made only then)
+            Prop const* prop = members_prop_keyed(members, p);
             if (!private_name && has_conflicting_private(me, prop, types, i, len)) private_name = prop->name;
             // (The intersection's property is required if one of them is: an optional one is that type or undefined
             // then, `{ a: string } & Partial<{ a: never }>` is never, string & undefined)
@@ -2210,6 +2211,7 @@ static Atom const* never_reduced_prop_known(Checker* me, Ty const* const* types,
                 if (!is_known_object_for_reduction(me, b)) continue;
                 Prop const* other = ty_get_prop(me, b, prop->name);
                 if (!other) continue;
+                prop = members_prop(me, members, p);
                 shared_prop_cross_product(me, prop, other);
                 if (prop->flags & other->flags & PROP_OPTIONAL) continue;
                 if (!a_type) {
