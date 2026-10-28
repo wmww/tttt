@@ -1,0 +1,33 @@
+ttttNeverIntersectionSpreadRestMapped.ts(7,12): error TS2339: Property 'id' does not exist on type '{}'.
+ttttNeverIntersectionSpreadRestMapped.ts(8,7): error TS2322: Type '{}' is not assignable to type 'never'.
+ttttNeverIntersectionSpreadRestMapped.ts(9,22): error TS2698: Spread types may only be created from object types.
+ttttNeverIntersectionSpreadRestMapped.ts(10,30): error TS2700: Rest types may only be created from object types.
+ttttNeverIntersectionSpreadRestMapped.ts(11,7): error TS2322: Type 'any' is not assignable to type 'never'.
+
+
+==== ttttNeverIntersectionSpreadRestMapped.ts (5 errors) ====
+    // An intersection that reduces to never (a private and a public `id`) spreads and rests like never (TS2698, TS2700:
+    // tsc's checkObjectLiteral and getBindingElementTypeFromParentType reduce first) and a mapped type over its keys has
+    // no properties (getPropertiesOfType of the reduced apparent type)
+    declare class D { private readonly id: string | number; other: 1 }
+    declare const wdp: D & { id: string | number }
+    declare const wdp_mapped: { [K in keyof typeof wdp]: (typeof wdp)[K] }
+    wdp_mapped.id = 'x'
+               ~~
+!!! error TS2339: Property 'id' does not exist on type '{}'.
+    const wdp_printed: never = wdp_mapped
+          ~~~~~~~~~~~
+!!! error TS2322: Type '{}' is not assignable to type 'never'.
+    const wdp_spread = { ...wdp }
+                         ~~~~~~
+!!! error TS2698: Spread types may only be created from object types.
+    const { other: wdp_other, ...wdp_rest } = wdp
+                                 ~~~~~~~~
+!!! error TS2700: Rest types may only be created from object types.
+    const wdp_rest_printed: never = wdp_rest
+          ~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    declare const u: { a: 1 } | (D & { id: string })
+    const u_spread = { ...u }
+    const { a: u_a, ...u_rest } = u
+    

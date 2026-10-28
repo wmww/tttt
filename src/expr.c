@@ -4178,7 +4178,8 @@ __attribute__((noinline)) static void jsx_typecheck(Expr const* me, ErrorCtx* er
                     expr_typecheck(&i->value, errs);
                 }
                 if (i->tag == JSX_ATTRIBUTE_SPREAD) {
-                    Ty const* type = expr_get_type(&i->value);
+                    // (Reduced: tsc's createJsxAttributesTypeFromAttributesProperty)
+                    Ty const* type = ty_reduced(current_checker, expr_get_type(&i->value));
                     ty_check_spread_type(current_checker, type, expr_outer_span(&i->value), errs);
                     ty_check_spread_overrides(current_checker, type, written, written_count, i->span, errs);
                 } else {
@@ -4868,7 +4869,8 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                     if (my assignment_pattern || expr_is_destructuring_target(&i->value)) {
                         if (target < SCRIPT_TARGET_ES2018) ty_check_emit_helpers(current_checker, i->span, EMIT_HELPER_REST, errs);
                     } else {
-                        Ty const* type = expr_get_type(&i->value);
+                        // (Reduced: tsc's checkObjectLiteral, `{ ...x }` with x an intersection that is never)
+                        Ty const* type = ty_reduced(current_checker, expr_get_type(&i->value));
                         ty_check_spread_type(current_checker, type, i->span, errs);
                         ty_check_spread_overrides(current_checker, type, written, written_count, i->span, errs);
                     }

@@ -3566,6 +3566,7 @@ static bool pattern_has_generic_key(Checker* me, TyList pattern) {
 
 // Whether `...rest` of an object pattern can be taken of `source` (else TS2700): not unknown, never or a primitive
 bool ty_object_rest_source_valid(Checker* me, Ty const* source) {
+    source = ty_reduced(me, source); // (tsc's getBindingElementTypeFromParentType: getReducedType of the parent)
     return (source->flags & TYF_ANY) || (!(source->flags & TYF_UNKNOWN) && ty_is_valid_spread_type(me, source));
 }
 
@@ -4028,7 +4029,7 @@ static Ty const* binding_element_of(Checker* me, Binding const* binding, Ty cons
             ty_array(me, ty_iterated_type(me, ITERATION_DESTRUCTURING, object, span_null, nullptr), false);
     } else if (binding->rest) {
         // (What can't be spread, reported by binding_typecheck(), is the error type: tsc's getBindingElementTypeFromParentType)
-        ret = ty_object_rest_source_valid(me, object) ? object_rest_type(me, object, pattern_keys(me, parent),
+        ret = ty_object_rest_source_valid(me, object) ? object_rest_type(me, ty_reduced(me, object), pattern_keys(me, parent),
             binding->tag == BINDING_IDENTIFIER ? binding->symbol : nullptr) :
             ty_intrinsic(me, TY_ERROR);
     } else if (in_array) {

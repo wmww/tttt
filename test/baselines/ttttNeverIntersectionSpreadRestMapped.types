@@ -1,0 +1,62 @@
+//// [test/cases/ttttNeverIntersectionSpreadRestMapped.ts] ////
+
+=== ttttNeverIntersectionSpreadRestMapped.ts ===
+// An intersection that reduces to never (a private and a public `id`) spreads and rests like never (TS2698, TS2700:
+// tsc's checkObjectLiteral and getBindingElementTypeFromParentType reduce first) and a mapped type over its keys has
+// no properties (getPropertiesOfType of the reduced apparent type)
+declare class D { private readonly id: string | number; other: 1 }
+>D : D
+>id : string | number
+>other : 1
+
+declare const wdp: D & { id: string | number }
+>wdp : never
+>id : string | number
+
+declare const wdp_mapped: { [K in keyof typeof wdp]: (typeof wdp)[K] }
+>wdp_mapped : {}
+>wdp : never
+>wdp : never
+
+wdp_mapped.id = 'x'
+>wdp_mapped.id = 'x' : "x"
+>wdp_mapped.id : any
+>wdp_mapped : {}
+>id : any
+>'x' : "x"
+
+const wdp_printed: never = wdp_mapped
+>wdp_printed : never
+>wdp_mapped : {}
+
+const wdp_spread = { ...wdp }
+>wdp_spread : any
+>{ ...wdp } : any
+>wdp : never
+
+const { other: wdp_other, ...wdp_rest } = wdp
+>other : any
+>wdp_other : never
+>wdp_rest : any
+>wdp : never
+
+const wdp_rest_printed: never = wdp_rest
+>wdp_rest_printed : never
+>wdp_rest : any
+
+declare const u: { a: 1 } | (D & { id: string })
+>u : { a: 1; }
+>a : 1
+>id : string
+
+const u_spread = { ...u }
+>u_spread : { a: 1; }
+>{ ...u } : { a: 1; }
+>u : { a: 1; }
+
+const { a: u_a, ...u_rest } = u
+>a : any
+>u_a : 1
+>u_rest : {}
+>u : { a: 1; }
+

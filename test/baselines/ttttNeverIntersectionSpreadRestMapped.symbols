@@ -1,0 +1,59 @@
+//// [test/cases/ttttNeverIntersectionSpreadRestMapped.ts] ////
+
+=== ttttNeverIntersectionSpreadRestMapped.ts ===
+// An intersection that reduces to never (a private and a public `id`) spreads and rests like never (TS2698, TS2700:
+// tsc's checkObjectLiteral and getBindingElementTypeFromParentType reduce first) and a mapped type over its keys has
+// no properties (getPropertiesOfType of the reduced apparent type)
+declare class D { private readonly id: string | number; other: 1 }
+>D : Symbol(D, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 0, 0))
+>id : Symbol(D.id, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 3, 17))
+>other : Symbol(D.other, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 3, 55))
+
+declare const wdp: D & { id: string | number }
+>wdp : Symbol(wdp, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 4, 13))
+>D : Symbol(D, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 0, 0))
+>id : Symbol(id, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 4, 24))
+
+declare const wdp_mapped: { [K in keyof typeof wdp]: (typeof wdp)[K] }
+>wdp_mapped : Symbol(wdp_mapped, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 5, 13))
+>K : Symbol(K, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 5, 29))
+>wdp : Symbol(wdp, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 4, 13))
+>wdp : Symbol(wdp, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 4, 13))
+>K : Symbol(K, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 5, 29))
+
+wdp_mapped.id = 'x'
+>wdp_mapped : Symbol(wdp_mapped, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 5, 13))
+
+const wdp_printed: never = wdp_mapped
+>wdp_printed : Symbol(wdp_printed, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 7, 5))
+>wdp_mapped : Symbol(wdp_mapped, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 5, 13))
+
+const wdp_spread = { ...wdp }
+>wdp_spread : Symbol(wdp_spread, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 8, 5))
+>wdp : Symbol(wdp, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 4, 13))
+
+const { other: wdp_other, ...wdp_rest } = wdp
+>wdp_other : Symbol(wdp_other, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 9, 7))
+>wdp_rest : Symbol(wdp_rest, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 9, 25))
+>wdp : Symbol(wdp, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 4, 13))
+
+const wdp_rest_printed: never = wdp_rest
+>wdp_rest_printed : Symbol(wdp_rest_printed, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 10, 5))
+>wdp_rest : Symbol(wdp_rest, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 9, 25))
+
+declare const u: { a: 1 } | (D & { id: string })
+>u : Symbol(u, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 11, 13))
+>a : Symbol(a, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 11, 18))
+>D : Symbol(D, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 0, 0))
+>id : Symbol(id, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 11, 34))
+
+const u_spread = { ...u }
+>u_spread : Symbol(u_spread, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 12, 5))
+>u : Symbol(u, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 11, 13))
+
+const { a: u_a, ...u_rest } = u
+>a : Symbol(a, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 11, 18))
+>u_a : Symbol(u_a, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 13, 7))
+>u_rest : Symbol(u_rest, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 13, 15))
+>u : Symbol(u, Decl(ttttNeverIntersectionSpreadRestMapped.ts, 11, 13))
+

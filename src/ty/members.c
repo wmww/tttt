@@ -4691,6 +4691,9 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
         // a string index is the key `string` alone, and the property names aren't absorbed by it like in `keyof T`.
         // Of an intersection, each member's (tsc's are the intersection's properties and index infos)
         TyList parts = keyed_intersection ? keyed->composite.types : (TyList){ .data = &keyed, .len = 1 };
+        // (An intersection that reduces to never has no properties: tsc's getPropertiesOfType reads the reduced
+        // apparent type, `D & { id: string }` with D's id private)
+        if (keyed_intersection && (ty_reduced(me, keyed)->flags & TYF_NEVER)) parts.len = 0;
         u32 cap = 0;
         for (u32 p = 0; p < parts.len; p++) {
             Ty const* part = ty_apparent_type(me, parts.data[p]);
