@@ -1,0 +1,28 @@
+//// [test/cases/ttttParameterModifierReservedName.ts] ////
+
+=== ttttParameterModifierReservedName.ts ===
+// After a parameter's modifiers a reserved word is the name tsc's parseBindingIdentifier rejects: TS1359 (mutation
+// testing seed 20261101, contextualParamTypeVsNestedReturnTypeInference4: `declare function` where a parameter was expected)
+declare function a(x: number,
+>a : (x: number, : any) => any
+>x : number
+
+declare function b(): void;
+> : any
+>b : () => void
+
+declare function c(public function): void;
+>c : (: any) => any
+> : any
+> : () => any
+>void : undefined
+> : any
+
+type F = (function) => void;
+>F : function
+>void : undefined
+> : any
+
+function d(class) {}
+>d : () => any
+

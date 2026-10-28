@@ -7617,6 +7617,11 @@ static bool parse_function_args_inner(
                     vec_expr_drop(&decorators);
                     if (list_abort_or_skip(&p, PARSING_PARAMETERS)) break;
                     continue;
+                } else if (tok_is_word(tok_peek(&p)) && *p.pos != '#' && is_reserved_word((csview){ p.pos, tok_peek(&p).end - p.pos })) {
+                    // After modifiers or decorators a reserved word is the name tsc's parseBindingIdentifier rejects:
+                    // TS1359, the name missing (`declare function` where a parameter was expected)
+                    expect_non_reserved_identifier(&p, &initializer.binding.content_span);
+                    initializer.binding.tag = BINDING_IDENTIFIER;
                 } else {
                     // `(...)`, `(@dec)`: tsc's parseParameter with a missing name
                     parse_error(&p, span_from_token_or_eof(&p), 1003, "Identifier expected.");

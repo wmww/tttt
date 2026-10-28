@@ -51,7 +51,7 @@ Each one mutant:
   with `initialParams?: Omit<T['params'], ...>` against `T['params']`. A generic mapped type is no empty object (tsc's
   isEmptyObjectType: !isGenericMappedType), so tryMergeUnionOfObjectTypeAndEmptyObject makes the union with undefined
   an optional copy of its known properties (none): the literal is `{ cursor: ... }`, not `Omit<...> & {...}`.
-  spreads_into_nothing() took the mapped type for empty (ttttSpreadGenericMappedOptional). [fixed bun8-7] The other
+  spreads_into_nothing() took the mapped type for empty (ttttSpreadGenericMappedOptional). [fixed 361e741de] The other
   flagflip cells: vue pluginScoped.ts (TS7006 x8 cells, tsgo_divergences.md's runaway), zod sloppy/nosnc TS2344->TS2589
   (depth-limit noise, tsgo_divergences.md). [design]
 

@@ -512,10 +512,15 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   parse-broken type parameter list; ttttInstantiationExpressionInterface). [fixed a93c7044d]
 - Mutation testing seed 20261101 (2000 mutants, 3 errors-component differences; `--syntax` 14, 3 render) leaves:
   infiniteConstraints2 (missing TS2589), noInferCommonPropertyCheck1 (TS2345 text), arrayFrom again (above), and on
-  `--syntax` es6ModuleInternalNamedImports2 (+TS2303), contextualParamTypeVsNestedReturnTypeInference4 (TS1359 ->
-  TS1003), declarationEmitOptionalMethod (+TS1200), conditionalPromptInference (-TS2300),
-  contextualParamTypeVsNestedReturnTypeInference1 (-TS1390), destructuringObjectBindingPatternAndAssignment4 (TS1005
-  text x2). Unlooked at. [open]
+  `--syntax` es6ModuleInternalNamedImports2 (+TS2303), declarationEmitOptionalMethod (+TS1200),
+  conditionalPromptInference (-TS2300), destructuringObjectBindingPatternAndAssignment4 (TS1005 text x2), and
+  contextualParamTypeVsNestedReturnTypeInference1: in a type literal broken by a missing `}>`, `g(Foo, h(function ()
+  {` is tsc's method `g` whose list aborts at `(`, then a call signature `(function` whose list reports TS1390 and
+  aborts at `function` (a type member start), TS7020; tttt drops that call signature (no TS7020/TS1390/TS7031 x2).
+  [open]
+- After a parameter's modifiers a reserved word is TS1359 (parseBindingIdentifier), not TS1003: `declare function`
+  where a parameter was expected (seed 20261101, contextualParamTypeVsNestedReturnTypeInference4;
+  ttttParameterModifierReservedName). [fixed bun8-8]
 - Class member TS1171/TS1166/TS1168 after the member's own modifier or signature grammar errors (tsgo's
   checkGrammarModifiers || checkGrammarProperty/Method/Accessor chains: TS1028, TS1029, TS1030, TS1031, TS1244...,
   then a method's or accessor's parameter list, `use strict` parameters, accessor and generator checks): the parser
