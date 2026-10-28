@@ -1,0 +1,30 @@
+//// [test/cases/ttttListEndOfFile.ts] ////
+
+=== a.ts ===
+type T<A
+>T : any
+
+=== b.ts ===
+let x: { [k: string
+>x : { [k: string]: any; }
+>k : string
+
+=== c.ts ===
+const {
+    a = 1,
+>a : any
+>1 : 1
+
+    f = a  // error
+>f : any
+>a : any
+
+=== d.ts ===
+const [
+  b = 1,
+>b : 1
+>1 : 1
+
+  c
+>c : any
+

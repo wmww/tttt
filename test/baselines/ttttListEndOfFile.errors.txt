@@ -1,0 +1,33 @@
+a.ts(1,9): error TS1005: '>' expected.
+b.ts(1,20): error TS1005: ']' expected.
+c.ts(2,5): error TS7022: 'a' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+c.ts(3,20): error TS1005: '}' expected.
+d.ts(3,3): error TS7031: Binding element 'c' implicitly has an 'any' type.
+d.ts(4,1): error TS1005: ']' expected.
+
+
+==== a.ts (1 errors) ====
+    type T<A
+            
+!!! error TS1005: '>' expected.
+==== b.ts (1 errors) ====
+    let x: { [k: string
+                       
+!!! error TS1005: ']' expected.
+==== c.ts (2 errors) ====
+    const {
+        a = 1,
+        ~
+!!! error TS7022: 'a' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+        f = a  // error
+                       
+!!! error TS1005: '}' expected.
+==== d.ts (2 errors) ====
+    const [
+      b = 1,
+      c
+      ~
+!!! error TS7031: Binding element 'c' implicitly has an 'any' type.
+    
+    
+!!! error TS1005: ']' expected.

@@ -2991,7 +2991,9 @@ static bool parse_generic_decl(Parser* parent, TypeParamOwner owner, Generic* re
         // (tsc's isListTerminator for type parameters: tokens other than `>` end the list for better recovery, the
         // `>` is what's missing then)
         Tok next = tok_peek(&p);
-        if (*p.pos == '>' || *p.pos == '(' || *p.pos == '{' || tok_is(next, "extends") || tok_is(next, "implements")) {
+        if (*p.pos == '>' || *p.pos == '(' || *p.pos == '{' || tok_is(next, "extends") || tok_is(next, "implements") ||
+            at_eof(&p, p.pos)
+        ) {
             break;
         }
         expect_char(&p, ',');
@@ -9409,7 +9411,7 @@ static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
         count++;
 
         trailing_comma = span_null;
-        if (*p.pos == ']') break;
+        if (*p.pos == ']' || at_eof(&p, p.pos)) break; // (an end of file ends every list: tsc's isListTerminator)
         if (hop_char(&p, ',')) {
             trailing_comma = span_from_previous_char(&p);
             hop_whitespace(&p);
@@ -14156,7 +14158,7 @@ static bool parse_binding_content_inner(Parser* parent, Binding* ret) {
             }
             hop_whitespace(&p);
 
-            ignore( *p.pos == ']' || expect_char(&p, ',') );
+            ignore( *p.pos == ']' || at_eof(&p, p.pos) || expect_char(&p, ',') ); // (tsc's isListTerminator: the end of file too)
             hop_whitespace(&p);
         }
         list_leave(&p, saved_context);
@@ -14318,7 +14320,7 @@ static bool parse_binding_content_inner(Parser* parent, Binding* ret) {
         object_item_done:
             hop_whitespace(&p);
 
-            ignore( *p.pos == '}' || expect_char(&p, ',') );
+            ignore( *p.pos == '}' || at_eof(&p, p.pos) || expect_char(&p, ',') );
             hop_whitespace(&p);
         }
         list_leave(&p, saved_context);

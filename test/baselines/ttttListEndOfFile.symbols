@@ -1,0 +1,30 @@
+//// [test/cases/ttttListEndOfFile.ts] ////
+
+=== a.ts ===
+type T<A
+>T : Symbol(T, Decl(a.ts, 0, 0))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+> : Symbol(unknown)
+
+=== b.ts ===
+let x: { [k: string
+>x : Symbol(x, Decl(b.ts, 0, 3))
+>k : Symbol(k, Decl(b.ts, 0, 10))
+
+=== c.ts ===
+const {
+    a = 1,
+>a : Symbol(a, Decl(c.ts, 0, 7))
+
+    f = a  // error
+>f : Symbol(f, Decl(c.ts, 1, 10))
+>a : Symbol(a, Decl(c.ts, 0, 7))
+
+=== d.ts ===
+const [
+  b = 1,
+>b : Symbol(b, Decl(d.ts, 0, 7))
+
+  c
+>c : Symbol(c, Decl(d.ts, 1, 8))
+
