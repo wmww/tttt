@@ -1,0 +1,100 @@
+//// [test/cases/ttttAnnotatedPatternInitializerContext.ts] ////
+
+=== ttttAnnotatedPatternInitializerContext.ts ===
+// origin: npm ChatbotXIO/ChatbotX @ a4ab684 apps/builder (tsconfig.bench.json), src/features/ads/components/conversion-events-view.tsx:255
+// flip: no
+// A name of an annotated pattern asked for before its declaration is checked (a return expression inferred while a
+// generic call infers) checks the initializer with the written type as its context, not without one
+declare function useMemo<T>(factory: () => T): T;
+>useMemo : <T>(factory: () => T) => T
+>factory : () => T
+
+type TC = { id: string }
+>TC : TC
+>id : string
+
+declare const c: boolean;
+>c : boolean
+
+const r1 = useMemo(() => { const { fk }: { fk: (t: TC) => boolean } = c ? { fk: (t) => !t.id } : { fk: (t) => !t.id }; return fk });
+>r1 : (t: TC) => boolean
+>useMemo(() => { const { fk }: { fk: (t: TC) => boolean } = c ? { fk: (t) => !t.id } : { fk: (t) => !t.id }; return fk }) : (t: TC) => boolean
+>useMemo : <T>(factory: () => T) => T
+>() => { const { fk }: { fk: (t: TC) => boolean } = c ? { fk: (t) => !t.id } : { fk: (t) => !t.id }; return fk } : () => (t: TC) => boolean
+>fk : (t: TC) => boolean
+>fk : (t: TC) => boolean
+>t : TC
+>c ? { fk: (t) => !t.id } : { fk: (t) => !t.id } : { fk: (t: TC) => boolean; }
+>c : boolean
+>{ fk: (t) => !t.id } : { fk: (t: TC) => boolean; }
+>fk : (t: TC) => boolean
+>(t) => !t.id : (t: TC) => boolean
+>t : TC
+>!t.id : boolean
+>t.id : string
+>t : TC
+>id : string
+>{ fk: (t) => !t.id } : { fk: (t: TC) => boolean; }
+>fk : (t: TC) => boolean
+>(t) => !t.id : (t: TC) => boolean
+>t : TC
+>!t.id : boolean
+>t.id : string
+>t : TC
+>id : string
+>fk : (t: TC) => boolean
+
+const r2 = useMemo(() => { const { fk }: { fk: (t: TC) => boolean } = { fk: (t) => !t.id }; return fk });
+>r2 : (t: TC) => boolean
+>useMemo(() => { const { fk }: { fk: (t: TC) => boolean } = { fk: (t) => !t.id }; return fk }) : (t: TC) => boolean
+>useMemo : <T>(factory: () => T) => T
+>() => { const { fk }: { fk: (t: TC) => boolean } = { fk: (t) => !t.id }; return fk } : () => (t: TC) => boolean
+>fk : (t: TC) => boolean
+>fk : (t: TC) => boolean
+>t : TC
+>{ fk: (t) => !t.id } : { fk: (t: TC) => boolean; }
+>fk : (t: TC) => boolean
+>(t) => !t.id : (t: TC) => boolean
+>t : TC
+>!t.id : boolean
+>t.id : string
+>t : TC
+>id : string
+>fk : (t: TC) => boolean
+
+const r3 = useMemo(() => { const x: { fk: (t: TC) => boolean } = { fk: (t) => !t.id }; return x });
+>r3 : { fk: (t: TC) => boolean; }
+>useMemo(() => { const x: { fk: (t: TC) => boolean } = { fk: (t) => !t.id }; return x }) : { fk: (t: TC) => boolean; }
+>useMemo : <T>(factory: () => T) => T
+>() => { const x: { fk: (t: TC) => boolean } = { fk: (t) => !t.id }; return x } : () => { fk: (t: TC) => boolean; }
+>x : { fk: (t: TC) => boolean; }
+>fk : (t: TC) => boolean
+>t : TC
+>{ fk: (t) => !t.id } : { fk: (t: TC) => boolean; }
+>fk : (t: TC) => boolean
+>(t) => !t.id : (t: TC) => boolean
+>t : TC
+>!t.id : boolean
+>t.id : string
+>t : TC
+>id : string
+>x : { fk: (t: TC) => boolean; }
+
+const r4 = useMemo(() => { const { fk }: { fk: (t: TC) => boolean } = { fk: (t) => !t.id }; return 1 });
+>r4 : number
+>useMemo(() => { const { fk }: { fk: (t: TC) => boolean } = { fk: (t) => !t.id }; return 1 }) : number
+>useMemo : <T>(factory: () => T) => T
+>() => { const { fk }: { fk: (t: TC) => boolean } = { fk: (t) => !t.id }; return 1 } : () => number
+>fk : (t: TC) => boolean
+>fk : (t: TC) => boolean
+>t : TC
+>{ fk: (t) => !t.id } : { fk: (t: TC) => boolean; }
+>fk : (t: TC) => boolean
+>(t) => !t.id : (t: TC) => boolean
+>t : TC
+>!t.id : boolean
+>t.id : string
+>t : TC
+>id : string
+>1 : 1
+

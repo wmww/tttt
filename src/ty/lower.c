@@ -4171,8 +4171,15 @@ static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
         Expr const* value = initialized_binding_value(c_container_of(parent->source, InitializedBinding, lazy_type));
         // (tsc's getTypeOfInitializer: getTypeOfExpression, its quick type first, a call of one non-generic signature
         // its return type without the arguments checked: `const { use }: R = make((p) => use())` isn't circular)
+        // (Else checked with the written type as its context, as tsc's checkExpression finds it through the parents: as
+        // the declaration checks it, not without context, which would type its functions' parameters any for good when
+        // a name is asked for before the declaration is checked, `const { f }: { f: (t: T) => boolean } = { f: (t) =>
+        // ... }; return f` in a function a generic call infers from, ChatbotX's TS7006)
         Ty const* initializer = value->tag != EXPR_IMPLICIT_ANY ? ty_quick_expr_type(me, value, false) : nullptr;
-        if (value->tag != EXPR_IMPLICIT_ANY && !initializer) initializer = ty_expr_type(me, value);
+        // (A variable's: a parameter's evaluation is its whole type, its elements' defaults included, a cycle)
+        if (value->tag != EXPR_IMPLICIT_ANY && !initializer) {
+            initializer = binding_is_parameter(parent) ? ty_expr_type(me, value) : lazy_type_get(parent->source);
+        }
         if (value->tag != EXPR_IMPLICIT_ANY && !ty_can_equal_undefined(me, initializer)) {
             object = ty_without_undefined(me, object);
         }

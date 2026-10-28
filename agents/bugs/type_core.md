@@ -64,6 +64,13 @@ passing tests).
   [open]
 
 ## Relations, instantiation, reduction
+- (cor, 2026-10-28) An interface whose base is a mapped type carries TYF_COULD_CONTAIN_TYPE_VARIABLES where tsc's
+  couldContainTypeVariables is false (a non-generic interface reference has no type arguments): `interface MenuProps
+  { open(): void } interface P extends Partial<MenuProps> { x?: boolean }`, then `P & Deps` has the flag where
+  `MenuProps & Deps` doesn't. It made expand_generic_homomorphic() (members.c) give `Readonly<Props>` with `Props
+  extends P & Deps` no properties (freelens, worked around in df95ec2f5 by also asking intersection_has_generic_part();
+  repro ttttMappedOverIntersectionWithMappedBase). Other code that tests the flag on such types takes slower or
+  generic paths; where lowering sets it for these interfaces wasn't chased. [open]
 - (det3, 2026-10-24) An object spread after one with an index signature kept it when what was spread second was
   `{} | undefined` (tsc's tryMergeUnionOfObjectTypeAndEmptyObject returns the `{}`, whose missing index signature
   getUnionIndexInfos then drops) or a union member undefined of the cross product (getSpreadType merges undefined like

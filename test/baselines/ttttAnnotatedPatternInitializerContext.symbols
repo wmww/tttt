@@ -1,0 +1,82 @@
+//// [test/cases/ttttAnnotatedPatternInitializerContext.ts] ////
+
+=== ttttAnnotatedPatternInitializerContext.ts ===
+// origin: npm ChatbotXIO/ChatbotX @ a4ab684 apps/builder (tsconfig.bench.json), src/features/ads/components/conversion-events-view.tsx:255
+// flip: no
+// A name of an annotated pattern asked for before its declaration is checked (a return expression inferred while a
+// generic call infers) checks the initializer with the written type as its context, not without one
+declare function useMemo<T>(factory: () => T): T;
+>useMemo : Symbol(useMemo, Decl(ttttAnnotatedPatternInitializerContext.ts, 0, 0))
+>T : Symbol(T, Decl(ttttAnnotatedPatternInitializerContext.ts, 4, 25))
+>factory : Symbol(factory, Decl(ttttAnnotatedPatternInitializerContext.ts, 4, 28))
+>T : Symbol(T, Decl(ttttAnnotatedPatternInitializerContext.ts, 4, 25))
+>T : Symbol(T, Decl(ttttAnnotatedPatternInitializerContext.ts, 4, 25))
+
+type TC = { id: string }
+>TC : Symbol(TC, Decl(ttttAnnotatedPatternInitializerContext.ts, 4, 49))
+>id : Symbol(id, Decl(ttttAnnotatedPatternInitializerContext.ts, 5, 11))
+
+declare const c: boolean;
+>c : Symbol(c, Decl(ttttAnnotatedPatternInitializerContext.ts, 6, 13))
+
+const r1 = useMemo(() => { const { fk }: { fk: (t: TC) => boolean } = c ? { fk: (t) => !t.id } : { fk: (t) => !t.id }; return fk });
+>r1 : Symbol(r1, Decl(ttttAnnotatedPatternInitializerContext.ts, 7, 5))
+>useMemo : Symbol(useMemo, Decl(ttttAnnotatedPatternInitializerContext.ts, 0, 0))
+>fk : Symbol(fk, Decl(ttttAnnotatedPatternInitializerContext.ts, 7, 34))
+>fk : Symbol(fk, Decl(ttttAnnotatedPatternInitializerContext.ts, 7, 42))
+>t : Symbol(t, Decl(ttttAnnotatedPatternInitializerContext.ts, 7, 48))
+>TC : Symbol(TC, Decl(ttttAnnotatedPatternInitializerContext.ts, 4, 49))
+>c : Symbol(c, Decl(ttttAnnotatedPatternInitializerContext.ts, 6, 13))
+>fk : Symbol(fk, Decl(ttttAnnotatedPatternInitializerContext.ts, 7, 75))
+>t : Symbol(t, Decl(ttttAnnotatedPatternInitializerContext.ts, 7, 81))
+>t.id : Symbol(id, Decl(ttttAnnotatedPatternInitializerContext.ts, 5, 11))
+>t : Symbol(t, Decl(ttttAnnotatedPatternInitializerContext.ts, 7, 81))
+>id : Symbol(id, Decl(ttttAnnotatedPatternInitializerContext.ts, 5, 11))
+>fk : Symbol(fk, Decl(ttttAnnotatedPatternInitializerContext.ts, 7, 98))
+>t : Symbol(t, Decl(ttttAnnotatedPatternInitializerContext.ts, 7, 104))
+>t.id : Symbol(id, Decl(ttttAnnotatedPatternInitializerContext.ts, 5, 11))
+>t : Symbol(t, Decl(ttttAnnotatedPatternInitializerContext.ts, 7, 104))
+>id : Symbol(id, Decl(ttttAnnotatedPatternInitializerContext.ts, 5, 11))
+>fk : Symbol(fk, Decl(ttttAnnotatedPatternInitializerContext.ts, 7, 34))
+
+const r2 = useMemo(() => { const { fk }: { fk: (t: TC) => boolean } = { fk: (t) => !t.id }; return fk });
+>r2 : Symbol(r2, Decl(ttttAnnotatedPatternInitializerContext.ts, 8, 5))
+>useMemo : Symbol(useMemo, Decl(ttttAnnotatedPatternInitializerContext.ts, 0, 0))
+>fk : Symbol(fk, Decl(ttttAnnotatedPatternInitializerContext.ts, 8, 34))
+>fk : Symbol(fk, Decl(ttttAnnotatedPatternInitializerContext.ts, 8, 42))
+>t : Symbol(t, Decl(ttttAnnotatedPatternInitializerContext.ts, 8, 48))
+>TC : Symbol(TC, Decl(ttttAnnotatedPatternInitializerContext.ts, 4, 49))
+>fk : Symbol(fk, Decl(ttttAnnotatedPatternInitializerContext.ts, 8, 71))
+>t : Symbol(t, Decl(ttttAnnotatedPatternInitializerContext.ts, 8, 77))
+>t.id : Symbol(id, Decl(ttttAnnotatedPatternInitializerContext.ts, 5, 11))
+>t : Symbol(t, Decl(ttttAnnotatedPatternInitializerContext.ts, 8, 77))
+>id : Symbol(id, Decl(ttttAnnotatedPatternInitializerContext.ts, 5, 11))
+>fk : Symbol(fk, Decl(ttttAnnotatedPatternInitializerContext.ts, 8, 34))
+
+const r3 = useMemo(() => { const x: { fk: (t: TC) => boolean } = { fk: (t) => !t.id }; return x });
+>r3 : Symbol(r3, Decl(ttttAnnotatedPatternInitializerContext.ts, 9, 5))
+>useMemo : Symbol(useMemo, Decl(ttttAnnotatedPatternInitializerContext.ts, 0, 0))
+>x : Symbol(x, Decl(ttttAnnotatedPatternInitializerContext.ts, 9, 32))
+>fk : Symbol(fk, Decl(ttttAnnotatedPatternInitializerContext.ts, 9, 37))
+>t : Symbol(t, Decl(ttttAnnotatedPatternInitializerContext.ts, 9, 43))
+>TC : Symbol(TC, Decl(ttttAnnotatedPatternInitializerContext.ts, 4, 49))
+>fk : Symbol(fk, Decl(ttttAnnotatedPatternInitializerContext.ts, 9, 66))
+>t : Symbol(t, Decl(ttttAnnotatedPatternInitializerContext.ts, 9, 72))
+>t.id : Symbol(id, Decl(ttttAnnotatedPatternInitializerContext.ts, 5, 11))
+>t : Symbol(t, Decl(ttttAnnotatedPatternInitializerContext.ts, 9, 72))
+>id : Symbol(id, Decl(ttttAnnotatedPatternInitializerContext.ts, 5, 11))
+>x : Symbol(x, Decl(ttttAnnotatedPatternInitializerContext.ts, 9, 32))
+
+const r4 = useMemo(() => { const { fk }: { fk: (t: TC) => boolean } = { fk: (t) => !t.id }; return 1 });
+>r4 : Symbol(r4, Decl(ttttAnnotatedPatternInitializerContext.ts, 10, 5))
+>useMemo : Symbol(useMemo, Decl(ttttAnnotatedPatternInitializerContext.ts, 0, 0))
+>fk : Symbol(fk, Decl(ttttAnnotatedPatternInitializerContext.ts, 10, 34))
+>fk : Symbol(fk, Decl(ttttAnnotatedPatternInitializerContext.ts, 10, 42))
+>t : Symbol(t, Decl(ttttAnnotatedPatternInitializerContext.ts, 10, 48))
+>TC : Symbol(TC, Decl(ttttAnnotatedPatternInitializerContext.ts, 4, 49))
+>fk : Symbol(fk, Decl(ttttAnnotatedPatternInitializerContext.ts, 10, 71))
+>t : Symbol(t, Decl(ttttAnnotatedPatternInitializerContext.ts, 10, 77))
+>t.id : Symbol(id, Decl(ttttAnnotatedPatternInitializerContext.ts, 5, 11))
+>t : Symbol(t, Decl(ttttAnnotatedPatternInitializerContext.ts, 10, 77))
+>id : Symbol(id, Decl(ttttAnnotatedPatternInitializerContext.ts, 5, 11))
+

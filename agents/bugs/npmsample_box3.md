@@ -161,7 +161,7 @@ for flips); a separate file so the three boxes never conflict.
   set from the clone's lockfile:
   `function RuleBuilder({}: RuleBuilderProps) { const templateOptions = useMemo(() => { const { list }: {
   fkMatcher: (template: TemplateCandidate) => boolean } = channel === "messenger" ? {} : { fkMatcher: (template) =>
-  template.integrationId === selectedIntegrationId }; return list }, []) }`. [open]
+  template.integrationId === selectedIntegrationId }; return list }, []) }`. Probably fixed by cor's ChatbotX fix (2026-10-28, npmsample.md: the same shape there, an annotated pattern's initializer checked without context when a name is asked for first); not rechecked on this project. [open]
 - Large seed 20261401, rocicorp/mono@main packages/zero-cache: tsgo 0 errors, tttt 42 (TS2339, TS2322, TS2345,
   TS2349, TS2532, TS2722). An array destructuring of a tuple union, `const [tag] = change; switch (tag) { case
   'begin': change[2]... }`, narrows `change` by the destructured tuple discriminant in tsgo (the binding-element
