@@ -10,13 +10,14 @@
 
 // TTTT_GRAPH_STATS' counters: global, so every worker's increment of one would take the same cache line exclusively
 // (several million a run, from every core). Counted only when the stats are printed
-static bool graph_stats_on;
+bool graph_stats_on;
 // (The counters are u64, some of them _Atomic: the cast lets one builtin serve both under clang too)
 #define GRAPH_STAT_ADD(p, n, order) do { if (graph_stats_on) __atomic_fetch_add((u64*)(p), (n), __ATOMIC_RELAXED); } while (0)
 
 
 typedef struct KindStats {
     u64 shared_hits; // Lookups a checker's own table missed and the shared one had
+    u64 shared_misses; // Lookups both missed (a shared probe that found nothing)
     u64 published; // Entries published
     u64 tainted; // Entries of memo kinds kept private because their computation was tainted
     u64 scratch; // Entries of scratch kinds (never published)
@@ -252,11 +253,12 @@ void graph_drop(TyGraph* me) {
 
 // Statistics
 
-void graph_count_shared_hit(InternTable const* table, u64 const* words, u32 count) {
+void graph_count_shared(InternTable const* table, u64 const* words, u32 count, bool hit) {
     Checker* checker = current_checker;
     if (!checker || !checker->graph || !count) return;
     u32 kind = table == &checker->intersection_props ? GRAPH_KIND_INTERSECTION_PROPS : (u32)(words[0] & 255);
-    GRAPH_STAT_ADD(&checker->graph->stats[kind].shared_hits, 1, __ATOMIC_RELAXED);
+    KindStats* stats = &checker->graph->stats[kind];
+    GRAPH_STAT_ADD(hit ? &stats->shared_hits : &stats->shared_misses, 1, __ATOMIC_RELAXED);
 }
 
 // Publication
@@ -550,7 +552,8 @@ void const* graph_link_get(TyGraph const* me, u32 kind, void const* subject) {
     // (Alone on the graph, a checker has its own identities, the only ones published: ty_link_publish())
     if (__atomic_load_n(&my checkers, __ATOMIC_RELAXED) == 1) return nullptr;
     void const* ret = shared_links_get(my node_links, graph_link_key(kind, subject));
-    if (ret) GRAPH_STAT_ADD(&((TyGraph*)me)->stats[256 + (kind & 255)].shared_hits, 1, __ATOMIC_RELAXED);
+    KindStats* stats = &((TyGraph*)me)->stats[256 + (kind & 255)];
+    GRAPH_STAT_ADD(ret ? &stats->shared_hits : &stats->shared_misses, 1, __ATOMIC_RELAXED);
     return ret;
 }
 
@@ -1021,25 +1024,26 @@ void graph_print_stats(TyGraph const* me) {
         Checker const* c = my workers[w];
         if (c && c->instantiation_limit_hits) eprintln("graph: worker ", w, " instantiation limit hits ", c->instantiation_limit_hits);
     }
-    eprintln("graph: kind  shared-hits  published  tainted  scratch  unfinished");
+    eprintln("graph: kind  shared-hits  shared-misses  published  tainted  scratch  unfinished");
     KindStats total = {0};
     for (u32 k = 0; k < GRAPH_STAT_KINDS; k++) {
         KindStats const* s = &my stats[k];
-        if (!s->shared_hits && !s->published && !s->tainted && !s->scratch && !s->unfinished) continue;
+        if (!s->shared_hits && !s->shared_misses && !s->published && !s->tainted && !s->scratch && !s->unfinished) continue;
         char const* name = k == GRAPH_STAT_MEMOS ? "declaration memos" : kind_name(k & 255);
         char other[32];
         if (!name) {
             snprintf(other, sizeof other, "kind %u", k & 255);
             name = other;
         }
-        eprintln("graph: ", k >= 256 && k != GRAPH_STAT_MEMOS ? "N " : "  ", name, " ", s->shared_hits, " ", s->published,
+        eprintln("graph: ", k >= 256 && k != GRAPH_STAT_MEMOS ? "N " : "  ", name, " ", s->shared_hits, " ", s->shared_misses, " ", s->published,
             " ", s->tainted, " ", s->scratch, " ", s->unfinished);
         total.shared_hits += s->shared_hits;
+        total.shared_misses += s->shared_misses;
         total.published += s->published;
         total.tainted += s->tainted;
         total.scratch += s->scratch;
         total.unfinished += s->unfinished;
     }
-    eprintln("graph: total ", total.shared_hits, " ", total.published, " ", total.tainted, " ", total.scratch, " ",
+    eprintln("graph: total ", total.shared_hits, " ", total.shared_misses, " ", total.published, " ", total.tainted, " ", total.scratch, " ",
         total.unfinished);
 }

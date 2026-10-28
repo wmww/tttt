@@ -17,6 +17,10 @@ scripts/sharedgraph/sgcheck_projects.txt, load 8-15): main at ab39dce20 12 of 34
   and KEY_PROP_WRITE_TYPE's null "none" written into another checker's published block (intern_set()), fixed by
   04d2384d9; ty_reduced_slow()'s second KEY_REDUCED_UNION store into a possibly published block, fixed by 0fe39de79.
   TSan clean on drizzle, effect, excalidraw, zod at T4/T8 after. [fixed 04d2384d9]
+- **excalidraw K8 round robin**: `+packages/element/src/bounds.ts(1432,57): error TS2345: Argument of type
+  'ExcalidrawElement' is not assignable to parameter of type 'null | undefined'.` in 1 of 30 flagged runs (sgcheck
+  `-f '^excalidraw$' -k 8 --deals rr -n 30`) at main 2c389b213 and the same with wt-premium's 75f79d714, 0 of 40 at
+  K8/K16 both deals in another batch; not in the census above. Mechanism not looked at; no repro (a rate). [note]
 - **drizzle residue C** (sharing_design.md §4): the Gel/MySql query builders' `execute` chains (TS2430/TS2416 at
   src/gel-core/query-builders/delete.ts(98,18), insert.ts(198,18), update.ts(280,18), mysql2/session.ts(281,17))
   missing or elaborated differently (`Promise<unknown>`). 5/10 K8 runs with the scheduler's deal, 0/30 with the round

@@ -147,6 +147,10 @@ corpora. Load 11-28 (two other workers): walls are noisy (a plain dokploy/apps/a
   shared graph's own deal in the one run checked); every other project was byte-identical in all runs. (2026-10-29, worker sg: auth-api's was a private-name race,
   fixed; better-drizzle's "plain too" was TTTT_DUP_DEAL panicking in plain's one-checker rerun, and the flag's own
   difference its missing rerun, both fixed: agents/bugs/shared_graph.md)
+- The premium's attribution (2026-10-29, notes/shared_graph.md "The premium, attributed"): not coherence. At K8 the
+  corpora's +12-19% is about half machinery instructions (+13-15% of plain's) and half cache misses of reading one
+  shared graph (x1.08-1.24 CPU per instruction already at `--threads 1 --checkers 8`), with variance re-measurement next
+  and cross-core effects last (x0.99-1.12); dokploy's x1.6 at T8 is races (564-584k words computed by a loser).
 - Verdict: file-granular sharing wins on about half the hub projects (by 5-49%, the i18n-style clusters most) and
   loses on 11 of 13 corpora by the premium (+15% CPU median). It would pay only with the premium bought down, as
   the first half of this note concluded; a per-project switch is a heuristic the human has ruled out.

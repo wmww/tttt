@@ -402,12 +402,12 @@ static bool intern_probes(InternTable const* table, u64 const* words, u32 count)
 // --shared-graph: a key the checker's own table doesn't have, in the graph's (ty/graph.h). Null if none
 [[gnu::noinline]] static void const** intern_shared_find(InternTable const* table, u64 hash, u64 const* words, u32 count) {
     void const** block = intern_probes(table, words, count) ? shared_table_find(table->others, hash, words, count) : nullptr;
+    if (__builtin_expect(graph_stats_on, 0)) graph_count_shared(table, words, count, block != nullptr);
     if (!block) {
         // (A memo kind's computation may start here: graph_memo_log_put() takes the taint counter from then)
         graph_memo_note_miss(current_checker, table, hash, words, count);
         return nullptr;
     }
-    graph_count_shared_hit(table, words, count);
 #ifdef TTTT_DEBUG_IDS
     debug_check_type_value(table, words, count, block, "shared hit");
 #endif

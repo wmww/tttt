@@ -178,7 +178,9 @@ void graph_taint_put(InternTable const* table, u64 hash, void const** block, u32
 void graph_taint_read_block(void const* const* block);
 void graph_count_lost(TyGraph* me, u32 kind); // An identity another checker published first (intern_publish())
 void const* graph_link_insert(TyGraph* me, u32 kind, void const* subject, void const* value); // First wins
-void graph_count_shared_hit(InternTable const* table, u64 const* words, u32 count); // (checker.c)
+// TTTT_GRAPH_STATS' per-kind shared probe counts (checker.c intern_shared_find(), called only with the stats on)
+extern bool graph_stats_on;
+void graph_count_shared(InternTable const* table, u64 const* words, u32 count, bool hit);
 
 // A shadowed worker may hand over to a fresh worker at its file's end (plan 86 4f: threads on, room for another worker
 // number); the retired checker is kept to the program's end (the graph holds what it made)

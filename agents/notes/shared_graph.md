@@ -109,7 +109,9 @@ plain / **0.314 flag**; zod 0.161 / 0.153, 0.239 / **0.381**; effect 0.163 / 0.1
 instruction at K12 costs 1.2-1.6x a plain K12 one (2.0-2.4x a K1 one; plain K12 is 1.4-1.6x from all-core clocks).
 At K4 the premium is 1.19x on separate cores, 1.14x on SMT siblings. Cachegrind gives the flag *fewer* LL misses than
 plain (drizzle 17.1 M vs 24.2 M) and context switches are ~1000 a run, so it is neither working set nor sleeping:
-inferred to be lines written by one core and read by others (shared tables, published objects, CAS'd words). Not
+inferred to be lines written by one core and read by others (shared tables, published objects, CAS'd words). (2026-10-29: not so. That cachegrind run simulated one cache for all K12 threads, where plain's twelve graphs
+compete; at one thread and K8 the flag has 1.7x plain's LL misses and the per-instruction premium is already there:
+"The premium, attributed" below.) Not
 measured: this VM has no performance counters. Effect's critical file Schema.ts: 469 M instructions plain, 549 M flag,
 117 ms plain vs 162-184 ms flag at K12. Net: drizzle's flag per-file sum equals plain's on 37% fewer instructions;
 zod and effect lose.
@@ -118,6 +120,109 @@ zod and effect lose.
 sharing cheap. Even a perfect 1.0x work ratio gives drizzle only -20% per-file sum and effect a loss. The flag wins
 only where plain recycling thrashes: dokploy and monkeytype run 2.2-2.5x faster (measurements.md "The thrashers with
 the flag").
+
+## The premium, attributed (2026-10-29, worker premium)
+The question (hub_regime.md): the flag loses 11 of 13 corpora by about +15% check CPU at K8. Is that (a) extra
+instructions on the flag's paths, (b) cache-coherence stalls, or (c) lost work? Measured on this box (16 vCPU EPYC
+Turin, 8 cores, 1 MB L2 a core, 32 MB L3, no performance counters) at 2c389b213. Instructions: callgrind, release build
+with `-g` (same code), check phase only (program_typecheck plus the worker threads). CPU: the typecheck phase's process
+CPU from `--time`, best of 5 interleaved at load 1-3. Seven projects: zod (tsconfig.test), drizzle, effect, xstate,
+react (the losers) and dokploy/apps/dokploy, openbot/packages/i18n (the winners). Scripts and raw data were in
+/tmp/premium-cg (cpu.py, buckets.py, prof.py: deleted; the method is below).
+
+**The method.** The flag's check CPU over plain's at K8 is (instructions flag/plain) x (CPU per instruction at ONE
+thread, `--threads 1 --checkers 8`, flag/plain) x (the concurrency factor: flag's T8/T1 CPU per instruction over
+plain's). At one thread no line is ever shared between cores, so the middle factor holds no coherence; what the third
+holds that isn't coherence is races (work a callgrind run, which serialises threads, doesn't show). At K1 the flag's
+CPU per instruction equals plain's (0.98-1.03): the K1 cost (+4-6%) is instructions only.
+
+| project | dup removed | (a) machinery instr | (c) lost work instr | instr flag/plain | CPU/instr at T1 | concurrency | check CPU flag/plain K8 |
+|---|---|---|---|---|---|---|---|
+| zod | -27% | +15% | +8.5% | 0.964 | x1.14 | x1.02 | 1.12 |
+| drizzle | -45% | +13% | +6.9% | 0.750 | x1.24 | x1.11 | 1.03 |
+| effect | -11% | +14% | +3.3% | 1.063 | x1.12 | x0.99 | 1.19 |
+| xstate | -30% | +13% | +14% | 0.972 | x1.08 | x1.12 | 1.18 |
+| react | -38% | +13% | +9.0% | 0.838 | x1.00 | x1.25 | 1.05 |
+| dokploy | -63% | +7% | +18% | 0.620 | x1.13 | x1.61 | 1.13 |
+| i18n | -71% | +3% | +16% | 0.485 | x1.13 | x1.06 | 0.58 |
+
+(Percentages are of plain K8's check instructions. "dup removed": plain K8's instructions beyond plain K1's, outside
+the machinery functions. "machinery": overlay.c's words, the shared tables and their mutexes, the memo log, flush and
+taint, the relation share, first-touch stamps, and memset, flag K8 minus plain K8 by function. "lost work": the rest
+of the flag's K8 instructions beyond plain K1's, of which flag K1 already has 0-1.3%.)
+
+What each column is:
+- **(a) machinery, +13-15% of the instructions on the corpora.** Top added functions over the seven at K8 (M
+  instructions): shared_table_find 1026, shared_table_insert 655, intern_shared_find 589, shared_links_get 372,
+  is_deeply_nested_stamped 311 (net of is_deeply_nested_max's saving, the stamps cost about half that), graph_memo_log_put
+  291, sw_finish 271, probe (the insert's) 263, shared_links_insert 242, sw_look_slow 216, pthread_mutex_lock 188,
+  intern_publish 183, memset 166 (the shared tables' growth: zeroed_table() of each doubled shard), graph_count_shared_hit
+  151 (a stats call made with the stats off), pthread_mutex_unlock 151, ty_stamp 147, graph_memo_flush 138, sw_claim
+  131. At K1 the top ones are sw_finish, the stamps, sw_look_slow, graph_memo_hit_cold, sw_claim.
+- **The CPU per instruction at one thread, x1.08-1.24, is the largest factor, and it is cache misses, not
+  coherence.** Sampled time (bench/timeline at 200 us, zod `--threads 1 --checkers 8`, 6 runs a side) against
+  callgrind's instructions per function: shared_table_find takes 0.66 ns an instruction and shared_links_get 0.74,
+  against 0.05-0.2 for the checker's own code; the two are +105 ms of the flag's +87 ms (the rest nets out). Cachegrind
+  at the same setting: LL read misses 2.30M plain, 3.93M flag; +0.63M in shared_table_find and +0.18M in
+  shared_table_insert, the other half spread over the relation and member code (ty_erased_signature, is_weak_type,
+  signatures_related...): reading types another checker made, which plain would have remade warm in its own arena. So
+  sharing trades cheap warm recomputation for cold reads: each shared probe is a random line of a table far bigger
+  than L2.
+- **(c) lost work, +3-18%.** At K8 the flag leaves almost no type duplication (types made K8/K1: zod 1.01, drizzle
+  1.00, effect 1.00, xstate 1.02-1.06, react 1.04, i18n 1.03; plain 1.44-4.77), but variance groups are re-measured by
+  each worker (`TTTT_VARIANCE_CENSUS` measurements K1 -> K8: zod 287 -> 1086, drizzle 666 -> 1336, effect 536 -> 937,
+  xstate 165 -> 887: the tainted groups of "The perf accounting"), and POISONed words are recomputed privately
+  (dokploy 47k computations).
+- **Races, natively.** callgrind serialises threads; natively at T8 (`TTTT_GRAPH_STATS`, 3 runs) words adopted
+  (computed in full by a worker that lost the race): zod 6-9k of 782k published, drizzle 5-9k, effect 11-33, xstate
+  20k of 154k, react 11-14k of 112k, i18n 11-12k of 105k, **dokploy 564-584k of 1.04M** (with relation pairs +40% and
+  types +40% over its T1 run). That is dokploy's x1.61: every worker builds the tRPC core at once (hub_regime.md).
+- **(b) coherence is bounded by the concurrency factor less the races: x0.99-1.02 on zod and effect, up to x1.11 on
+  drizzle and xstate.** It is the smallest of the three on every project. The earlier conclusion that the per-instruction
+  premium was cross-core traffic (this note's "perf accounting", sharing_design.md) is not supported: the premium is
+  there at one thread.
+
+**Verdict.** On the losing corpora the +12-19% is about half (a) machinery instructions and half the cache misses of
+reading a shared graph (the shared-table probes and other checkers' objects), with lost work (variance re-measurement)
+next and coherence last. Neither of the large two is a layout bug: they are what replacing a checker's own warm copy
+with one shared copy costs, per lookup. The flag wins where the duplication it removes is large (dokploy, i18n,
+drizzle: dup -45..-71%) and loses where it is small (effect -11%, zod -27%).
+
+**Cuts built (75f79d714):** an identity found in the shared table and a node link found in the shared links are kept in
+the checker's own tables (85-93% of shared identity hits repeated a key the same checker had found: zod's shared hits
+966k -> 240k); scratch kinds and the links' variances don't probe the shared table (15% of probes, all misses);
+KEY_PROP_MAPPED_TYPE (keyed by a Prop just made) doesn't probe. Output identical: quickgate --vs-main -k; sgcheck -k 4,8,16 both deals, 3 runs on the default list:
+6 of 1044 runs differ, all known residues at their rates (drizzle C 3 at K16 def, mikro-orm seeder 2 at K16 rr) or
+present on main too (excalidraw 1, bugs/shared_graph.md); TSan clean on drizzle, effect, excalidraw, zod at T4/T8; the
+-DTTTT_GRAPH_CHECKS build reports main's one site (kind 10) on the same four; the effect is small, because repeated hits were on
+warm lines and the probe time left moves to the next touch of the same lines: flag K8 check CPU -1..-3% at one thread,
+-0..-3% at T8 (best of 7 at load 6-8; zod 0.952 -> 0.952 s, effect 1.654 -> 1.630, xstate 0.531 -> 0.522, i18n 0.971 ->
+0.946), instructions -1% (zod, effect). After them, flag/plain check CPU at K8 T8: zod 1.11, effect 1.17, xstate 1.14,
+dokploy 1.13, drizzle 0.94, react 0.96, i18n 0.59. `TTTT_GRAPH_STATS` now has a shared-misses column per kind (the
+probes that found nothing: zod K8 1.18M against 232k hits after the cuts, KEY_ANONYMOUS_INSTANCE 179k of them).
+**Measured and not kept:** the shared tables at load 1/2 (+1-3% CPU); the shared tables' slot arrays on 2 MB pages
+(-2..-3% check CPU at T1, A/B by env on one binary: the TLB), not kept because huge pages were removed on 2026-10-28
+for their compaction-stall risk (kernel_time.md). If the laptop shows dTLB misses in the shared probes, it is the one
+layout change worth reopening.
+
+**What would cut the premium further** (not built): fewer shared lookups per unit of work, not cheaper ones: identity
+creation probes (KEY_ANONYMOUS_INSTANCE alone 0.74M misses on four projects) could be skipped where the key holds an
+object this checker just made (as KEY_PROP_MAPPED_TYPE now), the first-touch stamps replaced by the content order
+(sharing_design.md stage 1: 0.4-0.9% of K8 instructions plus the stamp table's misses), the variance groups shared
+(stage 3). None changes the verdict above: the flag pays a lookup's miss for each piece of shared state a checker
+first reads, and wins only where that state would otherwise be rebuilt several times.
+
+**For the laptop** (splits (b) from (a)+(c) with counters; `lscpu -e` for one hardware thread per big core): for P in
+zod, effect, drizzle, xstate, B in plain and `TTTT_SHARED_GRAPH=1`, T in 1 and 4,
+
+    perf stat -r 5 -x, -e cycles:u,instructions:u,L1-dcache-load-misses,dTLB-load-misses,ls_dmnd_fills_from_sys.local_ccx,ls_dmnd_fills_from_sys.near_cache,ls_dmnd_fills_from_sys.dram_io_all \
+      taskset -c BIGCORES env $B TTTT_SYNC_EXIT=1 $BIN --threads $T --checkers 4 --noEmit -p $P
+
+and `perf c2c record --all-user -- env TTTT_SHARED_GRAPH=1 $BIN --threads 4 --checkers 4 --noEmit -p zod` then
+`perf c2c report --stdio` (HITM lines and their symbols). Read: cycles/instruction flag/plain at T1 is the locality
+cost (expected x1.1-1.2 here); its T4/T1 growth over plain's is (b) plus races; near_cache fills (another CCX's cache)
+growing with T only under the flag are the cross-core traffic; dTLB misses in shared_table_find say whether the 2 MB
+pages would pay there.
 
 ## The ceiling, measured (2026-10-22)
 The most a shared graph could take off a checker: the share of its check instructions that only repeat what one
@@ -182,7 +287,8 @@ are). Checkers are recycled after 1/128 of the total cost. Its CPU at default th
 time (vscode 43 CPU s vs 14 single): sharing costs it too, it just has more cores busy.
 
 ## Tools left behind
-`TTTT_GRAPH_STATS=1`, `TTTT_GRAPH_WORK=1` (cycles per word computation by outcome), `TTTT_GRAPH_LEAD=1` /
+`TTTT_GRAPH_STATS=1` (per kind: shared hits, shared misses, published...), `TTTT_GRAPH_NO_CACHE=1` (shared hits not
+kept in the checker's own tables: the A/B of 75f79d714), `TTTT_GRAPH_WORK=1` (cycles per word computation by outcome), `TTTT_GRAPH_LEAD=1` /
 `TTTT_GRAPH_NO_LEAD=1`, `TTTT_GRAPH_SHARE_RELATIONS=0`, `TTTT_GRAPH_BUDGET_MB` (graph-wide recycle, default 800),
 `TTTT_DEBUG_PUBLISH` (debug build: a publication referencing a private range aborts), `scripts/sgcheck.py` (the gate:
 flagged against plain K1 at K 1/4/8/16 with two deals), a `-DTTTT_GRAPH_CHECKS` build with `TTTT_GRAPH_CHECKS=1` (identities published or
