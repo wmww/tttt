@@ -173,8 +173,8 @@ spans over K x the check phase (1 - idle).
 | process CPU N/1: tttt / bun | 1 / 1 | 1.08 / 1.05 | 1.22 / 1.15 | 1.55 / 1.46 | 2.19 / 1.90 |
 
 The lead erodes from N = 1 to 16 on 35 of the 42 hub projects (median x1.42 of the ratio, p90 x1.97; tttt behind bun
-at 16 on 17 of them, by up to 47%: inbox-zero, vite __tests_dts__, dokploy/apps/dokploy 1.44, dokploy schedules,
-api, server 1.25-1.28, openscience cli 1.26) and on 6 of the 15 corpora (zod-root x1.81, zod x1.41, drizzle x1.31,
+at 16 on 18 of them, by up to 49% without the rerun: vite __tests_dts__ 1.49, inbox-zero 1.47, dokploy/apps/dokploy
+1.44, dokploy api, schedules, server 1.25-1.28, openscience cli 1.26; better-drizzle 1.94 by its rerun) and on 6 of the 15 corpora (zod-root x1.81, zod x1.41, drizzle x1.31,
 vscode x1.14, three by the rerun); on the other corpora it holds or grows (effect 0.57 -> 0.43, type-fest 0.26 ->
 0.20, excalidraw, react, nest). On this 8-core box the erosion is entirely past the physical cores on the corpora and
 mostly from N = 8 to 16 on the hubs; the laptop's 24 threads would extend the N8 -> N16 trend.
