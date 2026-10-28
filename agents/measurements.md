@@ -241,6 +241,13 @@ So the laptop's +9.3% at K1 is most likely the text page (~4.6%) + a5a0b7100 (~1
 may cost more cycles) + something small; at the defaults a5a0b7100's critical path (~0.1 s) + the text page (~1.2%).
 Leads: bugs/perf_leads.md "vscode since v1".
 
+**Recovered (2026-10-29, worker rehuge, this box, `--fast`, load 3-10)**: huge pages back by the THP settings
+(b5c829162) and the return mapper without a second walk (4a8829f72). vscode main e73c517ff against the branch: K1
+(sibling pairs, 4 rounds) 15.36 -> 14.41 s (-6.2%), sys 0.98 -> 0.38, faults 1035k -> 79k; defaults (8 interleaved)
+1.58 -> 1.27 s (-19%), user 17.20 -> 16.61, sys 1.22 -> 0.60, RSS 5.05 -> 5.12 GB. The return mapper alone (both at
+TTTT_HUGEPAGES=0): defaults 1.57 -> 1.49 s (-4.8%); huge pages alone: kernel_time.md's table. Instructions (callgrind
+K1): a tsconfig over mapSessionEvents.test.ts 7.004 -> 4.697 G, zod -0.21%, drizzle -0.55%, effect -0.20%, react -0.18%.
+
 ## The 12-core box at 2c389b213: type graph step 1 and the intern tables (2026-10-29)
 The human's laptop agent (Ryzen AI 9 HX 370; the box not idle: Firefox and other sessions, load 1-5 at K1, up to 13 at
 the defaults; a few outlier runs up to +33% on zod, medians steady to a few %). BASE 6d5e31b4c, MID c28559e09 (type

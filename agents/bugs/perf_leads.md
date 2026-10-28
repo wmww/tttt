@@ -19,7 +19,8 @@ CPU. Three causes, each recoverable on its own; the coordinator decides.
   and on the laptop's measurement, which runs THP `always` and so got huge pages anyway. To recover without the stall:
   madvise only when `/sys/kernel/mm/transparent_hugepage/defrag` doesn't make madvised faults compact synchronously
   (`defer`, `never`), or MADV_HUGEPAGE + the free-block budget only for the first chunks, or ask the human whether
-  THP `madvise` machines (Ubuntu's default) matter. [open]
+  THP `madvise` machines (Ubuntu's default) matter. Back by the kernel's THP settings (kernel_time.md "Back
+  2026-10-29"): vscode K1 -5.5%, defaults -15.6% on this box. [fixed b5c829162]
 - **The huge text page** (removed in 24820df46). Nothing on this box (EPYC VM, +-0.2%), but the laptop measured it at
   -4.6% wall / -3.6% cycles at K1 and -1.2% at the defaults on 2026-10-22 (measurements.md "The 12-core box at
   277be4bc"), and the A/B the removal cited (df95ec2f) had it on in both arms. Likely the laptop's largest share:
@@ -35,7 +36,8 @@ CPU. Three causes, each recoverable on its own; the coordinator decides.
   main one's with no priority, so derive the no-priority inferred types from `inf`'s candidate lists (common
   supertype in union order instead of the union) rather than walking infer_from() again. Also: the file is a
   scheduling outlier (a 350 ms file late in the deal); a cost estimate that starts big test files first would hide
-  it. [open]
+  it. The return mapper now comes from the main inference's candidates without the return type's priority (no
+  second walk, same result: call.c infer_type_arguments()): the stand-in 7.00 -> 4.70 G, vscode defaults -4.8%. [fixed 4a8829f72]
 
 ## The types-ratio tail and K1 check ratios (2026-10-18 perf work)
 **date-fns/pkgs/docs 1.62 -> 0.64** (34483 -> 13679 types, tsgo 21221; worst of the perfsweep for ten passes, after
