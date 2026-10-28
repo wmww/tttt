@@ -1,0 +1,25 @@
+//// [test/cases/ttttYieldIsAnAssignmentExpression.ts] ////
+
+=== ttttYieldIsAnAssignmentExpression.ts ===
+// A yield expression is a whole assignment expression (tsc's parseAssignmentExpressionOrHigher returns
+// parseYieldExpression's), and takes an operand only on its own line: nothing continues it
+function* g1() { yield
+>g1 : Symbol(g1, Decl(ttttYieldIsAnAssignmentExpression.ts, 0, 0))
+
+[]; }
+function* g2() { yield
+>g2 : Symbol(g2, Decl(ttttYieldIsAnAssignmentExpression.ts, 3, 5))
+
+/a/.nope; }
+function* g3() { yield
+>g3 : Symbol(g3, Decl(ttttYieldIsAnAssignmentExpression.ts, 5, 11))
+
+*[]; }
+function* g4(): any { yield ? 1 : 2; }
+>g4 : Symbol(g4, Decl(ttttYieldIsAnAssignmentExpression.ts, 7, 6))
+
+function* g5(): any { const x = yield, y = 1; }
+>g5 : Symbol(g5, Decl(ttttYieldIsAnAssignmentExpression.ts, 8, 38))
+>x : Symbol(x, Decl(ttttYieldIsAnAssignmentExpression.ts, 9, 27))
+>y : Symbol(y, Decl(ttttYieldIsAnAssignmentExpression.ts, 9, 38))
+

@@ -592,7 +592,7 @@ static bool parse_type_predicate(Parser* parent, FunctionImpl* ret);
 static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_ret);
-static bool expr_ends_with_arrow(Expr const* e);
+static bool expr_ends_with_arrow_or_yield(Expr const* e);
 static bool jsx_generic_arrow_start(Parser* parent);
 static bool parse_binding_content(Parser* parent, Binding* ret);
 static bool is_reserved_word(csview word);
@@ -12429,14 +12429,19 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     // An arrow function is a whole assignment expression: nothing continues it (`() => {} || a` is missing a `;`),
     // nor what it ends as the right side of an assignment or the last branch of a conditional (`x = () => {}` and a
     // `(` on the next line)
-    while (!expr_ends_with_arrow(ret) && parse_expr_right_side(&p, ctx, ret)) {}
+    while (!expr_ends_with_arrow_or_yield(ret) && parse_expr_right_side(&p, ctx, ret)) {}
 
     return parse_success(&p);
 }
 
-static bool expr_ends_with_arrow(Expr const* e) {
+static bool expr_ends_with_arrow_or_yield(Expr const* e) {
     while (!expr_is_perenthisized(e)) {
         if (e->tag == EXPR_FUNCTION) return function_impl_is_arrow(e->function);
+        // (A yield expression is a whole assignment expression too, tsc's parseAssignmentExpressionOrHigher returns
+        // parseYieldExpression's: `yield ? 1 : 2` and `yield\n[]` are a bare `yield` and what follows)
+        if (e->tag == EXPR_UNARY_OP && (e->unary_op->op == UNARY_OP_YIELD || e->unary_op->op == UNARY_OP_YIELD_STAR)) {
+            return true;
+        }
         if (e->tag == EXPR_BINARY_OP && binary_op_is_assignment(e->binary_op->op)) {
             e = &e->binary_op->right;
         } else if (e->tag == EXPR_TERNARY) {

@@ -1,0 +1,29 @@
+ttttYieldIsAnAssignmentExpression.ts(6,5): error TS2339: Property 'nope' does not exist on type 'RegExp'.
+ttttYieldIsAnAssignmentExpression.ts(8,1): error TS1109: Expression expected.
+ttttYieldIsAnAssignmentExpression.ts(8,2): error TS2363: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+ttttYieldIsAnAssignmentExpression.ts(9,29): error TS1005: ';' expected.
+ttttYieldIsAnAssignmentExpression.ts(9,33): error TS1005: ';' expected.
+
+
+==== ttttYieldIsAnAssignmentExpression.ts (5 errors) ====
+    // A yield expression is a whole assignment expression (tsc's parseAssignmentExpressionOrHigher returns
+    // parseYieldExpression's), and takes an operand only on its own line: nothing continues it
+    function* g1() { yield
+    []; }
+    function* g2() { yield
+    /a/.nope; }
+        ~~~~
+!!! error TS2339: Property 'nope' does not exist on type 'RegExp'.
+    function* g3() { yield
+    *[]; }
+    ~
+!!! error TS1109: Expression expected.
+     ~~
+!!! error TS2363: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+    function* g4(): any { yield ? 1 : 2; }
+                                ~
+!!! error TS1005: ';' expected.
+                                    ~
+!!! error TS1005: ';' expected.
+    function* g5(): any { const x = yield, y = 1; }
+    

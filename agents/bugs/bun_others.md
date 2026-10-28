@@ -196,7 +196,7 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
 - Modifiers on an object literal's methods: tsc's checkGrammarMethod runs the whole checkGrammarModifiers first
   (TS1244 abstract, TS1024 readonly, TS1028/TS1029/TS1040...) and says TS1184 only when that passes; either ends the
   member's grammar checks (no '{' expected for a missing body); `readonly` stays a modifier of the property (TS2540,
-  TS2704): 02-C13b 28-C18a 32-C10a 32-C10c 32-C10d 53-L18. [fixed COMMIT3]
+  TS2704): 02-C13b 28-C18a 32-C10a 32-C10c 32-C10d 53-L18. [fixed 1833da4b3]
 - Object literal accessors with `abstract` on one of a pair: TS2676 on both (02-C13c, missing); a class expression with
   modifiers in an expression (`@dec public class {}`, 80-R08: tsc parses them, TS1184). [open]
 - Decorators on the parameters of signatures (function and constructor types, interface members, `@await` in an
@@ -204,7 +204,7 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
   and cascades (+TS1005 +TS1109 +TS1128 +TS1131 +TS1146 +TS1434): 56-L14b 83-R20a. JavaScript `function h(export
   @dec x)`: modifiers before decorators, TS8012 (tttt TS1359): 84-R01. [open]
 - `yield` takes an operand only on the same line and is an AssignmentExpression (no `?:` or binary operator after
-  it): -TS1109/-TS1005 43-X6a 43-X6b 43-X6c 43-X6e. [open]
+  it): -TS1109/-TS1005 43-X6a 43-X6b 43-X6c 43-X6e. [fixed COMMIT4]
 - A private name where an identifier is expected outside classes: tsc parses `#a` as the name (TS2304 "Cannot find
   name '#a'" for a JSX tag or type reference, TS18016 after `asserts`) and takes it as an import attribute key or a
   JSX attribute name without complaint: 43-P8e 43-X5f 56-L19 80-R01a 80-R01b 43-C13d (+TS1003 +TS1005 +TS1109
