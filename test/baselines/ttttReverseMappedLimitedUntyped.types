@@ -1,0 +1,64 @@
+//// [test/cases/ttttReverseMappedLimitedUntyped.ts] ////
+
+=== ttttReverseMappedLimitedUntyped.ts ===
+// A reverse mapped type through `keyof T & "b"` has only the properties the limited constraint takes, and the others'
+// types are never asked (tsc's resolveReverseMappedTypeMembers with getLimitedConstraint): a getter that reads the
+// call's result isn't a cycle there (bun 99-V4 getTypeOfReverseMappedSymbol__05). Without the limit it is (__06).
+declare function unbox<T>(x: { [K in keyof T & "b"]: [T[K]] }): T;
+>unbox : <T>(x: { [K in keyof T & "b"]: [T[K]]; }) => T
+>x : { [K in keyof T & "b"]: [T[K]]; }
+
+const src = {
+>src : { readonly a: number; b: [number]; }
+>{  get a() { return out.b; },  b: [1] as [number],} : { readonly a: number; b: [number]; }
+
+  get a() { return out.b; },
+>a : number
+>out.b : number
+>out : { b: number; }
+>b : number
+
+  b: [1] as [number],
+>b : [number]
+>[1] as [number] : [number]
+>[1] : [number]
+>1 : 1
+
+};
+const out = unbox(src);
+>out : { b: number; }
+>unbox(src) : { b: number; }
+>unbox : <T>(x: { [K in keyof T & "b"]: [T[K]]; }) => T
+>src : { readonly a: number; b: [number]; }
+
+const probe: never = out;
+>probe : never
+>out : { b: number; }
+
+declare function unboxAll<T>(x: { [K in keyof T]: [T[K]] }): T;
+>unboxAll : <T>(x: { [K in keyof T]: [T[K]]; }) => T
+>x : { [K in keyof T]: [T[K]]; }
+
+const src2 = {
+>src2 : { readonly a: any; b: [number]; }
+>{  get a() { return out2.b; },  b: [1] as [number],} : { readonly a: any; b: [number]; }
+
+  get a() { return out2.b; },
+>a : any
+>out2.b : any
+>out2 : any
+>b : any
+
+  b: [1] as [number],
+>b : [number]
+>[1] as [number] : [number]
+>[1] : [number]
+>1 : 1
+
+};
+const out2 = unboxAll(src2);
+>out2 : any
+>unboxAll(src2) : { readonly a: unknown; b: number; }
+>unboxAll : <T>(x: { [K in keyof T]: [T[K]]; }) => T
+>src2 : { readonly a: any; b: [number]; }
+

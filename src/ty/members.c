@@ -5096,28 +5096,31 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
 
 static Members const* resolve_intersection_members(Checker* me, Ty const* ty);
 
+// tsc's getLimitedConstraint: with `keyof T & X` for the keys, only the properties X has a key for; null for all
+Ty const* ty_reverse_mapped_limited(Checker* me, MappedInfo const* mapped, Ty const* operand) {
+    Ty const* constraint = mapped->constraint;
+    Ty const* origin = constraint->kind == TY_UNION ? constraint->composite.origin : constraint;
+    if (!origin || origin->kind != TY_INTERSECTION) return nullptr;
+    Ty const* keyof = ty_keyof(me, operand);
+    Ty const* rest[16];
+    u32 rest_count = 0;
+    for (u32 i = 0; i < origin->composite.types.len && rest_count < 16; i++) {
+        if (origin->composite.types.data[i] != keyof) rest[rest_count++] = origin->composite.types.data[i];
+    }
+    Ty const* limited = ty_intersection(me, rest, rest_count, nullptr, (TyList){0});
+    return limited->flags & TYF_NEVER ? nullptr : limited;
+}
+
 // tsc's resolveReverseMappedTypeMembers: the source's properties, whose types are inferred on first use (prop_type()),
 // and its string index signature's, inferred right away
 static Members const* resolve_reverse_mapped_members(Checker* me, Ty const* ty) {
     ReverseMapped const* reverse = ty->anonymous.reverse;
     MappedInfo const* mapped = reverse->mapped;
-    ObjectLiteralProp* props;
-    u32 count = ty_reverse_mapped_source_props(me, reverse->source, &props);
     MembersBuilder builder = {0};
-    // tsc's getLimitedConstraint: with `keyof T & X` for the keys, only the properties X has a key for
-    Ty const* limited = nullptr;
-    Ty const* constraint = mapped->constraint;
-    Ty const* origin = constraint->kind == TY_UNION ? constraint->composite.origin : constraint;
-    if (origin && origin->kind == TY_INTERSECTION) {
-        Ty const* keyof = ty_keyof(me, reverse->operand);
-        Ty const* rest[16];
-        u32 rest_count = 0;
-        for (u32 i = 0; i < origin->composite.types.len && rest_count < 16; i++) {
-            if (origin->composite.types.data[i] != keyof) rest[rest_count++] = origin->composite.types.data[i];
-        }
-        limited = ty_intersection(me, rest, rest_count, nullptr, (TyList){0});
-        if (limited->flags & TYF_NEVER) limited = nullptr;
-    }
+    Ty const* limited = ty_reverse_mapped_limited(me, mapped, reverse->operand);
+    // (Only the kept properties' types are asked: `get a() { return out.b }` left out by `keyof T & "b"` isn't typed)
+    ObjectLiteralProp* props;
+    u32 count = ty_reverse_mapped_source_props(me, reverse->source, limited, true, &props);
     for (u32 i = 0; i < count; i++) {
         u32 flags = props[i].flags & (PROP_OPTIONAL | PROP_READONLY);
         if (mapped->optional > 0) flags &= ~(u32)PROP_OPTIONAL; // `?` in the mapped type: T's property needn't be
@@ -5131,8 +5134,6 @@ static Members const* resolve_reverse_mapped_members(Checker* me, Ty const* ty) 
         prop->decl->name_is_value = props[i].name_is_value;
         prop->decl->name_form = props[i].name_form;
         if (props[i].name_type) prop_decl_rare_mut(me, prop->decl)->name_type = props[i].name_type;
-        // (Numeric and unique symbol keys too: tsc's getLiteralTypeFromProperty with StringOrNumberLiteralOrUnique)
-        if (limited && !ty_is_related(me, ty_prop_key_literal(me, prop), limited, TY_RELATION_ASSIGNABLE)) continue;
         // (Its own key is the name's string literal, `1` too: tsc's reverse mapped symbol has no valueDeclaration)
         prop->decl->name_is_value = false;
         prop->decl->asserted = props[i].asserted;

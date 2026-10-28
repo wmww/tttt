@@ -826,14 +826,17 @@ static bool is_partially_inferable(Checker* me, Ty const* ty, u32 depth) {
 
 // The properties of what's reverse mapped (tsc's getPropertiesOfType): an object's own, an intersection's those of all
 // of its members, each name once, of the type and with the modifiers the intersection has for it. malloc'd
-u32 ty_reverse_mapped_source_props(Checker* me, Ty const* source, ObjectLiteralProp** out) {
+u32 ty_reverse_mapped_source_props(Checker* me, Ty const* source, Ty const* limited, bool types, ObjectLiteralProp** out) {
     *out = nullptr;
     if (source->flags & TYF_OBJECT) {
         Members const* members = ty_members(me, source);
         *out = calloc(members->prop_count + 1, sizeof(ObjectLiteralProp));
         panic_if(!*out, "out of memory");
+        u32 count = 0;
         for (u32 i = 0; i < members->prop_count; i++) {
             Prop const* prop = members->props[i];
+            // (Numeric and unique symbol keys too: tsc's getLiteralTypeFromProperty with StringOrNumberLiteralOrUnique)
+            if (limited && !ty_is_related(me, ty_prop_key_literal(me, prop), limited, TY_RELATION_ASSIGNABLE)) continue;
             // (Declared where the source's is: tsc's createReverseMappedType copies its declarations, which is where
             // TS6500 points and what the symbols baseline shows)
             Prop const* origin = prop;
@@ -841,8 +844,8 @@ u32 ty_reverse_mapped_source_props(Checker* me, Ty const* source, ObjectLiteralP
             PropDecl const* decl = origin->decl;
             TypeNode const* annotation = origin == prop && decl->node && decl->node->parsed && !decl->lazy &&
                 !decl->function && !prop_decl_rare(decl)->overload_count && !decl->symbol ? decl->node : nullptr;
-            (*out)[i] = (ObjectLiteralProp){
-                .name = prop->name, .flags = prop->flags, .type = prop_type(me, prop), .name_form = ty_prop_name_form_of(prop),
+            (*out)[count++] = (ObjectLiteralProp){
+                .name = prop->name, .flags = prop->flags, .type = types ? prop_type(me, prop) : nullptr, .name_form = ty_prop_name_form_of(prop),
                 .name_span = prop->decl->name_span,
                 // (An instantiated property's declarations are its target's: tsc's instantiateSymbol)
                 .decl_spans = prop->decl->decl_span_count ? prop->decl->decl_spans : decl->decl_spans,
@@ -852,7 +855,7 @@ u32 ty_reverse_mapped_source_props(Checker* me, Ty const* source, ObjectLiteralP
                 .asserted = annotation ? annotation : origin == prop ? prop_decl_asserted(decl) : nullptr, .name_type = prop_decl_rare(prop->decl)->name_type,
             };
         }
-        return members->prop_count;
+        return count;
     }
     u32 count = 0, cap = 0;
     for (u32 p = 0; p < source->composite.types.len; p++) {
@@ -866,6 +869,7 @@ u32 ty_reverse_mapped_source_props(Checker* me, Ty const* source, ObjectLiteralP
             if (seen) continue;
             FoundProp found = ty_find_prop(me, source, name);
             if (!found.found) continue;
+            if (limited && found.prop && !ty_is_related(me, ty_prop_key_literal(me, found.prop), limited, TY_RELATION_ASSIGNABLE)) continue;
             if (count == cap) {
                 cap = cap ? cap * 2 : 8;
                 *out = realloc(*out, sizeof(ObjectLiteralProp) * cap);
@@ -891,15 +895,22 @@ static bool reverse_mappable(Checker* me, Ty const* source) {
     if (!(source->flags & TYF_OBJECT) && source->kind != TY_INTERSECTION) return false;
     if (ty_applicable_index_info(me, source, ty_intrinsic(me, TY_STRING))) return true;
     ObjectLiteralProp* source_props;
-    u32 source_prop_count = ty_reverse_mapped_source_props(me, source, &source_props);
+    u32 source_prop_count = ty_reverse_mapped_source_props(me, source, nullptr, false, &source_props);
     free(source_props);
     return source_prop_count && is_partially_inferable(me, source, 0);
 }
 
 static Ty const* reverse_mapped_type_uncached(Checker* me, Ty const* source, MappedInfo const* mapped, Ty const* operand) {
     if (!reverse_mappable(me, source)) return nullptr;
+    // The kept properties' types now (what the reverse mapped type's use asks during the call), not those `keyof T & X`
+    // leaves out: tsc's resolveReverseMappedTypeMembers skips them (`get a() { return out.b }` isn't typed)
+    Ty const* limited = ty_reverse_mapped_limited(me, mapped, operand);
     ObjectLiteralProp* source_props;
-    u32 source_prop_count = ty_reverse_mapped_source_props(me, source, &source_props);
+    u32 source_prop_count = ty_reverse_mapped_source_props(me, source, nullptr, !limited, &source_props);
+    if (limited) {
+        free(source_props);
+        ty_reverse_mapped_source_props(me, source, limited, true, &source_props);
+    }
     if (ty_is_array(me, source) || ty_tuple_shape(source)) {
         free(source_props);
         if (my reverse_mapped_depth >= 4) return nullptr;
@@ -950,7 +961,7 @@ static bool infer_to_mapped(Checker* me, Inference* inf, Ty const* source, Mappe
         // Members don't list)
         Members const* members = ty_members(me, source);
         ObjectLiteralProp* intersected = nullptr;
-        u32 prop_count = source->kind == TY_INTERSECTION ? ty_reverse_mapped_source_props(me, source, &intersected) :
+        u32 prop_count = source->kind == TY_INTERSECTION ? ty_reverse_mapped_source_props(me, source, nullptr, true, &intersected) :
             members->prop_count;
         u32 count = prop_count + members->index_count;
         if (!count) {

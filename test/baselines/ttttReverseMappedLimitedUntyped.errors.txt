@@ -1,0 +1,34 @@
+ttttReverseMappedLimitedUntyped.ts(10,7): error TS2322: Type '{ b: number; }' is not assignable to type 'never'.
+ttttReverseMappedLimitedUntyped.ts(12,41): error TS2313: Type parameter 'K' has a circular constraint.
+ttttReverseMappedLimitedUntyped.ts(14,7): error TS7023: 'a' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+ttttReverseMappedLimitedUntyped.ts(17,7): error TS7022: 'out2' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+
+
+==== ttttReverseMappedLimitedUntyped.ts (4 errors) ====
+    // A reverse mapped type through `keyof T & "b"` has only the properties the limited constraint takes, and the others'
+    // types are never asked (tsc's resolveReverseMappedTypeMembers with getLimitedConstraint): a getter that reads the
+    // call's result isn't a cycle there (bun 99-V4 getTypeOfReverseMappedSymbol__05). Without the limit it is (__06).
+    declare function unbox<T>(x: { [K in keyof T & "b"]: [T[K]] }): T;
+    const src = {
+      get a() { return out.b; },
+      b: [1] as [number],
+    };
+    const out = unbox(src);
+    const probe: never = out;
+          ~~~~~
+!!! error TS2322: Type '{ b: number; }' is not assignable to type 'never'.
+    
+    declare function unboxAll<T>(x: { [K in keyof T]: [T[K]] }): T;
+                                            ~~~~~~~
+!!! error TS2313: Type parameter 'K' has a circular constraint.
+!!! related TS2751 ttttReverseMappedLimitedUntyped.ts:17:14: Circularity originates in type at this location.
+    const src2 = {
+      get a() { return out2.b; },
+          ~
+!!! error TS7023: 'a' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+      b: [1] as [number],
+    };
+    const out2 = unboxAll(src2);
+          ~~~~
+!!! error TS7022: 'out2' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    

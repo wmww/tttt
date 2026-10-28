@@ -907,7 +907,10 @@ Ty const* ty_reverse_mapped_member_type(Checker* me, ReverseMapped const* revers
 // (infer.c) What a property of type `source` says about `operand[K]` (tsc's inferReverseMappedType)
 Ty const* ty_reverse_mapped_prop_type(Checker* me, Ty const* source, MappedInfo const* mapped, Ty const* operand);
 // (infer.c) The properties of a reverse mapped type's source, malloc'd, types as declared
-u32 ty_reverse_mapped_source_props(Checker* me, Ty const* source, struct ObjectLiteralProp** out);
+// `limited`: only the properties whose key it takes (tsc's getLimitedConstraint), null for all; `types`: their types too
+// (an object's are asked only then: tsc reads a reverse mapped property's source type when it is asked for)
+u32 ty_reverse_mapped_source_props(Checker* me, Ty const* source, Ty const* limited, bool types, struct ObjectLiteralProp** out);
+Ty const* ty_reverse_mapped_limited(Checker* me, struct MappedInfo const* mapped, Ty const* operand);
 Ty const* ty_mapped_template_instantiated(Checker* me, MappedInfo const* mapped, TyMapper const* mapper);
 
 struct Members {

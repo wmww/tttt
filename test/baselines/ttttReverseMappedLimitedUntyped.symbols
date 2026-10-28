@@ -1,0 +1,64 @@
+//// [test/cases/ttttReverseMappedLimitedUntyped.ts] ////
+
+=== ttttReverseMappedLimitedUntyped.ts ===
+// A reverse mapped type through `keyof T & "b"` has only the properties the limited constraint takes, and the others'
+// types are never asked (tsc's resolveReverseMappedTypeMembers with getLimitedConstraint): a getter that reads the
+// call's result isn't a cycle there (bun 99-V4 getTypeOfReverseMappedSymbol__05). Without the limit it is (__06).
+declare function unbox<T>(x: { [K in keyof T & "b"]: [T[K]] }): T;
+>unbox : Symbol(unbox, Decl(ttttReverseMappedLimitedUntyped.ts, 0, 0))
+>T : Symbol(T, Decl(ttttReverseMappedLimitedUntyped.ts, 3, 23))
+>x : Symbol(x, Decl(ttttReverseMappedLimitedUntyped.ts, 3, 26))
+>K : Symbol(K, Decl(ttttReverseMappedLimitedUntyped.ts, 3, 32))
+>T : Symbol(T, Decl(ttttReverseMappedLimitedUntyped.ts, 3, 23))
+>T : Symbol(T, Decl(ttttReverseMappedLimitedUntyped.ts, 3, 23))
+>K : Symbol(K, Decl(ttttReverseMappedLimitedUntyped.ts, 3, 32))
+>T : Symbol(T, Decl(ttttReverseMappedLimitedUntyped.ts, 3, 23))
+
+const src = {
+>src : Symbol(src, Decl(ttttReverseMappedLimitedUntyped.ts, 4, 5))
+
+  get a() { return out.b; },
+>a : Symbol(a, Decl(ttttReverseMappedLimitedUntyped.ts, 4, 13))
+>out.b : Symbol(b, Decl(ttttReverseMappedLimitedUntyped.ts, 5, 28))
+>out : Symbol(out, Decl(ttttReverseMappedLimitedUntyped.ts, 8, 5))
+>b : Symbol(b, Decl(ttttReverseMappedLimitedUntyped.ts, 5, 28))
+
+  b: [1] as [number],
+>b : Symbol(b, Decl(ttttReverseMappedLimitedUntyped.ts, 5, 28))
+
+};
+const out = unbox(src);
+>out : Symbol(out, Decl(ttttReverseMappedLimitedUntyped.ts, 8, 5))
+>unbox : Symbol(unbox, Decl(ttttReverseMappedLimitedUntyped.ts, 0, 0))
+>src : Symbol(src, Decl(ttttReverseMappedLimitedUntyped.ts, 4, 5))
+
+const probe: never = out;
+>probe : Symbol(probe, Decl(ttttReverseMappedLimitedUntyped.ts, 9, 5))
+>out : Symbol(out, Decl(ttttReverseMappedLimitedUntyped.ts, 8, 5))
+
+declare function unboxAll<T>(x: { [K in keyof T]: [T[K]] }): T;
+>unboxAll : Symbol(unboxAll, Decl(ttttReverseMappedLimitedUntyped.ts, 9, 25))
+>T : Symbol(T, Decl(ttttReverseMappedLimitedUntyped.ts, 11, 26))
+>x : Symbol(x, Decl(ttttReverseMappedLimitedUntyped.ts, 11, 29))
+>K : Symbol(K, Decl(ttttReverseMappedLimitedUntyped.ts, 11, 35))
+>T : Symbol(T, Decl(ttttReverseMappedLimitedUntyped.ts, 11, 26))
+>T : Symbol(T, Decl(ttttReverseMappedLimitedUntyped.ts, 11, 26))
+>K : Symbol(K, Decl(ttttReverseMappedLimitedUntyped.ts, 11, 35))
+>T : Symbol(T, Decl(ttttReverseMappedLimitedUntyped.ts, 11, 26))
+
+const src2 = {
+>src2 : Symbol(src2, Decl(ttttReverseMappedLimitedUntyped.ts, 12, 5))
+
+  get a() { return out2.b; },
+>a : Symbol(a, Decl(ttttReverseMappedLimitedUntyped.ts, 12, 14))
+>out2 : Symbol(out2, Decl(ttttReverseMappedLimitedUntyped.ts, 16, 5))
+
+  b: [1] as [number],
+>b : Symbol(b, Decl(ttttReverseMappedLimitedUntyped.ts, 13, 29))
+
+};
+const out2 = unboxAll(src2);
+>out2 : Symbol(out2, Decl(ttttReverseMappedLimitedUntyped.ts, 16, 5))
+>unboxAll : Symbol(unboxAll, Decl(ttttReverseMappedLimitedUntyped.ts, 9, 25))
+>src2 : Symbol(src2, Decl(ttttReverseMappedLimitedUntyped.ts, 12, 5))
+
