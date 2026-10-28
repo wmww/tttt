@@ -1,0 +1,39 @@
+ttttStatementRecoveryMutants.ts(5,3): error TS1005: 'while' expected.
+ttttStatementRecoveryMutants.ts(5,3): error TS2304: Cannot find name 'x'.
+ttttStatementRecoveryMutants.ts(5,4): error TS1005: ')' expected.
+ttttStatementRecoveryMutants.ts(7,1): error TS1142: Line break not permitted here.
+ttttStatementRecoveryMutants.ts(7,1): error TS2304: Cannot find name 'const'.
+ttttStatementRecoveryMutants.ts(7,7): error TS1005: ';' expected.
+ttttStatementRecoveryMutants.ts(7,11): error TS2304: Cannot find name 'T1'.
+ttttStatementRecoveryMutants.ts(8,15): error TS1359: Identifier expected. 'null' is a reserved word that cannot be used here.
+ttttStatementRecoveryMutants.ts(8,19): error TS1005: ';' expected.
+
+
+==== ttttStatementRecoveryMutants.ts (9 errors) ====
+    // tsc's parser recoveries found by mutating suite tests (mutate.py --seed 20261030): a do statement without its
+    // `while` goes on with `(`, the condition and `)` (parseDoStatement); `declare type` commits to a type alias, a line
+    // break after it is TS1142 and the name is missing; a reserved word as the catch variable is TS1359
+    do {
+    } x;
+      ~
+!!! error TS1005: 'while' expected.
+      ~
+!!! error TS2304: Cannot find name 'x'.
+       ~
+!!! error TS1005: ')' expected.
+    declare type
+    const t1: T1 = null;
+    ~~~~~
+!!! error TS1142: Line break not permitted here.
+    ~~~~~
+!!! error TS2304: Cannot find name 'const'.
+          ~~
+!!! error TS1005: ';' expected.
+              ~~
+!!! error TS2304: Cannot find name 'T1'.
+    try {} catch (null) {}
+                  ~~~~
+!!! error TS1359: Identifier expected. 'null' is a reserved word that cannot be used here.
+                      ~
+!!! error TS1005: ';' expected.
+    

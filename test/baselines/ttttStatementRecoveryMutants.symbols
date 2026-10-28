@@ -1,0 +1,16 @@
+//// [test/cases/ttttStatementRecoveryMutants.ts] ////
+
+=== ttttStatementRecoveryMutants.ts ===
+// tsc's parser recoveries found by mutating suite tests (mutate.py --seed 20261030): a do statement without its
+// `while` goes on with `(`, the condition and `)` (parseDoStatement); `declare type` commits to a type alias, a line
+// break after it is TS1142 and the name is missing; a reserved word as the catch variable is TS1359
+do {
+} x;
+declare type
+const t1: T1 = null;
+> : Symbol((Missing), Decl(ttttStatementRecoveryMutants.ts, 4, 4))
+>const : Symbol(const)
+
+try {} catch (null) {}
+> : Symbol((Missing), Decl(ttttStatementRecoveryMutants.ts, 7, 14))
+

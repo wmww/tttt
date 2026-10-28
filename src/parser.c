@@ -6729,7 +6729,11 @@ static bool parse_type_decl(Parser* parent, bool after_declare, TypeDecl* ret) {
 
     // (tsc's nextTokenIsIdentifierOnSameLine: `type void = I` is the expression statement `type`, then `void = I`)
     Span name;
-    if (decorated && !tok_is_identifier(tok_peek(&p))) {
+    // (Committed, by decorators or `declare type`: whatever follows, a missing name)
+    Tok name_t = tok_peek(&p);
+    if ((decorated || after_declare) &&
+        (!tok_is_identifier(name_t) || is_reserved_word((csview){ name_t.start, name_t.end - name_t.start }))
+    ) {
         expect_non_reserved_identifier(&p, &name);
     } else if (!parse_identifier(&p, &name) || is_reserved_word(span_sv(name))) {
         return parse_fail(&p);
@@ -14879,27 +14883,28 @@ static bool parse_do_while_loop_statement(Parser* parent, Statement* ret) {
     hop_whitespace(&p);
 
     Expr condition = expr_literal(span_from_pos(&p), value_boolean(false));
+    // (Without its `while`, tsc's parseDoStatement goes on with the `(`, the condition and the `)` all the same)
     if (hop_start_if_ends_on_word_break(&p, "while")) {
         hop_whitespace(&p);
-        const char* open = p.pos;
-        bool opened = expect_char(&p, '(');
-        hop_whitespace(&p);
-        Expr parsed;
-        if (expect_expr(&p, expr_ctx_null, &parsed)) {
-            expr_drop(&condition);
-            condition = parsed;
-            parse_comma_ops_right_side(&p, &condition);
-        }
-        hop_whitespace(&p);
-        if (opened) expect_closing(&p, ')', open);
-        else expect_char(&p, ')');
     } else {
         expected_token_error(&p, "while");
-        // (tsc's parseDoStatement goes on with the condition: a missing expression)
-        expr_drop(&condition);
-        condition = expr_implicit_any(span_from_pos(&p));
-        condition.missing = true;
     }
+    const char* open = p.pos;
+    bool opened = expect_char(&p, '(');
+    hop_whitespace(&p);
+    Expr parsed;
+    if (expect_expr(&p, expr_ctx_null, &parsed)) {
+        expr_drop(&condition);
+        condition = parsed;
+        parse_comma_ops_right_side(&p, &condition);
+    } else {
+        // (A missing expression)
+        expr_drop(&condition);
+        condition = parsed;
+    }
+    hop_whitespace(&p);
+    if (opened) expect_closing(&p, ')', open);
+    else expect_char(&p, ')');
 
     *ret = (Statement){
         .tag = STATEMENT_FOR_LOOP,
@@ -15372,7 +15377,14 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
                 const char* binding_start = p.pos;
                 if (!parse_binding_content_or_private_name(&p, &try_catch.catch_var, 18029,
                         "Private identifiers are not allowed in variable declarations.")) {
-                    parse_error(&p, span_from_token_or_eof(&p), 1003, "Identifier expected.");
+                    // (tsc's parseIdentifierOrPattern -> parseBindingIdentifier: a reserved word is TS1359)
+                    Tok t = tok_peek(&p);
+                    if (tok_is_word(t) && *t.start != '#' && is_reserved_word((csview){ t.start, t.end - t.start })) {
+                        Span word = span_make(p.shared->source, t.start, t.end);
+                        parse_error(&p, word, 1359, "Identifier expected. '", word, "' is a reserved word that cannot be used here.");
+                    } else {
+                        parse_error(&p, span_from_token_or_eof(&p), 1003, "Identifier expected.");
+                    }
                     // (A missing name, which tsc still declares)
                     try_catch.catch_var = (Binding){ .tag = BINDING_IDENTIFIER, .content_span = span_from_pos(&p) };
                     binding_set_element_span(&try_catch.catch_var, try_catch.catch_var.content_span);
