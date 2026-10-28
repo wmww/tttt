@@ -10,7 +10,7 @@
 typedef struct SharedTable SharedTable;
 typedef struct SharedLinks SharedLinks;
 
-SharedTable* shared_table_new(void);
+SharedTable* shared_table_new(ZeroPages* pages); // Its slot arrays come from the pages, freed with them
 void shared_table_drop(SharedTable* me);
 // The block of the key (InternTable's layout: the value, a long key's word count, the words), null if none.
 // `hash` is InternTable's (the count in its top 16 bits)
@@ -21,7 +21,7 @@ u64 shared_table_len(SharedTable const* me);
 u32 shared_table_shard(u64 hash); // Which shard (lock) a key's insert takes: batches sort by it
 u32 shared_links_shard(u64 key);
 
-SharedLinks* shared_links_new(void);
+SharedLinks* shared_links_new(ZeroPages* pages);
 void shared_links_drop(SharedLinks* me);
 void const* shared_links_get(SharedLinks const* me, u64 key); // LinkTable's key (kind + 1 in the top byte, subject)
 // Inserts unless the key is there: the value there after

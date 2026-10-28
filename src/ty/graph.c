@@ -46,6 +46,7 @@ struct TyGraph {
     // Declaration memos by slot, like LazySlots.top (pages made by CAS): each a shared word to an immutable copy of the
     // memo that finished cleanly first (plan 86 stage 4f)
     SharedWord* _Atomic* _Atomic memos[1 << LAZY_TOP_BITS];
+    ZeroPages pages; // The shared tables' slots and the memo pages
     KindStats stats[GRAPH_STAT_KINDS];
     u32 checkers;
     Checker* workers[64]; // By Checker.graph_worker
@@ -155,12 +156,13 @@ TyGraph* graph_new(Checker* first) {
     graph_batch = getenv("TTTT_GRAPH_BATCH") && strcmp(getenv("TTTT_GRAPH_BATCH"), "0") ? 1 : 0;
     TyGraph* me = calloc(1, sizeof(TyGraph));
     panic_if(!me, "out of memory");
-    my types = shared_table_new();
-    my links = shared_table_new();
-    my intersection_props = shared_table_new();
-    my node_links = shared_links_new();
-    my variance_slots = shared_links_new();
-    for (u32 i = 0; i < TY_RELATION_COUNT; i++) my relations[i] = shared_links_new();
+    zero_pages_init(&my pages);
+    my types = shared_table_new(&my pages);
+    my links = shared_table_new(&my pages);
+    my intersection_props = shared_table_new(&my pages);
+    my node_links = shared_links_new(&my pages);
+    my variance_slots = shared_links_new(&my pages);
+    for (u32 i = 0; i < TY_RELATION_COUNT; i++) my relations[i] = shared_links_new(&my pages);
     memcpy(my intrinsics, first->intrinsics, sizeof(my intrinsics));
     my typeof_type = first->typeof_type;
     graph_link_tables(me, first);
@@ -244,11 +246,7 @@ void graph_drop(TyGraph* me) {
     shared_links_drop(my node_links);
     shared_links_drop(my variance_slots);
     for (u32 i = 0; i < TY_RELATION_COUNT; i++) shared_links_drop(my relations[i]);
-    for (size_t i = 0; i < c_arraylen(my memos); i++) {
-        if (!my memos[i]) continue;
-        for (size_t j = 0; j < (1 << LAZY_DIR_BITS); j++) free(my memos[i][j]);
-        free((void*)my memos[i]);
-    }
+    zero_pages_drop(&my pages);
     free(me);
 }
 
@@ -362,25 +360,21 @@ static void publish_link(void* arg, u32 kind, void const* subject, void const* v
     if (shared_links_insert(my node_links, graph_link_key(kind, subject), value) == value) GRAPH_STAT_ADD(&stats->published, 1, __ATOMIC_RELAXED);
 }
 
-// (Pages are made by CAS: a loser frees its own)
+// (Pages are made by CAS: a loser's stays unused in the graph's pages)
 static SharedWord* memo_at(TyGraph* me, u32 slot, bool create) {
     SharedWord* _Atomic* _Atomic* dir = &my memos[slot >> (LAZY_PAGE_BITS + LAZY_DIR_BITS)];
     SharedWord* _Atomic* d = atomic_load_explicit(dir, memory_order_acquire);
     if (!d) {
         if (!create) return nullptr;
-        SharedWord* _Atomic* fresh = calloc(1 << LAZY_DIR_BITS, sizeof(SharedWord*));
-        panic_if(!fresh, "out of memory");
+        SharedWord* _Atomic* fresh = zero_pages_alloc(&my pages, (1 << LAZY_DIR_BITS) * sizeof(SharedWord*));
         if (atomic_compare_exchange_strong(dir, &d, fresh)) d = fresh;
-        else free((void*)fresh);
     }
     SharedWord* _Atomic* page = &d[(slot >> LAZY_PAGE_BITS) & ((1 << LAZY_DIR_BITS) - 1)];
     SharedWord* p = atomic_load_explicit(page, memory_order_acquire);
     if (!p) {
         if (!create) return nullptr;
-        SharedWord* fresh = calloc(1 << LAZY_PAGE_BITS, sizeof(SharedWord));
-        panic_if(!fresh, "out of memory");
+        SharedWord* fresh = zero_pages_alloc(&my pages, (1 << LAZY_PAGE_BITS) * sizeof(SharedWord));
         if (atomic_compare_exchange_strong(page, &p, fresh)) p = fresh;
-        else free(fresh);
     }
     return &p[slot & ((1 << LAZY_PAGE_BITS) - 1)];
 }

@@ -49,32 +49,26 @@ static u32 stride(void) {
 
 struct SharedTable {
     Shard shards[SHARDS];
+    ZeroPages* pages;
 };
 
-static Slots* slots_new(u32 cap, Slots* older, size_t slot_size) {
-    Slots* ret = zeroed_table(1, sizeof(Slots) + slot_size * cap * stride());
-    panic_if(!ret, "out of memory");
+// (Never freed alone: a reader may still be probing an older one, and every one goes with the owner's pages)
+static Slots* slots_new(ZeroPages* pages, u32 cap, Slots* older, size_t slot_size) {
+    Slots* ret = zero_pages_alloc(pages, sizeof(Slots) + slot_size * cap * stride());
     ret->cap = cap;
     ret->older = older;
     return ret;
 }
 
-static void shards_init(Shard* shards, size_t slot_size) {
+static void shards_init(Shard* shards, ZeroPages* pages, size_t slot_size) {
     for (u32 i = 0; i < SHARDS; i++) {
         pthread_mutex_init(&shards[i].lock, nullptr);
-        atomic_init(&shards[i].slots, slots_new(64, nullptr, slot_size));
+        atomic_init(&shards[i].slots, slots_new(pages, 64, nullptr, slot_size));
     }
 }
 
 static void shards_drop(Shard* shards) {
-    for (u32 i = 0; i < SHARDS; i++) {
-        for (Slots* s = atomic_load(&shards[i].slots); s;) {
-            Slots* older = s->older;
-            free(s);
-            s = older;
-        }
-        pthread_mutex_destroy(&shards[i].lock);
-    }
+    for (u32 i = 0; i < SHARDS; i++) pthread_mutex_destroy(&shards[i].lock);
 }
 
 static u64 shards_len(Shard const* shards) {
@@ -83,11 +77,12 @@ static u64 shards_len(Shard const* shards) {
     return ret;
 }
 
-SharedTable* shared_table_new(void) {
+SharedTable* shared_table_new(ZeroPages* pages) {
     SharedTable* me = aligned_alloc(64, (sizeof(SharedTable) + 63) & ~(size_t)63);
     if (me) memset(me, 0, sizeof(SharedTable));
     panic_if(!me, "out of memory");
-    shards_init(my shards, sizeof(Slot));
+    my pages = pages;
+    shards_init(my shards, pages, sizeof(Slot));
     return me;
 }
 
@@ -152,7 +147,7 @@ u64 shared_table_insert(SharedTable* me, u64 hash, void const** block, u32 count
         return 0;
     }
     if ((shard->len + 1) * 4 > slots->cap * 3) {
-        Slots* bigger = slots_new(slots->cap * 2, slots, sizeof(Slot));
+        Slots* bigger = slots_new(my pages, slots->cap * 2, slots, sizeof(Slot));
         for (u32 i = 0; i < slots->cap; i++) {
             u64 h = atomic_load_explicit(&slots->slot[i * slot_stride].hash, memory_order_relaxed);
             if (!h) continue;
@@ -187,6 +182,7 @@ typedef struct LinkSlots {
 
 struct SharedLinks {
     Shard shards[SHARDS];
+    ZeroPages* pages;
 };
 
 static u64 link_hash(u64 key) {
@@ -198,11 +194,12 @@ static u64 link_hash(u64 key) {
     return key;
 }
 
-SharedLinks* shared_links_new(void) {
+SharedLinks* shared_links_new(ZeroPages* pages) {
     SharedLinks* me = aligned_alloc(64, (sizeof(SharedLinks) + 63) & ~(size_t)63);
     if (me) memset(me, 0, sizeof(SharedLinks));
     panic_if(!me, "out of memory");
-    shards_init(my shards, sizeof(LinkSlot));
+    my pages = pages;
+    shards_init(my shards, pages, sizeof(LinkSlot));
     return me;
 }
 
@@ -248,7 +245,7 @@ void const* shared_links_insert(SharedLinks* me, u64 key, void const* value) {
         return there;
     }
     if ((shard->len + 1) * 4 > slots->cap * 3) {
-        LinkSlots* bigger = (LinkSlots*)slots_new(slots->cap * 2, (Slots*)slots, sizeof(LinkSlot));
+        LinkSlots* bigger = (LinkSlots*)slots_new(my pages, slots->cap * 2, (Slots*)slots, sizeof(LinkSlot));
         for (u32 i = 0; i < slots->cap; i++) {
             u64 k = atomic_load_explicit(&slots->slot[i * slot_stride].key, memory_order_relaxed);
             if (!k) continue;

@@ -183,3 +183,61 @@ void big_table_free(void* table, size_t bytes) {
     big_tables_free[shift] = table;
     pthread_mutex_unlock(&big_tables_lock);
 }
+
+enum { ZERO_PAGES_CHUNK = 32 << 20, ZERO_PAGES_OWN = 4 << 20, ZERO_PAGES_AHEAD = 1 << 20 };
+
+void zero_pages_init(ZeroPages* me) {
+    *me = (ZeroPages){};
+    pthread_mutex_init(&my lock, nullptr);
+}
+
+static char* zero_pages_map(ZeroPages* me, size_t bytes) {
+    // (Reserved, not committed: what isn't handed out is never touched)
+    char* start = mmap(nullptr, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+    panic_if(start == MAP_FAILED, "out of memory");
+    vma_name(start, bytes, "graph");
+    ((void**)start)[0] = my mappings;
+    ((size_t*)start)[1] = bytes;
+    my mappings = start;
+    return start + 64;
+}
+
+void* zero_pages_alloc(ZeroPages* me, size_t bytes) {
+    bytes = (bytes + 63) & ~(size_t)63;
+    char* ret;
+    char* from = nullptr;
+    char* to = nullptr;
+    pthread_mutex_lock(&my lock);
+    if (bytes > ZERO_PAGES_OWN) {
+        ret = zero_pages_map(me, bytes + 64);
+        from = (char*)((uintptr_t)ret & ~(uintptr_t)4095);
+        to = ret + bytes;
+    } else {
+        if ((size_t)(my end - my at) < bytes) {
+            my at = my populated = zero_pages_map(me, ZERO_PAGES_CHUNK);
+            my end = my at - 64 + ZERO_PAGES_CHUNK;
+        }
+        ret = my at;
+        my at += bytes;
+        if (my at > my populated) {
+            // (A megabyte ahead: a madvise() per memo page was 50k of them on vscode)
+            from = (char*)((uintptr_t)my populated & ~(uintptr_t)4095);
+            to = my at + ZERO_PAGES_AHEAD < my end ? my at + ZERO_PAGES_AHEAD : my end;
+            my populated = to;
+        }
+    }
+    pthread_mutex_unlock(&my lock);
+    // (Outside the lock: another thread handed a page of this range before it is faulted in only reads the zero page)
+    if (from) madvise(from, (size_t)(((uintptr_t)to + 4095) & ~(uintptr_t)4095) - (uintptr_t)from, MADV_POPULATE_WRITE);
+    return ret;
+}
+
+void zero_pages_drop(ZeroPages* me) {
+    for (void* m = my mappings; m;) {
+        void* before = ((void**)m)[0];
+        munmap(m, ((size_t*)m)[1]);
+        m = before;
+    }
+    pthread_mutex_destroy(&my lock);
+    *me = (ZeroPages){};
+}

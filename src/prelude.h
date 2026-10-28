@@ -7,6 +7,7 @@
 #include "debug_allocator.h"
 #endif
 
+#include <pthread.h>
 #include <stdio.h>
 #include <time.h>
 
@@ -102,6 +103,23 @@ static inline void* zeroed_table(size_t count, size_t size) {
 // pages are faulted 4 KB at a time, and a munmap() is a TLB shootdown on every thread
 void* big_table(size_t count, size_t size);
 void big_table_free(void* table, size_t bytes);
+
+// Zeroed memory that lives until the owner drops it all at once, bumped out of mappings of its own and shared by threads
+// (a lock per allocation, the faults outside it): --shared-graph's tables and memo pages. As glibc's they grew each checker thread's heap,
+// which past what the front end freed is a page at a time with an mprotect() each (a non-main arena's heap has no top
+// pad), taking the mm lock for writing while every other thread's faults wait: vscode made 11k of them under the flag
+// and 41 without, its checkers blocked 1.1 s against 0.16. The pages are faulted in for writing when handed out,
+// a megabyte ahead (zeroed_table()'s reason: no zero page to copy at the first write)
+typedef struct ZeroPages {
+    pthread_mutex_t lock;
+    char* at;
+    char* end;
+    char* populated; // Of the current chunk, faulted in up to here
+    void* mappings; // Each one's first word: the one before, its second: its length
+} ZeroPages;
+void zero_pages_init(ZeroPages* me);
+void* zero_pages_alloc(ZeroPages* me, size_t bytes); // 64-byte aligned
+void zero_pages_drop(ZeroPages* me);
 
 // These are used in debugging, DBG should not appear in committed code. Other debugging logic can be tagged with // DBG
 #define PANIC_DBG panic("AAaaa")
