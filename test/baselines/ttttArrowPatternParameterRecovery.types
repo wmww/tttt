@@ -1,0 +1,84 @@
+//// [test/cases/ttttArrowPatternParameterRecovery.ts] ////
+
+=== ttttArrowPatternParameterRecovery.ts ===
+declare const dec: any;
+>dec : any
+
+let x;
+>x : any
+
+x = ({ @dec b }) => 1;
+>x = ({ @dec b }) => 1 : ({}: {}, b: any) => number
+>x : any
+>({ @dec b }) => 1 : ({}: {}, b: any) => number
+>dec : any
+>b : any
+>1 : 1
+
+x = ({ % b }) => 1;
+>x = ({ % b : number
+>x : any
+>({ % b : number
+>{ % b : number
+>{ : {}
+>b : any
+>1 : 1
+
+x = ({ b, @dec c }) => 1;
+>x = ({ b, @dec c }) => 1 : ({ b, }: { b: any; }, c: any) => number
+>x : any
+>({ b, @dec c }) => 1 : ({ b, }: { b: any; }, c: any) => number
+>b : any
+>dec : any
+>c : any
+>1 : 1
+
+function f({ @dec b }) {}
+>f : ({}: {}, b: any) => void
+>dec : any
+>b : any
+
+x = (a, }) => 1;
+>x = (a, }) => 1 : (a: any) => number
+>x : any
+>(a, }) => 1 : (a: any) => number
+>a : any
+>1 : 1
+
+x = ([a] @ b) => 1;
+>x = ([a] : any[]
+>x : any
+>([a] : any[]
+>[a] : any[]
+>a : any
+>b : any
+>1 : 1
+
+var obj2 = ({ x: x => 1 });
+>obj2 : { x: (x: any) => number; }
+>({ x: x => 1 }) : { x: (x: any) => number; }
+>{ x: x => 1 } : { x: (x: any) => number; }
+>x : (x: any) => number
+>x => 1 : (x: any) => number
+>x : any
+>1 : 1
+
+var obj3 = ({ x: x => (x, undefined), y: y => (y, undefined) });
+>obj3 : { x: (x: any) => undefined; y: (y: any) => undefined; }
+>({ x: x => (x, undefined), y: y => (y, undefined) }) : { x: (x: any) => undefined; y: (y: any) => undefined; }
+>{ x: x => (x, undefined), y: y => (y, undefined) } : { x: (x: any) => undefined; y: (y: any) => undefined; }
+>x : (x: any) => undefined
+>x => (x, undefined) : (x: any) => undefined
+>x : any
+>(x, undefined) : undefined
+>x, undefined : undefined
+>x : any
+>undefined : undefined
+>y : (y: any) => undefined
+>y => (y, undefined) : (y: any) => undefined
+>y : any
+>(y, undefined) : undefined
+>y, undefined : undefined
+>y : any
+>undefined : undefined
+

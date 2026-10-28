@@ -1,0 +1,95 @@
+ttttArrowPatternParameterRecovery.ts(3,8): error TS1180: Property destructuring pattern expected.
+ttttArrowPatternParameterRecovery.ts(3,8): error TS7006: Parameter 'b' implicitly has an 'any' type.
+ttttArrowPatternParameterRecovery.ts(3,15): error TS1005: ',' expected.
+ttttArrowPatternParameterRecovery.ts(4,6): error TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+ttttArrowPatternParameterRecovery.ts(4,8): error TS1136: Property assignment expected.
+ttttArrowPatternParameterRecovery.ts(4,10): error TS2304: Cannot find name 'b'.
+ttttArrowPatternParameterRecovery.ts(4,12): error TS1005: ')' expected.
+ttttArrowPatternParameterRecovery.ts(4,13): error TS1128: Declaration or statement expected.
+ttttArrowPatternParameterRecovery.ts(4,15): error TS1128: Declaration or statement expected.
+ttttArrowPatternParameterRecovery.ts(5,8): error TS7031: Binding element 'b' implicitly has an 'any' type.
+ttttArrowPatternParameterRecovery.ts(5,11): error TS1180: Property destructuring pattern expected.
+ttttArrowPatternParameterRecovery.ts(5,11): error TS7006: Parameter 'c' implicitly has an 'any' type.
+ttttArrowPatternParameterRecovery.ts(5,18): error TS1005: ',' expected.
+ttttArrowPatternParameterRecovery.ts(6,14): error TS1180: Property destructuring pattern expected.
+ttttArrowPatternParameterRecovery.ts(6,14): error TS7006: Parameter 'b' implicitly has an 'any' type.
+ttttArrowPatternParameterRecovery.ts(6,21): error TS1005: ',' expected.
+ttttArrowPatternParameterRecovery.ts(7,6): error TS7006: Parameter 'a' implicitly has an 'any' type.
+ttttArrowPatternParameterRecovery.ts(7,9): error TS1138: Parameter declaration expected.
+ttttArrowPatternParameterRecovery.ts(8,7): error TS2304: Cannot find name 'a'.
+ttttArrowPatternParameterRecovery.ts(8,10): error TS1005: ')' expected.
+ttttArrowPatternParameterRecovery.ts(8,13): error TS1146: Declaration expected.
+ttttArrowPatternParameterRecovery.ts(8,15): error TS1128: Declaration or statement expected.
+ttttArrowPatternParameterRecovery.ts(9,18): error TS7006: Parameter 'x' implicitly has an 'any' type.
+ttttArrowPatternParameterRecovery.ts(10,18): error TS7006: Parameter 'x' implicitly has an 'any' type.
+ttttArrowPatternParameterRecovery.ts(10,24): error TS2695: Left side of comma operator is unused and has no side effects.
+ttttArrowPatternParameterRecovery.ts(10,42): error TS7006: Parameter 'y' implicitly has an 'any' type.
+ttttArrowPatternParameterRecovery.ts(10,48): error TS2695: Left side of comma operator is unused and has no side effects.
+
+
+==== ttttArrowPatternParameterRecovery.ts (27 errors) ====
+    declare const dec: any;
+    let x;
+    x = ({ @dec b }) => 1;
+           ~
+!!! error TS1180: Property destructuring pattern expected.
+           ~~~~~~
+!!! error TS7006: Parameter 'b' implicitly has an 'any' type.
+                  ~
+!!! error TS1005: ',' expected.
+    x = ({ % b }) => 1;
+         ~
+!!! error TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+           ~
+!!! error TS1136: Property assignment expected.
+             ~
+!!! error TS2304: Cannot find name 'b'.
+               ~
+!!! error TS1005: ')' expected.
+                ~
+!!! error TS1128: Declaration or statement expected.
+                  ~~
+!!! error TS1128: Declaration or statement expected.
+    x = ({ b, @dec c }) => 1;
+           ~
+!!! error TS7031: Binding element 'b' implicitly has an 'any' type.
+              ~
+!!! error TS1180: Property destructuring pattern expected.
+              ~~~~~~
+!!! error TS7006: Parameter 'c' implicitly has an 'any' type.
+                     ~
+!!! error TS1005: ',' expected.
+    function f({ @dec b }) {}
+                 ~
+!!! error TS1180: Property destructuring pattern expected.
+                 ~~~~~~
+!!! error TS7006: Parameter 'b' implicitly has an 'any' type.
+                        ~
+!!! error TS1005: ',' expected.
+    x = (a, }) => 1;
+         ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+            ~
+!!! error TS1138: Parameter declaration expected.
+    x = ([a] @ b) => 1;
+          ~
+!!! error TS2304: Cannot find name 'a'.
+             ~
+!!! error TS1005: ')' expected.
+                
+!!! error TS1146: Declaration expected.
+                  ~~
+!!! error TS1128: Declaration or statement expected.
+    var obj2 = ({ x: x => 1 });
+                     ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+    var obj3 = ({ x: x => (x, undefined), y: y => (y, undefined) });
+                     ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+                           ~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+                                             ~
+!!! error TS7006: Parameter 'y' implicitly has an 'any' type.
+                                                   ~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+    

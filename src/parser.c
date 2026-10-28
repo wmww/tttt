@@ -7480,6 +7480,15 @@ static bool parse_function_args_inner(
                         parse_error(&p, span_make(p.shared->source, from, first_modifier_end), 1433,
                             "Neither decorators nor modifiers may be applied to 'this' parameters.");
                     }
+                } else if (!is_definitely_function && !vec_function_arg_is_empty(&ret->args) && p.pos == before_param &&
+                    !tok_is_start_of_parameter(tok_peek(&p))
+                ) {
+                    // After a first parameter the list's recovery skips what is no parameter even in a speculative
+                    // arrow function (tsc's parseDelimitedList only calls parseParameter, which can fail it, on a
+                    // parameter's start): `({ @dec b }) => 1`'s `}`
+                    vec_expr_drop(&decorators);
+                    if (list_abort_or_skip(&p, PARSING_PARAMETERS)) break;
+                    continue;
                 } else if (!is_definitely_function) {
                     vec_expr_drop(&decorators);
                     goto drop_and_fail;
@@ -7554,8 +7563,11 @@ static bool parse_function_args_inner(
                 // tsc's isUnambiguouslyStartOfFunctionType and isParenthesizedArrowFunctionExpression: a first
                 // parameter that didn't commit must be followed by `,` or `)` (`(readonly T[]) => {` in a return type
                 // is a parenthesized type; an expression's modifier commits, a type's doesn't)
+                // (An arrow function whose first parameter is a pattern, `({` or `([`, is tsc's Tristate.Unknown: the whole
+                // arrow is parsed speculatively and stands if `=>` follows, `({ @dec b }) => 1`; the caller checks that)
+                bool pattern_first = !parse_type_return_syntax && (*before_param == '{' || *before_param == '[');
                 if (vec_function_arg_is_empty(&ret->args) && !is_definitely_function && *p.pos != ',' && *p.pos != ')' &&
-                    (parse_type_return_syntax || first_modifier_end == nullptr)
+                    (parse_type_return_syntax || first_modifier_end == nullptr) && !pattern_first
                 ) {
                     vec_expr_drop(&decorators);
                     initialized_binding_drop(&initializer);
@@ -7618,8 +7630,10 @@ static bool parse_function_args_inner(
             hop_whitespace(&p);
         }
 
-        // (A missing `)` is only an error: tsc's parseParameters keeps what it parsed and goes on)
-        expect_char(&p, ')');
+        // (A missing `)` is only an error: tsc's parseParameters keeps what it parsed and goes on. Not in a speculative
+        // arrow function, which it ends: parseParenthesizedArrowFunctionExpression without allowAmbiguity,
+        // `({ x: x => 1 })`'s pattern list stops at the `=>` that ends the variable declaration list)
+        if (!expect_char(&p, ')') && !is_definitely_function && !parse_type_return_syntax && !commit_on_paren) goto drop_and_fail;
     } else if (is_definitely_function) {
         expected_token_error(&p, "(");
         //goto drop_and_fail;

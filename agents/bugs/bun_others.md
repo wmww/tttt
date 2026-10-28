@@ -329,6 +329,12 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
   b.ts gets TS2303 twice, a.ts TS2552. A fix: run an `export default name` alias's suggestion outside its flight when
   binder_link reaches it first, and keep each check's verdict (nested and outer) for the walk to report. Contrived
   (a circular self-import), left. [open]
+- Bigint property names (10-C20, 53-L04b): tsgo names them by the scanner's token value (`0XFFn` "0xffn", `0b11n`
+  "3n"): TS1117 against a string name, and a binding element's bigint key reads that string property (TS2538 'bigint'
+  when there is none). [fixed 626720e67]
+- `({ @dec b }) => 1` (53-L16b): a speculative arrow function's parameter list skips what isn't a parameter after the
+  first one, and a missing `)` ends it (tsc's parseParenthesizedArrowFunctionExpression without allowAmbiguity).
+  [fixed COMMIT]
 
 ## Not looked at, by code
 - Each paragraph below is a code and direction with the cases it mismatches in, uninvestigated: at least one open
@@ -1301,7 +1307,7 @@ block.".
   a union's thenable member is dropped (`string | Bad` awaits as string). 16-C13d, where a contextual type `U` computed
   the awaited type of `U` first (no error) and a later `await u` says nothing in tsc: tttt's await expression computes
   its type before checking, so its own computation can't count; the contextual one now marks the union checked
-  (ty_await_context_awaited()) when the operand asks for its contextual type (literals, functions). [fixed COMMIT]
+  (ty_await_context_awaited()) when the operand asks for its contextual type (literals, functions). [fixed 9ce3b692e]
 - Modifier grammar (28-C18b 28-C5b 02-C23b): an async arrow or function expression in an ambient context is TS1040,
   a class's decorated index signature TS1206 alone (no TS1071), an index signature parameter's modifiers are checked
   like a parameter's (TS1274 for `in`/`out`). [fixed]
