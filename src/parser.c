@@ -6112,7 +6112,7 @@ static Span jsdoc_import_specifier_extent(Parser* parent, const char* c, const c
 
 // `@import { A } from "m"` (TS 5.5): a type-only import declaration, parsed by the statement parser from the tag's
 // name on (tsc's JSDocImportTag). Parse errors are JSDoc errors
-static void jsdoc_import_statement(Parser* parent, JsDocTag const* tag, const char* end, VecStatement* out) {
+static void jsdoc_import_statement(Parser* parent, JsDocTag const* tag, const char* end, bool toplevel, VecStatement* out) {
     Parser p = parser(parent);
     SourceFile const* source = p.shared->source;
     // The statement parser doesn't stop at the `*/`: what tsc's parseImportTag says about a clause, `from` or module
@@ -6128,7 +6128,14 @@ static void jsdoc_import_statement(Parser* parent, JsDocTag const* tag, const ch
         while (word_end < end && (is_identifier_char(*word_end) || *word_end == '-')) word_end++;
     }
     // (A reserved word isn't a default import's name: `@import import { A } from "m"` has no clause)
-    bool name = word_end > c && !(*c >= '0' && *c <= '9') && !is_reserved_word(csview_from_range(c, word_end));
+    csview word = csview_from_range(c, word_end);
+    bool name = word_end > c && !(*c >= '0' && *c <= '9') && !is_reserved_word(word);
+    if ((p.shared->in_async && csview_equals(word, "await")) || (p.shared->in_generator && csview_equals(word, "yield"))) {
+        // (Nor `await` in an async function, `yield` in a generator, tsc's isIdentifier: the module specifier is the
+        // expression `await from "m"`, the tag imports nothing and nothing is said)
+        parse_fail(&p);
+        return;
+    }
     if (c < end && (name || *c == '{' || *c == '*')) {
         clause = true;
         if (*c == '{') {
@@ -6205,6 +6212,9 @@ static void jsdoc_import_statement(Parser* parent, JsDocTag const* tag, const ch
             }
             statement.import_export->jsdoc = true;
             statement.import_export->main.jsdoc = true;
+            // (In a block or function: tsc's collectModuleReferences never resolves it to a file, see
+            // port_statement_add_names())
+            if (!toplevel && statement.import_export->module_ref) statement.import_export->module_ref->ambient_only = true;
             for_each (i, vec_port_item, &statement.import_export->items) i->jsdoc = true;
             // (The tag's range, to the next tag or the comment's end past a line break, else its last token: tsgo's
             // reparsed declaration)
@@ -6315,8 +6325,8 @@ static void jsdoc_bind_comments(
         parse_jsdoc_comment(parent, range, &tags);
         parent->shared->jsdoc_unchecked = outer_unchecked;
         for_each (i, vec_jsdoc_tag, &tags) {
-            if (i->kind == JSDOC_TAG_IMPORT && toplevel) {
-                jsdoc_import_statement(parent, i, range.end - 2, out);
+            if (i->kind == JSDOC_TAG_IMPORT) {
+                jsdoc_import_statement(parent, i, range.end - 2, toplevel, out);
                 continue;
             }
             if (i->kind != JSDOC_TAG_TYPEDEF && i->kind != JSDOC_TAG_CALLBACK) continue;
@@ -13058,7 +13068,12 @@ static bool parse_import_item_list(Parser* parent, bool is_import, PortStatement
                         // (a missing name imports nothing)
                         item.source_name = span_make(p.shared->source, item.decl_name.buf, item.decl_name.buf);
                     }
-                } else if (is_reserved_word(span_sv(item.decl_name))) {
+                } else if (is_reserved_word(span_sv(item.decl_name)) ||
+                    (p.shared->in_async && span_equals(item.decl_name, "await")) ||
+                    (p.shared->in_generator && span_equals(item.decl_name, "yield"))
+                ) {
+                    // (`await` in an async function and `yield` in a generator are no identifiers either: tsc's
+                    // isIdentifier)
                     parse_error(&p, item.decl_name, 1003, "Identifier expected.");
                 }
             }

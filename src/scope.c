@@ -2223,8 +2223,9 @@ void scope_add_port(Scope* me, PortItem* item) {
     }
 
     if (!port_item_is_export(item)) {
-        // (Its local name: an imported or exported name is an identifier name, tsc's isIdentifierName)
-        scope_check_strict_identifier(me, item->decl_name, false);
+        // (Its local name: an imported or exported name is an identifier name, tsc's isIdentifierName. Not a JSDoc
+        // `@import`'s, whose identifiers are JSDoc nodes to tsc's checkContextualIdentifier and checkStrictModeIdentifier)
+        if (!item->jsdoc) scope_check_strict_identifier(me, item->decl_name, false);
         if (!item->type_only) check_require_exports_collision(me, item->decl_name, false);
     }
     bool exported = port_item_declares_export(item);

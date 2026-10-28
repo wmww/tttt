@@ -1,0 +1,47 @@
+//// [test/cases/ttttJsDocImportInFunction.ts] ////
+
+=== b.ts ===
+export interface A { a: 1 }
+>A : Symbol(A, Decl(b.ts, 0, 0))
+>a : Symbol(A.a, Decl(b.ts, 0, 20))
+
+=== a.js ===
+function f() {
+>f : Symbol(f, Decl(a.js, 0, 0))
+
+/** @import { A } from "./b" */
+/** @type {A} */
+const x = 1;
+>x : Symbol(x, Decl(a.js, 3, 5))
+}
+async function g() {
+>g : Symbol(g, Decl(a.js, 4, 1))
+
+/** @import { A as await } from "./b" */
+}
+// (`@import await from` there has no clause: the module specifier is the expression `await from "./b"`, nothing said)
+async function g2() {
+>g2 : Symbol(g2, Decl(a.js, 7, 1))
+
+/** @import await from "./b" */
+}
+function h() {
+>h : Symbol(h, Decl(a.js, 11, 1))
+
+import { A } from "./b";
+>A : Symbol(A, Decl(a.js, 13, 8))
+}
+=== c.ts ===
+async function k() {
+>k : Symbol(k, Decl(c.ts, 0, 0))
+
+    import { A as await } from "./b";
+>await : Symbol(await, Decl(c.ts, 1, 12))
+}
+function* l() {
+>l : Symbol(l, Decl(c.ts, 2, 1))
+
+    import { A as yield } from "./b";
+>yield : Symbol(yield, Decl(c.ts, 4, 12))
+}
+

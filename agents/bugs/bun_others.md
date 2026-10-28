@@ -58,7 +58,7 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   has the union's properties to tsc (forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType reads
   getPropertiesOfType of the modifiers type, a union property with a common non-public declaration and public through
   one member included; getUnionIndexInfos for its index signatures), tttt read the keys of `keyof (W | D)` (`keyof W &
-  keyof D`, never): now union_mapped_keys() in expand_mapped() (members.c), test ttttMappedUnionKeyProperties. [fixed]
+  keyof D`, never): now union_mapped_keys() in expand_mapped() (members.c), test ttttMappedUnionKeyProperties. [fixed 004a96d40]
 - 99-V1's private_class_* files: `Pick<Writable<D>, "id"> & D` with D's `id` private (+TS2322 `W & D` to `{ id }`),
   and -TS2339 `t.id` on `T extends W & D` (the `*_generic` entry below). [open]
 - Circular mapped types and interfaces whose members are being resolved: 10-C8c (`interface I9 extends
@@ -268,9 +268,14 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
   jsdoc_extend_dashed_name()), `{@link Map#delete}` reserved words TS1359 and `{@link Map.}` (54-L07b:
   jsdoc_parse_link()), `@augments {A<=}`/`{A<<=}` and `{<>}`/`Array<<>>` (56-L01 56-L20b: the augments class's `<` is
   the JSDoc scanner's one-character token, `<=`/`<<=` start no type argument list elsewhere, type parameters commit a
-  function type; `@implements` arity is TS8026). [fixed]
-- JSDoc parsing, still open: `function () {}` with `@overload` in JS (61-L17, TS1003 twice), `@import { A as await }`
-  in an async function (92-R03d: tsc TS1473, TS1003, TS2307). [open]
+  function type; `@implements` arity is TS8026). [fixed 258fad6f4 ec5cf601e b76c32738]
+- JSDoc parsing: `function () {}` with `@overload` in JS (61-L17: the reparsed signature's missing name is TS1003
+  again, on the character before it), `@import { A as await }` in an async function (92-R03d: a JSDoc import in a
+  function is misplaced, TS1473, its module never resolved to a file, TS2307; `await`/`yield` there are no names,
+  TS1003). [fixed]
+- A function declaration missing its name (`function () {}`, JS, ttttJsDocOverloadMissingName's neighbours): tsc's
+  TS7010 calls it `(Missing)` (tttt ''), two of them in a file merge into one symbol (tsc's types baseline shows
+  one overloaded type), an `export default function () {}` with an `@overload` gets TS7011 at the tag. [open]
 - tsc's TS2314 on `@augments {A<=}` underlines `A<` (the node ends with its missing `>`), tttt's `A`
   (identifier_type_span() reconstructs the end from the text). [text]
 - `@type {yield}` in a generator (92-R03b): a JSDoc type's name isn't a strict-mode identifier (checkStrictModeIdentifier

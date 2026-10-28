@@ -1,0 +1,43 @@
+a.js(2,5): error TS1473: An import declaration can only be used at the top level of a module.
+a.js(2,24): error TS2307: Cannot find module './b' or its corresponding type declarations.
+a.js(14,1): error TS1473: An import declaration can only be used at the top level of a module.
+c.ts(2,19): error TS1003: Identifier expected.
+c.ts(5,19): error TS1003: Identifier expected.
+
+
+==== b.ts (0 errors) ====
+    export interface A { a: 1 }
+==== a.js (3 errors) ====
+    function f() {
+    /** @import { A } from "./b" */
+        ~
+!!! error TS1473: An import declaration can only be used at the top level of a module.
+                           ~~~~~
+!!! error TS2307: Cannot find module './b' or its corresponding type declarations.
+    /** @type {A} */
+    const x = 1;
+    }
+    async function g() {
+    /** @import { A as await } from "./b" */
+    }
+    // (`@import await from` there has no clause: the module specifier is the expression `await from "./b"`, nothing said)
+    async function g2() {
+    /** @import await from "./b" */
+    }
+    function h() {
+    import { A } from "./b";
+    ~~~~~~
+!!! error TS1473: An import declaration can only be used at the top level of a module.
+    }
+==== c.ts (2 errors) ====
+    async function k() {
+        import { A as await } from "./b";
+                      ~~~~~
+!!! error TS1003: Identifier expected.
+    }
+    function* l() {
+        import { A as yield } from "./b";
+                      ~~~~~
+!!! error TS1003: Identifier expected.
+    }
+    

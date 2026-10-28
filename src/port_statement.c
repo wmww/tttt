@@ -175,18 +175,25 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
     my in_ambient_module = scope->kind == SCOPE_NAMESPACE && scope->container && scope->container->is_module &&
         scope->parent && scope->parent->kind != SCOPE_MODULE;
     bool is_import_alias = my main.tag == PORT_IMPORT_ALIAS && csview_equals(span_sv(my keyword_span), "import");
-    if (!my jsdoc && !top && !my in_namespace &&
+    if (my jsdoc && !top && !my in_namespace && my module_ref) {
+        // A JSDoc `@import` in a block or function: tsgo's reparsed import declaration is misplaced (TS1473), but the
+        // tag is checked all the same, its module never resolved to a file (tsc's collectModuleReferences doesn't look
+        // there, see ModuleRef.ambient_only): TS2307
+        // (On the reparsed declaration's first token, the tag's `@`)
+        Span at = span_make_in(my keyword_span, span_start_ptr(my keyword_span) - 1, span_start_ptr(my keyword_span));
+        error_ctx_grammar_error_d(binder_errs(scope->binder), at, 1473, "An import declaration can only be used at the top level of a module.");
+    } else if (!my jsdoc && !top && !my in_namespace &&
         (my module_ref || span_valid(port_statement_rare(me)->non_string_specifier) || is_import_alias || port_statement_is_export_declaration(me))
     ) {
         my wrong_context = true;
         bool is_export = csview_equals(span_sv(my keyword_span), "export");
         // (A JavaScript file has no namespaces to mention)
         if (span_source(my keyword_span) && span_source(my keyword_span)->is_js) {
-            error_ctx_error_d(binder_errs(scope->binder), my keyword_span, is_export ? 1474 : 1473, is_export ?
+            error_ctx_grammar_error_d(binder_errs(scope->binder), my keyword_span, is_export ? 1474 : 1473, is_export ?
                 "An export declaration can only be used at the top level of a module." :
                 "An import declaration can only be used at the top level of a module.");
         } else {
-            error_ctx_error_d(binder_errs(scope->binder), my keyword_span, is_export ? 1233 : 1232, is_export ?
+            error_ctx_grammar_error_d(binder_errs(scope->binder), my keyword_span, is_export ? 1233 : 1232, is_export ?
                 "An export declaration can only be used at the top level of a namespace or module." :
                 "An import declaration can only be used at the top level of a namespace or module.");
         }
@@ -665,7 +672,8 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
     }
     port_item_check_export_equals_property(&my main, errs);
     for_each (i, vec_port_item, &my items) port_item_check_export_equals_property(i, errs);
-    if (span_source(span) && span_source(span)->is_js && !my jsdoc) {
+    // (Not of a misplaced one: tsc's checkImportDeclaration stops at its grammar error, TS1473)
+    if (span_source(span) && span_source(span)->is_js && !my jsdoc && !my wrong_context) {
         port_item_check_js_type(me, &my main, errs);
         for_each (i, vec_port_item, &my items) port_item_check_js_type(me, i, errs);
     }
