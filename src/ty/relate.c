@@ -2317,7 +2317,9 @@ Signature const* ty_erased_signature(Checker* me, Signature const* sig) {
             u32 key_len = 2 + own;
             u64* key = key_len <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * key_len);
             panic_if(!key, "out of memory");
-            key[0] = KEY_SIGNATURE_INSTANCE;
+            // (Its mapper's sources are the target's resolved type parameters: this worker's own when that resolution is,
+            // and so is the erasure then, ty_signature_instantiation())
+            key[0] = my graph && sw_load(&target->res) != (uintptr_t)target_res ? KEY_SIGNATURE_INSTANCE_OWN : KEY_SIGNATURE_INSTANCE;
             key[1] = (u64)(uintptr_t)sig;
             Ty const* any = ty_intrinsic(me, TY_ANY);
             for (u32 i = 0; i < own; i++) key[2 + i] = any->id;

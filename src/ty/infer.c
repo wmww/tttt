@@ -516,7 +516,11 @@ Signature const* ty_signature_instantiation(Checker* me, Signature const* sig, T
     u32 key_len = 2 + args.len;
     u64* key = key_len <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * key_len);
     panic_if(!key, "out of memory");
-    key[0] = KEY_SIGNATURE_INSTANCE;
+    // (An identity, keyed by the signature: its mapper's sources are the signature's type parameters as resolved, so it
+    // is everyone's only when that resolution is. With --shared-graph one resolved privately (tainted, or a shadowed
+    // worker's) has this worker's own type parameters, and an instance made of them is this worker's alone: published,
+    // another worker's arguments missed its type parameters, folo's renderer's `GeneralSettings[K]` read as never)
+    key[0] = my graph && sw_load(&sig->res) != (uintptr_t)sig_rs ? KEY_SIGNATURE_INSTANCE_OWN : KEY_SIGNATURE_INSTANCE;
     key[1] = (u64)(uintptr_t)sig;
     for (u32 i = 0; i < args.len; i++) key[2 + i] = args.data[i]->id;
     void const** slot = intern_slot(me, &my links, key, key_len);

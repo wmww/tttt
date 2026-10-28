@@ -182,6 +182,9 @@ enum {
     KEY_IN_FLIGHT,
     // A union member's type as ty_union_subtype_reduced() keys it (node_links) -> ReductionKey (expr.c)
     KEY_REDUCTION_KEY,
+    // --shared-graph: ty_signature_instantiation() of a signature whose resolution this worker keeps privately (its type
+    // parameters are this worker's clones): the instance is its own too (a scratch kind)
+    KEY_SIGNATURE_INSTANCE_OWN,
 };
 
 // The type parameters declared outside a root conditional type that it mentions (tsc's root.outerTypeParameters, less
