@@ -5,6 +5,8 @@ memo layout, code size), each a few percent. Measure by callgrind instructions o
 of `git show af936072c:agents/plans/86_multiples.md`; the last round's results are measurements.md
 "Single-threaded checker speed".
 
+The data side (bytes per type, cache misses by structure, bun's representation): agents/notes/footprint.md.
+
 ## Where the time goes (perf3, 2026-10-24, main 862617c2e, this box quiet: load 2-7, 16 vCPUs / 8 cores)
 At the defaults (fast/tttt, warm page cache):
 - **vscode 1.40 s**: config 1 ms, load+parse 150, resolve 140 (main thread on a CPU 134-140: nearly serial),

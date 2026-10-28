@@ -40,6 +40,14 @@ there (`nproc` 24): its section below; it is the one to read for core scaling.
   `--tsBuildInfoFile`); its walls right after `oracles.py`'s other oracles are inflated: rerun alone. A project whose
   `.tsbuildinfo` is committed makes tsc skip checking (webcmd).
 
+## Checker footprint at K1 (2026-10-28, worker foot, 7713f7dfa -> 796d25fb7; this box, release and fast builds)
+Census and method: agents/notes/footprint.md. Arena K1 (`--time`) imm(utable.d.ts one-file) 227 -> 217 MB, zod 284 ->
+265, drizzle 299 -> 271, effect 298 -> 287, store.d.ts 144 -> 143, type-fest 475 -> ~451. Peak RSS K1 (fast builds,
+/usr/bin/time) imm 277 -> 267, zod 458 -> 439, drizzle 506 -> 476, effect 740 -> 729 MB (bun --threads=1: 70, 211,
+266, 336). cachegrind D1 read misses imm -2.4%, zod -1.3%, drizzle -0.5%; instructions (callgrind) drizzle -0.30%,
+zod -0.36%. tsgo `--singleThreaded --extendedDiagnostics` Memory used: imm 346 MB, store 218, zod 616, drizzle 589,
+effect 834.
+
 ## Oracle totals (2026-10-23 evening)
 The merger's full `scripts/oracles.py` in wt-gate at **37d832827** (main after the day's first correctness batch,
 11:39; before the `bun*` suite tests and the afternoon's fixes), finished 13:07 on the loaded box (clidiff alone 997 s);
