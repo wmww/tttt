@@ -47,6 +47,9 @@ Census and method: agents/notes/footprint.md. Arena K1 (`--time`) imm(utable.d.t
 266, 336). cachegrind D1 read misses imm -2.4%, zod -1.3%, drizzle -0.5%; instructions (callgrind) drizzle -0.30%,
 zod -0.36%. tsgo `--singleThreaded --extendedDiagnostics` Memory used: imm 346 MB, store 218, zod 616, drizzle 589,
 effect 834.
+On the human's laptop (2026-10-27, dc8d517a0, Zen 5 big core pinned, K1 T1, medians of 5; footprint.md has the
+table): cycles 7713f7dfa -> dc8d517a0 imm -3.0%, store -0.4%, zod -1.1%, drizzle -1.7%, effect -1.1%; against bun
+`--threads=1` tttt takes 1.42x bun's cycles on imm, 1.21x on store, 0.54x zod, 0.55x drizzle, 0.50x effect.
 
 ## Oracle totals (2026-10-23 evening)
 The merger's full `scripts/oracles.py` in wt-gate at **37d832827** (main after the day's first correctness batch,

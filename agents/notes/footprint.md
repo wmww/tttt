@@ -101,21 +101,63 @@ effect ~911->896, vscode 5.42->5.38 GB. Wall K1, interleaved best of 5 at load 7
    TS2615's circular path reads; the template prop knows the mapped type, but copies of mapped props keep the
    template as target and would then find it where they find nothing today.
 
-## For the laptop
-Builds: `scripts/abbuild.sh 7713f7dfa --fast` (base) and `scripts/fastbuild.sh` at the branch tip (or main once
-landed), `cp -L` both out; bun: `npm pack @oven/bun-linux-x64@1.4.4-canary.20261027.1`, untar, `package/bin/bun`.
-Write the two one-file tsconfigs above (adjust the solid-js path to whatever `find thirdparty/sources -path
-'*solid-js@1.9.15*/store/types/store.d.ts'` gives). Then, for P in imm, store, zod
-(`thirdparty/corpora/zod/packages/zod/tsconfig.test.json`), drizzle (`.../drizzle/drizzle-orm/tsconfig.corpus.json`),
-effect (`.../effect/packages/effect/tsconfig.corpus.json`), from an empty directory (bun runs a package.json `check`
-script otherwise), interleaved, 5 runs each:
-```
-TTTT_SYNC_EXIT=1 perf stat -e cycles:u,instructions:u,L1-dcache-load-misses,LLC-load-misses,page-faults \
-    /usr/bin/time -f '%M KB' BASE -p P --noEmit --checkers 1 --threads 1
-TTTT_SYNC_EXIT=1 perf stat -e ... NEW -p P --noEmit --checkers 1 --threads 1
-perf stat -e ... /usr/bin/time -f '%M KB' BUN check -p P --noEmit --threads=1
-```
-and `perf stat -M PipelineL1` for NEW and BUN on imm and store: how much of the cycles are data stalls (the cache
-side) against the front end (code_layout.md's 50%). What decides the next step: if tttt's cycles per instruction on
-imm/store are bun's plus a data-stall share close to the LLC misses' (structural item 2), the intern tables first; if
-the stall share is spread (L1 misses in the graph), the shared members (item 1).
+## The laptop's counters (2026-10-27, the human's laptop, main dc8d517a0)
+Ryzen AI 9 HX 370 (Zen 5: 48 KB L1D, 1 MB L2 a core, 16 MB L3 for the four big cores), every run `taskset -c 2`
+(a big core; the eight Zen 5c cores have half the L3 and 3.3 GHz), box idle. BASE `abbuild.sh 7713f7dfa --fast`, NEW
+`fastbuild.sh` at dc8d517a0 (both BOLT), bun 1.4.4-canary.20261027.1 `check --threads=1`; tttt `--checkers 1
+--threads 1`, `TTTT_SYNC_EXIT=1`, from an empty directory; immutable.d.ts fetched at immutable-js 686b8baf, store.d.ts
+from `npm pack solid-js@1.9.15` (no thirdparty/sources here). `LLC-load-misses` doesn't exist on Zen:
+`ls_dmnd_fills_from_sys.local_ccx` (demand fills from L3) and `.dram_io_all` (from DRAM) stand in. Medians of 5
+interleaved runs, spread under 3% except the first runs (no multiplexing: six counters):
+| | cycles:u M | instr:u M | IPC | L1D miss M | L3 fill M | DRAM fill M | faults | task ms | RSS MB |
+|---|---|---|---|---|---|---|---|---|---|
+| imm base | 1195 | 2380 | 1.99 | 51.4 | 5.13 | 2.02 | 3051 | 263 | 285 |
+| imm new | 1159 | 2373 | 2.05 | 49.5 | 4.65 | 1.86 | 3008 | 257 | 278 |
+| imm bun | 815 | 2320 | 2.85 | 18.4 | 2.48 | 0.88 | 15168 | 184 | 67 |
+| store base | 2046 | 3050 | 1.49 | 45.5 | 4.13 | 4.11 | 3339 | 431 | 280 |
+| store new | 2037 | 3055 | 1.50 | 45.4 | 4.11 | 4.10 | 3278 | 429 | 278 |
+| store bun | 1677 | 4821 | 2.87 | 29.2 | 2.52 | 3.09 | 41819 | 384 | 169 |
+| zod base | 2348 | 3448 | 1.47 | 69.5 | 7.00 | 4.33 | 4027 | 507 | 466 |
+| zod new | 2323 | 3437 | 1.48 | 67.7 | 6.55 | 4.20 | 3954 | 505 | 446 |
+| zod bun | 4312 | 8855 | 2.05 | 98.9 | 16.22 | 4.50 | 49065 | 941 | 205 |
+| drizzle base | 2950 | 4294 | 1.46 | 80.0 | 8.24 | 5.22 | 3955 | 641 | 515 |
+| drizzle new | 2901 | 4292 | 1.48 | 77.8 | 7.78 | 5.02 | 3728 | 628 | 484 |
+| drizzle bun | 5303 | 9805 | 1.85 | 111.9 | 18.39 | 6.25 | 73945 | 1174 | 260 |
+| effect base | 4884 | 6965 | 1.43 | 139.9 | 14.14 | 8.20 | 4961 | 1043 | 686 |
+| effect new | 4828 | 6957 | 1.44 | 138.3 | 13.13 | 7.96 | 4954 | 1034 | 676 |
+| effect bun | 9628 | 18746 | 1.95 | 230.4 | 36.16 | 9.85 | 102685 | 2084 | 326 |
+- **The three landed changes on hardware**: cycles imm -3.0%, store -0.4%, zod -1.1%, drizzle -1.7%, effect -1.1%;
+  L1D misses -3.7 / -0.2 / -2.6 / -2.8 / -1.1%; DRAM fills -8 / 0 / -3 / -4 / -3%; instructions equal. Real but small,
+  like cachegrind said.
+- Top-down (`perf stat -r 5 -M PipelineL1` and `PipelineL2`, multiplexed; slots times the cycles above, M cycles):
+| | cycles | retiring | frontend | backend: memory | backend: cpu | bad speculation |
+|---|---|---|---|---|---|---|
+| imm new / bun | 1159 / 815 | 255 / 231 | 496 / 346 | 362 / 184 | 12 / 5 | 110 / 51 |
+| store new / bun | 2037 / 1677 | 320 / 507 | 650 / 565 | 874 / 475 | 24 / 17 | 208 / 111 |
+| zod new / bun | 2323 / 4312 | 372 / 974 | 1175 / 2152 | 602 / 910 | 23 / 34 | 188 / 276 |
+| drizzle new / bun | 2901 / 5303 | 458 / 1034 | 1451 / 2657 | 725 / 1145 | 29 / 42 | 241 / 339 |
+| effect new / bun | 4828 / 9628 | 739 / 2070 | 2477 / 4853 | 1193 / 2109 | 43 / 67 | 367 / 568 |
+  On the corpora both are half front end, a quarter memory (tttt 25%, bun 21%): the same machine profile, tttt
+  doing half the instructions. On the one-file `.d.ts` shapes the gap is: imm +344 M = memory +178, front end +150,
+  bad speculation +59 at the same instruction count; store +360 M = memory +399, bad speculation +97, front end +85,
+  with 37% fewer instructions than bun (all of it lost to memory stalls: store is 43% memory-bound against bun's 28%).
+  Bad speculation is twice bun's on both (not in this note's census; branchy code on data-dependent kinds).
+- Where the misses are (`perf record -e L1-dcache-load-misses/period=5000/,ls_dmnd_fills_from_sys.local_ccx/period=500/,
+  ls_dmnd_fills_from_sys.dram_io_all/period=200/` on a `-g` release build at dc8d517a0, `perf report --sort=srcline`
+  bucketed by line: intern = checker.c's hash_words..intern_has, links = ty_link_*, ty_alloc = its first writes to a
+  fresh type, kernel = page zeroing and faulting; non-precise, so function-level; IBS `perf mem` gave too few
+  samples to use: ldlat's minimum is 128 here and the sample counts were erratic). Shares of each event, %:
+| | L1D misses | L3 fills | DRAM fills |
+|---|---|---|---|
+| imm | graph 74, kernel 10, intern 8, libc 4, ty_alloc 3, grow 1 | graph 74, intern 10, libc 7, kernel 3, ty_alloc 3 | kernel 47, graph 33, ty_alloc 10, intern 6, libc 3 |
+| store | graph 47, intern 25, kernel 11, grow 4, ty_alloc 4, relation cache 3, links 3 | graph 55, intern 25, relation cache 5, ty_alloc 5, kernel 5, links 3 | graph 42, intern 25, kernel 13, ty_alloc 9, libc 3, links 2 |
+  The intern probes are checker.c:233/239 (the entry's hash, then the key block) and hash_words (skid); the top
+  graph line is ty_alloc's first write (checker.c:745, `ret->kind`).
+
+**The verdict, by the rule this section was written for**: the stall share is spread, not the LLC misses' of the
+intern tables. imm (the shape where bun is furthest ahead) has 2.7x bun's L1 misses at the same instruction count,
+three quarters of them in the type graph and only 8-10% in the tables, and 57% of its DRAM fills are fresh memory
+(kernel zeroing plus ty_alloc's first writes): bytes allocated, i.e. **the shared members (structural item 1) first**.
+The intern tables (item 2) are the second lever, worth about a quarter of the memory stall on store-like shapes
+(~200 M of store's 874 M memory-bound cycles, ~10% of its time; less elsewhere) and 6-10% of imm's. Bad speculation
+(twice bun's on the one-file shapes, 5-8% of cycles everywhere) is unexamined.
