@@ -414,7 +414,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
                 function_impl_rare_mut(me)->initializer_errors = stash;
             }
             value_errs = function_impl_rare(me)->initializer_errors;
-        } else if (!my has_body && !looked_at) {
+        } else if (!my has_body && !looked_at && i->initializer.value) {
             value_errs = binder_discarded_errs(names->binder);
         }
         initialized_binding_lookup_names_parameter(&i->initializer, parameter_scope, value_errs, errs);
