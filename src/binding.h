@@ -182,12 +182,16 @@ static inline Expr* initialized_binding_value(InitializedBinding const* me) {
 void unique_symbol_decl_mark(UniqueSymbolDecl decl, TypeNode* annotation, Expr* initializer);
 void initialized_binding_add_names(InitializedBinding* me, Scope* scope, BindingAddNamesProps props);
 void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, ErrorCtx* errs);
-// `value_unchecked`: the initializer of a function without a body (TS2371 only): its names are resolved silently
-void initialized_binding_lookup_names_parameter(InitializedBinding* me, Scope* names, bool value_unchecked, ErrorCtx* errs);
+// `value_errs`: where what resolving the initializer reports goes (`errs`; the binder's discarded errors for a function
+// without a body, TS2371 only; an overload's own, function_impl_check_compared_initializers())
+void initialized_binding_lookup_names_parameter(InitializedBinding* me, Scope* names, ErrorCtx* value_errs, ErrorCtx* errs);
 Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me);
 void initialized_binding_settle_value(InitializedBinding* me); // Its initializer checked, see ty_settle_function_context()
 bool initialized_binding_js_empty_array(InitializedBinding const* me, Ty const* init);
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs);
+// An overload's parameter's initializer checked when its type is asked (tsc's checkDeclarationInitializer without a
+// quick type: function_impl_check_compared_initializers())
+void initialized_binding_typecheck_overload_value(InitializedBinding* me, ErrorCtx* errs);
 // A parameter (`span`: all of it)
 void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, bool bodiless, ErrorCtx* errs);
 

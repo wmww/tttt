@@ -985,22 +985,14 @@ static bool in_optional_chain(Expr const* expr) {
 // A call of a function with a single non-generic signature is what the signature returns, arguments unseen: that's
 // what lets `x = f(y)` in a loop not depend on `y`'s type (tsc's getQuickTypeOfExpression). Null: no shortcut. The
 // flow engine asks for the callee through its own cache (`in_flow`), which doesn't remember loop-incomplete types
-Ty const* ty_quick_expr_type(Checker* me, Expr const* expr, bool in_flow) {
-    if (expr->tag == EXPR_UNARY_OP && expr->unary_op->op == UNARY_OP_AWAIT) {
-        Ty const* quick = ty_quick_expr_type(me, &expr->unary_op->expr, in_flow);
-        return quick ? ty_awaited(me, quick) : nullptr;
-    }
-    // (A type assertion is its type, its operand unchecked)
-    if (expr->tag == EXPR_AS_TYPE && !expr->as_type->is_satisfies && !as_type_is_const(expr->as_type)) {
-        return ty_from_node(me, &expr->as_type->type, (LowerCtx){ .generic = true });
-    }
-    if (expr->tag != EXPR_CALL) return nullptr;
+bool ty_quick_call_eligible(Expr const* expr) {
+    if (expr->tag != EXPR_CALL) return false;
     CallExpr const* call = expr->call;
-    if (call->is_extends || call->callable.tag == EXPR_GENERIC_PARAMS) return nullptr;
+    if (call->is_extends || call->callable.tag == EXPR_GENERIC_PARAMS) return false;
     // A chain is one only as `f?.(x)` of a callee that isn't nullish (tsc's getReturnTypeOfSingleNonGenericSignatureOfCallChain
     // asks the callee's own type, of which a nullish part has no signature; then nothing short-circuits):
     // `document.elementFromPoint?.(x, y)` (openscience's create-auto-scroll.tsx, a loop's TS7022 otherwise)
-    if (in_optional_chain(expr) && (!call->optional_chain || in_optional_chain(&call->callable))) return nullptr;
+    if (in_optional_chain(expr) && (!call->optional_chain || in_optional_chain(&call->callable))) return false;
     // (tsc's isSymbolOrSymbolForCall and isRequireCall: `Symbol()`, `Symbol.for()` and `require()`)
     Expr const* name_expr = &call->callable;
     if (name_expr->tag == EXPR_PROPERTY && span_equals(property_key_inner_span(name_expr->property), "for")) {
@@ -1009,11 +1001,13 @@ Ty const* ty_quick_expr_type(Checker* me, Expr const* expr, bool in_flow) {
     if (name_expr->tag == EXPR_IDENTIFIER && !call->uses_new) {
         csview name = span_sv(name_expr->inner_span);
         if (csview_equals(name, "Symbol") || (name_expr == &call->callable && csview_equals(name, "require"))) {
-            return nullptr;
+            return false;
         }
     }
-    if (!call->uses_new) ty_assign_iife_parameter_types(me, call);
-    Ty const* callee = in_flow ? ty_flow_expr_type(me, &call->callable) : ty_expr_type(me, &call->callable);
+    return true;
+}
+
+Ty const* ty_quick_call_return(Checker* me, CallExpr const* call, Ty const* callee) {
     if (!(callee->flags & TYF_OBJECT)) return nullptr;
     // (tsgo's getSingleSignature with allowMembers: the callee may have properties and index signatures, a class its
     // `prototype`. So `new A()` of an abstract class is A here, though checking it is an error)
@@ -1036,6 +1030,22 @@ Ty const* ty_quick_expr_type(Checker* me, Expr const* expr, bool in_flow) {
     SigResolved const* sig_rs = signature_resolve(me, sig);
     if (sig_rs->type_params.len) return nullptr;
     return signature_return_type(me, sig);
+}
+
+Ty const* ty_quick_expr_type(Checker* me, Expr const* expr, bool in_flow) {
+    if (expr->tag == EXPR_UNARY_OP && expr->unary_op->op == UNARY_OP_AWAIT) {
+        Ty const* quick = ty_quick_expr_type(me, &expr->unary_op->expr, in_flow);
+        return quick ? ty_awaited(me, quick) : nullptr;
+    }
+    // (A type assertion is its type, its operand unchecked)
+    if (expr->tag == EXPR_AS_TYPE && !expr->as_type->is_satisfies && !as_type_is_const(expr->as_type)) {
+        return ty_from_node(me, &expr->as_type->type, (LowerCtx){ .generic = true });
+    }
+    if (!ty_quick_call_eligible(expr)) return nullptr;
+    CallExpr const* call = expr->call;
+    if (!call->uses_new) ty_assign_iife_parameter_types(me, call);
+    Ty const* callee = in_flow ? ty_flow_expr_type(me, &call->callable) : ty_expr_type(me, &call->callable);
+    return ty_quick_call_return(me, call, callee);
 }
 
 static Ty const* flow_expr_type_in(Checker* me, Expr const* expr, BinaryOpExpr const* assignment);

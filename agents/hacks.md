@@ -300,6 +300,12 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   an instantiation whose declared type became undefined (`p: T = x` with T = undefined) that prints `never`. Probed 2026-10-23, matches tsgo (`p: undefined = undefined`, `p: T = undefined as T` with `T extends undefined`).
 - `ty_report_pattern_iterable()`: TS2318 'Iterable' gated on an array/object literal initializer because tttt computes
   the pattern's contextual type eagerly (tsc's createIterableType only when asked).
+- `function_impl_check_compared_initializers()`: an overload's initializer is checked when
+  ty_check_overloads_compatible() compares it (past the return types and the arity), not when its parameter's type is
+  first asked (tsc's getTypeOfParameter, which a call with arguments or declaration emit also reaches); the errors its
+  resolve walk reported are kept in FunctionImplRare.initializer_errors (malloc'd: a deferred body's materialization
+  dropped without a walk leaks those of the overloads inside it). Correct: lazy parameter typing that reports
+  (agents/notes/reentrancy.md).
 
 ## Calls and inference (`ty/call.c`, `ty/infer.c`)
 - `Checker.outer_inference` is dynamic state where tsc finds a node's inference context among its ancestors

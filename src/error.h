@@ -99,6 +99,9 @@ typedef struct ErrorCtx {
     struct ErrorCtx* parent;
     // Nothing may be reported into it: every checker reports into its own (a report is log_error()ed)
     bool frozen;
+    // It outlives the resolve walk that reports into it (FunctionImplRare.initializer_errors): a parallel walk's
+    // deferred reports go into it rather than being discarded (scope.c's shard_lasting_errs())
+    bool lasting;
 } ErrorCtx;
 
 static inline ErrorCtx error_ctx_init() { return (ErrorCtx){0}; }

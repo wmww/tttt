@@ -595,6 +595,9 @@ typedef struct UnaryOpExpr {
     // `yield x` outside a generator (tsc parses one where an operand follows on the line, isYieldExpression): TS1163;
     // the operand is still checked
     bool outside_generator;
+    // `yield`/`await` in a parameter initializer, not in a function inside it (tsc's
+    // isInParameterInitializerBeforeContainingFunction): TS2523/TS2524. Set by the parser
+    bool in_parameter_initializer;
     Expr expr;
     FunctionImpl const* generator; // `yield`: the generator it is in (set when resolving), null if there's none
     // `yield`: what it evaluates to isn't used (an expression statement, a `void` operand, left of a comma, a for loop's

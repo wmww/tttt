@@ -125,6 +125,10 @@ typedef struct FunctionImplRare {
     // The last `@param` tag when it names no parameter (its index into jsdoc_unmatched plus one, else 0): what
     // `arguments` could be (tsc's checkUnmatchedJSDocParameters: TS8029 unless its type is an array)
     u32 jsdoc_arguments_candidate;
+    // An overload signature (no body, not ambient, not a type's): what resolving its parameters' initializers reported,
+    // kept for function_impl_check_compared_initializers() (tsc checks one only when the parameter's type is asked).
+    // Owned, null if nothing
+    struct ErrorCtx* initializer_errors;
     // An overload signature of a class method or constructor: the first declaration of its symbol with a body (tsc's
     // addImplementationSuccessElaboration looks there); of a JSDoc `@overload`, its host. Set by the resolve walk
     struct FunctionImpl const* overload_implementation;
@@ -456,6 +460,9 @@ void function_impl_check_parameter_decorators(FunctionImpl const* me, ErrorCtx* 
 // TS2842 for the unused renamings in a bodiless signature's patterns (part of function_impl_typecheck_signature())
 void function_impl_check_unused_renamings(FunctionImpl const* me, ErrorCtx* errs);
 void function_impl_check_jsdoc_overloads(FunctionImpl const* me, Span name, ErrorCtx* errs);
+// An overload compared with its implementation (tsc's isImplementationCompatibleWithOverload asks its parameters'
+// types): its unannotated parameters' initializers checked as typing them checks them (FunctionImplRare.initializer_errors)
+void function_impl_check_compared_initializers(FunctionImpl const* me, ErrorCtx* errs);
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs);
 // The part of function_impl_typecheck() about the body, deferred for a function expression (Checker.defer_checks)
 void function_impl_typecheck_body(FunctionImpl* me, ErrorCtx* errs);

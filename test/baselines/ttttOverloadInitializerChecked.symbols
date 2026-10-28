@@ -1,0 +1,139 @@
+//// [test/cases/ttttOverloadInitializerChecked.ts] ////
+
+=== m.ts ===
+export class X { static readonly y = "k"; }
+>X : Symbol(X, Decl(m.ts, 0, 0))
+>y : Symbol(X.y, Decl(m.ts, 0, 16))
+
+=== a.ts ===
+import type { X } from "./m";
+>X : Symbol(X, Decl(a.ts, 0, 13))
+
+declare function one(x: number): string;
+>one : Symbol(one, Decl(a.ts, 0, 29))
+>x : Symbol(x, Decl(a.ts, 1, 21))
+
+declare let maybe: (() => string) | undefined;
+>maybe : Symbol(maybe, Decl(a.ts, 2, 11))
+
+function n1(a = X.y): void; function n1(a: any) {}
+>n1 : Symbol(n1, Decl(a.ts, 2, 46), Decl(a.ts, 3, 27))
+>a : Symbol(a, Decl(a.ts, 3, 12))
+>X.y : Symbol(X.y, Decl(m.ts, 0, 16))
+>X : Symbol(X, Decl(a.ts, 0, 13))
+>y : Symbol(X.y, Decl(m.ts, 0, 16))
+>n1 : Symbol(n1, Decl(a.ts, 2, 46), Decl(a.ts, 3, 27))
+>a : Symbol(a, Decl(a.ts, 3, 40))
+
+function q1(a = await 1): void; function q1(a: any) {}
+>q1 : Symbol(q1, Decl(a.ts, 3, 50), Decl(a.ts, 4, 31))
+>a : Symbol(a, Decl(a.ts, 4, 12))
+>q1 : Symbol(q1, Decl(a.ts, 3, 50), Decl(a.ts, 4, 31))
+>a : Symbol(a, Decl(a.ts, 4, 44))
+
+function q2(a = (await "s")): void; function q2(a: any) {}
+>q2 : Symbol(q2, Decl(a.ts, 4, 54), Decl(a.ts, 5, 35))
+>a : Symbol(a, Decl(a.ts, 5, 12))
+>q2 : Symbol(q2, Decl(a.ts, 4, 54), Decl(a.ts, 5, 35))
+>a : Symbol(a, Decl(a.ts, 5, 48))
+
+function r1(a = await -1): void; function r1(a: any) {}
+>r1 : Symbol(r1, Decl(a.ts, 5, 58), Decl(a.ts, 6, 32))
+>a : Symbol(a, Decl(a.ts, 6, 12))
+>r1 : Symbol(r1, Decl(a.ts, 5, 58), Decl(a.ts, 6, 32))
+>a : Symbol(a, Decl(a.ts, 6, 45))
+
+function r2(a = [await 1]): void; function r2(a: any) {}
+>r2 : Symbol(r2, Decl(a.ts, 6, 55), Decl(a.ts, 7, 33))
+>a : Symbol(a, Decl(a.ts, 7, 12))
+>r2 : Symbol(r2, Decl(a.ts, 6, 55), Decl(a.ts, 7, 33))
+>a : Symbol(a, Decl(a.ts, 7, 46))
+
+function c1(a = one(zzz)): void; function c1(a: any) {}
+>c1 : Symbol(c1, Decl(a.ts, 7, 56), Decl(a.ts, 8, 32))
+>a : Symbol(a, Decl(a.ts, 8, 12))
+>one : Symbol(one, Decl(a.ts, 0, 29))
+>c1 : Symbol(c1, Decl(a.ts, 7, 56), Decl(a.ts, 8, 32))
+>a : Symbol(a, Decl(a.ts, 8, 45))
+
+function c2(a = nope(1)): void; function c2(a: any) {}
+>c2 : Symbol(c2, Decl(a.ts, 8, 55), Decl(a.ts, 9, 31))
+>a : Symbol(a, Decl(a.ts, 9, 12))
+>c2 : Symbol(c2, Decl(a.ts, 8, 55), Decl(a.ts, 9, 31))
+>a : Symbol(a, Decl(a.ts, 9, 44))
+
+function c3(a = zzz as Missing): void; function c3(a: any) {}
+>c3 : Symbol(c3, Decl(a.ts, 9, 54), Decl(a.ts, 10, 38))
+>a : Symbol(a, Decl(a.ts, 10, 12))
+>Missing : Symbol(Missing)
+>c3 : Symbol(c3, Decl(a.ts, 9, 54), Decl(a.ts, 10, 38))
+>a : Symbol(a, Decl(a.ts, 10, 51))
+
+function c5(a = maybe()): void; function c5(a: any) {}
+>c5 : Symbol(c5, Decl(a.ts, 10, 61), Decl(a.ts, 11, 31))
+>a : Symbol(a, Decl(a.ts, 11, 12))
+>maybe : Symbol(maybe, Decl(a.ts, 2, 11))
+>c5 : Symbol(c5, Decl(a.ts, 10, 61), Decl(a.ts, 11, 31))
+>a : Symbol(a, Decl(a.ts, 11, 44))
+
+function c6(a: number = zzz): void; function c6(a: any) {}
+>c6 : Symbol(c6, Decl(a.ts, 11, 54), Decl(a.ts, 12, 35))
+>a : Symbol(a, Decl(a.ts, 12, 12))
+>c6 : Symbol(c6, Decl(a.ts, 11, 54), Decl(a.ts, 12, 35))
+>a : Symbol(a, Decl(a.ts, 12, 48))
+
+function c9(a = zzz, b = yyy): string; function c9(a: any, b: any) { return 1 as any; }
+>c9 : Symbol(c9, Decl(a.ts, 12, 58), Decl(a.ts, 13, 38))
+>a : Symbol(a, Decl(a.ts, 13, 12))
+>b : Symbol(b, Decl(a.ts, 13, 20))
+>c9 : Symbol(c9, Decl(a.ts, 12, 58), Decl(a.ts, 13, 38))
+>a : Symbol(a, Decl(a.ts, 13, 51))
+>b : Symbol(b, Decl(a.ts, 13, 58))
+
+function c10(a = zzz): void; function c10(a: any, b: any) {}
+>c10 : Symbol(c10, Decl(a.ts, 13, 87), Decl(a.ts, 14, 28))
+>a : Symbol(a, Decl(a.ts, 14, 13))
+>c10 : Symbol(c10, Decl(a.ts, 13, 87), Decl(a.ts, 14, 28))
+>a : Symbol(a, Decl(a.ts, 14, 42))
+>b : Symbol(b, Decl(a.ts, 14, 49))
+
+declare function c11(a = zzz, b = await 1): void;
+>c11 : Symbol(c11, Decl(a.ts, 14, 60))
+>a : Symbol(a, Decl(a.ts, 15, 21))
+>b : Symbol(b, Decl(a.ts, 15, 29))
+
+interface I { m(a = zzz): void }
+>I : Symbol(I, Decl(a.ts, 15, 49))
+>m : Symbol(I.m, Decl(a.ts, 16, 13))
+>a : Symbol(a, Decl(a.ts, 16, 16))
+
+type T = (a = zzz, b = await 1) => void;
+>T : Symbol(T, Decl(a.ts, 16, 32))
+>a : Symbol(a, Decl(a.ts, 17, 10))
+>b : Symbol(b, Decl(a.ts, 17, 18))
+
+class K {
+>K : Symbol(K, Decl(a.ts, 17, 40))
+
+    constructor(a = zzz);
+>a : Symbol(a, Decl(a.ts, 19, 16))
+
+    constructor(a: any) {}
+>a : Symbol(a, Decl(a.ts, 20, 16))
+
+    m(a = new Nope()): void;
+>m : Symbol(K.m, Decl(a.ts, 20, 26), Decl(a.ts, 21, 28))
+>a : Symbol(a, Decl(a.ts, 21, 6))
+
+    m(a: any) {}
+>m : Symbol(K.m, Decl(a.ts, 20, 26), Decl(a.ts, 21, 28))
+>a : Symbol(a, Decl(a.ts, 22, 6))
+}
+function* g1(a = yield): Generator; function* g1(a: any): Generator { }
+>g1 : Symbol(g1, Decl(a.ts, 23, 1), Decl(a.ts, 24, 35))
+>a : Symbol(a, Decl(a.ts, 24, 13))
+>Generator : Symbol(Generator, Decl(lib.es2015.generator.d.ts, --, --))
+>g1 : Symbol(g1, Decl(a.ts, 23, 1), Decl(a.ts, 24, 35))
+>a : Symbol(a, Decl(a.ts, 24, 49))
+>Generator : Symbol(Generator, Decl(lib.es2015.generator.d.ts, --, --))
+

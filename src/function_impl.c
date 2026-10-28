@@ -48,6 +48,10 @@ void function_impl_drop(FunctionImpl* me) {
     ast_delete(rare->jsdoc_param_issues);
     for (u32 i = 0; i < rare->jsdoc_unmatched_count; i++) type_drop(&rare->jsdoc_unmatched[i].type);
     ast_delete(rare->jsdoc_unmatched);
+    if (rare->initializer_errors) {
+        error_ctx_drop(rare->initializer_errors);
+        free(rare->initializer_errors);
+    }
     ast_delete(rare);
 }
 
@@ -399,7 +403,21 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         Binding const* binding = &i->initializer.binding;
         bool looked_at = (binding->tag == BINDING_ARRAY || binding->tag == BINDING_OBJECT) && binding->has_explicit_type &&
             compiler_options()->strict_null_checks && !my ambient && !my is_type;
-        initialized_binding_lookup_names_parameter(&i->initializer, parameter_scope, !my has_body && !looked_at, errs);
+        // (An overload's initializer is checked when its implementation is compared with it: what resolving it
+        // reports is kept until then, function_impl_check_compared_initializers())
+        bool kept = !my has_body && !looked_at && !my ambient && !my is_type && !(names->file && names->file->is_js) && i->initializer.value;
+        ErrorCtx* value_errs = errs;
+        if (kept) {
+            if (!function_impl_rare(me)->initializer_errors) {
+                ErrorCtx* stash = c_new(ErrorCtx, error_ctx_scratch(errs));
+                stash->lasting = true;
+                function_impl_rare_mut(me)->initializer_errors = stash;
+            }
+            value_errs = function_impl_rare(me)->initializer_errors;
+        } else if (!my has_body && !looked_at) {
+            value_errs = binder_discarded_errs(names->binder);
+        }
+        initialized_binding_lookup_names_parameter(&i->initializer, parameter_scope, value_errs, errs);
     }
     // (The `@param` tags that name no parameter: their types are where the parameters' are. tsgo's
     // checkUnmatchedJSDocParameters only resolves the last one's, for `arguments` (TS8029) when the body uses it: what
@@ -1427,6 +1445,69 @@ void function_impl_check_parameter_decorators(FunctionImpl const* me, ErrorCtx* 
             expr_typecheck(decorator, &ignored);
         }
         error_ctx_drop(&ignored);
+    }
+}
+
+// What of an overload's parameter initializer tsc checks when it types the parameter (checkDeclarationInitializer's
+// getQuickTypeOfExpression comes first, through parentheses and `await`s): nothing for a literal (the node itself, not
+// a parenthesized one) or a type assertion (its type's names are resolved), the callee of a call or `new`
+// (checkNonNullExpression; then the whole when the callee has no single non-generic signature), else all of it
+// (checkExpressionCached)
+typedef enum { QUICK_NONE, QUICK_SILENT, QUICK_TYPE, QUICK_CALL } QuickInitializer;
+static QuickInitializer quick_initializer(Expr const* node, Expr const** quick) {
+    Expr const* e = node;
+    while (e->tag == EXPR_UNARY_OP && e->unary_op->op == UNARY_OP_AWAIT) {
+        node = &e->unary_op->expr;
+        e = node;
+    }
+    *quick = e;
+    if (ty_quick_call_eligible(e)) return QUICK_CALL;
+    if (e->tag == EXPR_AS_TYPE && !e->as_type->is_satisfies && !as_type_is_const(e->as_type)) return QUICK_TYPE;
+    if (e->tag == EXPR_LITERAL && !expr_is_perenthisized(node)) return QUICK_SILENT;
+    return QUICK_NONE;
+}
+
+// The kept errors in `part` reported, but those in `except`
+static void report_kept(ErrorCtx const* kept, Span part, Span except, ErrorCtx* errs) {
+    for_each (e, vec_error, &kept->errors) {
+        if (span_contains_span(part, e->span) && !(span_valid(except) && span_contains_span(except, e->span))) {
+            error_ctx_append_error(errs, error_clone(*e));
+        }
+    }
+}
+
+void function_impl_check_compared_initializers(FunctionImpl const* me, ErrorCtx* errs) {
+    ErrorCtx const* kept = function_impl_rare(me)->initializer_errors;
+    if (!kept) return;
+    Checker* checker = current_checker;
+    for_each (i, vec_function_arg, &my args) {
+        Expr const* value = initialized_binding_value(&i->initializer);
+        // (An annotated parameter's type is its annotation: the initializer is never looked at)
+        if (value->tag == EXPR_IMPLICIT_ANY || i->initializer.binding.has_explicit_type || i->jsdoc_this) continue;
+        Expr const* quick = nullptr;
+        switch (quick_initializer(value, &quick)) {
+            case QUICK_SILENT: continue;
+            case QUICK_TYPE: {
+                Span keyword = quick->as_type->keyword_span;
+                Span type = quick->as_type->angle_bracket_syntax ? keyword :
+                    span_make(span_source(keyword), span_start_ptr(keyword), span_end_ptr(expr_outer_span(quick)));
+                report_kept(kept, type, span_null, errs);
+                continue;
+            }
+            case QUICK_CALL: {
+                Expr const* callee = &quick->call->callable;
+                report_kept(kept, expr_outer_span(callee), span_null, errs);
+                expr_typecheck(callee, errs);
+                Ty const* type = ty_check_non_null_type(checker, ty_expr_type(checker, callee), callee, errs);
+                if (ty_quick_call_return(checker, quick->call, type)) continue;
+                report_kept(kept, expr_outer_span(value), expr_outer_span(callee), errs);
+                break;
+            }
+            case QUICK_NONE:
+                report_kept(kept, expr_outer_span(value), span_null, errs);
+                break;
+        }
+        initialized_binding_typecheck_overload_value((InitializedBinding*)&i->initializer, errs);
     }
 }
 

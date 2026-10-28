@@ -1,0 +1,172 @@
+//// [test/cases/ttttOverloadInitializerChecked.ts] ////
+
+=== m.ts ===
+export class X { static readonly y = "k"; }
+>X : X
+>y : "k"
+>"k" : "k"
+
+=== a.ts ===
+import type { X } from "./m";
+>X : X
+
+declare function one(x: number): string;
+>one : (x: number) => string
+>x : number
+
+declare let maybe: (() => string) | undefined;
+>maybe : (() => string) | undefined
+
+function n1(a = X.y): void; function n1(a: any) {}
+>n1 : (a?: string) => void
+>a : string
+>X.y : "k"
+>X : typeof X
+>y : "k"
+>n1 : (a?: string) => void
+>a : any
+
+function q1(a = await 1): void; function q1(a: any) {}
+>q1 : (a?: number) => void
+>a : number
+>await 1 : 1
+>1 : 1
+>q1 : (a?: number) => void
+>a : any
+
+function q2(a = (await "s")): void; function q2(a: any) {}
+>q2 : (a?: string) => void
+>a : string
+>(await "s") : "s"
+>await "s" : "s"
+>"s" : "s"
+>q2 : (a?: string) => void
+>a : any
+
+function r1(a = await -1): void; function r1(a: any) {}
+>r1 : (a?: number) => void
+>a : number
+>await -1 : number
+>await : any
+>1 : 1
+>r1 : (a?: number) => void
+>a : any
+
+function r2(a = [await 1]): void; function r2(a: any) {}
+>r2 : (a?: number[]) => void
+>a : number[]
+>[await 1] : number[]
+>await 1 : 1
+>1 : 1
+>r2 : (a?: number[]) => void
+>a : any
+
+function c1(a = one(zzz)): void; function c1(a: any) {}
+>c1 : (a?: string) => void
+>a : string
+>one(zzz) : string
+>one : (x: number) => string
+>zzz : any
+>c1 : (a?: string) => void
+>a : any
+
+function c2(a = nope(1)): void; function c2(a: any) {}
+>c2 : (a?: any) => void
+>a : any
+>nope(1) : any
+>nope : any
+>1 : 1
+>c2 : (a?: any) => void
+>a : any
+
+function c3(a = zzz as Missing): void; function c3(a: any) {}
+>c3 : (a?: Missing) => void
+>a : Missing
+>zzz as Missing : Missing
+>zzz : any
+>c3 : (a?: Missing) => void
+>a : any
+
+function c5(a = maybe()): void; function c5(a: any) {}
+>c5 : (a?: string) => void
+>a : string
+>maybe() : string
+>maybe : (() => string) | undefined
+>c5 : (a?: string) => void
+>a : any
+
+function c6(a: number = zzz): void; function c6(a: any) {}
+>c6 : (a?: number) => void
+>a : number
+>zzz : any
+>c6 : (a?: number) => void
+>a : any
+
+function c9(a = zzz, b = yyy): string; function c9(a: any, b: any) { return 1 as any; }
+>c9 : (a?: any, b?: any) => string
+>a : any
+>zzz : any
+>b : any
+>yyy : any
+>c9 : (a?: any, b?: any) => string
+>a : any
+>b : any
+>1 as any : any
+>1 : 1
+
+function c10(a = zzz): void; function c10(a: any, b: any) {}
+>c10 : (a?: any) => void
+>a : any
+>zzz : any
+>c10 : (a?: any) => void
+>a : any
+>b : any
+
+declare function c11(a = zzz, b = await 1): void;
+>c11 : (a?: any, b?: number) => void
+>a : any
+>zzz : any
+>b : number
+>await 1 : 1
+>1 : 1
+
+interface I { m(a = zzz): void }
+>m : (a?: any) => void
+>a : any
+>zzz : any
+
+type T = (a = zzz, b = await 1) => void;
+>T : T
+>a : any
+>zzz : any
+>b : number
+>await 1 : 1
+>1 : 1
+
+class K {
+>K : K
+
+    constructor(a = zzz);
+>a : any
+>zzz : any
+
+    constructor(a: any) {}
+>a : any
+
+    m(a = new Nope()): void;
+>m : (a?: any) => void
+>a : any
+>new Nope() : any
+>Nope : any
+
+    m(a: any) {}
+>m : (a?: any) => void
+>a : any
+}
+function* g1(a = yield): Generator; function* g1(a: any): Generator { }
+>g1 : (a?: any) => Generator
+>a : any
+>yield : any
+>g1 : (a?: any) => Generator
+>a : any
+

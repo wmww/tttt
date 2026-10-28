@@ -1,0 +1,140 @@
+a.ts(4,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(4,17): error TS1361: 'X' cannot be used as a value because it was imported using 'import type'.
+a.ts(5,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(6,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(7,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(7,17): error TS2304: Cannot find name 'await'.
+a.ts(8,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(8,18): error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+a.ts(8,18): error TS2524: 'await' expressions cannot be used in a parameter initializer.
+a.ts(9,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(10,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(10,17): error TS2304: Cannot find name 'nope'.
+a.ts(11,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(11,24): error TS2304: Cannot find name 'Missing'.
+a.ts(12,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(12,17): error TS18048: 'maybe' is possibly 'undefined'.
+a.ts(13,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(14,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(14,17): error TS2304: Cannot find name 'zzz'.
+a.ts(14,22): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(14,26): error TS2304: Cannot find name 'yyy'.
+a.ts(15,10): error TS2394: This overload signature is not compatible with its implementation signature.
+a.ts(15,14): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(16,22): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(16,31): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(17,17): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(18,11): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(18,20): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(20,17): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(20,21): error TS2304: Cannot find name 'zzz'.
+a.ts(22,7): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(22,15): error TS2304: Cannot find name 'Nope'.
+a.ts(25,9): error TS1222: An overload signature cannot be declared as a generator.
+a.ts(25,14): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(25,18): error TS2523: 'yield' expressions cannot be used in a parameter initializer.
+
+
+==== m.ts (0 errors) ====
+    export class X { static readonly y = "k"; }
+    
+==== a.ts (35 errors) ====
+    import type { X } from "./m";
+    declare function one(x: number): string;
+    declare let maybe: (() => string) | undefined;
+    function n1(a = X.y): void; function n1(a: any) {}
+                ~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                    ~
+!!! error TS1361: 'X' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 a.ts:1:15: 'X' was imported here.
+    function q1(a = await 1): void; function q1(a: any) {}
+                ~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    function q2(a = (await "s")): void; function q2(a: any) {}
+                ~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    function r1(a = await -1): void; function r1(a: any) {}
+                ~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                    ~~~~~
+!!! error TS2304: Cannot find name 'await'.
+    function r2(a = [await 1]): void; function r2(a: any) {}
+                ~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                     ~~~~~
+!!! error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+!!! related TS1356 a.ts:8:10: Did you mean to mark this function as 'async'?
+                     ~~~~~~~
+!!! error TS2524: 'await' expressions cannot be used in a parameter initializer.
+    function c1(a = one(zzz)): void; function c1(a: any) {}
+                ~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    function c2(a = nope(1)): void; function c2(a: any) {}
+                ~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                    ~~~~
+!!! error TS2304: Cannot find name 'nope'.
+    function c3(a = zzz as Missing): void; function c3(a: any) {}
+                ~~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                           ~~~~~~~
+!!! error TS2304: Cannot find name 'Missing'.
+    function c5(a = maybe()): void; function c5(a: any) {}
+                ~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                    ~~~~~
+!!! error TS18048: 'maybe' is possibly 'undefined'.
+    function c6(a: number = zzz): void; function c6(a: any) {}
+                ~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    function c9(a = zzz, b = yyy): string; function c9(a: any, b: any) { return 1 as any; }
+                ~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                    ~~~
+!!! error TS2304: Cannot find name 'zzz'.
+                         ~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                             ~~~
+!!! error TS2304: Cannot find name 'yyy'.
+    function c10(a = zzz): void; function c10(a: any, b: any) {}
+             ~~~
+!!! error TS2394: This overload signature is not compatible with its implementation signature.
+!!! related TS2750 a.ts:15:39: The implementation signature is declared here.
+                 ~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    declare function c11(a = zzz, b = await 1): void;
+                         ~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                                  ~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    interface I { m(a = zzz): void }
+                    ~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    type T = (a = zzz, b = await 1) => void;
+              ~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                       ~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    class K {
+        constructor(a = zzz);
+                    ~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                        ~~~
+!!! error TS2304: Cannot find name 'zzz'.
+        constructor(a: any) {}
+        m(a = new Nope()): void;
+          ~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                  ~~~~
+!!! error TS2304: Cannot find name 'Nope'.
+        m(a: any) {}
+    }
+    function* g1(a = yield): Generator; function* g1(a: any): Generator { }
+            ~
+!!! error TS1222: An overload signature cannot be declared as a generator.
+                 ~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                     ~~~~~
+!!! error TS2523: 'yield' expressions cannot be used in a parameter initializer.
+    

@@ -10723,19 +10723,8 @@ static inline bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* r
     } else {
         expect_expr(&p, ctx, &expr);
     }
-    if (in_parameters && (op == UNARY_OP_YIELD || op == UNARY_OP_YIELD_STAR)) {
-        // (tsc's error span for a yield expression is its keyword, without the `*`)
-        Span keyword = op_span;
-        keyword.size = 5;
-        // (tsgo's checker says it: not a parse error of the file)
-        checker_error(&p, keyword, 2523, "'yield' expressions cannot be used in a parameter initializer.");
-    } else if (in_parameters && op == UNARY_OP_AWAIT) {
-        // (tsc's checkAwaitExpression: the whole expression, a missing operand being a zero-width node before the
-        // trivia)
-        bool operand = span_valid(expr_outer_span(&expr)) && expr_outer_span(&expr).size;
-        checker_error(&p, operand ? span_between(op_span, expr_outer_span(&expr)) : op_span, 2524,
-            "'await' expressions cannot be used in a parameter initializer.");
-    }
+    // (A `yield` or `await` in a parameter initializer is TS2523/TS2524 when the checker checks the expression:
+    // tsc's checkYieldExpression and checkAwaitExpression, reported by the resolve walk)
 
     // tsc's parseUnaryExpressionOrHigher: `-x ** 2` is ambiguous, so an error (still read as `(-x) ** 2`)
     bool simple_unary = op == UNARY_OP_PLUS || op == UNARY_OP_MINUS || op == UNARY_OP_TILDE || op == UNARY_OP_LEFT_BANG ||
@@ -10759,6 +10748,7 @@ static inline bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* r
             .op = op,
             .await_place = (uint8_t)await_place,
             .outside_generator = (op == UNARY_OP_YIELD || op == UNARY_OP_YIELD_STAR) && !p.shared->in_generator,
+            .in_parameter_initializer = in_parameters,
             .expr = expr,
         })
     );

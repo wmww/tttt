@@ -2234,6 +2234,11 @@ u32 ty_signature_param_count(Checker* me, Signature const* sig);
 bool ty_signature_has_rest(Checker* me, Signature const* sig);
 // The signature a function expression gets its parameter types from, given its contextual type, null if none
 Signature const* ty_function_contextual_signature(Checker* me, FunctionImpl const* function, Ty const* contextual);
+// A call or `new` getQuickTypeOfExpression may type by its callee: no `super`, `Symbol()`, `require()`, type arguments
+bool ty_quick_call_eligible(Expr const* expr);
+// Its type from the callee's (checked not to be nullish: tsc's checkNonNullExpression) single non-generic signature, null
+// if none
+Ty const* ty_quick_call_return(Checker* me, CallExpr const* call, Ty const* callee);
 Ty const* ty_quick_expr_type(Checker* me, Expr const* expr, bool in_flow); // tsc's getQuickTypeOfExpression, null if none // The array a tuple also is
 Ty const* ty_optional_param_type(Checker* me, Ty const* type); // infer.c
 // What the position of `param` takes: an optional one's type with undefined (tsc's getTypeOfParameter) // infer.c
@@ -2247,7 +2252,9 @@ Signature const* ty_combine_intersection_signatures(Checker* me, Signature const
 bool ty_signatures_identical(Checker* me, Signature const* source, Signature const* target, bool partial, bool ignore_return);
 // tsc's isImplementationCompatibleWithOverload (TS2394): the returns relate either way (or the overload's is void) and,
 // type parameters erased, the implementation is assignable to the overload with the returns ignored
-bool ty_implementation_compatible_with_overload(Checker* me, Signature const* implementation, Signature const* overload);
+// `params_compared`: whether the comparison got as far as the parameters' types (tsc's isImplementationCompatibleWithOverload
+// compares them after the return types, compareSignaturesRelated after the arity: what asks an overload's parameter types)
+bool ty_implementation_compatible_with_overload(Checker* me, Signature const* implementation, Signature const* overload, bool* params_compared);
 // tsc's ExternalEmitHelpers: the tslib helpers the emitter lowers syntax into (helpers.c)
 typedef enum EmitHelper {
     EMIT_HELPER_EXTENDS = 1u << 0,

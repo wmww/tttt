@@ -409,10 +409,18 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   (TS1134, TS1005: 43-C14a). [open]
 - A signature without a body (overload, `declare function`) checks a parameter's initializer only through
   getTypeOfParameter, which takes getQuickTypeOfExpression first (an `await` of a literal, an assertion, a call of a
-  single non-generic signature): 78-R07 (`function q(a = await 1): void;` has no TS2524/TS1308, tttt's parser says
-  TS2524 regardless) and 34-C4b (`function n(a = X.y): void;` with a type-only X: tsc's TS1361 comes from that check,
-  tttt never checks the initializer). Needs the initializer checked (errors kept) when the parameter's type is first
-  asked for, quick types aside. [open]
+  single non-generic signature): 78-R07 (`function q(a = await 1): void;` has no TS2524/TS1308, tttt's parser said
+  TS2524 regardless) and 34-C4b (`function n(a = X.y): void;` with a type-only X: TS1361). Design as built: the
+  resolve walk keeps what resolving an overload's (no body, not ambient, not a type's) initializers reports in
+  FunctionImplRare.initializer_errors (an ErrorCtx marked `lasting`, so a parallel walk's deferred reports reach it);
+  ty_check_overloads_compatible() calls function_impl_check_compared_initializers() for each overload it compares
+  past the return types and the arity (isImplementationCompatibleWithOverload, compareSignaturesRelated), which
+  replays tsgo's checkDeclarationInitializer: nothing for a literal, an assertion's type names, a call's callee
+  (checkNonNullExpression: TS18048, then the whole when no single non-generic signature), else all of it.
+  TS2523/TS2524 moved from the parser to the resolve walk (UnaryOpExpr.in_parameter_initializer). [fixed HASH]
+  Not modelled: other askers of an overload's parameter type (a call with arguments, a relation of the function's
+  type, declaration emit: the harness's post-emit count shows them), and compareSignaturesRelated stopping at the
+  first unrelated parameter. [open]
 - An object literal's member modifiers (TS1042) are the parser's: tsgo's checkGrammarObjectLiteralExpression returns at
   TS1118/TS1119, after which no later member's modifier is reported (28-C24a). The modifiers' spans would have to
   reach object_check_grammar(). [open]

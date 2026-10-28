@@ -2075,6 +2075,13 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                     await_check_grammar(my unary_op->await_place, AWAIT_KIND_EXPR,
                         span_in_sv(my inner_span, csview_from_n(my inner_span.buf, 5)),
                         scope_containing_function(names), errs);
+                    if (my unary_op->in_parameter_initializer) {
+                        // (tsc's checkAwaitExpression: the whole expression, a missing operand being a zero-width node
+                        // before the trivia; reported whether or not the file has parse errors)
+                        Span whole = span_valid(expr_outer_span(operand)) && expr_outer_span(operand).size ?
+                            span_between(my inner_span, expr_outer_span(operand)) : my inner_span;
+                        error_ctx_error_d(errs, whole, 2524, "'await' expressions cannot be used in a parameter initializer.");
+                    }
                     expr_lookup_names(operand, names, errs);
                     break;
 
@@ -2084,6 +2091,11 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                         // tsc's checkYieldExpressionGrammar; tsgo's checkYieldExpression checks the operand anyway
                         Span keyword = span_in_sv(my inner_span, csview_from_n(my inner_span.buf, 5));
                         error_ctx_grammar_error_d(errs, keyword, 1163, "A 'yield' expression is only allowed in a generator body.");
+                    }
+                    if (my unary_op->in_parameter_initializer) {
+                        // (tsc's error span for a yield expression is its keyword, without the `*`)
+                        Span keyword = span_in_sv(my inner_span, csview_from_n(my inner_span.buf, 5));
+                        error_ctx_error_d(errs, keyword, 2523, "'yield' expressions cannot be used in a parameter initializer.");
                     }
                     expr_lookup_names(operand, names, errs);
                     if (flow->function && flow->function->is_generator && !my unary_op->outside_generator && !flow->method_name) {

@@ -5791,7 +5791,7 @@ typedef struct DeferredEvent {
 // Where a shard's report that outlives the walk goes: the walk's contexts other than the file's are scratch ones it
 // drops (a `return` outside a function, `super<T>`)
 static ErrorCtx* shard_lasting_errs(ResolveShard* shard, ErrorCtx* errs) {
-    return !errs || errs == &shard->errs ? errs : &shard->discarded;
+    return !errs || errs == &shard->errs || errs->lasting ? errs : &shard->discarded;
 }
 
 static DeferredEvent* defer_event(ResolveShard* shard, DeferredKind kind, Scope const* scope, ErrorCtx* errs) {

@@ -2463,7 +2463,8 @@ static Signature const* erase_constructor_class_params(Checker* me, Signature co
     return ret;
 }
 
-bool ty_implementation_compatible_with_overload(Checker* me, Signature const* implementation, Signature const* overload) {
+bool ty_implementation_compatible_with_overload(Checker* me, Signature const* implementation, Signature const* overload, bool* params_compared) {
+    *params_compared = false;
     Signature const* source = erase_constructor_class_params(me, ty_erased_signature(me, implementation));
     Signature const* target = erase_constructor_class_params(me, ty_erased_signature(me, overload));
     Ty const* source_return = signature_return_type(me, source);
@@ -2473,6 +2474,8 @@ bool ty_implementation_compatible_with_overload(Checker* me, Signature const* im
     ) {
         return false;
     }
+    // (compareSignaturesRelated's arity check comes before any parameter's type is asked for)
+    *params_compared = ty_signature_has_rest(me, target) || signature_min_args(me, source) <= ty_signature_param_count(me, target);
     // isSignatureAssignableTo with IgnoreReturnTypes: the target returning any compares nothing more
     Signature* copy = arena_new(&my arena, Signature);
     signature_copy(me, copy, target);

@@ -4695,7 +4695,12 @@ void ty_check_overloads_compatible(
     if (!impl) return;
     for (u32 i = 0; i < count; i++) {
         Signature const* overload = ty_function_signature(me, overloads[i]);
-        if (!overload || ty_implementation_compatible_with_overload(me, impl, overload)) continue;
+        if (!overload) continue;
+        bool params_compared = false;
+        bool compatible = ty_implementation_compatible_with_overload(me, impl, overload, &params_compared);
+        // (Comparing them types the overload's parameters, which checks their initializers)
+        if (params_compared) function_impl_check_compared_initializers(overloads[i], errs);
+        if (compatible) continue;
         Error* e = error_ctx_error_d(errs, names[i], 2394, "This overload signature is not compatible with its implementation signature.");
         error_add_related_d(e, implementation_name, 2750, "The implementation signature is declared here.");
         break;

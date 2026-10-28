@@ -860,7 +860,7 @@ void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, Erro
     if (initialized_binding_value(me)->tag != EXPR_IMPLICIT_ANY) binding_flow_assign(&my binding, names);
 }
 
-void initialized_binding_lookup_names_parameter(InitializedBinding* me, Scope* names, bool value_unchecked, ErrorCtx* errs) {
+void initialized_binding_lookup_names_parameter(InitializedBinding* me, Scope* names, ErrorCtx* value_errs, ErrorCtx* errs) {
     FlowBuilder* flow = scope_flow(names);
     Binding const* saved = flow->parameter_initializing;
     Scope const* saved_scope = flow->parameter_function_scope;
@@ -872,7 +872,7 @@ void initialized_binding_lookup_names_parameter(InitializedBinding* me, Scope* n
     flow->context_root = context_root_make(me, CONTEXT_ROOT_BINDING);
     bool saved_default = flow->in_parameter_default;
     flow->in_parameter_default = true;
-    if (my value) expr_lookup_names_initializer(my value, names, value_unchecked ? binder_discarded_errs(names->binder) : errs);
+    if (my value) expr_lookup_names_initializer(my value, names, value_errs);
     flow->in_parameter_default = saved_default;
     flow->context_root = outer_root;
     flow->contextual_depth -= my binding.has_explicit_type;
@@ -1229,6 +1229,13 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
     binding_typecheck_at(&my binding, initializer, span_null, initializer, true, false, errs);
     report_errors_from_widening(me, span_null, errs);
     ty_leave_node(checker, saved);
+}
+
+void initialized_binding_typecheck_overload_value(InitializedBinding* me, ErrorCtx* errs) {
+    bool entered = ty_context_root_enter(me);
+    initialized_binding_check_value(me);
+    ty_context_root_leave(entered);
+    expr_typecheck(initialized_binding_value(me), errs);
 }
 
 void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, bool bodiless, ErrorCtx* errs) {
