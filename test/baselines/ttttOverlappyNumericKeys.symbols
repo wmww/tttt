@@ -1,0 +1,73 @@
+//// [test/cases/ttttOverlappyNumericKeys.ts] ////
+
+=== ttttOverlappyNumericKeys.ts ===
+// findMostOverlappyType keys by literal types: a numeric literal name `{ 1: x }` is the number 1, which overlaps a
+// number or string index signature and a numeric property `1:`, not a property declared `"1":` (and vice versa)
+interface S { (a: string): number; }
+>S : Symbol(S, Decl(ttttOverlappyNumericKeys.ts, 0, 0))
+>a : Symbol(a, Decl(ttttOverlappyNumericKeys.ts, 2, 15))
+
+interface A { 0: string; }
+>A : Symbol(A, Decl(ttttOverlappyNumericKeys.ts, 2, 36))
+>0 : Symbol(A[0], Decl(ttttOverlappyNumericKeys.ts, 3, 13))
+
+interface B { [a: number]: S; }
+>B : Symbol(B, Decl(ttttOverlappyNumericKeys.ts, 3, 26))
+>a : Symbol(a, Decl(ttttOverlappyNumericKeys.ts, 4, 15))
+>S : Symbol(S, Decl(ttttOverlappyNumericKeys.ts, 0, 0))
+
+interface C { [a: string]: S; }
+>C : Symbol(C, Decl(ttttOverlappyNumericKeys.ts, 4, 31))
+>a : Symbol(a, Decl(ttttOverlappyNumericKeys.ts, 5, 15))
+>S : Symbol(S, Decl(ttttOverlappyNumericKeys.ts, 0, 0))
+
+interface D { "1": S; }
+>D : Symbol(D, Decl(ttttOverlappyNumericKeys.ts, 5, 31))
+>"1" : Symbol(D["1"], Decl(ttttOverlappyNumericKeys.ts, 6, 13))
+>S : Symbol(S, Decl(ttttOverlappyNumericKeys.ts, 0, 0))
+
+interface E { 1: S; }
+>E : Symbol(E, Decl(ttttOverlappyNumericKeys.ts, 6, 23))
+>1 : Symbol(E[1], Decl(ttttOverlappyNumericKeys.ts, 7, 13))
+>S : Symbol(S, Decl(ttttOverlappyNumericKeys.ts, 0, 0))
+
+var x1: A | B = { "1": a => a };
+>x1 : Symbol(x1, Decl(ttttOverlappyNumericKeys.ts, 8, 3))
+>A : Symbol(A, Decl(ttttOverlappyNumericKeys.ts, 2, 36))
+>B : Symbol(B, Decl(ttttOverlappyNumericKeys.ts, 3, 26))
+>"1" : Symbol("1", Decl(ttttOverlappyNumericKeys.ts, 8, 17))
+>a : Symbol(a, Decl(ttttOverlappyNumericKeys.ts, 8, 22))
+>a : Symbol(a, Decl(ttttOverlappyNumericKeys.ts, 8, 22))
+
+var x2: A | C = { 1: a => a };
+>x2 : Symbol(x2, Decl(ttttOverlappyNumericKeys.ts, 9, 3))
+>A : Symbol(A, Decl(ttttOverlappyNumericKeys.ts, 2, 36))
+>C : Symbol(C, Decl(ttttOverlappyNumericKeys.ts, 4, 31))
+>1 : Symbol(1, Decl(ttttOverlappyNumericKeys.ts, 9, 17))
+>a : Symbol(a, Decl(ttttOverlappyNumericKeys.ts, 9, 20))
+>a : Symbol(a, Decl(ttttOverlappyNumericKeys.ts, 9, 20))
+
+var x3: A | D = { 1: a => a };
+>x3 : Symbol(x3, Decl(ttttOverlappyNumericKeys.ts, 10, 3))
+>A : Symbol(A, Decl(ttttOverlappyNumericKeys.ts, 2, 36))
+>D : Symbol(D, Decl(ttttOverlappyNumericKeys.ts, 5, 31))
+>1 : Symbol(1, Decl(ttttOverlappyNumericKeys.ts, 10, 17))
+>a : Symbol(a, Decl(ttttOverlappyNumericKeys.ts, 10, 20))
+>a : Symbol(a, Decl(ttttOverlappyNumericKeys.ts, 10, 20))
+
+var x4: A | E = { "1": a => a };
+>x4 : Symbol(x4, Decl(ttttOverlappyNumericKeys.ts, 11, 3))
+>A : Symbol(A, Decl(ttttOverlappyNumericKeys.ts, 2, 36))
+>E : Symbol(E, Decl(ttttOverlappyNumericKeys.ts, 6, 23))
+>"1" : Symbol("1", Decl(ttttOverlappyNumericKeys.ts, 11, 17))
+>a : Symbol(a, Decl(ttttOverlappyNumericKeys.ts, 11, 22))
+>a : Symbol(a, Decl(ttttOverlappyNumericKeys.ts, 11, 22))
+
+var x5: A | E = { 1: a => a };
+>x5 : Symbol(x5, Decl(ttttOverlappyNumericKeys.ts, 12, 3))
+>A : Symbol(A, Decl(ttttOverlappyNumericKeys.ts, 2, 36))
+>E : Symbol(E, Decl(ttttOverlappyNumericKeys.ts, 6, 23))
+>1 : Symbol(1, Decl(ttttOverlappyNumericKeys.ts, 12, 17))
+>a : Symbol(a, Decl(ttttOverlappyNumericKeys.ts, 12, 20))
+>a : Symbol(a, Decl(ttttOverlappyNumericKeys.ts, 12, 20))
+

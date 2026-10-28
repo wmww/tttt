@@ -1,0 +1,46 @@
+ttttOverlappyNumericKeys.ts(9,5): error TS2322: Type '{ "1": (a: string) => string; }' is not assignable to type 'A | B'.
+  The types returned by '["1"](...)' are incompatible between these types.
+    Type 'string' is not assignable to type 'number'.
+ttttOverlappyNumericKeys.ts(10,27): error TS2322: Type 'string' is not assignable to type 'number'.
+ttttOverlappyNumericKeys.ts(11,5): error TS2322: Type '{ 1: (a: string) => string; }' is not assignable to type 'A | D'.
+  The types returned by '1(...)' are incompatible between these types.
+    Type 'string' is not assignable to type 'number'.
+ttttOverlappyNumericKeys.ts(12,5): error TS2322: Type '{ "1": (a: string) => string; }' is not assignable to type 'A | E'.
+  The types returned by '["1"](...)' are incompatible between these types.
+    Type 'string' is not assignable to type 'number'.
+ttttOverlappyNumericKeys.ts(13,27): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== ttttOverlappyNumericKeys.ts (5 errors) ====
+    // findMostOverlappyType keys by literal types: a numeric literal name `{ 1: x }` is the number 1, which overlaps a
+    // number or string index signature and a numeric property `1:`, not a property declared `"1":` (and vice versa)
+    interface S { (a: string): number; }
+    interface A { 0: string; }
+    interface B { [a: number]: S; }
+    interface C { [a: string]: S; }
+    interface D { "1": S; }
+    interface E { 1: S; }
+    var x1: A | B = { "1": a => a };
+        ~~
+!!! error TS2322: Type '{ "1": (a: string) => string; }' is not assignable to type 'A | B'.
+!!! error TS2322:   The types returned by '["1"](...)' are incompatible between these types.
+!!! error TS2322:     Type 'string' is not assignable to type 'number'.
+    var x2: A | C = { 1: a => a };
+                              ~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+!!! related TS6502 ttttOverlappyNumericKeys.ts:3:11: The expected type comes from the return type of this signature.
+    var x3: A | D = { 1: a => a };
+        ~~
+!!! error TS2322: Type '{ 1: (a: string) => string; }' is not assignable to type 'A | D'.
+!!! error TS2322:   The types returned by '1(...)' are incompatible between these types.
+!!! error TS2322:     Type 'string' is not assignable to type 'number'.
+    var x4: A | E = { "1": a => a };
+        ~~
+!!! error TS2322: Type '{ "1": (a: string) => string; }' is not assignable to type 'A | E'.
+!!! error TS2322:   The types returned by '["1"](...)' are incompatible between these types.
+!!! error TS2322:     Type 'string' is not assignable to type 'number'.
+    var x5: A | E = { 1: a => a };
+                              ~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+!!! related TS6502 ttttOverlappyNumericKeys.ts:3:11: The expected type comes from the return type of this signature.
+    

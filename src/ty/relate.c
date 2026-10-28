@@ -8003,6 +8003,8 @@ static bool index_key_includes_name(Checker* me, Ty const* ty, Ty const* name) {
     if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false;
     Members const* members = ty_members(me, apparent);
     for (u32 i = 0; i < members->index_count; i++) {
+        // (A string index signature keys numbers too: `keyof { [k: string]: X }` is `string | number`)
+        if ((name->flags & TYF_NUMBER_LITERAL) && (members->index[i].key->flags & TYF_STRING)) return true;
         if (ty_is_related(me, name, members->index[i].key, TY_RELATION_ASSIGNABLE)) return true;
     }
     return false;
@@ -8091,9 +8093,14 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
             u32 count = 0;
             for (u32 p = 0; p < prop_count; p++) {
                 Atom const* name = props[p].prop->name;
+                // (Keys by their literal types: a numeric literal name (`{ 1: x }`) is the number 1, which a string
+                // literal key "1" doesn't overlap and an index signature of either kind does, tsc's getIndexType)
+                Ty const* key = ty_prop_key_literal(me, props[p].prop);
                 // (Its own: `keyof` has no Object members)
-                count += find_prop_in(me, apparent_type(me, keyed), name, 0, true).found ||
-                    index_key_includes_name(me, keyed, ty_prop_name_literal(me, name));
+                FoundProp found = find_prop_in(me, apparent_type(me, keyed), name, 0, true);
+                Ty const* found_key = found.found && found.prop ? ty_prop_key_literal(me, found.prop) : key;
+                bool same_key = found.found && (found_key == key || !((key->flags | found_key->flags) & TYF_NUMBER_LITERAL));
+                count += same_key || index_key_includes_name(me, keyed, key);
             }
             // (The source's index signatures key the member's names they apply to: `{ [k: string]: X }` against
             // `any[] | Promise<any[]>` overlaps the array's `length`, `pop`... more than the promise's `then`...)
