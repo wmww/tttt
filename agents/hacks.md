@@ -876,3 +876,8 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `type_member_setter_name()` (ty/members.c): a type member accessor pair's setter name, for prop_write_type()'s TS2502,
   is read back off the source text before the setter's parameter name, because PropDeclRare's size is asserted (foot's
   872b2e626) and has no room for a Span. A computed setter name falls back to the property's name span.
+- `made_before_step()` (ty/relate.c, the flag's walk order for deep nesting): a function type's return type is
+  peeked (what this worker knows) to decide "made before" (fact 2 of sharing_design.md §6); inferred lazily, so under
+  --shared-graph whether it is known can be history. Correct: a structural fact for it (the literal's/function's
+  inferred return type made part of its key, or decided without the peek). Shown by: a `-DTTTT_GRAPH_CHECKS` build's
+  "read the return type of" report (openscience/backend/cli only, output unaffected).

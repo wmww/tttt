@@ -52,7 +52,8 @@ threads busy at 2.2 GB on vscode: the existence proof that sharing can pay.
   it lost.
 - Earlier gates that still describe the code: union order's type-id fallback decides 0.003-0.6% of ties and is not
   observable under seeded permutation once spread alternatives got a structural key (`TTTT_ORDER_STATS`,
-  `TTTT_ORDER_SEED`); is_deeply_nested_as()'s "newer id" test needs first-touch stamps under the flag; the taint
+  `TTTT_ORDER_SEED`); is_deeply_nested_as()'s "newer id" test goes by the walk order under the flag (sharing_design.md §6; first-touch
+  stamps until b2b3cdcd2); the taint
   prototype (G0) found members and prop types 99.7-100% clean, intern memo kinds tainted 0.01-0.14%.
 
 ## Where it ended (2026-10-22)
@@ -63,7 +64,7 @@ with and without the shared graph".
   effect ~1% of loaded runs differ; TSan clean on 14 corpora; kdiff 8 / 3814 against plain's 3; K1 cost +4%
   instructions; work K12/K1 drizzle 1.305, zod 1.285, effect 1.134.
 - **Residues today: agents/bugs/shared_graph.md** (2026-10-29: auth-api's private-name race, the missing one-checker
-  rerun and the TSan groups fixed; drizzle's C is the first-touch stamps, effect and folo's renderer open), gated by
+  rerun and the TSan groups fixed; drizzle's C was the first-touch stamps, closed by the walk order at b2b3cdcd2; effect and folo's renderer fixed), gated by
   `scripts/sgcheck.py`. The rest of this bullet is the 2026-10-22 state.
 - **Open residues** (the release criterion wanted them closed and plain/flagged oracles identical): **C**, conditional
   and alias instances published as identities whatever their taint while carrying resolved state (mikro-orm x3, the
@@ -207,8 +208,8 @@ layout change worth reopening.
 
 **What would cut the premium further** (not built): fewer shared lookups per unit of work, not cheaper ones: identity
 creation probes (KEY_ANONYMOUS_INSTANCE alone 0.74M misses on four projects) could be skipped where the key holds an
-object this checker just made (as KEY_PROP_MAPPED_TYPE now), the first-touch stamps replaced by the content order
-(sharing_design.md stage 1: 0.4-0.9% of K8 instructions plus the stamp table's misses), the variance groups shared
+object this checker just made (as KEY_PROP_MAPPED_TYPE now), the first-touch stamps replaced by a content order
+(done: the walk order, b2b3cdcd2, -0.3..-1.9% of the flag's K8 instructions), the variance groups shared
 (stage 3). None changes the verdict above: the flag pays a lookup's miss for each piece of shared state a checker
 first reads, and wins only where that state would otherwise be rebuilt several times.
 

@@ -239,6 +239,9 @@ each. Report per corpus: instructions, cycles, IPC, fills, wall, against 1. The 
 between 1 and 4, and vue's wall in 2 vs 4.
 
 ## 6. A content key for deep nesting's "newer" test (worker ckey, 2026-10-29)
+**Status: the flag's order since b2b3cdcd2; residue C closed.** `--shared-graph` decides deep nesting by the walk order
+(relate.c is_deeply_nested_walk(), ty_nesting_order()); the plain path keeps tsc's id order; the first-touch stamps
+are deleted. `TTTT_NESTING_ORDER=id|walk|count|seed|content` overrides either path for A/B.
 The question: under `--shared-graph` there is no global creation order, so the "newer" test of tsc's deep-nesting cut
 used first-touch stamps (schedule-dependent: drizzle's residue C, mikro-orm seeder's Reference.ts(131,44), the
 laptop's K24 drizzle runs: 4 outputs in 5, TS2430 at mysql-core/query-builders/select.ts(1076,18) and the
@@ -337,12 +340,31 @@ The walk test is roughly what the stamps cost per decision, and the run is cheap
 event at a deep cut). The prototype lives in the audit function (a getenv'd mode, a second loop for the log); made the
 default it would replace the stamps' function.
 
+### Made the flag's order (b2b3cdcd2 and after, 2026-10-29)
+- Gates: quickgate --vs-main -k PASS (plain instructions drizzle -0.03%, zod -0.04%); sgcheck with the flag's own
+  order (no env) 0/696 on the default list (K 4/8/16, both deals, 2 runs) and 0/40 at K24 on drizzle, mikro-orm
+  seeder, webpack, openscience (5 runs, both deals); TSan clean at T8 on drizzle, effect, excalidraw, zod, vue (after
+  fda3b4397: the one report was the log switch's lazily set static); `$ExpectType` with the flag 68,640/68,640.
+- The flag before/after (main 02ebfb96a with stamps against walk): instructions (callgrind, `--threads 1 --checkers 8
+  --checker-memory off`) drizzle 7,119 -> 6,982 M (-1.9%), zod 5,709 -> 5,675 M (-0.6%), effect 10,892 -> 10,860 M
+  (-0.3%), xstate 3,108 -> 3,089 M (-0.6%), outputs identical. The stamps' own functions (is_deeply_nested_stamped,
+  ty_stamp: 68 / 76 / 90 / 33 M) are replaced by the walk's (is_deeply_nested_walk, walk_newer, the sub-term search,
+  heights: 71 / 50 / 58 / 31 M); the rest of the saving is the stamping in intern_shared_find() and no taint event at a
+  deep cut. Check CPU at K8 T8 (best of 5 interleaved, load 25-30): drizzle +0.5%, zod +0.4%, effect +1.2%, xstate
+  -4.3%: noise. So the stamps' "311 M" (shared_graph.md's premium table, 7 projects) is gone as stamps, but deep
+  nesting under the flag still costs about what it did: the per-decision work moved, it didn't vanish.
+- **Fact 2 is the order's one input that is history in principle**: made_before_step() peeks an object literal's
+  property types (set when the literal is made: no history) and a function type's return types (inferred on first
+  ask: under the flag another worker's published one may be known where this worker's own history wouldn't have it
+  yet). A `-DTTTT_GRAPH_CHECKS` build with `TTTT_GRAPH_CHECKS=1` reports (first 5) a decision that went by a return type
+  another worker made. On sgcheck's list at K8 both deals (116 runs) it fires only on openscience/backend/cli, the
+  Tool.define walks fact 2 exists for, in both deals, with the output byte-identical to plain K1.
+
 ### Verdict
 **walk is K-stable by construction and exact against the id order on everything measured** (the suite, 58 projects at
 K1, 856 flagged runs). It removes residue C (drizzle's execute chains, the laptop's K24 TS2430/TS2416 pair) and
 mikro-orm seeder's TS2322, which were the first-touch stamps. What remains inexact is case 5 (two unrelated
 pre-existing types whose order is the history's), where tsc itself depends on its history; no instance seen.
-Landing it (the coordinator's decision): make walk the flag's order in place of the stamps (delete ty_stamp, Checker
-.stamps, `--first-touch-stamps`), keep the id order for the plain path (or make walk the default too: identical
-output measured, and a precondition for sharing relation results whatever their deep cuts), run the full sweep and
-source sweep plain with walk before that.
+Landed for the flag (above). Open: whether the plain path should take walk too (identical output measured on the
+suite and 58 projects; tsc's rule is ids, so it's a separate decision; the full sweep and source sweep plain with
+`TTTT_NESTING_ORDER=walk` first).

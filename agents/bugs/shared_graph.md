@@ -34,7 +34,8 @@ scripts/sharedgraph/sgcheck_projects.txt, load 8-15): main at ab39dce20 12 of 34
   variance measurement in expo-sqlite/query.ts (definitely_unrelated()'s permissive check -> compare_signatures ->
   infer_from_type_args -> get_variances) whose cloned `TResult1`'s mapper targets `any` where K1's targets `unknown`
   (9/12 runs, output unaffected there). Fix: the content order (sharing_design.md stage 1; its parity cost is listed
-  there), a decision for the coordinator; stamps can't be made a function of the node. [note]
+  there), a decision for the coordinator; stamps can't be made a function of the node. Fixed by the walk order
+  (sharing_design.md §6), the flag's order since b2b3cdcd2: 0/696 on the default list, 0/40 at K24. [fixed b2b3cdcd2]
   - The content order's parity cost, measured 2026-10-29 (plain K1 with and without `TTTT_NESTING_ORDER=content
     TTTT_FIRST_TOUCH_STAMPS=0` on sgcheck's 58 projects): 55 identical; drizzle chain text only (12 lines: the
     mysql2/session.ts TS2416 elaboration one return level deeper, `with(...).update(...).set(...).where(...).$dynamic()`);
@@ -47,7 +48,7 @@ scripts/sharedgraph/sgcheck_projects.txt, load 8-15): main at ab39dce20 12 of 34
     same three projects differ, the same two diagnostics appear. So the push-order detail isn't it; the height
     comparison itself (or where bun cuts that tttt doesn't model) decides those two. Next, if wanted: reltrace or
     TTTT_DEBUG_RELATE_NESTED on webpack's generate-types.js(397,35) under both orders, the first relation whose
-    verdict parts. [note]
+    verdict parts. [design]
   - Traced (`TTTT_CHECK_ONLY=tooling/generate-types.js TTTT_DEBUG_RELATE_NESTED=1`, both orders): the call is
     `flatten(args.map((arg) => [...]))` with `flatten<T>(iterable: Iterable<Iterable<T>>): T[]` (JSDoc). Inferring T
     from `(string | boolean | Type)[][]` walks the target's `Iterable` -> `Iterator` -> `next` -> `IteratorResult`
@@ -60,12 +61,13 @@ scripts/sharedgraph/sgcheck_projects.txt, load 8-15): main at ab39dce20 12 of 34
     so recursion that unwraps a type (the descent tsc's deep-nesting test exists for, in inference) is never cut. Not
     bounded: any content key must order an unwrapped instantiation after its wrapper, which height can't. openscience's
     TS7006 (a `.map((file) => ...)` callback's parameter) is probably the same cut through inference, not traced.
-    [note]
+    The walk order handles both (sharing_design.md §6): `Iterator<T>` isn't a key sub-term of `Iterator<Iterable<T>>`,
+    so it counts as newer, as its later creation does; openscience's was another case, a `Promise<B>` reached from
+    `Promise<A>` only through an object literal's method's return type (made before A: older). [fixed b2b3cdcd2]
   - A content key that keeps the ids' answers (sharing_design.md §6, 2026-10-29): `TTTT_NESTING_ORDER=walk` (older:
     a key sub-term, a value reached through made-before parts, or on the other stack first) is byte-identical to the
     ids at K1 on all 58 projects and the suite, and 0/856 flagged runs differ with it (stamps: 18/60 on drizzle and
-    mikro-orm, the laptop's K24 TS2430 select.ts(1076,18) among them). Making it the flag's order is the fix,
-    pending the coordinator. [note]
+    mikro-orm, the laptop's K24 TS2430 select.ts(1076,18) among them). The flag's order since b2b3cdcd2. [fixed b2b3cdcd2]
 - **A signature's instance shared while its signature's resolution was private** (effect's Schema.ts
   `X.pipe(lowercased(...))` cascade: TS2507 "never is not a constructor", Schema.tst.ts(2892,39) TS2345, 2-3 of 10 K8
   runs; folo/apps/desktop/layer/renderer's residue W: `GeneralSettings[K]` read as never, TS2345 at
@@ -81,7 +83,8 @@ scripts/sharedgraph/sgcheck_projects.txt, load 8-15): main at ab39dce20 12 of 34
   'object' is not assignable to type 'T'", 2/2 runs at K16 rr, 0/10 at K4/K8 and K16 with the scheduler's deal
   (shared_graph.md's residue C listed mikro-orm). 0/4 under `TTTT_NESTING_ORDER=content TTTT_FIRST_TOUCH_STAMPS=0`
   against 2/4 without (2026-10-29), and 2/4 still after 720b23760: residue C's family (the stamps), with drizzle's.
-  Repro: `scripts/sgcheck.py -f 'mikro-orm/packages/seeder' -k 16 --deals rr -n 4`. [note]
+  Repro: `scripts/sgcheck.py -f 'mikro-orm/packages/seeder' -k 16 --deals rr -n 4`. The stamps: 0/10 at K24 and 0/20 at
+  K4-K16 with the walk order. [fixed b2b3cdcd2]
 
 After 720b23760 (2026-10-29, the default list at K 4/8/16, both deals, 2 runs, 696 runs): 3 differ, all drizzle's C
 (K8 and K16 with the scheduler's deal); mikro-orm seeder's shows at a lower rate (0/4 there, 2/4 in a targeted run).

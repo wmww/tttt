@@ -46,9 +46,8 @@ wins first; land fast and gate in batches.
   dokploy and openbot/apps/i18n (physical paths), best of 5 interleaved, wall, user, RSS; `TTTT_SHARED_GRAPH=1` is the
   flag. If the corpora are at or under 1.0 there, the flag is a default-on candidate pending residue C; else the
   per-read cost comes first.
-- **Fewer shared reads per unit of work** (the only lever left on the premium): content nesting order instead of
-  first-touch stamps (needs a key that orders a type made while walking into another after it: bugs/shared_graph.md
-  "drizzle C"; it also removes is_deeply_nested_stamped's 311 M instructions and residue C), and variance groups
+- **Fewer shared reads per unit of work** (the only lever left on the premium): the content nesting order is done
+  (the walk order replaced the stamps at b2b3cdcd2, residue C closed, -0.3..-1.9% instructions: sharing_design.md §6), and variance groups
   measured once (zod 287 at K1 against 1086 at K8 under the flag: lost work, +3..18% instructions; the 10-22 closure
   of variance sharing was about K-independence, which the shared graph's taint rules now give a frame for).
 - **The hub regime diagnosis (done 2026-10-29: hub_regime.md)** (the input to the redesign question; a diagnosis track with a written verdict, no

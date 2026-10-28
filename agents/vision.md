@@ -104,8 +104,8 @@ measured wins first; land fast and gate in batches.
   the right way with threads (hubs median wall 1.11/1.05/0.90 at N4/8/16; corpora 1.26/1.15/1.10, crossing only
   around 32-64 threads), no core-count threshold wins everywhere, and no import-graph predictor separates winners
   from losers (the type-level fan-in of an `as const` catalog isn't in the import graph). What is left: the laptop
-  at its 24 threads (the curve's next point), fewer shared reads per unit of work (content order instead of
-  first-touch stamps, also residue C's fix; variance groups shared), or accepting the flag as a per-project option.
+  at its 24 threads (the curve's next point), fewer shared reads per unit of work (variance groups shared; the
+  content order replaced the first-touch stamps at b2b3cdcd2, closing residue C), or accepting the flag as a per-project option.
 - **The leaner type graph is a memory project, not the route to speed** (2026-10-29, the laptop at 2c389b213:
   measurements.md "The 12-core box at 2c389b213"): step 1 (instance props made on first use) cut zod's arena 20% and
   RSS 12% but cycles only 1.6%, because the bytes it saved were written once and never read: the stalls are random
