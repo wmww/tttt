@@ -1,0 +1,55 @@
+//// [test/cases/ttttIterateNullableConstraint.ts] ////
+
+=== ttttIterateNullableConstraint.ts ===
+// A type parameter constrained to `unknown[] | undefined` has no `[Symbol.iterator]` (a union property is every
+// member's): spreading it is TS2488 naming T; a for-of's operand is checked as non-null first (TS18048)
+declare function takeArray(arr: Array<unknown>): void;
+>takeArray : Symbol(takeArray, Decl(ttttIterateNullableConstraint.ts, 0, 0))
+>arr : Symbol(arr, Decl(ttttIterateNullableConstraint.ts, 2, 27))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+
+function fn<T extends Array<unknown> | undefined>(arg: T) {
+>fn : Symbol(fn, Decl(ttttIterateNullableConstraint.ts, 2, 54))
+>T : Symbol(T, Decl(ttttIterateNullableConstraint.ts, 3, 12))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>arg : Symbol(arg, Decl(ttttIterateNullableConstraint.ts, 3, 50))
+>T : Symbol(T, Decl(ttttIterateNullableConstraint.ts, 3, 12))
+
+    if (typeof arg !== 42) {
+>arg : Symbol(arg, Decl(ttttIterateNullableConstraint.ts, 3, 50))
+
+        takeArray(arg);
+>takeArray : Symbol(takeArray, Decl(ttttIterateNullableConstraint.ts, 0, 0))
+>arg : Symbol(arg, Decl(ttttIterateNullableConstraint.ts, 3, 50))
+
+        for (const p of arg) {  }
+>p : Symbol(p, Decl(ttttIterateNullableConstraint.ts, 6, 18))
+>arg : Symbol(arg, Decl(ttttIterateNullableConstraint.ts, 3, 50))
+
+        const m = [...arg];
+>m : Symbol(m, Decl(ttttIterateNullableConstraint.ts, 7, 13))
+>arg : Symbol(arg, Decl(ttttIterateNullableConstraint.ts, 3, 50))
+    }
+}
+function fn2<T extends Array<unknown> | undefined>(arg: T) {
+>fn2 : Symbol(fn2, Decl(ttttIterateNullableConstraint.ts, 9, 1))
+>T : Symbol(T, Decl(ttttIterateNullableConstraint.ts, 10, 13))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>arg : Symbol(arg, Decl(ttttIterateNullableConstraint.ts, 10, 51))
+>T : Symbol(T, Decl(ttttIterateNullableConstraint.ts, 10, 13))
+
+    const m = [...arg];
+>m : Symbol(m, Decl(ttttIterateNullableConstraint.ts, 11, 9))
+>arg : Symbol(arg, Decl(ttttIterateNullableConstraint.ts, 10, 51))
+
+    for (const p of arg) {  }
+>p : Symbol(p, Decl(ttttIterateNullableConstraint.ts, 12, 14))
+>arg : Symbol(arg, Decl(ttttIterateNullableConstraint.ts, 10, 51))
+}
+declare const a: unknown[] | undefined;
+>a : Symbol(a, Decl(ttttIterateNullableConstraint.ts, 14, 13))
+
+const m1 = [...a];
+>m1 : Symbol(m1, Decl(ttttIterateNullableConstraint.ts, 15, 5))
+>a : Symbol(a, Decl(ttttIterateNullableConstraint.ts, 14, 13))
+

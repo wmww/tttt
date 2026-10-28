@@ -159,6 +159,11 @@ static Ty const* property_type(Checker* me, Ty const* ty, Atom const* name, bool
     // (Only objects, unions and intersections have properties: an apparent type that is any, like a `T[string]` whose
     // T is constrained by an unresolved type, has none, so it isn't iterable though it isn't any itself)
     if (!(apparent->flags & (TYF_UNION | TYF_INTERSECTION))) return nullptr;
+    // (A union property is every member's: null or undefined among them has none, which ty_access() reads past. A type
+    // parameter constrained to `unknown[] | undefined` isn't iterable, tsc's getPropertyOfType of its apparent type)
+    for (u32 i = 0; apparent->kind == TY_UNION && i < apparent->composite.types.len; i++) {
+        if (apparent->composite.types.data[i]->flags & TYF_NULLABLE) return nullptr;
+    }
     return ty_access(me, apparent, ty_prop_name_literal(me, name));
 }
 
