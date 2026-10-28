@@ -653,4 +653,4 @@ missing_checks.md, together with variances for a declared type against its insta
   coop/server's networkingService (+TS2322 x2 in three configs) and coop/client's ManualReviewDashboardInsightsChart.tsx
   (+TS2339, +TS7006). initializer_ignores_context() skipped the pattern's implied type for a call without type
   parameters, but an IIFE's return expressions take the call's contextual type (tsc's getContextualReturnType).
-  ty_call_may_ask_context() says yes for an IIFE. Repro ttttIifeDestructuredTuple. [fixed e98eaa70a]
+  ty_call_may_ask_context() says yes for an IIFE. Repro ttttIifeDestructuredTuple. [fixed 62eb5e438]
