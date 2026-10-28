@@ -383,9 +383,11 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
                 TY_WORKER_STATE(me);
                 *intern_slot(me, &my links, (u64[]){ KEY_RETURN_WIDENED_ANY, (u64)(uintptr_t)function }, 2) = ret;
             }
-            // (Its context is its own type: see set_contextual_return() in expr.c)
+            // (Its context is its own type: see set_contextual_return() in expr.c. An async function's is what that
+            // promises, tsc's getPromisedTypeOfPromise of the awaited return type: nothing, so `async () => "a"` whose
+            // context is its own signature returns Promise<string>)
             if (!contextual && self == CONTEXT_OWN) {
-                contextual = ret;
+                contextual = function->is_async ? promised_context(me, ret) : ret;
             }
             if (!(ret->flags & TYF_NEVER)) ret = ty_widened_return_type(me, ret, contextual);
         }
