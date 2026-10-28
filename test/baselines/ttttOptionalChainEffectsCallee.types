@@ -1,0 +1,53 @@
+//// [test/cases/ttttOptionalChainEffectsCallee.ts] ////
+
+=== ttttOptionalChainEffectsCallee.ts ===
+// A later reference's flow narrowing by an optional call `a?.o()` (tsc's getEffectsSignature) checks the callee not
+// to be nullish after taking the chain's marker off: TS18048 at `a.o` besides the call's TS2722 (bun 99-V4
+// resolveCallExpression__03). `a?.o?.()`'s callee is the expression of its own `?.`: no error. The flow only gets to
+// the call when the reference's type before it isn't the declared one (tsc's branch label stops early), hence `r1`
+type T = { m(): number; o?: () => string };
+>T : T
+>m : () => number
+>o : (() => string) | undefined
+
+declare const a: T | undefined;
+>a : T | undefined
+
+const r1 = a?.m();
+>r1 : number | undefined
+>a?.m() : number | undefined
+>a?.m : (() => number) | undefined
+>a : T | undefined
+>m : (() => number) | undefined
+
+const r2 = a?.o();
+>r2 : string | undefined
+>a?.o() : string | undefined
+>a?.o : (() => string) | undefined
+>a : T | undefined
+>o : (() => string) | undefined
+
+const r3 = a?.o?.();
+>r3 : string | undefined
+>a?.o?.() : string | undefined
+>a?.o : (() => string) | undefined
+>a : T | undefined
+>o : (() => string) | undefined
+
+declare const c: T | undefined;
+>c : T | undefined
+
+const s2 = c?.o();
+>s2 : string | undefined
+>c?.o() : string | undefined
+>c?.o : (() => string) | undefined
+>c : T | undefined
+>o : (() => string) | undefined
+
+const s3 = c?.o?.();
+>s3 : string | undefined
+>c?.o?.() : string | undefined
+>c?.o : (() => string) | undefined
+>c : T | undefined
+>o : (() => string) | undefined
+

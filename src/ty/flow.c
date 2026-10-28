@@ -1756,8 +1756,11 @@ static CallEffects call_effects(Checker* me, Expr const* call_expr, bool is_stat
     } else if (callee_expr->tag != EXPR_IDENTIFIER || callee_expr->identifier.keyword != KEYWORD_IDENTIFIER_SUPER) {
         callee = ty_flow_expr_type(me, callee_expr);
         // (tsc's checkNonNullExpression, which reports too: `if (f(x))` with `f` possibly undefined is TS18048 at `f`
-        // besides the call's TS2722. Not in an optional chain, whose callee may be nullish)
-        if (!expr_is_optional_chain(call_expr) && my errs && my errs->phase == ERROR_PHASE_TYPECHECK) {
+        // besides the call's TS2722. In an optional chain the callee's own `?.` takes its nullishness out first, the
+        // chain's marker comes off otherwise (getOptionalExpressionType): `a?.o()` with `o?: () => T` is TS18048 at
+        // `a.o`, `a?.o?.()` isn't)
+        if (expr_is_optional_chain(call_expr)) callee = ty_optional_expression_type(me, callee, call->optional_chain, nullptr);
+        if (my errs && my errs->phase == ERROR_PHASE_TYPECHECK) {
             Ty const* checked = ty_check_non_null_type(me, callee, callee_expr, my errs);
             callee = checked ? checked : ty_non_nullable(me, callee);
         } else {
