@@ -1722,6 +1722,12 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
 ) {
     // A name the parser found missing (`o.` then something else) has said enough (tsc: `right.escapedText &&`)
     if (span_valid(span) && !span.size) return;
+    if (destructured && ts_code == 2339 && span_valid(span) && span_is_bigint_name(span, true)) {
+        // (A binding element's key written as a bigint, `{ 0n: x }`, is its token value as a name, "0n": when no
+        // property has it, tsgo's getPropertyTypeForIndexType says so of the bigint literal)
+        error_ctx_error_d(errs, span, 2538, "Type 'bigint' cannot be used as an index type.");
+        return;
+    }
     cstr name = index_name(me, index);
     // (A binding element's is about the apparent type: tsc's getIndexedAccessType reports on getReducedApparentType,
     // `{}` for `object`, the constraint's for a type parameter)
@@ -2113,7 +2119,7 @@ static void check_access(
         // (A numeric string literal too, `t["2"]`: tsc's isNumericLiteralName(propName))
         bool numeric_name = (index->flags & TYF_STRING_LITERAL) && !(index->flags & TYF_ENUM_LITERAL) && index->literal.string &&
             ty_is_numeric_name(index->literal.string);
-        if (!opaque && is_union_of_fixed_tuples(object) && (((index->flags & TYF_NUMBER_LITERAL) && !(index->flags & TYF_ENUM_LITERAL)) ||
+        if (!opaque && !span_is_bigint_name(index_span, true) && is_union_of_fixed_tuples(object) && (((index->flags & TYF_NUMBER_LITERAL) && !(index->flags & TYF_ENUM_LITERAL)) ||
             numeric_name) && !some_member_has_prop(me, object, numeric_name ? index->literal.string : ty_literal_name(me, index))
         ) {
             // (No elaboration naming a member)

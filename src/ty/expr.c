@@ -4664,6 +4664,8 @@ typedef struct LiteralBinding {
 
 static Atom const* literal_item_bound_name(Checker* me, ObjectExprItem const* item) {
     if (item->tag == OBJECT_ITEM_SPREAD) return nullptr;
+    // (A bigint name is tsc's __missing, a symbol outside the table)
+    if (!item->computed_key && span_is_bigint_name(item->name_span, item->name_is_value)) return nullptr;
     if (!item->computed_key) return checker_atom(me, cstr_sv(&item->name_string));
     // (A literal key is bound by its value, `[-1]` and `[+1]` as written: tsc's getDeclarationName)
     Expr const* key = item->computed_key;

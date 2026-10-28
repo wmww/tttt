@@ -267,6 +267,8 @@ static inline Value value_native_func(
 
 // The decimal digits of a bigint, `-` first when negative and not zero
 void bigint_append_decimal(cstr* out, BigintValue value);
+// The literal as tsgo's scanner keeps it, its property name (`0XFF` is "0xffn", `0b11` "3n")
+void bigint_append_token_value(cstr* out, BigintValue value);
 bool bigint_is_zero(BigintValue value);
 static inline Value value_bigint(char const* text, u32 len, bool negative) {
     return (Value){ .tag = VALUE_BIGINT, .bigint = { .text = text, .len = len, .negative = negative } };

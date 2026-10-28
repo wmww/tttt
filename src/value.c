@@ -1,4 +1,5 @@
 #include "value.h"
+#include <ctype.h>
 #include "math.h"
 #include "function_impl.h"
 #include "result.h"
@@ -380,6 +381,29 @@ static u32 bigint_limbs(BigintValue value, u32** out) {
     }
     *out = limbs;
     return count;
+}
+
+// A bigint literal's text as tsgo's scanner keeps it (scanBigIntSuffix), which is what it names as a property: hex as
+// `0x` and its digits lowercased, binary and octal in decimal, decimal as written; separators dropped, an `n` after
+void bigint_append_token_value(cstr* out, BigintValue value) {
+    if (value.len >= 2 && value.text[0] == '0' && (value.text[1] == 'x' || value.text[1] == 'X')) {
+        cstr_append_lit(out, "0x");
+        for (u32 i = 2; i < value.len; i++) {
+            char c = value.text[i];
+            if (c == '_') continue;
+            char lower = (char)tolower((unsigned char)c);
+            cstr_append_n(out, &lower, 1);
+        }
+    } else if (value.len >= 2 && value.text[0] == '0' && strchr("oObB", value.text[1])) {
+        BigintValue positive = value;
+        positive.negative = false;
+        bigint_append_decimal(out, positive);
+    } else {
+        for (u32 i = 0; i < value.len; i++) {
+            if (value.text[i] != '_') cstr_append_n(out, &value.text[i], 1);
+        }
+    }
+    cstr_append_lit(out, "n");
 }
 
 bool bigint_is_zero(BigintValue value) {

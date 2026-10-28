@@ -1,0 +1,125 @@
+//// [test/cases/ttttBigintPropertyNames.ts] ////
+
+=== ttttBigintPropertyNames.ts ===
+const o7 = { 1n: 1, "1n": 3 };
+>o7 : { "1n": number; }
+>{ 1n: 1, "1n": 3 } : { "1n": number; }
+>1n : number
+>1 : 1
+>"1n" : number
+>3 : 3
+
+const o6 = { 0o7n: 1, "7n": 2 };
+>o6 : { "7n": number; }
+>{ 0o7n: 1, "7n": 2 } : { "7n": number; }
+>0o7n : number
+>1 : 1
+>"7n" : number
+>2 : 2
+
+const o8 = { 0x1Fn: 1 };
+>o8 : {}
+>{ 0x1Fn: 1 } : {}
+>0x1Fn : number
+>1 : 1
+
+const o9 = { 10n: 1 };
+>o9 : {}
+>{ 10n: 1 } : {}
+>10n : number
+>1 : 1
+
+o9["10n"];
+>o9["10n"] : any
+>o9 : {}
+>"10n" : "10n"
+
+declare const o: { "0x10n": number; "16n": string; "0xffn": 1; "255n": 2 };
+>o : { "0x10n": number; "16n": string; "0xffn": 1; "255n": 2; }
+>"0x10n" : number
+>"16n" : string
+>"0xffn" : 1
+>"255n" : 2
+
+const { 0x10n: a } = o; const a1: never = a;
+>a : number
+>o : { "0x10n": number; "16n": string; "0xffn": 1; "255n": 2; }
+>a1 : never
+>a : number
+
+const { 0XFFn: c } = o; const c1: never = c;
+>c : 1
+>o : { "0x10n": number; "16n": string; "0xffn": 1; "255n": 2; }
+>c1 : never
+>c : 1
+
+const { 0b11n: d } = { "3n": true };
+>d : boolean
+>{ "3n": true } : { "3n": boolean; }
+>"3n" : boolean
+>true : true
+
+const p1 = { 0b11n: 1, 3n: 2 };
+>p1 : {}
+>{ 0b11n: 1, 3n: 2 } : {}
+>0b11n : number
+>1 : 1
+>3n : number
+>2 : 2
+
+const p2 = { 0XFFn: 1, 0xffn: 2 };
+>p2 : {}
+>{ 0XFFn: 1, 0xffn: 2 } : {}
+>0XFFn : number
+>1 : 1
+>0xffn : number
+>2 : 2
+
+const p4 = { 0o7n: 1, "7n": 2 };
+>p4 : { "7n": number; }
+>{ 0o7n: 1, "7n": 2 } : { "7n": number; }
+>0o7n : number
+>1 : 1
+>"7n" : number
+>2 : 2
+
+const p6 = { 0b11n: 1, "0b11n": 2 };
+>p6 : { "0b11n": number; }
+>{ 0b11n: 1, "0b11n": 2 } : { "0b11n": number; }
+>0b11n : number
+>1 : 1
+>"0b11n" : number
+>2 : 2
+
+declare function dec(t: any, c: { name: "0xffn" }): void;
+>dec : (t: any, c: { name: "0xffn"; }) => void
+>t : any
+>c : { name: "0xffn"; }
+>name : "0xffn"
+
+declare function dec2(t: any, c: { name: "3n" }): void;
+>dec2 : (t: any, c: { name: "3n"; }) => void
+>t : any
+>c : { name: "3n"; }
+>name : "3n"
+
+class C2 { @dec 0XFFn() {} @dec2 0b11n() {} }
+>C2 : C2
+>dec : (t: any, c: { name: "0xffn"; }) => void
+>0XFFn : () => void
+>dec2 : (t: any, c: { name: "3n"; }) => void
+>0b11n : () => void
+
+class K { 1n() {} "1n"() {} 0x1Fn = 1; 0x1fn = 2 }
+>K : K
+>1n : () => void
+>"1n" : () => void
+>0x1Fn : number
+>1 : 1
+>0x1fn : number
+>2 : 2
+
+interface I { 1n: number; "1n": string }
+>1n : number
+>"1n" : string
+

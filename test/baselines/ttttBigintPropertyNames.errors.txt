@@ -1,0 +1,87 @@
+ttttBigintPropertyNames.ts(1,14): error TS1539: A 'bigint' literal cannot be used as a property name.
+ttttBigintPropertyNames.ts(1,21): error TS1117: An object literal cannot have multiple properties with the same name.
+ttttBigintPropertyNames.ts(2,14): error TS1539: A 'bigint' literal cannot be used as a property name.
+ttttBigintPropertyNames.ts(2,23): error TS1117: An object literal cannot have multiple properties with the same name.
+ttttBigintPropertyNames.ts(3,14): error TS1539: A 'bigint' literal cannot be used as a property name.
+ttttBigintPropertyNames.ts(4,14): error TS1539: A 'bigint' literal cannot be used as a property name.
+ttttBigintPropertyNames.ts(5,1): error TS7053: Element implicitly has an 'any' type because expression of type '"10n"' can't be used to index type '{}'.
+  Property '10n' does not exist on type '{}'.
+ttttBigintPropertyNames.ts(7,31): error TS2322: Type 'number' is not assignable to type 'never'.
+ttttBigintPropertyNames.ts(8,31): error TS2322: Type '1' is not assignable to type 'never'.
+ttttBigintPropertyNames.ts(10,14): error TS1539: A 'bigint' literal cannot be used as a property name.
+ttttBigintPropertyNames.ts(10,24): error TS1117: An object literal cannot have multiple properties with the same name.
+ttttBigintPropertyNames.ts(10,24): error TS1539: A 'bigint' literal cannot be used as a property name.
+ttttBigintPropertyNames.ts(11,14): error TS1539: A 'bigint' literal cannot be used as a property name.
+ttttBigintPropertyNames.ts(11,24): error TS1117: An object literal cannot have multiple properties with the same name.
+ttttBigintPropertyNames.ts(11,24): error TS1539: A 'bigint' literal cannot be used as a property name.
+ttttBigintPropertyNames.ts(12,14): error TS1539: A 'bigint' literal cannot be used as a property name.
+ttttBigintPropertyNames.ts(12,23): error TS1117: An object literal cannot have multiple properties with the same name.
+ttttBigintPropertyNames.ts(13,14): error TS1539: A 'bigint' literal cannot be used as a property name.
+ttttBigintPropertyNames.ts(17,29): error TS1539: A 'bigint' literal cannot be used as a property name.
+ttttBigintPropertyNames.ts(17,40): error TS1539: A 'bigint' literal cannot be used as a property name.
+ttttBigintPropertyNames.ts(18,15): error TS1539: A 'bigint' literal cannot be used as a property name.
+
+
+==== ttttBigintPropertyNames.ts (21 errors) ====
+    const o7 = { 1n: 1, "1n": 3 };
+                 ~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+                        ~~~~
+!!! error TS1117: An object literal cannot have multiple properties with the same name.
+    const o6 = { 0o7n: 1, "7n": 2 };
+                 ~~~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+                          ~~~~
+!!! error TS1117: An object literal cannot have multiple properties with the same name.
+    const o8 = { 0x1Fn: 1 };
+                 ~~~~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+    const o9 = { 10n: 1 };
+                 ~~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+    o9["10n"];
+    ~~~~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '"10n"' can't be used to index type '{}'.
+!!! error TS7053:   Property '10n' does not exist on type '{}'.
+    declare const o: { "0x10n": number; "16n": string; "0xffn": 1; "255n": 2 };
+    const { 0x10n: a } = o; const a1: never = a;
+                                  ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+    const { 0XFFn: c } = o; const c1: never = c;
+                                  ~~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+    const { 0b11n: d } = { "3n": true };
+    const p1 = { 0b11n: 1, 3n: 2 };
+                 ~~~~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+                           ~~
+!!! error TS1117: An object literal cannot have multiple properties with the same name.
+                           ~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+    const p2 = { 0XFFn: 1, 0xffn: 2 };
+                 ~~~~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+                           ~~~~~
+!!! error TS1117: An object literal cannot have multiple properties with the same name.
+                           ~~~~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+    const p4 = { 0o7n: 1, "7n": 2 };
+                 ~~~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+                          ~~~~
+!!! error TS1117: An object literal cannot have multiple properties with the same name.
+    const p6 = { 0b11n: 1, "0b11n": 2 };
+                 ~~~~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+    declare function dec(t: any, c: { name: "0xffn" }): void;
+    declare function dec2(t: any, c: { name: "3n" }): void;
+    class C2 { @dec 0XFFn() {} @dec2 0b11n() {} }
+    class K { 1n() {} "1n"() {} 0x1Fn = 1; 0x1fn = 2 }
+                                ~~~~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+                                           ~~~~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+    interface I { 1n: number; "1n": string }
+                  ~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+    

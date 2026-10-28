@@ -1,0 +1,98 @@
+//// [test/cases/ttttBigintPropertyNames.ts] ////
+
+=== ttttBigintPropertyNames.ts ===
+const o7 = { 1n: 1, "1n": 3 };
+>o7 : Symbol(o7, Decl(ttttBigintPropertyNames.ts, 0, 5))
+>1n : Symbol(1n, Decl(ttttBigintPropertyNames.ts, 0, 12))
+>"1n" : Symbol("1n", Decl(ttttBigintPropertyNames.ts, 0, 19))
+
+const o6 = { 0o7n: 1, "7n": 2 };
+>o6 : Symbol(o6, Decl(ttttBigintPropertyNames.ts, 1, 5))
+>0o7n : Symbol(0o7n, Decl(ttttBigintPropertyNames.ts, 1, 12))
+>"7n" : Symbol("7n", Decl(ttttBigintPropertyNames.ts, 1, 21))
+
+const o8 = { 0x1Fn: 1 };
+>o8 : Symbol(o8, Decl(ttttBigintPropertyNames.ts, 2, 5))
+>0x1Fn : Symbol(0x1Fn, Decl(ttttBigintPropertyNames.ts, 2, 12))
+
+const o9 = { 10n: 1 };
+>o9 : Symbol(o9, Decl(ttttBigintPropertyNames.ts, 3, 5))
+>10n : Symbol(10n, Decl(ttttBigintPropertyNames.ts, 3, 12))
+
+o9["10n"];
+>o9 : Symbol(o9, Decl(ttttBigintPropertyNames.ts, 3, 5))
+
+declare const o: { "0x10n": number; "16n": string; "0xffn": 1; "255n": 2 };
+>o : Symbol(o, Decl(ttttBigintPropertyNames.ts, 5, 13))
+>"0x10n" : Symbol("0x10n", Decl(ttttBigintPropertyNames.ts, 5, 18))
+>"16n" : Symbol("16n", Decl(ttttBigintPropertyNames.ts, 5, 35))
+>"0xffn" : Symbol("0xffn", Decl(ttttBigintPropertyNames.ts, 5, 50))
+>"255n" : Symbol("255n", Decl(ttttBigintPropertyNames.ts, 5, 62))
+
+const { 0x10n: a } = o; const a1: never = a;
+>a : Symbol(a, Decl(ttttBigintPropertyNames.ts, 6, 7))
+>o : Symbol(o, Decl(ttttBigintPropertyNames.ts, 5, 13))
+>a1 : Symbol(a1, Decl(ttttBigintPropertyNames.ts, 6, 29))
+>a : Symbol(a, Decl(ttttBigintPropertyNames.ts, 6, 7))
+
+const { 0XFFn: c } = o; const c1: never = c;
+>c : Symbol(c, Decl(ttttBigintPropertyNames.ts, 7, 7))
+>o : Symbol(o, Decl(ttttBigintPropertyNames.ts, 5, 13))
+>c1 : Symbol(c1, Decl(ttttBigintPropertyNames.ts, 7, 29))
+>c : Symbol(c, Decl(ttttBigintPropertyNames.ts, 7, 7))
+
+const { 0b11n: d } = { "3n": true };
+>d : Symbol(d, Decl(ttttBigintPropertyNames.ts, 8, 7))
+>"3n" : Symbol("3n", Decl(ttttBigintPropertyNames.ts, 8, 22))
+
+const p1 = { 0b11n: 1, 3n: 2 };
+>p1 : Symbol(p1, Decl(ttttBigintPropertyNames.ts, 9, 5))
+>0b11n : Symbol(0b11n, Decl(ttttBigintPropertyNames.ts, 9, 12))
+>3n : Symbol(3n, Decl(ttttBigintPropertyNames.ts, 9, 22))
+
+const p2 = { 0XFFn: 1, 0xffn: 2 };
+>p2 : Symbol(p2, Decl(ttttBigintPropertyNames.ts, 10, 5))
+>0XFFn : Symbol(0XFFn, Decl(ttttBigintPropertyNames.ts, 10, 12))
+>0xffn : Symbol(0xffn, Decl(ttttBigintPropertyNames.ts, 10, 22))
+
+const p4 = { 0o7n: 1, "7n": 2 };
+>p4 : Symbol(p4, Decl(ttttBigintPropertyNames.ts, 11, 5))
+>0o7n : Symbol(0o7n, Decl(ttttBigintPropertyNames.ts, 11, 12))
+>"7n" : Symbol("7n", Decl(ttttBigintPropertyNames.ts, 11, 21))
+
+const p6 = { 0b11n: 1, "0b11n": 2 };
+>p6 : Symbol(p6, Decl(ttttBigintPropertyNames.ts, 12, 5))
+>0b11n : Symbol(0b11n, Decl(ttttBigintPropertyNames.ts, 12, 12))
+>"0b11n" : Symbol("0b11n", Decl(ttttBigintPropertyNames.ts, 12, 22))
+
+declare function dec(t: any, c: { name: "0xffn" }): void;
+>dec : Symbol(dec, Decl(ttttBigintPropertyNames.ts, 12, 36))
+>t : Symbol(t, Decl(ttttBigintPropertyNames.ts, 13, 21))
+>c : Symbol(c, Decl(ttttBigintPropertyNames.ts, 13, 28))
+>name : Symbol(name, Decl(ttttBigintPropertyNames.ts, 13, 33))
+
+declare function dec2(t: any, c: { name: "3n" }): void;
+>dec2 : Symbol(dec2, Decl(ttttBigintPropertyNames.ts, 13, 57))
+>t : Symbol(t, Decl(ttttBigintPropertyNames.ts, 14, 22))
+>c : Symbol(c, Decl(ttttBigintPropertyNames.ts, 14, 29))
+>name : Symbol(name, Decl(ttttBigintPropertyNames.ts, 14, 34))
+
+class C2 { @dec 0XFFn() {} @dec2 0b11n() {} }
+>C2 : Symbol(C2, Decl(ttttBigintPropertyNames.ts, 14, 55))
+>dec : Symbol(dec, Decl(ttttBigintPropertyNames.ts, 12, 36))
+>0XFFn : Symbol(C2[0XFFn], Decl(ttttBigintPropertyNames.ts, 15, 10))
+>dec2 : Symbol(dec2, Decl(ttttBigintPropertyNames.ts, 13, 57))
+>0b11n : Symbol(C2[0b11n], Decl(ttttBigintPropertyNames.ts, 15, 26))
+
+class K { 1n() {} "1n"() {} 0x1Fn = 1; 0x1fn = 2 }
+>K : Symbol(K, Decl(ttttBigintPropertyNames.ts, 15, 45))
+>1n : Symbol(K[1n], Decl(ttttBigintPropertyNames.ts, 16, 9))
+>"1n" : Symbol(K["1n"], Decl(ttttBigintPropertyNames.ts, 16, 17))
+>0x1Fn : Symbol(K[0x1Fn], Decl(ttttBigintPropertyNames.ts, 16, 27))
+>0x1fn : Symbol(K[0x1fn], Decl(ttttBigintPropertyNames.ts, 16, 38))
+
+interface I { 1n: number; "1n": string }
+>I : Symbol(I, Decl(ttttBigintPropertyNames.ts, 16, 50))
+>1n : Symbol(I[1n], Decl(ttttBigintPropertyNames.ts, 17, 13))
+>"1n" : Symbol(I["1n"], Decl(ttttBigintPropertyNames.ts, 17, 25))
+
