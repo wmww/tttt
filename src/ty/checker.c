@@ -1811,11 +1811,6 @@ static bool is_literal_like(Ty const* t) {
     return t->kind == TY_LITERAL || (t->kind == TY_INTRINSIC && (t->flags & TYF_NULLABLE));
 }
 
-static Prop const* root_declaration(Prop const* prop) {
-    while (prop->target) prop = prop->target;
-    return prop;
-}
-
 // An object type whose properties are known: not generic (TYF_COULD_CONTAIN_TYPE_VARIABLES says too little: a type
 // literal with a `typeof` in it has it)
 static bool is_known_object(Checker* me, Ty const* ty) {
@@ -1851,8 +1846,8 @@ static bool has_conflicting_private(Checker* me, Prop const* prop, Ty const* con
         // (Only declarations count: a mapped type's property, `Record<"m", unknown>`'s, has none, so with a class's
         // private `m` the property has that one value declaration and isn't conflicting, tsc's
         // createUnionOrIntersectionProperty hasNonUniformValueDeclaration)
-        Prop const* a = root_declaration(prop);
-        Prop const* c = other ? root_declaration(other) : nullptr;
+        Prop const* a = prop_root(prop);
+        Prop const* c = other ? prop_root(other) : nullptr;
         if (other && ((prop->flags | other->flags) & PROP_PRIVATE) && a != c && span_valid(a->decl->name_span) && span_valid(c->decl->name_span)) {
             return true;
         }
@@ -2167,8 +2162,8 @@ static Atom const* never_reduced_prop_grouped(Checker* me, Ty const* const* type
             for (u32 b = holders[a].next; b != UINT32_MAX && !found; b = holders[b].next) {
                 Prop const* pa = holders[a].prop;
                 Prop const* pb = holders[b].prop;
-                Prop const* ra = root_declaration(pa);
-                Prop const* rb = root_declaration(pb);
+                Prop const* ra = prop_root(pa);
+                Prop const* rb = prop_root(pb);
                 if (((pa->flags | pb->flags) & PROP_PRIVATE) && ra != rb && span_valid(ra->decl->name_span) && span_valid(rb->decl->name_span)) {
                     found = slot->name;
                     *private_conflict = true;

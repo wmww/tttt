@@ -8,6 +8,7 @@
 #endif
 
 #include <stdio.h>
+#include <time.h>
 
 // cleat.h pulls in cleat's types, string helpers, common macros, display, log, failable and generic/types headers,
 // plus STC's common/csview/cstr. See thirdparty/cleat/readme.md
@@ -66,6 +67,12 @@ typedef struct DebugEnv {
 } DebugEnv;
 extern DebugEnv debug_env;
 
+// Wall-clock milliseconds (C23's timespec_get(): clock_gettime() is hidden by strict -std=c2x), for timings
+static inline double wall_ms(void) {
+    struct timespec now;
+    timespec_get(&now, TIME_UTC);
+    return (double)now.tv_sec * 1e3 + (double)now.tv_nsec / 1e6;
+}
 // The process's resident set, bytes (/proc/self/statm; 0 if unreadable). A read of an fd kept open: cheap enough per file
 u64 process_resident_bytes(void);
 // The memory the system could give the process now, bytes: /proc/meminfo's MemAvailable, and when it runs in cgroups

@@ -172,14 +172,6 @@ static void variation_drop(Variation* me) {
 #define g_no_clone
 #include <cleat/generic/vec.h>
 
-static bool sv_equals_ignore_case(csview a, csview b) {
-    if (a.size != b.size) return false;
-    for (isize i = 0; i < a.size; i++) {
-        if (tolower((unsigned char)a.buf[i]) != tolower((unsigned char)b.buf[i])) return false;
-    }
-    return true;
-}
-
 // The id of a value, so that es6 and es2015 count as the same thing. Unknown values are only equal to themselves
 static int value_id(csview value, const char* const* known, int const* known_ids, isize known_count, int fallback) {
     for (isize k = 0; k < known_count; k++) {

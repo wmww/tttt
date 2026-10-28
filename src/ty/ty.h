@@ -1866,6 +1866,15 @@ Ty const* ty_undefined_or_missing(Checker* me); // tsc's undefinedOrMissingType
 Ty const* ty_remove_missing(Checker* me, Ty const* ty, bool optional); // tsc's removeMissingType
 // tsc's containsMissingType. Relies on TY_MISSING having the lowest id of the undefined-likes: it sorts first in a union
 bool ty_contains_missing(Checker* me, Ty const* ty);
+// tsc's containsUndefinedType: undefined, or a union with an undefined member
+static inline bool ty_contains_undefined_type(Ty const* ty) {
+    if (ty->flags & TYF_UNDEFINED) return true;
+    if (ty->kind != TY_UNION) return false;
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        if (ty->composite.types.data[i]->flags & TYF_UNDEFINED) return true;
+    }
+    return false;
+}
 bool ty_mentions_any(Checker* me, Ty const* ty, Ty const* const* params, u32 count);
 // The type parameters a function expression's type (ty_function_type()) mentions, once its signature is resolved and
 // its return type inferred, or an object literal's type once its property types are known; false (unknown) before that

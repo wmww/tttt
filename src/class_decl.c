@@ -896,16 +896,6 @@ static bool item_has_member_name(Checker* checker, ClassDecl const* me, ClassIte
     return item_member_name(checker, me, item) == name;
 }
 
-// tsc's containsUndefinedType
-static bool contains_undefined(Ty const* ty) {
-    if (ty->flags & TYF_UNDEFINED) return true;
-    if (ty->kind != TY_UNION) return false;
-    for (u32 i = 0; i < ty->composite.types.len; i++) {
-        if (ty->composite.types.data[i]->flags & TYF_UNDEFINED) return true;
-    }
-    return false;
-}
-
 // tsc's isPropertyInitializedInConstructor: `this.x` isn't possibly undefined at the end of the constructor, when it
 // starts out undefined there. The reference is the constructor's first `this.x = v` (class_field_ts_assigned()): without one
 // it's undefined wherever the end can be reached
@@ -931,7 +921,7 @@ static bool field_initialized_in_constructor(
     if (!reference) return false;
     Ty const* parts[2] = { type, ty_intrinsic(checker, TY_UNDEFINED) };
     Ty const* initial = ty_union(checker, parts, 2, nullptr, (TyList){0});
-    return !contains_undefined(ty_flow_type(checker, reference, type, initial, end));
+    return !ty_contains_undefined_type(ty_flow_type(checker, reference, type, initial, end));
 }
 
 static ClassItem const* class_constructor_with_body(ClassDecl const* me) {
@@ -2190,7 +2180,7 @@ static void class_check_property_initialization(ClassDecl const* me, ErrorCtx* e
         if (i->field.is_definite) continue;
         // (Its symbol's type: an optional one has undefined, unless its symbol's first declaration says otherwise)
         Ty const* type = ty_class_field_symbol_type(checker, me, i);
-        if ((type->flags & (TYF_ANY | TYF_UNKNOWN)) || contains_undefined(type)) continue;
+        if ((type->flags & (TYF_ANY | TYF_UNKNOWN)) || ty_contains_undefined_type(type)) continue;
         if (constructor && field_initialized_in_constructor(checker, me, i, type, constructor)) continue;
         error_ctx_error_d(errs, i->field.name_span, 2564, "Property '", i->field.name_span,
             "' has no initializer and is not definitely assigned in the constructor.");

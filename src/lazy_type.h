@@ -162,12 +162,7 @@ LazyMemo* lazy_type_memo(LazyType* me);
 // expression). Replaces the memo if there is one
 void lazy_type_set(LazyType* me, struct Ty const* result, struct Ty const* context);
 
-// Makes a LazyType that evaluates whatever contains it, according to tag
-static inline LazyType lazy_type_init(int tag) {
-    return (LazyType){ .tag = tag, .slot = lazy_slot_new() };
-}
-
-// Same, but in place and keeping the slot if there is one
+// Makes the LazyType evaluate whatever contains it, according to tag, keeping its slot if it has one
 static inline void lazy_type_bind(LazyType* me, int tag) {
     my tag = tag;
     if (!my slot) my slot = lazy_slot_new();

@@ -2561,14 +2561,9 @@ static bool requires_optional_properties(Checker* me, Ty const* source) {
     return compiler_options()->strict_null_checks ? !(element->flags & TYF_NEVER) : element != ty_intrinsic(me, TY_UNDEFINED_WIDENING);
 }
 
-static Prop const* root_declaration(Prop const* prop) {
-    while (prop && prop->target) prop = prop->target;
-    return prop;
-}
-
 // The class a property is declared in (tsc's getDeclaringClass)
 static Ty const* declaring_class(Checker* me, Prop const* prop) {
-    Symbol const* parent = root_declaration(prop) ? root_declaration(prop)->parent : nullptr;
+    Symbol const* parent = prop_root(prop) ? prop_root(prop)->parent : nullptr;
     return parent && (parent->flags & SYMBOL_CLASS) ? ty_declared_type_of(me, parent) : nullptr;
 }
 
@@ -2623,7 +2618,7 @@ static bool modifiers_related(
     bool related = true;
     unsigned code = 0;
     if ((source_flags | target_flags) & PROP_PRIVATE) {
-        related = source_prop->prop && root_declaration(source_prop->prop) == root_declaration(target_prop);
+        related = source_prop->prop && prop_root(source_prop->prop) == prop_root(target_prop);
         code = (source_flags & target_flags & PROP_PRIVATE) ? 2442 : 2325;
     } else if (target_flags & PROP_PROTECTED) {
         related = valid_protected_override(me, source_prop->prop, target_prop);
@@ -5450,7 +5445,7 @@ static bool prop_modifiers_identical(Prop const* source, Prop const* target) {
     u32 access = PROP_PRIVATE | PROP_PROTECTED;
     if ((source->flags & access) != (target->flags & access)) return false;
     if (source->flags & access) {
-        if (root_declaration(source) != root_declaration(target)) return false;
+        if (prop_root(source) != prop_root(target)) return false;
     } else if ((source->flags ^ target->flags) & PROP_OPTIONAL) {
         return false;
     }

@@ -320,13 +320,6 @@ static void note_escaped_names(ParserShared* shared) {
     else names_register_source((SourceFile*)shared->source);
 }
 
-static int hex_digit_value(char c) {
-    if (c >= '0' && c <= '9') return c - '0';
-    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
-    return -1;
-}
-
 static void append_code_point(cstr* str, u32 code) {
     // A surrogate is kept as its WTF-8 encoding (three bytes, ED A0-BF xx), which the printer escapes (`"\uD800"`); a
     // low one right after a high one is the pair's character (`"\uD83D\uDE00"` is the emoji)

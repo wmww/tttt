@@ -200,7 +200,7 @@ static void object_accessors(ObjectExpr const* object, ObjectExprItem const* ite
     }
 }
 
-static TypeNode const* setter_annotation(FunctionImpl const* setter) {
+TypeNode const* pseudo_setter_annotation(FunctionImpl const* setter) {
     if (!setter || !vec_function_arg_size(&setter->args)) return nullptr;
     // (Not its `this` parameter: the first one, as tsgo's getTypeAnnotationFromAccessor takes)
     FunctionArg const* arg = vec_function_arg_at(&setter->args, 0);
@@ -223,7 +223,7 @@ static bool get_accessor_member(Build* me, ObjectExpr const* object, ObjectExprI
     FunctionImpl const* set = setter ? setter->value.function : nullptr;
     FunctionImpl const* accessor = item->value.function;
     *out = (PseudoMember){ .item = item, .function = accessor };
-    if (get && get->ret_explicit && set && setter_annotation(set)) {
+    if (get && get->ret_explicit && set && pseudo_setter_annotation(set)) {
         // Both are annotated: they may say different types, both are kept
         if (item->tag == OBJECT_ITEM_GETTER) {
             out->kind = PSEUDO_MEMBER_GETTER;
@@ -454,8 +454,8 @@ static Pseudo const* create_return_from_signature(Build* me, FunctionImpl const*
 
 // typeFromAccessor: the annotation of either accessor (this one's first), else the getter's single returned expression
 static Pseudo const* type_from_accessor(Build* me, FunctionImpl const* getter, FunctionImpl const* setter, bool of_setter) {
-    TypeNode const* annotation = of_setter ? setter_annotation(setter) : getter_annotation(getter);
-    if (!annotation) annotation = of_setter ? getter_annotation(getter) : setter_annotation(setter);
+    TypeNode const* annotation = of_setter ? pseudo_setter_annotation(setter) : getter_annotation(getter);
+    if (!annotation) annotation = of_setter ? getter_annotation(getter) : pseudo_setter_annotation(setter);
     if (annotation) return direct(me, annotation);
     if (getter) {
         Pseudo const* ret = create_return_from_signature(me, getter, (PseudoPlace){ .contextual = getter->syntactically_contextual });

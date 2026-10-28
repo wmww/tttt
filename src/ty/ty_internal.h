@@ -519,6 +519,11 @@ Symbol const* ty_global_type_alias_reported(Checker* me, csview name, u32 arity)
 void ty_report_missing_global_type(Checker* me, csview name); // tsc's getGlobalType with reportErrors: TS2318
 bool ty_conditional_distribution_dependent(Checker* me, Ty const* conditional);
 bool ty_elides_default_type_args(Checker* me, Ty const* target); // iterate.c
+// The property a (chain of) instantiated or synthetic property comes from, its declaration's (null for null)
+static inline Prop const* prop_root(Prop const* prop) {
+    while (prop && prop->target) prop = prop->target;
+    return prop;
+}
 static inline bool is_empty_tuple(Ty const* ty) { // The empty tuple's type: its own target
     return ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_TUPLE_TARGET;
 }

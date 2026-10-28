@@ -374,10 +374,6 @@ static inline void spanned_type_drop(SpannedType* me) { type_drop(&my type); }
 #define g_allocator ast
 #include <cleat/generic/vec.h>
 
-static inline TypeNode const* generic_param_at(VecSpannedType const* params, intptr_t i) {
-    return i < vec_spanned_type_size(params) ? &vec_spanned_type_at(params, i)->type : &type_any;
-}
-
 typedef enum KeywordIdentifier {
     KEYWORD_IDENTIFIER_NONE = 0,
     KEYWORD_IDENTIFIER_THIS,

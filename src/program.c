@@ -253,16 +253,6 @@ typedef struct Program {
 } Program;
 
 static void program_add_builtins(Program* me) {
-#define GLOBAL_VALUE(global_name, global_value) {\
-    Symbol* symbol = nullptr; \
-    scope_init_declaration(my binder->global_scope, &symbol, (DeclProps) { \
-        .name = sv_make_span(c_sv(global_name)), \
-        .kind = SYMBOL_DECL_BUILTIN, \
-        .node = &global_value, \
-        .function_scoped = true, \
-    } ); \
-}
-
 #define GLOBAL_TYPE(global_name, global_type) {\
     Symbol* symbol = nullptr; \
     scope_init_declaration(my binder->global_scope, &symbol, (DeclProps) { \
@@ -1402,15 +1392,6 @@ static int source_check_directive(csview contents) {
     return ret;
 }
 
-static bool equals_ignoring_case(csview sv, const char* lowercase) {
-    isize len = (isize)strlen(lowercase);
-    if (sv.size != len) return false;
-    for (isize i = 0; i < len; i++) {
-        if (tolower((unsigned char)sv.buf[i]) != lowercase[i]) return false;
-    }
-    return true;
-}
-
 // tsc's processCommentPragmas as far as the JSX pragmas go: in each `/* */` comment at the top of the file, every
 // line's `@name args` (/@(\S+)(\s+(?:\S.*)?)?$/gm), the first word of args being the argument
 static void source_jsx_pragmas(SourceFile* file) {
@@ -1444,10 +1425,10 @@ static void source_jsx_pragmas(SourceFile* file) {
                 csview name = csview_from_range(at + 1, name_end);
                 csview value = csview_from_range(arg, arg_end);
                 if (value.size) {
-                    if (equals_ignoring_case(name, "jsx") && !file->jsx_pragmas.factory.size) file->jsx_pragmas.factory = value;
-                    if (equals_ignoring_case(name, "jsxfrag") && !file->jsx_pragmas.fragment_factory.size) file->jsx_pragmas.fragment_factory = value;
-                    if (equals_ignoring_case(name, "jsxruntime")) file->jsx_pragmas.runtime = value;
-                    if (equals_ignoring_case(name, "jsximportsource")) file->jsx_pragmas.import_source = value;
+                    if (sv_equals_ignore_case(name, c_sv("jsx")) && !file->jsx_pragmas.factory.size) file->jsx_pragmas.factory = value;
+                    if (sv_equals_ignore_case(name, c_sv("jsxfrag")) && !file->jsx_pragmas.fragment_factory.size) file->jsx_pragmas.fragment_factory = value;
+                    if (sv_equals_ignore_case(name, c_sv("jsxruntime"))) file->jsx_pragmas.runtime = value;
+                    if (sv_equals_ignore_case(name, c_sv("jsximportsource"))) file->jsx_pragmas.import_source = value;
                 }
             }
             line = line_end;
@@ -1959,19 +1940,13 @@ static SourceFile* program_lookup_canonical(Program const* me, csview canonical)
 static isize stdlib_priority(SourceFile const* source);
 static SourceFile* program_add_source_idempotent(Program* me, csview path);
 
-static double deferred_libs_now_ms(void) {
-    struct timespec now;
-    timespec_get(&now, TIME_UTC);
-    return (double)now.tv_sec * 1e3 + (double)now.tv_nsec / 1e6;
-}
-
 static void program_defer_lib(Program* me, csview canonical) {
     if (my deferred_lib_count == my deferred_lib_cap) {
         my deferred_lib_cap = my deferred_lib_cap ? my deferred_lib_cap * 2 : 4;
         my deferred_libs = realloc(my deferred_libs, sizeof(DeferredLib) * my deferred_lib_cap);
         panic_if(!my deferred_libs, "out of memory");
     }
-    if (!my deferred_lib_count) my deferred_libs_since = deferred_libs_now_ms();
+    if (!my deferred_lib_count) my deferred_libs_since = wall_ms();
     my deferred_libs[my deferred_lib_count++] = (DeferredLib){
         .path = cstr_from_sv(canonical), .parent = my loading_parent, .site = my include_site, .kind = my include_kind,
         .set_included_at = my include_kind == INCLUDE_REFERENCE,
@@ -2022,7 +1997,7 @@ static void program_finish_deferred_lib(Program* me, DeferredLib const* lib) {
 // for emitted files)
 void program_finish_deferred_libs(Program* me, char const* when, csview wanted) {
     if (!my deferred_lib_count || my finishing_libs) return;
-    double start = deferred_libs_now_ms();
+    double start = wall_ms();
     SourceFile* parent = my loading_parent;
     Span site = my include_site;
     IncludeKind kind = my include_kind;
@@ -2059,7 +2034,7 @@ void program_finish_deferred_libs(Program* me, char const* when, csview wanted) 
         my deferred_lib_count = kept;
     }
     if (getenv("TTTT_LOAD_POOL_STATS")) {
-        double end = deferred_libs_now_ms();
+        double end = wall_ms();
         eprintln("load: ", (i64)finished, " of ", (i64)total, " deferred libs finished ", when, wanted.size ? " " : "",
             wanted, " ", start - my deferred_libs_since, " ms after the first was deferred, in ", end - start, " ms");
     }
@@ -4144,19 +4119,13 @@ typedef struct ResolveLane {
     atomic_uint next;
 } ResolveLane;
 
-static double now_ms(void) {
-    struct timespec ts;
-    timespec_get(&ts, TIME_UTC);
-    return (double)ts.tv_sec * 1000.0 + (double)ts.tv_nsec / 1000000.0;
-}
-
 static void resolve_lane_run(ResolveLane* me, u32 thread) {
     Binder* binder = my program->binder;
     Arena* arena = thread ? binder_thread_arena(binder, thread) : &binder->arena;
     Arena* scope_arena = thread ? binder_thread_scope_arena(binder, thread) : &binder->scope_arena;
     for (u32 i; (i = atomic_fetch_add(&my next, 1)) < my count;) {
         ResolveItem* item = &my items[i];
-        double start = debug_env.resolve_times ? now_ms() : 0;
+        double start = debug_env.resolve_times ? wall_ms() : 0;
         ResolveShard* shard = item->shard;
         *shard = (ResolveShard){
             .binder = binder, .arena = arena, .scope_arena = scope_arena,
@@ -4167,7 +4136,7 @@ static void resolve_lane_run(ResolveLane* me, u32 thread) {
         if (item->chunked) chunked_walk_run(item->chunked, item->chunk, &shard->errs);
         else my run(item->file, &shard->errs);
         resolve_shard = nullptr;
-        if (debug_env.resolve_times) item->ms = now_ms() - start;
+        if (debug_env.resolve_times) item->ms = wall_ms() - start;
     }
 }
 

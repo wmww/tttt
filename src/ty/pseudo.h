@@ -204,6 +204,8 @@ bool pseudo_is_entity_name(Expr const* expr);
 // tsc's isPrimitiveLiteralValue: a boolean, number or string literal (a bigint too with `include_bigint`), or `-1`,
 // `+1`, `-1n` (the operand not parenthesized)
 bool pseudo_is_primitive_literal_value(Expr const* expr, bool include_bigint);
+// A setter's first parameter's annotation, null if none (tsgo's getTypeAnnotationFromAccessor for a setter)
+TypeNode const* pseudo_setter_annotation(FunctionImpl const* setter);
 
 // pseudoTypeToType (ty_display.c): the type a pseudo type stands for where it is direct, null for the structures
 Ty const* ty_pseudo_type(Checker* me, Pseudo const* pseudo);

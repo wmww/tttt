@@ -18,6 +18,22 @@ static inline bool sv_ends_with(csview s, csview suffix) {
     return s.size >= suffix.size && !memcmp(s.buf + s.size - suffix.size, suffix.buf, (size_t)suffix.size);
 }
 
+static inline bool sv_equals_ignore_case(csview a, csview b) {
+    if (a.size != b.size) return false;
+    for (isize i = 0; i < a.size; i++) {
+        if (tolower((unsigned char)a.buf[i]) != tolower((unsigned char)b.buf[i])) return false;
+    }
+    return true;
+}
+
+// The value of a hexadecimal digit, -1 for anything else
+static inline int hex_digit_value(char c) {
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    return -1;
+}
+
 static inline bool path_contains_node_modules(csview path) {
     return csview_find_sv(path, c_sv("/node_modules/")) != c_NPOS;
 }

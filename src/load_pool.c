@@ -116,12 +116,6 @@ static double thread_cpu_ms(void) {
     return (double)now.tv_sec * 1e3 + (double)now.tv_nsec / 1e6;
 }
 
-static double pool_now_ms(void) {
-    struct timespec now;
-    timespec_get(&now, TIME_UTC);
-    return (double)now.tv_sec * 1e3 + (double)now.tv_nsec / 1e6;
-}
-
 // Under the lock: whether a worker would find something to do (a heap's items may be stale: a guess, erring towards yes)
 static bool load_pool_has_work(LoadPool* me) {
     return my big.count || my ranked.count || my job_count || vec_load_entry_ptr_size(&my unsized) > my unsized_next;
@@ -478,13 +472,13 @@ static bool load_pool_queue_locked(LoadPool* me, csview path, bool is_stdlib) {
         Rank rank = next_rank(entry->order);
         if (entry->state == LOAD_QUEUED && rank_compare(&rank, &entry->rank) < 0) {
             entry->rank = rank;
-            entry->ranked_at = pool_now_ms();
+            entry->ranked_at = wall_ms();
             if (entry->sized && entry->size < BIG_FILE) heap_push(&my ranked, entry);
         }
         return false;
     }
     LoadEntry* entry = load_pool_add(me, path, is_stdlib, 0, LOAD_QUEUED);
-    entry->queued_at = entry->ranked_at = pool_now_ms();
+    entry->queued_at = entry->ranked_at = wall_ms();
     if (my size) vec_load_entry_ptr_push(&my unsized, entry);
     else load_pool_schedule(me, entry);
     return true;
@@ -561,8 +555,8 @@ SourceFile* load_pool_take(LoadPool* me, csview path, bool is_stdlib, ErrorCtx* 
             cstr rank = cstr_null;
             for (u32 i = 0; i < entry->rank.depth; i++) cstr_append_d(&rank, DEFAULT_DISPLAY, i ? "." : "", (i64)entry->rank.at[i]);
             eprintln("load pool: the loader parses ", path, " (rank ", rank, " of ", vec_load_entry_ptr_size(&my entries),
-                ", ", entry->size, " bytes, queued ", pool_now_ms() - entry->queued_at, " ms ago, ranked ",
-                pool_now_ms() - entry->ranked_at, " ms ago, ",
+                ", ", entry->size, " bytes, queued ", wall_ms() - entry->queued_at, " ms ago, ranked ",
+                wall_ms() - entry->ranked_at, " ms ago, ",
                 entry->state == LOAD_QUEUED ? entry->sized ? "waiting" : "unsized" : "parsed as the other kind", ")");
             cstr_drop(&rank);
         }

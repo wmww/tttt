@@ -1,5 +1,6 @@
 #include "symbol_chain.h"
 #include "scope.h"
+#include "string_helpers.h"
 #include "unicode_case.h"
 #include "ast_walk.h"
 #include "several_types.h"
@@ -5382,14 +5383,6 @@ static double levenshtein_with_max(u32 const* s1, isize s1_len, u32 const* s2, i
     return result;
 }
 
-static bool equals_ignoring_case(csview a, csview b) {
-    if (a.size != b.size) return false;
-    for (isize i = 0; i < a.size; i++) {
-        if (tolower((unsigned char)a.buf[i]) != tolower((unsigned char)b.buf[i])) return false;
-    }
-    return true;
-}
-
 isize spelling_suggestion(csview name, csview const* names, isize count) {
     return spelling_suggestion_ex(name, names, count, nullptr, nullptr);
 }
@@ -5418,7 +5411,7 @@ isize spelling_suggestion_ex(csview name, csview const* names, isize count, int 
         isize difference = candidate.size > name_len ? candidate.size - name_len : name_len - candidate.size;
         if (difference > maximum_length_difference || csview_equals_sv(candidate, name)) continue;
         // Short names only when they differ by case
-        if (candidate.size < 3 && !equals_ignoring_case(candidate, name)) continue;
+        if (candidate.size < 3 && !sv_equals_ignore_case(candidate, name)) continue;
         isize candidate_len;
         u32 const* candidate_runes = spelling_runes(candidate, candidate_stack, 64, &candidate_len);
         // (With a comparison, a tie is a candidate too: levenshteinWithMax at the best distance itself)

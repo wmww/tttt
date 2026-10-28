@@ -47,8 +47,6 @@ enum { MAX_COMPILER_OPTION_ARGS = 64 };
 // human takes speed over memory up to ~3x bun's peak (vscode: 2.2 GB); 8 GB never recycles any measured project
 #define DEFAULT_CHECKER_MEMORY_MAX_MB 8192
 #define DEFAULT_CHECKER_MEMORY_MIN_MB 256
-#define STRINGIFY_(x) #x
-#define STRINGIFY(x) STRINGIFY_(x)
 
 static u64 memory_pool_resident0, memory_pool_available0; // What memory_pool_default() was made of
 
@@ -132,13 +130,6 @@ static void output_flush(Output* me) {
     cstr_clear(&my err);
 }
 
-static double now_ms() {
-    struct timespec ts;
-    // (C23's own clock rather than clock_gettime(), which strict -std=c2x hides)
-    timespec_get(&ts, TIME_UTC);
-    return (double)ts.tv_sec * 1000.0 + (double)ts.tv_nsec / 1000000.0;
-}
-
 // The resident set so far, in MB (0 where /proc isn't there)
 static long resident_mb() {
     FILE* statm = fopen("/proc/self/statm", "r");
@@ -165,7 +156,7 @@ static void phase_done(Options const* opts, Output* out, const char* name, doubl
         memtrack_scan(phase);
     }
     if (timeline_phase) timeline_phase(name);
-    const double now = now_ms();
+    const double now = wall_ms();
     // (How long the main thread was on a CPU meanwhile: a loaded machine's preemption is the rest, for the serial
     // phases)
     // (Only under --time: CLOCK_THREAD_CPUTIME_ID isn't served by the vDSO, each read is a syscall)
@@ -835,7 +826,7 @@ static void root_stream_drop(RootStream* me) {
 static_failable check_files(Options const* opts, Output* out, csview config, ProjectSet* projects, u32 project,
     ProjectRedirects const* redirects, bool last, CheckCounts* counts, bool defer, returns int
 ) {
-    double last_time = now_ms();
+    double last_time = wall_ms();
     if (timeline_phase) timeline_phase("startup");
     ErrorCtx* errs = c_new(ErrorCtx, error_ctx_init());
     Program* program = program_new(errs, opts->emit_view ? emit_view_fs(opts->emit_view) : fs);
@@ -1346,11 +1337,11 @@ static void* build_thread(void* arg) {
         if (i != UINT32_MAX) my jobs[i].started = true;
         pthread_mutex_unlock(&my lock);
         if (i == UINT32_MAX) break;
-        double started = now_ms();
+        double started = wall_ms();
         build_run(me, i);
         if (getenv("TTTT_BUILD_TIMES")) {
             fprintf(stderr, "job %u %s: %.0f..%.0f ms\n", i, cstr_str(&project_set_at(my projects, my order[i])->config),
-                started - build_epoch, now_ms() - build_epoch);
+                started - build_epoch, wall_ms() - build_epoch);
         }
         pthread_mutex_lock(&my lock);
         build_job_done(me, i);
@@ -1486,7 +1477,7 @@ static_failable build(Options const* opts, returns int) {
     c_free_n(stack, count + 1);
     c_free_n(position, position_count ? position_count : 1);
     pthread_t* threads = nullptr;
-    build_epoch = now_ms();
+    build_epoch = wall_ms();
     if (jobs > 1) {
         pthread_mutex_init(&b.lock, nullptr);
         pthread_cond_init(&b.done, nullptr);

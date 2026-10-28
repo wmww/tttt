@@ -1714,12 +1714,6 @@ static void serialize_return(Walk* me, FunctionImpl const* fn, Pseudo const* pse
     cstr_drop(&pseudo_text);
 }
 
-static TypeNode const* setter_type(FunctionImpl const* setter) {
-    if (!setter || !vec_function_arg_size(&setter->args)) return nullptr;
-    FunctionArg const* arg = vec_function_arg_at(&setter->args, 0);
-    return arg->initializer.binding.has_explicit_type ? binding_type(&arg->initializer.binding) : nullptr;
-}
-
 // tsc's isOptionalParameter: `?`, or an initializer with no required parameter after it
 static bool is_optional_parameter(FunctionImpl const* fn, FunctionArg const* arg) {
     if (arg->explicit_optional) return true;

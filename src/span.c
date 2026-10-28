@@ -243,29 +243,22 @@ void names_unregister_source(SourceFile* file) {
     file->escaped_names = false;
 }
 
-static int name_hex_value(char c) {
-    if (c >= '0' && c <= '9') return c - '0';
-    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
-    return -1;
-}
-
 // `\uXXXX` or `\u{X...}` at c (before end): its length and value, 0 if there is none
 static int name_escape(const char* c, const char* end, u32* code) {
     if (end - c < 3 || c[0] != '\\' || c[1] != 'u') return 0;
     *code = 0;
     if (c[2] == '{') {
         const char* d = c + 3;
-        for (; d < end && name_hex_value(*d) >= 0; d++) {
-            *code = *code * 16 + (u32)name_hex_value(*d);
+        for (; d < end && hex_digit_value(*d) >= 0; d++) {
+            *code = *code * 16 + (u32)hex_digit_value(*d);
             if (*code > 0x10FFFF) return 0;
         }
         return d > c + 3 && d < end && *d == '}' ? (int)(d + 1 - c) : 0;
     }
     if (end - c < 6) return 0;
     for (int i = 2; i < 6; i++) {
-        if (name_hex_value(c[i]) < 0) return 0;
-        *code = *code * 16 + (u32)name_hex_value(c[i]);
+        if (hex_digit_value(c[i]) < 0) return 0;
+        *code = *code * 16 + (u32)hex_digit_value(c[i]);
     }
     return 6;
 }

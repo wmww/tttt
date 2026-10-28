@@ -41,7 +41,6 @@ void source_file_unregister(SourceFile const* file);
 // The text of a declaration's name as tsc's declarationNameToString has it: "(Missing)" where recovery left none
 static inline csview span_name_text(Span me) { return me.size ? span_sv(me) : c_sv("(Missing)"); }
 #define span_equals(span, lit) csview_equals_sv(span_sv(span), c_sv(lit))
-#define c_SPAN(span) c_SV(span_sv(span))
 
 static inline Span span_make(SourceFile const* source, const char* start, const char* end) {
     return (Span){ .buf = start, .size = (i32)(end - start), .file = source_file_id(source) };

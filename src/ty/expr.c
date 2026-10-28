@@ -2327,15 +2327,6 @@ Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identi
     return ty_type_of_symbol(me, decl);
 }
 
-static bool includes_undefined(Ty const* ty) {
-    if (ty->flags & TYF_UNDEFINED) return true;
-    if (ty->kind != TY_UNION) return false;
-    for (u32 i = 0; i < ty->composite.types.len; i++) {
-        if (ty->composite.types.data[i]->flags & TYF_UNDEFINED) return true;
-    }
-    return false;
-}
-
 static Ty const* base_type_of_literal(Checker* me, Ty const* ty) { return ty_base_type_of_literal(me, ty); }
 
 static bool is_generic_with_union_constraint(Checker* me, Ty const* ty) {
@@ -2522,7 +2513,7 @@ static Ty const* narrowable_type(Checker* me, bool constraint_position, Expr con
 // `(o: T | undefined = {})` (or an optional parameter typed by the context or a JSDoc `@type` tag) is a T in the body
 // unless the default can be undefined (tsc's removeOptionalityFromDeclaredType)
 static Ty const* parameter_initial_type(Checker* me, Binding const* binding, Ty const* type) {
-    if (!binding || !compiler_options()->strict_null_checks || !includes_undefined(type) || !binding->source ||
+    if (!binding || !compiler_options()->strict_null_checks || !ty_contains_undefined_type(type) || !binding->source ||
         binding->source->tag != LAZY_TYPE_INITIALIZED_BINDING
     ) {
         return type;
@@ -2546,7 +2537,7 @@ static Ty const* parameter_initial_type(Checker* me, Binding const* binding, Ty 
     Ty const* value = initialized_binding_value(initialized)->tag == EXPR_IMPLICIT_ANY || in_flight ? nullptr : ty_expr_type(me, initialized_binding_value(initialized));
     // (`any` and `unknown` can't be undefined here, tsc's UnknownFacts)
     // (A type parameter by its constraint: tsc's hasTypeFacts(IsUndefined))
-    bool may_be_undefined = value && (includes_undefined(value) || (value->flags & TYF_VOID) ||
+    bool may_be_undefined = value && (ty_contains_undefined_type(value) || (value->flags & TYF_VOID) ||
         (!(value->flags & (TYF_ANY | TYF_UNKNOWN)) && ty_can_be_undefined(me, value)));
     if (value && !may_be_undefined) {
         return ty_without_undefined(me, type);
@@ -2689,7 +2680,7 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
             flow_type = flow_type == auto_any ? ty_intrinsic(me, TY_ANY) : ty_non_nullable(me, flow_type);
         }
         bool still_auto = flow_type == auto_any || flow_type == my auto_array;
-        if (still_auto || (!assume_initialized && includes_undefined(flow_type))) {
+        if (still_auto || (!assume_initialized && ty_contains_undefined_type(flow_type))) {
             if (!ty_is_evolving_array_operation_target(me, expr)) {
                 if (still_auto) {
                     *issue = flow_type == auto_any ? IDENTIFIER_FLOW_IMPLICIT_ANY : IDENTIFIER_FLOW_IMPLICIT_ANY_ARRAY;
@@ -2699,7 +2690,7 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
                     if (!issue_only) *intern_slot(me, &my links, (u64[]){ KEY_AUTO_FLOW_ISSUE, (u64)(uintptr_t)expr }, 2) = flow_type;
                     return flow_type == auto_any ? ty_intrinsic(me, TY_ANY) : ty_array(me, ty_intrinsic(me, TY_ANY), false);
                 }
-            } else if (!assume_initialized && includes_undefined(flow_type)) {
+            } else if (!assume_initialized && ty_contains_undefined_type(flow_type)) {
                 *issue = IDENTIFIER_FLOW_UNASSIGNED; // `let x; x.push(1)`
                 return type;
             }
@@ -2721,7 +2712,7 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
         // too (checkIdentifier's isAlias)
         symbol_find_node(symbol, SYMBOL_DECL_ALIAS);
     // (A type with undefined in it is its own optional type, tsc's getOptionalType: the same as assumed initialized)
-    bool assume_initialized = tsc_assumes_initialized || includes_undefined(type);
+    bool assume_initialized = tsc_assumes_initialized || ty_contains_undefined_type(type);
     if (issue_only && assume_initialized) return nullptr;
     // (The check pass asks again for the issue: what the type's own flow query found, tsc's checkIdentifier reports it
     // as it computes the type. A second flow query isn't free of effects: its loop junctions are cached complete where
@@ -2765,7 +2756,7 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
     }
     my flow_substitutes_constraints = substituted;
     Ty const* flow_type = non_null_flow_type(me, expr, type, initial);
-    bool unassigned = !assume_initialized && includes_undefined(flow_type);
+    bool unassigned = !assume_initialized && ty_contains_undefined_type(flow_type);
     if (!issue_only && !assume_initialized) *intern_slot(me, &my links, issue_key, 2) = (void const*)(uintptr_t)(unassigned ? 2 : 1);
     if (unassigned) {
         *issue = IDENTIFIER_FLOW_UNASSIGNED;
@@ -2918,10 +2909,10 @@ void ty_check_property_used_before_assigned(Checker* me, Expr const* expr, Error
     bool cast = object->tag == EXPR_AS_TYPE;
     if (!(this_access && options->strict_property_initialization) && !cast && is_read_in_declaring_container(me, access)) {
         Ty const* type = ty_expr_type(me, expr);
-        if (includes_undefined(type)) return;
+        if (ty_contains_undefined_type(type)) return;
         Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
         Ty const* initial = ty_union(me, parts, 2, nullptr, (TyList){0});
-        if (!includes_undefined(ty_flow_type(me, expr, type, initial, access->flow))) return;
+        if (!ty_contains_undefined_type(ty_flow_type(me, expr, type, initial, access->flow))) return;
         error_ctx_error_d(errs, property_name(access), 2565, "Property '", property_name(access), "' is used before being assigned.");
         return;
     }
@@ -2941,10 +2932,10 @@ void ty_check_property_used_before_assigned(Checker* me, Expr const* expr, Error
         return;
     }
     Ty const* type = ty_expr_type(me, expr);
-    if (includes_undefined(type)) return;
+    if (ty_contains_undefined_type(type)) return;
     Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
     Ty const* initial = ty_union(me, parts, 2, nullptr, (TyList){0});
-    if (!includes_undefined(ty_flow_type(me, expr, type, initial, access->flow))) return;
+    if (!ty_contains_undefined_type(ty_flow_type(me, expr, type, initial, access->flow))) return;
     error_ctx_error_d(errs, property_name(access), 2565, "Property '", property_name(access), "' is used before being assigned.");
 }
 

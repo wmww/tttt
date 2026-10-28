@@ -3292,11 +3292,6 @@ static unsigned char synth_effective(SyntheticAccess const* access, bool writing
     return contains & SYNTH_PUBLIC ? SYNTH_PUBLIC : contains & SYNTH_PROTECTED ? SYNTH_PROTECTED : SYNTH_PRIVATE;
 }
 
-static Prop const* prop_root(Prop const* prop) {
-    while (prop->target) prop = prop->target;
-    return prop;
-}
-
 static void synthetic_access(Checker* me, Ty const* object, Atom const* name, SyntheticAccess* out, u32 depth) {
     *out = (SyntheticAccess){0};
     if (depth > 8) return;
