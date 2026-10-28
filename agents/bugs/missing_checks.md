@@ -47,6 +47,14 @@ Each one mutant:
   is `ComponentOptionsProperties<{ msg: string; }>` in tsc (the inferred instantiation of the contextual type) where
   tttt prints `ComponentOptionsProperties<Data>`. [open]
 
+- flagflip vscode/exactOptionalPropertyTypes, mcpServerRequestHandler.ts:270 (-TS2322): `{ ...initialParams, cursor }`
+  with `initialParams?: Omit<T['params'], ...>` against `T['params']`. A generic mapped type is no empty object (tsc's
+  isEmptyObjectType: !isGenericMappedType), so tryMergeUnionOfObjectTypeAndEmptyObject makes the union with undefined
+  an optional copy of its known properties (none): the literal is `{ cursor: ... }`, not `Omit<...> & {...}`.
+  spreads_into_nothing() took the mapped type for empty (ttttSpreadGenericMappedOptional). [fixed bun8-7] The other
+  flagflip cells: vue pluginScoped.ts (TS7006 x8 cells, tsgo_divergences.md's runaway), zod sloppy/nosnc TS2344->TS2589
+  (depth-limit noise, tsgo_divergences.md). [design]
+
 ## Triage drain 2026-10-07: checker items re-checked, not fixed
 - Diagnostic order at one position (TS2741 before TS2454 at `[d1, d2]` against `Base[]`,
   derivedTypeDoesNotRequireExtendsClause with `extends Object`): tsc's check order; not looked into further. [open]

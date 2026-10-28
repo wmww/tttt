@@ -509,7 +509,7 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
 - An instantiation expression is an ExpressionWithTypeArguments to tsc: a value use of an interface (or `N.J`) there
   is TS2689 'Cannot extend an interface' (getEntityNameForExtendingInterface), not TS2693/TS2708: `const x = I<string>`
   (mutation testing seeds 20261031 and 20261101: awaitedTypeJQuery, reverseMappedUnionInference, through a
-  parse-broken type parameter list; ttttInstantiationExpressionInterface). [fixed bun8-6]
+  parse-broken type parameter list; ttttInstantiationExpressionInterface). [fixed a93c7044d]
 - Mutation testing seed 20261101 (2000 mutants, 3 errors-component differences; `--syntax` 14, 3 render) leaves:
   infiniteConstraints2 (missing TS2589), noInferCommonPropertyCheck1 (TS2345 text), arrayFrom again (above), and on
   `--syntax` es6ModuleInternalNamedImports2 (+TS2303), contextualParamTypeVsNestedReturnTypeInference4 (TS1359 ->

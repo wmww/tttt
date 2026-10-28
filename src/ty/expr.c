@@ -4200,6 +4200,8 @@ static bool spreads_into_nothing(Checker* me, Ty const* ty) {
     }
     if (ty->kind == TY_KEYOF) return true;
     if (!(ty->flags & TYF_OBJECT) || (ty->flags & (TYF_TYPE_PARAM | TYF_DEFERRED))) return false;
+    // (Nor a generic mapped type: tsc's isEmptyObjectType says !isGenericMappedType)
+    if (ty->kind == TY_ANONYMOUS && ty_generic_mapped(me, ty)) return false;
     Members const* members = ty_members(me, ty);
     return !members->prop_count && !members->index_count && !members->call_count && !members->construct_count;
 }
