@@ -1,0 +1,18 @@
+ttttMisplacedAmbientModuleQuotedName.ts(3,22): error TS1035: Only ambient modules can use quoted names.
+ttttMisplacedAmbientModuleQuotedName.ts(3,22): error TS2435: Ambient modules cannot be nested in other modules or namespaces.
+ttttMisplacedAmbientModuleQuotedName.ts(4,16): error TS1234: An ambient module declaration is only allowed at the top level in a file.
+
+
+==== ttttMisplacedAmbientModuleQuotedName.ts (3 errors) ====
+    // A misplaced `module "y" {}` is TS1234 alone: checkGrammarModuleElementContext ends tsc's checkModuleDeclaration before
+    // its TS1035 (bun 51-L02); in a namespace it isn't misplaced
+    namespace N { module "x" {} }
+                         ~~~
+!!! error TS1035: Only ambient modules can use quoted names.
+                         ~~~
+!!! error TS2435: Ambient modules cannot be nested in other modules or namespaces.
+    function f() { module "y" {} }
+                   ~~~~~~
+!!! error TS1234: An ambient module declaration is only allowed at the top level in a file.
+    export { N, f };
+    

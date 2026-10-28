@@ -1,0 +1,16 @@
+//// [test/cases/ttttMisplacedAmbientModuleQuotedName.ts] ////
+
+=== ttttMisplacedAmbientModuleQuotedName.ts ===
+// A misplaced `module "y" {}` is TS1234 alone: checkGrammarModuleElementContext ends tsc's checkModuleDeclaration before
+// its TS1035 (bun 51-L02); in a namespace it isn't misplaced
+namespace N { module "x" {} }
+>"x" : typeof import("x")
+
+function f() { module "y" {} }
+>f : () => void
+>"y" : typeof import("y")
+
+export { N, f };
+>N : any
+>f : () => void
+

@@ -801,8 +801,8 @@ void namespace_decl_typecheck(NamespaceDecl* me, bool declared, ErrorCtx* errs) 
         if (my symbol->decls[i].node == me) own = &my symbol->decls[i];
     }
     Symbol const* counterpart = own && !declared ? same_block_counterpart(my symbol, own) : nullptr;
-    // (tsc's checkModuleDeclarationDiagnostics)
-    if (!declared && my is_ambient_module && !my modifiers_failed) {
+    // (tsc's checkModuleDeclarationDiagnostics, after checkGrammarModuleElementContext's TS1234)
+    if (!declared && my is_ambient_module && !my modifiers_failed && !my misplaced) {
         error_ctx_grammar_error_d(errs, my name, 1035, "Only ambient modules can use quoted names.");
     }
     if (my module_keyword && !my is_ambient_module && !my is_global && !my misplaced && !my jsdoc) {
