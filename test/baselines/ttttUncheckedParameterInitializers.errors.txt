@@ -1,0 +1,59 @@
+ttttUncheckedParameterInitializers.ts(6,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttUncheckedParameterInitializers.ts(7,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttUncheckedParameterInitializers.ts(8,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttUncheckedParameterInitializers.ts(9,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttUncheckedParameterInitializers.ts(10,12): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttUncheckedParameterInitializers.ts(11,17): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttUncheckedParameterInitializers.ts(12,17): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttUncheckedParameterInitializers.ts(12,52): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttUncheckedParameterInitializers.ts(12,91): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttUncheckedParameterInitializers.ts(13,15): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttUncheckedParameterInitializers.ts(14,20): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttUncheckedParameterInitializers.ts(15,12): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttUncheckedParameterInitializers.ts(15,33): error TS1174: Classes can only extend a single class.
+
+
+==== ttttUncheckedParameterInitializers.ts (13 errors) ====
+    // The initializers in the parameters of a function type, a type member's signature or an ambient function (a binding
+    // pattern's too) are never checked: only TS2371 (tsc's checkVariableLikeDeclaration returns), and no parameter type
+    // is read from them. The grammar errors inside (a class expression's TS1174, TS1172, TS1098...) aren't reported. An
+    // overload's initializer types its parameter, so it is checked
+    declare class A {} declare class B {} interface J {}
+    type T1 = ({a = class extends A, B {}}: any) => void;
+                ~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    type T2 = ({a = class extends A extends B {}}: any) => void;
+                ~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    type T3 = ({a = class implements J implements J {}}: any) => void;
+                ~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    type T4 = ({a = class <> {}}: any) => void;
+                ~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    type T5 = (a = class { m<>() {} }) => void;
+               ~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    type T6 = new ({a = (public a) => 1}: any) => void;
+                    ~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    interface I { m(a = class extends A, B {}): void; (b = class extends A, B {}): void; new (c = class extends A, B {}): I }
+                    ~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                                                       ~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                                                                                              ~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    type L = { m({a = class extends A, B {}}: any): void };
+                  ~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    declare function f(a = class extends A, B {}): void;
+                       ~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    function g(a = class extends A, B {}): void;
+               ~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                                    ~
+!!! error TS1174: Classes can only extend a single class.
+    function g() {}
+    

@@ -1,0 +1,88 @@
+//// [test/cases/ttttUncheckedParameterInitializers.ts] ////
+
+=== ttttUncheckedParameterInitializers.ts ===
+// The initializers in the parameters of a function type, a type member's signature or an ambient function (a binding
+// pattern's too) are never checked: only TS2371 (tsc's checkVariableLikeDeclaration returns), and no parameter type
+// is read from them. The grammar errors inside (a class expression's TS1174, TS1172, TS1098...) aren't reported. An
+// overload's initializer types its parameter, so it is checked
+declare class A {} declare class B {} interface J {}
+>A : A
+>B : B
+
+type T1 = ({a = class extends A, B {}}: any) => void;
+>T1 : T1
+>a : any
+>class extends A, B {} : typeof a
+>A : A
+>B : A
+
+type T2 = ({a = class extends A extends B {}}: any) => void;
+>T2 : T2
+>a : any
+>class extends A extends B {} : typeof a
+>A : A
+>B : A
+
+type T3 = ({a = class implements J implements J {}}: any) => void;
+>T3 : T3
+>a : any
+>class implements J implements J {} : typeof a
+
+type T4 = ({a = class <> {}}: any) => void;
+>T4 : T4
+>a : any
+>class <> {} : typeof a
+
+type T5 = (a = class { m<>() {} }) => void;
+>T5 : T5
+>a : typeof (Anonymous class)
+>class { m<>() {} } : typeof (Anonymous class)
+>m : () => void
+
+type T6 = new ({a = (public a) => 1}: any) => void;
+>T6 : T6
+>a : any
+>(public a) => 1 : (a: any) => number
+>a : any
+>1 : 1
+
+interface I { m(a = class extends A, B {}): void; (b = class extends A, B {}): void; new (c = class extends A, B {}): I }
+>m : (a?: typeof (Anonymous class)) => void
+>a : typeof (Anonymous class)
+>class extends A, B {} : typeof (Anonymous class)
+>A : A
+>B : A
+>b : typeof (Anonymous class)
+>class extends A, B {} : typeof (Anonymous class)
+>A : A
+>B : A
+>c : typeof (Anonymous class)
+>class extends A, B {} : typeof (Anonymous class)
+>A : A
+>B : A
+
+type L = { m({a = class extends A, B {}}: any): void };
+>L : L
+>m : ({ a }: any) => void
+>a : any
+>class extends A, B {} : typeof a
+>A : A
+>B : A
+
+declare function f(a = class extends A, B {}): void;
+>f : (a?: typeof (Anonymous class)) => void
+>a : typeof (Anonymous class)
+>class extends A, B {} : typeof (Anonymous class)
+>A : A
+>B : A
+
+function g(a = class extends A, B {}): void;
+>g : (a?: typeof (Anonymous class)) => void
+>a : typeof (Anonymous class)
+>class extends A, B {} : typeof (Anonymous class)
+>A : A
+>B : A
+
+function g() {}
+>g : (a?: typeof (Anonymous class)) => void
+

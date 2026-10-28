@@ -182,6 +182,8 @@ typedef struct ParserShared {
     bool jsdoc_augments_type_args;
     // parse_generic_params()'s `<` is a one-character token whatever follows it (set and cleared around one call)
     bool single_less_than;
+    // The parameters parse_function_args() parses next are a type member's (set and cleared around one call)
+    bool type_member_args;
     // The `{` of the innermost Block (statement block, function body) being parsed, for TernaryType.enclosing_block
     const char* block_open;
     ModifiedParent statement_parent;
@@ -7272,6 +7274,11 @@ static bool parse_function_args_inner(
     bool commit_on_paren,
     FunctionImpl* ret
 ) {
+    // (In a type or an ambient context, the initializers in the parameters, a binding pattern's too, are never checked:
+    // only TS2371, tsc's checkVariableLikeDeclaration, and no parameter type from them. Their grammar errors are
+    // dropped)
+    bool unchecked_initializers = parse_type_return_syntax || parent->shared->type_member_args || parent->shared->in_ambient;
+    parent->shared->type_member_args = false;
     // Without `abstract`/`new` a parameter list starts at its `(` or type parameters (member names come here first)
     if (!parse_abstract_and_new && *parent->pos != '(' && *parent->pos != '<') return false;
     Parser p = parser(parent);
@@ -7388,6 +7395,7 @@ static bool parse_function_args_inner(
                     rest_span = span_from(arg_start);
                 }
 
+                intptr_t binding_mark = error_mark(&p);
                 if (parse_binding_content_or_private_name(&p, &initializer.binding, 18009,
                         "Private identifiers cannot be used as parameters.")) {
                 } else if (!rest && hop_start_if_ends_on_word_break(&p, "this")) {
@@ -7436,6 +7444,7 @@ static bool parse_function_args_inner(
                     parse_error(&p, span_from_token_or_eof(&p), 1003, "Identifier expected.");
                     initializer.binding = (Binding){ .tag = BINDING_IDENTIFIER, .content_span = span_from_pos(&p) };
                 }
+                if (unchecked_initializers && initializer.binding.tag != BINDING_IDENTIFIER) grammar_drop_since(&p, binding_mark, 0, nullptr);
                 hop_whitespace(&p);
 
                 Span question_span = span_null;
@@ -7456,7 +7465,9 @@ static bool parse_function_args_inner(
                     vec_jsdoc_tag_drop(&tags);
                 }
 
+                intptr_t initializer_mark = error_mark(&p);
                 initializer.value = this_param ? nullptr : parse_initialization_boxed(&p, expr_ctx_null);
+                if (unchecked_initializers) grammar_drop_since(&p, initializer_mark, 0, nullptr);
                 if (initializer.binding.tag == BINDING_IDENTIFIER && !rest && !this_param) mark_named_evaluation(initialized_binding_value(&initializer), false);
                 hop_whitespace(&p);
 
@@ -7892,7 +7903,9 @@ static bool parse_signature_args(Parser* p, bool is_type, FunctionImpl* ret) {
     bool in_async = p->shared->in_async, outer_in_async = p->shared->outer_in_async;
     p->shared->outer_in_async = in_async;
     p->shared->in_async = false;
+    p->shared->type_member_args = true;
     bool parsed = parse_function_args(p, true, false, true, false, ret);
+    p->shared->type_member_args = false;
     p->shared->in_async = in_async;
     p->shared->outer_in_async = outer_in_async;
     return parsed;
@@ -7908,7 +7921,9 @@ static bool parse_function_header(Parser* parent, FunctionFlags flags, FunctionI
     bool in_async = p.shared->in_async, outer_in_async = p.shared->outer_in_async;
     p.shared->outer_in_async = in_async;
     p.shared->in_async = false;
+    p.shared->type_member_args = true;
     bool parsed = parse_function_args(&p, false, false, true, true, ret);
+    p.shared->type_member_args = false;
     p.shared->in_async = in_async;
     p.shared->outer_in_async = outer_in_async;
     if (!parsed) return parse_fail(&p);

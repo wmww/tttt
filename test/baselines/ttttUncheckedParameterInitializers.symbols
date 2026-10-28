@@ -1,0 +1,80 @@
+//// [test/cases/ttttUncheckedParameterInitializers.ts] ////
+
+=== ttttUncheckedParameterInitializers.ts ===
+// The initializers in the parameters of a function type, a type member's signature or an ambient function (a binding
+// pattern's too) are never checked: only TS2371 (tsc's checkVariableLikeDeclaration returns), and no parameter type
+// is read from them. The grammar errors inside (a class expression's TS1174, TS1172, TS1098...) aren't reported. An
+// overload's initializer types its parameter, so it is checked
+declare class A {} declare class B {} interface J {}
+>A : Symbol(A, Decl(ttttUncheckedParameterInitializers.ts, 0, 0))
+>B : Symbol(B, Decl(ttttUncheckedParameterInitializers.ts, 4, 18))
+>J : Symbol(J, Decl(ttttUncheckedParameterInitializers.ts, 4, 37))
+
+type T1 = ({a = class extends A, B {}}: any) => void;
+>T1 : Symbol(T1, Decl(ttttUncheckedParameterInitializers.ts, 4, 52))
+>a : Symbol(a, Decl(ttttUncheckedParameterInitializers.ts, 5, 12))
+>A : Symbol(A, Decl(ttttUncheckedParameterInitializers.ts, 0, 0))
+>B : Symbol(B, Decl(ttttUncheckedParameterInitializers.ts, 4, 18))
+
+type T2 = ({a = class extends A extends B {}}: any) => void;
+>T2 : Symbol(T2, Decl(ttttUncheckedParameterInitializers.ts, 5, 53))
+>a : Symbol(a, Decl(ttttUncheckedParameterInitializers.ts, 6, 12))
+>A : Symbol(A, Decl(ttttUncheckedParameterInitializers.ts, 0, 0))
+>B : Symbol(B, Decl(ttttUncheckedParameterInitializers.ts, 4, 18))
+
+type T3 = ({a = class implements J implements J {}}: any) => void;
+>T3 : Symbol(T3, Decl(ttttUncheckedParameterInitializers.ts, 6, 60))
+>a : Symbol(a, Decl(ttttUncheckedParameterInitializers.ts, 7, 12))
+>J : Symbol(J, Decl(ttttUncheckedParameterInitializers.ts, 4, 37))
+>J : Symbol(J, Decl(ttttUncheckedParameterInitializers.ts, 4, 37))
+
+type T4 = ({a = class <> {}}: any) => void;
+>T4 : Symbol(T4, Decl(ttttUncheckedParameterInitializers.ts, 7, 66))
+>a : Symbol(a, Decl(ttttUncheckedParameterInitializers.ts, 8, 12))
+
+type T5 = (a = class { m<>() {} }) => void;
+>T5 : Symbol(T5, Decl(ttttUncheckedParameterInitializers.ts, 8, 43))
+>a : Symbol(a, Decl(ttttUncheckedParameterInitializers.ts, 9, 11))
+>m : Symbol((Anonymous class).m, Decl(ttttUncheckedParameterInitializers.ts, 9, 22))
+
+type T6 = new ({a = (public a) => 1}: any) => void;
+>T6 : Symbol(T6, Decl(ttttUncheckedParameterInitializers.ts, 9, 43))
+>a : Symbol(a, Decl(ttttUncheckedParameterInitializers.ts, 10, 16))
+>a : Symbol(a, Decl(ttttUncheckedParameterInitializers.ts, 10, 21))
+
+interface I { m(a = class extends A, B {}): void; (b = class extends A, B {}): void; new (c = class extends A, B {}): I }
+>I : Symbol(I, Decl(ttttUncheckedParameterInitializers.ts, 10, 51))
+>m : Symbol(I.m, Decl(ttttUncheckedParameterInitializers.ts, 11, 13))
+>a : Symbol(a, Decl(ttttUncheckedParameterInitializers.ts, 11, 16))
+>A : Symbol(A, Decl(ttttUncheckedParameterInitializers.ts, 0, 0))
+>B : Symbol(B, Decl(ttttUncheckedParameterInitializers.ts, 4, 18))
+>b : Symbol(b, Decl(ttttUncheckedParameterInitializers.ts, 11, 51))
+>A : Symbol(A, Decl(ttttUncheckedParameterInitializers.ts, 0, 0))
+>B : Symbol(B, Decl(ttttUncheckedParameterInitializers.ts, 4, 18))
+>c : Symbol(c, Decl(ttttUncheckedParameterInitializers.ts, 11, 90))
+>A : Symbol(A, Decl(ttttUncheckedParameterInitializers.ts, 0, 0))
+>B : Symbol(B, Decl(ttttUncheckedParameterInitializers.ts, 4, 18))
+>I : Symbol(I, Decl(ttttUncheckedParameterInitializers.ts, 10, 51))
+
+type L = { m({a = class extends A, B {}}: any): void };
+>L : Symbol(L, Decl(ttttUncheckedParameterInitializers.ts, 11, 121))
+>m : Symbol(m, Decl(ttttUncheckedParameterInitializers.ts, 12, 10))
+>a : Symbol(a, Decl(ttttUncheckedParameterInitializers.ts, 12, 14))
+>A : Symbol(A, Decl(ttttUncheckedParameterInitializers.ts, 0, 0))
+>B : Symbol(B, Decl(ttttUncheckedParameterInitializers.ts, 4, 18))
+
+declare function f(a = class extends A, B {}): void;
+>f : Symbol(f, Decl(ttttUncheckedParameterInitializers.ts, 12, 55))
+>a : Symbol(a, Decl(ttttUncheckedParameterInitializers.ts, 13, 19))
+>A : Symbol(A, Decl(ttttUncheckedParameterInitializers.ts, 0, 0))
+>B : Symbol(B, Decl(ttttUncheckedParameterInitializers.ts, 4, 18))
+
+function g(a = class extends A, B {}): void;
+>g : Symbol(g, Decl(ttttUncheckedParameterInitializers.ts, 13, 52), Decl(ttttUncheckedParameterInitializers.ts, 14, 44))
+>a : Symbol(a, Decl(ttttUncheckedParameterInitializers.ts, 14, 11))
+>A : Symbol(A, Decl(ttttUncheckedParameterInitializers.ts, 0, 0))
+>B : Symbol(B, Decl(ttttUncheckedParameterInitializers.ts, 4, 18))
+
+function g() {}
+>g : Symbol(g, Decl(ttttUncheckedParameterInitializers.ts, 13, 52), Decl(ttttUncheckedParameterInitializers.ts, 14, 44))
+
