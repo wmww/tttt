@@ -141,9 +141,9 @@ const baselines = {
         types: false,
     },
     'bun02-C10': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun02-C11': {
         errors: true,
@@ -376,12 +376,12 @@ const baselines = {
         types: true,
     },
     'bun03-C17a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'bun03-C17b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -581,7 +581,7 @@ const baselines = {
         types: true,
     },
     'bun04-C12': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -2196,9 +2196,9 @@ const baselines = {
         types: true,
     },
     'bun13-P2a': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun13-P2b': {
         errors: true,
@@ -2208,7 +2208,7 @@ const baselines = {
     'bun13-P2c': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun13-P3': {
         errors: true,
@@ -2416,7 +2416,7 @@ const baselines = {
         types: true,
     },
     'bun15-C11': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -2671,12 +2671,12 @@ const baselines = {
         types: false,
     },
     'bun16-C7a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'bun16-C7b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -4636,7 +4636,7 @@ const baselines = {
         types: true,
     },
     'bun28-C12': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -4731,7 +4731,7 @@ const baselines = {
         types: true,
     },
     'bun28-C19a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -4851,7 +4851,7 @@ const baselines = {
         types: true,
     },
     'bun28-C24d': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -4861,7 +4861,7 @@ const baselines = {
         types: true,
     },
     'bun28-C25a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -4881,7 +4881,7 @@ const baselines = {
         types: true,
     },
     'bun28-C26c': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -4891,7 +4891,7 @@ const baselines = {
         types: true,
     },
     'bun28-C26e': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -4906,7 +4906,7 @@ const baselines = {
         types: true,
     },
     'bun28-C27b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -5001,7 +5001,7 @@ const baselines = {
         types: true,
     },
     'bun28-C33f': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -5446,7 +5446,7 @@ const baselines = {
         types: true,
     },
     'bun30-C13': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -6196,7 +6196,7 @@ const baselines = {
         types: true,
     },
     'bun33-C14a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -6276,7 +6276,7 @@ const baselines = {
         types: true,
     },
     'bun33-C1b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -6396,7 +6396,7 @@ const baselines = {
         types: true,
     },
     'bun33-C9': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -6456,14 +6456,14 @@ const baselines = {
         types: true,
     },
     'bun33-P5': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun33-P6a': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun33-P6b': {
         errors: true,
@@ -6491,12 +6491,12 @@ const baselines = {
         types: true,
     },
     'bun33-P9a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'bun33-P9b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -6506,7 +6506,7 @@ const baselines = {
         types: true,
     },
     'bun33-P9d': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -6736,7 +6736,7 @@ const baselines = {
         types: true,
     },
     'bun34-P4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -7751,7 +7751,7 @@ const baselines = {
         types: true,
     },
     'bun42-C8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -7801,9 +7801,9 @@ const baselines = {
         types: true,
     },
     'bun43-C11': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun43-C12a': {
         errors: false,
@@ -7961,14 +7961,14 @@ const baselines = {
         types: true,
     },
     'bun43-C2e': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'bun43-C2f': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun43-C2g': {
         errors: true,
@@ -8021,19 +8021,19 @@ const baselines = {
         types: false,
     },
     'bun43-C5a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'bun43-C5b': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun43-C5c': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun43-C6': {
         errors: false,
@@ -8391,7 +8391,7 @@ const baselines = {
         types: true,
     },
     'bun51-L02': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8556,7 +8556,7 @@ const baselines = {
         types: true,
     },
     'bun53-L15': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8596,7 +8596,7 @@ const baselines = {
         types: true,
     },
     'bun54-L01': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8611,14 +8611,14 @@ const baselines = {
         types: true,
     },
     'bun54-L02c': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'bun54-L02d': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun54-L06': {
         errors: false,
@@ -9191,7 +9191,7 @@ const baselines = {
         types: true,
     },
     'bun62-L02b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9801,7 +9801,7 @@ const baselines = {
         types: true,
     },
     'bun80-R04': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9811,9 +9811,9 @@ const baselines = {
         types: true,
     },
     'bun80-R08': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun80-R09a': {
         errors: true,
@@ -12163,6 +12163,16 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAmbientForStatementGrammar': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttAmbientInitializerErrorSpan': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAmbientPatternParameterNullable': {
         errors: true,
         symbols: true,
@@ -12351,6 +12361,16 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAwaitInParameterInitializer': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttAwaitNameCommonJs': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAwaitTypeParameterTopLevel': {
         errors: true,
         symbols: true,
@@ -12437,6 +12457,11 @@ const baselines = {
         types: true,
     },
     'ttttBindingPatternTypeNotInstantiated': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttBlockScopedBranchListError': {
         errors: true,
         symbols: true,
         types: true,
@@ -12560,7 +12585,22 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttCommaComputedKeyGating': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttCommonJsModuleObjectNoInferableIndex': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttCommonJsNotExternalModule(module=commonjs)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttCommonJsNotExternalModule(module=es2022)': {
         errors: true,
         symbols: true,
         types: true,
@@ -13481,6 +13521,41 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclareExportAssignment(module=commonjs)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttDeclareExportAssignment(module=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttDeclareExportDefaultExpression': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttDeclareExportDefaultLiteral': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttDeclareExportInNamespace': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttDeclarePropertyAmbientInitializer': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttDecoratedClassExpressionModifiers': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDecoratedImportExport': {
         errors: true,
         symbols: true,
@@ -13506,7 +13581,22 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDecoratorMetadataAccessorParenNever': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDecoratorMetadataRestParameter': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttDecoratorMissingLibTypes(experimentaldecorators=false)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttDecoratorMissingLibTypes(experimentaldecorators=true)': {
         errors: true,
         symbols: true,
         types: true,
@@ -13797,6 +13887,11 @@ const baselines = {
         types: true,
     },
     'ttttEscapedAssertsPredicate': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttEscapedKeywordNames': {
         errors: true,
         symbols: true,
         types: true,
@@ -14197,6 +14292,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttImportMergedWithExportTypeOnly': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttImportSpecifierKeywordName': {
         errors: true,
         symbols: false,
@@ -14233,6 +14333,11 @@ const baselines = {
         types: true,
     },
     'ttttImportTypeJsxNotSet': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttImportTypeMissingQualifier': {
         errors: true,
         symbols: true,
         types: true,
@@ -14768,12 +14873,27 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttJsonAmbientModuleFile': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttJsonDeclarationExtensionFirstD': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttJsonRecovery': {
         errors: true,
         symbols: true,
         types: true,
     },
     'ttttJsxAttributeGenericCallInference': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttJsxAttributeStringAfterComment': {
         errors: true,
         symbols: true,
         types: true,
@@ -15160,6 +15280,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttMisplacedAmbientModuleQuotedName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttMisplacedImportSuggestion': {
         errors: true,
         symbols: true,
@@ -15191,6 +15316,11 @@ const baselines = {
         types: true,
     },
     'ttttNamespaceDuplicateExportValue': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttNamespaceExportNonStringSpecifier': {
         errors: true,
         symbols: true,
         types: true,
@@ -15361,6 +15491,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttObjectLiteralCommaKeyDestructuring': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttObjectLiteralInstantiatedByOuterTypeParams': {
         errors: true,
         symbols: true,
@@ -15482,6 +15617,16 @@ const baselines = {
         errors: true,
         symbols: true,
         types: false,
+    },
+    'ttttParameterPropertyDecoratorRejected(experimentaldecorators=false)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttParameterPropertyDecoratorRejected(experimentaldecorators=true)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttParenthesizedConstraintPosition': {
         errors: true,
@@ -15977,6 +16122,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttTemplateLiteralTypeInvalidEscape': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttTemplatePlaceholderCurrentNode': {
         errors: true,
         symbols: true,
@@ -16128,6 +16278,11 @@ const baselines = {
         types: true,
     },
     'ttttTypeMemberMissingName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttTypeOnlyImportEmptyBindings': {
         errors: true,
         symbols: true,
         types: true,
@@ -16454,6 +16609,11 @@ const baselines = {
         types: true,
     },
     'ttttWriteTypeMergedAndIndexed': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttYieldInTypeInGenerator': {
         errors: true,
         symbols: true,
         types: true,
