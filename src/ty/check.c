@@ -4706,20 +4706,25 @@ Signature const* ty_function_signature(Checker* me, FunctionImpl const* function
     return members->construct_count ? members->construct[0] : nullptr;
 }
 
+Signature const* ty_interface_method_signature(Checker* me, InterfaceMember const* member) {
+    Members const* members = ty_members(me, ty_from_node(me, &member->type, (LowerCtx){ .generic = true }));
+    return members->call_count ? members->call[0] : nullptr;
+}
+
 void ty_check_overloads_compatible(
     Checker* me, FunctionImpl const* implementation, Span implementation_name, FunctionImpl const* const* overloads,
-    Span const* names, u32 count, ErrorCtx* errs
+    Signature const* const* signatures, Span const* names, u32 count, ErrorCtx* errs
 ) {
     Signature const* impl = function_impl_rare(implementation)->jsdoc_overload_count ? ty_implementation_signature(me, implementation) :
         ty_function_signature(me, implementation);
     if (!impl) return;
     for (u32 i = 0; i < count; i++) {
-        Signature const* overload = ty_function_signature(me, overloads[i]);
+        Signature const* overload = overloads[i] ? ty_function_signature(me, overloads[i]) : signatures[i];
         if (!overload) continue;
         bool params_compared = false;
         bool compatible = ty_implementation_compatible_with_overload(me, impl, overload, &params_compared);
         // (Comparing them types the overload's parameters, which checks their initializers)
-        if (params_compared) function_impl_check_compared_initializers(overloads[i], errs);
+        if (params_compared && overloads[i]) function_impl_check_compared_initializers(overloads[i], errs);
         if (compatible) continue;
         Error* e = error_ctx_error_d(errs, names[i], 2394, "This overload signature is not compatible with its implementation signature.");
         error_add_related_d(e, implementation_name, 2750, "The implementation signature is declared here.");

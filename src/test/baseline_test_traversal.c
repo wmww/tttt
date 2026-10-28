@@ -811,7 +811,10 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 if (prop && (prop->flags & PROP_METHOD)) {
                     // (Also with the declarations of an interface of another program, the lib's: `interface Array<T>`)
                     Ty const* type = prop_type(checker, prop);
-                    if (prop->decl->decl_span_count > 1 || ((type->flags & TYF_OBJECT) && ty_members(checker, type)->call_count > 1)) {
+                    // (An instantiation's declarations are its target's)
+                    Prop const* root = prop;
+                    while (root->target && !root->decl->decl_span_count) root = root->target;
+                    if (root->decl->decl_span_count > 1 || ((type->flags & TYF_OBJECT) && ty_members(checker, type)->call_count > 1)) {
                         merged = prop;
                     }
                 }

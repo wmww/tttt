@@ -15,8 +15,10 @@ here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in 
 - **Classes**: TS2687 skips statics and method/accessor pairs (hacks.md). [open]
 - A class method merged with an interface's method signature of its name is one symbol in tsc, whose overload flag
   agreement covers both (checkFunctionOrConstructorSymbol: the signature makes it overloaded): `interface I { m():
-  void } class I { private m() {} }` is TS2385 at the class's `m`; tttt's class_check_overload_agreement() sees the
-  class's items only (TS2386/TS2512 likewise). Probe only (cor5 2026-10-30). [open]
+  void } class I { private m() {} }` is TS2385 at the class's `m` (TS2386/TS2512 likewise, and the signatures are
+  overloads the implementation must fit, TS2394): class_check_overload_agreement() and class_check_overloads() take the
+  same-file interfaces' signatures (class_merged_signatures()), interface_check_overload_optionality() leaves those
+  names to the class. Across files each side still checks alone. Test ttttClassMergedInterfaceOverloads. [fixed PENDING]
 - **Accessibility**: `this.x = v` in the constructor of a class merged with an interface declaring `readonly x` (tttt
   exempted any property whose parent is the class; tsc only one whose value declaration, the first, is in the class:
   check.c readonly_assignment()). Test ttttReadonlyFromMergedInterface [fixed db2e41209]. Private names: TS18015.

@@ -2644,7 +2644,7 @@ static void function_check_duplicate_implementation(FunctionImpl const* me, Erro
     }
     function_check_flag_agreements(me, symbol, errs);
     if (implementation && overload_count) {
-        ty_check_overloads_compatible(current_checker, implementation, implementation->name, overloads, names, overload_count, errs);
+        ty_check_overloads_compatible(current_checker, implementation, implementation->name, overloads, nullptr, names, overload_count, errs);
     }
     // A function merged with a class that isn't ambient: TS2813 on each class, TS2814 on each function declaration
     bool non_ambient_class = false;

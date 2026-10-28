@@ -1,0 +1,94 @@
+ttttClassMergedInterfaceOverloads.ts(7,19): error TS2385: Overload signatures must all be public, private or protected.
+ttttClassMergedInterfaceOverloads.ts(10,15): error TS2385: Overload signatures must all be public, private or protected.
+ttttClassMergedInterfaceOverloads.ts(13,11): error TS2386: Overload signatures must all be optional or required.
+ttttClassMergedInterfaceOverloads.ts(16,15): error TS2386: Overload signatures must all be optional or required.
+ttttClassMergedInterfaceOverloads.ts(19,29): error TS2512: Overload signatures must all be abstract or non-abstract.
+ttttClassMergedInterfaceOverloads.ts(27,16): error TS2394: This overload signature is not compatible with its implementation signature.
+ttttClassMergedInterfaceOverloads.ts(30,16): error TS2394: This overload signature is not compatible with its implementation signature.
+ttttClassMergedInterfaceOverloads.ts(32,16): error TS2394: This overload signature is not compatible with its implementation signature.
+ttttClassMergedInterfaceOverloads.ts(34,20): error TS2385: Overload signatures must all be public, private or protected.
+ttttClassMergedInterfaceOverloads.ts(34,39): error TS2385: Overload signatures must all be public, private or protected.
+ttttClassMergedInterfaceOverloads.ts(40,28): error TS2386: Overload signatures must all be optional or required.
+ttttClassMergedInterfaceOverloads.ts(44,16): error TS2394: This overload signature is not compatible with its implementation signature.
+ttttClassMergedInterfaceOverloads.ts(47,28): error TS2385: Overload signatures must all be public, private or protected.
+
+
+==== ttttClassMergedInterfaceOverloads.ts (13 errors) ====
+    // A class's method merged with an interface's method signatures of its name is one symbol (tsc's
+    // checkFunctionOrConstructorSymbol): accessibility, abstractness and optionality agree across both (TS2385, TS2512,
+    // TS2386, the canonical one the first declaration unless the implementation shares its container), and the
+    // signatures are overloads the implementation must fit (TS2394)
+    
+    interface I { m(): void }
+    class I { private m() {} }
+                      ~
+!!! error TS2385: Overload signatures must all be public, private or protected.
+    
+    class J { protected n() {} }
+    interface J { n(): void }
+                  ~
+!!! error TS2385: Overload signatures must all be public, private or protected.
+    
+    interface K { o?(): void }
+    class K { o() {} }
+              ~
+!!! error TS2386: Overload signatures must all be optional or required.
+    
+    class L { p() {} }
+    interface L { p?(): void }
+                  ~
+!!! error TS2386: Overload signatures must all be optional or required.
+    
+    interface M { q(): void; q(x: number): void }
+    abstract class M { abstract q(): void }
+                                ~
+!!! error TS2512: Overload signatures must all be abstract or non-abstract.
+    
+    declare class N { r(): void }
+    interface N { r(x: number): void }
+    interface N { r(x: string): void }
+    class O { private s() {} }
+    interface O { t(): void }
+    
+    interface I2 { m(x: string): void }
+                   ~~~~~~~~~~~~~~~~~~
+!!! error TS2394: This overload signature is not compatible with its implementation signature.
+!!! related TS2750 ttttClassMergedInterfaceOverloads.ts:28:12: The implementation signature is declared here.
+    class I2 { m(x: number) {} }
+    class J2 { n(x: number) {} }
+    interface J2 { n(x: string): void }
+                   ~~~~~~~~~~~~~~~~~~
+!!! error TS2394: This overload signature is not compatible with its implementation signature.
+!!! related TS2750 ttttClassMergedInterfaceOverloads.ts:29:12: The implementation signature is declared here.
+    class K2 { o(): void; o(x?: number) {} }
+    interface K2 { o(x: string): void }
+                   ~~~~~~~~~~~~~~~~~~
+!!! error TS2394: This overload signature is not compatible with its implementation signature.
+!!! related TS2750 ttttClassMergedInterfaceOverloads.ts:31:23: The implementation signature is declared here.
+    interface L2 { p(): void }
+    class L2 { private p(): void; private p() {} }
+                       ~
+!!! error TS2385: Overload signatures must all be public, private or protected.
+                                          ~
+!!! error TS2385: Overload signatures must all be public, private or protected.
+    
+    interface G<T> { m(x: T): void; m(x: T, y: number): void }
+    class G<T> { m(x: T, y?: number) {} }
+    interface H<T> { m(x: T): this }
+    class H<T> { m(x: T) { return this; } }
+    interface P2 { a?(): void; a(x: number): void }
+                               ~
+!!! error TS2386: Overload signatures must all be optional or required.
+    class P2 { private b() {} }
+    class Q2 { m(x: string): void; m(x: any) {} }
+    interface Q2 { m(x: number): void }
+    interface R2 { m(x: number): string }
+                   ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2394: This overload signature is not compatible with its implementation signature.
+!!! related TS2750 ttttClassMergedInterfaceOverloads.ts:45:12: The implementation signature is declared here.
+    class R2 { m(x: number): number { return 1 } }
+    interface S2 { m(x: number): void }
+    declare class S2 { private m(): void }
+                               ~
+!!! error TS2385: Overload signatures must all be public, private or protected.
+    

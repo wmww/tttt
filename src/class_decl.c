@@ -14,6 +14,8 @@
 #include "source_file.h"
 #include "block.h"
 #include "name_index.h"
+#include "interface.h"
+#include "interface_decl.h"
 
 void class_item_drop(ClassItem* me) {
     vec_expr_drop(&my decorators);
@@ -1685,6 +1687,43 @@ static Span overload_name(ClassItem const* item) {
     return item->tag == CLASS_ITEM_CONSTRUCTOR ? item->constructor.name_span : item->method.name_span;
 }
 
+// The method signatures named `name` of the interfaces in the class's file that merge with it (its symbol's
+// declarations: tsc's instance member symbols are one across them) in declaration order into `out`, how many of them
+// come before the class in `*before`
+static u32 class_merged_signatures(ClassDecl const* me, cstr const* name, InterfaceMember const** out, u32 cap, u32* before) {
+    *before = 0;
+    Symbol const* symbol = my symbol;
+    if (!symbol || symbol->decl_count < 2) return 0;
+    SourceFile const* file = span_source(my full_span);
+    u32 count = 0;
+    bool class_seen = false;
+    for (u32 d = 0; d < symbol->decl_count; d++) {
+        SymbolDecl const* decl = &symbol->decls[d];
+        if (decl->node == me) class_seen = true;
+        if (decl->kind != SYMBOL_DECL_INTERFACE) continue;
+        InterfaceDecl const* interface = decl->node;
+        if (span_source(interface->full_span) != file) continue;
+        for_each (i, vec_interface_member, &interface->type.interface.members) {
+            if (!interface_member_is_named_method(i) || !cstr_eq(&i->key.name_string, name) || count >= cap) continue;
+            out[count++] = i;
+            if (!class_seen) (*before)++;
+        }
+    }
+    return count;
+}
+
+bool class_decl_merges_method(ClassDecl const* me, cstr const* name, SourceFile const* file) {
+    if (span_source(my full_span) != file) return false;
+    for_each (i, vec_class_item, &my items) {
+        if (i->tag == CLASS_ITEM_METHOD && !i->method.accessor && !i->method.is_static && !i->method.computed_key &&
+            !span_valid(class_item_private_name(i)) && cstr_eq(&i->method.name_string, name)
+        ) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // tsc's checkFlagAgreementBetweenOverloads and checkQuestionTokenAgreementBetweenOverloads for the methods of a class
 // (the declarations of one method symbol, with an overload among them): each declaration that differs from the
 // canonical one (the implementation, else the first) in accessibility (TS2385), else abstractness (TS2512), and in
@@ -1740,8 +1779,26 @@ static void class_check_overload_agreement(ClassDecl const* me, ErrorCtx* errs) 
                 overloads = true;
             }
         }
-        if (!first || !overloads) continue;
-        ClassItem const* canonical = implementation ? implementation : item;
+        if (!first) continue;
+        // The method signatures of the interfaces the class merges with (in its file) are declarations of the same
+        // symbol, before or after the class's own as the interfaces are
+        InterfaceMember const* signatures[16];
+        u32 signature_count = 0, signatures_before = 0;
+        if (!item->method.is_static && !item->method.computed_key && !span_valid(class_item_private_name(item))) {
+            signature_count = class_merged_signatures(me, &item->method.name_string, signatures, c_arraylen(signatures), &signatures_before);
+        }
+        for (u32 s = 0; s < signature_count; s++) {
+            all_flags = 0; // (Public, not abstract)
+            some_optional |= signatures[s]->optional;
+            all_optional &= signatures[s]->optional;
+        }
+        if (!overloads && !signature_count) continue;
+        // The canonical declaration: the implementation if it's in the container of the first declaration, else the
+        // first (an interface's signature: public, not abstract)
+        ClassItem const* canonical = signatures_before ? nullptr : implementation ? implementation : item;
+        AccessModifier canonical_access = canonical ? canonical->access : ACCESS_MODIFIER_PUBLIC;
+        bool canonical_abstract = canonical && canonical->method.is_abstract;
+        bool canonical_optional = canonical ? canonical->method.is_optional : signatures[0]->optional;
         for (ClassNamesakes it = class_namesakes(me, item, true); class_namesakes_next(&it);) {
             ClassItem const* other = it.item;
             if (other->tag != CLASS_ITEM_METHOD || other->method.accessor || !same_member(item, other) ||
@@ -1750,14 +1807,27 @@ static void class_check_overload_agreement(ClassDecl const* me, ErrorCtx* errs) 
                 continue;
             }
             if (some_flags != all_flags) {
-                if (other->access != canonical->access) {
+                if (other->access != canonical_access) {
                     error_ctx_error_d(errs, other->method.name_span, 2385, "Overload signatures must all be public, private or protected.");
-                } else if (other->method.is_abstract != canonical->method.is_abstract) {
+                } else if (other->method.is_abstract != canonical_abstract) {
                     error_ctx_error_d(errs, other->method.name_span, 2512, "Overload signatures must all be abstract or non-abstract.");
                 }
             }
-            if (some_optional != all_optional && other->method.is_optional != canonical->method.is_optional) {
+            if (some_optional != all_optional && other->method.is_optional != canonical_optional) {
                 error_ctx_error_d(errs, other->method.name_span, 2386, "Overload signatures must all be optional or required.");
+            }
+        }
+        for (u32 s = 0; s < signature_count; s++) {
+            InterfaceMember const* other = signatures[s];
+            if (some_flags != all_flags) {
+                if (canonical_access != ACCESS_MODIFIER_PUBLIC) {
+                    error_ctx_error_d(errs, other->key.span, 2385, "Overload signatures must all be public, private or protected.");
+                } else if (canonical_abstract) {
+                    error_ctx_error_d(errs, other->key.span, 2512, "Overload signatures must all be abstract or non-abstract.");
+                }
+            }
+            if (some_optional != all_optional && other->optional != canonical_optional) {
+                error_ctx_error_d(errs, other->key.span, 2386, "Overload signatures must all be optional or required.");
             }
         }
     }
@@ -1933,8 +2003,29 @@ static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
                 overloads[overload_count++] = other_func;
             }
         }
-        if (first && implementation && overload_count) {
-            ty_check_overloads_compatible(current_checker, implementation, implementation_name, overloads, names, overload_count, errs);
+        // The method signatures of interfaces merged with the class are overloads too, in declaration order
+        InterfaceMember const* merged[16];
+        u32 merged_count = 0, merged_before = 0;
+        if (first && implementation && item->tag == CLASS_ITEM_METHOD && !item->method.is_static &&
+            !item->method.computed_key && !span_valid(class_item_private_name(item))
+        ) {
+            merged_count = class_merged_signatures(me, &item->method.name_string, merged, c_arraylen(merged), &merged_before);
+        }
+        if (first && implementation && merged_count) {
+            FunctionImpl const* all[48];
+            Signature const* signatures[48];
+            Span all_names[48];
+            u32 all_count = 0;
+            for (u32 k = 0; k < merged_count + overload_count; k++) {
+                bool own = k >= merged_before && k < merged_before + overload_count;
+                InterfaceMember const* signature = own ? nullptr : merged[k < merged_before ? k : k - overload_count];
+                all[all_count] = own ? overloads[k - merged_before] : nullptr;
+                signatures[all_count] = own ? nullptr : ty_interface_method_signature(current_checker, signature);
+                all_names[all_count++] = own ? names[k - merged_before] : signature->declaration; // (tsc: the whole signature)
+            }
+            ty_check_overloads_compatible(current_checker, implementation, implementation_name, all, signatures, all_names, all_count, errs);
+        } else if (first && implementation && overload_count) {
+            ty_check_overloads_compatible(current_checker, implementation, implementation_name, overloads, nullptr, names, overload_count, errs);
         } else if (first && implementation && item->tag == CLASS_ITEM_CONSTRUCTOR) {
             function_impl_check_jsdoc_overloads(implementation, implementation_name, errs); // (a JavaScript constructor's)
         }

@@ -1,0 +1,187 @@
+//// [test/cases/ttttClassMergedInterfaceOverloads.ts] ////
+
+=== ttttClassMergedInterfaceOverloads.ts ===
+// A class's method merged with an interface's method signatures of its name is one symbol (tsc's
+// checkFunctionOrConstructorSymbol): accessibility, abstractness and optionality agree across both (TS2385, TS2512,
+// TS2386, the canonical one the first declaration unless the implementation shares its container), and the
+// signatures are overloads the implementation must fit (TS2394)
+
+interface I { m(): void }
+>I : Symbol(I, Decl(ttttClassMergedInterfaceOverloads.ts, 0, 0), Decl(ttttClassMergedInterfaceOverloads.ts, 5, 25))
+>m : Symbol(I.m, Decl(ttttClassMergedInterfaceOverloads.ts, 5, 13), Decl(ttttClassMergedInterfaceOverloads.ts, 6, 9))
+
+class I { private m() {} }
+>I : Symbol(I, Decl(ttttClassMergedInterfaceOverloads.ts, 0, 0), Decl(ttttClassMergedInterfaceOverloads.ts, 5, 25))
+>m : Symbol(I.m, Decl(ttttClassMergedInterfaceOverloads.ts, 5, 13), Decl(ttttClassMergedInterfaceOverloads.ts, 6, 9))
+
+class J { protected n() {} }
+>J : Symbol(J, Decl(ttttClassMergedInterfaceOverloads.ts, 6, 26), Decl(ttttClassMergedInterfaceOverloads.ts, 8, 28))
+>n : Symbol(J.n, Decl(ttttClassMergedInterfaceOverloads.ts, 8, 9), Decl(ttttClassMergedInterfaceOverloads.ts, 9, 13))
+
+interface J { n(): void }
+>J : Symbol(J, Decl(ttttClassMergedInterfaceOverloads.ts, 6, 26), Decl(ttttClassMergedInterfaceOverloads.ts, 8, 28))
+>n : Symbol(J.n, Decl(ttttClassMergedInterfaceOverloads.ts, 8, 9), Decl(ttttClassMergedInterfaceOverloads.ts, 9, 13))
+
+interface K { o?(): void }
+>K : Symbol(K, Decl(ttttClassMergedInterfaceOverloads.ts, 9, 25), Decl(ttttClassMergedInterfaceOverloads.ts, 11, 26))
+>o : Symbol(K.o, Decl(ttttClassMergedInterfaceOverloads.ts, 11, 13), Decl(ttttClassMergedInterfaceOverloads.ts, 12, 9))
+
+class K { o() {} }
+>K : Symbol(K, Decl(ttttClassMergedInterfaceOverloads.ts, 9, 25), Decl(ttttClassMergedInterfaceOverloads.ts, 11, 26))
+>o : Symbol(K.o, Decl(ttttClassMergedInterfaceOverloads.ts, 11, 13), Decl(ttttClassMergedInterfaceOverloads.ts, 12, 9))
+
+class L { p() {} }
+>L : Symbol(L, Decl(ttttClassMergedInterfaceOverloads.ts, 12, 18), Decl(ttttClassMergedInterfaceOverloads.ts, 14, 18))
+>p : Symbol(L.p, Decl(ttttClassMergedInterfaceOverloads.ts, 14, 9), Decl(ttttClassMergedInterfaceOverloads.ts, 15, 13))
+
+interface L { p?(): void }
+>L : Symbol(L, Decl(ttttClassMergedInterfaceOverloads.ts, 12, 18), Decl(ttttClassMergedInterfaceOverloads.ts, 14, 18))
+>p : Symbol(L.p, Decl(ttttClassMergedInterfaceOverloads.ts, 14, 9), Decl(ttttClassMergedInterfaceOverloads.ts, 15, 13))
+
+interface M { q(): void; q(x: number): void }
+>M : Symbol(M, Decl(ttttClassMergedInterfaceOverloads.ts, 15, 26), Decl(ttttClassMergedInterfaceOverloads.ts, 17, 45))
+>q : Symbol(M.q, Decl(ttttClassMergedInterfaceOverloads.ts, 17, 13), Decl(ttttClassMergedInterfaceOverloads.ts, 17, 24), Decl(ttttClassMergedInterfaceOverloads.ts, 18, 18))
+>q : Symbol(M.q, Decl(ttttClassMergedInterfaceOverloads.ts, 17, 13), Decl(ttttClassMergedInterfaceOverloads.ts, 17, 24), Decl(ttttClassMergedInterfaceOverloads.ts, 18, 18))
+>x : Symbol(x, Decl(ttttClassMergedInterfaceOverloads.ts, 17, 27))
+
+abstract class M { abstract q(): void }
+>M : Symbol(M, Decl(ttttClassMergedInterfaceOverloads.ts, 15, 26), Decl(ttttClassMergedInterfaceOverloads.ts, 17, 45))
+>q : Symbol(M.q, Decl(ttttClassMergedInterfaceOverloads.ts, 17, 13), Decl(ttttClassMergedInterfaceOverloads.ts, 17, 24), Decl(ttttClassMergedInterfaceOverloads.ts, 18, 18))
+
+declare class N { r(): void }
+>N : Symbol(N, Decl(ttttClassMergedInterfaceOverloads.ts, 18, 39), Decl(ttttClassMergedInterfaceOverloads.ts, 20, 29), Decl(ttttClassMergedInterfaceOverloads.ts, 21, 34))
+>r : Symbol(N.r, Decl(ttttClassMergedInterfaceOverloads.ts, 20, 17), Decl(ttttClassMergedInterfaceOverloads.ts, 21, 13), Decl(ttttClassMergedInterfaceOverloads.ts, 22, 13))
+
+interface N { r(x: number): void }
+>N : Symbol(N, Decl(ttttClassMergedInterfaceOverloads.ts, 18, 39), Decl(ttttClassMergedInterfaceOverloads.ts, 20, 29), Decl(ttttClassMergedInterfaceOverloads.ts, 21, 34))
+>r : Symbol(N.r, Decl(ttttClassMergedInterfaceOverloads.ts, 20, 17), Decl(ttttClassMergedInterfaceOverloads.ts, 21, 13), Decl(ttttClassMergedInterfaceOverloads.ts, 22, 13))
+>x : Symbol(x, Decl(ttttClassMergedInterfaceOverloads.ts, 21, 16))
+
+interface N { r(x: string): void }
+>N : Symbol(N, Decl(ttttClassMergedInterfaceOverloads.ts, 18, 39), Decl(ttttClassMergedInterfaceOverloads.ts, 20, 29), Decl(ttttClassMergedInterfaceOverloads.ts, 21, 34))
+>r : Symbol(N.r, Decl(ttttClassMergedInterfaceOverloads.ts, 20, 17), Decl(ttttClassMergedInterfaceOverloads.ts, 21, 13), Decl(ttttClassMergedInterfaceOverloads.ts, 22, 13))
+>x : Symbol(x, Decl(ttttClassMergedInterfaceOverloads.ts, 22, 16))
+
+class O { private s() {} }
+>O : Symbol(O, Decl(ttttClassMergedInterfaceOverloads.ts, 22, 34), Decl(ttttClassMergedInterfaceOverloads.ts, 23, 26))
+>s : Symbol(O.s, Decl(ttttClassMergedInterfaceOverloads.ts, 23, 9))
+
+interface O { t(): void }
+>O : Symbol(O, Decl(ttttClassMergedInterfaceOverloads.ts, 22, 34), Decl(ttttClassMergedInterfaceOverloads.ts, 23, 26))
+>t : Symbol(O.t, Decl(ttttClassMergedInterfaceOverloads.ts, 24, 13))
+
+interface I2 { m(x: string): void }
+>I2 : Symbol(I2, Decl(ttttClassMergedInterfaceOverloads.ts, 24, 25), Decl(ttttClassMergedInterfaceOverloads.ts, 26, 35))
+>m : Symbol(I2.m, Decl(ttttClassMergedInterfaceOverloads.ts, 26, 14), Decl(ttttClassMergedInterfaceOverloads.ts, 27, 10))
+>x : Symbol(x, Decl(ttttClassMergedInterfaceOverloads.ts, 26, 17))
+
+class I2 { m(x: number) {} }
+>I2 : Symbol(I2, Decl(ttttClassMergedInterfaceOverloads.ts, 24, 25), Decl(ttttClassMergedInterfaceOverloads.ts, 26, 35))
+>m : Symbol(I2.m, Decl(ttttClassMergedInterfaceOverloads.ts, 26, 14), Decl(ttttClassMergedInterfaceOverloads.ts, 27, 10))
+>x : Symbol(x, Decl(ttttClassMergedInterfaceOverloads.ts, 27, 13))
+
+class J2 { n(x: number) {} }
+>J2 : Symbol(J2, Decl(ttttClassMergedInterfaceOverloads.ts, 27, 28), Decl(ttttClassMergedInterfaceOverloads.ts, 28, 28))
+>n : Symbol(J2.n, Decl(ttttClassMergedInterfaceOverloads.ts, 28, 10), Decl(ttttClassMergedInterfaceOverloads.ts, 29, 14))
+>x : Symbol(x, Decl(ttttClassMergedInterfaceOverloads.ts, 28, 13))
+
+interface J2 { n(x: string): void }
+>J2 : Symbol(J2, Decl(ttttClassMergedInterfaceOverloads.ts, 27, 28), Decl(ttttClassMergedInterfaceOverloads.ts, 28, 28))
+>n : Symbol(J2.n, Decl(ttttClassMergedInterfaceOverloads.ts, 28, 10), Decl(ttttClassMergedInterfaceOverloads.ts, 29, 14))
+>x : Symbol(x, Decl(ttttClassMergedInterfaceOverloads.ts, 29, 17))
+
+class K2 { o(): void; o(x?: number) {} }
+>K2 : Symbol(K2, Decl(ttttClassMergedInterfaceOverloads.ts, 29, 35), Decl(ttttClassMergedInterfaceOverloads.ts, 30, 40))
+>o : Symbol(K2.o, Decl(ttttClassMergedInterfaceOverloads.ts, 30, 10), Decl(ttttClassMergedInterfaceOverloads.ts, 30, 21), Decl(ttttClassMergedInterfaceOverloads.ts, 31, 14))
+>o : Symbol(K2.o, Decl(ttttClassMergedInterfaceOverloads.ts, 30, 10), Decl(ttttClassMergedInterfaceOverloads.ts, 30, 21), Decl(ttttClassMergedInterfaceOverloads.ts, 31, 14))
+>x : Symbol(x, Decl(ttttClassMergedInterfaceOverloads.ts, 30, 24))
+
+interface K2 { o(x: string): void }
+>K2 : Symbol(K2, Decl(ttttClassMergedInterfaceOverloads.ts, 29, 35), Decl(ttttClassMergedInterfaceOverloads.ts, 30, 40))
+>o : Symbol(K2.o, Decl(ttttClassMergedInterfaceOverloads.ts, 30, 10), Decl(ttttClassMergedInterfaceOverloads.ts, 30, 21), Decl(ttttClassMergedInterfaceOverloads.ts, 31, 14))
+>x : Symbol(x, Decl(ttttClassMergedInterfaceOverloads.ts, 31, 17))
+
+interface L2 { p(): void }
+>L2 : Symbol(L2, Decl(ttttClassMergedInterfaceOverloads.ts, 31, 35), Decl(ttttClassMergedInterfaceOverloads.ts, 32, 26))
+>p : Symbol(L2.p, Decl(ttttClassMergedInterfaceOverloads.ts, 32, 14), Decl(ttttClassMergedInterfaceOverloads.ts, 33, 10), Decl(ttttClassMergedInterfaceOverloads.ts, 33, 29))
+
+class L2 { private p(): void; private p() {} }
+>L2 : Symbol(L2, Decl(ttttClassMergedInterfaceOverloads.ts, 31, 35), Decl(ttttClassMergedInterfaceOverloads.ts, 32, 26))
+>p : Symbol(L2.p, Decl(ttttClassMergedInterfaceOverloads.ts, 32, 14), Decl(ttttClassMergedInterfaceOverloads.ts, 33, 10), Decl(ttttClassMergedInterfaceOverloads.ts, 33, 29))
+>p : Symbol(L2.p, Decl(ttttClassMergedInterfaceOverloads.ts, 32, 14), Decl(ttttClassMergedInterfaceOverloads.ts, 33, 10), Decl(ttttClassMergedInterfaceOverloads.ts, 33, 29))
+
+interface G<T> { m(x: T): void; m(x: T, y: number): void }
+>G : Symbol(G, Decl(ttttClassMergedInterfaceOverloads.ts, 33, 46), Decl(ttttClassMergedInterfaceOverloads.ts, 35, 58))
+>T : Symbol(T, Decl(ttttClassMergedInterfaceOverloads.ts, 35, 12), Decl(ttttClassMergedInterfaceOverloads.ts, 36, 8))
+>m : Symbol(G.m, Decl(ttttClassMergedInterfaceOverloads.ts, 35, 16), Decl(ttttClassMergedInterfaceOverloads.ts, 35, 31), Decl(ttttClassMergedInterfaceOverloads.ts, 36, 12))
+>x : Symbol(x, Decl(ttttClassMergedInterfaceOverloads.ts, 35, 19))
+>T : Symbol(T, Decl(ttttClassMergedInterfaceOverloads.ts, 35, 12), Decl(ttttClassMergedInterfaceOverloads.ts, 36, 8))
+>m : Symbol(G.m, Decl(ttttClassMergedInterfaceOverloads.ts, 35, 16), Decl(ttttClassMergedInterfaceOverloads.ts, 35, 31), Decl(ttttClassMergedInterfaceOverloads.ts, 36, 12))
+>x : Symbol(x, Decl(ttttClassMergedInterfaceOverloads.ts, 35, 34))
+>T : Symbol(T, Decl(ttttClassMergedInterfaceOverloads.ts, 35, 12), Decl(ttttClassMergedInterfaceOverloads.ts, 36, 8))
+>y : Symbol(y, Decl(ttttClassMergedInterfaceOverloads.ts, 35, 39))
+
+class G<T> { m(x: T, y?: number) {} }
+>G : Symbol(G, Decl(ttttClassMergedInterfaceOverloads.ts, 33, 46), Decl(ttttClassMergedInterfaceOverloads.ts, 35, 58))
+>T : Symbol(T, Decl(ttttClassMergedInterfaceOverloads.ts, 35, 12), Decl(ttttClassMergedInterfaceOverloads.ts, 36, 8))
+>m : Symbol(G.m, Decl(ttttClassMergedInterfaceOverloads.ts, 35, 16), Decl(ttttClassMergedInterfaceOverloads.ts, 35, 31), Decl(ttttClassMergedInterfaceOverloads.ts, 36, 12))
+>x : Symbol(x, Decl(ttttClassMergedInterfaceOverloads.ts, 36, 15))
+>T : Symbol(T, Decl(ttttClassMergedInterfaceOverloads.ts, 35, 12), Decl(ttttClassMergedInterfaceOverloads.ts, 36, 8))
+>y : Symbol(y, Decl(ttttClassMergedInterfaceOverloads.ts, 36, 20))
+
+interface H<T> { m(x: T): this }
+>H : Symbol(H, Decl(ttttClassMergedInterfaceOverloads.ts, 36, 37), Decl(ttttClassMergedInterfaceOverloads.ts, 37, 32))
+>T : Symbol(T, Decl(ttttClassMergedInterfaceOverloads.ts, 37, 12), Decl(ttttClassMergedInterfaceOverloads.ts, 38, 8))
+>m : Symbol(H.m, Decl(ttttClassMergedInterfaceOverloads.ts, 37, 16), Decl(ttttClassMergedInterfaceOverloads.ts, 38, 12))
+>x : Symbol(x, Decl(ttttClassMergedInterfaceOverloads.ts, 37, 19))
+>T : Symbol(T, Decl(ttttClassMergedInterfaceOverloads.ts, 37, 12), Decl(ttttClassMergedInterfaceOverloads.ts, 38, 8))
+
+class H<T> { m(x: T) { return this; } }
+>H : Symbol(H, Decl(ttttClassMergedInterfaceOverloads.ts, 36, 37), Decl(ttttClassMergedInterfaceOverloads.ts, 37, 32))
+>T : Symbol(T, Decl(ttttClassMergedInterfaceOverloads.ts, 37, 12), Decl(ttttClassMergedInterfaceOverloads.ts, 38, 8))
+>m : Symbol(H.m, Decl(ttttClassMergedInterfaceOverloads.ts, 37, 16), Decl(ttttClassMergedInterfaceOverloads.ts, 38, 12))
+>x : Symbol(x, Decl(ttttClassMergedInterfaceOverloads.ts, 38, 15))
+>T : Symbol(T, Decl(ttttClassMergedInterfaceOverloads.ts, 37, 12), Decl(ttttClassMergedInterfaceOverloads.ts, 38, 8))
+>this : Symbol(H, Decl(ttttClassMergedInterfaceOverloads.ts, 36, 37), Decl(ttttClassMergedInterfaceOverloads.ts, 37, 32))
+
+interface P2 { a?(): void; a(x: number): void }
+>P2 : Symbol(P2, Decl(ttttClassMergedInterfaceOverloads.ts, 38, 39), Decl(ttttClassMergedInterfaceOverloads.ts, 39, 47))
+>a : Symbol(P2.a, Decl(ttttClassMergedInterfaceOverloads.ts, 39, 14), Decl(ttttClassMergedInterfaceOverloads.ts, 39, 26))
+>a : Symbol(P2.a, Decl(ttttClassMergedInterfaceOverloads.ts, 39, 14), Decl(ttttClassMergedInterfaceOverloads.ts, 39, 26))
+>x : Symbol(x, Decl(ttttClassMergedInterfaceOverloads.ts, 39, 29))
+
+class P2 { private b() {} }
+>P2 : Symbol(P2, Decl(ttttClassMergedInterfaceOverloads.ts, 38, 39), Decl(ttttClassMergedInterfaceOverloads.ts, 39, 47))
+>b : Symbol(P2.b, Decl(ttttClassMergedInterfaceOverloads.ts, 40, 10))
+
+class Q2 { m(x: string): void; m(x: any) {} }
+>Q2 : Symbol(Q2, Decl(ttttClassMergedInterfaceOverloads.ts, 40, 27), Decl(ttttClassMergedInterfaceOverloads.ts, 41, 45))
+>m : Symbol(Q2.m, Decl(ttttClassMergedInterfaceOverloads.ts, 41, 10), Decl(ttttClassMergedInterfaceOverloads.ts, 41, 30), Decl(ttttClassMergedInterfaceOverloads.ts, 42, 14))
+>x : Symbol(x, Decl(ttttClassMergedInterfaceOverloads.ts, 41, 13))
+>m : Symbol(Q2.m, Decl(ttttClassMergedInterfaceOverloads.ts, 41, 10), Decl(ttttClassMergedInterfaceOverloads.ts, 41, 30), Decl(ttttClassMergedInterfaceOverloads.ts, 42, 14))
+>x : Symbol(x, Decl(ttttClassMergedInterfaceOverloads.ts, 41, 33))
+
+interface Q2 { m(x: number): void }
+>Q2 : Symbol(Q2, Decl(ttttClassMergedInterfaceOverloads.ts, 40, 27), Decl(ttttClassMergedInterfaceOverloads.ts, 41, 45))
+>m : Symbol(Q2.m, Decl(ttttClassMergedInterfaceOverloads.ts, 41, 10), Decl(ttttClassMergedInterfaceOverloads.ts, 41, 30), Decl(ttttClassMergedInterfaceOverloads.ts, 42, 14))
+>x : Symbol(x, Decl(ttttClassMergedInterfaceOverloads.ts, 42, 17))
+
+interface R2 { m(x: number): string }
+>R2 : Symbol(R2, Decl(ttttClassMergedInterfaceOverloads.ts, 42, 35), Decl(ttttClassMergedInterfaceOverloads.ts, 43, 37))
+>m : Symbol(R2.m, Decl(ttttClassMergedInterfaceOverloads.ts, 43, 14), Decl(ttttClassMergedInterfaceOverloads.ts, 44, 10))
+>x : Symbol(x, Decl(ttttClassMergedInterfaceOverloads.ts, 43, 17))
+
+class R2 { m(x: number): number { return 1 } }
+>R2 : Symbol(R2, Decl(ttttClassMergedInterfaceOverloads.ts, 42, 35), Decl(ttttClassMergedInterfaceOverloads.ts, 43, 37))
+>m : Symbol(R2.m, Decl(ttttClassMergedInterfaceOverloads.ts, 43, 14), Decl(ttttClassMergedInterfaceOverloads.ts, 44, 10))
+>x : Symbol(x, Decl(ttttClassMergedInterfaceOverloads.ts, 44, 13))
+
+interface S2 { m(x: number): void }
+>S2 : Symbol(S2, Decl(ttttClassMergedInterfaceOverloads.ts, 44, 46), Decl(ttttClassMergedInterfaceOverloads.ts, 45, 35))
+>m : Symbol(S2.m, Decl(ttttClassMergedInterfaceOverloads.ts, 45, 14), Decl(ttttClassMergedInterfaceOverloads.ts, 46, 18))
+>x : Symbol(x, Decl(ttttClassMergedInterfaceOverloads.ts, 45, 17))
+
+declare class S2 { private m(): void }
+>S2 : Symbol(S2, Decl(ttttClassMergedInterfaceOverloads.ts, 44, 46), Decl(ttttClassMergedInterfaceOverloads.ts, 45, 35))
+>m : Symbol(S2.m, Decl(ttttClassMergedInterfaceOverloads.ts, 45, 14), Decl(ttttClassMergedInterfaceOverloads.ts, 46, 18))
+

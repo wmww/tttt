@@ -1059,7 +1059,7 @@ void function_impl_check_jsdoc_overloads(FunctionImpl const* me, Span name, Erro
         overloads[count] = overload;
         names[count++] = tag_name;
     }
-    if (count && span_valid(name)) ty_check_overloads_compatible(current_checker, me, name, overloads, names, count, errs);
+    if (count && span_valid(name)) ty_check_overloads_compatible(current_checker, me, name, overloads, nullptr, names, count, errs);
 }
 
 void function_impl_check_unused_renamings(FunctionImpl const* me, ErrorCtx* errs) {

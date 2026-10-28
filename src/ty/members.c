@@ -2263,6 +2263,8 @@ static void builder_add_class_items(
                         prop_decl_rare_mut(me, interface_method->decl)->overloads = all;
                         prop_decl_rare_mut(me, interface_method->decl)->overload_count = had + count;
                         interface_method->thisless = false; // (Declared more than once: tsc's isThisless)
+                        // (Optional if any declaration is: tsc's binder adds SymbolFlags.Optional per declaration)
+                        if (i->method.is_optional) interface_method->flags |= PROP_OPTIONAL;
                         prop_add_shared_decl_spans(me, interface_method, &i->span, 1);
                         prop_add_decl_spans(me, interface_method, spans, span_count);
                         break;

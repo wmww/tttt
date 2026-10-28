@@ -24,3 +24,5 @@ typedef struct Interface {
 void interface_drop(Interface* me);
 // `merged`: the interface symbol whose declarations its own merges with (null for a type literal)
 void interface_typecheck(Interface const* me, struct Symbol const* merged, ErrorCtx* errs);
+// A method signature with a written name (`m(): void`, not `m: () => void`)
+bool interface_member_is_named_method(struct InterfaceMember const* member);

@@ -1,0 +1,161 @@
+//// [test/cases/ttttClassMergedInterfaceOverloads.ts] ////
+
+=== ttttClassMergedInterfaceOverloads.ts ===
+// A class's method merged with an interface's method signatures of its name is one symbol (tsc's
+// checkFunctionOrConstructorSymbol): accessibility, abstractness and optionality agree across both (TS2385, TS2512,
+// TS2386, the canonical one the first declaration unless the implementation shares its container), and the
+// signatures are overloads the implementation must fit (TS2394)
+
+interface I { m(): void }
+>m : { (): void; (): void; }
+
+class I { private m() {} }
+>I : I
+>m : { (): void; (): void; }
+
+class J { protected n() {} }
+>J : J
+>n : { (): void; (): void; }
+
+interface J { n(): void }
+>n : { (): void; (): void; }
+
+interface K { o?(): void }
+>o : { (): void; (): void; } | undefined
+
+class K { o() {} }
+>K : K
+>o : { (): void; (): void; } | undefined
+
+class L { p() {} }
+>L : L
+>p : { (): void; (): void; } | undefined
+
+interface L { p?(): void }
+>p : { (): void; (): void; } | undefined
+
+interface M { q(): void; q(x: number): void }
+>q : { (): void; (x: number): void; (): void; }
+>q : { (): void; (x: number): void; (): void; }
+>x : number
+
+abstract class M { abstract q(): void }
+>M : M
+>q : { (): void; (x: number): void; (): void; }
+
+declare class N { r(): void }
+>N : N
+>r : { (): void; (x: number): void; (x: string): void; }
+
+interface N { r(x: number): void }
+>r : { (): void; (x: number): void; (x: string): void; }
+>x : number
+
+interface N { r(x: string): void }
+>r : { (): void; (x: number): void; (x: string): void; }
+>x : string
+
+class O { private s() {} }
+>O : O
+>s : () => void
+
+interface O { t(): void }
+>t : () => void
+
+interface I2 { m(x: string): void }
+>m : { (x: string): void; (x: number): void; }
+>x : string
+
+class I2 { m(x: number) {} }
+>I2 : I2
+>m : { (x: string): void; (x: number): void; }
+>x : number
+
+class J2 { n(x: number) {} }
+>J2 : J2
+>n : { (x: number): void; (x: string): void; }
+>x : number
+
+interface J2 { n(x: string): void }
+>n : { (x: number): void; (x: string): void; }
+>x : string
+
+class K2 { o(): void; o(x?: number) {} }
+>K2 : K2
+>o : { (): void; (x: string): void; }
+>o : { (): void; (x: string): void; }
+>x : number | undefined
+
+interface K2 { o(x: string): void }
+>o : { (): void; (x: string): void; }
+>x : string
+
+interface L2 { p(): void }
+>p : { (): void; (): void; }
+
+class L2 { private p(): void; private p() {} }
+>L2 : L2
+>p : { (): void; (): void; }
+>p : { (): void; (): void; }
+
+interface G<T> { m(x: T): void; m(x: T, y: number): void }
+>m : { (x: T): void; (x: T, y: number): void; (x: T, y?: number): void; }
+>x : T
+>m : { (x: T): void; (x: T, y: number): void; (x: T, y?: number): void; }
+>x : T
+>y : number
+
+class G<T> { m(x: T, y?: number) {} }
+>G : G<T>
+>m : { (x: T): void; (x: T, y: number): void; (x: T, y?: number): void; }
+>x : T
+>y : number | undefined
+
+interface H<T> { m(x: T): this }
+>m : { (x: T): this; (x: T): this; }
+>x : T
+
+class H<T> { m(x: T) { return this; } }
+>H : H<T>
+>m : { (x: T): this; (x: T): this; }
+>x : T
+>this : this
+
+interface P2 { a?(): void; a(x: number): void }
+>a : { (): void; (x: number): void; } | undefined
+>a : { (): void; (x: number): void; } | undefined
+>x : number
+
+class P2 { private b() {} }
+>P2 : P2
+>b : () => void
+
+class Q2 { m(x: string): void; m(x: any) {} }
+>Q2 : Q2
+>m : { (x: string): void; (x: number): void; }
+>x : string
+>m : { (x: string): void; (x: number): void; }
+>x : any
+
+interface Q2 { m(x: number): void }
+>m : { (x: string): void; (x: number): void; }
+>x : number
+
+interface R2 { m(x: number): string }
+>m : { (x: number): string; (x: number): number; }
+>x : number
+
+class R2 { m(x: number): number { return 1 } }
+>R2 : R2
+>m : { (x: number): string; (x: number): number; }
+>x : number
+>1 : 1
+
+interface S2 { m(x: number): void }
+>m : { (x: number): void; (): void; }
+>x : number
+
+declare class S2 { private m(): void }
+>S2 : S2
+>m : { (x: number): void; (): void; }
+

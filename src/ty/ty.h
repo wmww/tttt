@@ -2296,12 +2296,16 @@ bool ty_emits_commonjs_like(struct SourceFile const* file);
 Signature const* ty_function_signature(Checker* me, FunctionImpl const* function);
 // Its signature's return type was its annotation's, circularly (TS2577): any (KEY_RETURN_ANNOTATION_CIRCULAR)
 bool ty_function_return_annotation_circular(Checker* me, FunctionImpl const* function);
-// TS2394 on the first of the overloads (with their names) that the implementation isn't compatible with
 Signature const* ty_implementation_signature(Checker* me, FunctionImpl const* function);
 bool ty_has_call_signature_for_arity(Checker* me, Ty const* type, u32 required);
+// The call signature of an interface's method signature
+Signature const* ty_interface_method_signature(Checker* me, InterfaceMember const* member);
+// TS2394 on the first of the overloads (with their names) that the implementation isn't compatible with. An overload
+// is a declaration, or when that's null and `signatures` isn't, signatures[i] (an interface's method signature merged
+// with a class's method)
 void ty_check_overloads_compatible(
     Checker* me, FunctionImpl const* implementation, Span implementation_name, FunctionImpl const* const* overloads,
-    Span const* names, u32 count, ErrorCtx* errs
+    Signature const* const* signatures, Span const* names, u32 count, ErrorCtx* errs
 );
 // A contextual signature of a union: `base` returning what any of `composites` returns, with `base`'s `this`
 Signature const* ty_union_signature(Checker* me, Signature const* base, Signature* const* composites, u32 count);

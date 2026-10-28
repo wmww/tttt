@@ -285,6 +285,9 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs);
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs);
 // The part of class_decl_typecheck() about the members, deferred for a class expression (Checker.defer_checks)
 void class_decl_typecheck_members(ClassDecl* me, ErrorCtx* errs);
+// Whether the class, in `file`, has an instance method named `name` (an interface it merges with in that file has its
+// signatures of that name checked with the class's, class_check_overload_agreement())
+bool class_decl_merges_method(ClassDecl const* me, cstr const* name, struct SourceFile const* file);
 // Whether a base class named by the `extends` clause gets as many type arguments as it takes (TS2314/TS2707 if not,
 // and the base is errorType). Always in JavaScript
 bool class_decl_base_arity_fits(ClassDecl const* me);
