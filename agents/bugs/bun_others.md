@@ -571,7 +571,10 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   newTargetNarrowing member-typo (`.targetX`: missing TS2345 boolean to true) [open]; octalIntegerLiteralES6
   num-to-str (TS2551 'Did you mean' on a property named `5.462437423415177e+244` is TS7053 in tttt: a numeric literal
   key's name) [open]; generatorTypeCheck46 member-typo (`[Symbol.iteratorX]`: missing TS2488 on a type with only a
-  number index signature) [open]; two render.
+  number index signature) [open]; two render. Seed 20261108 `--syntax` (bun11, 2000: 6, no parser item): checker,
+  relayed: genericCallWithTupleType add-optional (`tuple1?:` then an element assignment: missing TS2322 'false' to
+  'undefined') [open]; controlFlowIterationErrorsAsync ann-string-number (missing TS2345 string to number inside an
+  async loop) [open]; controlFlowGenericTypes swap-args (TS2345 text) [text]; three render.
 - Mutation seeds 20261105 and 20261106 (bun10, `--syntax`, 2000 each: 8 and 15 errors-component differences; 20261104
   without `--syntax`: 0). Fixed: a `]` ends a parameter list (fb750f459), a misplaced `import x = N` (TS1232) isn't
   resolved (a43889a36), the end of the file ends a type or class member (3aca4984e), a for-of's expression is no comma
