@@ -431,7 +431,11 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
 - tsc's parseErrorForMissingSemicolonAfter also follows a class property's name and a throw statement's expression;
   its TS2427/TS2457/TS2819 are tsc parse diagnostics (deduplicated with the next statement's TS1128 or member's TS1068
   at the same token: is_semantic_code() took every TS2xxx for a checker's) and name the scanner's TokenValue(), which
-  punctuation leaves at the name's (96-SOLID1). [fixed HASH]
+  punctuation leaves at the name's (96-SOLID1). [fixed 185ac2dcc]
+- `<<` and `<=` after a JSX tag name or element are tokens of their own: no type arguments, no adjacent element
+  (TS2657); the attribute list aborts at the binary operator (isInSomeParsingContext) and the operator applies to the
+  element (43-C13f, 43-C4b, 93-P04d). After a missing tag name tttt still takes `<<` for type arguments, which matches tsgo's
+  diagnostics on 93-P04b (`(<a><<<T>()=>void>/></a>)`) but not its tree (the .types show three children). `<a <<= b />` still differs (TS1109 x2 where tsgo says nothing past TS1003). [fixed HASH]
 
 ## Not looked at, by code
 - Each paragraph below is a code and direction with the cases it mismatches in, uninvestigated: at least one open

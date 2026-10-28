@@ -1,0 +1,41 @@
+//// [test/cases/ttttJsxShiftAfterTagName.tsx] ////
+
+=== a.tsx ===
+// `<<` and `<=` are tokens of their own to tsc's scanner: after a JSX tag name no type arguments, and after an element
+// no adjacent element (TS2657); a binary operator aborts the attribute list (isInSomeParsingContext), the element ends
+// there and the operator applies to it (bun 43-C13f)
+var v = <a << />;
+>v : number
+><a << /> : number
+><a : any
+>a : any
+>/> : RegExp
+
+var w = <a <= />;
+>w : boolean
+><a <= /> : boolean
+><a : any
+>a : any
+>/> : RegExp
+
+var x = <a <</a>;
+>x : number
+><a <</a> : number
+><a : any
+>a : any
+>/a> : RegExp
+
+var y = <a<string> />;
+>y : any
+><a<string> /> : any
+>a : any
+
+var t = (<a><<b/></a>);
+>t : any
+>(<a><<b/></a>) : any
+><a><<b/></a> : any
+>a : any
+><<b/> : any
+> : any
+>a : any
+

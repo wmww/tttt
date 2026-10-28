@@ -15,7 +15,7 @@ ttttJsxShiftTypeArguments.tsx(5,31): error TS1161: Unterminated regular expressi
 ==== ttttJsxShiftTypeArguments.tsx (12 errors) ====
     // A JSX opening element's type arguments want a `<` token: `<Component<<T>(v: T) => void> />` has a `<<` (tsc's
     // parseJsxOpeningOrSelfClosingElementOrOpeningFragment, tryParseTypeArguments), which tsgo then recovers from as a shift
-    // expression. Known failing (agents/bugs/missing_checks.md, Parser recovery). Babel's
+    // expression. (agents/bugs/missing_checks.md, Parser recovery.) Babel's
     // type-arguments-bit-shift-left-like/jsx-opening-element fixture
     <Component<<T>(v: T) => void> />
      ~~~~~~~~~

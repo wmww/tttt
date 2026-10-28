@@ -1,0 +1,66 @@
+a.tsx(4,9): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.tsx(4,12): error TS1003: Identifier expected.
+a.tsx(4,15): error TS1161: Unterminated regular expression literal.
+a.tsx(4,15): error TS2363: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+a.tsx(5,9): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.tsx(5,12): error TS1003: Identifier expected.
+a.tsx(5,15): error TS1161: Unterminated regular expression literal.
+a.tsx(6,9): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.tsx(6,12): error TS1003: Identifier expected.
+a.tsx(6,14): error TS1161: Unterminated regular expression literal.
+a.tsx(6,14): error TS2363: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+a.tsx(7,9): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.tsx(7,12): error TS2558: Expected 0 type arguments, but got 1.
+a.tsx(8,10): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.tsx(8,14): error TS1003: Identifier expected.
+a.tsx(8,15): error TS2304: Cannot find name 'b'.
+a.tsx(8,16): error TS1005: '>' expected.
+a.tsx(8,18): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+
+
+==== a.tsx (18 errors) ====
+    // `<<` and `<=` are tokens of their own to tsc's scanner: after a JSX tag name no type arguments, and after an element
+    // no adjacent element (TS2657); a binary operator aborts the attribute list (isInSomeParsingContext), the element ends
+    // there and the operator applies to it (bun 43-C13f)
+    var v = <a << />;
+            ~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+               ~~
+!!! error TS1003: Identifier expected.
+                  ~~
+!!! error TS1161: Unterminated regular expression literal.
+                  ~~
+!!! error TS2363: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+    var w = <a <= />;
+            ~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+               ~~
+!!! error TS1003: Identifier expected.
+                  ~~
+!!! error TS1161: Unterminated regular expression literal.
+    var x = <a <</a>;
+            ~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+               ~~
+!!! error TS1003: Identifier expected.
+                 ~~~
+!!! error TS1161: Unterminated regular expression literal.
+                 ~~~
+!!! error TS2363: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+    var y = <a<string> />;
+            ~~~~~~~~~~~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+               ~~~~~~
+!!! error TS2558: Expected 0 type arguments, but got 1.
+    var t = (<a><<b/></a>);
+             ~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+                 ~
+!!! error TS1003: Identifier expected.
+                  ~
+!!! error TS2304: Cannot find name 'b'.
+                   ~
+!!! error TS1005: '>' expected.
+                     ~~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+    

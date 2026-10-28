@@ -12506,14 +12506,19 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
     if (!is_fragment) {
         parse_jsx_tag_name(&p, &el->tag_name, &el->namespaced, &el->tag_name_broken);
         const char* name_end = p.pos;
-        if (el->tag_name.tag == EXPR_IDENTIFIER && !el->tag_name.inner_span.size) {
+        bool name_missing = el->tag_name.tag == EXPR_IDENTIFIER && !el->tag_name.inner_span.size;
+        if (name_missing) {
             // A missing name is where the trivia before it starts (tsc's missing node, its TS17008 is there)
             el->tag_name = expr_identifier(span_make(p.shared->source, name_full_start, name_full_start), (IdentifierExpr){0});
             name_end = name_full_start;
         }
         hop_whitespace(&p);
         attributes_a = anchor(&p);
-        if (!p.shared->source->is_js && *p.pos == '<' && p.pos[1] != '/') {
+        // (A `<` token: tsc's scanner makes `<<` and `<=` tokens of their own. But after a missing name tsgo takes
+        // `<<T>() => void>` as type arguments, `(<a><<<T>()=>void>/></a>)`: bun 93-P04b, not understood)
+        if (!p.shared->source->is_js && *p.pos == '<' && p.pos[1] != '/' &&
+            ((p.pos[1] != '<' && p.pos[1] != '=') || name_missing)
+        ) {
             // tsc's parseBracketedList(TypeArguments): types separated by commas, anything else ends the list
             Anchor type_args_a = anchor(&p);
             p.pos++;
@@ -12647,7 +12652,8 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
     if (!must_be_unary && in_expression_context) {
         Parser look = parser(&p);
         hop_whitespace(&look);
-        bool another = *look.pos == '<';
+        // (A `<` token: not `<<` or `<=`, the scanner's tokens of their own)
+        bool another = *look.pos == '<' && look.pos[1] != '<' && look.pos[1] != '=';
         parse_fail(&look);
         if (another) {
             const char* top = top_invalid_pos ? top_invalid_pos : a.start;
