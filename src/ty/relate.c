@@ -7883,7 +7883,7 @@ static Ty const* prop_or_index_type(Checker* me, Ty const* ty, Atom const* name)
     // (Any index signature that applies to the name: template literal and `string & {}` keys too, tsc's
     // getApplicableIndexInfoForName)
     if (!ty_members(me, ty)->index_count) return nullptr;
-    IndexInfo const* info = ty_applicable_index_info(me, ty, ty_prop_name_literal(me, name));
+    IndexInfo const* info = ty_applicable_index_info_for_name(me, ty, name);
     return info ? info->value : nullptr;
 }
 
@@ -8102,7 +8102,7 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
                 Members const* target_members = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty_members(me, apparent) : nullptr;
                 for (u32 p = 0; target_members && p < target_members->prop_count; p++) {
                     Atom const* name = members_prop_name(target_members, p);
-                    if (!ty_prop_exists(me, source, name) && ty_applicable_index_info(me, source, ty_prop_name_literal(me, name))) count++;
+                    if (!ty_prop_exists(me, source, name) && ty_applicable_index_info_for_name(me, source, name)) count++;
                 }
             }
             if ((count || (generic_keys && ty_keyof(me, keyed)->kind == TY_UNION)) && count >= best_count) {
@@ -8127,7 +8127,7 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
                 if (!names[p].size) continue;
                 Atom const* name = checker_atom(me, names[p]);
                 overlap += find_prop_in(me, apparent_type(me, t), name, 0, true).found ||
-                    ty_applicable_index_info(me, t, ty_prop_name_literal(me, name));
+                    ty_applicable_index_info_for_name(me, t, name);
             }
             if (overlap && overlap >= best_count) {
                 best = t;

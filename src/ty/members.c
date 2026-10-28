@@ -4563,7 +4563,7 @@ static Prop const* modifiers_prop(Checker* me, Ty const* modifiers, Atom const* 
             // (An intersection member's too: `{ component: any } & { [prop: string]: any }` in react-transition-group's
             // TransitionGroupProps, which Pick then keeps `about?` optional from, mui-x's styled TransitionGroup)
             IndexInfo const* info = is_union && ((member->flags & TYF_OBJECT) || member->kind == TY_INTERSECTION) ?
-                ty_applicable_index_info(me, member, ty_prop_name_literal(me, name)) : nullptr;
+                ty_applicable_index_info_for_name(me, member, name) : nullptr;
             if (info) {
                 if (info->readonly) readonly |= PROP_READONLY;
                 continue;
@@ -4597,7 +4597,7 @@ static u32 composite_prop_key_state(Checker* me, Ty const* ty, Atom const* name,
             if (!part && is_union) {
                 Ty const* apparent = ty_apparent_type(me, member);
                 bool indexed = ((apparent->flags & TYF_OBJECT) || apparent->kind == TY_INTERSECTION) &&
-                    ty_applicable_index_info(me, apparent, ty_prop_name_literal(me, name));
+                    ty_applicable_index_info_for_name(me, apparent, name);
                 if (!indexed) return 0;
                 continue;
             }

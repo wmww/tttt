@@ -3322,6 +3322,7 @@ static inline u32 ty_key_flags(Ty const* index) {
     return flags;
 }
 IndexInfo const* ty_applicable_index_info(Checker* me, Ty const* object, Ty const* index); // Of an apparent type
+IndexInfo const* ty_applicable_index_info_for_name(Checker* me, Ty const* object, Atom const* name); // A union member's, see access.c
 void ty_check_export_equals_property_reference(Checker* me, struct IdentifierType const* identifier); // lower.c
 // The symbols baseline's symbol of a type reference to a property of what `export =` names (the type it is, the
 // global type a value-only one gives way to, the import itself when it is missing), null if not one (lower.c)

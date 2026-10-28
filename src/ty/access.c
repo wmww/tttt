@@ -136,6 +136,15 @@ static IndexInfo const* find_applicable_index_info(Checker* me, IndexInfo const*
     return nullptr;
 }
 
+// tsc's getApplicableIndexInfoForName of a union or intersection member without the property (createUnionOrIntersection
+// Property): a private name goes by its escaped symbol name (`__#1@#p`), a string, which a string index signature
+// takes, unlike an access of the member itself
+IndexInfo const* ty_applicable_index_info_for_name(Checker* me, Ty const* object, Atom const* name) {
+    Ty const* key = ty_prop_name_literal(me, name);
+    if (name->len && name->str[0] == '#' && name != checker_atom(me, atom_sv(name))) key = ty_intrinsic(me, TY_STRING);
+    return ty_applicable_index_info(me, object, key);
+}
+
 IndexInfo const* ty_applicable_index_info(Checker* me, Ty const* object, Ty const* index) {
     // (An intersection's are its members' intersected per key, see resolve_intersection_members())
     Members const* members = ty_members(me, object);
@@ -458,7 +467,10 @@ static Ty const* access_uncached(Checker* me, Ty const* object, Ty const* index,
         Ty const** parts = malloc(sizeof(Ty const*) * object->composite.types.len);
         Ty const* ret = nullptr;
         u32 len = 0;
-        bool missing = false, padded = false, literal_padded = false, found_in_some = false;
+        bool missing = false, padded = false, literal_padded = false, found_in_some = false, private_indexed = false;
+        bool private_key = index->kind == TY_LITERAL && (index->flags & TYF_STRING_LITERAL) && index->literal.string &&
+            index->literal.string->len && index->literal.string->str[0] == '#' &&
+            index->literal.string != checker_atom(me, atom_sv(index->literal.string));
         u64 padded_tuples = 0; // (bit i: parts[i] is a too short tuple's undefined)
         for (u32 i = 0; i < object->composite.types.len && !missing; i++) {
             Ty const* member = object->composite.types.data[i];
@@ -497,6 +509,14 @@ static Ty const* access_uncached(Checker* me, Ty const* object, Ty const* index,
                 padded = literal_padded = true;
             } else if (part) {
                 found_in_some = true;
+            } else if (private_key) {
+                // A private name reaches a member's string index signature through the union property, by its
+                // escaped name (tsc's createUnionOrIntersectionProperty, getApplicableIndexInfoForName of `__#1@#p`),
+                // though not when accessed on that member alone. One member's own property still has to make it
+                Ty const* apparent = ty_apparent_type(me, member);
+                IndexInfo const* info = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ?
+                    ty_applicable_index_info_for_name(me, apparent, index->literal.string) : nullptr;
+                if (info) part = info->value, private_indexed = true;
             }
             if (part) parts[len++] = part; else missing = true;
         }
@@ -523,7 +543,7 @@ static Ty const* access_uncached(Checker* me, Ty const* object, Ty const* index,
                 k++;
             }
         }
-        missing |= padded && !found_in_some;
+        missing |= (padded || private_indexed) && !found_in_some;
         if (!missing && len) ret = ty_union(me, parts, len, nullptr, (TyList){0});
         // (Padded for an object literal, it still takes a member with the property itself: with only index signatures
         // elsewhere, tsc's createUnionOrIntersectionProperty makes none, and the union's index signatures, which the
@@ -532,7 +552,7 @@ static Ty const* access_uncached(Checker* me, Ty const* object, Ty const* index,
         // Without a member's own property there is no union property: the union's own index signatures are read,
         // the key types every member has exactly, each member's of those (tsc's getUnionIndexInfos), not each
         // member's applicable one: `(Record<string, C> | (string[] & Record<string, C>))[number]` is C, not `string | C`
-        if (ret && !padded) {
+        if (ret && !padded && !private_indexed) {
             bool own = false;
             for (u32 i = 0; i < object->composite.types.len && !own; i++) {
                 Ty const* member = object->composite.types.data[i];

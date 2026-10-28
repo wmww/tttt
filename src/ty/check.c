@@ -234,7 +234,7 @@ static Prop const* target_prop_of(Checker* me, Ty const* target, Atom const* nam
         if (!prop && target->kind == TY_UNION) {
             Ty const* member = ty_apparent_type(me, target->composite.types.data[i]);
             if (!(member->flags & (TYF_OBJECT | TYF_INTERSECTION)) ||
-                !ty_applicable_index_info(me, member, ty_prop_name_literal(me, name))
+                !ty_applicable_index_info_for_name(me, member, name)
             ) {
                 return nullptr;
             }
@@ -1832,7 +1832,9 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
         error_sub_error_s(error, (Span){0}, never_code, never_message);
     }
     // (Not of an enum: a primitive, tsc's reportNonexistentProperty)
-    if (error && !destructured && object->kind == TY_UNION && !(object->flags & TYF_BOOLEAN) && !ty_is_enum_union(object)) {
+    // (Nor of a private name: tsc's reportNonexistentProperty skips a PrivateIdentifier)
+    bool private_name = atom && atom->len && atom->str[0] == '#' && atom != checker_atom(me, atom_sv(atom));
+    if (error && !destructured && !private_name && object->kind == TY_UNION && !(object->flags & TYF_BOOLEAN) && !ty_is_enum_union(object)) {
         // Which member it is that lacks it
         for (u32 i = 0; i < object->composite.types.len; i++) {
             Ty const* member = object->composite.types.data[i];

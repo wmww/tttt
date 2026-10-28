@@ -313,8 +313,9 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
     if (!prop) {
         // (A member with an index signature for the name still has it: tsc's createUnionOrIntersectionProperty
         // counts it as WritePartial, no declarations, `(T[] | [T]).0`)
-        // (getApplicableIndexInfoForName: a template literal or symbol key too, `{ [k: `b${string}`]: 1 }` for `b`)
-        bool indexed = ty_applicable_index_info(checker, object, ty_prop_name_literal(checker, name)) != nullptr;
+        // (getApplicableIndexInfoForName: a template literal or symbol key too, `{ [k: `b${string}`]: 1 }` for `b`; a
+        // private name by its escaped name, a string: `(U | { [k: string]: T }).#p`)
+        bool indexed = ty_applicable_index_info_for_name(checker, object, name) != nullptr;
         // (An object literal's type without it too, unless widened or spread into: isObjectLiteralType without
         // ContainsSpread, `(o || {}).a`)
         if (ty_is_object_literal_without_spread(checker, object)) indexed = true;
