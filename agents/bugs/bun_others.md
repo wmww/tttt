@@ -350,7 +350,7 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
 - Async generators (04-C3b, 04-C3, 06-C1, 11-C1): a `yield`'s operand is awaited with it as the error node, TS1321
   (TS1322 for a `yield*`'s iterated elements) and TS1062 there; an async iterable's thenable-but-not-promise yield type
   stays itself (getIterationTypesOfIterableFast's `|| yieldType`, async-from-sync's is any); a yield with no awaited
-  type adds nothing to the generator's yield type (never). [fixed COMMIT] tsgo 7.1 panics (nil message in
+  type adds nothing to the generator's yield type (never). [fixed 48bc7b701] tsgo 7.1 panics (nil message in
   getAsyncFromSyncIterationTypes' getAwaitedTypeEx, and the async-iterable fast path's) on `yield* [nc]` and
   `for await (const x of ai)` with a thenable that isn't a promise (NoCb): not in the repro. [tsgo]
 
