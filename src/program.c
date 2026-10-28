@@ -169,6 +169,9 @@ typedef struct Program {
     // tsc's getPackagesMap: the package name of every module resolution that found a file of a package, whether one of
     // them was a declaration file
     HMapPackageFlag packages;
+    // The name program_load_module_ref_inner() last made sure of in packages, a resolver's (its characters), and its flag
+    char const* last_package_name;
+    bool last_package_dts;
     Checker* checker; // Created by program_make_current(), checks the first share of the files
     Checker** checkers; // malloc'd, checker_count of them once typechecked: checker and the others
     // --shared-graph: checkers retired after a shadowed file (graph_fresh_worker()), dropped with the others
@@ -761,7 +764,7 @@ static thread_local struct { char const* buf; isize size; csview canonical; } ca
 
 // The last source_files_map lookup by a view whose characters are at buf (the loader asks for one path two or three
 // times per import: whether it's new, then to add it). Forgotten at every insert
-static thread_local struct { Program const* program; char const* buf; isize size; SourceFile* found; } lookup_memo;
+static thread_local struct { u32 program; char const* buf; isize size; SourceFile* found; } lookup_memo; // (program: its serial)
 
 typedef struct SourceFile SourceFile;
 static SourceFile* program_lookup_canonical(Program const* me, csview canonical);
@@ -1091,9 +1094,16 @@ static void program_load_module_ref_inner(Program* me, SourceFile* source, Modul
         else error_ctx_global_error_s(my errs, code, message);
         cstr_drop(&shown);
     }
-    if (cstr_size(&resolved.package_name)) {
-        auto entry = hmap_package_flag_insert(&my packages, cstr_clone(resolved.package_name), 0);
-        if (resolved.kind == RESOLVED_DTS) entry.ref->second = 1;
+    // (The resolver's resolution, not a copy: its name's characters stay put, so the same buffer is the same name, and
+    // a name met again needs nothing, a declaration file's flag once set stays)
+    bool same_package = !owned && cstr_str(&resolved.package_name) == my last_package_name &&
+        (resolved.kind != RESOLVED_DTS || my last_package_dts);
+    if (cstr_size(&resolved.package_name) && !same_package) {
+        auto found = hmap_package_flag_get_mut(&my packages, cstr_sv(&resolved.package_name));
+        PackageFlag* flag = found ? &found->second : &hmap_package_flag_insert(&my packages, cstr_clone(resolved.package_name), 0).ref->second;
+        if (resolved.kind == RESOLVED_DTS) *flag = 1;
+        my last_package_name = owned ? nullptr : cstr_str(&resolved.package_name);
+        my last_package_dts = *flag;
     }
     if (program_options_of(me, source)->no_resolve) {
         // Nothing is added to the program, but a name may still mean a file that is part of it (the file's own options:
@@ -1145,10 +1155,12 @@ static void program_load_module_ref_inner(Program* me, SourceFile* source, Modul
 
 static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* ref) {
     program_load_module_ref_inner(me, source, ref);
-    // (The hint is good for this resolution only: its path may be freed, and the address reused, after loading)
+    // (The hint is good for this resolution only: its path may be freed, and the address reused, after loading. The
+    // lookup memo's view is the resolver's path then, which stays put as long as the program's resolver: it stays until
+    // the next insert, for the file's next import of the same file, unless the path was a copy, program_redirects())
     canonical_hint.buf = nullptr;
     canonical_hint.size = 0;
-    lookup_memo.buf = nullptr;
+    if (my redirects) lookup_memo.buf = nullptr;
 }
 
 // The same version of a package installed twice is one package (tsc's packageIdToSourceFile), unless
@@ -1987,6 +1999,8 @@ static void program_note_loaded(Program* me, SourceFile* file) {
         vec_source_file_ptr_push(&my load_roots, file);
         return;
     }
+    // (A file importing one file over and over: the walk of the children, collect_walk(), takes it the first time only)
+    if (parent->load_child_count && parent->load_children[parent->load_child_count - 1] == file) return;
     if (parent->load_child_count == parent->load_child_cap) {
         parent->load_child_cap = parent->load_child_cap ? parent->load_child_cap * 2 : 4;
         parent->load_children = realloc(parent->load_children, sizeof(SourceFile*) * parent->load_child_cap);
@@ -2010,14 +2024,14 @@ static void record_include_reason(Program* me, SourceFile* file) {
 }
 
 static SourceFile* program_lookup_canonical(Program const* me, csview canonical) {
-    if (lookup_memo.buf && lookup_memo.buf == canonical.buf && lookup_memo.size == canonical.size && lookup_memo.program == me) {
+    if (lookup_memo.buf && lookup_memo.buf == canonical.buf && lookup_memo.size == canonical.size && lookup_memo.program == my serial) {
         return lookup_memo.found;
     }
     auto found = hmap_box_source_file_get(&my source_files_map, canonical);
     SourceFile* ret = found ? found->second.get : nullptr;
     // (Only during loading, and for a view the hint gave: a resolution's characters, which stay put until then)
     if (my phase == PROGRAM_PHASE_LOADING && canonical_hint.buf && canonical.buf == canonical_hint.canonical.buf) {
-        lookup_memo.program = me;
+        lookup_memo.program = my serial;
         lookup_memo.buf = canonical.buf;
         lookup_memo.size = canonical.size;
         lookup_memo.found = ret;
