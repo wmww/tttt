@@ -15666,6 +15666,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         VecExpr between = {0};
         if (parse_decorators(&q, &between)) {
             hop_whitespace(&q);
+            char const* default_at = q.pos;
             Parser c = parser(&q);
             bool is_default = hop_start_if_ends_on_word_break(&c, "default");
             hop_whitespace(&c);
@@ -15676,11 +15677,17 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 Span first = span_make(p.shared->source, at, span_end_ptr(expr_outer_span(vec_expr_at(&between, 0))));
                 // (Another default export, `export @dec default function f() {}`, is TS1206 below, at the same `@`)
                 if (default_class && p.shared->source->is_js) js_syntax_error(&p, first, 1206, "Decorators are not valid here.");
-                else if (default_class) grammar_error(&p, first, 1206, "Decorators are not valid here.");
+                // (Not in a namespace, where checkGrammarModifiers' `default` says TS1319 first, see below)
+                else if (default_class && !(toplevel && p.shared->in_namespace_body && p.shared->statement_parent == MODIFIED_IN_MODULE_BLOCK)) {
+                    grammar_error(&p, first, 1206, "Decorators are not valid here.");
+                }
                 if (vec_expr_is_empty(&decorators)) decorators_span = first;
                 for_each (i, vec_expr, &between) vec_expr_push(&decorators, *i);
                 between.size = 0;
                 modifiers.includes[MODIFIER_EXPORT_DEFAULT] = true;
+                // (The `default` is a modifier like any, which the modifier checks see: TS1319 in a namespace)
+                vec_spanned_modifier_push(&modifiers.spanned, (SpannedModifier){ .tag = MODIFIER_EXPORT_DEFAULT,
+                    .span = span_make(p.shared->source, default_at, default_at + strlen("default")) });
             } else {
                 parse_fail(&c);
                 parse_fail(&q);
@@ -15911,7 +15918,8 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         // checkGrammarModuleElementContext's TS1232 comes first and ends the check)
         bool misplaced = ret->tag == STATEMENT_IMPORT_EXPORT && p.shared->statement_parent == MODIFIED_IN_OTHER &&
             !ret->import_export->main.is_require;
-        bool decorators_invalid = !vec_expr_is_empty(&decorators) && !misplaced;
+        // (Nor on an `export as namespace`, whose modifiers the checker never checks: the binder's TS1184 alone)
+        bool decorators_invalid = !vec_expr_is_empty(&decorators) && !misplaced && modified.kind != MODIFIED_NAMESPACE_EXPORT;
         if (decorators_invalid) {
             grammar_error(&p, span_make(p.shared->source, decorators_span.buf, decorators_span.buf + 1), 1206,
                 "Decorators are not valid here.");
@@ -15970,7 +15978,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         return parse_fail(&p);
     }
     p.shared->in_ambient = outer_ambient;
-    check_modifiers(&p, &modifiers, modified);
+    bool modifiers_reported = check_modifiers(&p, &modifiers, modified);
     js_syntax_declaration(&p, mark, a.start, keyword, ret);
 
     if (!vec_expr_is_empty(&decorators)) {
@@ -15984,7 +15992,10 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 Span trailing_span = span_make(p.shared->source, at, span_end_ptr(trailing));
                 cstr message = cstr_from("Decorators may not appear after 'export' or 'export default' if they also appear before 'export'.");
                 // (In JavaScript one of tsc's getJSSyntacticDiagnosticsForFile, whatever else the file has)
-                Error* error = !p.shared->source->is_js ? grammar_error_s(&p, trailing_span, 8038, message) :
+                // (checkGrammarModifiers stops at its first complaint: one about a modifier before the trailing
+                // decorators, `@a export export @b class`'s TS1030, is all it says)
+                Error* error = !p.shared->source->is_js ? (modifiers_reported ? (cstr_drop(&message), nullptr) :
+                        grammar_error_s(&p, trailing_span, 8038, message)) :
                     reports_js_syntax(&p) ? add_error_to_parser(&p, (Error){ .message = message, .span = trailing_span,
                         .ts_code = 8038, .phase = ERROR_PHASE_PARSE }) : (cstr_drop(&message), nullptr);
                 if (error) {

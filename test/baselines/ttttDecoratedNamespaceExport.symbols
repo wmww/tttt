@@ -1,0 +1,14 @@
+//// [test/cases/ttttDecoratedNamespaceExport.ts] ////
+
+=== a.ts ===
+declare function dec(...a: any[]): any;
+>dec : Symbol(dec, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 21))
+
+@dec export as namespace X;
+>dec : Symbol(dec, Decl(a.ts, 0, 0))
+
+=== b.js ===
+@dec export as namespace Y;
+>dec : Symbol(dec, Decl(a.ts, 0, 0))
+

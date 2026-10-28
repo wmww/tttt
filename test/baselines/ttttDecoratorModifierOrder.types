@@ -1,0 +1,63 @@
+//// [test/cases/ttttDecoratorModifierOrder.ts] ////
+
+=== ttttDecoratorModifierOrder.ts ===
+declare const a: any, b: any;
+>a : any
+>b : any
+
+@a export export @b class C1 {}
+>a : any
+>b : any
+>C1 : C1
+
+@a public export @b class C2 {}
+>a : any
+>b : any
+>C2 : C2
+
+@a declare export @b class C3 {}
+>a : any
+>b : any
+>C3 : C3
+
+function f() { @a export @b class C4 {} }
+>f : () => void
+>a : any
+>b : any
+>C4 : C4
+
+namespace N { export @a default class C5 {} }
+>N : typeof N
+>a : any
+>C5 : C5
+
+namespace M { @a export default @b class C6 {} }
+>M : typeof M
+>a : any
+>b : any
+>C6 : C6
+
+namespace N2 { export @a default class C5 {} }
+>N2 : typeof N2
+>a : any
+>C5 : C5
+
+export @a default class C6b {}
+>a : any
+>C6b : C6b
+
+namespace M { export @a class C7 {} }
+>M : typeof M
+>a : any
+>C7 : C7
+
+declare namespace Q2 { export @a default class C8 {} }
+>Q2 : typeof Q2
+>a : any
+>C8 : C8
+
+declare module "x" { export @a default class C9 {} }
+>"x" : typeof import("x")
+>a : any
+>C9 : C9
+

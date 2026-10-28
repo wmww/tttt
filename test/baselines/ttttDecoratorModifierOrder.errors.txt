@@ -1,0 +1,50 @@
+ttttDecoratorModifierOrder.ts(2,11): error TS1030: 'export' modifier already seen.
+ttttDecoratorModifierOrder.ts(3,4): error TS1044: 'public' modifier cannot appear on a module or namespace element.
+ttttDecoratorModifierOrder.ts(4,12): error TS1029: 'export' modifier must precede 'declare' modifier.
+ttttDecoratorModifierOrder.ts(5,19): error TS1184: Modifiers cannot appear here.
+ttttDecoratorModifierOrder.ts(6,25): error TS1319: A default export can only be used in an ECMAScript-style module.
+ttttDecoratorModifierOrder.ts(7,25): error TS1319: A default export can only be used in an ECMAScript-style module.
+ttttDecoratorModifierOrder.ts(9,26): error TS1319: A default export can only be used in an ECMAScript-style module.
+ttttDecoratorModifierOrder.ts(10,8): error TS1206: Decorators are not valid here.
+ttttDecoratorModifierOrder.ts(12,34): error TS1319: A default export can only be used in an ECMAScript-style module.
+ttttDecoratorModifierOrder.ts(13,16): error TS2664: Invalid module name in augmentation, module 'x' cannot be found.
+ttttDecoratorModifierOrder.ts(13,29): error TS1206: Decorators are not valid here.
+
+
+==== ttttDecoratorModifierOrder.ts (11 errors) ====
+    declare const a: any, b: any;
+    @a export export @b class C1 {}
+              ~~~~~~
+!!! error TS1030: 'export' modifier already seen.
+    @a public export @b class C2 {}
+       ~~~~~~
+!!! error TS1044: 'public' modifier cannot appear on a module or namespace element.
+    @a declare export @b class C3 {}
+               ~~~~~~
+!!! error TS1029: 'export' modifier must precede 'declare' modifier.
+    function f() { @a export @b class C4 {} }
+                      ~~~~~~
+!!! error TS1184: Modifiers cannot appear here.
+    namespace N { export @a default class C5 {} }
+                            ~~~~~~~
+!!! error TS1319: A default export can only be used in an ECMAScript-style module.
+    namespace M { @a export default @b class C6 {} }
+                            ~~~~~~~
+!!! error TS1319: A default export can only be used in an ECMAScript-style module.
+    
+    namespace N2 { export @a default class C5 {} }
+                             ~~~~~~~
+!!! error TS1319: A default export can only be used in an ECMAScript-style module.
+    export @a default class C6b {}
+           ~~
+!!! error TS1206: Decorators are not valid here.
+    namespace M { export @a class C7 {} }
+    declare namespace Q2 { export @a default class C8 {} }
+                                     ~~~~~~~
+!!! error TS1319: A default export can only be used in an ECMAScript-style module.
+    declare module "x" { export @a default class C9 {} }
+                   ~~~
+!!! error TS2664: Invalid module name in augmentation, module 'x' cannot be found.
+                                ~~
+!!! error TS1206: Decorators are not valid here.
+    

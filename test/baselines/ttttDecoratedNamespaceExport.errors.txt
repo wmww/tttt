@@ -1,0 +1,20 @@
+a.ts(2,1): error TS1184: Modifiers cannot appear here.
+a.ts(2,1): error TS1314: Global module exports may only appear in module files.
+b.js(1,1): error TS1184: Modifiers cannot appear here.
+b.js(1,1): error TS1314: Global module exports may only appear in module files.
+
+
+==== a.ts (2 errors) ====
+    declare function dec(...a: any[]): any;
+    @dec export as namespace X;
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1184: Modifiers cannot appear here.
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1314: Global module exports may only appear in module files.
+==== b.js (2 errors) ====
+    @dec export as namespace Y;
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1184: Modifiers cannot appear here.
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1314: Global module exports may only appear in module files.
+    

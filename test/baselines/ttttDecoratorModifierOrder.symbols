@@ -1,0 +1,63 @@
+//// [test/cases/ttttDecoratorModifierOrder.ts] ////
+
+=== ttttDecoratorModifierOrder.ts ===
+declare const a: any, b: any;
+>a : Symbol(a, Decl(ttttDecoratorModifierOrder.ts, 0, 13))
+>b : Symbol(b, Decl(ttttDecoratorModifierOrder.ts, 0, 21))
+
+@a export export @b class C1 {}
+>a : Symbol(a, Decl(ttttDecoratorModifierOrder.ts, 0, 13))
+>b : Symbol(b, Decl(ttttDecoratorModifierOrder.ts, 0, 21))
+>C1 : Symbol(C1, Decl(ttttDecoratorModifierOrder.ts, 0, 29))
+
+@a public export @b class C2 {}
+>a : Symbol(a, Decl(ttttDecoratorModifierOrder.ts, 0, 13))
+>b : Symbol(b, Decl(ttttDecoratorModifierOrder.ts, 0, 21))
+>C2 : Symbol(C2, Decl(ttttDecoratorModifierOrder.ts, 1, 31))
+
+@a declare export @b class C3 {}
+>a : Symbol(a, Decl(ttttDecoratorModifierOrder.ts, 0, 13))
+>b : Symbol(b, Decl(ttttDecoratorModifierOrder.ts, 0, 21))
+>C3 : Symbol(C3, Decl(ttttDecoratorModifierOrder.ts, 2, 31))
+
+function f() { @a export @b class C4 {} }
+>f : Symbol(f, Decl(ttttDecoratorModifierOrder.ts, 3, 32))
+>a : Symbol(a, Decl(ttttDecoratorModifierOrder.ts, 0, 13))
+>b : Symbol(b, Decl(ttttDecoratorModifierOrder.ts, 0, 21))
+>C4 : Symbol(C4, Decl(ttttDecoratorModifierOrder.ts, 4, 14))
+
+namespace N { export @a default class C5 {} }
+>N : Symbol(N, Decl(ttttDecoratorModifierOrder.ts, 4, 41))
+>a : Symbol(a, Decl(ttttDecoratorModifierOrder.ts, 0, 13))
+>C5 : Symbol(C5, Decl(ttttDecoratorModifierOrder.ts, 5, 13))
+
+namespace M { @a export default @b class C6 {} }
+>M : Symbol(M, Decl(ttttDecoratorModifierOrder.ts, 5, 45), Decl(ttttDecoratorModifierOrder.ts, 9, 30))
+>a : Symbol(a, Decl(ttttDecoratorModifierOrder.ts, 0, 13))
+>b : Symbol(b, Decl(ttttDecoratorModifierOrder.ts, 0, 21))
+>C6 : Symbol(C6, Decl(ttttDecoratorModifierOrder.ts, 6, 13))
+
+namespace N2 { export @a default class C5 {} }
+>N2 : Symbol(N2, Decl(ttttDecoratorModifierOrder.ts, 6, 48))
+>a : Symbol(a, Decl(ttttDecoratorModifierOrder.ts, 0, 13))
+>C5 : Symbol(C5, Decl(ttttDecoratorModifierOrder.ts, 8, 14))
+
+export @a default class C6b {}
+>a : Symbol(a, Decl(ttttDecoratorModifierOrder.ts, 0, 13))
+>C6b : Symbol(C6b, Decl(ttttDecoratorModifierOrder.ts, 8, 46))
+
+namespace M { export @a class C7 {} }
+>M : Symbol(M, Decl(ttttDecoratorModifierOrder.ts, 5, 45), Decl(ttttDecoratorModifierOrder.ts, 9, 30))
+>a : Symbol(a, Decl(ttttDecoratorModifierOrder.ts, 0, 13))
+>C7 : Symbol(C7, Decl(ttttDecoratorModifierOrder.ts, 10, 13))
+
+declare namespace Q2 { export @a default class C8 {} }
+>Q2 : Symbol(Q2, Decl(ttttDecoratorModifierOrder.ts, 10, 37))
+>a : Symbol(a, Decl(ttttDecoratorModifierOrder.ts, 0, 13))
+>C8 : Symbol(C8, Decl(ttttDecoratorModifierOrder.ts, 11, 22))
+
+declare module "x" { export @a default class C9 {} }
+>"x" : Symbol("x", Decl(ttttDecoratorModifierOrder.ts, 11, 54))
+>a : Symbol(a, Decl(ttttDecoratorModifierOrder.ts, 0, 13))
+>C9 : Symbol(C9, Decl(ttttDecoratorModifierOrder.ts, 12, 20))
+

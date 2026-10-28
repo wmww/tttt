@@ -334,7 +334,11 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
   when there is none). [fixed 626720e67]
 - `({ @dec b }) => 1` (53-L16b): a speculative arrow function's parameter list skips what isn't a parameter after the
   first one, and a missing `)` ends it (tsc's parseParenthesizedArrowFunctionExpression without allowAmbiguity).
-  [fixed COMMIT]
+  [fixed c0104fc3d]
+- Decorator modifier order (57-L01, 57-L02a, 80-R07): checkGrammarModifiers stops at its first complaint (no TS8038
+  after a leading modifier error), `export @a default class` in a namespace is TS1319 at `default` (the `default`
+  after decorators is a modifier the checks see), and an `export as namespace`'s decorators are the binder's TS1184
+  alone. [fixed COMMIT]
 
 ## Not looked at, by code
 - Each paragraph below is a code and direction with the cases it mismatches in, uninvestigated: at least one open
@@ -837,9 +841,6 @@ module '…'. '…' implicitly has an '…' type".
 
 +TS7031 (spurious), 2 cases: 51-L19b, 78-R20b. First: 51-L19b a.ts:1 "Binding element '…' implicitly has an '…'
 type.".
-
-+TS8038 (spurious), 2 cases: 57-L01, 57-L02a. First: 57-L01 a.ts:2 "Decorators may not appear after '…' or '…' if they
-also appear before '…'.".
 
 +TS18033 (spurious), 2 cases: 52-L15b, 99-V4. First: 52-L15b a.ts:2 "Type '…' is not assignable to type '…' as
 required for computed enum member valu".

@@ -1,0 +1,16 @@
+//// [test/cases/ttttDecoratedNamespaceExport.ts] ////
+
+=== a.ts ===
+declare function dec(...a: any[]): any;
+>dec : (...a: any[]) => any
+>a : any[]
+
+@dec export as namespace X;
+>dec : (...a: any[]) => any
+>X : any
+
+=== b.js ===
+@dec export as namespace Y;
+>dec : (...a: any[]) => any
+>Y : any
+
