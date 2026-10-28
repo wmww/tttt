@@ -15355,6 +15355,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttLoopPartialArithmetic': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttLoopPartialEqualityChecks': {
         errors: true,
         symbols: true,
