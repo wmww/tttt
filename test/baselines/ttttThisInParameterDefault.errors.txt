@@ -1,0 +1,60 @@
+ttttThisInParameterDefault.ts(8,9): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+ttttThisInParameterDefault.ts(9,20): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+ttttThisInParameterDefault.ts(10,11): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+ttttThisInParameterDefault.ts(15,7): error TS2322: Type 'any' is not assignable to type 'never'.
+ttttThisInParameterDefault.ts(16,7): error TS2322: Type 'number' is not assignable to type 'never'.
+ttttThisInParameterDefault.ts(17,16): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+ttttThisInParameterDefault.ts(25,25): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+ttttThisInParameterDefault.ts(26,65): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+
+
+==== ttttThisInParameterDefault.ts (8 errors) ====
+    // `this` in a parameter's initializer (or a default in its pattern) of a function whose `this` it would be isn't that
+    // function's `this` (bun 99-V4 checkObjectLiteralMethod__01, checkPropertyAssignment__03...): tsc's tryGetThisTypeAt
+    // skips the function for isInParameterInitializerBeforeContainingFunction unless it has a `this` parameter, and an
+    // object literal method's contextual `this` never applies there: any, TS2683. Through an arrow function it does
+    export {}
+    const o = {
+      k: 1,
+      m(x = this.k) { return x; },
+            ~~~~
+!!! error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+!!! related TS2738 ttttThisInParameterDefault.ts:8:3: An outer value of 'this' is shadowed by this container.
+      n: function (y = this.k) { return y; },
+                       ~~~~
+!!! error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+!!! related TS2738 ttttThisInParameterDefault.ts:9:3: An outer value of 'this' is shadowed by this container.
+      p({ a = this.k }: { a?: number }) { return a; },
+              ~~~~
+!!! error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+!!! related TS2738 ttttThisInParameterDefault.ts:10:3: An outer value of 'this' is shadowed by this container.
+      q(this: { k: number }, z = this.k) { return z; },
+      r(w = () => this.k) { return w; },
+      s(v = (() => this.k)()) { return v; },
+    };
+    const probeM: never = o.m();
+          ~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const probeP: never = o.p({});
+          ~~~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+    function f(a = this) { return a; }
+                   ~~~~
+!!! error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+!!! related TS2738 ttttThisInParameterDefault.ts:17:10: An outer value of 'this' is shadowed by this container.
+    function g(this: { s: string }, b = this.s) { return b; }
+    class C {
+      k = 1;
+      m(x = this.k) { return x; }
+      static s = 1;
+      static sm(x = this.s) { return x; }
+    }
+    const h = function (c = this) { return c; };
+                            ~~~~
+!!! error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+!!! related TS2738 ttttThisInParameterDefault.ts:25:7: An outer value of 'this' is shadowed by this container.
+    const ctx: { k: number; m(x?: number): number } = { k: 1, m(x = this.k) { return x; } };
+                                                                    ~~~~
+!!! error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+!!! related TS2738 ttttThisInParameterDefault.ts:26:59: An outer value of 'this' is shadowed by this container.
+    

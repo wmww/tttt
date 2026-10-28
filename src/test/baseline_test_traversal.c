@@ -2232,6 +2232,7 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
         });
         return;
     }
+    if (my this_in_parameter_default) return; // (any: no symbol)
     Symbol const* symbol = my target;
     if (!symbol && my this_kind == THIS_ANY && identifier_this_function(me) && function_impl_paired_this(identifier_this_function(me))) {
         symbol = function_impl_paired_this(identifier_this_function(me))->initializer.binding.symbol;

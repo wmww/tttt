@@ -1579,6 +1579,7 @@ static Ty const* type_of_dotted_name_resolving(Checker* me, Expr const* expr, Re
             // contextual signature's `this` parameter gave the function once it was contextually typed (tsc's
             // assignContextualParameterTypes sets the signature's thisParameter), not one a call inferring now fixes
             ThisKind kind = expr->identifier.this_kind;
+            if (kind == THIS_ANY && expr->identifier.this_in_parameter_default) return nullptr;
             if (kind == THIS_ANY && identifier_this_function(&expr->identifier)) {
                 u64 this_key[2] = { KEY_CONTEXT_THIS, (u64)(uintptr_t)identifier_this_function(&expr->identifier) };
                 return intern_get(&my links, this_key, 2);

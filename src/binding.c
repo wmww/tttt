@@ -163,9 +163,10 @@ void binding_lookup_names(Binding* me, Scope* names, ErrorCtx* errs) {
     if (my default_value) {
         // In a parameter's pattern the default is the element's own (tsc's associatedDeclarationForContainingInitializer)
         Binding const* saved = scope_flow(names) ? scope_flow(names)->parameter_initializing : nullptr;
-        if (saved) scope_flow(names)->parameter_initializing = me;
+        bool saved_default = saved ? scope_flow(names)->in_parameter_default : false;
+        if (saved) scope_flow(names)->parameter_initializing = me, scope_flow(names)->in_parameter_default = true;
         expr_lookup_names_initializer(my default_value, names, errs);
-        if (saved) scope_flow(names)->parameter_initializing = saved;
+        if (saved) scope_flow(names)->parameter_initializing = saved, scope_flow(names)->in_parameter_default = saved_default;
     }
     switch (my tag) {
         case BINDING_NOOP: break;
@@ -869,7 +870,10 @@ void initialized_binding_lookup_names_parameter(InitializedBinding* me, Scope* n
     flow->contextual_depth += my binding.has_explicit_type;
     uintptr_t outer_root = flow->context_root;
     flow->context_root = context_root_make(me, CONTEXT_ROOT_BINDING);
+    bool saved_default = flow->in_parameter_default;
+    flow->in_parameter_default = true;
     if (my value) expr_lookup_names_initializer(my value, names, value_unchecked ? binder_discarded_errs(names->binder) : errs);
+    flow->in_parameter_default = saved_default;
     flow->context_root = outer_root;
     flow->contextual_depth -= my binding.has_explicit_type;
     flow->parameter_initializing = saved;

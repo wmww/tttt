@@ -1,0 +1,153 @@
+//// [test/cases/ttttThisInParameterDefault.ts] ////
+
+=== ttttThisInParameterDefault.ts ===
+// `this` in a parameter's initializer (or a default in its pattern) of a function whose `this` it would be isn't that
+// function's `this` (bun 99-V4 checkObjectLiteralMethod__01, checkPropertyAssignment__03...): tsc's tryGetThisTypeAt
+// skips the function for isInParameterInitializerBeforeContainingFunction unless it has a `this` parameter, and an
+// object literal method's contextual `this` never applies there: any, TS2683. Through an arrow function it does
+export {}
+const o = {
+>o : { k: number; m(x?: any): any; n: (y?: any) => any; p({ a }: { a?: number; }): number; q(this: { k: number; }, z?: number): number; r(w?: () => number): () => number; s(v?: number): number; }
+>{  k: 1,  m(x = this.k) { return x; },  n: function (y = this.k) { return y; },  p({ a = this.k }: { a?: number }) { return a; },  q(this: { k: number }, z = this.k) { return z; },  r(w = () => this.k) { return w; },  s(v = (() => this.k)()) { return v; },} : { k: number; m(x?: any): any; n: (y?: any) => any; p({ a }: { a?: number; }): number; q(this: { k: number; }, z?: number): number; r(w?: () => number): () => number; s(v?: number): number; }
+
+  k: 1,
+>k : number
+>1 : 1
+
+  m(x = this.k) { return x; },
+>m : (x?: any) => any
+>x : any
+>this.k : any
+>this : any
+>k : any
+>x : any
+
+  n: function (y = this.k) { return y; },
+>n : (y?: any) => any
+>function (y = this.k) { return y; } : (y?: any) => any
+>y : any
+>this.k : any
+>this : any
+>k : any
+>y : any
+
+  p({ a = this.k }: { a?: number }) { return a; },
+>p : ({ a }: { a?: number; }) => number
+>a : number
+>this.k : any
+>this : any
+>k : any
+>a : number | undefined
+>a : number
+
+  q(this: { k: number }, z = this.k) { return z; },
+>q : (this: { k: number; }, z?: number) => number
+>this : { k: number; }
+>k : number
+>z : number
+>this.k : number
+>this : { k: number; }
+>k : number
+>z : number
+
+  r(w = () => this.k) { return w; },
+>r : (w?: () => number) => () => number
+>w : () => number
+>() => this.k : () => number
+>this.k : number
+>this : { k: number; m(x?: any): any; n: (y?: any) => any; p({ a }: { a?: number; }): number; q(this: { k: number; }, z?: number): number; r(w?: () => number): () => number; s(v?: number): number; }
+>k : number
+>w : () => number
+
+  s(v = (() => this.k)()) { return v; },
+>s : (v?: number) => number
+>v : number
+>(() => this.k)() : number
+>(() => this.k) : () => number
+>() => this.k : () => number
+>this.k : number
+>this : { k: number; m(x?: any): any; n: (y?: any) => any; p({ a }: { a?: number; }): number; q(this: { k: number; }, z?: number): number; r(w?: () => number): () => number; s(v?: number): number; }
+>k : number
+>v : number
+
+};
+const probeM: never = o.m();
+>probeM : never
+>o.m() : any
+>o.m : (x?: any) => any
+>o : { k: number; m(x?: any): any; n: (y?: any) => any; p({ a }: { a?: number; }): number; q(this: { k: number; }, z?: number): number; r(w?: () => number): () => number; s(v?: number): number; }
+>m : (x?: any) => any
+
+const probeP: never = o.p({});
+>probeP : never
+>o.p({}) : number
+>o.p : ({ a }: { a?: number; }) => number
+>o : { k: number; m(x?: any): any; n: (y?: any) => any; p({ a }: { a?: number; }): number; q(this: { k: number; }, z?: number): number; r(w?: () => number): () => number; s(v?: number): number; }
+>p : ({ a }: { a?: number; }) => number
+>{} : {}
+
+function f(a = this) { return a; }
+>f : (a?: any) => any
+>a : any
+>this : any
+>a : any
+
+function g(this: { s: string }, b = this.s) { return b; }
+>g : (this: { s: string; }, b?: string) => string
+>this : { s: string; }
+>s : string
+>b : string
+>this.s : string
+>this : { s: string; }
+>s : string
+>b : string
+
+class C {
+>C : C
+
+  k = 1;
+>k : number
+>1 : 1
+
+  m(x = this.k) { return x; }
+>m : (x?: number) => number
+>x : number
+>this.k : number
+>this : this
+>k : number
+>x : number
+
+  static s = 1;
+>s : number
+>1 : 1
+
+  static sm(x = this.s) { return x; }
+>sm : (x?: number) => number
+>x : number
+>this.s : number
+>this : typeof C
+>s : number
+>x : number
+}
+const h = function (c = this) { return c; };
+>h : (c?: any) => any
+>function (c = this) { return c; } : (c?: any) => any
+>c : any
+>this : any
+>c : any
+
+const ctx: { k: number; m(x?: number): number } = { k: 1, m(x = this.k) { return x; } };
+>ctx : { k: number; m(x?: number): number; }
+>k : number
+>m : (x?: number) => number
+>x : number | undefined
+>{ k: 1, m(x = this.k) { return x; } } : { k: number; m(x?: number | undefined): number; }
+>k : number
+>1 : 1
+>m : (x?: number | undefined) => number
+>x : number | undefined
+>this.k : any
+>this : any
+>k : any
+>x : number
+

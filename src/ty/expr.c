@@ -2309,6 +2309,7 @@ Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identi
     switch (identifier->this_kind) {
         case THIS_NONE: break;
         case THIS_ANY: {
+            if (identifier->this_in_parameter_default) return any_type(me);
             FunctionArg const* paired_this = identifier_this_function(identifier) ? function_impl_paired_this(identifier_this_function(identifier)) : nullptr;
             if (paired_this) return ty_type_of_symbol(me, paired_this->initializer.binding.symbol);
             Ty const* contextual = identifier_this_function(identifier) ? ty_contextual_this_type(me, identifier_this_function(identifier)) : nullptr;
@@ -2679,7 +2680,7 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
         type = declared_type;
         if (identifier->this_kind == THIS_ANY) {
             FunctionImpl const* function = identifier_this_function(identifier);
-            if (!function || (!function_impl_paired_this(function) && !ty_contextual_this_type(me, function))) return type;
+            if (!function || identifier->this_in_parameter_default || (!function_impl_paired_this(function) && !ty_contextual_this_type(me, function))) return type;
         }
         return identifier->flow ? ty_flow_type(me, expr, type, type, identifier->flow) : type;
     }
@@ -3334,7 +3335,7 @@ static bool is_literal_this_declaration(BinaryOpExpr const* binary) {
     }
     Expr const* object = &binary->left.property->expr;
     IdentifierExpr const* this = expr_this_keyword(object);
-    FunctionImpl const* function = this && this->this_kind == THIS_ANY ? identifier_this_function(this) : nullptr;
+    FunctionImpl const* function = this && this->this_kind == THIS_ANY && !this->this_in_parameter_default ? identifier_this_function(this) : nullptr;
     SourceFile const* file = span_source(object->inner_span);
     return function && file && file->is_js && function_impl_rare(function)->this_literal && !function_impl_is_arrow(function) &&
         (span_valid(function_impl_member_name(function)) || function->accessor);

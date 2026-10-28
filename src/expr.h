@@ -89,6 +89,10 @@ typedef struct IdentifierExpr {
     // `this` of a function (THIS_ANY) inside a class member, a function with a `this` parameter or a CommonJS module:
     // TS2683 says the function shadows the outer `this` (tsc's checkThisExpression, tryGetThisTypeAt of the container)
     bool this_shadows_outer : 1;
+    // `this` (THIS_ANY) in a parameter's initializer or pattern default of its function, not through another function:
+    // that function's `this` isn't there yet and nothing else is, any and TS2683 (tsc's tryGetThisTypeAt skips the
+    // function for isInParameterInitializerBeforeContainingFunction; a `this` parameter would be THIS_PARAMETER)
+    bool this_in_parameter_default : 1;
     // What only some identifiers have, by what they are: read them with the accessors below, which know which one it is
     union {
         // `import("./a")` (the identifier is the `import` keyword) or the callee of `require("./a")` in JavaScript

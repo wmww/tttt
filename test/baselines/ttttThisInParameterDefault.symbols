@@ -1,0 +1,124 @@
+//// [test/cases/ttttThisInParameterDefault.ts] ////
+
+=== ttttThisInParameterDefault.ts ===
+// `this` in a parameter's initializer (or a default in its pattern) of a function whose `this` it would be isn't that
+// function's `this` (bun 99-V4 checkObjectLiteralMethod__01, checkPropertyAssignment__03...): tsc's tryGetThisTypeAt
+// skips the function for isInParameterInitializerBeforeContainingFunction unless it has a `this` parameter, and an
+// object literal method's contextual `this` never applies there: any, TS2683. Through an arrow function it does
+export {}
+const o = {
+>o : Symbol(o, Decl(ttttThisInParameterDefault.ts, 5, 5))
+
+  k: 1,
+>k : Symbol(k, Decl(ttttThisInParameterDefault.ts, 5, 11))
+
+  m(x = this.k) { return x; },
+>m : Symbol(m, Decl(ttttThisInParameterDefault.ts, 6, 7))
+>x : Symbol(x, Decl(ttttThisInParameterDefault.ts, 7, 4))
+>x : Symbol(x, Decl(ttttThisInParameterDefault.ts, 7, 4))
+
+  n: function (y = this.k) { return y; },
+>n : Symbol(n, Decl(ttttThisInParameterDefault.ts, 7, 30))
+>y : Symbol(y, Decl(ttttThisInParameterDefault.ts, 8, 15))
+>y : Symbol(y, Decl(ttttThisInParameterDefault.ts, 8, 15))
+
+  p({ a = this.k }: { a?: number }) { return a; },
+>p : Symbol(p, Decl(ttttThisInParameterDefault.ts, 8, 41))
+>a : Symbol(a, Decl(ttttThisInParameterDefault.ts, 9, 5))
+>a : Symbol(a, Decl(ttttThisInParameterDefault.ts, 9, 21))
+>a : Symbol(a, Decl(ttttThisInParameterDefault.ts, 9, 5))
+
+  q(this: { k: number }, z = this.k) { return z; },
+>q : Symbol(q, Decl(ttttThisInParameterDefault.ts, 9, 50))
+>this : Symbol(this, Decl(ttttThisInParameterDefault.ts, 10, 4))
+>k : Symbol(k, Decl(ttttThisInParameterDefault.ts, 10, 11))
+>z : Symbol(z, Decl(ttttThisInParameterDefault.ts, 10, 24))
+>this.k : Symbol(k, Decl(ttttThisInParameterDefault.ts, 10, 11))
+>this : Symbol(this, Decl(ttttThisInParameterDefault.ts, 10, 4))
+>k : Symbol(k, Decl(ttttThisInParameterDefault.ts, 10, 11))
+>z : Symbol(z, Decl(ttttThisInParameterDefault.ts, 10, 24))
+
+  r(w = () => this.k) { return w; },
+>r : Symbol(r, Decl(ttttThisInParameterDefault.ts, 10, 51))
+>w : Symbol(w, Decl(ttttThisInParameterDefault.ts, 11, 4))
+>this.k : Symbol(k, Decl(ttttThisInParameterDefault.ts, 5, 11))
+>this : Symbol(o, Decl(ttttThisInParameterDefault.ts, 5, 9))
+>k : Symbol(k, Decl(ttttThisInParameterDefault.ts, 5, 11))
+>w : Symbol(w, Decl(ttttThisInParameterDefault.ts, 11, 4))
+
+  s(v = (() => this.k)()) { return v; },
+>s : Symbol(s, Decl(ttttThisInParameterDefault.ts, 11, 36))
+>v : Symbol(v, Decl(ttttThisInParameterDefault.ts, 12, 4))
+>this.k : Symbol(k, Decl(ttttThisInParameterDefault.ts, 5, 11))
+>this : Symbol(o, Decl(ttttThisInParameterDefault.ts, 5, 9))
+>k : Symbol(k, Decl(ttttThisInParameterDefault.ts, 5, 11))
+>v : Symbol(v, Decl(ttttThisInParameterDefault.ts, 12, 4))
+
+};
+const probeM: never = o.m();
+>probeM : Symbol(probeM, Decl(ttttThisInParameterDefault.ts, 14, 5))
+>o.m : Symbol(m, Decl(ttttThisInParameterDefault.ts, 6, 7))
+>o : Symbol(o, Decl(ttttThisInParameterDefault.ts, 5, 5))
+>m : Symbol(m, Decl(ttttThisInParameterDefault.ts, 6, 7))
+
+const probeP: never = o.p({});
+>probeP : Symbol(probeP, Decl(ttttThisInParameterDefault.ts, 15, 5))
+>o.p : Symbol(p, Decl(ttttThisInParameterDefault.ts, 8, 41))
+>o : Symbol(o, Decl(ttttThisInParameterDefault.ts, 5, 5))
+>p : Symbol(p, Decl(ttttThisInParameterDefault.ts, 8, 41))
+
+function f(a = this) { return a; }
+>f : Symbol(f, Decl(ttttThisInParameterDefault.ts, 15, 30))
+>a : Symbol(a, Decl(ttttThisInParameterDefault.ts, 16, 11))
+>a : Symbol(a, Decl(ttttThisInParameterDefault.ts, 16, 11))
+
+function g(this: { s: string }, b = this.s) { return b; }
+>g : Symbol(g, Decl(ttttThisInParameterDefault.ts, 16, 34))
+>this : Symbol(this, Decl(ttttThisInParameterDefault.ts, 17, 11))
+>s : Symbol(s, Decl(ttttThisInParameterDefault.ts, 17, 18))
+>b : Symbol(b, Decl(ttttThisInParameterDefault.ts, 17, 31))
+>this.s : Symbol(s, Decl(ttttThisInParameterDefault.ts, 17, 18))
+>this : Symbol(this, Decl(ttttThisInParameterDefault.ts, 17, 11))
+>s : Symbol(s, Decl(ttttThisInParameterDefault.ts, 17, 18))
+>b : Symbol(b, Decl(ttttThisInParameterDefault.ts, 17, 31))
+
+class C {
+>C : Symbol(C, Decl(ttttThisInParameterDefault.ts, 17, 57))
+
+  k = 1;
+>k : Symbol(C.k, Decl(ttttThisInParameterDefault.ts, 18, 9))
+
+  m(x = this.k) { return x; }
+>m : Symbol(C.m, Decl(ttttThisInParameterDefault.ts, 19, 8))
+>x : Symbol(x, Decl(ttttThisInParameterDefault.ts, 20, 4))
+>this.k : Symbol(C.k, Decl(ttttThisInParameterDefault.ts, 18, 9))
+>this : Symbol(C, Decl(ttttThisInParameterDefault.ts, 17, 57))
+>k : Symbol(C.k, Decl(ttttThisInParameterDefault.ts, 18, 9))
+>x : Symbol(x, Decl(ttttThisInParameterDefault.ts, 20, 4))
+
+  static s = 1;
+>s : Symbol(C.s, Decl(ttttThisInParameterDefault.ts, 20, 29))
+
+  static sm(x = this.s) { return x; }
+>sm : Symbol(C.sm, Decl(ttttThisInParameterDefault.ts, 21, 15))
+>x : Symbol(x, Decl(ttttThisInParameterDefault.ts, 22, 12))
+>this.s : Symbol(C.s, Decl(ttttThisInParameterDefault.ts, 20, 29))
+>this : Symbol(C, Decl(ttttThisInParameterDefault.ts, 17, 57))
+>s : Symbol(C.s, Decl(ttttThisInParameterDefault.ts, 20, 29))
+>x : Symbol(x, Decl(ttttThisInParameterDefault.ts, 22, 12))
+}
+const h = function (c = this) { return c; };
+>h : Symbol(h, Decl(ttttThisInParameterDefault.ts, 24, 5))
+>c : Symbol(c, Decl(ttttThisInParameterDefault.ts, 24, 20))
+>c : Symbol(c, Decl(ttttThisInParameterDefault.ts, 24, 20))
+
+const ctx: { k: number; m(x?: number): number } = { k: 1, m(x = this.k) { return x; } };
+>ctx : Symbol(ctx, Decl(ttttThisInParameterDefault.ts, 25, 5))
+>k : Symbol(k, Decl(ttttThisInParameterDefault.ts, 25, 12))
+>m : Symbol(m, Decl(ttttThisInParameterDefault.ts, 25, 23))
+>x : Symbol(x, Decl(ttttThisInParameterDefault.ts, 25, 26))
+>k : Symbol(k, Decl(ttttThisInParameterDefault.ts, 25, 51))
+>m : Symbol(m, Decl(ttttThisInParameterDefault.ts, 25, 57))
+>x : Symbol(x, Decl(ttttThisInParameterDefault.ts, 25, 60))
+>x : Symbol(x, Decl(ttttThisInParameterDefault.ts, 25, 60))
+

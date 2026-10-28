@@ -202,6 +202,9 @@ typedef struct FlowBuilder {
     // of its function: it can't use itself (TS2372) or what that scope declares after it (TS2373)
     Binding const* parameter_initializing;
     Scope const* parameter_function_scope;
+    // Walking a parameter's initializer or a default in its pattern (not its computed names, not a nested function's
+    // walk): a `this` there isn't its function's (tsc's isInParameterInitializerBeforeContainingFunction)
+    bool in_parameter_default;
     // Evaluated with the class: a field's initializer or a `static {}` block's expression statement (tsc's
     // isInPropertyInitializerOrClassStaticBlock), where a property can be read before it is initialized (TS2729).
     // Functions (and the computed names of methods, which are in them for tsc) don't count

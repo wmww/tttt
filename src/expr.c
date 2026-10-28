@@ -614,6 +614,8 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
                 ThisRef outer_ref = container && container->parent ? scope_get_this(container->parent, false) : (ThisRef){0};
                 ThisKind outer = outer_ref.kind;
                 my this_shadows_outer = outer == THIS_CLASS_INSTANCE || outer == THIS_CLASS_STATIC || outer == THIS_PARAMETER;
+                FlowBuilder const* flow = scope_flow(names);
+                my this_in_parameter_default = flow && flow->in_parameter_default && flow->parameter_function_scope == container;
                 if (!outer && container && container->parent) {
                     // At the top level: a module's `this` (undefined, or what a CommonJS module exports) isn't globalThis
                     // (tsc's tryGetThisTypeAt of the container)
@@ -941,7 +943,8 @@ void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
     }
     // `this` in a function nothing says the `this` of (tsc's checkThisExpression)
     if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind == THIS_ANY && compiler_options()->no_implicit_this &&
-        !(identifier_this_function(me) && ty_contextual_this_type(current_checker, identifier_this_function(me)))
+        (my this_in_parameter_default ||
+            !(identifier_this_function(me) && ty_contextual_this_type(current_checker, identifier_this_function(me))))
     ) {
         Error* e = error_ctx_error_d(errs, identifier_expr_name(me), 2683, "'this' implicitly has type 'any' because it does not have a type annotation.");
         FunctionImpl const* outer = identifier_this_function(me) ? function_impl_rare(identifier_this_function(me))->outer_this_function : nullptr;
