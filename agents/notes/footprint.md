@@ -83,7 +83,7 @@ effect ~911->896, vscode 5.42->5.38 GB. Wall K1, interleaved best of 5 at load 7
 0.80->0.78, others equal within 10 ms.
 
 ## What remains is structural (estimates from the census)
-1. **Per-instance members** (bun's shared shape): instantiated Props, Members, Signatures, SigResolved and params are
+1. **Per-instance members** (bun's shared shape; the design and its staging: notes/type_graph_design.md): instantiated Props, Members, Signatures, SigResolved and params are
    ~45% of imm's arena, ~40% of zod's, ~30% of drizzle's. Lazily instantiated member types keyed by (prop, mapper)
    would take most of it, and instantiate_members()'s walk of the source props. Not a stint: Prop identity is
    everywhere (prop_type() caches in the Prop, relations and display compare props by pointer, ~850 `decl` reads).
