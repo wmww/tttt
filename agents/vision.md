@@ -8,6 +8,29 @@ faster; correctness is never traded. Completeness first in the sense that nothin
 be fast or can't be complete. The suite's baselines are the first oracle, not the goal; real projects that are clean
 under tsc are the second.
 
+## State (2026-10-28 evening: three parallel tracks after the release; main at 8642f349c, 48 commits since 5137f5cc7)
+- **Correctness**: 15 real-code fixes landed today (cor), each with a `test/cases` repro: every `[open]` npmsample flip with a
+  named repository is fixed (react-doctor, reanimated, kirka, Questarr, freelens x3, ChatbotX, synergy x2, firecms,
+  eva, akanjs written up), appflare's root project (two apps augmenting one interface through two re-export paths:
+  tsc's clone chain and TS2717), effect's HttpApiEndpoint TS2322 (a declared type's non-augmenting base has no
+  this-argument), four isEmptyAnonymousObjectType variants made one. `scripts/bugcount.py`: 298 open root causes (309
+  this morning), 206 fixed. Batch oracles on the first 12 commits: suite 0 lost, corpora 0/0, DT 8595, `$ExpectType`
+  68640, bun cases 1532 with 0 K-dependent, dts and perfsweep unchanged; the sampled sweep's two moved projects were
+  appflare's old root divergence (fixed since), not a regression.
+- **Cleanup** (ref): 24 commits, ~500 net lines removed, 9 newly passing tests, instructions within 0.03%: six
+  semantics fixes that fell out of hack removals (tsgo 7's pragma parser, `no-default-lib`, the module test, JSDoc
+  `unique symbol`, TS2417 on mixin bases, TS6133 on destructured private methods), dead functions/fields/helpers,
+  and the huge-page machinery removed (below). hacks.md: 208 entries triaged, ~190 are designs or measured policies.
+- **Perf** (perf; notes/bun_breadth.md "2026-10-28", notes/one_checker_rerun.md "Fresh eyes"): on the 300 slowest
+  sweep projects, tttt ST/MT median 3.16 against bun's 3.33 on this 8-core box; tttt MT/bun MT 0.76. Where the
+  speedup goes (51.9 s of loss over 300 projects): the idle tail behind one file 12.8 s, the front end 9.5 s,
+  duplication 9.2 s (the "hub" regime: 41 projects where every checker rebuilds one type graph nearly every file
+  reaches, K8 doing >= 2x K1's work), the rerun 4.0 s (its parallel passes now stop early: 15a98e4b7). The parked
+  shared graph saves CPU on hubs but not wall: the hub is built serially by whoever builds it.
+- **Pending the laptop**: the physical-core checker cap removal (branch `wt-ref-cap`, ad0215612: drizzle K8 -> K16
+  on this box +50% user CPU, +22% RSS, wall worse under load; `scripts/abbench.sh` recipe in the conversation), and
+  the per-instruction slowdown at K8 (check CPU 1.66x ST of which duplication explains 1.22x).
+
 ## State (2026-10-25: v1 released; full oracles at 5de65a46b, quick oracles at 45397f75f and 86bcd7ba4)
 - **Released: tag `v1` = 438727981** (the human's choice, 2026-10-25: the tree they tested; the README updated in
   c7ad9918a). Main past the tag holds the memory refactor (45397f75f: huge pages off by default, the pool reads free
@@ -41,7 +64,16 @@ under tsc are the second.
   contributors already recovered), the per-file regressions back to their old times, big projects within noise of
   d22d93ae (vscode 4.07 s both at the defaults here). Huge pages are opt-in (`--huge-pages`, +1..5% without).
 
-## Direction (2026-10-23 evening; the items and their numbers are in todo.md)
+## Direction (2026-10-28; the items and their numbers are in todo.md)
+- **Multithreading is the perf problem (the human, 2026-10-28)**: on the projects where tttt loses to bun by a lot,
+  tttt single-threaded still beats bun single-threaded (often ~2x), while some of them have tttt at the defaults no
+  faster than its K1 and bun's parallel run >10x its single-threaded one on the same machine. The answer is not a
+  heuristic that disables threads: tttt's parallel run must beat its own K1 on every project by a wide margin, and
+  on slow projects by a much wider one. Many strategies failed (sharing, deals, scheduling: "Decisions"); a major
+  redesign may be needed; C is not the blocker. Slow projects are clues, not targets: every finding is stated as a
+  mechanism that applies everywhere and checked at breadth before it counts. The 2026-10-28 accounting (above) says
+  the hub regime is where the gap is; the open question is whether the hub itself can be built in parallel
+  (notes/bun_breadth.md "2026-10-28", todo.md "Now").
 - **After the release (the human, 2026-10-25)**: one correctness agent at a time, fixing the known real-world items
   (agents/bugs/npmsample*.md `[open]`, then sourcesweep_checker.md, then bun cases when the real-world list is
   empty); no finders (the remote box is gone; notes/npm_workflow.md "Remote finder box" recreates one), no perf work
@@ -63,6 +95,19 @@ measured wins first; land fast and gate in batches.
 6. **Re-pin to 7.1.0 stable** when it ships.
 
 ## Decisions (each with its reason; the narrative is in git history of this file)
+- **Keep the parked shared graph and the TTTT_TAINT prototype** (2026-10-28, the human) until tttt either uses the
+  shared graph, is confident in a different multithreading strategy, or understands why it can't get multithreading
+  gains near bun's. The long-term wish is a clean tree of only code and tooling in use, no disabled features; the
+  removal inventory (3,282 + 858 lines, 260 + 103 hook sites, 1,031 lines of tooling) is in ref's 2026-10-28 report
+  and todo.md.
+- **No perf machinery below ~1% for its complexity, nor anything that only showed on the laptop** (2026-10-28, the
+  human): the huge text page (-1.2% at the defaults on the laptop, the private set unmoved) and the whole opt-in
+  `--huge-pages` path (the laptop at df95ec2f: faults -3.6x, wall and user cycles within noise, kernel 4-8% of user,
+  zeroing fresh pages 2.4% of user and not avoided by huge pages) are removed (24820df46, 4f3fa414e). Kept: the
+  memory pool reading free memory (the alternative is an OOM kill or an arbitrary cap), the AST's address-space
+  reservations (structural: pointer ownership in one load, not a perf trick), MADV_POPULATE_WRITE pre-faulting. The
+  physical-core checker cap is judged a hack by the human and its removal is built (wt-ref-cap) but held on this
+  box's drizzle numbers for the laptop's A/B. notes/portability.md lists what still depends on the box.
 - **Structural work is good** (2026-10-24, the human, approving the "this-instantiated members" project after hono's
   TS2769 turned out to be that design gap): a fix that gives a structural solution instead of a point fix is welcome
   even when the triggering case isn't a flip, as long as it lands in gated stages (quickgate --vs-main incl. instrcount

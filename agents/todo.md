@@ -40,7 +40,31 @@ than bun canary on real projects, judged on their private set (perf work needs a
 check, not the bench, and no machine-specific tuning: vision.md "Decisions"); memory where cheap; easy, measured
 wins first; land fast and gate in batches.
 
-## Now: the human's projects and the day's open threads
+## Now (2026-10-28): the hub regime, the laptop's two A/Bs
+- **The hub regime diagnosis** (the input to the redesign question; a diagnosis track with a written verdict, no
+  build-out): on dokploy/apps/dokploy, monkeytype/backend, zod and openbot/i18n, what the hub is (which declarations
+  nearly every file reaches: `TTTT_DUP_CENSUS`, arenasites), how long building it serially takes at K1 (the wall
+  floor of the per-checker model at any K, and of the parked shared graph), what share of each checker's types it
+  is, and whether bun's threads build it concurrently (notes/bun_concurrency.md plus its source) or pay it once
+  serially too. Verdict: can the hub be built in parallel, at what granularity, and what it would need from the
+  type graph (notes/sharing_design.md has the costs already measured). Numbers: notes/bun_breadth.md "2026-10-28".
+- **immutable.d.ts**: bun 0.19 s, tttt 0.38, tsgo 3.4 s; the critical path of 7 sweep projects. What bun does there
+  is an unread lead (a checked `.d.ts` is the idle tail's usual shape: 188 of 300 projects have one file over 1/K).
+- **The front end's loader waits**: load+parse waits on a worker's parse 51% of the phase, resolve at 2.7 cores
+  (bun_breadth.md "2026-10-28"); 9.5 s of the 300's 51.9 s loss.
+- **For the laptop**: (1) the checker cap A/B, `scripts/abbench.sh -n 7 OLD NEW drizzle zod nest react effect
+  vscode` with fast builds of main and of `wt-ref-cap` (copied out with `cp -L`); land the removal if no-cap wins or
+  ties on wall. (2) `perf stat -r 5 -e cycles:u,instructions:u` at `--threads 1 --checkers 8` against the default
+  threads with `--checkers 8` on dokploy/apps/dokploy, monkeytype/backend, solid/packages/solid, kebo and
+  vitest/test/browser: splits the 1.36x per-instruction slowdown (SMT, helpers, or this box's load).
+- **Correctness, continuous** (cor's queue): sourcesweep_checker.md `[open]` (starlight's TS2589 is reentrancy stage
+  E), then type_core.md's one-line probes, then bun cases. The content mappers' `--runExternalCode` is a feature
+  decision for the human (it runs external code).
+- **Cleanup leftovers** (ref's report): the shared graph + taint removal when the Decisions allow it (inventory in
+  vision.md); the 235 `plan N` comment tags (cosmetic, a Sonnet task); the `-b` per-builder checker split went with
+  the cap removal (wt-ref-cap).
+
+## Earlier threads: the human's projects (2026-10-23)
 - **openclaw** (correctness only, out of every perf measurement): 36 / 49 configs match in the last sweep, **13 time
   out** (its sub-configs under load: are they slow in tttt or only in the sweep's limits? `scripts/projdiff.py` on one,
   `TTTT_FILE_TIMES=1`), and 4 are K-dependent in kdiff (openclaw/packages, packages/plugin-sdk, src/agents/sessions,
@@ -81,8 +105,9 @@ wins first; land fast and gate in batches.
 ## For the human
 The prompts were given in conversation at the fourth coordinator's end; redo them from here, each with the exact
 command (measurements.md "How to measure": sys with `TTTT_SYNC_EXIT=1`):
-- **(a) The remaining kernel time**: `perf record -e cycles:k -g` top symbols on drizzle and vscode at the defaults
-  (kernel cycles are 6-9% of user there, 17% on react, 27% on nest). Feeds section 4.
+- **(a) The remaining kernel time: done 2026-10-27** (measurements.md "The 12-core box at df95ec2f"): kernel 4% of
+  user on vscode, 8% on drizzle; `clear_pages` 30% of kernel cycles, faulting ~10%, spinlocks 4.7%, TLB shootdowns
+  3.7%, no futex/mmap. Zeroing fresh pages is ~2.4% of user cycles; reusing arena memory is the only lever left.
 - **(b) The exit tail under THP `always`**: last output byte to exit with `TTTT_SYNC_EXIT=1` against the reaper's
   default (this box, THP `madvise`, measured 7-66 ms; fewer pages to free on the laptop may make it smaller).
 - **(c) Thread placement: withdrawn** (2026-10-23, the human): a rule that pins work to a kind of core would be
@@ -101,12 +126,10 @@ command (measurements.md "How to measure": sys with `TTTT_SYNC_EXIT=1`):
 - MADV_POPULATE_WRITE counts as minor faults on this box's kernel but not in the laptop's `perf stat page-faults`
   (6.7k there against ~72k here on drizzle): compare faults like with like.
 
-## 1. Page-fault leftovers (small)
-The arena alignment landed (97839044a: huge arena chunks are whole aligned 2 MB pages; faults drizzle 72k -> 44k,
-vscode 301k -> 185k, sys -12..-20%, RSS +0..2%; measurements.md "2 MB-aligned huge arena chunks"); the laptop's (e)
-should include it. Not started from ktime2's brief: does the pre-check malloc_trim still pay (RSS and madvise count
-with `TTTT_NO_TRIM=1`), and pre-faulting checkers' first chunks off the critical path (resolve names keeps ~4.5 of 16
-cores busy: a helper could populate them then).
+## 1. Page-fault leftovers: closed 2026-10-28
+The huge-page machinery is removed (vision.md "Decisions", the laptop at df95ec2f). What is left of kernel time is
+page zeroing (2.4% of user cycles): touching less fresh memory (reusing recycled arena chunks, measured at most
+0.6% CPU in notes/memory.md) is the remaining lever, small.
 
 ## 2. The bun breadth sweep's remaining classes
 Done 2026-10-23 (notes/bun_breadth.md: 487 projects, bun wins on wall on 116, median ratio 0.82; fixed on the way:
@@ -132,10 +155,8 @@ vscode 5.5 GB at the defaults against bun's 2.2 (K1 4.3); the kernel round added
   no other file reaches.
 - **Phase-boundary trims**: a trim burst when no checker runs. Small.
 
-## 4. Kernel round three
-From the laptop's `cycles:k` profile (For the human, a). What was measured and
-declined in round one is in notes/kernel_time.md ("Measured and not changed": glibc.malloc.hugetlb=1's faults -23..-35%
-at +19% RSS on nest). The rest of malloc (AST helpers, scopes, flow) is the next fault lever.
+## 4. Kernel round three: answered 2026-10-27
+The laptop's profile (For the human, a) shows no round left: 4-8% kernel of user, led by page zeroing. Closed.
 
 ## 5. Correctness long tail (continuous)
 New real-code sightings first; every unfixed divergence gets a known-failing test in `test/cases`. Grep `bugs/` for a
