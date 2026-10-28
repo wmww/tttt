@@ -1,0 +1,16 @@
+//// [test/cases/ttttImportTypeMissingQualifier.ts] ////
+
+=== m.ts ===
+
+export {};
+=== a.js ===
+/** @type {import("./m").} */ let b1 = 1;
+>b1 : Symbol(b1, Decl(a.js, 0, 33))
+
+=== b.ts ===
+let a: import("./m").;
+>a : Symbol(a, Decl(b.ts, 0, 3))
+
+let b: typeof import("./m").;
+>b : Symbol(b, Decl(b.ts, 1, 3))
+

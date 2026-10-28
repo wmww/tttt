@@ -1,0 +1,25 @@
+a.js(1,12): error TS1340: Module './m' does not refer to a type, but is used as a type here. Did you mean 'typeof import('./m')'?
+a.js(1,26): error TS1110: Type expected.
+b.ts(1,8): error TS1340: Module './m' does not refer to a type, but is used as a type here. Did you mean 'typeof import('./m')'?
+b.ts(1,22): error TS1110: Type expected.
+b.ts(2,29): error TS1110: Type expected.
+
+
+==== m.ts (0 errors) ====
+    export {};
+==== a.js (2 errors) ====
+    /** @type {import("./m").} */ let b1 = 1;
+               ~~~~~~~~~~~~~~
+!!! error TS1340: Module './m' does not refer to a type, but is used as a type here. Did you mean 'typeof import('./m')'?
+                             ~
+!!! error TS1110: Type expected.
+==== b.ts (3 errors) ====
+    let a: import("./m").;
+           ~~~~~~~~~~~~~~
+!!! error TS1340: Module './m' does not refer to a type, but is used as a type here. Did you mean 'typeof import('./m')'?
+                         ~
+!!! error TS1110: Type expected.
+    let b: typeof import("./m").;
+                                ~
+!!! error TS1110: Type expected.
+    

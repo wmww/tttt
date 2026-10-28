@@ -117,7 +117,8 @@ static bool import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
     module_ref_report_require_of_esm(rare->import_ref, rare->import_ref->span, errs); // (TS1542)
     if (module->is_shorthand_module) return true;
     Symbol const* container = module_export_equals(module);
-    if (!span_valid(my name)) {
+    // (A missing qualifier, `import("m").` then nothing, is none: tsc's getTypeFromImportTypeNode, NodeIsMissing)
+    if (!span_valid(my name) || (!my name.size && !ast_spans_size(&rare->namespaces))) {
         if (rare->import_typeof) {
             my target = container;
             my symbol = container;
