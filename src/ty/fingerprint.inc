@@ -345,8 +345,8 @@ static u64 fp_signature(Signature const* sig, u32 depth) {
     if (!sig) return 29;
     u64 h = M(31, sig->flags);
     h = M(h, (u64)(uintptr_t)sig->function);
-    h = M(h, fp_ty(sig->class_instance));
-    h = fp_list(h, sig->class_type_params);
+    h = M(h, fp_ty(sig_rare(sig)->class_instance));
+    h = fp_list(h, sig_rare(sig)->class_type_params);
     if (!sig->function && sig->target && depth < 32) h = M(h, fp_signature(sig->target, depth + 1));
     // (Resolving a generic one adds its own type parameters' clones to the mapper, clone_type_params(): not those)
     // (Its key is what it is made of: the resolved mapper (sig_mapper()) is only there once it is resolved)

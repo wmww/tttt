@@ -2237,7 +2237,7 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
     if (!symbol && my this_kind == THIS_ANY && identifier_this_function(me)) {
         Signature const* sig = ty_function_assigned_contextual_signature(checker, identifier_this_function(me));
         // (A union's contextual signature: the `this` of the member it was made from, declared_by)
-        while (sig && (sig->target || (!sig->function && sig->declared_by))) sig = sig->target ? sig->target : sig->declared_by;
+        while (sig && (sig->target || (!sig->function && sig_rare(sig)->declared_by))) sig = sig->target ? sig->target : sig_rare(sig)->declared_by;
         FunctionImpl const* function = sig ? sig->function : nullptr;
         // (Only a function expression's: a declaration's signature is its own, getSignatureFromDeclaration, which a
         // JSDoc `@type` gives no `this` parameter; its `this` is the symbol of its type)

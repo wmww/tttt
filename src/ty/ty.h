@@ -816,15 +816,11 @@ struct Signature {
     // Exactly one source: a function (a declaration/expression, or a function type node, see FunctionImpl.is_type)
     // or a target to instantiate
     FunctionImpl const* function;
-    // Construct signatures of a class: the type parameters are the class's and the return type is its instance type,
-    // whatever `node` or `target` say
-    Ty const* class_instance;
-    TyList class_type_params;
+    // What few signatures have (class construct signatures, combinations, erasures): sig_rare(). Set when the signature
+    // is made, immutable
+    struct SignatureRare const* rare;
     Span name_span; // For the symbols baseline
     Span decl_span;
-    // A combination of signatures (tsc's combineSignaturesOfUnionMembers): the one whose declaration it has, whose
-    // parameters' declarations its own (synthesized) parameters don't have
-    struct Signature const* declared_by;
     // As made (an instantiation's), see SigResolved.target and sig_target()/sig_mapper() for what it is now. Nothing
     // writes them after it is made
     Signature const* target;
@@ -836,7 +832,25 @@ struct Signature {
     SharedWord ret; // A Ty: use signature_return_type(), sig_ret_init() for a signature being made
     SharedWord predicate; // A TyPredicate, NONE for none: use signature_predicate(), sig_predicate_init()
 };
-static_assert(sizeof(Signature) == 128);
+static_assert(sizeof(Signature) == 104);
+
+typedef struct SignatureRare {
+    // Construct signatures of a class: the type parameters are the class's and the return type is its instance type,
+    // whatever `node` or `target` say
+    Ty const* class_instance;
+    TyList class_type_params;
+    // A combination of signatures (tsc's combineSignaturesOfUnionMembers): the one whose declaration it has, whose
+    // parameters' declarations its own (synthesized) parameters don't have
+    struct Signature const* declared_by;
+} SignatureRare;
+
+// (members.c) A rare part saying only `declared_by`
+SignatureRare const* sig_rare_declared_by(Checker* me, Signature const* declared_by);
+
+static inline SignatureRare const* sig_rare(Signature const* sig) {
+    static const SignatureRare none = {0};
+    return sig->rare ? sig->rare : &none;
+}
 
 // A member with a computed name that an object literal's index signature was made of (`[a]: 1`)
 typedef struct IndexComponent {

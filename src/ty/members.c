@@ -2352,14 +2352,22 @@ static void builder_add_class_items(
     builder_add_computed_index_infos(me, builder, class_decl, static_side);
 }
 
+SignatureRare const* sig_rare_declared_by(Checker* me, Signature const* declared_by) {
+    SignatureRare* rare = arena_new(&my arena, SignatureRare);
+    rare->declared_by = declared_by;
+    return rare;
+}
+
 static Signature* class_construct_signature(Checker* me, ClassDecl const* class_decl, Ty const* instance_declared) {
     Signature* sig = arena_new(&my arena, Signature);
     sig->flags = SIGNATURE_CONSTRUCT | (class_decl->is_abstract ? SIGNATURE_ABSTRACT : 0);
     // (The outer type parameters of a local class aren't the signature's: the static side instantiates them)
-    sig->class_type_params = ty_local_type_params(instance_declared);
-    sig->class_instance = instance_declared->declared.type_params.len ?
+    SignatureRare* rare = arena_new(&my arena, SignatureRare);
+    rare->class_type_params = ty_local_type_params(instance_declared);
+    rare->class_instance = instance_declared->declared.type_params.len ?
         ty_reference(me, instance_declared, instance_declared->declared.type_params) :
         instance_declared;
+    sig->rare = rare;
     sig->ctx = (LowerCtx){ .generic = instance_declared->declared.type_params.len > 0 };
     return sig;
 }
@@ -6193,14 +6201,14 @@ SigResolved const* signature_resolve_slow(Checker* me, Signature const* const_si
         }
         function_signature_params(me, sig, r, &frame, nullptr);
     }
-    if (sig->class_instance) {
-        r->type_params = sig->class_type_params;
-        r->class_ret = sig->class_instance;
+    if (sig_rare(sig)->class_instance) {
+        r->type_params = sig_rare(sig)->class_type_params;
+        r->class_ret = sig_rare(sig)->class_instance;
     }
-    if (!sig->class_instance && r->target && r->target->class_instance && r->mapper) {
+    if (!sig_rare(sig)->class_instance && r->target && sig_rare(r->target)->class_instance && r->mapper) {
         // An instantiated construct signature of a class (not one a derived class without a constructor inherits: that
         // makes the derived class)
-        r->class_ret = ty_instantiate(me, r->target->class_instance, r->mapper);
+        r->class_ret = ty_instantiate(me, sig_rare(r->target)->class_instance, r->mapper);
     }
     // (An instantiation of its own type parameters has none left: ty_signature_instantiation())
     if (sig->instantiates_own_params) r->type_params = (TyList){0};
@@ -6397,7 +6405,7 @@ typedef struct PredicateClaim {
 } PredicateClaim;
 
 static TyPredicate const* compute_signature_predicate(Checker* me, Signature* sig, PredicateClaim* claim) {
-    if (sig->class_instance) return nullptr;
+    if (sig_rare(sig)->class_instance) return nullptr;
     if (sig_target(me, sig)) {
         TyPredicate const* target_predicate = signature_predicate(me, sig_target(me, sig));
         if (target_predicate && target_predicate->type && sig_mapper(me, sig)) {

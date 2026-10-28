@@ -2152,7 +2152,7 @@ static void report_arity(
         SigParam const* missing = args->len < min && closest && args->len < sig_res(me, closest)->param_count ?
             &sig_res(me, closest)->params[args->len] : nullptr;
         // (A combined signature's are synthesized: tsc looks at its declaration's parameters)
-        Signature const* declared_by = missing && !missing->decl ? closest->declared_by : nullptr;
+        Signature const* declared_by = missing && !missing->decl ? sig_rare(closest)->declared_by : nullptr;
         if (declared_by && args->len < sig_res(me, declared_by)->param_count) missing = &sig_res(me, declared_by)->params[args->len];
         if (missing && missing->decl) {
             Binding const* binding = &missing->decl->initializer.binding;
@@ -2284,8 +2284,8 @@ static void add_implementation_success(Checker* me, Candidate const* candidate, 
 static Span signature_decl_span(Checker* me, Signature const* sig) {
     while (sig_target(me, sig)) sig = sig_target(me, sig);
     // (A union's signature is declared by the one it was made from: tsc's createUnionSignature clones it)
-    while (!sig->function && sig->declared_by && sig->declared_by != sig) {
-        sig = sig->declared_by;
+    while (!sig->function && sig_rare(sig)->declared_by && sig_rare(sig)->declared_by != sig) {
+        sig = sig_rare(sig)->declared_by;
         while (sig_target(me, sig)) sig = sig_target(me, sig);
     }
     // (A JSDoc `@overload`: its tag name, where tsgo's reparsed declaration is)

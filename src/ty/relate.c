@@ -1902,7 +1902,7 @@ typedef enum CallbackMode {
 static bool is_instantiated_generic_param(Checker* me, Signature const* sig, Signature const* origin, u32 i) {
     // (Erased in one step from its target's target: tsc's erased signature's target is the instantiation it erases,
     // `m<U>(a: X)` of `Foo<S>` has `a: S`)
-    Signature const* target = origin ? origin : sig->erased_in_one_step ? sig->declared_by : sig_target(me, sig);
+    Signature const* target = origin ? origin : sig->erased_in_one_step ? sig_rare(sig)->declared_by : sig_target(me, sig);
     if (!target) return false;
     signature_resolve(me, target);
     // (At a rest parameter of a generic type, `(...args: P) => any` of `infer P`, tsc's tryGetTypeAtPosition indexes
@@ -2295,7 +2295,7 @@ Signature const* ty_erased_signature(Checker* me, Signature const* sig) {
     Signature const* target = sig->target;
     // (Not resolved, nor in flight here: tested last, the cheap tests first)
     if (target && unresolved_mapper && !sig->function && !sig->instantiates_own_params &&
-        !sig->drops_mapped_type_params && !sig->fresh_type_params && !sig->class_instance && !(sig->flags & SIGNATURE_CONSTRUCT) &&
+        !sig->drops_mapped_type_params && !sig->fresh_type_params && !sig_rare(sig)->class_instance && !(sig->flags & SIGNATURE_CONSTRUCT) &&
         !sig_resolved(me, sig) && !sw_mine_in_flight(me, &sig->res, &sig->res_flight)
     ) {
         SigResolved const* target_res = signature_resolve(me, target);
@@ -2335,7 +2335,7 @@ Signature const* ty_erased_signature(Checker* me, Signature const* sig) {
                
                 .instantiates_own_params = true,
                 .erased_in_one_step = true,
-                .declared_by = sig,
+                .rare = sig_rare_declared_by(me, sig),
             };
             // (Its own until resolved: published with --shared-graph once it is)
             *slot = ret;
@@ -8757,7 +8757,7 @@ static Signature* union_signature(Checker* me, Signature const* base, Signature*
         .ret = { SW_VAL(ty_union_subtype_reduced(me, return_types, count)) },
         .predicate = { SW_VAL(union_predicate(me, composites, count)) },
         // (A clone of the base, tsc's createUnionSignature: declared where it is, its `this` parameter's)
-        .declared_by = base->declared_by ? base->declared_by : base,
+        .rare = sig_rare_declared_by(me, sig_rare(base)->declared_by ? sig_rare(base)->declared_by : base),
     };
     free(return_types);
     return ret;
@@ -8851,7 +8851,7 @@ static Signature* combine_signatures(Checker* me, Signature const* left, Signatu
             ((left->flags | right->flags) & (SIGNATURE_ABSTRACT | SIGNATURE_SOME_ABSTRACT) ? SIGNATURE_SOME_ABSTRACT : 0),
         .name_span = left->name_span,
         .decl_span = left->decl_span,
-        .declared_by = left->declared_by ? left->declared_by : left,
+        .rare = sig_rare_declared_by(me, sig_rare(left)->declared_by ? sig_rare(left)->declared_by : left),
         .res = { (uintptr_t)sig_resolved_new(me, (SigResolved){
             .type_params = left_res->type_params.len ? left_res->type_params : right_res->type_params,
             .params = params,
@@ -8882,7 +8882,7 @@ Signature const* ty_union_signature(Checker* me, Signature const* base, Signatur
     with_this.this_type = sig_res(me, base)->this_type;
     sig_res_init(ret, sig_resolved_new(me, with_this));
     // (Whose `this` parameter that is: the clone's thisParameter is the base's symbol)
-    ret->declared_by = base->declared_by ? base->declared_by : base;
+    ret->rare = sig_rare_declared_by(me, sig_rare(base)->declared_by ? sig_rare(base)->declared_by : base);
     return ret;
 }
 

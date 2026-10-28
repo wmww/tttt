@@ -4234,7 +4234,7 @@ static void display_this_param(
         span_equals(function->args.data[0].initializer.binding.content_span, "this"))
     ) {
         Signature const* contextual = ty_function_assigned_contextual_signature(me, function);
-        while (contextual && !contextual->function && (contextual->target || contextual->declared_by)) contextual = contextual->target ? contextual->target : contextual->declared_by;
+        while (contextual && !contextual->function && (contextual->target || sig_rare(contextual)->declared_by)) contextual = contextual->target ? contextual->target : sig_rare(contextual)->declared_by;
         FunctionImpl const* context_function = contextual ? contextual->function : nullptr;
         contextual_jsdoc_this = context_function && vec_function_arg_size(&context_function->args) &&
             context_function->args.data[0].jsdoc_this;
@@ -4249,7 +4249,7 @@ static void display_this_param(
     // A function expression's `this` from its contextual signature is that signature's parameter (tsc's
     // assignContextualParameterTypes: createSymbolWithType(context.thisParameter)), whose annotation is reused
     Signature const* contextual = function && !binding && reusable ? ty_function_assigned_contextual_signature(me, function) : nullptr;
-    while (contextual && !contextual->function && (contextual->target || contextual->declared_by)) contextual = contextual->target ? contextual->target : contextual->declared_by;
+    while (contextual && !contextual->function && (contextual->target || sig_rare(contextual)->declared_by)) contextual = contextual->target ? contextual->target : sig_rare(contextual)->declared_by;
     FunctionImpl const* context_function = contextual ? contextual->function : nullptr;
     FunctionArg const* context_this = context_function && vec_function_arg_size(&context_function->args) ?
         vec_function_arg_at(&context_function->args, 0) : nullptr;
@@ -4281,7 +4281,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     bool this_only = true; // Instantiated only with what `this` is (every method of a class): no fresh type parameters
     bool class_default = false; // (A class's default constructor returns the class, whatever its base signature returns)
     for (; sig_target(me, root); root = sig_target(me, root)) {
-        class_default |= root->class_instance != nullptr;
+        class_default |= sig_rare(root)->class_instance != nullptr;
         for (u32 i = 0; sig_mapper(me, root) && i < sig_mapper(me, root)->len; i++) {
             Ty const* source = sig_mapper(me, root)->sources[i];
             this_only &= source->kind == TY_TYPE_PARAM && source->param.state->is_this;
@@ -4292,7 +4292,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     // scope for them (tsc's enterNewScope; type parameters under GenerateNamesForShadowedTypeParams, which printing
     // sets), so no import or export around supplies the originalModuleSpecifier: modules print as from the file, by its
     // default resolution mode (`import("./types")` where the import's ESM usage would add `/index.js`)
-    if ((sig_rs->param_count || sig_rs->type_params.len) && (root->function || root->declared_by)) d.usage_in_fake_scope = true;
+    if ((sig_rs->param_count || sig_rs->type_params.len) && (root->function || sig_rare(root)->declared_by)) d.usage_in_fake_scope = true;
     bool sibling_mapped = d.sibling_mentions_mapped;
     d.sibling_mentions_mapped = false;
     // (Unless its own type parameters were instantiated away: a call's candidate with what was inferred)
@@ -4334,7 +4334,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         }
     }
     // (A class's constructor has its parameters reused, but it returns the class)
-    FunctionImpl const* function = root->function && root->class_instance && !root->function->is_constructor ? nullptr : root->function;
+    FunctionImpl const* function = root->function && sig_rare(root)->class_instance && !root->function->is_constructor ? nullptr : root->function;
     // (A JSDoc `@this` makes a parameter of its own, which isn't reused)
     bool jsdoc_this = function && vec_function_arg_size(&function->args) && function->args.data[0].jsdoc_this;
     bool reusable = (d.types_baseline || d.reuse_nodes) && function;
@@ -4516,14 +4516,14 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     // instantiateType(getReturnTypeOfSignature(signature), ctx.mapper): what maps a type parameter to a type that names
     // it, `U` to `Value<K, U>`, is applied twice)
     if (!enclosing_symbol_type && instantiated && root->function) ret = instantiate_for(me, sig, ret);
-    TypeNode const* ret_annotation = !reusable || root->class_instance || !function->ret_explicit ? nullptr : &function->ret;
+    TypeNode const* ret_annotation = !reusable || sig_rare(root)->class_instance || !function->ret_explicit ? nullptr : &function->ret;
     bool reused = ret_annotation &&
         !mentions(me, ret, d.fresh_params) && (!instantiated || ret == signature_return_type(me, root)) &&
         !(fresh_anonymous && ret->kind == TY_ANONYMOUS);
     if (predicate) {
         // (An inferred predicate: the pseudo return type doesn't say it, reported at the function)
         PseudoReporter storage;
-        PseudoReporter const* rep = reusable && reuses_nodes(d) && !d.reused && !root->class_instance && !function->predicate &&
+        PseudoReporter const* rep = reusable && reuses_nodes(d) && !d.reused && !sig_rare(root)->class_instance && !function->predicate &&
             !function->ret_explicit ? display_reporter(d, &storage) : nullptr;
         pseudo_report(rep, (PseudoError){ .kind = PSEUDO_ERROR_FUNCTION, .function = function });
         // In an instantiated signature, a parameter it names isn't the one of the instantiated signature (tsc resolves
@@ -4566,7 +4566,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     // The return type as the declaration's syntax says it, where that's the same type (tsgo's
     // serializeReturnTypeForSignature: its pseudo type; an instantiated signature's own type parameters are fresh, see
     // TyDisplay.fresh_params)
-    if (reusable && reuses_nodes(d) && !d.reused && !root->class_instance) {
+    if (reusable && reuses_nodes(d) && !d.reused && !sig_rare(root)->class_instance) {
         Pseudo const* pseudo = pseudo_of_return(me, function);
         PseudoReporter storage;
         if (pseudo_equivalent(me, d, pseudo, ret, false, display_reporter(d, &storage))) {
