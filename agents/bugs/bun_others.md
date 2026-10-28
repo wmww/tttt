@@ -7,6 +7,12 @@ is usually `const sentinel: number = ""`. Show one with `scripts/buncases.py --l
 what was looked at, by root cause; the second lists the rest by code, uninvestigated, with a first instance each.
 
 ## Looked at, by root cause
+- Missing TS2367 on a loop's partial types (99-V4 getTypeOfExpression__01/02, getAssignedType__05/06,
+  checks-of-a-value-assigned-on-a-loop-back-edge a2/a3): tsc reports an equality's TS2367 while control flow evaluates
+  an assigned value on a loop's first-iteration types, unless CheckModeTypeOnly (getTypeOfExpression) reaches it
+  (checkBinaryLikeExpression's reportOperatorErrorUnless). ty/expr.c checks equalities with ty_flow_partial_reports(),
+  Checker.type_only_root and type_only_reaches() for the propagation. Left: `+(x === 5)` (a3 d24: tttt's flow doesn't
+  evaluate a unary plus's operand). Test ttttLoopPartialEqualityChecks [fixed COMMIT-next].
 - TS2490/TS2767 both ways (04-C9b, 04-C2a, 93-R19a, 99-V4 checkIteratedTypeOrElementType__01/02/06, 99-V7): tsc reports
   an iterator's method problems only from the first getIterationTypesOfIterable of a (type, cache-use) key, if it had
   an error node; flow's for-of variables and destructured elements, a destructuring assignment's rest target, a
@@ -646,11 +652,6 @@ module '…' cannot be found.".
 
 -TS2355 (missing), 3 cases: 02-C7, 21-C15, 31-SC1. First: 02-C7 a.ts:2 "A function whose declared type is neither '…',
 '…', nor '…' must return a value.".
-
--TS2367 (missing), 3 cases: 99-V4, checks-of-a-value-assigned-on-a-loop-back-edge,
-loop-back-edge-errors-of-two-variables-in-functions-that-other-files-call. First: 99-V4
-getAssignedType__05_for_of_operand_comparison_in_loop.ts:9 "This comparison appears to be unintentional because the
-types '…' and '…' have n".
 
 -TS2383 (missing), 3 cases: 02-C12, 28-C33b, 28-C33i. First: 02-C12 a.ts:2 "Overload signatures must all be exported or
 non-exported.".

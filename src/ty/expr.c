@@ -3444,6 +3444,41 @@ Ty const* ty_assigned_value_context(Checker* me, BinaryOpExpr const* assignment)
     return assignment_value_context(me, assignment, ty_expr_type(me, &assignment->left));
 }
 
+// Whether `target` is `root` or below it through nodes that check that operand in the check mode they're checked in
+// (tsc's: parentheses, a conditional's three parts, a binary operator's left operand and a comma's right one, an
+// assignment's value, `as` and `void`; a logical operator's right operand, `!`, `satisfies`, a call's arguments and literals' elements check in
+// normal mode: bun's checks-of-a-value-assigned-on-a-loop-back-edge a3.ts), see Checker.type_only_root
+static bool type_only_reaches(Expr const* root, Expr const* target) {
+    for (u32 depth = 0; depth < 64; depth++) {
+        if (root == target) return true;
+        switch (root->tag) {
+            case EXPR_TERNARY:
+                return type_only_reaches(&root->ternary->condition, target) || type_only_reaches(&root->ternary->yes, target) ||
+                    type_only_reaches(&root->ternary->no, target);
+            case EXPR_BINARY_OP:
+                // (An assignment checks its value in the mode it's checked in: `(y = x === 5) ? 1 : 2` reports nothing)
+                if (binary_op_is_assignment(root->binary_op->op)) {
+                    root = &root->binary_op->right;
+                    break;
+                }
+                if (root->binary_op->op == BINARY_OP_COMMA && type_only_reaches(&root->binary_op->right, target)) return true;
+                root = &root->binary_op->left;
+                break;
+            case EXPR_AS_TYPE:
+                if (root->as_type->is_satisfies) return false;
+                root = &root->as_type->expr;
+                break;
+            case EXPR_UNARY_OP:
+                if (root->unary_op->op != UNARY_OP_VOID) return false;
+                root = &root->unary_op->expr;
+                break;
+            default:
+                return false;
+        }
+    }
+    return false;
+}
+
 static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx ctx) {
     check_left_spine(me, binary, ctx);
     Ty const* left;
@@ -6620,7 +6655,20 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             IdentifierFlowIssue issue = IDENTIFIER_FLOW_OK; // Reported by the typecheck walk
             return identifier_flow_type(me, expr, ctx.contextual, &issue, false);
         }
-        case EXPR_BINARY_OP: return check_binary(me, expr->binary_op, ctx);
+        case EXPR_BINARY_OP: {
+            Ty const* ret = check_binary(me, expr->binary_op, ctx);
+            // (An equality a loop's unfinished flow analysis evaluates is checked on the partial types too: tsc's
+            // getTypeOfExpression of an assigned value reports TS2367 for the first iteration's narrowed operands,
+            // `a = pick(a === b)` in a loop, see ty_flow_partial_reports())
+            BinaryOp op = expr->binary_op->op;
+            if ((op == BINARY_OP_DOUBLE_EQUAL || op == BINARY_OP_TRIPLE_EQUAL || op == BINARY_OP_NOT_EQUAL ||
+                op == BINARY_OP_TRIPLE_NOT_EQUAL) && ty_flow_partial_reports(me, expr->inner_span) &&
+                !(my type_only_root && type_only_reaches(my type_only_root, expr))
+            ) {
+                expr_equality_errors(expr, ty_expr_type(me, &expr->binary_op->left), ty_expr_type(me, &expr->binary_op->right), my errs);
+            }
+            return ret;
+        }
         case EXPR_UNARY_OP:
             if (expr->unary_op->op == UNARY_OP_YIELD || expr->unary_op->op == UNARY_OP_YIELD_STAR) {
                 return check_yield(me, expr->unary_op, ctx);

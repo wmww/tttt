@@ -1300,7 +1300,15 @@ static Ty const* initial_or_assigned_type_raw(FlowQuery* q, FlowAssign const* as
 // `row: T` of a union constraint, read as that constraint where the context isn't generic, is assigned the constraint,
 // which is the declared type then: nothing to reduce
 static Ty const* initial_or_assigned_type(FlowQuery* q, FlowAssign const* assign) {
+    // (tsc's getTypeOfExpression of the value: CheckModeTypeOnly, see Checker.type_only_root)
+    Checker* me = q->me;
+    Expr const* outer_root = my type_only_root;
+    if (assign->kind == FLOW_ASSIGN_EXPR) my type_only_root = &assign->assignment->binary_op->right;
+    else if (assign->kind == FLOW_ASSIGN_DECLARATION && root_initializer(assign->binding)) {
+        my type_only_root = initialized_binding_value(root_initializer(assign->binding));
+    }
     Ty const* ret = initial_or_assigned_type_raw(q, assign);
+    my type_only_root = outer_root;
     return q->substitutes_constraints ? ty_substitute_constraints(q->me, ret) : ret;
 }
 

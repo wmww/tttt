@@ -1,0 +1,125 @@
+//// [test/cases/ttttLoopPartialEqualityChecks.ts] ////
+
+=== ttttLoopPartialEqualityChecks.ts ===
+// A comparison control flow evaluates while a loop's types are partial is reported on those types (TS2367 for the
+// first iteration's narrowed operands), unless it is reached from the assigned value only through what passes tsc's
+// CheckModeTypeOnly on (getTypeOfExpression of the value: parentheses, a conditional's parts, a binary operator's left
+// operand, a comma's right one, an assignment's value, `as`, `void`). bun 99-V4 getTypeOfExpression__01/02,
+// getAssignedType__05/06, checks-of-a-value-assigned-on-a-loop-back-edge's a3.ts; controlFlowNoIntermediateErrors is
+// the other side
+declare const more: boolean;
+>more : Symbol(more, Decl(ttttLoopPartialEqualityChecks.ts, 6, 13))
+
+declare function pick<T>(v: T): "x" | "y";
+>pick : Symbol(pick, Decl(ttttLoopPartialEqualityChecks.ts, 6, 28))
+>T : Symbol(T, Decl(ttttLoopPartialEqualityChecks.ts, 7, 22))
+>v : Symbol(v, Decl(ttttLoopPartialEqualityChecks.ts, 7, 25))
+>T : Symbol(T, Decl(ttttLoopPartialEqualityChecks.ts, 7, 22))
+
+declare function str(x: unknown): string;
+>str : Symbol(str, Decl(ttttLoopPartialEqualityChecks.ts, 7, 42))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 8, 21))
+
+declare const ones: 1[];
+>ones : Symbol(ones, Decl(ttttLoopPartialEqualityChecks.ts, 9, 13))
+
+declare const zeros: 0[];
+>zeros : Symbol(zeros, Decl(ttttLoopPartialEqualityChecks.ts, 10, 13))
+
+function f1() { let a: "x" | "y" = "x"; let b: "x" | "y" = "y"; while (more) { a = pick(a === b); } }
+>f1 : Symbol(f1, Decl(ttttLoopPartialEqualityChecks.ts, 10, 25))
+>a : Symbol(a, Decl(ttttLoopPartialEqualityChecks.ts, 11, 19))
+>b : Symbol(b, Decl(ttttLoopPartialEqualityChecks.ts, 11, 43))
+>more : Symbol(more, Decl(ttttLoopPartialEqualityChecks.ts, 6, 13))
+>a : Symbol(a, Decl(ttttLoopPartialEqualityChecks.ts, 11, 19))
+>pick : Symbol(pick, Decl(ttttLoopPartialEqualityChecks.ts, 6, 28))
+>a : Symbol(a, Decl(ttttLoopPartialEqualityChecks.ts, 11, 19))
+>b : Symbol(b, Decl(ttttLoopPartialEqualityChecks.ts, 11, 43))
+
+function f2() { let a: 0 | 1 = 0; let x: 0 | 1 | undefined; while (more) { for (x of a === 1 ? ones : zeros) { a = x; } } }
+>f2 : Symbol(f2, Decl(ttttLoopPartialEqualityChecks.ts, 11, 101))
+>a : Symbol(a, Decl(ttttLoopPartialEqualityChecks.ts, 12, 19))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 12, 37))
+>more : Symbol(more, Decl(ttttLoopPartialEqualityChecks.ts, 6, 13))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 12, 37))
+>a : Symbol(a, Decl(ttttLoopPartialEqualityChecks.ts, 12, 19))
+>ones : Symbol(ones, Decl(ttttLoopPartialEqualityChecks.ts, 9, 13))
+>zeros : Symbol(zeros, Decl(ttttLoopPartialEqualityChecks.ts, 10, 13))
+>a : Symbol(a, Decl(ttttLoopPartialEqualityChecks.ts, 12, 19))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 12, 37))
+
+function d01() { let x: string | number = "a"; while (more) { x = more && x === 5 ? "b" : 5; } }
+>d01 : Symbol(d01, Decl(ttttLoopPartialEqualityChecks.ts, 12, 123))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 13, 20))
+>more : Symbol(more, Decl(ttttLoopPartialEqualityChecks.ts, 6, 13))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 13, 20))
+>more : Symbol(more, Decl(ttttLoopPartialEqualityChecks.ts, 6, 13))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 13, 20))
+
+function d02() { let x: string | number = "a"; while (more) { x = x === 5 && more ? "b" : 5; } }
+>d02 : Symbol(d02, Decl(ttttLoopPartialEqualityChecks.ts, 13, 96))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 14, 20))
+>more : Symbol(more, Decl(ttttLoopPartialEqualityChecks.ts, 6, 13))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 14, 20))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 14, 20))
+>more : Symbol(more, Decl(ttttLoopPartialEqualityChecks.ts, 6, 13))
+
+function d06() { let x: string | number = "a"; while (more) { x = (x, x === 5) ? "b" : 5; } }
+>d06 : Symbol(d06, Decl(ttttLoopPartialEqualityChecks.ts, 14, 96))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 15, 20))
+>more : Symbol(more, Decl(ttttLoopPartialEqualityChecks.ts, 6, 13))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 15, 20))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 15, 20))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 15, 20))
+
+function d08() { let x: string | number = "a"; while (more) { x = str(x === 5) ? "b" : 5; } }
+>d08 : Symbol(d08, Decl(ttttLoopPartialEqualityChecks.ts, 15, 93))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 16, 20))
+>more : Symbol(more, Decl(ttttLoopPartialEqualityChecks.ts, 6, 13))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 16, 20))
+>str : Symbol(str, Decl(ttttLoopPartialEqualityChecks.ts, 7, 42))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 16, 20))
+
+function d10() { let x: string | number = "a"; while (more) { x = !(x === 5) ? "b" : 5; } }
+>d10 : Symbol(d10, Decl(ttttLoopPartialEqualityChecks.ts, 16, 93))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 17, 20))
+>more : Symbol(more, Decl(ttttLoopPartialEqualityChecks.ts, 6, 13))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 17, 20))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 17, 20))
+
+function d13() { let x: string | number = "a"; while (more) { x = (x === 5 ? 1 : 2) === 1 ? "b" : 5; } }
+>d13 : Symbol(d13, Decl(ttttLoopPartialEqualityChecks.ts, 17, 91))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 18, 20))
+>more : Symbol(more, Decl(ttttLoopPartialEqualityChecks.ts, 6, 13))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 18, 20))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 18, 20))
+
+function d16() { let x: string | number = "a"; while (more) { x = (x === 5) as boolean ? "b" : 5; } }
+>d16 : Symbol(d16, Decl(ttttLoopPartialEqualityChecks.ts, 18, 104))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 19, 20))
+>more : Symbol(more, Decl(ttttLoopPartialEqualityChecks.ts, 6, 13))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 19, 20))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 19, 20))
+
+function d17() { let x: string | number = "a"; while (more) { x = (x === 5) satisfies boolean ? "b" : 5; } }
+>d17 : Symbol(d17, Decl(ttttLoopPartialEqualityChecks.ts, 19, 101))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 20, 20))
+>more : Symbol(more, Decl(ttttLoopPartialEqualityChecks.ts, 6, 13))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 20, 20))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 20, 20))
+
+function d29() { let x: string | number = "a"; let y = false; while (more) { x = (y = x === 5) ? 1 : "a"; } }
+>d29 : Symbol(d29, Decl(ttttLoopPartialEqualityChecks.ts, 20, 108))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 21, 20))
+>y : Symbol(y, Decl(ttttLoopPartialEqualityChecks.ts, 21, 50))
+>more : Symbol(more, Decl(ttttLoopPartialEqualityChecks.ts, 6, 13))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 21, 20))
+>y : Symbol(y, Decl(ttttLoopPartialEqualityChecks.ts, 21, 50))
+>x : Symbol(x, Decl(ttttLoopPartialEqualityChecks.ts, 21, 20))
+
+function g() { let code: 0 | 1 = 0; while (true) { code = code === 1 ? 0 : 1; } }
+>g : Symbol(g, Decl(ttttLoopPartialEqualityChecks.ts, 21, 109))
+>code : Symbol(code, Decl(ttttLoopPartialEqualityChecks.ts, 22, 18))
+>code : Symbol(code, Decl(ttttLoopPartialEqualityChecks.ts, 22, 18))
+>code : Symbol(code, Decl(ttttLoopPartialEqualityChecks.ts, 22, 18))
+

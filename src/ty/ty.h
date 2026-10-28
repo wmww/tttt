@@ -1473,6 +1473,11 @@ struct Checker {
     // contextual signature before the inference fixed it: a parameter not assigned yet, read by an earlier one's
     // initializer, is its type at its position there, not remembered (tsc's getTypeOfSymbol doesn't cache a parameter
     // of a context-sensitive signature, isParameterOfContextSensitiveSignature; its assignment comes after)
+    // The value control flow is typing for an assignment or declaration (tsc's getTypeOfExpression, CheckModeTypeOnly):
+    // an equality reached from it through parentheses, conditionals and binary operators, which pass the check mode
+    // on, reports no TS2367 on a loop's partial types; one in a call's argument or anything else that checks in normal
+    // mode does (ty_type_only_reaches())
+    Expr const* type_only_root;
     FunctionImpl const* assigning_context_function;
     Signature const* assigning_context_signature;
     // Every generic call inferring now, innermost first (OuterInference.enclosing), and the serial the last one got:

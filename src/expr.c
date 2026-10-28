@@ -4270,6 +4270,10 @@ __attribute__((noinline)) static void jsx_typecheck(Expr const* me, ErrorCtx* er
     }
 }
 
+void expr_equality_errors(Expr const* me, Ty const* left, Ty const* right, ErrorCtx* errs) {
+    binary_op_typecheck(left, my binary_op->op, right, me, errs);
+}
+
 // The binary case of expr_typecheck() once the left operand is checked
 static void binary_expr_typecheck_rest(Expr const* me, bool root, ErrorCtx* errs) {
     if (my binary_op->op == BINARY_OP_AND_AND || my binary_op->op == BINARY_OP_OR_OR) {
