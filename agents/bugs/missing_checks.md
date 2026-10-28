@@ -15,7 +15,7 @@ here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in 
 - **Classes**: TS2687 skips statics and method/accessor pairs (hacks.md). [open]
 - **Accessibility**: `this.x = v` in the constructor of a class merged with an interface declaring `readonly x` (tttt
   exempts any property whose parent is the class). Private names: TS18015. [open]
-- **Declarations**: `export function g() {}` + `function g() {}` is TS2395 here, TS2393 in tsc. [open]
+- **Declarations**: `export function g() {}` + `function g() {}` is TS2393 in tsc (one local symbol with two implementations; tttt said nothing). Test ttttExportedAndLocalFunctionDuplicate. [fixed in the commit that flips this]
 - **Implicit any**: widening errors past `report_errors_from_widening` (binding.c; the tests the tsc mechanism ports named for them
   pass since, re-check with a probe: TS7008 class fields, TS7018 through a spread) and of generator yield/next types. [open]
 - **Target-gated**: TS2705 comes only from an inferred return type's demand (tsc's createPromiseReturnType), and tttt

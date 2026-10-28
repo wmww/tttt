@@ -2628,10 +2628,29 @@ static void function_check_duplicate_implementation(FunctionImpl const* me, Erro
     for (u32 i = 0; i < symbol->decl_count; i++) {
         if (symbol->decls[i].kind == SYMBOL_DECL_FUNCTION && ((FunctionImpl const*)symbol->decls[i].node)->has_body) bodies++;
     }
+    if (bodies >= 2) {
+        for (u32 i = 0; i < symbol->decl_count; i++) {
+            if (symbol->decls[i].kind != SYMBOL_DECL_FUNCTION) continue;
+            error_ctx_error_d(errs, symbol_decl_error_span(&symbol->decls[i]), 2393, "Duplicate function implementation.");
+        }
+        return;
+    }
+    // tsc checks the local symbol, which has the block's exported declarations too: `export function g() {}` and
+    // `function g() {}` are one local symbol with two implementations (checkFunctionOrMethodDeclaration's
+    // checkFunctionOrConstructorSymbol(localSymbol); the identical reports of the export symbol's check dedupe)
+    // (Not in JavaScript, whose local symbols aren't checked)
+    if (symbol->decl_count != 1 || !my has_body || (span_source(my full_span) && span_source(my full_span)->is_js)) return;
+    SymbolDecl const* decls[64];
+    bool exported[64];
+    u32 count = function_local_symbol_decls(symbol, decls, exported, c_arraylen(decls));
+    bodies = 0;
+    for (u32 i = 0; i < count; i++) {
+        if (decls[i]->kind == SYMBOL_DECL_FUNCTION && ((FunctionImpl const*)decls[i]->node)->has_body) bodies++;
+    }
     if (bodies < 2) return;
-    for (u32 i = 0; i < symbol->decl_count; i++) {
-        if (symbol->decls[i].kind != SYMBOL_DECL_FUNCTION) continue;
-        error_ctx_error_d(errs, symbol_decl_error_span(&symbol->decls[i]), 2393, "Duplicate function implementation.");
+    for (u32 i = 0; i < count; i++) {
+        if (decls[i]->kind != SYMBOL_DECL_FUNCTION) continue;
+        error_ctx_error_d(errs, symbol_decl_error_span(decls[i]), 2393, "Duplicate function implementation.");
     }
 }
 

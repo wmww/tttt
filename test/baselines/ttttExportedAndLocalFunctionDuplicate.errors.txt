@@ -1,0 +1,25 @@
+ttttExportedAndLocalFunctionDuplicate.ts(4,17): error TS2393: Duplicate function implementation.
+ttttExportedAndLocalFunctionDuplicate.ts(5,10): error TS2393: Duplicate function implementation.
+ttttExportedAndLocalFunctionDuplicate.ts(7,14): error TS2393: Duplicate function implementation.
+ttttExportedAndLocalFunctionDuplicate.ts(8,21): error TS2393: Duplicate function implementation.
+
+
+==== ttttExportedAndLocalFunctionDuplicate.ts (4 errors) ====
+    // An exported function and a local function of the same name in one block are one local symbol in tsc (the binder
+    // declares the exported one locally too, ExportValue): two implementations, TS2393 on both
+    // (checkFunctionOrMethodDeclaration's checkFunctionOrConstructorSymbol of the local symbol; missing_checks.md)
+    export function g() {}
+                    ~
+!!! error TS2393: Duplicate function implementation.
+    function g() {}
+             ~
+!!! error TS2393: Duplicate function implementation.
+    namespace N {
+        function h() {}
+                 ~
+!!! error TS2393: Duplicate function implementation.
+        export function h() {}
+                        ~
+!!! error TS2393: Duplicate function implementation.
+    }
+    

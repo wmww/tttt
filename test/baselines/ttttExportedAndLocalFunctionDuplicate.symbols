@@ -1,0 +1,22 @@
+//// [test/cases/ttttExportedAndLocalFunctionDuplicate.ts] ////
+
+=== ttttExportedAndLocalFunctionDuplicate.ts ===
+// An exported function and a local function of the same name in one block are one local symbol in tsc (the binder
+// declares the exported one locally too, ExportValue): two implementations, TS2393 on both
+// (checkFunctionOrMethodDeclaration's checkFunctionOrConstructorSymbol of the local symbol; missing_checks.md)
+export function g() {}
+>g : Symbol(g, Decl(ttttExportedAndLocalFunctionDuplicate.ts, 0, 0))
+
+function g() {}
+>g : Symbol(g, Decl(ttttExportedAndLocalFunctionDuplicate.ts, 0, 0), Decl(ttttExportedAndLocalFunctionDuplicate.ts, 3, 22))
+
+namespace N {
+>N : Symbol(N, Decl(ttttExportedAndLocalFunctionDuplicate.ts, 4, 15))
+
+    function h() {}
+>h : Symbol(h, Decl(ttttExportedAndLocalFunctionDuplicate.ts, 5, 13), Decl(ttttExportedAndLocalFunctionDuplicate.ts, 6, 19))
+
+    export function h() {}
+>h : Symbol(h, Decl(ttttExportedAndLocalFunctionDuplicate.ts, 6, 19))
+}
+
