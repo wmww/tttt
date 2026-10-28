@@ -8181,7 +8181,7 @@ const baselines = {
         types: true,
     },
     'bun43-P9a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -10332,7 +10332,7 @@ const baselines = {
     },
     'bun89-R15': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'bun89-R18b': {
@@ -14107,7 +14107,7 @@ const baselines = {
         types: false,
     },
     'ttttFlowTypeCastRecovery': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15672,6 +15672,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttOptionalPatternNonContextual': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttOptionalPropIndexedConstraint': {
         errors: true,
         symbols: true,
@@ -15752,6 +15757,11 @@ const baselines = {
         errors: true,
         symbols: true,
         types: false,
+    },
+    'ttttParameterModifierReservedName': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttParameterPropertyDecoratorRejected(experimentaldecorators=false)': {
         errors: true,
@@ -16143,6 +16153,11 @@ const baselines = {
         types: true,
     },
     'ttttSpreadGenericArrayLike': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttSpreadGenericMappedOptional': {
         errors: true,
         symbols: true,
         types: true,
@@ -16688,6 +16703,11 @@ const baselines = {
         types: true,
     },
     'ttttUnionSuggestionObjectMembers': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUnionTemplateIndexSymbol': {
         errors: true,
         symbols: true,
         types: true,
