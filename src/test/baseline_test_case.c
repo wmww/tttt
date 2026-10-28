@@ -597,21 +597,6 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
         }
     }
 
-    // A file that says `/// <reference no-default-lib="true"/>` is the default library (tsc's hasNoDefaultLib)
-    bool no_default_lib = csview_find_sv(contents_sv, c_sv("no-default-lib=\"true\"")) != c_NPOS;
-    for (csview list = cstr_sv(&my lib_files); list.size && !no_default_lib;) {
-        isize end = csview_find_sv(list, c_sv(","));
-        cstr path = cstr_d("/.lib/", csview_trim_whitespace(csview_slice(list, 0, end)));
-        list = end == c_NPOS ? c_sv("") : csview_slice(list, end + 1, INTPTR_MAX);
-        cstr lib_contents = cstr_null;
-        try (fs_read_file(mock_fs_get_fs(my fs), cstr_sv(&path), &lib_contents)) if_err (e) {
-            ignore e;
-            current_error_destroy();
-        }
-        no_default_lib = cstr_find(&lib_contents, "no-default-lib=\"true\"") != c_NPOS;
-        cstr_drop(&lib_contents);
-        cstr_drop(&path);
-    }
     // `/// <reference lib="dom" />` in a test's file adds that lib to the program (tsc's processLibReferenceDirectives).
     // The libs are a cached program of their own that a file can't add to (program_follow_lib_references() is off),
     // so the harness adds them to the list up front. Not with libReplacement, whose libs the test's program loads
@@ -756,7 +741,7 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
     }
     my skipped = tsgo_skips_configuration(program_options(my program));
     compiler_options_resolve(program_options(my program));
-    cstr_take(&my lib_list, no_default_lib ? cstr_null : compiler_options_lib_files(program_options(my program)));
+    cstr_take(&my lib_list, compiler_options_lib_files(program_options(my program)));
     for (csview rest = cstr_sv(&referenced_libs); rest.size && cstr_size(&my lib_list);) {
         isize end = csview_find_sv(rest, c_sv(","));
         csview single = csview_slice(rest, 0, end);

@@ -1,0 +1,13 @@
+//// [test/cases/ttttNoDefaultLibPragma.ts] ////
+
+=== ttttNoDefaultLibPragma.ts ===
+// `/// <reference no-default-lib="true"/>` changes nothing in tsgo 7 (processPragmasIntoFields ignores it): the file is
+// no default library, so skipDefaultLibCheck (on in the harness) still checks it, and the libs are loaded
+/// <reference no-default-lib="true"/>
+const x: number = "s";
+>x : Symbol(x, Decl(ttttNoDefaultLibPragma.ts, 3, 5))
+
+const a: Array<string> = [];
+>a : Symbol(a, Decl(ttttNoDefaultLibPragma.ts, 4, 5))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+

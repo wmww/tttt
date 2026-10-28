@@ -1434,34 +1434,6 @@ static int source_check_directive(csview contents) {
     return ret;
 }
 
-// `/// <reference no-default-lib="true"/>` in the comments at the top of a file (tsc's hasNoDefaultLib): the file
-// says it is the default lib, which skipDefaultLibCheck doesn't check
-static bool source_has_no_default_lib(csview contents) {
-    const char* c = past_bom_and_shebang(contents);
-    const char* end = contents.buf + contents.size;
-    while (c < end) {
-        while (c < end && (*c == ' ' || *c == '\t' || *c == '\r' || *c == '\n')) c++;
-        if (c + 1 >= end || c[0] != '/' || (c[1] != '/' && c[1] != '*')) break;
-        const char* comment_end;
-        if (c[1] == '/') {
-            comment_end = c;
-            while (comment_end < end && *comment_end != '\n') comment_end++;
-            csview text = csview_from_range(c, comment_end);
-            if (csview_starts_with(text, "///") && csview_contains(text, "<reference") &&
-                (csview_contains(text, "no-default-lib=\"true\"") || csview_contains(text, "no-default-lib='true'"))
-            ) {
-                return true;
-            }
-        } else {
-            csview rest = csview_from_range(c + 2, end);
-            isize close = csview_find_sv(rest, c_sv("*/"));
-            comment_end = close == c_NPOS ? end : rest.buf + close + 2;
-        }
-        c = comment_end;
-    }
-    return false;
-}
-
 static bool equals_ignoring_case(csview sv, const char* lowercase) {
     isize len = (isize)strlen(lowercase);
     if (sv.size != len) return false;
@@ -1729,9 +1701,6 @@ static SourceFile* program_make_source_text(Program const* me, csview canonical_
     // tsc's skipTypeChecking: declaration files aren't checked with skipLibCheck
     if (source_file->is_declaration && my options.skip_lib_check) source_file->unchecked = true;
     if (my options.no_check) source_file->unchecked = true; // (tsc's skipTypeChecking: no semantic diagnostics at all)
-    if (my options.skip_default_lib_check && !is_stdlib && source_has_no_default_lib(cstr_sv(&source_file->contents))) {
-        source_file->unchecked = true;
-    }
     // (tsc's canIncludeBindAndCheckDiagnostics: a JSON file has none, only convertToJson's syntax errors)
     if (source_file->is_json) source_file->unchecked = true;
     source_file->plain_js = source_file->is_js && !check_directive && !my options.is_set[COMPILER_OPTION_check_js] &&

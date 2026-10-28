@@ -32,8 +32,9 @@
   7.1.0-beta's defaultTypesExclude*LibraryReferences tests, one in a `node_modules/@types/X/` unit doesn't unless
   `@types` names X or `*` (tsgo's default `types` is empty); an @types package an import loads would be missed
   (no test has one). Correct: libs a test's program can add to. [harness]
-- The CLI (`program.c`) loads the default lib even when a file says `/// <reference no-default-lib="true"/>`; only the
-  harness honours it. [open]
+- `/// <reference no-default-lib="true"/>` was honoured by the harness (no default lib) and skipDefaultLibCheck
+  (program.c), TypeScript 5's hasNoDefaultLib; tsgo 7 ignores the pragma, and so does tttt now
+  (ttttNoDefaultLibPragma). [fixed see git log]
 - Option diagnostics go on the tsconfig (program_set_config_file(), option_sites()) since suite checker bugs 6. Left:
   `paths` only an extended config sets isn't validated; APILibCheck wants
   typescript.internal.d.ts and tsserverlibrary, which only a tsc build has. [open]

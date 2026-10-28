@@ -1,0 +1,12 @@
+ttttNoDefaultLibPragma.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== ttttNoDefaultLibPragma.ts (1 errors) ====
+    // `/// <reference no-default-lib="true"/>` changes nothing in tsgo 7 (processPragmasIntoFields ignores it): the file is
+    // no default library, so skipDefaultLibCheck (on in the harness) still checks it, and the libs are loaded
+    /// <reference no-default-lib="true"/>
+    const x: number = "s";
+          ~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    const a: Array<string> = [];
+    
