@@ -244,15 +244,13 @@ static bool class_decorator_runs_first(Scope const* names, void const* class_dec
 
 // tsc's checkResolvedBlockScopedVariable / isBlockScopedNameDeclaredBeforeUse: a `let`/`const`, class or enum used
 // (as a value) before its declaration, unless the use is deferred: in a function, in an instance member
-__attribute__((always_inline)) static inline void check_declared_before_use(IdentifierExpr const* me, Scope const* names, ErrorCtx* errs) {
-    Symbol const* symbol = my symbol;
-    // (An import merged with an exported value: the value, see scope_get_value())
-    if ((symbol->flags & SYMBOL_ALIAS) && my target && symbol->alias && symbol->alias->export_value == my target) symbol = my target;
+// (`name`: the use. `flow_free`: not where the walk is, so the flow builder's state says nothing about it)
+__attribute__((always_inline)) static inline void check_symbol_declared_before_use(Symbol const* symbol, Span name, Scope const* names, bool flow_free, ErrorCtx* errs) {
     u32 flags = symbol->flags;
     if (!(flags & (SYMBOL_BLOCK_SCOPED_VARIABLE | SYMBOL_CLASS | SYMBOL_ENUM)) || symbol->is_ambient) return;
     if (flags & SYMBOL_CLASS && flags & (SYMBOL_FUNCTION | SYMBOL_FUNCTION_SCOPED_VARIABLE)) return;
     if ((flags & SYMBOL_ENUM) == SYMBOL_CONST_ENUM && !compiler_options()->isolated_modules) return;
-    if ((scope_flow(names) && scope_flow(names)->in_type_query) || names->ambient) return;
+    if ((!flow_free && scope_flow(names) && scope_flow(names)->in_type_query) || names->ambient) return;
     SymbolDecl const* decl = nullptr;
     for (u32 i = 0; i < symbol->decl_count && !decl; i++) {
         SymbolDeclKind kind = symbol->decls[i].kind;
@@ -264,8 +262,8 @@ __attribute__((always_inline)) static inline void check_declared_before_use(Iden
     }
     if (!decl || !span_source(decl->full)) return;
     // (Files aren't ordered without an outFile, which TypeScript 7 removed)
-    if (span_source(decl->full) != span_source(identifier_expr_name(me))) return;
-    if (span_start_ptr(decl->full) <= span_start_ptr(identifier_expr_name(me))) {
+    if (span_source(decl->full) != span_source(name)) return;
+    if (span_start_ptr(decl->full) <= span_start_ptr(name)) {
         if (decl->kind == SYMBOL_DECL_CLASS) {
             // Declared before, but used in a computed name of its own members (`class A { [A.p]() {} }`)
             bool in_computed_name = false;
@@ -280,13 +278,13 @@ __attribute__((always_inline)) static inline void check_declared_before_use(Iden
             }
         } else {
             // Declared before, but used in its own initializer (`let x = x`, `for (const x of x)`)
-            if (decl->kind != SYMBOL_DECL_VARIABLE || !scope_flow(names) || !scope_flow(names)->initializing) return;
+            if (flow_free || decl->kind != SYMBOL_DECL_VARIABLE || !scope_flow(names) || !scope_flow(names)->initializing) return;
             Binding const* binding = decl->node;
             Binding const* root = binding;
             while (root->parent) root = root->parent;
             if (root != &scope_flow(names)->initializing->binding) return;
             // In the default of another element of the pattern it's initialized already (`{ a, b = a }`)
-            char const* at = span_start_ptr(identifier_expr_name(me));
+            char const* at = span_start_ptr(name);
             bool in_pattern = at >= span_start_ptr(root->content_span) && at < span_end_ptr(root->content_span);
             Span element = binding->has_element_span ? binding_element_span(binding) : binding->content_span;
             if (binding->default_value) element = span_between(element, expr_outer_span(binding->default_value));
@@ -309,13 +307,24 @@ __attribute__((always_inline)) static inline void check_declared_before_use(Iden
     }
     Error* error;
     if (flags & SYMBOL_BLOCK_SCOPED_VARIABLE) {
-        error = error_ctx_error_d(errs, identifier_expr_name(me), 2448, "Block-scoped variable '", decl->name, "' used before its declaration.");
+        error = error_ctx_error_d(errs, name, 2448, "Block-scoped variable '", decl->name, "' used before its declaration.");
     } else if (flags & SYMBOL_CLASS) {
-        error = error_ctx_error_d(errs, identifier_expr_name(me), 2449, "Class '", decl->name, "' used before its declaration.");
+        error = error_ctx_error_d(errs, name, 2449, "Class '", decl->name, "' used before its declaration.");
     } else {
-        error = error_ctx_error_d(errs, identifier_expr_name(me), 2450, "Enum '", decl->name, "' used before its declaration.");
+        error = error_ctx_error_d(errs, name, 2450, "Enum '", decl->name, "' used before its declaration.");
     }
     error_add_related_d(error, decl->name, 2728, "'", decl->name, "' is declared here.");
+}
+
+__attribute__((always_inline)) static inline void check_declared_before_use(IdentifierExpr const* me, Scope const* names, ErrorCtx* errs) {
+    Symbol const* symbol = my symbol;
+    // (An import merged with an exported value: the value, see scope_get_value())
+    if ((symbol->flags & SYMBOL_ALIAS) && my target && symbol->alias && symbol->alias->export_value == my target) symbol = my target;
+    check_symbol_declared_before_use(symbol, identifier_expr_name(me), names, false, errs);
+}
+
+void scope_check_declared_before_use(Symbol const* symbol, Span name, Scope const* names, ErrorCtx* errs) {
+    check_symbol_declared_before_use(symbol, name, names, true, errs);
 }
 
 // tsc's onSuccessfullyResolvedSymbol for parameter initializers: a parameter's initializer (or its pattern's defaults
@@ -427,11 +436,18 @@ void port_item_add_type_only_related(Error* error, PortItem const* item, csview 
 // import in a namespace (which resolves nothing itself): its module's TS2307
 static void check_unresolved_import_alias_value(IdentifierExpr const* me, Scope const* names) {
     Symbol const* symbol = my symbol;
-    if (!symbol || !(symbol->flags & SYMBOL_ALIAS) || !symbol->alias || !symbol->alias->item || !my target->is_placeholder) return;
+    if (!symbol || !(symbol->flags & SYMBOL_ALIAS) || !symbol->alias || !symbol->alias->item) return;
+    // (tsc's markAliasReferenced: not in a type query; a value target (not a const enum's unless isolatedModules or
+    // preserveConstEnums) or nothing)
+    if (scope_flow(names) && scope_flow(names)->in_type_query) return;
+    u32 target_flags = my target->is_placeholder ? 0 : symbol_resolved_flags(my target);
+    bool value = target_flags & SYMBOL_VALUE &&
+        (!(target_flags & SYMBOL_CONST_ENUM) || compiler_options()->isolated_modules || compiler_options()->preserve_const_enums);
+    if (!my target->is_placeholder && !value) return;
     PortItem* item = symbol->alias->item;
     Scope const* scope = symbol->alias->scope;
     if (item->value_use_checked || !scope || scope->file != names->file) return;
-    if (port_item_check_namespace_import_use(symbol, names)) return;
+    if (my target->is_placeholder && port_item_check_namespace_import_use(symbol, names)) return;
     if (item->tag != PORT_IMPORT_ALIAS || !vec_span_size(&port_item_alias(item)->path)) return;
     item->value_use_checked = true;
     port_item_report_alias_root_value(scope, *vec_span_front(&port_item_alias(item)->path), binder_errs(scope->binder));

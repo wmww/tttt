@@ -1038,6 +1038,9 @@ void scope_report_namespace_not_found(Scope const* me, Span at, ErrorCtx* errs);
 // The same for a value used in an expression, which in a class may be a member missing `this.` (TS2663/TS2662): that
 // waits for the checker
 void scope_report_value_not_found(Scope const* me, Span name, bool shorthand, ErrorCtx* errs);
+// tsc's checkResolvedBlockScopedVariable for a value use at `name` in `names` that isn't where the resolve walk is (the
+// first name of an `import x = A.B` that a use of x references): TS2448/TS2449/TS2450 (expr.c)
+void scope_check_declared_before_use(Symbol const* symbol, Span name, Scope const* names, ErrorCtx* errs);
 // Reports what scope_report_value_not_found() deferred, with the checker current
 void scope_report_missing_prefixes(Binder* me);
 Symbol* scope_resolve(Scope const* me, csview name, u32 meaning);

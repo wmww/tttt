@@ -6,14 +6,22 @@
 #include "scope.h"
 #include "ty/ty.h"
 
-// `A` of an `import x = A.B` referenced as a value (tsc's markIdentifierAliasReferenced -> getResolvedSymbol): not
-// found is TS2304, a namespace only TS2708
+// `A` of an `import x = A.B` referenced as a value (tsc's markIdentifierAliasReferenced -> getResolvedSymbol): a
+// block-scoped variable, class or enum declared after the import is TS2448/TS2449/TS2450 (checkResolvedBlockScopedVariable);
+// not found is TS2304, a namespace only TS2708, a type only TS2693
 void port_item_report_alias_root_value(Scope const* scope, Span first, ErrorCtx* errs) {
     // (Not under verbatimModuleSyntax: tsc's markLinkedReferences needs canCollectSymbolAliasAccessibilityData)
     if (!first.size || compiler_options()->verbatim_module_syntax) return;
-    if (scope_resolve(scope, span_sv(first), SYMBOL_VALUE)) return;
+    Symbol const* value = scope_resolve(scope, span_sv(first), SYMBOL_VALUE);
+    if (value) {
+        scope_check_declared_before_use(value, first, scope, errs);
+        return;
+    }
     if (scope_resolve(scope, span_sv(first), SYMBOL_NAMESPACE)) {
         error_ctx_error_d(errs, first, 2708, "Cannot use namespace '", first, "' as a value.");
+    } else if (scope_get_type(scope, span_sv(first), nullptr) && !symbol_is_builtin_type(scope_get_type(scope, span_sv(first), nullptr))) {
+        // (tsc's checkAndReportErrorForUsingTypeAsValue)
+        scope_report_type_as_value(scope->binder, scope_resolve(scope, span_sv(first), SYMBOL_TYPE), first, false, errs);
     } else {
         scope_report_value_not_found(scope, first, false, errs);
     }
@@ -536,12 +544,21 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
     // or export, at the name
     // (Each prefix of the name, longest first: what it names, unresolved, and that alias's type-only declaration)
     PortItem const* alias_type_only = nullptr;
-    if (my main.tag == PORT_IMPORT_ALIAS && !my main.type_only && !my jsdoc && my main.symbol &&
-        !vec_span_is_empty(&port_item_alias(&my main)->path) && symbol_resolve_alias(my main.symbol)
+    if (my main.tag == PORT_IMPORT_ALIAS && !my main.type_only && !my jsdoc && my main.symbol && my main.symbol->alias &&
+        !vec_span_is_empty(&port_item_alias(&my main)->path)
     ) {
+        // (Whether the whole name resolves or not: `import f = TO.v` of a type-only interface TO, TS2702 there)
+        symbol_resolve_alias(my main.symbol);
         for (isize i = vec_symbol_cptr_size(&port_item_alias(&my main)->path_symbols); i-- > 0 && !alias_type_only;) {
             Symbol const* part = *vec_symbol_cptr_at(&port_item_alias(&my main)->path_symbols, i);
             if (part && (part->flags & SYMBOL_ALIAS)) alias_type_only = symbol_type_only_declaration(part);
+        }
+        // (A first name that isn't a namespace resolved nothing: tsc's getTypeOnlyDeclarationOfEntityName takes it with
+        // every meaning)
+        if (!alias_type_only && vec_symbol_cptr_is_empty(&port_item_alias(&my main)->path_symbols)) {
+            Span first = *vec_span_front(&port_item_alias(&my main)->path);
+            Symbol const* part = first.size ? scope_resolve(my main.symbol->alias->scope, span_sv(first), SYMBOL_ANY_MEANING) : nullptr;
+            if (part && part != my main.symbol && (part->flags & SYMBOL_ALIAS)) alias_type_only = symbol_type_only_declaration(part);
         }
     }
     if (alias_type_only) {

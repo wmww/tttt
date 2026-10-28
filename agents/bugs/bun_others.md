@@ -435,7 +435,13 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
 - `<<` and `<=` after a JSX tag name or element are tokens of their own: no type arguments, no adjacent element
   (TS2657); the attribute list aborts at the binary operator (isInSomeParsingContext) and the operator applies to the
   element (43-C13f, 43-C4b, 93-P04d). After a missing tag name tttt still takes `<<` for type arguments, which matches tsgo's
-  diagnostics on 93-P04b (`(<a><<<T>()=>void>/></a>)`) but not its tree (the .types show three children). `<a <<= b />` still differs (TS1109 x2 where tsgo says nothing past TS1003). [fixed HASH]
+  diagnostics on 93-P04b (`(<a><<<T>()=>void>/></a>)`) but not its tree (the .types show three children). `<a <<= b />` still differs (TS1109 x2 where tsgo says nothing past TS1003). [fixed 8981a243d]
+- `import x = A.B` (90-R10b): a value use of x resolves A as a value from the import (tsc's
+  markAliasSymbolAsReferenced, for a value target too, not only an unresolved one): TS2448/TS2449/TS2450 when A is
+  declared after the import, TS2693 for a type; a first name that is only a type is TS2702, not TS2503
+  (checkAndReportErrorForUsingTypeAsNamespace; its TS2713 alternative needs the declared type's properties, which the
+  binder doesn't have: still TS2702 for `import x = I.p` of an interface I with a property p); TS1380 through a
+  type-only first name whether the rest resolves or not. [fixed HASH]
 
 ## Not looked at, by code
 - Each paragraph below is a code and direction with the cases it mismatches in, uninvestigated: at least one open

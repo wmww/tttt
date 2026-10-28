@@ -3263,7 +3263,15 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
     target = scope_resolve(my alias->scope, span_sv(first), SYMBOL_NAMESPACE);
     if (target == me) target = nullptr;
     if (!target) {
-        error_ctx_error_d(errs, first, 2503, "Cannot find namespace '", first, "'.");
+        // (tsc's checkAndReportErrorForUsingTypeAsNamespace: a type of the name is TS2702, or TS2713 when its declared
+        // type has a property of the next name, which the binder can't tell)
+        Symbol const* type = scope_resolve(my alias->scope, span_sv(first), SYMBOL_TYPE);
+        if (type == me) type = nullptr;
+        if (type && (symbol_resolved_flags(type) & SYMBOL_TYPE)) {
+            error_ctx_error_d(errs, first, 2702, "'", first, "' only refers to a type, but is being used as a namespace here.");
+        } else {
+            error_ctx_error_d(errs, first, 2503, "Cannot find namespace '", first, "'.");
+        }
         return nullptr;
     }
     unused_mark_referenced(my alias->scope, target, SYMBOL_NAMESPACE);

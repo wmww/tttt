@@ -1,0 +1,54 @@
+a.ts(1,12): error TS2449: Class 'K' used before its declaration.
+a.ts(1,12): error TS2702: 'K' only refers to a type, but is being used as a namespace here.
+a.ts(2,12): error TS2448: Block-scoped variable 'L' used before its declaration.
+a.ts(2,12): error TS2503: Cannot find namespace 'L'.
+a.ts(3,12): error TS2450: Enum 'En' used before its declaration.
+a.ts(3,17): error TS2713: Cannot access 'X.y' because 'X' is a type, but not a namespace. Did you mean to retrieve the type of the property 'y' in 'X' with 'X["y"]'?
+a.ts(5,12): error TS2693: 'TO' only refers to a type, but is being used as a value here.
+a.ts(5,12): error TS2702: 'TO' only refers to a type, but is being used as a namespace here.
+a.ts(5,12): error TS1380: An import alias cannot reference a declaration that was imported using 'import type'.
+a.ts(6,35): error TS2448: Block-scoped variable 'P' used before its declaration.
+a.ts(6,35): error TS2503: Cannot find namespace 'P'.
+
+
+==== t.ts (0 errors) ====
+    export interface G1 { x: 1 }
+    
+==== a.ts (11 errors) ====
+    import c = K.v; c; class K { static v = 1 }
+               ~
+!!! error TS2449: Class 'K' used before its declaration.
+!!! related TS2728 a.ts:1:26: 'K' is declared here.
+               ~
+!!! error TS2702: 'K' only refers to a type, but is being used as a namespace here.
+    import d = L.v; d; let L = { v: 1 };
+               ~
+!!! error TS2448: Block-scoped variable 'L' used before its declaration.
+!!! related TS2728 a.ts:2:24: 'L' is declared here.
+               ~
+!!! error TS2503: Cannot find namespace 'L'.
+    import e = En.X.y; e; enum En { X }
+               ~~
+!!! error TS2450: Enum 'En' used before its declaration.
+!!! related TS2728 a.ts:3:28: 'En' is declared here.
+                    ~
+!!! error TS2713: Cannot access 'X.y' because 'X' is a type, but not a namespace. Did you mean to retrieve the type of the property 'y' in 'X' with 'X["y"]'?
+    import type { G1 as TO } from "./t";
+    import f = TO.v; f;
+               ~~
+!!! error TS2693: 'TO' only refers to a type, but is being used as a value here.
+               ~~
+!!! error TS2702: 'TO' only refers to a type, but is being used as a namespace here.
+               ~~~~
+!!! error TS1380: An import alias cannot reference a declaration that was imported using 'import type'.
+!!! related TS1376 a.ts:4:15: 'TO' was imported here.
+    function fn(p = g) { } import g = P.v; const P = { v: 1 };
+                                      ~
+!!! error TS2448: Block-scoped variable 'P' used before its declaration.
+!!! related TS2728 a.ts:6:46: 'P' is declared here.
+                                      ~
+!!! error TS2503: Cannot find namespace 'P'.
+    namespace N { export const v = 1 }
+    import h = N.v; h;
+    export {};
+    
