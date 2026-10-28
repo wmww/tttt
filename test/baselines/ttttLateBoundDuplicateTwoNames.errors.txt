@@ -1,0 +1,98 @@
+ttttLateBoundDuplicateTwoNames.ts(6,7): error TS2300: Duplicate identifier '[k]'.
+ttttLateBoundDuplicateTwoNames.ts(7,3): error TS2300: Duplicate identifier '[k]'.
+ttttLateBoundDuplicateTwoNames.ts(10,7): error TS2300: Duplicate identifier '[k]'.
+ttttLateBoundDuplicateTwoNames.ts(11,7): error TS2300: Duplicate identifier '[k]'.
+ttttLateBoundDuplicateTwoNames.ts(12,3): error TS2300: Duplicate identifier '[k]'.
+ttttLateBoundDuplicateTwoNames.ts(12,3): error TS2717: Subsequent property declarations must have the same type.  Property '[k]' must be of type 'number', but here has type 'string'.
+ttttLateBoundDuplicateTwoNames.ts(13,3): error TS2300: Duplicate identifier '[k]'.
+ttttLateBoundDuplicateTwoNames.ts(13,3): error TS2300: Duplicate identifier 'a'.
+ttttLateBoundDuplicateTwoNames.ts(16,7): error TS2300: Duplicate identifier '[k]'.
+ttttLateBoundDuplicateTwoNames.ts(16,7): error TS2300: Duplicate identifier 'a'.
+ttttLateBoundDuplicateTwoNames.ts(17,7): error TS2300: Duplicate identifier '[k]'.
+ttttLateBoundDuplicateTwoNames.ts(17,7): error TS2300: Duplicate identifier 'a'.
+ttttLateBoundDuplicateTwoNames.ts(18,3): error TS2300: Duplicate identifier '[k]'.
+ttttLateBoundDuplicateTwoNames.ts(18,3): error TS2300: Duplicate identifier 'a'.
+ttttLateBoundDuplicateTwoNames.ts(18,3): error TS2717: Subsequent property declarations must have the same type.  Property '[k]' must be of type 'number', but here has type 'string'.
+ttttLateBoundDuplicateTwoNames.ts(19,3): error TS2300: Duplicate identifier '[k]'.
+ttttLateBoundDuplicateTwoNames.ts(19,3): error TS2300: Duplicate identifier 'a'.
+ttttLateBoundDuplicateTwoNames.ts(20,7): error TS2300: Duplicate identifier '[k]'.
+ttttLateBoundDuplicateTwoNames.ts(20,7): error TS2300: Duplicate identifier 'a'.
+
+
+==== ttttLateBoundDuplicateTwoNames.ts (19 errors) ====
+    // A late-bound accessor symbol that conflicts with itself and with the written member of its name: each declaration is
+    // a duplicate under both names, the property name (lateBindMember) and `[k]` (combineSymbolTables' mergeSymbol).
+    // Types and symbols left out: tsc's merged symbol isn't mirrored (agents/bugs/bun_others.md)
+    const k = "a";
+    class C {
+      get [k]() { return 1; }
+          ~~~
+!!! error TS2300: Duplicate identifier '[k]'.
+!!! related TS6203 ttttLateBoundDuplicateTwoNames.ts:7:3: '[k]' was also declared here.
+      a() {}
+      ~
+!!! error TS2300: Duplicate identifier '[k]'.
+!!! related TS6203 ttttLateBoundDuplicateTwoNames.ts:6:7: '[k]' was also declared here.
+    }
+    class D {
+      get [k]() { return 1; }
+          ~~~
+!!! error TS2300: Duplicate identifier '[k]'.
+!!! related TS6203 ttttLateBoundDuplicateTwoNames.ts:13:3: '[k]' was also declared here.
+      set [k](v: number) {}
+          ~~~
+!!! error TS2300: Duplicate identifier '[k]'.
+!!! related TS6203 ttttLateBoundDuplicateTwoNames.ts:13:3: '[k]' was also declared here.
+      [k]: string = "";
+      ~~~
+!!! error TS2300: Duplicate identifier '[k]'.
+!!! related TS6203 ttttLateBoundDuplicateTwoNames.ts:13:3: '[k]' was also declared here.
+      ~~~
+!!! error TS2717: Subsequent property declarations must have the same type.  Property '[k]' must be of type 'number', but here has type 'string'.
+!!! related TS6203 ttttLateBoundDuplicateTwoNames.ts:10:7: '[k]' was also declared here.
+      a() {}
+      ~
+!!! error TS2300: Duplicate identifier '[k]'.
+!!! related TS6203 ttttLateBoundDuplicateTwoNames.ts:10:7: '[k]' was also declared here.
+!!! related TS6204 ttttLateBoundDuplicateTwoNames.ts:11:7: and here.
+!!! related TS6204 ttttLateBoundDuplicateTwoNames.ts:12:3: and here.
+      ~
+!!! error TS2300: Duplicate identifier 'a'.
+    }
+    class E {
+      get [k]() { return 1; }
+          ~~~
+!!! error TS2300: Duplicate identifier '[k]'.
+!!! related TS6203 ttttLateBoundDuplicateTwoNames.ts:19:3: '[k]' was also declared here.
+          ~~~
+!!! error TS2300: Duplicate identifier 'a'.
+      set [k](v: number) {}
+          ~~~
+!!! error TS2300: Duplicate identifier '[k]'.
+!!! related TS6203 ttttLateBoundDuplicateTwoNames.ts:19:3: '[k]' was also declared here.
+          ~~~
+!!! error TS2300: Duplicate identifier 'a'.
+      [k]: string = "";
+      ~~~
+!!! error TS2300: Duplicate identifier '[k]'.
+!!! related TS6203 ttttLateBoundDuplicateTwoNames.ts:19:3: '[k]' was also declared here.
+      ~~~
+!!! error TS2300: Duplicate identifier 'a'.
+      ~~~
+!!! error TS2717: Subsequent property declarations must have the same type.  Property '[k]' must be of type 'number', but here has type 'string'.
+!!! related TS6203 ttttLateBoundDuplicateTwoNames.ts:16:7: '[k]' was also declared here.
+      a() {}
+      ~
+!!! error TS2300: Duplicate identifier '[k]'.
+!!! related TS6203 ttttLateBoundDuplicateTwoNames.ts:16:7: '[k]' was also declared here.
+!!! related TS6204 ttttLateBoundDuplicateTwoNames.ts:17:7: and here.
+!!! related TS6204 ttttLateBoundDuplicateTwoNames.ts:18:3: and here.
+      ~
+!!! error TS2300: Duplicate identifier 'a'.
+      get [k]() { return 2; }
+          ~~~
+!!! error TS2300: Duplicate identifier '[k]'.
+          ~~~
+!!! error TS2300: Duplicate identifier 'a'.
+    }
+    

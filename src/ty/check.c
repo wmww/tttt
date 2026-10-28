@@ -3720,10 +3720,27 @@ static MemberEntry* add_member_entry(MemberTables* me) {
 }
 
 // TS2300 at `at` naming `name` (once: the binder's and the checker's reports of a declaration are one)
+// The TS2300 at `at` that names `name`: tsc's diagnostics are one per position and message, so the same declaration can
+// be a duplicate under two names (lateBindMember's property name and mergeSymbol's `[k]`)
+static Error* find_duplicate_named(ErrorCtx* errs, Span at, csview name) {
+    for (ErrorCtx* ctx = errs; ctx; ctx = ctx->parent) {
+        for (isize_t i = vec_error_size(&ctx->errors); i > 0; i--) {
+            Error* error = vec_error_at_mut(&ctx->errors, i - 1);
+            if (error->ts_code != 2300 || !span_eq(error->span, at)) continue;
+            csview message = cstr_sv(&error->message);
+            csview prefix = c_sv("Duplicate identifier '");
+            if (message.size == prefix.size + name.size + 2 && !memcmp(message.buf + prefix.size, name.buf, (size_t)name.size)) {
+                return error;
+            }
+        }
+    }
+    return nullptr;
+}
+
 static void report_duplicate_named(Span at, csview name, ErrorCtx* errs) {
     // (A lib's declaration only when lib files are checked: the lib side of the conflict, tsc's check of the lib)
     if (!errs || !span_valid(at) || !span_source(at) || (span_source(at)->is_stdlib && !lib_files_checked())) return;
-    Error* existing = error_ctx_find(errs, at, 2300);
+    Error* existing = find_duplicate_named(errs, at, name);
     if (!existing) error_ctx_error_s(errs, at, 2300, cstr_d("Duplicate identifier '", name, "'."));
 }
 
@@ -3858,11 +3875,11 @@ static void merge_late_members(MemberTables* tables, VecDupRecord* records, Erro
             csview display = span_sv(late->decls[0]);
             for (u32 i = 0; i < late->decl_count; i++) {
                 report_duplicate_named(late->decls[i], display, errs);
-                for (u32 j = 0; j < early->decl_count; j++) add_duplicate_related_named(error_ctx_find(errs, late->decls[i], 2300), late->decls[i], early->decls[j], display);
+                for (u32 j = 0; j < early->decl_count; j++) add_duplicate_related_named(find_duplicate_named(errs, late->decls[i], display), late->decls[i], early->decls[j], display);
             }
             for (u32 j = 0; j < early->decl_count; j++) {
                 report_duplicate_named(early->decls[j], display, errs);
-                for (u32 i = 0; i < late->decl_count; i++) add_duplicate_related_named(error_ctx_find(errs, early->decls[j], 2300), early->decls[j], late->decls[i], display);
+                for (u32 i = 0; i < late->decl_count; i++) add_duplicate_related_named(find_duplicate_named(errs, early->decls[j], display), early->decls[j], late->decls[i], display);
             }
             continue;
         }

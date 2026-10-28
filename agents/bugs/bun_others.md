@@ -80,9 +80,18 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   reads nothing, tttt reads the property `1` (spurious TS2339, missing TS2538; TS1539 is corF's). [open]
 - Accessors with a `this` parameter, 58-L01 (`get x(this)`, `set x(this, v)`): tsc's `this` in such an accessor body
   is any (no TS2339, no TS7006 for an implicit `this`); tttt types it as the class. [open]
-- Private names: `o.#a` on a type literal `{ #a: number }` (30-C9b, TS18016 then nothing in tsc) and `x.#p` on a
-  union with an index signature member (89-R15): tttt reports TS2339 where tsc finds the class's private name or
-  stays quiet. [open]
+- Private names: `o.#a` on a type literal `{ #a: number }` (30-C9b, TS18016 then nothing in tsc): tttt reports
+  TS2339 where tsc stays quiet. [open] `x.#p` on a union with a string index signature member (89-R15): the union
+  property takes it (tsgo's getApplicableIndexInfoForName of the escaped name, ty_applicable_index_info_for_name()).
+  [fixed add71df94]
+- A late-bound symbol that conflicts with itself and with the written member of its name (99-V4
+  lateBindMember__07: `get [k]`, `set [k]`, `[k]: string`, `a()`, `get [k]` again with k = "a"): every declaration is
+  TS2300 under both names, `'a'` (lateBindMember) and `'[k]'` (combineSymbolTables' mergeSymbol, and
+  checkObjectTypeForDuplicateDeclarations' reportDuplicateMemberErrors); tttt deduplicated TS2300 by position alone.
+  Now per position and name (find_duplicate_named()); test ttttLateBoundDuplicateTwoNames (errors only) [fixed PENDING].
+  Left: tsc's symbols and types there: mergeSymbol fails and returns the late symbol, which combineSymbolTables keeps
+  for the name, while `c.a` still reads the method (`() => void`) in tsc's output; tttt keeps the early symbol and
+  types the late `[k]` as the method. Not traced. [open]
 - `Pick` and `Writable` of a protected key (`Pick<D, "id">` with `protected readonly id`, TS2344), 99-V1's
   protected_* files: tsc keeps `id` a property of the mapped type and reports TS2445 at accesses, tttt drops it
   (TS2339 spurious, TS2445 missing). Found 2026-10-29 (bun): the smallest form is `declare const u: Pick<D, "id"> | D; u.id = 'x'` (tsc TS2540,
