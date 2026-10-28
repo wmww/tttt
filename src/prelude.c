@@ -48,7 +48,10 @@ static void read_debug_env() {
         .order_seed = getenv("TTTT_ORDER_SEED") ? strtoull(getenv("TTTT_ORDER_SEED"), nullptr, 0) : 0,
         .nesting_order = !getenv("TTTT_NESTING_ORDER") ? 0 : !strcmp(getenv("TTTT_NESTING_ORDER"), "count") ? 1 :
             !strcmp(getenv("TTTT_NESTING_ORDER"), "seed") ? 2 :
-            !strcmp(getenv("TTTT_NESTING_ORDER"), "content") ? 3 : 0,
+            !strcmp(getenv("TTTT_NESTING_ORDER"), "content") ? 3 :
+            !strcmp(getenv("TTTT_NESTING_ORDER"), "sub") ? 4 :
+            !strcmp(getenv("TTTT_NESTING_ORDER"), "chain") ? 5 :
+            !strcmp(getenv("TTTT_NESTING_ORDER"), "walk") ? 6 : 0,
         .rollback_stats = getenv("TTTT_ROLLBACK_STATS") != nullptr,
         .deep_hit_no_taint = getenv("TTTT_DEEP_HIT_NO_TAINT") != nullptr,
         .vma_names = getenv("TTTT_VMA_NAMES") != nullptr,

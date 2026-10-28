@@ -405,6 +405,65 @@ u32 ty_height(Checker const* checker, Ty const* t) {
     return height_of(t, 0);
 }
 
+// TTTT_NESTING_ORDER=sub (the content key for deep nesting's "newer", agents/notes/sharing_design.md §6): whether
+// `inner` is a proper sub-term of `outer` along the edges a height counts (arguments, a mapper's sources and targets,
+// an alias's arguments, an origin...): what every creation order must have made before `outer`. A content property.
+// Searched below `outer` only through types higher than `inner`; past a budget, by height alone (deterministic)
+typedef struct SubtermWalk { Ty const* inner; u32 inner_height; u32 budget; Ty const* seen[64]; u32 seen_len; } SubtermWalk;
+
+static bool subterm_in(SubtermWalk* w, Ty const* t);
+
+static bool subterm_list(SubtermWalk* w, Ty const* const* list, u32 len) {
+    for (u32 i = 0; i < len; i++) if (list[i] && subterm_in(w, list[i])) return true;
+    return false;
+}
+
+static bool subterm_mapper(SubtermWalk* w, TyMapper const* m) {
+    return m && (subterm_list(w, m->sources, m->len) || subterm_list(w, m->targets, m->len));
+}
+
+static bool subterm_in(SubtermWalk* w, Ty const* t) {
+    if (t == w->inner) return true;
+    if (height_of(t, 0) <= w->inner_height) return false;
+    if (!w->budget) return true;
+    w->budget--;
+    for (u32 i = 0; i < w->seen_len; i++) if (w->seen[i] == t) return false;
+    if (w->seen_len < 64) w->seen[w->seen_len++] = t;
+    if (subterm_list(w, t->alias_args.data, t->alias_args.len)) return true;
+    switch ((TyKind)t->kind) {
+        case TY_LITERAL: return t->literal.regular && subterm_in(w, t->literal.regular);
+        case TY_REFERENCE:
+            if (subterm_in(w, t->reference.target)) return true;
+            if (t->reference.this_arg && subterm_in(w, t->reference.this_arg)) return true;
+            if (t->reference.deferred) return subterm_mapper(w, t->reference.deferred->mapper);
+            return subterm_list(w, t->reference.args.data, t->reference.args.len);
+        case TY_ANONYMOUS:
+            return (t->anonymous.target && subterm_in(w, t->anonymous.target)) || subterm_mapper(w, t->anonymous.mapper);
+        case TY_UNION:
+        case TY_INTERSECTION:
+            return subterm_list(w, t->composite.types.data, t->composite.types.len) ||
+                (t->composite.origin && subterm_in(w, t->composite.origin));
+        case TY_KEYOF: return subterm_in(w, t->keyof.operand);
+        case TY_INDEXED: return subterm_in(w, t->indexed.object) || subterm_in(w, t->indexed.index);
+        case TY_CONDITIONAL:
+            return (t->conditional.root && t->conditional.root != t && subterm_in(w, t->conditional.root)) ||
+                subterm_in(w, t->conditional.check) || subterm_in(w, t->conditional.extends) ||
+                subterm_mapper(w, t->conditional.mapper);
+        case TY_SUBSTITUTION: return subterm_in(w, t->substitution.base) || subterm_in(w, t->substitution.constraint);
+        case TY_TEMPLATE_LITERAL: return subterm_list(w, t->template_literal.types.data, t->template_literal.types.len);
+        case TY_STRING_MAPPING: return subterm_in(w, t->string_mapping.type);
+        default: return false;
+    }
+}
+
+bool ty_is_subterm(Checker const* checker, Ty const* inner, Ty const* outer) {
+    if (inner == outer) return false;
+    u32 hi = ty_height(checker, inner);
+    if (hi >= ty_height(checker, outer)) return false;
+    SubtermWalk w = { .inner = inner, .inner_height = hi, .budget = 256 };
+    return subterm_in(&w, outer);
+}
+
 // Two distinct types in id order, permuted by the seed (relate.c's conditional branches, related in id order)
 int ty_compare_ids(Ty const* a, Ty const* b) {
     return cmp_ids(ID_SITE_BRANCH_ORDER, a->kind, a->id, b->id);
