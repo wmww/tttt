@@ -54,7 +54,7 @@ enum {
     KEY_NORMALIZED_INTERSECTION, // (intersection type id, writing) -> normalized_intersection() of it (relate.c)
     KEY_MAPPED_FILTERING, // declared mapped type's key parameter -> 1 remapping, 2 filtering, by relation (members.c)
     KEY_PROP_MAPPED_TYPE, // Prop with .mapped -> the mapped type it's a property of (members.c)
-    KEY_PROP_WRITE_TYPE, // Prop -> prop_write_type() of it, null for none; present once known (members.c)
+    KEY_PROP_WRITE_TYPE, // Prop -> prop_write_type() of it, members.c's WRITE_TYPE_NONE for none; present once known (members.c)
     // Instantiated Prop -> its type as instantiated again while its own instantiation was in flight (prop_type_slow():
     // tsc's getTypeOfInstantiatedSymbol caches that nested result, which later requests during the outer one see)
     KEY_PROP_REENTERED_TYPE,

@@ -5975,11 +5975,20 @@ void prop_write_type_slow_touch(Checker* me, Prop const* prop) {
     if (rare->write_node || (rare->setter && setter_is_annotated(rare->setter))) prop_write_type(me, prop);
 }
 
+// KEY_PROP_WRITE_TYPE's value for none: never null, which intern_set() takes for an entry not set yet (with
+// --shared-graph a null entry another checker published was written into again, TSan's intern_publish() pair)
+static char const write_type_none;
+#define WRITE_TYPE_NONE ((void const*)&write_type_none)
+Ty const* prop_write_type_known(Checker* me, Prop const* prop) {
+    void const* known = intern_get(&my links, (u64[]){ KEY_PROP_WRITE_TYPE, (u64)(uintptr_t)prop }, 2);
+    return known == WRITE_TYPE_NONE ? nullptr : known;
+}
+
 Ty const* prop_write_type(Checker* me, Prop const* const_prop) {
     Prop* prop = (Prop*)const_prop; // Resolved lazily like the type
     u64 key[2] = { KEY_PROP_WRITE_TYPE, (u64)(uintptr_t)prop };
     void const* known;
-    if (intern_has(&my links, key, 2, &known)) return known;
+    if (intern_has(&my links, key, 2, &known)) return known == WRITE_TYPE_NONE ? nullptr : known;
     Ty const* type = nullptr;
     PropDeclRare const* rare = prop_decl_rare(prop->decl);
     // (A property declared with accessors of its name, one symbol in tsgo (TS2300), is a SymbolFlags.Property:
@@ -6019,10 +6028,11 @@ Ty const* prop_write_type(Checker* me, Prop const* const_prop) {
     }
     // (A nested computation below a call's barrier finished first: it is the one remembered, tsc's `if
     // links.writeType == nil`)
-    if (resolving && intern_has(&my links, key, 2, &known)) return known;
+    if (resolving && intern_has(&my links, key, 2, &known)) return known == WRITE_TYPE_NONE ? nullptr : known;
     // (An identity of the property: with --shared-graph another checker's property may be this one, and the entry's
-    // presence says it is known, null for none. Who computes it first doesn't matter, it's the same)
-    return intern_set(me, &my links, intern_slot(me, &my links, key, 2), type);
+    // presence says it is known. Who computes it first doesn't matter, it's the same)
+    void const* there = intern_set(me, &my links, intern_slot(me, &my links, key, 2), type ? (void const*)type : WRITE_TYPE_NONE);
+    return there == WRITE_TYPE_NONE ? nullptr : there;
 }
 
 // A generic signature instantiated by an outer mapper (a method of `Box<number>`) gets fresh type parameters whose
@@ -6861,10 +6871,10 @@ Ty const* ty_object_literal_alternative(
             // properties' flags)
             for (u32 i = 0; i < count; i++) {
                 if (props[i].reuse || !props[i].type) continue;
-                u32 xflags = props[i].type->xflags & TYX_PROPAGATING;
+                u32 xflags = props[i].type->xflags;
                 fresh->xflags |= props[i].own || props[i].own_merged ? xflags : xflags & ~(u32)TYX_CONTAINS_WIDENING;
             }
-            for (u32 i = 0; i < index_count; i++) fresh->xflags |= index[i].value->xflags & TYX_PROPAGATING;
+            for (u32 i = 0; i < index_count; i++) fresh->xflags |= index[i].value->xflags;
         }
         fresh->anonymous.ctx = (LowerCtx){ .generic = true };
         // (Of a literal outside every function and generic declaration: none, so it's never instantiated. Keyed by

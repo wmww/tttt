@@ -555,7 +555,7 @@ static bool literal_instance_is_itself(Checker* me, Ty const* target, TyMapper c
         Prop const* prop = members_prop(me, members, i);
         Ty const* prop_ty = prop_type_peek(me, prop);
         if (TAINT_IF(TAINT_PEEK, !prop_ty)) return false;
-        Ty const* write = intern_get(&my links, (u64[]){ KEY_PROP_WRITE_TYPE, (u64)(uintptr_t)prop }, 2);
+        Ty const* write = prop_write_type_known(me, prop);
         if (write && write != prop_ty) return false;
         if (ty_instantiate(me, prop_ty, mapper) != prop_ty) return false;
     }

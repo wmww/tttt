@@ -430,10 +430,10 @@ static bool tsc_could_contain_type_variables_uncached(Ty const* ty);
 
 // (Memoized on the type, tsc's ObjectFlags.CouldContainTypeVariablesComputed/CouldContainTypeVariables)
 static bool tsc_could_contain_type_variables(Ty const* ty) {
-    u32 x = __atomic_load_n(&ty->xflags, __ATOMIC_RELAXED);
-    if (x & TYX_CCTV_KNOWN) return (x & TYX_CCTV_YES) != 0;
+    uint8_t memo = atomic_load_explicit(&ty->memo, memory_order_relaxed);
+    if (memo & TY_MEMO_CCTV_KNOWN) return (memo & TY_MEMO_CCTV_YES) != 0;
     bool ret = tsc_could_contain_type_variables_uncached(ty);
-    __atomic_fetch_or((u32*)&ty->xflags, TYX_CCTV_KNOWN | (ret ? TYX_CCTV_YES : 0), __ATOMIC_RELAXED);
+    atomic_fetch_or_explicit((_Atomic uint8_t*)&ty->memo, TY_MEMO_CCTV_KNOWN | (ret ? TY_MEMO_CCTV_YES : 0), memory_order_relaxed);
     return ret;
 }
 

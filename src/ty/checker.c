@@ -490,7 +490,7 @@ void const* intern_publish(Checker* me, InternTable* table, void const** slot) {
     if (table == &my intersection_props || graph_kind_class((u32)kind) != GRAPH_IDENTITY) return *slot;
 #ifdef TTTT_DEBUG_IDS
     debug_check_type_value(table, intern_key_words(slot, count), count, slot, "publish");
-    if (!*slot && kind != KEY_PROP_WRITE_TYPE) panic("intern_publish: a null value of kind ", (u32)kind);
+    if (!*slot) panic("intern_publish: a null value of kind ", (u32)kind);
 #endif
     void const** there;
     if (!shared_table_insert(table->others, hash, slot, count, &there)) {
@@ -742,6 +742,7 @@ Ty* ty_alloc(Checker* me, TyKind kind, u32 flags) {
     if (my stamps) ty_stamp(me, ret);
     ret->kind = kind;
     ret->height = 0;
+    ret->memo = 0;
     ret->flags = flags;
     return ret;
 }
@@ -1279,6 +1280,7 @@ static Ty const* make_origin(Checker* me, OriginSpec const* spec, TyList types) 
 #endif
     ret->kind = spec->kind;
     ret->height = 0;
+    ret->memo = 0;
     if (spec->kind == TY_KEYOF) {
         ret->keyof.operand = spec->types[0];
     } else {
@@ -1331,7 +1333,7 @@ static Ty const* intern_composite_ex(
         u32 flags = 0, xflags = 0;
         for (u32 i = 0; i < len; i++) {
             flags |= types[i]->flags;
-            xflags |= types[i]->xflags & TYX_PROPAGATING;
+            xflags |= types[i]->xflags;
         }
         u32 member_flags = flags;
         flags = (flags | ty_list_flags(alias_args)) & TYF_COULD_CONTAIN_TYPE_VARIABLES;
@@ -1520,7 +1522,7 @@ static Ty const* union_with_origin(
     bool includes_error = false, includes_non_widening = false;
     for (u32 i = 0; i < buf.len; i++) {
         includes |= buf.data[i]->flags;
-        u32 xflags = buf.data[i]->xflags & TYX_PROPAGATING;
+        u32 xflags = buf.data[i]->xflags;
         xincludes |= xflags;
         if ((buf.data[i]->flags & TYF_NULLABLE) && !(xflags & TYX_CONTAINS_WIDENING)) includes_non_widening = true;
         // (An unresolved name's any too: tsc's isErrorType, IncludesError)
@@ -3179,7 +3181,7 @@ Ty const* ty_reference_with_this(Checker* me, Ty const* target, TyList args, Ty 
         ret->reference.this_arg = this_arg;
         ret->reference.from_type_node = my creating_from_type_node;
         if (!compiler_options()->strict_null_checks) {
-            for (u32 i = 0; i < args.len; i++) ret->xflags |= args.data[i]->xflags & TYX_PROPAGATING;
+            for (u32 i = 0; i < args.len; i++) ret->xflags |= args.data[i]->xflags;
         }
         ret->reference.state = arena_new(&my arena, TyObjectState);
         intern_set(me, &my types, slot, ret);

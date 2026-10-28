@@ -296,7 +296,11 @@ typedef struct TyParamState {
 
 struct Ty {
     u32 id;
-    uint16_t kind; // TyKind
+    uint8_t kind; // TyKind
+    // Memos of content properties kept on the type itself (TY_MEMO_*): set once, atomically, by whichever worker asks
+    // first; every worker computes the same answer. A byte of their own, not bits of xflags, which every union and
+    // reference creation reads plainly (TSan's races with infer.c's memo under --shared-graph)
+    _Atomic uint8_t memo;
     // TTTT_NESTING_ORDER=content (sg2's audit): the type's height once ty_height() worked it out, 0 until then. Written
     // once by whichever worker asks first; every worker computes the same value (a content property)
     _Atomic uint16_t height;
@@ -1143,11 +1147,14 @@ enum {
     // a property only through a spread, whose ContainsWideningType tsc doesn't propagate (nothing in it is reported,
     // TS7018, but getWidenedType still widens every object literal)
     TYX_WIDENS = 16,
-    // Memo of infer.c's tsc_could_contain_type_variables() on the type itself (set once, atomically, by whichever worker
-    // asks first; every worker computes the same answer): not a propagating flag, so TYX_PROPAGATING masks it out
-    TYX_CCTV_KNOWN = 1u << 30,
-    TYX_CCTV_YES = 1u << 31,
-    TYX_PROPAGATING = ~(TYX_CCTV_KNOWN | TYX_CCTV_YES),
+};
+
+// Ty.memo's bits
+enum {
+    // infer.c's tsc_could_contain_type_variables() (tsc's ObjectFlags.CouldContainTypeVariablesComputed and
+    // CouldContainTypeVariables)
+    TY_MEMO_CCTV_KNOWN = 1,
+    TY_MEMO_CCTV_YES = 2,
 };
 
 typedef enum TyIntrinsic {
@@ -2056,6 +2063,7 @@ bool ty_prop_is_accessor(Prop const* prop); // Its symbol is an accessor (tsc's 
 // What writes to the property are checked against when it differs from what reads get (a `set` accessor whose
 // parameter type isn't the getter's), else null
 Ty const* prop_write_type(Checker* me, Prop const* prop);
+Ty const* prop_write_type_known(Checker* me, Prop const* prop); // Without computing it: null if none or not known
 void prop_write_type_slow_touch(Checker* me, Prop const* prop);
 // A union or intersection property is made: tsc's createUnionOrIntersectionProperty asks each member property's write
 // type (getWriteTypeOfSymbol), which resolves a setter's annotation under its own entry, a cycle through it (TS2502)
