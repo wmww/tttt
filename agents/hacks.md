@@ -145,7 +145,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   knows 44 times in ~35 tests (classUpdateTests, constructorWithIncompleteTypeAnnotation, JSX attribute tests...);
   falling back to skipping whitespace backwards changes no suite result and no bun case, so nothing observable
   depends on it today. Cheapest fix when one does: that backward scan on a miss (error paths only, free), comments
-  still needing the cache; a per-parser trivia start (copied by parser()/parse_success()) costs like the ~0.6% nest
+  still needing the cache; a per-parser trivia start (copied by parser()/parse_success()) costs like the +0.8-1% on nest
   ThisNodeHasError's per-parser flag did.
 - ThisNodeHasError positions (`note_error_node()`, `note_missing_node()`, unused.c `report_imports()`): a flagged node's
   span is found by skipping whitespace and comments forward from the child's start (and whitespace back from its end);
