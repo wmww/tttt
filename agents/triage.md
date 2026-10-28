@@ -252,3 +252,8 @@ intersection's property symbol to bugs/type_core.md.
   harness does (bun3, 2026-10-30; its test ttttEscapedReservedWords avoids the shape). Probably the CLI's "no semantic
   diagnostics after syntax errors in the same file" rule applied where tsc's harness checks anyway: compare with
   `scripts/tscbaseline.sh` on a one-line probe and with the CLI (`projdiff.py`). [harness]
+- Symbols baseline: `this` whose type is a type literal written as a variable's annotation (`declare const obj: { x:
+  any }; obj.x = function () { this }`) prints `Symbol(__type, ...)` where tsc prints `Symbol(obj, ...)`: tsgo's
+  getNameOfSymbolAsWritten names a nameless declaration by its parent variable declaration anywhere, the harness's
+  `this_compile_test_info()` only inside that variable's own statement (ctx->variable_type_literal) (cor4,
+  2026-10-28). [open]

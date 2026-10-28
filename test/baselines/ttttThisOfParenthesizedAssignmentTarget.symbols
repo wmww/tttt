@@ -1,0 +1,34 @@
+//// [test/cases/ttttThisOfParenthesizedAssignmentTarget.ts] ////
+
+=== ttttThisOfParenthesizedAssignmentTarget.ts ===
+// A function expression assigned to a parenthesized property access gets no contextual `this` from its object (bun
+// 07-C5, 32-C2): tsc's getContextualThisParameterType walks up the parentheses around the function, not those around
+// the target, which must be an access expression itself
+export {};
+interface O { x: any; y: number }
+>O : Symbol(O, Decl(ttttThisOfParenthesizedAssignmentTarget.ts, 3, 10))
+>x : Symbol(O.x, Decl(ttttThisOfParenthesizedAssignmentTarget.ts, 4, 13))
+>y : Symbol(O.y, Decl(ttttThisOfParenthesizedAssignmentTarget.ts, 4, 21))
+
+declare const obj: O;
+>obj : Symbol(obj, Decl(ttttThisOfParenthesizedAssignmentTarget.ts, 5, 13))
+>O : Symbol(O, Decl(ttttThisOfParenthesizedAssignmentTarget.ts, 3, 10))
+
+(obj.x) = function () { return this.y; };
+>obj.x : Symbol(O.x, Decl(ttttThisOfParenthesizedAssignmentTarget.ts, 4, 13))
+>obj : Symbol(obj, Decl(ttttThisOfParenthesizedAssignmentTarget.ts, 5, 13))
+>x : Symbol(O.x, Decl(ttttThisOfParenthesizedAssignmentTarget.ts, 4, 13))
+
+obj.x = (function () { return this.y; });
+>obj.x : Symbol(O.x, Decl(ttttThisOfParenthesizedAssignmentTarget.ts, 4, 13))
+>obj : Symbol(obj, Decl(ttttThisOfParenthesizedAssignmentTarget.ts, 5, 13))
+>x : Symbol(O.x, Decl(ttttThisOfParenthesizedAssignmentTarget.ts, 4, 13))
+>this.y : Symbol(O.y, Decl(ttttThisOfParenthesizedAssignmentTarget.ts, 4, 21))
+>this : Symbol(O, Decl(ttttThisOfParenthesizedAssignmentTarget.ts, 3, 10))
+>y : Symbol(O.y, Decl(ttttThisOfParenthesizedAssignmentTarget.ts, 4, 21))
+
+((obj.x)) ??= function () { return this.y; };
+>obj.x : Symbol(O.x, Decl(ttttThisOfParenthesizedAssignmentTarget.ts, 4, 13))
+>obj : Symbol(obj, Decl(ttttThisOfParenthesizedAssignmentTarget.ts, 5, 13))
+>x : Symbol(O.x, Decl(ttttThisOfParenthesizedAssignmentTarget.ts, 4, 13))
+

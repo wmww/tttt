@@ -1966,9 +1966,10 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 ast_delete(my binary_op->access_site);
                 my binary_op->access_site = scope_access_site(names);
             }
-            // `o.m = function () {}` (or `??=` & co.): `this` in there may be `o`
+            // `o.m = function () {}` (or `??=` & co.): `this` in there may be `o`. Not `(o.m) = ...`, whose target is a
+            // parenthesized expression to tsc (getContextualThisParameterType asks for an access expression)
             if (binary_op_is_assignment(op) && right->tag == EXPR_FUNCTION && !function_impl_is_arrow(right->function) &&
-                left->tag == EXPR_PROPERTY
+                left->tag == EXPR_PROPERTY && !expr_is_perenthisized(left)
             ) {
                 function_impl_rare_mut(right->function)->this_assigned_object = &left->property->expr;
             }

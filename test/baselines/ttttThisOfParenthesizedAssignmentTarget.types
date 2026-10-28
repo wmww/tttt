@@ -1,0 +1,48 @@
+//// [test/cases/ttttThisOfParenthesizedAssignmentTarget.ts] ////
+
+=== ttttThisOfParenthesizedAssignmentTarget.ts ===
+// A function expression assigned to a parenthesized property access gets no contextual `this` from its object (bun
+// 07-C5, 32-C2): tsc's getContextualThisParameterType walks up the parentheses around the function, not those around
+// the target, which must be an access expression itself
+export {};
+interface O { x: any; y: number }
+>x : any
+>y : number
+
+declare const obj: O;
+>obj : O
+
+(obj.x) = function () { return this.y; };
+>(obj.x) = function () { return this.y; } : () => any
+>(obj.x) : any
+>obj.x : any
+>obj : O
+>x : any
+>function () { return this.y; } : () => any
+>this.y : any
+>this : any
+>y : any
+
+obj.x = (function () { return this.y; });
+>obj.x = (function () { return this.y; }) : () => number
+>obj.x : any
+>obj : O
+>x : any
+>(function () { return this.y; }) : () => number
+>function () { return this.y; } : () => number
+>this.y : number
+>this : O
+>y : number
+
+((obj.x)) ??= function () { return this.y; };
+>((obj.x)) ??= function () { return this.y; } : any
+>((obj.x)) : any
+>(obj.x) : any
+>obj.x : any
+>obj : O
+>x : any
+>function () { return this.y; } : () => any
+>this.y : any
+>this : any
+>y : any
+

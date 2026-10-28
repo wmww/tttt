@@ -1,0 +1,21 @@
+ttttThisOfParenthesizedAssignmentTarget.ts(7,32): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+ttttThisOfParenthesizedAssignmentTarget.ts(9,36): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+
+
+==== ttttThisOfParenthesizedAssignmentTarget.ts (2 errors) ====
+    // A function expression assigned to a parenthesized property access gets no contextual `this` from its object (bun
+    // 07-C5, 32-C2): tsc's getContextualThisParameterType walks up the parentheses around the function, not those around
+    // the target, which must be an access expression itself
+    export {};
+    interface O { x: any; y: number }
+    declare const obj: O;
+    (obj.x) = function () { return this.y; };
+                                   ~~~~
+!!! error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+!!! related TS2738 ttttThisOfParenthesizedAssignmentTarget.ts:7:11: An outer value of 'this' is shadowed by this container.
+    obj.x = (function () { return this.y; });
+    ((obj.x)) ??= function () { return this.y; };
+                                       ~~~~
+!!! error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+!!! related TS2738 ttttThisOfParenthesizedAssignmentTarget.ts:9:15: An outer value of 'this' is shadowed by this container.
+    
