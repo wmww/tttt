@@ -42,7 +42,11 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   stays quiet. [open]
 - `Pick` and `Writable` of a protected key (`Pick<D, "id">` with `protected readonly id`, TS2344), 99-V1's
   protected_* files: tsc keeps `id` a property of the mapped type and reports TS2445 at accesses, tttt drops it
-  (TS2339 spurious, TS2445 missing). [open]
+  (TS2339 spurious, TS2445 missing). Found 2026-10-29 (bun): the smallest form is `declare const u: Pick<D, "id"> | D; u.id = 'x'` (tsc TS2540,
+  tttt TS2339): tsc's createUnionOrIntersectionProperty keeps a union property whose non-public declarations are
+  common to all members (hasCommonDeclaration: Pick's mapped id is declared at D.id), tttt's
+  ty_union_non_public_conflict() compares prop_root()s, and a mapped prop's root is its template (`.target`), not the
+  property it maps; the Pick prop seen there also had no name span in its decl. [open]
 - Circular mapped types and interfaces whose members are being resolved: 10-C8c (`interface I9 extends
   Array<typeof a9>`), 11-C15 (`{ [K in "a"]: A1["a"] }`: tsc's property is missing, TS2339, where tttt says TS2615),
   93-R01a, 93-R01c, 93-R01d (mapped types with `as` clauses through each other), 12-C1d (`Alt<B, A>` alternating),
@@ -136,6 +140,23 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   80-R17b), `@typedef`/`@callback` tags' property/param descriptions in a TS file (54-L06), member names after `#`
   that are keywords (54-L07a: `a#delete` and `c#default` use, `b#foo`, `d#of`, `e.delete` don't). Needs the links
   resolved from parsed, attached JSDoc. [open]
+
+- 83-R10a: functions inside heritage elements tsc never checks (TS2500/TS2499, clauses after TS1172/TS1174/TS1175)
+  reported unused locals and TS1235; deferred bodies kept reporting what an immediate walk wouldn't. [fixed cf537256c]
+- 99-V1's TS2790: an intersection's property is optional only when all its members' are. [fixed 903cbccb2]
+- 99-V1's TS2415: a base constructor's return type is the base reduced (`D & (J | W)`). [fixed f57bb563c]
+- 99-V1's TS2698/TS2700/TS2339 on intersections that reduce to never (spread, rest, keyof-mapped). [fixed ef5be1fd5]
+- `t.other` with `<T extends D & { id: string }>` (D's id private): tsc's reduced apparent type of T is never
+  (TS2339), tttt's type literal inside the generic signature has TYF_COULD_CONTAIN_TYPE_VARIABLES and
+  is_known_object_for_reduction() declines to reduce (99-V1's `*_generic` lines). [open]
+- checks-of-a-value-assigned-on-a-loop-back-edge (87 TS2322, TS2345...): tsc reports the assigned expression's errors
+  twice, once while the loop's flow types are incomplete (getInitialOrAssignedType checks `x = more ? "a" :
+  takeNum(x)` with x still `string`) and once in the ordinary check (`string | number`); tttt reports the second
+  only. Diagnostics produced during flow analysis are the mechanism: a design question. [design]
+- -TS2448: two mechanisms, the JSX factory (`React`, `Frag`) declared after the element that uses it (tsc resolves
+  the factory at the element as a use: 01-C2b, 15-C3b, 27-C3a, 27-P7, 34-C2b) and `const arguments = 1` in a
+  function body (tsc's reference to the implicit `arguments`: 25-C17c, 33-P4g, 51-L01, 51-L05, 77-R12b). [open]
+- 83-R01c (+TS2304 33): the for-initializer DisallowIn leak, missing_checks.md (ttttForInitializerDisallowInLeak). [dup]
 
 ## Not looked at, by code
 - Each paragraph below is a code and direction with the cases it mismatches in, uninvestigated: at least one open
