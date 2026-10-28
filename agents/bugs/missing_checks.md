@@ -478,7 +478,7 @@ Seed 41: 10 -> 7 differing, seed 42: 13 -> 5. Left, each looked at:
   union with ty_access (string). Now ty_indexed_or_null. Test ttttUnionSignatureNonTupleRest. Left: `f2(1, 2)` on the
   `[string] | undefined` rest alone prints `[1, number]` where tsc has `[1, 2]` (getSpreadArgumentType's contextual
   type of each argument, getIndexedAccessType(rest, i, Contextual), keeps the literals: what tsc's contextual type is
-  there wasn't traced). [fixed HASH]
+  there wasn't traced). [fixed 48128a820]
 
 ## Mutation seed 2026102001 (2026-10-20, -n 3000: 5 / 1552 differ)
 Fixed: a computed key naming no property against a generic mapped contextual type, recursive-return skip with type
@@ -577,7 +577,14 @@ Diagnostics-class leftovers, not fixed:
   still contextually types the initializer by the @type. [dup]
 - With a non-string import attribute value, tsc resolves (and reports) the bindings only when something uses them;
   tttt approximates by a text scan for the binding names (hacks.md). [open]
-- Seen while fixing: `/** @type {} */ var w = 1` types w as any in tsgo (TS1110 there), number in tttt. [open]
+- Seen while fixing: `/** @type {} */ var w = 1` types w as any in tsgo (TS1110 there), number in tttt. The tag now
+  has tsc's missing type (parse_jsdoc_type_expression), and a missing type node lowers to the error type (so `x
+  satisfies <missing>` is any, TS and JSDoc), a type running into the comment's end is kept. Test ttttJsdocEmptyType.
+  [fixed HASH] Left, JSDoc parser (bun's area): `/** @type {\n */` and `/** @type { */` miss tsgo's TS1110 at the
+  newline/whitespace token after `{` (tsgo's JSDoc scanner makes whitespace a token); `/** @type {\n * number} */` is
+  `*` (JSDocAllType) then '}' expected at `number` in tsgo, number without errors in tttt (the continuation's `*`
+  skipped). Text: `{ x: 1 } satisfies ;`'s types line prints `satisfies ` with a trailing space (the missing type's span
+  starts after the whitespace; tsc's ends at the keyword). [open]
 - Seed 2313 (multi/js, 40 / 3977): the stop seed, two new diagnostics-class divergences. The harness's TS5024 location
   in an extended config is fixed. Not fixed: tsgo's doubled TS2304 next to its TS2552 for `export { StringHash }` of a
   missing name under `@declaration` (declarationsForIndirectTypeAliasReference delete-stmt), most likely the

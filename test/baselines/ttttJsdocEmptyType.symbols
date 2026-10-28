@@ -1,0 +1,60 @@
+//// [test/cases/ttttJsdocEmptyType.ts] ////
+
+=== b.js ===
+/** @type {} */
+var w = 1;
+>w : Symbol(w, Decl(b.js, 1, 3))
+
+w = "s";
+>w : Symbol(w, Decl(b.js, 1, 3))
+
+/** @param {} p */
+function f(p) { return p; }
+>f : Symbol(f, Decl(b.js, 2, 8))
+>p : Symbol(p, Decl(b.js, 4, 11))
+>p : Symbol(p, Decl(b.js, 4, 11))
+
+/** @returns {} */
+function g() { return 1; }
+>g : Symbol(g, Decl(b.js, 4, 27))
+
+/** @typedef {} T */
+/** @type {T} */
+var t = 1;
+>t : Symbol(t, Decl(b.js, 9, 3))
+
+/** @typedef {Object} O
+ * @property {} x
+ */
+/** @type {O} */
+var o = { x: 1 };
+>o : Symbol(o, Decl(b.js, 14, 3))
+>x : Symbol(x, Decl(b.js, 14, 9))
+
+/** @template {} U
+ * @param {U} u */
+function h(u) { return u; }
+>h : Symbol(h, Decl(b.js, 14, 17))
+>u : Symbol(u, Decl(b.js, 17, 11))
+>u : Symbol(u, Decl(b.js, 17, 11))
+
+const s = /** @satisfies { } */ ({ a: 1 });
+>s : Symbol(s, Decl(b.js, 18, 5))
+>a : Symbol(a, Decl(b.js, 18, 34))
+
+/** @param {} [q] */
+function k(q) { return q; }
+>k : Symbol(k, Decl(b.js, 18, 43))
+>q : Symbol(q, Decl(b.js, 20, 11))
+>q : Symbol(q, Decl(b.js, 20, 11))
+
+/** @param {...} r */
+function m(r) { return r; }
+>m : Symbol(m, Decl(b.js, 20, 27))
+>r : Symbol(r, Decl(b.js, 22, 11))
+>r : Symbol(r, Decl(b.js, 22, 11))
+
+/** @type {?} */
+var n1 = 1;
+>n1 : Symbol(n1, Decl(b.js, 24, 3))
+

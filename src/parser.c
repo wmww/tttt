@@ -4428,12 +4428,27 @@ static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const 
             else parse_error(&p, span_from_token(&p), 1005, "'}' expected.");
             *pos = p.pos;
         } else {
-            type_drop(&type);
+            // (Its type all the same: tsc's parseJSDocTypeExpression keeps it, `@type {T` at the comment's end)
+            if (tag->has_type) type_drop(&tag->type);
+            tag->has_type = true;
+            tag->type = type;
+            tag->type_span = type_span;
+            tag->variadic = variadic;
+            *pos = end;
             parse_error(&p, span_make(p.shared->source, end, end), 1005, "'}' expected.");
         }
     } else if (!p.error_count) {
-        // (No type starts there: tsc's parseJSDocType reports it at the token, `{@import(...)}`)
+        // (No type starts there: tsc's parseJSDocType reports it at the token, `{@import(...)}`, and the tag's type is
+        // a missing name, which resolves to any: `@type {}`)
         parse_error(&p, span_from_token(&p), 1110, "Type expected.");
+        if (tag->has_type) type_drop(&tag->type);
+        tag->has_type = true;
+        tag->type = (TypeNode){ .tag = TYPE_ANY, .any.unkown_symbol_span = span_from_pos(&p) };
+        tag->type_span = span_from_pos(&p);
+        tag->variadic = variadic;
+        const char* c = p.pos;
+        while (c < end && *c != '}' && *c != '\n') c++;
+        *pos = c < end && *c == '}' ? c + 1 : c;
     }
     // Past the braces even when the type didn't parse (tsc: `{` starts a type expression that ends at `}`)
     if (!tag->has_type) {

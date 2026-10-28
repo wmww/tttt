@@ -4647,7 +4647,7 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
     LowerCtx ctx = outer_ctx;
     ctx.method = false;
     switch (node->tag) {
-        case TYPE_ANY: return ty_intrinsic(me, node->any.self_referential_error ? TY_ERROR : TY_ANY);
+        case TYPE_ANY: return ty_intrinsic(me, node->any.self_referential_error || span_valid(node->any.unkown_symbol_span) ? TY_ERROR : TY_ANY);
         case TYPE_UNKNOWN: return ty_intrinsic(me, TY_UNKNOWN_);
         case TYPE_NEVER: return ty_intrinsic(me, TY_NEVER);
         case TYPE_VOID: return ty_intrinsic(me, TY_VOID);

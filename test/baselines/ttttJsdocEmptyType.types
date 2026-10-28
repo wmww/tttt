@@ -1,0 +1,71 @@
+//// [test/cases/ttttJsdocEmptyType.ts] ////
+
+=== b.js ===
+/** @type {} */
+var w = 1;
+>w : any
+>1 : 1
+
+w = "s";
+>w = "s" : "s"
+>w : any
+>"s" : "s"
+
+/** @param {} p */
+function f(p) { return p; }
+>f : (p: any) => any
+>p : any
+>p : any
+
+/** @returns {} */
+function g() { return 1; }
+>g : () => any
+>1 : 1
+
+/** @typedef {} T */
+/** @type {T} */
+var t = 1;
+>t : any
+>1 : 1
+
+/** @typedef {Object} O
+ * @property {} x
+ */
+/** @type {O} */
+var o = { x: 1 };
+>o : O
+>{ x: 1 } : { x: number; }
+>x : number
+>1 : 1
+
+/** @template {} U
+ * @param {U} u */
+function h(u) { return u; }
+>h : <U extends any>(u: U) => U
+>u : U
+>u : U
+
+const s = /** @satisfies { } */ ({ a: 1 });
+>s : any
+>({ a: 1 }) : any
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+
+/** @param {} [q] */
+function k(q) { return q; }
+>k : (q?: any) => any
+>q : any
+>q : any
+
+/** @param {...} r */
+function m(r) { return r; }
+>m : (r: any[]) => any[]
+>r : any[]
+>r : any[]
+
+/** @type {?} */
+var n1 = 1;
+>n1 : any
+>1 : 1
+

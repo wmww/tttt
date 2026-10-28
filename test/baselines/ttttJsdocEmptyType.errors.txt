@@ -1,0 +1,59 @@
+b.js(1,12): error TS1110: Type expected.
+b.js(4,13): error TS1110: Type expected.
+b.js(6,15): error TS1110: Type expected.
+b.js(8,15): error TS1110: Type expected.
+b.js(12,15): error TS1110: Type expected.
+b.js(16,16): error TS1110: Type expected.
+b.js(19,28): error TS1110: Type expected.
+b.js(20,13): error TS1110: Type expected.
+b.js(22,16): error TS1110: Type expected.
+b.js(24,13): error TS1110: Type expected.
+
+
+==== b.js (10 errors) ====
+    /** @type {} */
+               ~
+!!! error TS1110: Type expected.
+    var w = 1;
+    w = "s";
+    /** @param {} p */
+                ~
+!!! error TS1110: Type expected.
+    function f(p) { return p; }
+    /** @returns {} */
+                  ~
+!!! error TS1110: Type expected.
+    function g() { return 1; }
+    /** @typedef {} T */
+                  ~
+!!! error TS1110: Type expected.
+    /** @type {T} */
+    var t = 1;
+    /** @typedef {Object} O
+     * @property {} x
+                  ~
+!!! error TS1110: Type expected.
+     */
+    /** @type {O} */
+    var o = { x: 1 };
+    /** @template {} U
+                   ~
+!!! error TS1110: Type expected.
+     * @param {U} u */
+    function h(u) { return u; }
+    const s = /** @satisfies { } */ ({ a: 1 });
+                               ~
+!!! error TS1110: Type expected.
+    /** @param {} [q] */
+                ~
+!!! error TS1110: Type expected.
+    function k(q) { return q; }
+    /** @param {...} r */
+                   ~
+!!! error TS1110: Type expected.
+    function m(r) { return r; }
+    /** @type {?} */
+                ~
+!!! error TS1110: Type expected.
+    var n1 = 1;
+    
