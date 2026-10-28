@@ -1,0 +1,36 @@
+error TS2318: Cannot find global type 'ClassAccessorDecoratorContext'.
+error TS2318: Cannot find global type 'ClassAccessorDecoratorResult'.
+error TS2318: Cannot find global type 'ClassAccessorDecoratorTarget'.
+error TS2318: Cannot find global type 'ClassDecoratorContext'.
+error TS2318: Cannot find global type 'ClassMethodDecoratorContext'.
+ttttDecoratorMissingLibTypes.ts(8,2): error TS1238: Unable to resolve signature of class decorator when called as an expression.
+  Argument of type 'unknown' is not assignable to parameter of type '{ name: string; }'.
+ttttDecoratorMissingLibTypes.ts(10,3): error TS1241: Unable to resolve signature of method decorator when called as an expression.
+  The runtime will invoke the decorator with 2 arguments, but the decorator expects 3.
+
+
+!!! error TS2318: Cannot find global type 'ClassAccessorDecoratorContext'.
+!!! error TS2318: Cannot find global type 'ClassAccessorDecoratorResult'.
+!!! error TS2318: Cannot find global type 'ClassAccessorDecoratorTarget'.
+!!! error TS2318: Cannot find global type 'ClassDecoratorContext'.
+!!! error TS2318: Cannot find global type 'ClassMethodDecoratorContext'.
+==== ttttDecoratorMissingLibTypes.ts (2 errors) ====
+    // A decorator's lib type that is missing (TS2318) is tsc's emptyGenericType: unknown for an ES decorator's context,
+    // target and result (tryCreateTypeReference), `{}` for the legacy descriptor (createTypeFromGenericGlobalType), and
+    // the call is checked all the same (bun 16-C7a, 16-C7b)
+    interface Array<T> { length: number } interface Boolean {} interface Function {} interface IArguments {} interface Number {} interface Object {} interface RegExp {} interface String {}
+    interface CallableFunction extends Function {} interface NewableFunction extends Function {}
+    declare function dec(target: any, context: { name: string }): void;
+    declare function dec3(target: any, key: any, d: { value: number }): void;
+    @dec class C {
+     ~~~
+!!! error TS1238: Unable to resolve signature of class decorator when called as an expression.
+!!! error TS1238:   Argument of type 'unknown' is not assignable to parameter of type '{ name: string; }'.
+      @dec accessor g = 1;
+      @dec3 m() {}
+      ~~~~~
+!!! error TS1241: Unable to resolve signature of method decorator when called as an expression.
+!!! error TS1241:   The runtime will invoke the decorator with 2 arguments, but the decorator expects 3.
+!!! related TS6210 ttttDecoratorMissingLibTypes.ts:7:46: An argument for 'd' was not provided.
+    }
+    

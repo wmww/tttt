@@ -1,0 +1,50 @@
+//// [test/cases/ttttDecoratorMissingLibTypes.ts] ////
+
+=== ttttDecoratorMissingLibTypes.ts ===
+// A decorator's lib type that is missing (TS2318) is tsc's emptyGenericType: unknown for an ES decorator's context,
+// target and result (tryCreateTypeReference), `{}` for the legacy descriptor (createTypeFromGenericGlobalType), and
+// the call is checked all the same (bun 16-C7a, 16-C7b)
+interface Array<T> { length: number } interface Boolean {} interface Function {} interface IArguments {} interface Number {} interface Object {} interface RegExp {} interface String {}
+>Array : Symbol(Array, Decl(ttttDecoratorMissingLibTypes.ts, 0, 0))
+>T : Symbol(T, Decl(ttttDecoratorMissingLibTypes.ts, 3, 16))
+>length : Symbol(Array.length, Decl(ttttDecoratorMissingLibTypes.ts, 3, 20))
+>Boolean : Symbol(Boolean, Decl(ttttDecoratorMissingLibTypes.ts, 3, 37))
+>Function : Symbol(Function, Decl(ttttDecoratorMissingLibTypes.ts, 3, 58))
+>IArguments : Symbol(IArguments, Decl(ttttDecoratorMissingLibTypes.ts, 3, 80))
+>Number : Symbol(Number, Decl(ttttDecoratorMissingLibTypes.ts, 3, 104))
+>Object : Symbol(Object, Decl(ttttDecoratorMissingLibTypes.ts, 3, 124))
+>RegExp : Symbol(RegExp, Decl(ttttDecoratorMissingLibTypes.ts, 3, 144))
+>String : Symbol(String, Decl(ttttDecoratorMissingLibTypes.ts, 3, 164))
+
+interface CallableFunction extends Function {} interface NewableFunction extends Function {}
+>CallableFunction : Symbol(CallableFunction, Decl(ttttDecoratorMissingLibTypes.ts, 3, 184))
+>Function : Symbol(Function, Decl(ttttDecoratorMissingLibTypes.ts, 3, 58))
+>NewableFunction : Symbol(NewableFunction, Decl(ttttDecoratorMissingLibTypes.ts, 4, 46))
+>Function : Symbol(Function, Decl(ttttDecoratorMissingLibTypes.ts, 3, 58))
+
+declare function dec(target: any, context: { name: string }): void;
+>dec : Symbol(dec, Decl(ttttDecoratorMissingLibTypes.ts, 4, 92))
+>target : Symbol(target, Decl(ttttDecoratorMissingLibTypes.ts, 5, 21))
+>context : Symbol(context, Decl(ttttDecoratorMissingLibTypes.ts, 5, 33))
+>name : Symbol(name, Decl(ttttDecoratorMissingLibTypes.ts, 5, 44))
+
+declare function dec3(target: any, key: any, d: { value: number }): void;
+>dec3 : Symbol(dec3, Decl(ttttDecoratorMissingLibTypes.ts, 5, 67))
+>target : Symbol(target, Decl(ttttDecoratorMissingLibTypes.ts, 6, 22))
+>key : Symbol(key, Decl(ttttDecoratorMissingLibTypes.ts, 6, 34))
+>d : Symbol(d, Decl(ttttDecoratorMissingLibTypes.ts, 6, 44))
+>value : Symbol(value, Decl(ttttDecoratorMissingLibTypes.ts, 6, 49))
+
+@dec class C {
+>dec : Symbol(dec, Decl(ttttDecoratorMissingLibTypes.ts, 4, 92))
+>C : Symbol(C, Decl(ttttDecoratorMissingLibTypes.ts, 6, 73))
+
+  @dec accessor g = 1;
+>dec : Symbol(dec, Decl(ttttDecoratorMissingLibTypes.ts, 4, 92))
+>g : Symbol(C.g, Decl(ttttDecoratorMissingLibTypes.ts, 7, 14))
+
+  @dec3 m() {}
+>dec3 : Symbol(dec3, Decl(ttttDecoratorMissingLibTypes.ts, 5, 67))
+>m : Symbol(C.m, Decl(ttttDecoratorMissingLibTypes.ts, 8, 22))
+}
+

@@ -4371,12 +4371,14 @@ Ty const* ty_awaited_no_alias(Checker* me, Ty const* ty) { return awaited_type(m
 
 // A global generic type of the lib applied to `args`, TS2318 if there's no such type (tsc's getGlobalType with
 // reportErrors, which tsc reports once per program: the error context deduplicates it)
+// A decorator's lib type: without one (tsc's emptyGenericType) unknown (tryCreateTypeReference), or `{}` for the
+// legacy descriptor (createTypeFromGenericGlobalType), and the call is resolved all the same
 static Ty const* global_generic(Checker* me, char const* name, Ty const* const* args, u32 len, ErrorCtx* errs) {
     Symbol const* symbol = program_get_global(my program, csview_from(name), SYMBOL_TYPE);
     Ty const* declared = symbol ? ty_declared_type_of(me, symbol) : nullptr;
     if (!declared || declared->kind != TY_DECLARED || declared->declared.type_params.len != len) {
         if (!symbol) error_ctx_global_error_d(errs, 2318, "Cannot find global type '", name, "'.");
-        return nullptr;
+        return strcmp(name, "TypedPropertyDescriptor") == 0 ? ty_empty_object_type(me) : ty_intrinsic(me, TY_UNKNOWN_);
     }
     return ty_reference(me, declared, (TyList){ .data = (Ty const**)args, .len = len });
 }
@@ -4449,7 +4451,6 @@ static bool decorator_call(Checker* me, DecoratorSite site, DecoratorCall* out, 
             out->ret = union2(me, class_type, void_type);
         } else {
             Ty const* context = global_generic(me, "ClassDecoratorContext", &class_type, 1, errs);
-            if (!context) return false;
             out->params[0] = class_type;
             out->params[1] = context;
             out->count = 2;
@@ -4481,7 +4482,6 @@ static bool decorator_call(Checker* me, DecoratorSite site, DecoratorCall* out, 
             out->params[0] = this_type;
             out->params[1] = member_key_type(me, item, true);
             Ty const* descriptor = global_generic(me, "TypedPropertyDescriptor", &value, 1, errs);
-            if (!descriptor) descriptor = ty_intrinsic(me, TY_ANY);
             bool has_descriptor = !field || auto_accessor;
             if (has_descriptor) out->params[2] = descriptor;
             out->count = has_descriptor ? 3 : 2;
@@ -4517,7 +4517,6 @@ static bool decorator_call(Checker* me, DecoratorSite site, DecoratorCall* out, 
                 target = ret = value;
             }
             Ty const* context = global_generic(me, context_name, pair, 2, errs);
-            if (!context || !target || !ret) return false;
             // & { name: "x"; private: boolean; static: boolean } (tsc's getClassMemberDecoratorContextOverrideType)
             bool is_private = span_valid(class_item_private_name(item));
             cstr const* name_string = field ? &item->field.name_string : &item->method.name_string;
