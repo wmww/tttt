@@ -1,0 +1,249 @@
+//// [test/cases/ttttShorthandAssignmentDefault.ts] ////
+
+=== ttttShorthandAssignmentDefault.ts ===
+// A shorthand assignment pattern's default (`({ b = d } = o)`) has no contextual type (tsc's getContextualType of a
+// shorthand's initializer is its object literal's, none as an assignment target), and the property loses undefined
+// unless the default's type facts say IsUndefined: any and unknown don't, a type variable by its constraint (tsc's
+// checkDestructuringAssignment)
+namespace N1 {
+>N1 : typeof N1
+
+declare const o: { a?: number; b?: string };
+>o : { a?: number; b?: string; }
+>a : number | undefined
+>b : string | undefined
+
+let b: string;
+>b : string
+
+({ b = 5 as any } = o);
+>({ b = 5 as any } = o) : { a?: number; b?: string; }
+>{ b = 5 as any } = o : { a?: number; b?: string; }
+>{ b = 5 as any } : { b?: string; }
+>b : string
+>5 as any : any
+>5 : 5
+>o : { a?: number; b?: string; }
+
+({ b = (5 as any).foo } = o);
+>({ b = (5 as any).foo } = o) : { a?: number; b?: string; }
+>{ b = (5 as any).foo } = o : { a?: number; b?: string; }
+>{ b = (5 as any).foo } : { b?: string; }
+>b : string
+>(5 as any).foo : any
+>(5 as any) : any
+>5 as any : any
+>5 : 5
+>foo : any
+>o : { a?: number; b?: string; }
+
+declare const n: number;
+>n : number
+
+({ b = n.foo } = o);
+>({ b = n.foo } = o) : { a?: number; b?: string; }
+>{ b = n.foo } = o : { a?: number; b?: string; }
+>{ b = n.foo } : { b?: string; }
+>b : string
+>n.foo : any
+>n : number
+>foo : any
+>o : { a?: number; b?: string; }
+
+({ b = (n as any as {}).foo } = o);
+>({ b = (n as any as {}).foo } = o) : { a?: number; b?: string; }
+>{ b = (n as any as {}).foo } = o : { a?: number; b?: string; }
+>{ b = (n as any as {}).foo } : { b?: string; }
+>b : string
+>(n as any as {}).foo : any
+>(n as any as {}) : {}
+>n as any as {} : {}
+>n as any : any
+>n : number
+>foo : any
+>o : { a?: number; b?: string; }
+}
+namespace N2 {
+>N2 : typeof N2
+
+declare const o: { a?: number; b?: string };
+>o : { a?: number; b?: string; }
+>a : number | undefined
+>b : string | undefined
+
+let b: string;
+>b : string
+
+({ b = undefined } = o);
+>({ b = undefined } = o) : { a?: number; b?: string; }
+>{ b = undefined } = o : { a?: number; b?: string; }
+>{ b = undefined } : { b?: string; }
+>b : string
+>undefined : undefined
+>o : { a?: number; b?: string; }
+
+declare const u: string | undefined;
+>u : string | undefined
+
+({ b = u } = o);
+>({ b = u } = o) : { a?: number; b?: string; }
+>{ b = u } = o : { a?: number; b?: string; }
+>{ b = u } : { b?: string; }
+>b : string
+>u : string | undefined
+>o : { a?: number; b?: string; }
+
+declare const k: unknown;
+>k : unknown
+
+({ b = k as never } = o);
+>({ b = k as never } = o) : { a?: number; b?: string; }
+>{ b = k as never } = o : { a?: number; b?: string; }
+>{ b = k as never } : { b?: string; }
+>b : string
+>k as never : never
+>k : unknown
+>o : { a?: number; b?: string; }
+}
+namespace N3 {
+>N3 : typeof N3
+
+declare const o: { a?: number; b?: string };
+>o : { a?: number; b?: string; }
+>a : number | undefined
+>b : string | undefined
+
+let b: string;
+>b : string
+
+declare const k: unknown;
+>k : unknown
+
+({ b = k } = o);
+>({ b = k } = o) : { a?: number; b?: string; }
+>{ b = k } = o : { a?: number; b?: string; }
+>{ b = k } : { b?: string; }
+>b : string
+>k : unknown
+>o : { a?: number; b?: string; }
+
+declare const v: void;
+>v : void
+
+({ b = v } = o);
+>({ b = v } = o) : { a?: number; b?: string; }
+>{ b = v } = o : { a?: number; b?: string; }
+>{ b = v } : { b?: string; }
+>b : string
+>v : void
+>o : { a?: number; b?: string; }
+
+function f<T extends string | undefined, U extends string>(t: T, u: U) {
+>f : <T extends string | undefined, U extends string>(t: T, u: U) => void
+>t : T
+>u : U
+
+  ({ b = t } = o);
+>({ b = t } = o) : { a?: number; b?: string; }
+>{ b = t } = o : { a?: number; b?: string; }
+>{ b = t } : { b?: string; }
+>b : string
+>t : T
+>o : { a?: number; b?: string; }
+
+  ({ b = u } = o);
+>({ b = u } = o) : { a?: number; b?: string; }
+>{ b = u } = o : { a?: number; b?: string; }
+>{ b = u } : { b?: string; }
+>b : string
+>u : U
+>o : { a?: number; b?: string; }
+}
+({ b = 5 as any } = o);
+>({ b = 5 as any } = o) : { a?: number; b?: string; }
+>{ b = 5 as any } = o : { a?: number; b?: string; }
+>{ b = 5 as any } : { b?: string; }
+>b : string
+>5 as any : any
+>5 : 5
+>o : { a?: number; b?: string; }
+}
+namespace N4 {
+>N4 : typeof N4
+
+declare const o: { b?: string };
+>o : { b?: string; }
+>b : string | undefined
+
+let b: string;
+>b : string
+
+function f<T extends string | undefined>(t: T) {
+>f : <T extends string | undefined>(t: T) => void
+>t : T
+
+  ({ b = t } = o);
+>({ b = t } = o) : { b?: string; }
+>{ b = t } = o : { b?: string; }
+>{ b = t } : { b?: string; }
+>b : string
+>t : T
+>o : { b?: string; }
+}
+function g<T extends string | undefined>(t: T, o2: { b: string }) {
+>g : <T extends string | undefined>(t: T, o2: { b: string; }) => void
+>t : T
+>o2 : { b: string; }
+>b : string
+
+  ({ b = t } = o2);
+>({ b = t } = o2) : { b: string; }
+>{ b = t } = o2 : { b: string; }
+>{ b = t } : { b?: string; }
+>b : string
+>t : T
+>o2 : { b: string; }
+}
+}
+namespace N5 {
+>N5 : typeof N5
+
+let fn: (x: number) => number;
+>fn : (x: number) => number
+>x : number
+
+({ fn = x => x } = {});
+>({ fn = x => x } = {}) : {}
+>{ fn = x => x } = {} : {}
+>{ fn = x => x } : { fn?: (x: number) => number; }
+>fn : (x: number) => number
+>x => x : (x: any) => any
+>x : any
+>x : any
+>{} : {}
+
+let lit: "a" | "b";
+>lit : "a" | "b"
+
+({ lit = "a" } = {});
+>({ lit = "a" } = {}) : {}
+>{ lit = "a" } = {} : {}
+>{ lit = "a" } : { lit?: "a" | "b"; }
+>lit : "a" | "b"
+>"a" : "a"
+>{} : {}
+
+let arr: [number, string];
+>arr : [number, string]
+
+({ arr = [1, "s"] } = {});
+>({ arr = [1, "s"] } = {}) : {}
+>{ arr = [1, "s"] } = {} : {}
+>{ arr = [1, "s"] } : { arr?: [number, string]; }
+>arr : [number, string]
+>[1, "s"] : (string | number)[]
+>1 : 1
+>"s" : "s"
+>{} : {}
+}
+

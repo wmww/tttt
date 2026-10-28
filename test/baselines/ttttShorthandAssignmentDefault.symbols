@@ -1,0 +1,181 @@
+//// [test/cases/ttttShorthandAssignmentDefault.ts] ////
+
+=== ttttShorthandAssignmentDefault.ts ===
+// A shorthand assignment pattern's default (`({ b = d } = o)`) has no contextual type (tsc's getContextualType of a
+// shorthand's initializer is its object literal's, none as an assignment target), and the property loses undefined
+// unless the default's type facts say IsUndefined: any and unknown don't, a type variable by its constraint (tsc's
+// checkDestructuringAssignment)
+namespace N1 {
+>N1 : Symbol(N1, Decl(ttttShorthandAssignmentDefault.ts, 0, 0))
+
+declare const o: { a?: number; b?: string };
+>o : Symbol(o, Decl(ttttShorthandAssignmentDefault.ts, 5, 13))
+>a : Symbol(a, Decl(ttttShorthandAssignmentDefault.ts, 5, 18))
+>b : Symbol(b, Decl(ttttShorthandAssignmentDefault.ts, 5, 30))
+
+let b: string;
+>b : Symbol(b, Decl(ttttShorthandAssignmentDefault.ts, 6, 3))
+
+({ b = 5 as any } = o);
+>b : Symbol(b, Decl(ttttShorthandAssignmentDefault.ts, 7, 2))
+>o : Symbol(o, Decl(ttttShorthandAssignmentDefault.ts, 5, 13))
+
+({ b = (5 as any).foo } = o);
+>b : Symbol(b, Decl(ttttShorthandAssignmentDefault.ts, 8, 2))
+>o : Symbol(o, Decl(ttttShorthandAssignmentDefault.ts, 5, 13))
+
+declare const n: number;
+>n : Symbol(n, Decl(ttttShorthandAssignmentDefault.ts, 9, 13))
+
+({ b = n.foo } = o);
+>b : Symbol(b, Decl(ttttShorthandAssignmentDefault.ts, 10, 2))
+>n : Symbol(n, Decl(ttttShorthandAssignmentDefault.ts, 9, 13))
+>o : Symbol(o, Decl(ttttShorthandAssignmentDefault.ts, 5, 13))
+
+({ b = (n as any as {}).foo } = o);
+>b : Symbol(b, Decl(ttttShorthandAssignmentDefault.ts, 11, 2))
+>n : Symbol(n, Decl(ttttShorthandAssignmentDefault.ts, 9, 13))
+>o : Symbol(o, Decl(ttttShorthandAssignmentDefault.ts, 5, 13))
+}
+namespace N2 {
+>N2 : Symbol(N2, Decl(ttttShorthandAssignmentDefault.ts, 12, 1))
+
+declare const o: { a?: number; b?: string };
+>o : Symbol(o, Decl(ttttShorthandAssignmentDefault.ts, 14, 13))
+>a : Symbol(a, Decl(ttttShorthandAssignmentDefault.ts, 14, 18))
+>b : Symbol(b, Decl(ttttShorthandAssignmentDefault.ts, 14, 30))
+
+let b: string;
+>b : Symbol(b, Decl(ttttShorthandAssignmentDefault.ts, 15, 3))
+
+({ b = undefined } = o);
+>b : Symbol(b, Decl(ttttShorthandAssignmentDefault.ts, 16, 2))
+>undefined : Symbol(undefined)
+>o : Symbol(o, Decl(ttttShorthandAssignmentDefault.ts, 14, 13))
+
+declare const u: string | undefined;
+>u : Symbol(u, Decl(ttttShorthandAssignmentDefault.ts, 17, 13))
+
+({ b = u } = o);
+>b : Symbol(b, Decl(ttttShorthandAssignmentDefault.ts, 18, 2))
+>u : Symbol(u, Decl(ttttShorthandAssignmentDefault.ts, 17, 13))
+>o : Symbol(o, Decl(ttttShorthandAssignmentDefault.ts, 14, 13))
+
+declare const k: unknown;
+>k : Symbol(k, Decl(ttttShorthandAssignmentDefault.ts, 19, 13))
+
+({ b = k as never } = o);
+>b : Symbol(b, Decl(ttttShorthandAssignmentDefault.ts, 20, 2))
+>k : Symbol(k, Decl(ttttShorthandAssignmentDefault.ts, 19, 13))
+>o : Symbol(o, Decl(ttttShorthandAssignmentDefault.ts, 14, 13))
+}
+namespace N3 {
+>N3 : Symbol(N3, Decl(ttttShorthandAssignmentDefault.ts, 21, 1))
+
+declare const o: { a?: number; b?: string };
+>o : Symbol(o, Decl(ttttShorthandAssignmentDefault.ts, 23, 13))
+>a : Symbol(a, Decl(ttttShorthandAssignmentDefault.ts, 23, 18))
+>b : Symbol(b, Decl(ttttShorthandAssignmentDefault.ts, 23, 30))
+
+let b: string;
+>b : Symbol(b, Decl(ttttShorthandAssignmentDefault.ts, 24, 3))
+
+declare const k: unknown;
+>k : Symbol(k, Decl(ttttShorthandAssignmentDefault.ts, 25, 13))
+
+({ b = k } = o);
+>b : Symbol(b, Decl(ttttShorthandAssignmentDefault.ts, 26, 2))
+>k : Symbol(k, Decl(ttttShorthandAssignmentDefault.ts, 25, 13))
+>o : Symbol(o, Decl(ttttShorthandAssignmentDefault.ts, 23, 13))
+
+declare const v: void;
+>v : Symbol(v, Decl(ttttShorthandAssignmentDefault.ts, 27, 13))
+
+({ b = v } = o);
+>b : Symbol(b, Decl(ttttShorthandAssignmentDefault.ts, 28, 2))
+>v : Symbol(v, Decl(ttttShorthandAssignmentDefault.ts, 27, 13))
+>o : Symbol(o, Decl(ttttShorthandAssignmentDefault.ts, 23, 13))
+
+function f<T extends string | undefined, U extends string>(t: T, u: U) {
+>f : Symbol(f, Decl(ttttShorthandAssignmentDefault.ts, 28, 16))
+>T : Symbol(T, Decl(ttttShorthandAssignmentDefault.ts, 29, 11))
+>U : Symbol(U, Decl(ttttShorthandAssignmentDefault.ts, 29, 40))
+>t : Symbol(t, Decl(ttttShorthandAssignmentDefault.ts, 29, 59))
+>T : Symbol(T, Decl(ttttShorthandAssignmentDefault.ts, 29, 11))
+>u : Symbol(u, Decl(ttttShorthandAssignmentDefault.ts, 29, 64))
+>U : Symbol(U, Decl(ttttShorthandAssignmentDefault.ts, 29, 40))
+
+  ({ b = t } = o);
+>b : Symbol(b, Decl(ttttShorthandAssignmentDefault.ts, 30, 4))
+>t : Symbol(t, Decl(ttttShorthandAssignmentDefault.ts, 29, 59))
+>o : Symbol(o, Decl(ttttShorthandAssignmentDefault.ts, 23, 13))
+
+  ({ b = u } = o);
+>b : Symbol(b, Decl(ttttShorthandAssignmentDefault.ts, 31, 4))
+>u : Symbol(u, Decl(ttttShorthandAssignmentDefault.ts, 29, 64))
+>o : Symbol(o, Decl(ttttShorthandAssignmentDefault.ts, 23, 13))
+}
+({ b = 5 as any } = o);
+>b : Symbol(b, Decl(ttttShorthandAssignmentDefault.ts, 33, 2))
+>o : Symbol(o, Decl(ttttShorthandAssignmentDefault.ts, 23, 13))
+}
+namespace N4 {
+>N4 : Symbol(N4, Decl(ttttShorthandAssignmentDefault.ts, 34, 1))
+
+declare const o: { b?: string };
+>o : Symbol(o, Decl(ttttShorthandAssignmentDefault.ts, 36, 13))
+>b : Symbol(b, Decl(ttttShorthandAssignmentDefault.ts, 36, 18))
+
+let b: string;
+>b : Symbol(b, Decl(ttttShorthandAssignmentDefault.ts, 37, 3))
+
+function f<T extends string | undefined>(t: T) {
+>f : Symbol(f, Decl(ttttShorthandAssignmentDefault.ts, 37, 14))
+>T : Symbol(T, Decl(ttttShorthandAssignmentDefault.ts, 38, 11))
+>t : Symbol(t, Decl(ttttShorthandAssignmentDefault.ts, 38, 41))
+>T : Symbol(T, Decl(ttttShorthandAssignmentDefault.ts, 38, 11))
+
+  ({ b = t } = o);
+>b : Symbol(b, Decl(ttttShorthandAssignmentDefault.ts, 39, 4))
+>t : Symbol(t, Decl(ttttShorthandAssignmentDefault.ts, 38, 41))
+>o : Symbol(o, Decl(ttttShorthandAssignmentDefault.ts, 36, 13))
+}
+function g<T extends string | undefined>(t: T, o2: { b: string }) {
+>g : Symbol(g, Decl(ttttShorthandAssignmentDefault.ts, 40, 1))
+>T : Symbol(T, Decl(ttttShorthandAssignmentDefault.ts, 41, 11))
+>t : Symbol(t, Decl(ttttShorthandAssignmentDefault.ts, 41, 41))
+>T : Symbol(T, Decl(ttttShorthandAssignmentDefault.ts, 41, 11))
+>o2 : Symbol(o2, Decl(ttttShorthandAssignmentDefault.ts, 41, 46))
+>b : Symbol(b, Decl(ttttShorthandAssignmentDefault.ts, 41, 52))
+
+  ({ b = t } = o2);
+>b : Symbol(b, Decl(ttttShorthandAssignmentDefault.ts, 42, 4))
+>t : Symbol(t, Decl(ttttShorthandAssignmentDefault.ts, 41, 41))
+>o2 : Symbol(o2, Decl(ttttShorthandAssignmentDefault.ts, 41, 46))
+}
+}
+namespace N5 {
+>N5 : Symbol(N5, Decl(ttttShorthandAssignmentDefault.ts, 44, 1))
+
+let fn: (x: number) => number;
+>fn : Symbol(fn, Decl(ttttShorthandAssignmentDefault.ts, 46, 3))
+>x : Symbol(x, Decl(ttttShorthandAssignmentDefault.ts, 46, 9))
+
+({ fn = x => x } = {});
+>fn : Symbol(fn, Decl(ttttShorthandAssignmentDefault.ts, 47, 2))
+>x : Symbol(x, Decl(ttttShorthandAssignmentDefault.ts, 47, 7))
+>x : Symbol(x, Decl(ttttShorthandAssignmentDefault.ts, 47, 7))
+
+let lit: "a" | "b";
+>lit : Symbol(lit, Decl(ttttShorthandAssignmentDefault.ts, 48, 3))
+
+({ lit = "a" } = {});
+>lit : Symbol(lit, Decl(ttttShorthandAssignmentDefault.ts, 49, 2))
+
+let arr: [number, string];
+>arr : Symbol(arr, Decl(ttttShorthandAssignmentDefault.ts, 50, 3))
+
+({ arr = [1, "s"] } = {});
+>arr : Symbol(arr, Decl(ttttShorthandAssignmentDefault.ts, 51, 2))
+}
+

@@ -277,8 +277,12 @@ passing tests).
   last check wins). (An IIFE's parameters are pushed from `ty_quick_expr_type()` too now: before, a variable
   referenced above its IIFE initializer typed the function without them.) [note]
 - Destructuring assignment targets are checked as a whole, not property by property (tsc's
-  checkDestructuringAssignment; hacks.md "Destructuring assignments"). The `{ a = dflt }` default of a shorthand
-  assignment pattern is resolved but not checked (`ObjectExprItem.shorthand_default`). [open]
+  checkDestructuringAssignment; hacks.md "Destructuring assignments"). [open]
+- A shorthand assignment pattern's default (`({ b = d } = o)`, `ObjectExprItem.shorthand_default`) was checked with
+  the target's type as contextual type (tsc: none, `{ f = x => x } = o` is TS7006, a generic `t` stays `T` in the
+  message) and an any or unknown default kept undefined in the property (tsc's hasTypeFacts(IsUndefined) is false for
+  them: spurious TS2322 on `({ b = x as any } = o)`), a type variable now by its base constraint. expr.c's destructuring
+  assignment check. Test ttttShorthandAssignmentDefault [fixed PENDING].
 
 - (types only) ttttFlowIssueSingleQuery: the diagnostics match now (the extra flow query was removed), but `r.previous`
   on the narrowed silent `never` prints `never` where tsc prints the error type (`previous : any`, `r.previous : error`):

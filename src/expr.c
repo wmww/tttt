@@ -2868,16 +2868,23 @@ static void assignment_target_typecheck_of(
                         assignment_target_typecheck_of(&i->value, rest, nullptr, site, true, span_null, errs);
                     }
                 } else if (i->tag == OBJECT_ITEM_SHORTHAND && object_item_rare(i)->shorthand_default) {
-                    // `{ a = 1 } = o`: the default is assigned to `a` (checked with a's type as its contextual type),
-                    // and so is the property, without undefined unless the default can be undefined too (tsc's
-                    // checkDestructuringAssignment of a ShorthandPropertyAssignment)
-                    Ty const* declared = ty_expr_type(checker, &i->value);
-                    Ty const* default_type = ty_check_expr(checker, object_item_rare(i)->shorthand_default, declared);
+                    // `{ a = 1 } = o`: the default is assigned to `a`, and so is the property, without undefined unless
+                    // the default can be undefined too (tsc's checkDestructuringAssignment of a
+                    // ShorthandPropertyAssignment: hasTypeFacts(IsUndefined), which any and unknown don't have). The
+                    // default has no contextual type: tsc's getContextualType of a shorthand's initializer is the
+                    // object literal's, and an assignment target has none (`{ f = x => x } = o` is TS7006)
+                    Ty const* default_type = ty_check_expr(checker, object_item_rare(i)->shorthand_default, nullptr);
                     expr_typecheck(object_item_rare(i)->shorthand_default, errs);
                     assignment_target_typecheck(&i->value, default_type, object_item_rare(i)->shorthand_default, site, errs);
-                    // (any and unknown have no IsUndefined fact either: tsgo's getTypeFacts gives them UnknownFacts)
+                    // (any and unknown have no IsUndefined fact: tsgo's getTypeFacts gives them UnknownFacts; a type variable is
+                    // judged by its base constraint, unknown without one)
+                    Ty const* facts_type = default_type;
+                    if (facts_type->flags & (TYF_TYPE_PARAM | TYF_DEFERRED | TYF_INTERSECTION)) {
+                        Ty const* constraint = ty_base_constraint(checker, facts_type);
+                        facts_type = constraint ? constraint : ty_intrinsic(checker, TY_UNKNOWN_);
+                    }
                     if (property && compiler_options()->strict_null_checks &&
-                        ty_without_undefined(checker, default_type) == default_type
+                        ((facts_type->flags & (TYF_ANY | TYF_UNKNOWN)) || ty_without_undefined(checker, facts_type) == facts_type)
                     ) {
                         property = ty_without_undefined(checker, property);
                     }

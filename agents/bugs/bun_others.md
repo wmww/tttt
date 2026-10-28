@@ -39,17 +39,17 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
 - Spurious TS2314 on a class, interface or alias with a repeated type parameter name (99-V4
   getDeclaredTypeOfClassOrInterface__05, `interface Rep<T, T>` referenced as `Rep<string>`): the repeats are one type
   parameter symbol in tsc, so one type argument; several_types.c's declared_type_params() counted the items (the type's
-  own parameter list already deduplicated). Test ttttRepeatedTypeParameterArity [fixed 041e61c1b].
+  own parameter list already deduplicated). Test ttttRepeatedTypeParameterArity [fixed 793f87f8c].
 - Missing TS2322 at `static prototype = 1` (99-V4 getTypeOfPrototypeProperty__02): the field merges into the class's
   prototype symbol (tsc's binder), typed as the instance type with any arguments, and its initializer is checked
   against that, an annotation aside. class_decl.c's field check, ty_class_prototype_type(). Test
-  ttttStaticPrototypeInitializer [fixed 5edffc0e6].
+  ttttStaticPrototypeInitializer [fixed 3301ed110].
 - Missing TS2540 writing a numeric name of a union whose other member only has a readonly number index signature
   (99-V4 getTypeOfSymbolWithDeferredType__05, `v[0] = "q"` with `{ 0: "q" } | { readonly [k: number]: null }`, and a
   tuple member, where tttt said TS2542): check.c member_refs() asked a member without the property for its string
   index signature, tsc for the one applying to the name (getApplicableIndexInfoForName); and a union of members that
   only have index signatures has no such property (String's readonly index in classDoesNotDependOnBaseTypes stays
-  TS2542). Test ttttUnionReadonlyIndexForName [fixed 1f110d86a].
+  TS2542). Test ttttUnionReadonlyIndexForName [fixed e2db2d077].
 - Control flow of loops with `finally` and back edges after a never-returning call or a `break` in a narrowing:
   73-R01e and 73-R01f (TS2339 both ways on `x.foo` in `do { try {} finally { x.foo } } while (true)` after `fail()`),
   73-R03a (an evolving `let x = []` narrowed by `Array.isArray` in a for loop's incrementor: tttt says TS2339 on never

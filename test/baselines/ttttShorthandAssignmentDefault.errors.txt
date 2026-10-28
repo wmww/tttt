@@ -1,0 +1,121 @@
+ttttShorthandAssignmentDefault.ts(11,10): error TS2339: Property 'foo' does not exist on type 'number'.
+ttttShorthandAssignmentDefault.ts(12,25): error TS2339: Property 'foo' does not exist on type '{}'.
+ttttShorthandAssignmentDefault.ts(17,4): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+ttttShorthandAssignmentDefault.ts(17,4): error TS2322: Type 'undefined' is not assignable to type 'string'.
+ttttShorthandAssignmentDefault.ts(19,4): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+ttttShorthandAssignmentDefault.ts(27,4): error TS2322: Type 'unknown' is not assignable to type 'string'.
+ttttShorthandAssignmentDefault.ts(29,4): error TS2322: Type 'void' is not assignable to type 'string'.
+ttttShorthandAssignmentDefault.ts(31,6): error TS2322: Type 'T' is not assignable to type 'string'.
+  Type 'string | undefined' is not assignable to type 'string'.
+    Type 'undefined' is not assignable to type 'string'.
+ttttShorthandAssignmentDefault.ts(31,6): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+ttttShorthandAssignmentDefault.ts(40,6): error TS2322: Type 'T' is not assignable to type 'string'.
+  Type 'string | undefined' is not assignable to type 'string'.
+    Type 'undefined' is not assignable to type 'string'.
+ttttShorthandAssignmentDefault.ts(40,6): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+ttttShorthandAssignmentDefault.ts(43,6): error TS2322: Type 'T' is not assignable to type 'string'.
+  Type 'string | undefined' is not assignable to type 'string'.
+    Type 'undefined' is not assignable to type 'string'.
+ttttShorthandAssignmentDefault.ts(48,9): error TS7006: Parameter 'x' implicitly has an 'any' type.
+ttttShorthandAssignmentDefault.ts(52,4): error TS2322: Type '(string | number)[]' is not assignable to type '[number, string]'.
+  Target requires 2 element(s) but source may have fewer.
+
+
+==== ttttShorthandAssignmentDefault.ts (14 errors) ====
+    // A shorthand assignment pattern's default (`({ b = d } = o)`) has no contextual type (tsc's getContextualType of a
+    // shorthand's initializer is its object literal's, none as an assignment target), and the property loses undefined
+    // unless the default's type facts say IsUndefined: any and unknown don't, a type variable by its constraint (tsc's
+    // checkDestructuringAssignment)
+    namespace N1 {
+    declare const o: { a?: number; b?: string };
+    let b: string;
+    ({ b = 5 as any } = o);
+    ({ b = (5 as any).foo } = o);
+    declare const n: number;
+    ({ b = n.foo } = o);
+             ~~~
+!!! error TS2339: Property 'foo' does not exist on type 'number'.
+    ({ b = (n as any as {}).foo } = o);
+                            ~~~
+!!! error TS2339: Property 'foo' does not exist on type '{}'.
+    }
+    namespace N2 {
+    declare const o: { a?: number; b?: string };
+    let b: string;
+    ({ b = undefined } = o);
+       ~
+!!! error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'string'.
+       ~
+!!! error TS2322: Type 'undefined' is not assignable to type 'string'.
+    declare const u: string | undefined;
+    ({ b = u } = o);
+       ~
+!!! error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'string'.
+    declare const k: unknown;
+    ({ b = k as never } = o);
+    }
+    namespace N3 {
+    declare const o: { a?: number; b?: string };
+    let b: string;
+    declare const k: unknown;
+    ({ b = k } = o);
+       ~
+!!! error TS2322: Type 'unknown' is not assignable to type 'string'.
+    declare const v: void;
+    ({ b = v } = o);
+       ~
+!!! error TS2322: Type 'void' is not assignable to type 'string'.
+    function f<T extends string | undefined, U extends string>(t: T, u: U) {
+      ({ b = t } = o);
+         ~
+!!! error TS2322: Type 'T' is not assignable to type 'string'.
+!!! error TS2322:   Type 'string | undefined' is not assignable to type 'string'.
+!!! error TS2322:     Type 'undefined' is not assignable to type 'string'.
+         ~
+!!! error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'string'.
+      ({ b = u } = o);
+    }
+    ({ b = 5 as any } = o);
+    }
+    namespace N4 {
+    declare const o: { b?: string };
+    let b: string;
+    function f<T extends string | undefined>(t: T) {
+      ({ b = t } = o);
+         ~
+!!! error TS2322: Type 'T' is not assignable to type 'string'.
+!!! error TS2322:   Type 'string | undefined' is not assignable to type 'string'.
+!!! error TS2322:     Type 'undefined' is not assignable to type 'string'.
+         ~
+!!! error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'string'.
+    }
+    function g<T extends string | undefined>(t: T, o2: { b: string }) {
+      ({ b = t } = o2);
+         ~
+!!! error TS2322: Type 'T' is not assignable to type 'string'.
+!!! error TS2322:   Type 'string | undefined' is not assignable to type 'string'.
+!!! error TS2322:     Type 'undefined' is not assignable to type 'string'.
+    }
+    }
+    namespace N5 {
+    let fn: (x: number) => number;
+    ({ fn = x => x } = {});
+            ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+    let lit: "a" | "b";
+    ({ lit = "a" } = {});
+    let arr: [number, string];
+    ({ arr = [1, "s"] } = {});
+       ~~~
+!!! error TS2322: Type '(string | number)[]' is not assignable to type '[number, string]'.
+!!! error TS2322:   Target requires 2 element(s) but source may have fewer.
+    }
+    
