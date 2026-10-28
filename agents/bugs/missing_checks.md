@@ -114,6 +114,10 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   of that `b` (tsc's typeWriter rechecks it, number; tttt keeps the checked expression's T), and a later parameter with
   a default or `...` (getTypeForVariableLikeDeclaration's optionality and rest type) still goes through its lazy type.
   Test ttttUnassignedContextualParameterRead (types component fails, that baseline). [fixed bc0424527]
+- (cor4, 2026-10-30, bun 99-V4 checkForOfStatement__05) A for-of's declared variable was typed after its expression
+  (tsc: the declaration list first), so an evolving array pushed with the variable on the loop's back edge wasn't
+  circular (TS7022 missing). Names only (a pattern's computed names go first). Test ttttForOfVariableTypedFirst.
+  [fixed 869bb9349]
 - (cor4, 2026-10-30, bun 99-V4 checkVariableLikeDeclaration__01, getTypeFromBindingPattern__04/05) A default in an
   unannotated variable pattern reading a sibling through an IIFE, `const [a, b = (() => a)()] = [2]`: tsc checks the
   elements first (checkVariableLikeDeclaration -> checkBindingElement -> getTypeOfSymbol(a)), so a's type is in flight
@@ -131,7 +135,11 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   the result depends on which type is asked first. tttt's has_base_type() (members.c) walks the extends clauses
   syntactically and drops every base that leads back, so B has no members (spurious TS2339) and TS2430 is missing. A
   fix: a memoized, resolution-ordered base list per class/interface (partial while in flight) that members.c's base
-  loop and has_base_type() both read, with TS2310 where tsc reports it; order-dependent like tsc's, so kdiff it. [open]
+  loop and has_base_type() both read, with TS2310 where tsc reports it; order-dependent like tsc's, so kdiff it.
+  Not built (cor4): tttt's whole-cycle-has-no-bases rule (ty_interface_in_base_cycle(), a shared word of the graph) is
+  deliberate, deterministic across checkers; tsc's result depends on which interface a checker asks first, so across
+  files it would be K-dependent in tttt (and in tsgo), and base cycles are compile errors real code doesn't keep.
+  [design]
 - (cor4, 2026-10-30, bun 99-V4 getTypeOfInstantiatedSymbol__01/04/05, +TS2347) A generic class getter returning the
   same getter of another instantiation (`get a() { return bs.a }` in `Box<T>`): tsc's in-flight read of the target
   accessor is errorType (getTypeOfAccessors' failing push), which getTypeOfInstantiatedSymbol instantiates and keeps,
