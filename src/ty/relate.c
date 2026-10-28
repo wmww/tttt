@@ -2300,7 +2300,12 @@ static Ternary compare_signatures(
     // (tsc's isResolvingReturnTypeOfSignature): a source's is still related (any isn't a subtype of string)
     if (ty_signature_return_resolving(me, target)) return result;
     Ty const* target_return = signature_return_type(me, target);
-    if (target_return->flags & (TYF_VOID | TYF_ANY)) return result;
+    // (Only void and the plain any, by identity: an error type's any is compared like any other return type, which
+    // types the source's body, `widths.reduce(function (a, b) { return maxWidth; })` with widths an error-typed array
+    // is TS7022 for maxWidth. tsc's compareSignaturesRelated)
+    if ((target_return->flags & TYF_VOID) || target_return == ty_intrinsic(me, TY_ANY) || target_return == ty_intrinsic(me, TY_CIRCULAR)) {
+        return result;
+    }
     Ty const* source_return = ty_signature_return_resolving(me, source) ? ty_intrinsic(me, TY_ANY) :
         signature_return_type(me, source);
     // A type predicate is only assignable to the same predicate (a `boolean` target takes any)

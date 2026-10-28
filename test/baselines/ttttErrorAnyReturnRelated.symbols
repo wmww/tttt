@@ -1,0 +1,51 @@
+//// [test/cases/ttttErrorAnyReturnRelated.ts] ////
+
+=== ttttErrorAnyReturnRelated.ts ===
+// compareSignaturesRelated skips the return types only for a target returning void or the plain any: an error
+// type's any (an array whose element type an error made) relates the source's, which types the callback's body:
+// circular here (TS7022/TS7024). A declared any[] stays silent
+declare const ns: number[];
+>ns : Symbol(ns, Decl(ttttErrorAnyReturnRelated.ts, 3, 13))
+
+var widths = ns.map(function (e) { return e.xyz; });
+>widths : Symbol(widths, Decl(ttttErrorAnyReturnRelated.ts, 4, 3))
+>ns.map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>ns : Symbol(ns, Decl(ttttErrorAnyReturnRelated.ts, 3, 13))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>e : Symbol(e, Decl(ttttErrorAnyReturnRelated.ts, 4, 30))
+>e : Symbol(e, Decl(ttttErrorAnyReturnRelated.ts, 4, 30))
+
+var maxWidth = widths.reduce(function (a, b) {
+>maxWidth : Symbol(maxWidth, Decl(ttttErrorAnyReturnRelated.ts, 5, 3))
+>widths.reduce : Symbol(Array.reduce, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>widths : Symbol(widths, Decl(ttttErrorAnyReturnRelated.ts, 4, 3))
+>reduce : Symbol(Array.reduce, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(ttttErrorAnyReturnRelated.ts, 5, 39))
+>b : Symbol(b, Decl(ttttErrorAnyReturnRelated.ts, 5, 41))
+
+    return maxWidth;
+>maxWidth : Symbol(maxWidth, Decl(ttttErrorAnyReturnRelated.ts, 5, 3))
+
+});
+declare const declaredWidths: any[];
+>declaredWidths : Symbol(declaredWidths, Decl(ttttErrorAnyReturnRelated.ts, 8, 13))
+
+var declaredMax = declaredWidths.reduce(function (a, b) {
+>declaredMax : Symbol(declaredMax, Decl(ttttErrorAnyReturnRelated.ts, 9, 3))
+>declaredWidths.reduce : Symbol(Array.reduce, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>declaredWidths : Symbol(declaredWidths, Decl(ttttErrorAnyReturnRelated.ts, 8, 13))
+>reduce : Symbol(Array.reduce, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(ttttErrorAnyReturnRelated.ts, 9, 50))
+>b : Symbol(b, Decl(ttttErrorAnyReturnRelated.ts, 9, 52))
+
+    return a > b ? a : b;
+>a : Symbol(a, Decl(ttttErrorAnyReturnRelated.ts, 9, 50))
+>b : Symbol(b, Decl(ttttErrorAnyReturnRelated.ts, 9, 52))
+>a : Symbol(a, Decl(ttttErrorAnyReturnRelated.ts, 9, 50))
+>b : Symbol(b, Decl(ttttErrorAnyReturnRelated.ts, 9, 52))
+
+    return declaredMax;
+>declaredMax : Symbol(declaredMax, Decl(ttttErrorAnyReturnRelated.ts, 9, 3))
+
+});
+

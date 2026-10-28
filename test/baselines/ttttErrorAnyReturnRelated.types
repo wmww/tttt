@@ -1,0 +1,61 @@
+//// [test/cases/ttttErrorAnyReturnRelated.ts] ////
+
+=== ttttErrorAnyReturnRelated.ts ===
+// compareSignaturesRelated skips the return types only for a target returning void or the plain any: an error
+// type's any (an array whose element type an error made) relates the source's, which types the callback's body:
+// circular here (TS7022/TS7024). A declared any[] stays silent
+declare const ns: number[];
+>ns : number[]
+
+var widths = ns.map(function (e) { return e.xyz; });
+>widths : any[]
+>ns.map(function (e) { return e.xyz; }) : any[]
+>ns.map : <U>(callbackfn: (value: number, index: number, array: number[]) => U, thisArg?: any) => U[]
+>ns : number[]
+>map : <U>(callbackfn: (value: number, index: number, array: number[]) => U, thisArg?: any) => U[]
+>function (e) { return e.xyz; } : (e: number) => any
+>e : number
+>e.xyz : any
+>e : number
+>xyz : any
+
+var maxWidth = widths.reduce(function (a, b) {
+>maxWidth : any
+>widths.reduce(function (a, b) {    return maxWidth;}) : any
+>widths.reduce : { (callbackfn: (previousValue: any, currentValue: any, currentIndex: number, array: any[]) => any): any; (callbackfn: (previousValue: any, currentValue: any, currentIndex: number, array: any[]) => any, initialValue: any): any; <U>(callbackfn: (previousValue: U, currentValue: any, currentIndex: number, array: any[]) => U, initialValue: U): U; }
+>widths : any[]
+>reduce : { (callbackfn: (previousValue: any, currentValue: any, currentIndex: number, array: any[]) => any): any; (callbackfn: (previousValue: any, currentValue: any, currentIndex: number, array: any[]) => any, initialValue: any): any; <U>(callbackfn: (previousValue: U, currentValue: any, currentIndex: number, array: any[]) => U, initialValue: U): U; }
+>function (a, b) {    return maxWidth;} : (a: any, b: any) => any
+>a : any
+>b : any
+
+    return maxWidth;
+>maxWidth : any
+
+});
+declare const declaredWidths: any[];
+>declaredWidths : any[]
+
+var declaredMax = declaredWidths.reduce(function (a, b) {
+>declaredMax : any
+>declaredWidths.reduce(function (a, b) {    return a > b ? a : b;    return declaredMax;}) : any
+>declaredWidths.reduce : { (callbackfn: (previousValue: any, currentValue: any, currentIndex: number, array: any[]) => any): any; (callbackfn: (previousValue: any, currentValue: any, currentIndex: number, array: any[]) => any, initialValue: any): any; <U>(callbackfn: (previousValue: U, currentValue: any, currentIndex: number, array: any[]) => U, initialValue: U): U; }
+>declaredWidths : any[]
+>reduce : { (callbackfn: (previousValue: any, currentValue: any, currentIndex: number, array: any[]) => any): any; (callbackfn: (previousValue: any, currentValue: any, currentIndex: number, array: any[]) => any, initialValue: any): any; <U>(callbackfn: (previousValue: U, currentValue: any, currentIndex: number, array: any[]) => U, initialValue: U): U; }
+>function (a, b) {    return a > b ? a : b;    return declaredMax;} : (a: any, b: any) => any
+>a : any
+>b : any
+
+    return a > b ? a : b;
+>a > b ? a : b : any
+>a > b : boolean
+>a : any
+>b : any
+>a : any
+>b : any
+
+    return declaredMax;
+>declaredMax : any
+
+});
+
