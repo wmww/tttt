@@ -1,0 +1,29 @@
+//// [test/cases/ttttMisplacedImportAliasUnresolved.ts] ////
+
+=== ttttMisplacedImportAliasUnresolved.ts ===
+// An `import x = N` outside a namespace or module (TS1232) is never resolved: tsc's checkImportEqualsDeclaration stops
+// at checkGrammarModuleElementContext, so no TS2503 for a value or a missing name (mutation seed 20261105,
+// unknownSymbols2)
+function f(asdf: any) {
+>f : Symbol(f, Decl(ttttMisplacedImportAliasUnresolved.ts, 0, 0))
+>asdf : Symbol(asdf, Decl(ttttMisplacedImportAliasUnresolved.ts, 3, 11))
+
+    import d = asdf;
+>d : Symbol(d, Decl(ttttMisplacedImportAliasUnresolved.ts, 3, 23))
+}
+var asdf2 = 1;
+>asdf2 : Symbol(asdf2, Decl(ttttMisplacedImportAliasUnresolved.ts, 6, 3))
+{
+    import e = asdf2;
+>e : Symbol(e, Decl(ttttMisplacedImportAliasUnresolved.ts, 7, 1))
+}
+function g() {
+>g : Symbol(g, Decl(ttttMisplacedImportAliasUnresolved.ts, 9, 1))
+
+    import h = nothere;
+>h : Symbol(h, Decl(ttttMisplacedImportAliasUnresolved.ts, 10, 14))
+
+    import i = nothere.deeper;
+>i : Symbol(i, Decl(ttttMisplacedImportAliasUnresolved.ts, 11, 23))
+}
+

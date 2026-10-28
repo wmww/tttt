@@ -3230,9 +3230,10 @@ static Symbol* resolve_if_pure_alias(Symbol* me) {
     return my alias->value_target ? me : target;
 }
 
-static Symbol* resolve_import_alias_path(Symbol* me) {
+// (errs: resolve_alias_target()'s, a misplaced import's kept apart for a spelling suggestion: tsc's checker stops at its
+// TS1232 and never resolves it)
+static Symbol* resolve_import_alias_path(Symbol* me, ErrorCtx* errs) {
     PortItem* item = my alias->item;
-    ErrorCtx* errs = my alias->scope->binder->errs;
     if (vec_span_is_empty(&port_item_alias(item)->path)) return nullptr;
     Span first = *vec_span_front(&port_item_alias(item)->path);
     if (!first.size) return nullptr; // (A missing name: tsc's resolveEntityName says nothing)
@@ -4083,7 +4084,7 @@ static Symbol* resolve_alias_target_in(Symbol* me, ErrorCtx* errs) {
         }
 
         case PORT_IMPORT_ALIAS:
-            return resolve_import_alias_path(me);
+            return resolve_import_alias_path(me, errs);
 
         case PORT_EXPORT_AS_NAMESPACE: {
             Symbol* own_module = my alias->scope->container;

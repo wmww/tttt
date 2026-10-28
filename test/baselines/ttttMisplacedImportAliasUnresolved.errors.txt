@@ -1,0 +1,30 @@
+ttttMisplacedImportAliasUnresolved.ts(5,5): error TS1232: An import declaration can only be used at the top level of a namespace or module.
+ttttMisplacedImportAliasUnresolved.ts(9,5): error TS1232: An import declaration can only be used at the top level of a namespace or module.
+ttttMisplacedImportAliasUnresolved.ts(12,5): error TS1232: An import declaration can only be used at the top level of a namespace or module.
+ttttMisplacedImportAliasUnresolved.ts(13,5): error TS1232: An import declaration can only be used at the top level of a namespace or module.
+
+
+==== ttttMisplacedImportAliasUnresolved.ts (4 errors) ====
+    // An `import x = N` outside a namespace or module (TS1232) is never resolved: tsc's checkImportEqualsDeclaration stops
+    // at checkGrammarModuleElementContext, so no TS2503 for a value or a missing name (mutation seed 20261105,
+    // unknownSymbols2)
+    function f(asdf: any) {
+        import d = asdf;
+        ~~~~~~
+!!! error TS1232: An import declaration can only be used at the top level of a namespace or module.
+    }
+    var asdf2 = 1;
+    {
+        import e = asdf2;
+        ~~~~~~
+!!! error TS1232: An import declaration can only be used at the top level of a namespace or module.
+    }
+    function g() {
+        import h = nothere;
+        ~~~~~~
+!!! error TS1232: An import declaration can only be used at the top level of a namespace or module.
+        import i = nothere.deeper;
+        ~~~~~~
+!!! error TS1232: An import declaration can only be used at the top level of a namespace or module.
+    }
+    
