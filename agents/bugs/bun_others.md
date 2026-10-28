@@ -39,17 +39,17 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
 - Spurious TS2314 on a class, interface or alias with a repeated type parameter name (99-V4
   getDeclaredTypeOfClassOrInterface__05, `interface Rep<T, T>` referenced as `Rep<string>`): the repeats are one type
   parameter symbol in tsc, so one type argument; several_types.c's declared_type_params() counted the items (the type's
-  own parameter list already deduplicated). Test ttttRepeatedTypeParameterArity [fixed 793f87f8c].
+  own parameter list already deduplicated). Test ttttRepeatedTypeParameterArity [fixed 2cddcaf93].
 - Missing TS2322 at `static prototype = 1` (99-V4 getTypeOfPrototypeProperty__02): the field merges into the class's
   prototype symbol (tsc's binder), typed as the instance type with any arguments, and its initializer is checked
   against that, an annotation aside. class_decl.c's field check, ty_class_prototype_type(). Test
-  ttttStaticPrototypeInitializer [fixed 3301ed110].
+  ttttStaticPrototypeInitializer [fixed c1c599135].
 - Missing TS2540 writing a numeric name of a union whose other member only has a readonly number index signature
   (99-V4 getTypeOfSymbolWithDeferredType__05, `v[0] = "q"` with `{ 0: "q" } | { readonly [k: number]: null }`, and a
   tuple member, where tttt said TS2542): check.c member_refs() asked a member without the property for its string
   index signature, tsc for the one applying to the name (getApplicableIndexInfoForName); and a union of members that
   only have index signatures has no such property (String's readonly index in classDoesNotDependOnBaseTypes stays
-  TS2542). Test ttttUnionReadonlyIndexForName [fixed e2db2d077].
+  TS2542). Test ttttUnionReadonlyIndexForName [fixed d35a16ed0].
 - Control flow of loops with `finally` and back edges after a never-returning call or a `break` in a narrowing:
   73-R01e and 73-R01f (TS2339 both ways on `x.foo` in `do { try {} finally { x.foo } } while (true)` after `fail()`),
   73-R03a (an evolving `let x = []` narrowed by `Array.isArray` in a for loop's incrementor: tttt says TS2339 on never
@@ -497,7 +497,7 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   [fixed 0d3156599] After a call fails at an earlier argument (`Array.from(v, ({ a }) => ...)` with `v: void`), tsc types
   the later arrow function's destructured parameter unknown and its pattern reports TS2339; without the argument
   error assignParameterType's binding-pattern fallback applies (TS2345). tttt reports neither TS2339 (arrayFrom;
-  ttttFailedCallPatternParamUnknown). tsgo never contextually checks such an argument (the first pass skips it, the failure's inference too): the element's type is asked lazily (getTypeForBindingElement from getContextuallyTypedParameterType's unknown, the deferred body check), while the parameter itself prints the pattern's type once the types writer checks the arrow. call.c marks the never-checked context-sensitive arguments of a failed call (KEY_CONTEXT_UNASSIGNED), whose pattern elements are taken from unknown (ty_parameter_pattern_unassigned()). [fixed PENDING]
+  ttttFailedCallPatternParamUnknown). tsgo never contextually checks such an argument (the first pass skips it, the failure's inference too): the element's type is asked lazily (getTypeForBindingElement from getContextuallyTypedParameterType's unknown, the deferred body check), while the parameter itself prints the pattern's type once the types writer checks the arrow. call.c marks the never-checked context-sensitive arguments of a failed call (KEY_CONTEXT_UNASSIGNED), whose pattern elements are taken from unknown (ty_parameter_pattern_unassigned()). [fixed 0a84664f8]
 - A name right after a shorthand property's `=` (`({ x = used } = o)`, unparenthesized) is that property's child:
   not found, it is TS18004 (tsc's getCannotFindNameDiagnosticForName); and an any or unknown default removes
   undefined from the property's type like any other (tsgo's getTypeFacts gives them UnknownFacts, no IsUndefined: no
