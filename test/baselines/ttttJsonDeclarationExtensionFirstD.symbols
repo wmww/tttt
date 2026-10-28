@@ -1,0 +1,20 @@
+//// [test/cases/ttttJsonDeclarationExtensionFirstD.ts] ////
+
+=== a.d.b.d.json.ts ===
+export declare const named: 1;
+>named : Symbol(named, Decl(a.d.b.d.json.ts, 0, 20))
+
+=== c.d.json.ts ===
+export declare const named: 1;
+>named : Symbol(named, Decl(c.d.json.ts, 0, 20))
+
+=== a.ts ===
+// A declaration file is a JSON module's by tsgo's DeclarationFileExtension, which starts at the base name's first
+// `.d.`: `a.d.b.d.json.ts`'s is `.d.b.d.json.ts`, no JSON (no TS1544: bun 42-C8); `c.d.json.ts`'s is
+import { named } from "./a.d.b.json" with { type: "json" };
+>named : Symbol(named, Decl(a.ts, 2, 8))
+
+import { named as n2 } from "./c.json" with { type: "json" };
+>named : Symbol(n2, Decl(c.d.json.ts, 0, 20))
+>n2 : Symbol(n2, Decl(a.ts, 3, 8))
+

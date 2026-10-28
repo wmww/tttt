@@ -1,0 +1,19 @@
+a.ts(4,10): error TS1544: Named imports from a JSON file into an ECMAScript module are not allowed when 'module' is set to 'NodeNext'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "nodenext", "allowArbitraryExtensions": true } }
+==== a.d.b.d.json.ts (0 errors) ====
+    export declare const named: 1;
+==== c.d.json.ts (0 errors) ====
+    export declare const named: 1;
+==== a.ts (1 errors) ====
+    // A declaration file is a JSON module's by tsgo's DeclarationFileExtension, which starts at the base name's first
+    // `.d.`: `a.d.b.d.json.ts`'s is `.d.b.d.json.ts`, no JSON (no TS1544: bun 42-C8); `c.d.json.ts`'s is
+    import { named } from "./a.d.b.json" with { type: "json" };
+    import { named as n2 } from "./c.json" with { type: "json" };
+             ~~~~~
+!!! error TS1544: Named imports from a JSON file into an ECMAScript module are not allowed when 'module' is set to 'NodeNext'.
+    
+==== package.json (0 errors) ====
+    { "type": "module" }

@@ -2919,7 +2919,15 @@ SourceFile const* module_declaring_file(Symbol const* module) {
 }
 
 bool source_file_is_json_like(SourceFile const* file) {
-    return file && (file->is_json || csview_ends_with(cstr_sv(&file->canonical_path), ".d.json.ts"));
+    if (!file) return false;
+    if (file->is_json) return true;
+    // (tsgo's DeclarationFileExtension: from the base name's first `.d.`, so `a.d.b.d.json.ts`'s is `.d.b.d.json.ts`)
+    csview path = cstr_sv(&file->canonical_path);
+    if (!csview_ends_with(path, ".d.json.ts")) return false;
+    char const* base = path.buf + path.size;
+    while (base > path.buf && base[-1] != '/') base--;
+    char const* first = strstr(base, ".d.");
+    return first && strcmp(first, ".d.json.ts") == 0;
 }
 
 Symbol* module_export_equals(Symbol* module) {
