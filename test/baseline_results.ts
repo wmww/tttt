@@ -161,9 +161,9 @@ const baselines = {
         types: true,
     },
     'bun02-C13b': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun02-C13c': {
         errors: false,
@@ -226,7 +226,7 @@ const baselines = {
         types: true,
     },
     'bun02-C21a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -4616,12 +4616,12 @@ const baselines = {
         types: true,
     },
     'bun28-C10a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'bun28-C10b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -4631,7 +4631,7 @@ const baselines = {
         types: true,
     },
     'bun28-C11b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -4716,7 +4716,7 @@ const baselines = {
         types: true,
     },
     'bun28-C18a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -4831,7 +4831,7 @@ const baselines = {
         types: true,
     },
     'bun28-C23': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -5021,7 +5021,7 @@ const baselines = {
         types: true,
     },
     'bun28-C4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -5141,7 +5141,7 @@ const baselines = {
         types: true,
     },
     'bun28-P15': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -5166,9 +5166,9 @@ const baselines = {
         types: true,
     },
     'bun28-P4b': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun28-P4c': {
         errors: true,
@@ -5206,37 +5206,37 @@ const baselines = {
         types: true,
     },
     'bun28-P6a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'bun28-P6b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'bun28-P6c': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'bun28-P7a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'bun28-P7b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'bun28-P8a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'bun28-P8b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -5951,22 +5951,22 @@ const baselines = {
         types: false,
     },
     'bun32-C10a': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun32-C10b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'bun32-C10c': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'bun32-C10d': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -6086,17 +6086,17 @@ const baselines = {
         types: true,
     },
     'bun32-C25': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun32-C25b': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun32-C25c': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -6136,7 +6136,7 @@ const baselines = {
         types: true,
     },
     'bun32-C8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -6741,9 +6741,9 @@ const baselines = {
         types: true,
     },
     'bun34-P5': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun34-P6a': {
         errors: false,
@@ -7831,9 +7831,9 @@ const baselines = {
         types: true,
     },
     'bun43-C13d': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun43-C13e': {
         errors: false,
@@ -8176,9 +8176,9 @@ const baselines = {
         types: true,
     },
     'bun43-P8e': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun43-P9a': {
         errors: false,
@@ -8296,9 +8296,9 @@ const baselines = {
         types: true,
     },
     'bun43-X5f': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun43-X5g': {
         errors: true,
@@ -8311,29 +8311,29 @@ const baselines = {
         types: false,
     },
     'bun43-X6a': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun43-X6b': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun43-X6c': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun43-X6d': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun43-X6e': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun43-X7': {
         errors: true,
@@ -8576,9 +8576,9 @@ const baselines = {
         types: true,
     },
     'bun53-L18': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun53-L20': {
         errors: true,
@@ -8786,9 +8786,9 @@ const baselines = {
         types: false,
     },
     'bun56-L11': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun56-L14': {
         errors: true,
@@ -8816,12 +8816,12 @@ const baselines = {
         types: true,
     },
     'bun56-L19': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun56-L20': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -8841,9 +8841,9 @@ const baselines = {
         types: true,
     },
     'bun57-L02b': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun57-L02c': {
         errors: false,
@@ -8856,9 +8856,9 @@ const baselines = {
         types: true,
     },
     'bun57-L02f': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun57-L03': {
         errors: false,
@@ -9151,9 +9151,9 @@ const baselines = {
         types: false,
     },
     'bun61-L14': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun61-L15b': {
         errors: false,
@@ -9221,7 +9221,7 @@ const baselines = {
         types: false,
     },
     'bun62-L12': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9576,9 +9576,9 @@ const baselines = {
         types: true,
     },
     'bun74-R15d': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun74-R15e': {
         errors: false,
@@ -9786,14 +9786,14 @@ const baselines = {
         types: false,
     },
     'bun80-R01a': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun80-R01b': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun80-R01c': {
         errors: false,
@@ -10016,7 +10016,7 @@ const baselines = {
         types: true,
     },
     'bun83-R11a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -10656,9 +10656,9 @@ const baselines = {
         types: true,
     },
     'bun93-P01b': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun93-P01c': {
         errors: true,
@@ -12316,6 +12316,16 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAwaitInComputedPropertyName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttAwaitTypeParameterTopLevel': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttBaseConstructorNotObject': {
         errors: true,
         symbols: true,
@@ -13441,6 +13451,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDecoratorsBeforeNonClass': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDeepNestingObjectLiteralSource': {
         errors: true,
         symbols: true,
@@ -13933,6 +13948,11 @@ const baselines = {
         types: true,
     },
     'ttttGlobalTypeBaseImportBeforeAmbient': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttGrammarChecksTscSkips': {
         errors: true,
         symbols: true,
         types: true,
@@ -15142,6 +15162,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttObjectLiteralMemberModifiers': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttObjectLiteralOuterInstantiableNotGeneric': {
         errors: true,
         symbols: true,
@@ -15319,6 +15344,11 @@ const baselines = {
         dts: true,
     },
     'ttttPickUnionIntersectionIndexOptional': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttPrivateNameAsIdentifierName': {
         errors: true,
         symbols: true,
         types: true,
@@ -15997,6 +16027,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttUnionNonPublicCommonDeclaration': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttUnionNonPublicNoSuggestion': {
         errors: true,
         symbols: true,
@@ -16149,6 +16184,11 @@ const baselines = {
         types: true,
     },
     'ttttWriteTypeMergedAndIndexed': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttYieldIsAnAssignmentExpression': {
         errors: true,
         symbols: true,
         types: true,
