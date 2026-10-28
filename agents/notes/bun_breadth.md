@@ -1,5 +1,75 @@
-# tttt vs bun at breadth (2026-10-23, worker "busy")
+# tttt vs bun at breadth
 
+## 2026-10-28 (worker perf): each side's own scaling, and where tttt's goes
+`scripts/bunsweep.py` (the driver this note asked for): the 300 source-sweep projects tsgo checks slowest, four runs
+interleaved per round (tttt defaults = K8 on this 16-vCPU / 8-core box, tttt `--threads 1 --checkers 1`, bun defaults,
+bun `--threads=1`), 3 rounds, the best of each; tttt fast/tttt at 5137f5cc7 (before the rerun's early stop), bun
+1.4.4-canary.20261027.1. The box was shared (load 5-23, median 10): walls are relative; CPU sums and the serial
+`--threads 1` runs carry the structure. (A first run named projects through the worktree's symlinked
+thirdparty/sources: workspace packages then load twice on both sides, arktype 0.2 s -> 54 s; redone with physical
+paths. A median of 3 was moved by stalled rounds of other workers' jobs, pinia/packages/nuxt 0.40x; best-of-3 since.)
+
+**Headline.** tttt ST / MT median 3.16 (p10 1.74, min 0.81): no faster than ST on 7 projects, all reruns; under
+1.5x on 23. bun ST / MT median 3.33 (p10 1.80). tttt MT / bun MT median 0.76, bun faster on 65 of 300 (by > 25% on 26);
+tttt ST / bun ST median 0.70. So tttt scales about as well as bun everywhere (in every regime below, bun's median
+scaling is within 0.2 of tttt's) and wins on its faster single thread; the losers are where tttt scales worse
+than bun or bun's single thread is unusually fast.
+
+**Where tttt's speed-up goes** (ms of MT wall over ST / 8 cores, summed over the 300: 51.9 s of 66.6 s of MT wall):
+- **The check phase** (median 3.3x over ST): typecheck CPU MT / ST 1.66 = **duplication 1.22** (K8 / K1 work at
+  `--threads 1`, no contention: median 1.22, p90 2.24, >= 2 on 41 projects) x **per-instruction slowdown ~1.36** (SMT
+  siblings, the materialize helpers, other workers' load: unmeasurable here, the laptop's counters must split it), at
+  **6.3 of 8 cores busy** (the idle tail behind the costliest file). bun's CPU MT / ST is 1.90 at 7.3 busy: the same
+  shape, more cores.
+- **The costliest file** bounds the per-file model: at K8 it exceeds K1 / 8 on 188 of 300 projects; the bound K1 /
+  max(K1 / 8, costliest file) has median 6.4, p10 2.7; < 4 on 68 projects, < 2 on 21. Idle tail summed 12.8 s.
+  The costliest file is mostly the same at K1 and K8 (199 of 300) and costs about the same (median 1.04x): it is a
+  heavy file, not a warm-up the deal created. Often a checked declaration file: immutable.d.ts (300-400 ms; the
+  critical path of 7 of the 300: lucide/packages/solid, vitest/test/browser, vitest/examples/lit, angular-components,
+  ng-bootstrap, quill, immutable-js), solid-js's store.d.ts, @types/react, @babel/types, typescript-eslint's
+  helpers.d.ts; or a type-level module (solid's store.ts, telegraf's composer.ts, qwik's jsx-generated.ts).
+- **Duplication, two regimes** (`TTTT_DUP_CENSUS=1 --threads 1 --checkers 8`, types summed / distinct, the share of a
+  checker's types every checker makes): *spread* (vscode 1.39x / 6%, effect 1.40x / 5%, kebo 1.15x / 1%, react-select
+  1.46x / 0.3%, drizzle 2.16x / 5%: pairs and clusters, notes/duplication.md) and *hub* (dokploy 4.13x / 80%, openbot
+  i18n 4.19x / 47%, monkeytype backend 3.22x / 21%, bulletproof-react 2.07x / 31%, zod 1.65x / 24%): one type graph
+  nearly every file reaches (a tRPC AppRouter, an i18n key union, a schema library's core), rebuilt by every checker,
+  mostly anonymous object types, `.d.ts` references, unions and intersections. Duplication's summed wall share 9.2 s.
+  41 projects have K8 / K1 >= 2; their median scaling is 1.94 for tttt and 2.09 for bun: **bun scales as badly on
+  hubs** (dokploy 1.95x), because the hub is a serial chain whoever builds it. The parked shared graph on dokploy:
+  CPU -10..-30%, peak RSS -40%, wall unchanged (all 8 checkers start on hub files at once, none has published). What
+  would lower the wall is building the hub itself in parallel (its routers on several threads), which is neither
+  model's today.
+- **The front end** (9.5 s summed over ST / 8): front / bun's load median 1.15 (1.55 on 2026-10-23), slower on 230;
+  cores busy 5.9 median over the whole front end. load+parse at 4.1 cores: the loader waits on a worker's parse 51%
+  of the phase (p90 85%: the import graph's depth), workers are on a CPU 31% of the time they hold a file (here the
+  run queue of a loaded box; notes/front_end.md has the quiet-box reasons). resolve at 2.7 cores: main thread on a
+  CPU 69% (declare merge, link, the walk's serial files). One fixed: a 2.6 MB barrel `.d.ts` with ~1900 namespaces
+  re-exporting (lucide-react's dynamic.d.ts, in 34 of the source repos) scanned the file's statements per name,
+  64 ms on one declare thread (ff16b7a48).
+- **The rerun** (9 projects, 4.0 s): every project with MT <= ST. The parallel pass is 1.0 s of it, which the early
+  stop (15a98e4b7) removes; the rest is a K1 check (notes/one_checker_rerun.md "Fresh eyes").
+
+**Verdicts, the worst scalers** (tttt ST/MT, bun ST/MT):
+
+| project | tttt | bun | dominant | mechanism | fixable | generality | gain on the sweep if removed |
+|---|---|---|---|---|---|---|---|
+| crawlee/website/versioned_docs x3 | 0.81-0.91 | 2.5-2.8 | rerun | TS5115 shown, the parallel pass then a K1 check | parallel pass: fixed (early stop); K1 check: only by order-independent limits or tsgo-default's oracle | 9 / 300 rerun (32 / 5166 source-sweep configs) | 1.0 s parallel passes (1.5% of MT wall); the K1 checks' excess over K1/8 ~3 s more |
+| better-drizzle | 0.81 | 2.02 | rerun | TS2502 foreign circularity | as above | as above | as above |
+| sunmao-ui | 0.90 | 1.70 | rerun | TS2590 | as above | as above | as above |
+| hop-protocol | 1.00 | 3.49 | rerun | TS7023 implicit any across files | as above | as above | as above |
+| monkeytype/backend | 0.96 | 1.59 | dup + tail | hub (types 3.2x; routes/index.ts 244 ms at K8 vs 71 at K1) | not in the per-checker model; sharing doesn't lower the serial hub | 41 / 300 with K8/K1 >= 2 | dup's wall share 9.2 s (14%), of which the hubs' serial part stays |
+| dokploy/apps/dokploy | 1.03 (2x on quiet runs) | 1.95 | dup | tRPC AppRouter ~500 ms per checker, 80% of each checker's types in every checker | as above; shared graph: CPU and RSS, not wall | as above | as above |
+| immutable-js/type-definitions | 0.99 | 0.99 | one file | immutable.d.ts 380 ms: base-interface compatibility through generic signature inference (relate.c, infer_from; tsgo 3.4 s, bun 0.19 s) | per-file model: no; bun's 2x on this file is a lead (unread) | immutable.d.ts critical in 7; 21 projects bounded < 2x by one file, 68 < 4x | idle tail 12.8 s (19%) |
+| telegraf | 1.18 | 1.10 | one file | composer.ts 545-645 ms | no (bun the same) | as above | as above |
+| openbot/packages/i18n | 1.28 | 2.55 | dup | hub of literal unions / intersections (types 4.2x, 47% in every checker) | as dokploy | as above | as above |
+
+What next, in order: (1) the laptop's counters on the check phase's 1.36x per-instruction slowdown (the one bucket not
+explained by mechanism here); (2) the hub regime is the input for the redesign question: sharing helps its CPU and
+memory, its wall only if the hub's own construction parallelizes; (3) what bun does to check immutable.d.ts 2x
+faster than tttt (and 17x faster than tsgo); (4) the front end's loader waits (import-graph depth: an import
+pre-scan was bounded at ~15 ms on vscode, notes/front_end.md).
+
+## 2026-10-23 (worker "busy")
 tttt at its defaults (fast/tttt at d98cddfbb) against bun canary 1.4.4-canary.20261022.1 at its defaults on the 500
 source sweep projects tsgo checks slowest (`test/perfsweep/tsgo.jsonl.gz`, check_s >= 0.58 s; 487 measured, the
 corpus-named entries skipped). Per project bun once to warm, then 3 interleaved runs of each, medians. The 16-vCPU
@@ -74,7 +144,7 @@ and on none of the 17 corpora (TypeScript6 stays at 4). perfshape medians of 7 (
 55), lexical's span pinned by one file both ways (106 -> 109 ms, walls overlap). CPU +4..17%, peak RSS +10..32%
 (+15 to +48 MB). Small: it is the worst project's class, not the biggest.
 
-## How to redo it
+## How to redo it (now: scripts/bunsweep.py --bun PATH; the steps below are what it does)
 1. bun: `npm pack @oven/bun-linux-x64@1.4.4-canary.20261022.1` into scratch, `package/bin/bun`.
 2. Sample: the 500 projects with the largest tsgo `check_s` in `test/perfsweep/tsgo.jsonl.gz`.
 3. Per project: bun once (its first run is slow), then 3x (tttt `--time` with TTTT_SYNC_EXIT=1, bun `check -p P

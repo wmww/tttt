@@ -93,6 +93,58 @@ manager 5.4 s against 0.5 and 1.3 s. That is what the trigger rules avoid.
 - **05ca65eb4**: (d)+(B), the safe version.
 - **This commit**: limits always, the TS7022 family by cycle shape and import order.
 
+## Fresh eyes (perf, 2026-10-28)
+**Measured** (`--time` prints `time: rerun in one checker after a parallel pass of X ms at K checkers[, stopped early]
+(RULE, TSn in FILE)`; the study script ran tttt at the defaults, at `--checkers 1` and with `--no-rerun` on the 136
+source-sweep configs whose tsgo output has a history-dependent code, box loaded 10-20): 32 rerun at the defaults
+(limit TS5115 25, TS2590 1; implicit any TS7022/7023 3; foreign TS2502/TS7023 3). All 136 at the defaults are
+byte-identical to `--checkers 1`. Without the rerun 19 of the 32 would have been identical anyway; the 13 that need it
+are appflare x11 (TS5115 at several checkers' first sites), better-auth's cloudflare fixture (TS5115) and sunmao-ui
+(TS2590). On the bun breadth sweep's 300 slowest projects the rerun is the dominant loss of every project whose
+default run is no faster than its single-threaded one (sunmao-ui 0.88x, hop-protocol 1.01x, better-auth 1.18x):
+a rerunning project paid its whole parallel pass plus a K1 check.
+
+**Built: the early stop** (15a98e4b7). history_dependent_matters() is monotone in the diagnostics reported (an error
+in a checker's context stays there until the pass ends; the rules read only it, static program data and whether a
+checker recycled), so the first diagnostic that fires a rule makes the rerun certain. Each checker polls its own new
+diagnostics once history_reported is set, after every statement and file, and sets Program.rerun_due; every checker
+then drops what it is checking at its next statement (typecheck_stopping() in statements_typecheck() and
+check_file()'s deferred checks), skips its after-check pass and declaration walks, and the rerun starts. The output
+is the rerun's by construction; a stop whose diagnostics fire no rule at the end (not expected) reruns anyway.
+`TTTT_DEBUG_RERUN_STOP=N` forces a stop after the pass's N-th file, mid-file for the others: byte-identical to
+`--checkers 1` on the 13 corpora at N = 1, 20, 200. 31 of the 32 stopped early; appflare/apps/manager's parallel pass
+236 -> 6-27 ms (typecheck 1.9 -> 1.2 s). A rerunning project now costs about its K1 check plus the time to its first
+firing diagnostic: still slower than K1 alone by that much, never faster.
+
+**Verdicts per rule** (keep / narrow / drop):
+- **Limits: keep.** Where one trips depends on what its checker instantiated before: the depth and count limits
+  count work the caches short-cut, and cached instantiations come from any earlier file, not only the tripping file's
+  import closure (global augmentations, lib types every file instantiates). Its error type then silences diagnostics
+  in arbitrary later files. 11 of 25 TS5115 configs and the TS2590 one differ without the rerun; nothing tells the 14
+  that don't apart without knowing K1's site (cloudflare-os workshop-backend: one checker's limit, still not K1's).
+- **Foreign circularities: keep.** better-drizzle and hexo were identical without it, but bun 92-R16b is the flake it
+  exists for (16-19 of 60 runs at K4 before); it costs little now that the pass stops at the report.
+- **Implicit-any circularities across files: keep.** hop-protocol and better-auth's drizzle adapter were identical
+  without it; sequelize differed in 3 of 15 runs.
+- **Recycles: keep** (none measured: the pool default recycles nothing on a free box).
+
+**Verdicts per design:**
+- **Recheck only the files that can depend on history: drop.** K1's history for a file is every earlier file in
+  program order; which earlier work warms the caches a limit counts is not its import closure, and where K1 trips
+  first is unknowable without the K1 prefix. Non-history diagnostics are history-independent by the K-stability
+  invariant, but the silencing reaches any later file. No narrower recheck gives K1's output by construction.
+- **Start the rerun early on a spare thread: subsumed** by the early stop: the pass now ends at the first firing
+  statement (median ~30 ms of parallel pass on the 32), so there is little left to overlap.
+- **Continue the rerun from a checker that has been checking a program-order prefix** (checker 0 dealt files 0..m in
+  order, no stealing into it, its after-check pass deferred): saves at most that prefix, ~1/K of K1, for a deal
+  change on the scheduler. Not built.
+- **A parallel rerun at a fixed virtual K with tsgo's own association**: tsgo's CLI checks with 4 checkers whose files
+  come from a FENNEL partition of the import graph (internal/compiler/checkerpool.go), so tsgo's *default* output for
+  these programs is that partition's, not `--singleThreaded`'s. A rerun replaying tsgo's association at 4 checkers
+  would be deterministic, about 4x faster than K1, and equal to what users of `tsc` see, but not to the oracle the
+  sweeps use (`--singleThreaded`). The human's call; it means porting the partitioner exactly.
+- The real fix stays order-independent limits and circularities (agents/notes/reentrancy.md stages C-E).
+
 ## Cheaper designs (not built)
 - **Recheck only the files that can depend on history** (the reporting checkers' files, or the tripping file's import
   closure), keeping the other checkers' results. tsgo K1's history includes every earlier file in program order, and

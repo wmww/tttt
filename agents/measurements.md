@@ -1732,3 +1732,12 @@ Not contributors (parent vs commit equal): 5f7885f36, dc9d07bb1, 22280be87. Sum 
 1..33, +0.007 G in 33..65; a bump at index 25: faeef9d01 4.366 then 4.348 at 41, so a transient later undone) with
 no commit found over the 0.15% threshold. Mechanisms are read from the commit messages and diffs' sizes, not
 profiled. Drizzle/excalidraw were not re-confirmed (budget).
+
+## tttt and bun, each against its own single thread (2026-10-28, perf, this box shared at load 5-23)
+`scripts/bunsweep.py --bun bun-1.4.4-canary.20261027.1 --bin fast/tttt@5137f5cc7 -n 300`: the 300 source-sweep
+projects tsgo checks slowest, tttt defaults (K8) / tttt `--threads 1 --checkers 1` / bun defaults / bun `--threads=1`,
+interleaved, best of 3. tttt ST/MT median 3.16 (p10 1.74, min 0.81; MT <= ST on 7, all reruns); bun ST/MT 3.33 (p10
+1.80); tttt MT / bun MT 0.76 (bun faster on 65); tttt ST / bun ST 0.70. Check phase: CPU MT/ST 1.66 = duplication
+1.22 (K8/K1 at `--threads 1`, median; p90 2.24) x ~1.36 per-instruction, 6.3 of 8 cores busy; bun CPU MT/ST 1.90 at
+7.3 busy. Summed loss over ST/8: 51.9 s of 66.6 s MT wall (dup 9.2, idle tail 12.8, front end 9.5, rerun 4.0).
+Details and the verdicts: agents/notes/bun_breadth.md "2026-10-28".

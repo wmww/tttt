@@ -2,7 +2,8 @@
 """tttt against bun's `bun check`, each at its defaults and single-threaded, at breadth (agents/notes/bun_breadth.md):
 the source sweep projects tsgo checks slowest (test/perfsweep/tsgo.jsonl.gz's check_s; the `# perf: no` repos left
 out). Per project bun once to warm the page cache and itself, then --runs rounds of four interleaved runs: tttt at its
-defaults (MT), tttt --threads 1 --checkers 1 (ST), bun at its defaults, bun --threads=1; medians.
+defaults (MT), tttt --threads 1 --checkers 1 (ST), bun at its defaults, bun --threads=1; the best of each (the box
+is shared: one stalled round moves a median of 3).
 
 The headline is each side's own scaling, ST wall / MT wall (tttt's worst first), next to tttt MT / bun MT. tttt's
 runs record `--time`'s phases (config, libs, load+parse, resolve names: the front end; typecheck; the rest of the wall
@@ -132,19 +133,23 @@ SIDES = ('mt', 'st', 'bun', 'bun1')
 
 
 def summarize(project, r):
-    """The medians of a project's runs: None when a run failed"""
+    """A project's runs summarized: the best of each side's runs (walls, phases; the box is shared, and one stalled
+    round moves a median of 3), medians of CPU; None when a run failed"""
     if any(not r.get(side) or any(x['status'] not in (0, 1, 2) for x in r[side]) for side in SIDES):
         return None
     mt, st, b, b1 = (r[side] for side in SIDES)
+    # (The best run of each side by wall, its phases and per-file numbers with it)
+    cpu_med = {side: med([x['cpu'] for x in r[side]]) for side in SIDES}
+    mt, st, b, b1 = ([min(runs, key=lambda x: x['wall'])] for runs in (mt, st, b, b1))
     front = lambda runs: med([sum(x['phases'].get(f, 0) for f in FRONT) for x in runs])
     front_cpu = lambda runs: med([sum(x['phase_cpu'].get(f, 0) for f in FRONT) for x in runs])
     check = lambda runs: med([x['phases'].get('typecheck', 0) for x in runs])
     s = {'project': project, 'load': r.get('load'),
          'mt': med([x['wall'] for x in mt]), 'st': med([x['wall'] for x in st]),
          'bun': med([x['wall'] for x in b]), 'bun1': med([x['wall'] for x in b1]),
-         'mt_cpu': med([x['cpu'] for x in mt]), 'st_cpu': med([x['cpu'] for x in st]),
+         'mt_cpu': cpu_med['mt'], 'st_cpu': cpu_med['st'],
          'mt_sys': med([x['sys'] for x in mt]), 'st_sys': med([x['sys'] for x in st]),
-         'bun_cpu': med([x['cpu'] for x in b]), 'bun1_cpu': med([x['cpu'] for x in b1]),
+         'bun_cpu': cpu_med['bun'], 'bun1_cpu': cpu_med['bun1'],
          'mt_rss': med([x['rss_kb'] for x in mt]) / 1024, 'bun_rss': med([x['rss_kb'] for x in b]) / 1024,
          'front_mt': front(mt), 'front_st': front(st), 'front_cpu_mt': front_cpu(mt),
          'check_mt': check(mt), 'check_st': check(st),
