@@ -7868,12 +7868,16 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
         Binding const* first = vec_function_arg_is_empty(&ret->args) ? nullptr : &vec_function_arg_at(&ret->args, 0)->initializer.binding;
         // (Not after type parameters: tsc's isParenthesizedArrowFunctionExpression is Unknown after a `<`, `async
         // <T extends U>(x: any);` is a call with type arguments)
-        is_definitely_function = committed || (first && first->has_explicit_type && *a.start != '<' &&
+        // (A pattern first, `({` or `([`, is only ever Unknown to tsc: the arrow stands if `=>` follows, whatever its
+        // annotation or a `?` after it, `v = ({ g: "b", t: w ? u : 1 })`)
+        FunctionArg const* first_arg = vec_function_arg_is_empty(&ret->args) ? nullptr : vec_function_arg_at(&ret->args, 0);
+        bool pattern_first = first_arg && !first_arg->rest &&
+            (first->tag == BINDING_OBJECT || first->tag == BINDING_ARRAY);
+        is_definitely_function = committed || (first && !pattern_first && first->has_explicit_type && *a.start != '<' &&
             span_start_ptr(binding_explicit_type_span(first)) > span_start_ptr(first->content_span));
         // (The rest of tsc's isParenthesizedArrowFunctionExpression's certain cases: `()` (then `=>`, `:` or `{`),
         // `(...`, `(a?`, `(public a`. A return type alone isn't: `(a, b): T = v` is a parenthesized expression)
-        FunctionArg const* first_arg = vec_function_arg_is_empty(&ret->args) ? nullptr : vec_function_arg_at(&ret->args, 0);
-        if (*a.start == '(' && (!first_arg || first_arg->rest || first_arg->question_offset || first_arg->is_parameter_property)) {
+        if (*a.start == '(' && (!first_arg || first_arg->rest || (first_arg->question_offset && !pattern_first) || first_arg->is_parameter_property)) {
             is_definitely_function = true;
         }
 

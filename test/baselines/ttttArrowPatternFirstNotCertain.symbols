@@ -1,0 +1,41 @@
+//// [test/cases/ttttArrowPatternFirstNotCertain.ts] ////
+
+=== ttttArrowPatternFirstNotCertain.ts ===
+// `({` is only ever tsc's Unknown arrow lookahead: a parenthesized object literal whose pattern reading breaks off at a
+// `?` (`t: w ? u : 1`) is no `(a?` arrow function, and without `=>` the speculation fails and it is reparsed as an
+// expression (openclaw's reply-tool-authority.test.ts, a regression of 39c88f5ec)
+declare let v: any, w: any, u: any, t: any;
+>v : Symbol(v, Decl(ttttArrowPatternFirstNotCertain.ts, 3, 11))
+>w : Symbol(w, Decl(ttttArrowPatternFirstNotCertain.ts, 3, 19))
+>u : Symbol(u, Decl(ttttArrowPatternFirstNotCertain.ts, 3, 27))
+>t : Symbol(t, Decl(ttttArrowPatternFirstNotCertain.ts, 3, 35))
+
+v = ({ g: "b", t: w ? u : 1 });
+>v : Symbol(v, Decl(ttttArrowPatternFirstNotCertain.ts, 3, 11))
+>g : Symbol(g, Decl(ttttArrowPatternFirstNotCertain.ts, 4, 6))
+>t : Symbol(t, Decl(ttttArrowPatternFirstNotCertain.ts, 4, 14))
+>w : Symbol(w, Decl(ttttArrowPatternFirstNotCertain.ts, 3, 19))
+>u : Symbol(u, Decl(ttttArrowPatternFirstNotCertain.ts, 3, 27))
+
+v = ({ g: 1, u })(1);
+>v : Symbol(v, Decl(ttttArrowPatternFirstNotCertain.ts, 3, 11))
+>g : Symbol(g, Decl(ttttArrowPatternFirstNotCertain.ts, 5, 6))
+>u : Symbol(u, Decl(ttttArrowPatternFirstNotCertain.ts, 5, 12))
+
+v = ([w, u]);
+>v : Symbol(v, Decl(ttttArrowPatternFirstNotCertain.ts, 3, 11))
+>w : Symbol(w, Decl(ttttArrowPatternFirstNotCertain.ts, 3, 19))
+>u : Symbol(u, Decl(ttttArrowPatternFirstNotCertain.ts, 3, 27))
+
+declare const x: any;
+>x : Symbol(x, Decl(ttttArrowPatternFirstNotCertain.ts, 7, 13))
+
+x.map((w: any) => ({ w, gk: "bound", t: w ? undefined : 1 }));
+>x : Symbol(x, Decl(ttttArrowPatternFirstNotCertain.ts, 7, 13))
+>w : Symbol(w, Decl(ttttArrowPatternFirstNotCertain.ts, 8, 7))
+>w : Symbol(w, Decl(ttttArrowPatternFirstNotCertain.ts, 8, 20))
+>gk : Symbol(gk, Decl(ttttArrowPatternFirstNotCertain.ts, 8, 23))
+>t : Symbol(t, Decl(ttttArrowPatternFirstNotCertain.ts, 8, 36))
+>w : Symbol(w, Decl(ttttArrowPatternFirstNotCertain.ts, 8, 7))
+>undefined : Symbol(undefined)
+

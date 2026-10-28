@@ -1,0 +1,65 @@
+//// [test/cases/ttttArrowPatternFirstNotCertain.ts] ////
+
+=== ttttArrowPatternFirstNotCertain.ts ===
+// `({` is only ever tsc's Unknown arrow lookahead: a parenthesized object literal whose pattern reading breaks off at a
+// `?` (`t: w ? u : 1`) is no `(a?` arrow function, and without `=>` the speculation fails and it is reparsed as an
+// expression (openclaw's reply-tool-authority.test.ts, a regression of 39c88f5ec)
+declare let v: any, w: any, u: any, t: any;
+>v : any
+>w : any
+>u : any
+>t : any
+
+v = ({ g: "b", t: w ? u : 1 });
+>v = ({ g: "b", t: w ? u : 1 }) : { g: string; t: any; }
+>v : any
+>({ g: "b", t: w ? u : 1 }) : { g: string; t: any; }
+>{ g: "b", t: w ? u : 1 } : { g: string; t: any; }
+>g : string
+>"b" : "b"
+>t : any
+>w ? u : 1 : any
+>w : any
+>u : any
+>1 : 1
+
+v = ({ g: 1, u })(1);
+>v = ({ g: 1, u })(1) : any
+>v : any
+>({ g: 1, u })(1) : any
+>({ g: 1, u }) : { g: number; u: any; }
+>{ g: 1, u } : { g: number; u: any; }
+>g : number
+>1 : 1
+>u : any
+>1 : 1
+
+v = ([w, u]);
+>v = ([w, u]) : any[]
+>v : any
+>([w, u]) : any[]
+>[w, u] : any[]
+>w : any
+>u : any
+
+declare const x: any;
+>x : any
+
+x.map((w: any) => ({ w, gk: "bound", t: w ? undefined : 1 }));
+>x.map((w: any) => ({ w, gk: "bound", t: w ? undefined : 1 })) : any
+>x.map : any
+>x : any
+>map : any
+>(w: any) => ({ w, gk: "bound", t: w ? undefined : 1 }) : (w: any) => { w: any; gk: string; t: number | undefined; }
+>w : any
+>({ w, gk: "bound", t: w ? undefined : 1 }) : { w: any; gk: string; t: number | undefined; }
+>{ w, gk: "bound", t: w ? undefined : 1 } : { w: any; gk: string; t: number | undefined; }
+>w : any
+>gk : string
+>"bound" : "bound"
+>t : number | undefined
+>w ? undefined : 1 : 1 | undefined
+>w : any
+>undefined : undefined
+>1 : 1
+
