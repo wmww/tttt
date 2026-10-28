@@ -7601,7 +7601,7 @@ const baselines = {
         types: true,
     },
     'bun40-P4a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9496,9 +9496,9 @@ const baselines = {
         types: true,
     },
     'bun73-R09': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun73-R09b': {
         errors: false,
@@ -11711,9 +11711,9 @@ const baselines = {
         types: true,
     },
     'npm__react-doctor_evals_TS2322': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'npm__rocket-slate_mentions_TS2615': {
         errors: false,
@@ -11927,7 +11927,7 @@ const baselines = {
         types: true,
     },
     'npm_react-native-reanimated_TS2578': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11997,9 +11997,9 @@ const baselines = {
         types: true,
     },
     'rw_effect_HttpApiEndpoint_TS2322': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'rw_effect_HttpRouter_TS2322': {
         errors: true,
@@ -12168,6 +12168,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAnnotatedPatternInitializerContext': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAnnotatedPatternQuickInitializer': {
         errors: true,
         symbols: true,
@@ -12267,6 +12272,16 @@ const baselines = {
         types: true,
     },
     'ttttAugmentationReexportParent': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttAugmentationTwoPathsDirect': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttAugmentationTwoPathsIndirect': {
         errors: true,
         symbols: true,
         types: true,
@@ -12644,6 +12659,11 @@ const baselines = {
         symbols: true,
         types: true,
         dts: true,
+    },
+    'ttttContextualIntersectionWithConditional': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttContextualReturnNotOnStack': {
         errors: true,
@@ -13591,6 +13611,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttEmptyMappedInstanceNotEmptyAnonymous': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttEmptySpreadContainsSpread': {
         errors: true,
         symbols: true,
@@ -13873,7 +13898,7 @@ const baselines = {
         types: true,
     },
     'ttttHackJsdocUniqueSymbolLet': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -14075,6 +14100,11 @@ const baselines = {
         types: true,
     },
     'ttttInferToIndexedMappedTemplate': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttInferToOptionalMappedFromIntersection': {
         errors: true,
         symbols: true,
         types: true,
@@ -14368,6 +14398,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttJsDocTypeArity': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttJsDocTypedExportDefaultElaborates': {
         errors: true,
         symbols: true,
@@ -14398,6 +14433,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttJsThisTypeInFunction': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttJsTypedefNoNameDropsGrammarErrors': {
         errors: true,
         symbols: true,
@@ -14414,6 +14454,16 @@ const baselines = {
         types: true,
     },
     'ttttJsdocTypedModuleExportsChecked': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttJsdocUniqueSymbolHosts': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttJsdocUniqueSymbolPlaces': {
         errors: true,
         symbols: true,
         types: true,
@@ -14464,6 +14514,16 @@ const baselines = {
         types: true,
     },
     'ttttJsxFactoryImportedAsType(jsx=react)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttJsxGenericChildSignatureView': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttJsxGenericDiscriminatedHandler': {
         errors: true,
         symbols: true,
         types: true,
@@ -14567,6 +14627,11 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
+    },
+    'ttttLeakedTypeParamReturnType': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
     'ttttLibDomWebworkerConflicts': {
         errors: true,
@@ -14742,6 +14807,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttMappedOverIntersectionWithMappedBase': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttMappedOverMappedConstraint': {
         errors: true,
         symbols: true,
@@ -14886,6 +14956,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttNeverIndexedByNever': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttNeverPropertyInstantiationExpression': {
         errors: true,
         symbols: true,
@@ -14907,6 +14982,11 @@ const baselines = {
         types: true,
     },
     'ttttNeverReductionTypeVariableHasNeverType': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttNoDefaultLibPragma': {
         errors: true,
         symbols: true,
         types: true,
@@ -14942,6 +15022,11 @@ const baselines = {
         types: true,
     },
     'ttttNoSupertypeReductionEmptyLiteralType': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttNonGenericCallInitializerDefaults': {
         errors: true,
         symbols: true,
         types: true,
@@ -15144,6 +15229,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttQuickCallTypeParamsUntyped': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttQuickTypeOptionalCall': {
         errors: true,
         symbols: true,
@@ -15250,6 +15340,11 @@ const baselines = {
         symbols: true,
         types: true,
         dts: true,
+    },
+    'ttttReturnMapperCommonSupertype': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttReturnTypeUniqueUnresolved': {
         errors: true,
@@ -15439,6 +15534,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttStaticHeritageTypeVariable': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttStaticUniqueSymbolField': {
         errors: true,
         symbols: true,
@@ -15527,6 +15627,16 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttTopLevelAwaitExportAsNamespace': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttTripleSlashPragmas': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttTruncatedDeferredReference': {
         errors: true,
         symbols: true,
@@ -15586,6 +15696,11 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
+    },
+    'ttttTuplePatternCircularElement': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
     'ttttTupleSpreadNotArrayLike': {
         errors: true,
@@ -15829,6 +15944,11 @@ const baselines = {
         types: true,
     },
     'ttttUntypedCallArgumentsCircular': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUnusedDestructuredSelfMethod': {
         errors: true,
         symbols: true,
         types: true,
@@ -22375,9 +22495,9 @@ const baselines = {
         types: true,
     },
     'contextualReturnSpreadPickInference': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualReturnTypeOfIIFE': {
         errors: true,
