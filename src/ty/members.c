@@ -6651,6 +6651,7 @@ static Ty const* compute_signature_return(Checker* me, Signature* sig, SigResolv
             span_valid(function_impl_ret_span(function))
         ) {
             ty_error_at(me, function_impl_ret_span(function), 2577, cstr_from("Return type annotation circularly references itself."));
+            if (!function->is_type) ty_link_set(me, KEY_RETURN_ANNOTATION_CIRCULAR, function, function);
         }
     }
     return ret;

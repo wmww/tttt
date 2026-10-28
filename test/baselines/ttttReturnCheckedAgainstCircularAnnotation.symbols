@@ -1,0 +1,41 @@
+//// [test/cases/ttttReturnCheckedAgainstCircularAnnotation.ts] ////
+
+=== ttttReturnCheckedAgainstCircularAnnotation.ts ===
+// A return type annotation that circularly references itself (TS2577) makes the signature's return type any, and the
+// function's return statements are checked against that (bun 99-V4 checkReturnStatement__01/02: tsc's
+// checkReturnStatement asks getReturnTypeOfSignature), not against the annotation as lowered once the cycle broke
+export {}
+function f(): [ReturnType<typeof f>] {
+>f : Symbol(f, Decl(ttttReturnCheckedAgainstCircularAnnotation.ts, 3, 9))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>f : Symbol(f, Decl(ttttReturnCheckedAgainstCircularAnnotation.ts, 3, 9))
+
+  return 1;
+}
+const probe: never = f();
+>probe : Symbol(probe, Decl(ttttReturnCheckedAgainstCircularAnnotation.ts, 7, 5))
+>f : Symbol(f, Decl(ttttReturnCheckedAgainstCircularAnnotation.ts, 3, 9))
+
+class Chain {
+>Chain : Symbol(Chain, Decl(ttttReturnCheckedAgainstCircularAnnotation.ts, 7, 25))
+
+  next(): ReturnType<Chain["next"]>[] {
+>next : Symbol(Chain.next, Decl(ttttReturnCheckedAgainstCircularAnnotation.ts, 8, 13))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>Chain : Symbol(Chain, Decl(ttttReturnCheckedAgainstCircularAnnotation.ts, 7, 25))
+
+    return "leaf";
+  }
+}
+const probe2: never = new Chain().next();
+>probe2 : Symbol(probe2, Decl(ttttReturnCheckedAgainstCircularAnnotation.ts, 13, 5))
+>new Chain().next : Symbol(Chain.next, Decl(ttttReturnCheckedAgainstCircularAnnotation.ts, 8, 13))
+>Chain : Symbol(Chain, Decl(ttttReturnCheckedAgainstCircularAnnotation.ts, 7, 25))
+>next : Symbol(Chain.next, Decl(ttttReturnCheckedAgainstCircularAnnotation.ts, 8, 13))
+
+function g(): [number] {
+>g : Symbol(g, Decl(ttttReturnCheckedAgainstCircularAnnotation.ts, 13, 41))
+
+  return 1;
+}
+

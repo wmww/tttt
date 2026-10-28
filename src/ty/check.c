@@ -4676,6 +4676,10 @@ bool ty_has_call_signature_for_arity(Checker* me, Ty const* type, u32 required) 
     return applicable != nullptr;
 }
 
+bool ty_function_return_annotation_circular(Checker* me, FunctionImpl const* function) {
+    return ty_link_get(me, KEY_RETURN_ANNOTATION_CIRCULAR, function) != nullptr;
+}
+
 Signature const* ty_function_signature(Checker* me, FunctionImpl const* function) {
     Members const* members = ty_members(me, ty_function_type(me, function));
     if (members->call_count) return members->call[0];

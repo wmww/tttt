@@ -88,6 +88,9 @@ enum {
     KEY_CONTEXT_IIFE_RETURN, // FunctionImpl -> the contextual type of the call that invokes it immediately
     KEY_ASSIGNMENT_PATTERN, // Ty (a TYF_BINDING_PATTERN clone) -> itself: the pattern is an assignment target's
     KEY_CONTEXT_THIS,   // FunctionImpl -> the `this` type its contextual signature declares
+    // FunctionImpl with a return annotation -> non-null: its signature's return type was circular (TS2577), any, which
+    // its return statements are checked against (ty_function_return_annotation_circular())
+    KEY_RETURN_ANNOTATION_CIRCULAR,
     KEY_YIELD_CONTEXT,  // UnaryOpExpr of a `yield` -> the contextual type it was checked with (its generator's TNext)
     KEY_ACCESS_USES_CONTEXT, // Property access Expr -> itself, if its type has a type variable with a union constraint (narrowable_type())
     KEY_LITERAL_CONTEXT, // Object literal Expr -> the contextual type it is being checked with (for `this` in methods)

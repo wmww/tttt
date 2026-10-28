@@ -3146,7 +3146,13 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                     return_typecheck(me, &my expr, ctx.unwrapped_return, false, ctx.await_returned, errs);
                 }
             } else if (ctx.specified_return) {
-                return_typecheck(me, &my expr, ty_of_node(ctx.specified_return), false, false, errs);
+                // (Against the signature's return type, tsc's checkReturnStatement: any when the annotation was
+                // circular, TS2577, which lowering it finds)
+                Ty const* declared = ty_of_node(ctx.specified_return);
+                if (ctx.function && ty_function_return_annotation_circular(current_checker, ctx.function)) {
+                    declared = ty_intrinsic(current_checker, TY_ANY);
+                }
+                return_typecheck(me, &my expr, declared, false, false, errs);
             }
             // tsc's checkReturnStatement: a bare `return;` where the function returns something
             if (statement_is_bare_return(me) && ctx.function && !ctx.constructed_class && compiler_options()->no_implicit_returns &&

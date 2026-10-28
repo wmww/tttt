@@ -1,0 +1,36 @@
+ttttReturnCheckedAgainstCircularAnnotation.ts(5,15): error TS2577: Return type annotation circularly references itself.
+ttttReturnCheckedAgainstCircularAnnotation.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+ttttReturnCheckedAgainstCircularAnnotation.ts(10,11): error TS2577: Return type annotation circularly references itself.
+ttttReturnCheckedAgainstCircularAnnotation.ts(14,7): error TS2322: Type 'any' is not assignable to type 'never'.
+ttttReturnCheckedAgainstCircularAnnotation.ts(16,3): error TS2322: Type 'number' is not assignable to type '[number]'.
+
+
+==== ttttReturnCheckedAgainstCircularAnnotation.ts (5 errors) ====
+    // A return type annotation that circularly references itself (TS2577) makes the signature's return type any, and the
+    // function's return statements are checked against that (bun 99-V4 checkReturnStatement__01/02: tsc's
+    // checkReturnStatement asks getReturnTypeOfSignature), not against the annotation as lowered once the cycle broke
+    export {}
+    function f(): [ReturnType<typeof f>] {
+                  ~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2577: Return type annotation circularly references itself.
+      return 1;
+    }
+    const probe: never = f();
+          ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    class Chain {
+      next(): ReturnType<Chain["next"]>[] {
+              ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2577: Return type annotation circularly references itself.
+        return "leaf";
+      }
+    }
+    const probe2: never = new Chain().next();
+          ~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    function g(): [number] {
+      return 1;
+      ~~~~~~
+!!! error TS2322: Type 'number' is not assignable to type '[number]'.
+    }
+    

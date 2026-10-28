@@ -2273,6 +2273,8 @@ void ty_check_emit_helpers(Checker* me, Span at, u32 helpers, ErrorCtx* errs);
 bool ty_emits_commonjs_like(struct SourceFile const* file);
 // The call signature of a function declaration or method (its first construct signature for a constructor)
 Signature const* ty_function_signature(Checker* me, FunctionImpl const* function);
+// Its signature's return type was its annotation's, circularly (TS2577): any (KEY_RETURN_ANNOTATION_CIRCULAR)
+bool ty_function_return_annotation_circular(Checker* me, FunctionImpl const* function);
 // TS2394 on the first of the overloads (with their names) that the implementation isn't compatible with
 Signature const* ty_implementation_signature(Checker* me, FunctionImpl const* function);
 bool ty_has_call_signature_for_arity(Checker* me, Ty const* type, u32 required);
