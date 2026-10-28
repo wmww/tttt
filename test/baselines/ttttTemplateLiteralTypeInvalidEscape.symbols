@@ -1,0 +1,21 @@
+//// [test/cases/ttttTemplateLiteralTypeInvalidEscape.ts] ////
+
+=== ttttTemplateLiteralTypeInvalidEscape.ts ===
+// A no-substitution template literal type isn't rescanned (tsc's parseLiteralTypeNode): an invalid escape is no error
+// there and the type is its text as written; with substitutions, or in an expression, it is TS1488/TS1487 (bun 43-C11)
+type T = `\8`;
+>T : Symbol(T, Decl(ttttTemplateLiteralTypeInvalidEscape.ts, 0, 0))
+
+type U = `a\1b`;
+>U : Symbol(U, Decl(ttttTemplateLiteralTypeInvalidEscape.ts, 2, 14))
+
+type V = `\8${string}`;
+>V : Symbol(V, Decl(ttttTemplateLiteralTypeInvalidEscape.ts, 3, 16))
+
+const x = `\8`;
+>x : Symbol(x, Decl(ttttTemplateLiteralTypeInvalidEscape.ts, 5, 5))
+
+let t: T = "\\8";
+>t : Symbol(t, Decl(ttttTemplateLiteralTypeInvalidEscape.ts, 6, 3))
+>T : Symbol(T, Decl(ttttTemplateLiteralTypeInvalidEscape.ts, 0, 0))
+

@@ -599,6 +599,7 @@ static bool parse_function_args(
 );
 static bool parse_numeric_value(Parser* parent, Value* ret);
 static bool parse_string(Parser* parent, cstr* ret);
+static inline bool parse_string_or_tagged(Parser* parent, cstr* ret, bool report_escapes);
 static Span span_from_token_or_eof(Parser* parent);
 static const char* token_full_start(Parser* me);
 static bool parse_template(Parser* parent, VecExpr* ret, AstCStrs* texts);
@@ -4093,7 +4094,14 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
             .owns_expr = true,
         }));
     } else if (c == '`' && parse_template_type(&p, ret)) {
-    } else if ((word || c == '"' || c == '\'' || c == '`' || is_number_start_char(c)) &&
+    } else if (c == '`' && parse_string_or_tagged(&p, &ret->value.string, false)) {
+        // A no-substitution template literal type isn't rescanned (tsc's parseLiteralTypeNode): an invalid escape is no
+        // error there (its scanner reports them only on a rescan) and stays as written
+        ret->value.tag = VALUE_STRING;
+        ast_cstr_seal(&ret->value.string);
+        ret->tag = TYPE_VALUE;
+        ret->value_span = span_from(value_anchor);
+    } else if ((word || c == '"' || c == '\'' || is_number_start_char(c)) &&
         !(c == 'u' && undefined_then_dot(&p)) && parse_type_compat_literal(&p, &ret->value)
     ) {
         ret->tag = TYPE_VALUE;

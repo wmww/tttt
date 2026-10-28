@@ -1,0 +1,7 @@
+// A no-substitution template literal type isn't rescanned (tsc's parseLiteralTypeNode): an invalid escape is no error
+// there and the type is its text as written; with substitutions, or in an expression, it is TS1488/TS1487 (bun 43-C11)
+type T = `\8`;
+type U = `a\1b`;
+type V = `\8${string}`;
+const x = `\8`;
+let t: T = "\\8";
