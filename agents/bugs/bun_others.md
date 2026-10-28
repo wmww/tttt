@@ -48,8 +48,19 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   ty_union_non_public_conflict() compares prop_root()s, and a mapped prop's root is its template (`.target`), not the
   property it maps. Now compared by declaration (ty_props_share_declaration(): the name span mapped_prop_decl() copies),
   and a mapped property reads as public (no value declaration of its own). [fixed 8d0716ee1]
-- 99-V1's protected_* files are other shapes than the union above (intersections `W & D`, spreads and Writable of
-  them, `delete`): 20 +TS2445, 13 +TS2339, 9 -TS2540, -TS2536, -TS2704. [open]
+- 99-V1's protected_* files, other shapes than the union above: `Writable<Pick<D, "id">> | D` with D's `id` of a union
+  type (D's property is an instantiation's, instance_prop(), with no declaration of its own: ty_props_share_declaration()
+  walks to the declared one), and `D & (J | W)` = `(D & J) | (D & W)` (tsc's hasCommonDeclaration counts every
+  declaration of a member's synthetic property, so D's `id` is common, and the union's property is public through `D &
+  J`: synthetic_common_declaration(); TS2536 rather than TS4105 for `T["id"]`, getConstituentProperty's intersection
+  property being public: intersection_prop_non_public()). [fixed]
+- 99-V1, still open: a mapped type over a non-generic union's keys, `{ [K in keyof typeof u]: (typeof u)[K] }` with `u:
+  W | D`, has the union's properties to tsc (forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType reads
+  getPropertiesOfType of the modifiers type, a union property with a common non-public declaration and public through
+  one member included), tttt the keys of `keyof (W | D)` (`keyof W & keyof D`, never): +TS2339 at
+  protected_class__writable_of_pick.ts:148 and protected_writable_class__plus_readonly.ts:212/276 (expand_mapped(),
+  members.c). The private_class_* files: `Pick<Writable<D>, "id"> & D` with D's `id` private (+TS2322 `W & D` to `{ id
+  }`, -TS2339 `t.id` on `T extends W & D`). [open]
 - Circular mapped types and interfaces whose members are being resolved: 10-C8c (`interface I9 extends
   Array<typeof a9>`), 11-C15 (`{ [K in "a"]: A1["a"] }`: tsc's property is missing, TS2339, where tttt says TS2615),
   93-R01a, 93-R01c, 93-R01d (mapped types with `as` clauses through each other), 12-C1d (`Alt<B, A>` alternating),

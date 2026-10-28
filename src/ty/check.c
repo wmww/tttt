@@ -2474,16 +2474,30 @@ void ty_check_generic_index_write(Checker* me, PropertyExpr const* access, Ty co
     cstr_drop(&object_str);
 }
 
+static int intersection_prop_non_public(Checker* me, Ty const* intersection, Atom const* name);
+
 // tsc's checkIndexedAccessIndexType for an index a generic object rejects: a private or protected member is TS4105
 // rather than TS2536 (the first member of the apparent type that has it decides)
 static void report_invalid_generic_index(Checker* me, Ty const* object, Ty const* index, Span span, ErrorCtx* errs) {
     if (ty_is_generic_object(me, object) && (index->flags & TYF_STRING_LITERAL) && !(index->flags & TYF_ENUM_LITERAL) && index->literal.string) {
         Ty const* apparent = ty_apparent_type(me, object);
         TyList parts = apparent->kind == TY_UNION ? apparent->composite.types : (TyList){ .data = &apparent, .len = 1 };
-        Prop const* prop = nullptr;
-        // (Each member by its apparent type: tsc's getPropertyOfType of a type parameter in the union)
-        for (u32 i = 0; i < parts.len && !prop; i++) prop = ty_property_of_type(me, ty_apparent_type(me, parts.data[i]), index->literal.string);
-        if (prop && (prop->flags & (PROP_PRIVATE | PROP_PROTECTED))) {
+        bool found = false, non_public = false;
+        // (Each member by its apparent type: tsc's getPropertyOfType of a type parameter in the union; an intersection's
+        // property is synthetic, public if a member's is: getDeclarationModifierFlagsFromSymbol)
+        for (u32 i = 0; i < parts.len && !found; i++) {
+            Ty const* part = ty_apparent_type(me, parts.data[i]);
+            if (part->kind == TY_INTERSECTION) {
+                int verdict = intersection_prop_non_public(me, part, index->literal.string);
+                found = verdict >= 0;
+                non_public = verdict > 0;
+                continue;
+            }
+            Prop const* prop = ty_property_of_type(me, part, index->literal.string);
+            found = prop != nullptr;
+            non_public = prop && (prop->flags & (PROP_PRIVATE | PROP_PROTECTED));
+        }
+        if (non_public) {
             error_ctx_error_d(errs, span, 4105, "Private or protected member '", atom_sv(index->literal.string),
                 "' cannot be accessed on a type parameter.");
             return;
@@ -3346,6 +3360,23 @@ static unsigned char synth_effective(SyntheticAccess const* access, bool writing
     return contains & SYNTH_PUBLIC ? SYNTH_PUBLIC : contains & SYNTH_PROTECTED ? SYNTH_PROTECTED : SYNTH_PRIVATE;
 }
 
+// tsc's hasCommonDeclaration over a union's members' properties: a declaration every one of them has (a member's
+// synthetic property is declared wherever its own members' are: `(D & J) | (D & W)` with D's protected `id` has D's).
+// The members' leaves are leaves->props[starts[i]..starts[i + 1]]
+static bool synthetic_common_declaration(MemberRefs const* leaves, u32 const* starts, u32 children) {
+    if (!children) return false;
+    for (u32 a = starts[0]; a < starts[1]; a++) {
+        bool everywhere = true;
+        for (u32 c = 1; c < children && everywhere; c++) {
+            bool here = false;
+            for (u32 b = starts[c]; b < starts[c + 1] && !here; b++) here = ty_props_share_declaration(leaves->props[a], leaves->props[b]);
+            everywhere = here;
+        }
+        if (everywhere) return true;
+    }
+    return false;
+}
+
 static void synthetic_access(Checker* me, Ty const* object, Atom const* name, SyntheticAccess* out, u32 depth) {
     *out = (SyntheticAccess){0};
     if (depth > 8) return;
@@ -3355,6 +3386,9 @@ static void synthetic_access(Checker* me, Ty const* object, Atom const* name, Sy
         bool is_union = object->kind == TY_UNION;
         bool partial = false, distinct = false;
         Prop const* first = nullptr;
+        // (Where each member's leaves start in out->leaves: a member's property is declared where its leaves are)
+        u32 starts[c_arraylen(out->leaves.props) + 1];
+        u32 children = 0;
         for (u32 i = 0; i < object->composite.types.len; i++) {
             Ty const* member = object->composite.types.data[i];
             if (member->flags & TYF_NULLABLE) continue;
@@ -3377,6 +3411,7 @@ static void synthetic_access(Checker* me, Ty const* object, Atom const* name, Sy
             out->read |= synth_effective(&child, false);
             out->write |= synth_effective(&child, true);
             out->is_static |= child.is_static;
+            if (children < c_arraylen(out->leaves.props)) starts[children++] = out->leaves.len;
             for (u32 j = 0; j < child.leaves.len && out->leaves.len < c_arraylen(out->leaves.props); j++) {
                 out->leaves.props[out->leaves.len] = child.leaves.props[j];
                 out->leaves.objects[out->leaves.len++] = child.leaves.objects[j];
@@ -3398,8 +3433,8 @@ static void synthetic_access(Checker* me, Ty const* object, Atom const* name, Sy
         if (!distinct && !partial) return;
         // A union's property with a private or protected member's that isn't the same declaration everywhere (tsc's
         // hasCommonDeclaration): none if that's for reading, else written as the most restricted member's
-        bool common = out->leaves.len > 0;
-        for (u32 i = 1; i < out->leaves.len && common; i++) common = ty_props_share_declaration(out->leaves.props[i], out->leaves.props[0]);
+        starts[children] = out->leaves.len;
+        bool common = synthetic_common_declaration(&out->leaves, starts, children);
         if (is_union && ((out->read | out->write) & (SYNTH_PROTECTED | SYNTH_PRIVATE)) && !common) {
             if (out->read & (SYNTH_PROTECTED | SYNTH_PRIVATE)) {
                 out->found = false;
@@ -3426,6 +3461,13 @@ static void synthetic_access(Checker* me, Ty const* object, Atom const* name, Sy
     out->leaves.props[0] = prop;
     out->leaves.objects[0] = object;
     out->leaves.len = 1;
+}
+
+// Whether an intersection's property `name` is private or protected for reading (1), public (0), or there's none (-1)
+static int intersection_prop_non_public(Checker* me, Ty const* intersection, Atom const* name) {
+    SyntheticAccess synthetic;
+    synthetic_access(me, intersection, name, &synthetic, 0);
+    return !synthetic.found ? -1 : synth_effective(&synthetic, false) != SYNTH_PUBLIC;
 }
 
 // tsc's checkPropertyAccessibilityAtLocation of a synthetic property: public if its accessibility for the access is,

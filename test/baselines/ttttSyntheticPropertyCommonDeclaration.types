@@ -1,0 +1,56 @@
+//// [test/cases/ttttSyntheticPropertyCommonDeclaration.ts] ////
+
+=== ttttSyntheticPropertyCommonDeclaration.ts ===
+// A union's property whose members' properties are non-public exists when they have a declaration in common (tsc's
+// hasCommonDeclaration), each member's property counting with all its declarations: an instantiated class property
+// is declared where its target is, and an intersection's synthetic property wherever its members' are
+declare class D { protected readonly id: string | number; other: 1 }
+>D : D
+>id : string | number
+>other : 1
+
+declare const u: Pick<D, "id"> | D;
+>u : D | Pick<D, "id">
+
+u.id = "x";
+>u.id = "x" : "x"
+>u.id : any
+>u : D | Pick<D, "id">
+>id : any
+>"x" : "x"
+
+interface J { id: string | number }
+>id : string | number
+
+declare class E { protected id: string | number; other: 1 }
+>E : E
+>id : string | number
+>other : 1
+
+type W = { +readonly [K in keyof E]: E[K] }
+>W : W
+
+// `(E & J) | (E & W)`: E's `id` is in both, and public in `E & J` (J's is), so the union's is public
+declare const v: E & (J | W);
+>v : E & (J | W)
+
+v.id = "x";
+>v.id = "x" : "x"
+>v.id : string | number
+>v : E & (J | W)
+>id : string | number
+>"x" : "x"
+
+const s: string | number = v.id;
+>s : string | number
+>v.id : string
+>v : E & (J | W)
+>id : string
+
+// Nor is it TS4105 on a type parameter (tsc's getConstituentProperty: the intersection's property is public), but not
+// a key either
+function f<T extends typeof v>(x: T["id"]) {}
+>f : <T extends typeof v>(x: T["id"]) => void
+>v : E & (J | W)
+>x : T["id"]
+

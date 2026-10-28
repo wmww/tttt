@@ -1,0 +1,65 @@
+//// [test/cases/ttttSyntheticPropertyCommonDeclaration.ts] ////
+
+=== ttttSyntheticPropertyCommonDeclaration.ts ===
+// A union's property whose members' properties are non-public exists when they have a declaration in common (tsc's
+// hasCommonDeclaration), each member's property counting with all its declarations: an instantiated class property
+// is declared where its target is, and an intersection's synthetic property wherever its members' are
+declare class D { protected readonly id: string | number; other: 1 }
+>D : Symbol(D, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 0, 0))
+>id : Symbol(D.id, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 3, 17))
+>other : Symbol(D.other, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 3, 57))
+
+declare const u: Pick<D, "id"> | D;
+>u : Symbol(u, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 4, 13))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>D : Symbol(D, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 0, 0))
+>D : Symbol(D, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 0, 0))
+
+u.id = "x";
+>u.id : Symbol(D.id, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 3, 17))
+>u : Symbol(u, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 4, 13))
+>id : Symbol(D.id, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 3, 17))
+
+interface J { id: string | number }
+>J : Symbol(J, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 5, 11))
+>id : Symbol(J.id, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 7, 13))
+
+declare class E { protected id: string | number; other: 1 }
+>E : Symbol(E, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 7, 35))
+>id : Symbol(E.id, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 8, 17))
+>other : Symbol(E.other, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 8, 48))
+
+type W = { +readonly [K in keyof E]: E[K] }
+>W : Symbol(W, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 8, 59))
+>K : Symbol(K, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 9, 22))
+>E : Symbol(E, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 7, 35))
+>E : Symbol(E, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 7, 35))
+>K : Symbol(K, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 9, 22))
+
+// `(E & J) | (E & W)`: E's `id` is in both, and public in `E & J` (J's is), so the union's is public
+declare const v: E & (J | W);
+>v : Symbol(v, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 11, 13))
+>E : Symbol(E, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 7, 35))
+>J : Symbol(J, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 5, 11))
+>W : Symbol(W, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 8, 59))
+
+v.id = "x";
+>v.id : Symbol(E.id, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 8, 17), Decl(ttttSyntheticPropertyCommonDeclaration.ts, 7, 13))
+>v : Symbol(v, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 11, 13))
+>id : Symbol(E.id, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 8, 17), Decl(ttttSyntheticPropertyCommonDeclaration.ts, 7, 13))
+
+const s: string | number = v.id;
+>s : Symbol(s, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 13, 5))
+>v.id : Symbol(E.id, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 8, 17), Decl(ttttSyntheticPropertyCommonDeclaration.ts, 7, 13))
+>v : Symbol(v, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 11, 13))
+>id : Symbol(E.id, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 8, 17), Decl(ttttSyntheticPropertyCommonDeclaration.ts, 7, 13))
+
+// Nor is it TS4105 on a type parameter (tsc's getConstituentProperty: the intersection's property is public), but not
+// a key either
+function f<T extends typeof v>(x: T["id"]) {}
+>f : Symbol(f, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 13, 32))
+>T : Symbol(T, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 16, 11))
+>v : Symbol(v, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 11, 13))
+>x : Symbol(x, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 16, 31))
+>T : Symbol(T, Decl(ttttSyntheticPropertyCommonDeclaration.ts, 16, 11))
+

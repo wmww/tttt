@@ -203,8 +203,15 @@ static Ty const* access_index_infos(Checker* me, Ty const* object, Ty const* ind
 // tsc's createUnionOrIntersectionProperty: a union property some of whose members' declarations are private or
 // protected exists only if they share a declaration (hasCommonDeclaration). A mapped property is declared where the
 // property it maps is (`Pick<D, "id"> | D`: mapped_prop_decl() copies the name span), an instantiated one where its
-// target is
+// target is (an instantiation's prop has no declaration of its own: `D | Pick<D, "id">` with D's `id` a reference's)
+static Prop const* prop_declared_at(Prop const* prop) {
+    while (prop->target && !(span_valid(prop->decl->name_span) && prop->decl->name_span.size)) prop = prop->target;
+    return prop;
+}
+
 bool ty_props_share_declaration(Prop const* a, Prop const* b) {
+    a = prop_declared_at(a);
+    b = prop_declared_at(b);
     Span x = a->decl->name_span, y = b->decl->name_span;
     if (span_valid(x) && span_valid(y) && x.size && y.size) return span_eq(x, y);
     while (a->target) a = a->target;
