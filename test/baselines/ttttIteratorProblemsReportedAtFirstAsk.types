@@ -1,0 +1,119 @@
+//// [test/cases/ttttIteratorProblemsReportedAtFirstAsk.ts] ////
+
+=== ttttIteratorProblemsReportedAtFirstAsk.ts ===
+// An iterable whose iterator's methods are wrong (TS2490, TS2767) is reported only if the first time its iteration
+// types are worked out for a use (tsc's iterationTypesCache key: the type and whether it is for-of / async) has an
+// error node: control flow's for-of variable type and a destructuring assignment's rest target ask without one and
+// silence it (bun 99-V4 checkIteratedTypeOrElementType__01/02), a for-of and a spread are two keys (__06), and a type
+// parameter's iterator is its constraint's (04-C2a)
+export {}
+interface Loose { [Symbol.iterator](): { next(): {} } }
+>[Symbol.iterator] : () => { next(): {}; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>next : () => {}
+
+declare const its: Loose;
+>its : Loose
+
+declare function pick(): string | number;
+>pick : () => string | number
+
+const early = g();
+>early : string | number
+>g() : string | number
+>g : () => string | number
+
+function g() {
+>g : () => string | number
+
+    let v: string | number = pick();
+>v : string | number
+>pick() : string | number
+>pick : () => string | number
+
+    for (const x of its) {
+>x : any
+>its : Loose
+
+        x.go(v);
+>x.go(v) : any
+>x.go : any
+>x : any
+>go : any
+>v : string | number
+
+        return v;
+>v : string | number
+    }
+    return 0;
+>0 : 0
+}
+interface Loose2 { [Symbol.iterator](): { next(): {} } }
+>[Symbol.iterator] : () => { next(): {}; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>next : () => {}
+
+declare let rest: Loose2;
+>rest : Loose2
+
+declare const other: Loose2;
+>other : Loose2
+
+[...rest] = [1, 2];
+>[...rest] = [1, 2] : number[]
+>[...rest] : any[]
+>...rest : any
+>rest : Loose2
+>[1, 2] : number[]
+>1 : 1
+>2 : 2
+
+const copy = [...other];
+>copy : any[]
+>[...other] : any[]
+>...other : any
+>other : Loose2
+
+interface Loose3 { [Symbol.iterator](): { next(): {} } }
+>[Symbol.iterator] : () => { next(): {}; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>next : () => {}
+
+declare const first: Loose3;
+>first : Loose3
+
+declare const second: Loose3;
+>second : Loose3
+
+for (const item of first) { item; }
+>item : any
+>first : Loose3
+>item : any
+
+const copy2 = [...second];
+>copy2 : any[]
+>[...second] : any[]
+>...second : any
+>second : Loose3
+
+type BadReturn = { [Symbol.iterator](): { next(): IteratorResult<number>; return: number } };
+>BadReturn : BadReturn
+>[Symbol.iterator] : () => { next(): IteratorResult<number>; return: number; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>next : () => IteratorResult<number>
+>return : number
+
+function f1<T extends BadReturn>(t: T) { for (const x of t) {} }
+>f1 : <T extends BadReturn>(t: T) => void
+>t : T
+>x : number
+>t : T
+

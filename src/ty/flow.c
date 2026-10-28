@@ -1162,7 +1162,7 @@ static Ty const* pattern_path_type(Checker* me, FlowAssign const* assign, FlowPa
             if (object->flags & TYF_NEVER) return ty_intrinsic(me, TY_ERROR);
             if (!ty_extends_array(me, object)) {
                 // (Another iterable: what it iterates to, tsc's includeUndefinedInIndexSignature(checkIteratedTypeOrElementType))
-                Ty const* element = ty_iterated_type(me, ITERATION_DESTRUCTURING, object, span_null, nullptr);
+                Ty const* element = ty_iterated_type_unreported(me, ITERATION_DESTRUCTURING, object);
                 ret = element ? ty_possibly_out_of_bounds(me, element) : ty_intrinsic(me, TY_ERROR);
                 break;
             }
@@ -1197,7 +1197,7 @@ static Ty const* pattern_path_type(Checker* me, FlowAssign const* assign, FlowPa
             // is tsc's errorType (getAssignedType has no case for a spread assignment): it leaves a declared type as it
             // is, and an auto-typed `let a` is any from there on, not implicitly any where unassigned (TS7034)
             if (path->pattern->tag != EXPR_ARRAY) return ty_intrinsic(me, TY_ERROR);
-            Ty const* element = ty_iterated_type(me, ITERATION_DESTRUCTURING, object, span_null, nullptr);
+            Ty const* element = ty_iterated_type_unreported(me, ITERATION_DESTRUCTURING, object);
             return ty_array(me, element ? element : ty_intrinsic(me, TY_ERROR), false);
         }
     }
@@ -1616,7 +1616,7 @@ static Ty const* type_of_dotted_name_resolving(Checker* me, Expr const* expr, Re
             ResolvingLoop link = { loop, resolving };
             Ty const* iterable = type_of_dotted_name_resolving(me, &loop->iterable, &link);
             if (!iterable) return nullptr;
-            return ty_iterated_type(me, loop->is_await ? ITERATION_FOR_AWAIT_OF : ITERATION_FOR_OF, iterable, span_null, nullptr);
+            return ty_iterated_type_unreported(me, loop->is_await ? ITERATION_FOR_AWAIT_OF : ITERATION_FOR_OF, iterable);
         }
         if (!explicit_resolving_enter(symbol)) return nullptr;
         Ty const* ret = ty_identifier_reference_type(me, &expr->identifier);

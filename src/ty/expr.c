@@ -959,7 +959,7 @@ static Ty const* get_element_context(Checker* me, Ty const* object, void const* 
     if (!ret) ret = ty_access(me, object, ty_intrinsic(me, TY_NUMBER));
     if (!ret) {
         // Anything iterable: what it yields (tsc's getIteratedTypeOrElementType for IterationUse.Element)
-        TyIterationTypes const* types = ty_iteration_types_of_iterable(me, object, ITERATION_ALLOWS_SYNC);
+        TyIterationTypes const* types = ty_iteration_types_of_iterable_unreported(me, object, ITERATION_ALLOWS_SYNC);
         if (types) ret = types->yield_type;
     }
     return ret;
@@ -5440,7 +5440,7 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
                     Ty const* apparent = ty_apparent_type(me, operand);
                     IndexInfo const* index = (apparent->flags & TYF_OBJECT) ?
                         ty_applicable_index_info(me, apparent, ty_intrinsic(me, TY_NUMBER)) : nullptr;
-                    TyIterationTypes const* iterated = index ? nullptr : ty_iteration_types_of_iterable(me, operand, ITERATION_DESTRUCTURING);
+                    TyIterationTypes const* iterated = index ? nullptr : ty_iteration_types_of_iterable_unreported(me, operand, ITERATION_DESTRUCTURING);
                     Ty const* element = index ? index->value : iterated ? iterated->yield_type : ty_intrinsic(me, TY_UNKNOWN_);
                     elements[count++] = ty_array(me, element, false);
                     continue;

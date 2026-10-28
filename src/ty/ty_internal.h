@@ -163,7 +163,9 @@ enum {
     KEY_TUPLE_NAME_INDEX, // (array type's target, element count, prop count) -> a tuple's likely PropNameIndex (members.c tuple_name_index())
     KEY_DECIMAL_ORDER, // element count -> u32 indices in the order of their decimal strings (members.c)
     KEY_YIELD_WIDENED_ANY, // generator FunctionImpl -> its yield type before widening, when that widens to any
-    KEY_ITERATOR_REPORTED, // iterable Ty (+ async) -> non-null once its iterator's method problems were reported
+    // Iterable Ty (reduced) + use & ITERATION_CACHE_FLAGS -> non-null once its iteration types were asked for (tsc's
+    // iterationTypesCache entry): only that first ask reports its iterator's method problems (TS2490, TS2767...)
+    KEY_ITERATION_ASKED,
     KEY_UNION_NODE,     // (union or generic reference TypeNode, ctx.generic) -> its lowered type, see lower()
     KEY_EMIT_HELPERS,   // helpers module Symbol -> EmitHelper mask already checked; SourceFile -> TS2354 said (helpers.c)
     KEY_NAMESPACE_IMPORT, // namespace import alias Symbol -> its module type (or the alias itself: none), see namespace_import_type()

@@ -3099,6 +3099,10 @@ typedef struct TyIterationTypes {
 } TyIterationTypes;
 // What iterating a value of the type gives (every member of a union has to iterate), null if it doesn't
 TyIterationTypes const* ty_iteration_types_of_iterable(Checker* me, Ty const* ty, u32 use);
+// The same for an ask tsc makes without an error node: the iterator's method problems are never reported for the type
+// and use then (iterate.c's iteration_asked_slot())
+TyIterationTypes const* ty_iteration_types_of_iterable_unreported(Checker* me, Ty const* ty, u32 use);
+Ty const* ty_iterated_type_unreported(Checker* me, u32 use, Ty const* input);
 TyIterationTypes const* ty_iteration_types_of_iterator(Checker* me, Ty const* ty, bool async); // null: not an iterator
 // What for-of, spread and array destructuring get from a value: the yield type, below ES2015 the element type of an
 // array (or string). Reports TS2488/TS2495/TS2461/TS2802... to `errs` if it isn't iterable (then it's any)

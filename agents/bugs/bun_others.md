@@ -7,6 +7,12 @@ is usually `const sentinel: number = ""`. Show one with `scripts/buncases.py --l
 what was looked at, by root cause; the second lists the rest by code, uninvestigated, with a first instance each.
 
 ## Looked at, by root cause
+- TS2490/TS2767 both ways (04-C9b, 04-C2a, 93-R19a, 99-V4 checkIteratedTypeOrElementType__01/02/06, 99-V7): tsc reports
+  an iterator's method problems only from the first getIterationTypesOfIterable of a (type, cache-use) key, if it had
+  an error node; flow's for-of variables and destructured elements, a destructuring assignment's rest target, a
+  contextual element type and a generator's return type ask without one. iterate.c's iteration_asked_slot() and the
+  _unreported functions; a type parameter reports its constraint's. Test ttttIteratorProblemsReportedAtFirstAsk
+  [fixed COMMIT-next].
 - Missing TS2683 (07-C5, 32-C2, 99-V4): `this` in a parameter default of a function or object literal method isn't
   the function's (tsc's isInParameterInitializerBeforeContainingFunction: any, TS2683; ttttThisInParameterDefault)
   [fixed 352a1d5a9]; `(o.x) = function () { this }` gets no contextual `this` from `o`, the target is parenthesized
@@ -794,12 +800,6 @@ Consider adding '…' to the type".
 +TS2464 (spurious), 2 cases: 33-C4b, 33-C4c. First: 33-C4b a.ts:2 "A computed property name must be of type '…', '…',
 '…', or '…'.".
 
-+TS2490 (spurious), 2 cases: 04-C9b, 99-V4. First: 04-C9b a.ts:4 "The type returned by the '…' method of an iterator
-must have a '…' property.".
-
--TS2490 (missing), 2 cases: 99-V4, 99-V7. First: 99-V4 checkIteratedTypeOrElementType__06_for_of_then_spread.ts:7 "The
-type returned by the '…' method of an iterator must have a '…' property.".
-
 +TS2491 (spurious), 2 cases: 03-C22, 07-C17. First: 03-C22 a.ts:2 "The left-hand side of a '…' statement cannot be a
 destructuring pattern.".
 
@@ -1184,10 +1184,6 @@ children, but only a s".
 +TS2748 (spurious), 1 case: 04-C14. First: 04-C14 a.ts:2 "Cannot access ambient const enums when '…' is enabled.".
 
 -TS2748 (missing), 1 case: 99-B4. First: 99-B4 a.ts:4 "Cannot access ambient const enums when '…' is enabled.".
-
--TS2767 (missing), 1 case: 04-C2a. First: 04-C2a a.ts:2 "The '…' property of an iterator must be a method.".
-
-+TS2767 (spurious), 1 case: 93-R19a. First: 93-R19a a.ts:3 "The '…' property of an iterator must be a method.".
 
 -TS2769 (missing), 1 case: 13-P4b. First: 13-P4b a.ts:2 "No overload matches this call.".
 

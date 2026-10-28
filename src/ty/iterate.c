@@ -501,6 +501,35 @@ TyIterationTypes const* ty_iteration_types_of_iterable(Checker* me, Ty const* ty
     return ret;
 }
 
+// tsc's iterationTypesCache decides once per (reduced) type and use (its cache flags) whether the iterator's method
+// problems (TS2490, TS2767...) are reported: by the first getIterationTypesOfIterable, if it had an error node. The
+// asks tsc makes without one (control flow's for-of variables and destructured elements, a destructuring assignment's
+// rest target, a contextual element type, a generator's return type) go through the _unreported functions below and
+// silence it for good; tttt's other asks without an ErrorCtx (inference) had one in tsc, and leave it to the next
+static char const iteration_silenced, iteration_reported;
+
+static void const** iteration_asked_slot(Checker* me, Ty const* ty, u32 use) {
+    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) ty = ty_reduced(me, ty);
+    u64 key[3] = { KEY_ITERATION_ASKED, ty->id, use & (ITERATION_ALLOWS_SYNC | ITERATION_ALLOWS_ASYNC | ITERATION_FOR_OF_FLAG) };
+    return intern_slot(me, &my links, key, 3);
+}
+
+static void iteration_note_unreported(Checker* me, Ty const* ty, u32 use) {
+    if (ty->flags & TYF_ANY) return;
+    void const** slot = iteration_asked_slot(me, ty, use);
+    if (!*slot) *slot = &iteration_silenced;
+}
+
+TyIterationTypes const* ty_iteration_types_of_iterable_unreported(Checker* me, Ty const* ty, u32 use) {
+    iteration_note_unreported(me, ty, use);
+    return ty_iteration_types_of_iterable(me, ty, use);
+}
+
+Ty const* ty_iterated_type_unreported(Checker* me, u32 use, Ty const* input) {
+    iteration_note_unreported(me, input, use);
+    return ty_iterated_type(me, use, input, span_null, nullptr);
+}
+
 // Consumers
 
 static bool is_string_like(Ty const* ty) {
@@ -620,18 +649,16 @@ static Error* report_not_iterable(Checker* me, u32 use, Ty const* input, Span sp
 }
 
 // tsc's getIterationTypesOfMethod errors for an iterable's own (not global) iterator: `return`/`throw` that aren't
-// methods (TS2767) and methods whose results have no `value` (TS2490). tsc says them the first time the iterable's
-// types are worked out with an error node: once per iterable type here
+// methods (TS2767) and methods whose results have no `value` (TS2490). tsc says them when the iterable's types are
+// first worked out for the use, if that was with an error node (see iteration_asked_slot())
 static void report_iterator_methods(Checker* me, Ty const* iterable, bool async, Span span, ErrorCtx* errs) {
+    // (A type parameter's iterator is its constraint's: tsc's getPropertyOfType of the apparent type)
+    if (iterable->kind == TY_TYPE_PARAM) iterable = ty_apparent_type(me, iterable);
     if (iterable->kind == TY_UNION || !(iterable->flags & TYF_OBJECT)) return;
     IterationState const* state = iteration_state(me);
     for (u32 g = 0; g < IG_COUNT; g++) {
         if (is_reference_to(state, iterable, (IterationGlobal)g)) return;
     }
-    u64 key[3] = { KEY_ITERATOR_REPORTED, iterable->id, async };
-    void const** slot = intern_slot(me, &my links, key, 3);
-    if (*slot) return;
-    *slot = iterable;
     bool optional;
     Ty const* method = property_type(me, iterable, async ? state->async_iterator_name : state->iterator_name, &optional, nullptr);
     if (!method || optional || (method->flags & TYF_ANY)) return;
@@ -744,7 +771,13 @@ static Ty const* iterated_type_sending(Checker* me, u32 use, Ty const* input, Ty
         // (Wherever it is asked with an error node: tsgo's getIterationTypesOfIterable ignores a cached
         // noIterationTypes then)
         if (!types && uplevel && errs) report_not_iterable(me, use, input, span, errs);
-        if (types && errs) report_iterator_methods(me, input, async, span, errs);
+        if (types && errs) {
+            void const** asked = iteration_asked_slot(me, input, use);
+            if (!*asked) {
+                *asked = &iteration_reported;
+                report_iterator_methods(me, input, async, span, errs);
+            }
+        }
         if (types && errs) check_sent_type(me, use, sent, types->next_type, span, errs);
         if (types) return types->yield_type;
         if (uplevel) return ty_intrinsic(me, TY_ANY);
@@ -812,7 +845,7 @@ bool ty_elides_default_type_args(Checker* me, Ty const* target) {
 TyIterationTypes const* ty_generator_return_iteration_types(Checker* me, Ty const* ret, bool async) {
     if (ret->flags & TYF_ANY) return any_types(me);
     TyIterationTypes const* types =
-        ty_iteration_types_of_iterable(me, ret, async ? ITERATION_ASYNC_GENERATOR_RETURN : ITERATION_GENERATOR_RETURN);
+        ty_iteration_types_of_iterable_unreported(me, ret, async ? ITERATION_ASYNC_GENERATOR_RETURN : ITERATION_GENERATOR_RETURN);
     return types ? types : ty_iteration_types_of_iterator(me, ret, async);
 }
 

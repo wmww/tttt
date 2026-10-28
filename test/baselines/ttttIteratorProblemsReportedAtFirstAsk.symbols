@@ -1,0 +1,115 @@
+//// [test/cases/ttttIteratorProblemsReportedAtFirstAsk.ts] ////
+
+=== ttttIteratorProblemsReportedAtFirstAsk.ts ===
+// An iterable whose iterator's methods are wrong (TS2490, TS2767) is reported only if the first time its iteration
+// types are worked out for a use (tsc's iterationTypesCache key: the type and whether it is for-of / async) has an
+// error node: control flow's for-of variable type and a destructuring assignment's rest target ask without one and
+// silence it (bun 99-V4 checkIteratedTypeOrElementType__01/02), a for-of and a spread are two keys (__06), and a type
+// parameter's iterator is its constraint's (04-C2a)
+export {}
+interface Loose { [Symbol.iterator](): { next(): {} } }
+>Loose : Symbol(Loose, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 5, 9))
+>[Symbol.iterator] : Symbol(Loose[Symbol.iterator], Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 6, 17))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>next : Symbol(next, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 6, 40))
+
+declare const its: Loose;
+>its : Symbol(its, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 7, 13))
+>Loose : Symbol(Loose, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 5, 9))
+
+declare function pick(): string | number;
+>pick : Symbol(pick, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 7, 25))
+
+const early = g();
+>early : Symbol(early, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 9, 5))
+>g : Symbol(g, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 9, 18))
+
+function g() {
+>g : Symbol(g, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 9, 18))
+
+    let v: string | number = pick();
+>v : Symbol(v, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 11, 7))
+>pick : Symbol(pick, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 7, 25))
+
+    for (const x of its) {
+>x : Symbol(x, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 12, 14))
+>its : Symbol(its, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 7, 13))
+
+        x.go(v);
+>x : Symbol(x, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 12, 14))
+>v : Symbol(v, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 11, 7))
+
+        return v;
+>v : Symbol(v, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 11, 7))
+    }
+    return 0;
+}
+interface Loose2 { [Symbol.iterator](): { next(): {} } }
+>Loose2 : Symbol(Loose2, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 17, 1))
+>[Symbol.iterator] : Symbol(Loose2[Symbol.iterator], Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 18, 18))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>next : Symbol(next, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 18, 41))
+
+declare let rest: Loose2;
+>rest : Symbol(rest, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 19, 11))
+>Loose2 : Symbol(Loose2, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 17, 1))
+
+declare const other: Loose2;
+>other : Symbol(other, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 20, 13))
+>Loose2 : Symbol(Loose2, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 17, 1))
+
+[...rest] = [1, 2];
+>rest : Symbol(rest, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 19, 11))
+
+const copy = [...other];
+>copy : Symbol(copy, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 22, 5))
+>other : Symbol(other, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 20, 13))
+
+interface Loose3 { [Symbol.iterator](): { next(): {} } }
+>Loose3 : Symbol(Loose3, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 22, 24))
+>[Symbol.iterator] : Symbol(Loose3[Symbol.iterator], Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 23, 18))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>next : Symbol(next, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 23, 41))
+
+declare const first: Loose3;
+>first : Symbol(first, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 24, 13))
+>Loose3 : Symbol(Loose3, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 22, 24))
+
+declare const second: Loose3;
+>second : Symbol(second, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 25, 13))
+>Loose3 : Symbol(Loose3, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 22, 24))
+
+for (const item of first) { item; }
+>item : Symbol(item, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 26, 10))
+>first : Symbol(first, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 24, 13))
+>item : Symbol(item, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 26, 10))
+
+const copy2 = [...second];
+>copy2 : Symbol(copy2, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 27, 5))
+>second : Symbol(second, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 25, 13))
+
+type BadReturn = { [Symbol.iterator](): { next(): IteratorResult<number>; return: number } };
+>BadReturn : Symbol(BadReturn, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 27, 26))
+>[Symbol.iterator] : Symbol([Symbol.iterator], Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 28, 18))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>next : Symbol(next, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 28, 41))
+>IteratorResult : Symbol(IteratorResult, Decl(lib.es2015.iterable.d.ts, --, --))
+>return : Symbol(return, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 28, 73))
+
+function f1<T extends BadReturn>(t: T) { for (const x of t) {} }
+>f1 : Symbol(f1, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 28, 93))
+>T : Symbol(T, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 29, 12))
+>BadReturn : Symbol(BadReturn, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 27, 26))
+>t : Symbol(t, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 29, 33))
+>T : Symbol(T, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 29, 12))
+>x : Symbol(x, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 29, 51))
+>t : Symbol(t, Decl(ttttIteratorProblemsReportedAtFirstAsk.ts, 29, 33))
+
