@@ -5709,6 +5709,11 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
                 prop_reentry_depth--;
                 return again;
             }
+            // A reverse mapped property's type asked again while it is inferred is unknown, no cycle: tsc's
+            // getTypeOfReverseMappedSymbol pushes nothing, and inferReverseMappedType's second entry with the same
+            // source and target is deeply nested (isDeeplyNestedType at 2), so it infers nothing. `interface Src { a: {
+            // value: Unbox<Src>["a"] extends string ? 1 : 2 } }` has no TS2502 at value
+            if (!prop->target && prop_decl_rare(prop->decl)->reverse_of) return ty_intrinsic(me, TY_UNKNOWN_);
             // (Its own computation is circular, wherever the barrier is: the entry's record. An instantiated property
             // that isn't mapped has none, nor anything to report)
             Resolving* own = ty_in_flight_entry(me, RESOLVING_PROP, prop);

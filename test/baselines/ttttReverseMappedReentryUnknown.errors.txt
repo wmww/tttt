@@ -1,0 +1,19 @@
+ttttReverseMappedReentryUnknown.ts(12,7): error TS2322: Type '{ a: 2; }' is not assignable to type 'never'.
+
+
+==== ttttReverseMappedReentryUnknown.ts (1 errors) ====
+    // A reverse mapped property asked for again while its type is inferred is unknown, not a cycle: tsc's
+    // getTypeOfReverseMappedSymbol pushes nothing, and inferReverseMappedType's second entry with the same source and
+    // target is deeply nested and infers nothing (bun 99-V4 getTypeOfReverseMappedSymbol__01/02: no TS2502 at `value`;
+    // __02's two-property form matches its diagnostics, its types print `b.value` as 2 where tsc has the unknown of the
+    // re-entry)
+    type Boxed<T> = { [K in keyof T]: { value: T[K] } };
+    type Unbox<X> = X extends Boxed<infer T> ? T : never;
+    interface Src {
+      a: { value: Unbox<Src>["a"] extends string ? 1 : 2 };
+    }
+    declare const v: Unbox<Src>;
+    const probe: never = v;
+          ~~~~~
+!!! error TS2322: Type '{ a: 2; }' is not assignable to type 'never'.
+    

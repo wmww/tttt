@@ -1,0 +1,43 @@
+//// [test/cases/ttttReverseMappedReentryUnknown.ts] ////
+
+=== ttttReverseMappedReentryUnknown.ts ===
+// A reverse mapped property asked for again while its type is inferred is unknown, not a cycle: tsc's
+// getTypeOfReverseMappedSymbol pushes nothing, and inferReverseMappedType's second entry with the same source and
+// target is deeply nested and infers nothing (bun 99-V4 getTypeOfReverseMappedSymbol__01/02: no TS2502 at `value`;
+// __02's two-property form matches its diagnostics, its types print `b.value` as 2 where tsc has the unknown of the
+// re-entry)
+type Boxed<T> = { [K in keyof T]: { value: T[K] } };
+>Boxed : Symbol(Boxed, Decl(ttttReverseMappedReentryUnknown.ts, 0, 0))
+>T : Symbol(T, Decl(ttttReverseMappedReentryUnknown.ts, 5, 11))
+>K : Symbol(K, Decl(ttttReverseMappedReentryUnknown.ts, 5, 19))
+>T : Symbol(T, Decl(ttttReverseMappedReentryUnknown.ts, 5, 11))
+>value : Symbol(value, Decl(ttttReverseMappedReentryUnknown.ts, 5, 35))
+>T : Symbol(T, Decl(ttttReverseMappedReentryUnknown.ts, 5, 11))
+>K : Symbol(K, Decl(ttttReverseMappedReentryUnknown.ts, 5, 19))
+
+type Unbox<X> = X extends Boxed<infer T> ? T : never;
+>Unbox : Symbol(Unbox, Decl(ttttReverseMappedReentryUnknown.ts, 5, 52))
+>X : Symbol(X, Decl(ttttReverseMappedReentryUnknown.ts, 6, 11))
+>X : Symbol(X, Decl(ttttReverseMappedReentryUnknown.ts, 6, 11))
+>Boxed : Symbol(Boxed, Decl(ttttReverseMappedReentryUnknown.ts, 0, 0))
+>T : Symbol(T, Decl(ttttReverseMappedReentryUnknown.ts, 6, 37))
+>T : Symbol(T, Decl(ttttReverseMappedReentryUnknown.ts, 6, 37))
+
+interface Src {
+>Src : Symbol(Src, Decl(ttttReverseMappedReentryUnknown.ts, 6, 53))
+
+  a: { value: Unbox<Src>["a"] extends string ? 1 : 2 };
+>a : Symbol(Src.a, Decl(ttttReverseMappedReentryUnknown.ts, 7, 15))
+>value : Symbol(value, Decl(ttttReverseMappedReentryUnknown.ts, 8, 6))
+>Unbox : Symbol(Unbox, Decl(ttttReverseMappedReentryUnknown.ts, 5, 52))
+>Src : Symbol(Src, Decl(ttttReverseMappedReentryUnknown.ts, 6, 53))
+}
+declare const v: Unbox<Src>;
+>v : Symbol(v, Decl(ttttReverseMappedReentryUnknown.ts, 10, 13))
+>Unbox : Symbol(Unbox, Decl(ttttReverseMappedReentryUnknown.ts, 5, 52))
+>Src : Symbol(Src, Decl(ttttReverseMappedReentryUnknown.ts, 6, 53))
+
+const probe: never = v;
+>probe : Symbol(probe, Decl(ttttReverseMappedReentryUnknown.ts, 11, 5))
+>v : Symbol(v, Decl(ttttReverseMappedReentryUnknown.ts, 10, 13))
+
