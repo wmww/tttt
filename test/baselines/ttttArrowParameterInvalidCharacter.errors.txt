@@ -1,0 +1,84 @@
+ttttArrowParameterInvalidCharacter.ts(4,16): error TS1127: Invalid character.
+ttttArrowParameterInvalidCharacter.ts(5,15): error TS1127: Invalid character.
+ttttArrowParameterInvalidCharacter.ts(5,16): error TS1138: Parameter declaration expected.
+ttttArrowParameterInvalidCharacter.ts(5,18): error TS7006: Parameter 'y' implicitly has an 'any' type.
+ttttArrowParameterInvalidCharacter.ts(6,11): error TS2304: Cannot find name 'x'.
+ttttArrowParameterInvalidCharacter.ts(6,15): error TS1127: Invalid character.
+ttttArrowParameterInvalidCharacter.ts(6,17): error TS1134: Variable declaration expected.
+ttttArrowParameterInvalidCharacter.ts(6,18): error TS1005: ';' expected.
+ttttArrowParameterInvalidCharacter.ts(6,20): error TS1128: Declaration or statement expected.
+ttttArrowParameterInvalidCharacter.ts(6,23): error TS2304: Cannot find name 'x'.
+ttttArrowParameterInvalidCharacter.ts(7,11): error TS2304: Cannot find name 'x'.
+ttttArrowParameterInvalidCharacter.ts(7,15): error TS1127: Invalid character.
+ttttArrowParameterInvalidCharacter.ts(7,16): error TS1134: Variable declaration expected.
+ttttArrowParameterInvalidCharacter.ts(8,11): error TS1127: Invalid character.
+ttttArrowParameterInvalidCharacter.ts(8,12): error TS1134: Variable declaration expected.
+ttttArrowParameterInvalidCharacter.ts(8,14): error TS1005: ';' expected.
+ttttArrowParameterInvalidCharacter.ts(9,11): error TS2304: Cannot find name 'x'.
+ttttArrowParameterInvalidCharacter.ts(9,13): error TS1127: Invalid character.
+ttttArrowParameterInvalidCharacter.ts(9,14): error TS1134: Variable declaration expected.
+ttttArrowParameterInvalidCharacter.ts(9,16): error TS1005: ';' expected.
+ttttArrowParameterInvalidCharacter.ts(10,16): error TS1127: Invalid character.
+ttttArrowParameterInvalidCharacter.ts(11,15): error TS1127: Invalid character.
+ttttArrowParameterInvalidCharacter.ts(11,16): error TS1127: Invalid character.
+
+
+==== ttttArrowParameterInvalidCharacter.ts (23 errors) ====
+    // An invalid character in a parenthesized arrow function's first parameter: tsc's parseDelimitedList skips the token no
+    // list takes and the arrow stands, the missing initializer's and the list's errors deduplicated on the TS1127
+    // (bun 43-C14a); without `=>` it is a parenthesized expression
+    var s12 = (x = €) => x;
+                   ~
+!!! error TS1127: Invalid character.
+    var s2 = (x = €, y) => x;
+                  ~
+!!! error TS1127: Invalid character.
+                   ~
+!!! error TS1138: Parameter declaration expected.
+                     ~
+!!! error TS7006: Parameter 'y' implicitly has an 'any' type.
+    var s3 = (x = € 1) => x;
+              ~
+!!! error TS2304: Cannot find name 'x'.
+                  ~
+!!! error TS1127: Invalid character.
+                    ~
+!!! error TS1134: Variable declaration expected.
+                     ~
+!!! error TS1005: ';' expected.
+                       ~~
+!!! error TS1128: Declaration or statement expected.
+                          ~
+!!! error TS2304: Cannot find name 'x'.
+    var s4 = (x = €);
+              ~
+!!! error TS2304: Cannot find name 'x'.
+                  ~
+!!! error TS1127: Invalid character.
+                   ~
+!!! error TS1134: Variable declaration expected.
+    var s5 = (€) => 1;
+              ~
+!!! error TS1127: Invalid character.
+               ~
+!!! error TS1134: Variable declaration expected.
+                 ~~
+!!! error TS1005: ';' expected.
+    var s6 = (x €) => 1;
+              ~
+!!! error TS2304: Cannot find name 'x'.
+                ~
+!!! error TS1127: Invalid character.
+                 ~
+!!! error TS1134: Variable declaration expected.
+                   ~~
+!!! error TS1005: ';' expected.
+    var s7 = (x = 1€) => x;
+                   ~
+!!! error TS1127: Invalid character.
+    var s8 = (x = €€) => x;
+                  ~
+!!! error TS1127: Invalid character.
+                   ~
+!!! error TS1127: Invalid character.
+    

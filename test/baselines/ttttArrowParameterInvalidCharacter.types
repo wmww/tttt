@@ -1,0 +1,63 @@
+//// [test/cases/ttttArrowParameterInvalidCharacter.ts] ////
+
+=== ttttArrowParameterInvalidCharacter.ts ===
+// An invalid character in a parenthesized arrow function's first parameter: tsc's parseDelimitedList skips the token no
+// list takes and the arrow stands, the missing initializer's and the list's errors deduplicated on the TS1127
+// (bun 43-C14a); without `=>` it is a parenthesized expression
+var s12 = (x = €) => x;
+>s12 : (x?: any) => any
+>(x = €) => x : (x?: any) => any
+>x : any
+> : any
+>x : any
+
+var s2 = (x = €, y) => x;
+>s2 : (x: any, y: any) => any
+>(x = €, y) => x : (x: any, y: any) => any
+>x : any
+> : any
+>y : any
+>x : any
+
+var s3 = (x = € 1) => x;
+>s3 : any
+>(x = : any
+>x = : any
+>x : any
+> : any
+>1 : 1
+>x : any
+
+var s4 = (x = €);
+>s4 : any
+>(x = : any
+>x = : any
+>x : any
+> : any
+
+var s5 = (€) => 1;
+>s5 : any
+>( : any
+> : any
+>1 : 1
+
+var s6 = (x €) => 1;
+>s6 : any
+>(x : any
+>x : any
+>1 : 1
+
+var s7 = (x = 1€) => x;
+>s7 : (x?: number) => number
+>(x = 1€) => x : (x?: number) => number
+>x : number
+>1 : 1
+>x : number
+
+var s8 = (x = €€) => x;
+>s8 : (x?: any) => any
+>(x = €€) => x : (x?: any) => any
+>x : any
+> : any
+>x : any
+

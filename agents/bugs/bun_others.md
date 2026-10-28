@@ -404,9 +404,10 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
 - A JSX attribute's quote after a comment starts an ordinary string literal, escapes and all (43-C5a, 43-C5b,
   43-C5c). [fixed fb1ed03cb]
 - An invalid character in a parenthesized arrow function's parameter initializer, `(x = €) => x`: tsc's
-  parseParenthesizedArrowFunctionExpression keeps the arrow (the missing expression's and the list's errors land on
-  the TS1127 and are deduplicated), tttt's parse_function_args() fails and reparses a parenthesized expression
-  (TS1134, TS1005: 43-C14a). [open]
+  parseParenthesizedArrowFunctionExpression keeps the arrow (parseDelimitedList skips the token no list takes; the
+  missing expression's and the list's errors land on the TS1127 and are deduplicated); parse_function_args_inner()'s
+  first-parameter gate now lets an invalid character through to the list's recovery (43-C14a). A lone `#` is a private
+  identifier to tsc's scanner (`(#) => 1`, `(x = #) => x`), not handled. [fixed HASH]
 - A signature without a body (overload, `declare function`) checks a parameter's initializer only through
   getTypeOfParameter, which takes getQuickTypeOfExpression first (an `await` of a literal, an assertion, a call of a
   single non-generic signature): 78-R07 (`function q(a = await 1): void;` has no TS2524/TS1308, tttt's parser said
@@ -424,7 +425,7 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
 - An object literal's member modifiers (TS1042) are tsgo's checkGrammarObjectLiteralExpression's, in member order: it
   returns at TS1118/TS1119, after which no later member's modifier is reported (28-C24a, 28-P13a), and a destructuring
   assignment target reports none. The parser keeps their spans (ObjectExprItemRare.modifiers) for
-  object_check_grammar(). [fixed HASH]
+  object_check_grammar(). [fixed f119a6f9d]
 
 ## Not looked at, by code
 - Each paragraph below is a code and direction with the cases it mismatches in, uninvestigated: at least one open

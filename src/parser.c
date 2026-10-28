@@ -7580,8 +7580,11 @@ static bool parse_function_args_inner(
                 // (An arrow function whose first parameter is a pattern, `({` or `([`, is tsc's Tristate.Unknown: the whole
                 // arrow is parsed speculatively and stands if `=>` follows, `({ @dec b }) => 1`; the caller checks that)
                 bool pattern_first = !parse_type_return_syntax && (*before_param == '{' || *before_param == '[');
+                // (Nor an invalid character, which no list takes: tsc's parseDelimitedList skips it and the arrow
+                // stands, its errors all on the TS1127, `(x = €) => x`)
                 if (vec_function_arg_is_empty(&ret->args) && !is_definitely_function && *p.pos != ',' && *p.pos != ')' &&
-                    (parse_type_return_syntax || first_modifier_end == nullptr) && !pattern_first
+                    (parse_type_return_syntax || first_modifier_end == nullptr) && !pattern_first &&
+                    (parse_type_return_syntax || !invalid_char_size(&p, p.pos))
                 ) {
                     vec_expr_drop(&decorators);
                     initialized_binding_drop(&initializer);

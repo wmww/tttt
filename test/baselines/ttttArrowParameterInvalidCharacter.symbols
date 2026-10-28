@@ -1,0 +1,39 @@
+//// [test/cases/ttttArrowParameterInvalidCharacter.ts] ////
+
+=== ttttArrowParameterInvalidCharacter.ts ===
+// An invalid character in a parenthesized arrow function's first parameter: tsc's parseDelimitedList skips the token no
+// list takes and the arrow stands, the missing initializer's and the list's errors deduplicated on the TS1127
+// (bun 43-C14a); without `=>` it is a parenthesized expression
+var s12 = (x = €) => x;
+>s12 : Symbol(s12, Decl(ttttArrowParameterInvalidCharacter.ts, 3, 3))
+>x : Symbol(x, Decl(ttttArrowParameterInvalidCharacter.ts, 3, 11))
+>x : Symbol(x, Decl(ttttArrowParameterInvalidCharacter.ts, 3, 11))
+
+var s2 = (x = €, y) => x;
+>s2 : Symbol(s2, Decl(ttttArrowParameterInvalidCharacter.ts, 4, 3))
+>x : Symbol(x, Decl(ttttArrowParameterInvalidCharacter.ts, 4, 10))
+>y : Symbol(y, Decl(ttttArrowParameterInvalidCharacter.ts, 4, 16))
+>x : Symbol(x, Decl(ttttArrowParameterInvalidCharacter.ts, 4, 10))
+
+var s3 = (x = € 1) => x;
+>s3 : Symbol(s3, Decl(ttttArrowParameterInvalidCharacter.ts, 5, 3))
+
+var s4 = (x = €);
+>s4 : Symbol(s4, Decl(ttttArrowParameterInvalidCharacter.ts, 6, 3))
+
+var s5 = (€) => 1;
+>s5 : Symbol(s5, Decl(ttttArrowParameterInvalidCharacter.ts, 7, 3))
+
+var s6 = (x €) => 1;
+>s6 : Symbol(s6, Decl(ttttArrowParameterInvalidCharacter.ts, 8, 3))
+
+var s7 = (x = 1€) => x;
+>s7 : Symbol(s7, Decl(ttttArrowParameterInvalidCharacter.ts, 9, 3))
+>x : Symbol(x, Decl(ttttArrowParameterInvalidCharacter.ts, 9, 10))
+>x : Symbol(x, Decl(ttttArrowParameterInvalidCharacter.ts, 9, 10))
+
+var s8 = (x = €€) => x;
+>s8 : Symbol(s8, Decl(ttttArrowParameterInvalidCharacter.ts, 10, 3))
+>x : Symbol(x, Decl(ttttArrowParameterInvalidCharacter.ts, 10, 10))
+>x : Symbol(x, Decl(ttttArrowParameterInvalidCharacter.ts, 10, 10))
+
