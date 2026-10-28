@@ -1,0 +1,13 @@
+//// [test/cases/ttttJsDocStrictModeName.ts] ////
+
+=== a.js ===
+// A JSDoc type's name isn't checked as a strict-mode identifier (tsc's checkStrictModeIdentifier skips JSDoc nodes):
+// `@type {yield}` in a generator is only TS2304
+function* f() {
+>f : Symbol(f, Decl(a.js, 0, 0))
+
+    /** @type {yield} */
+    const x = 1;
+>x : Symbol(x, Decl(a.js, 4, 9))
+}
+

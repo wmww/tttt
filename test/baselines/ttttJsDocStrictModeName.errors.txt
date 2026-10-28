@@ -1,0 +1,13 @@
+a.js(4,16): error TS2304: Cannot find name 'yield'.
+
+
+==== a.js (1 errors) ====
+    // A JSDoc type's name isn't checked as a strict-mode identifier (tsc's checkStrictModeIdentifier skips JSDoc nodes):
+    // `@type {yield}` in a generator is only TS2304
+    function* f() {
+        /** @type {yield} */
+                   ~~~~~
+!!! error TS2304: Cannot find name 'yield'.
+        const x = 1;
+    }
+    

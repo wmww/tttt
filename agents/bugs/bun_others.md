@@ -266,7 +266,9 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
   `a?.<T>\`x\`` (92-R02h: type arguments after `?.` then a tagged template, TS1358). [fixed]
 - JSDoc parsing: `@import a-b from` (43-C8e), `{@link Map#delete}` reserved words TS1359 and `{@link Map.}` (54-L07b),
   `@augments {A<=}`/`{A<<=}` and `{<>}`/`Array<<>>` (56-L01 56-L20b), `function () {}` with `@overload` in JS
-  (61-L17, TS1003 twice), `@import yield`/`{ A as await }` in generators and async functions (92-R03b 92-R03d). [open]
+  (61-L17, TS1003 twice), `@import { A as await }` in an async function (92-R03d: tsc TS1473, TS1003, TS2307). [open]
+- `@type {yield}` in a generator (92-R03b): a JSDoc type's name isn't a strict-mode identifier (checkStrictModeIdentifier
+  skips JSDoc nodes): no TS1212 (several_types.c). [fixed]
 - `typeof a..b` (84-R04): in an entity name a `.` after the dot is a missing name (parseEntityName), `...` ends it
   (parse_dot_prop()). [fixed]
 - Type literal members `static\n{}` and `[` (92-R07a 92-R07b 92-R07f): a type member's `static` before `{` is a modifier

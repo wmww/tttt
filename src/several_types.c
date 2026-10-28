@@ -319,7 +319,8 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
         error_ctx_drop(&silent);
         return;
     }
-    if (!my keyword) scope_check_strict_identifier(names, identifier_type_namespace_count(me) ? *my rare->namespaces.data : my name, true);
+    // (Not in JSDoc: tsc's checkStrictModeIdentifier skips a node with the JSDoc flag, `@type {yield}` is only TS2304)
+    if (!my keyword && !my jsdoc) scope_check_strict_identifier(names, identifier_type_namespace_count(me) ? *my rare->namespaces.data : my name, true);
 
     if (identifier_type_namespace_count(me)) {
         IdentifierTypeRare* rare = my rare;
