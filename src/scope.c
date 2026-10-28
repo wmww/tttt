@@ -4458,6 +4458,15 @@ static Symbol* aug_merge_symbol(Binder* me, Symbol* target, Symbol* source, Erro
     if (!aug_is_clone(target)) {
         Symbol* resolved = symbol_is_pure_alias(target) ? symbol_resolve_alias(target) : target;
         if (!resolved || resolved->is_placeholder) return source;
+        // (tsc's resolveAlias of an alias whose target is itself an alias is getMergedSymbol of what that resolves to
+        // (resolveIndirectionAlias), one level: what an earlier augmentation through another path cloned it into, which
+        // this one clones again. A direct target stays as declared. tanstack's Register augmented through react-start's
+        // `export *` then through react-router's re-export of router-core's re-export keeps the first one's properties,
+        // appflare)
+        PortItem const* item = resolved != target && target->alias ? target->alias->item : nullptr;
+        if (item && item->source_symbol && symbol_is_pure_alias(item->source_symbol) && aug_merged(resolved)) {
+            resolved = aug_merged(resolved);
+        }
         if (resolved->binder != me) return target;
         // (tsc's mergeSymbol resolves the target to compare, and reports a conflict at the alias's declarations)
         if (resolved->flags & excluded_flags(source->flags)) {

@@ -265,6 +265,11 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     for (u32 d = 0; my symbol && d < my symbol->decl_count && !first_checked; d++) {
         SymbolDecl const* decl = &my symbol->decls[d];
         SourceFile const* file = decl->kind == SYMBOL_DECL_INTERFACE ? span_source(decl->name) : nullptr;
+        // (Nor one whose own symbol is another: an augmentation clone left behind keeps the declarations of the symbol it
+        // cloned, whose check is that symbol's. Two augmentations of a re-exported interface through `export *` and
+        // through a re-export make two clones, tsc's mergeSymbol; the first's properties are still checked, TS2717,
+        // appflare's two tanstack Register augmentations)
+        if (file && decl->kind == SYMBOL_DECL_INTERFACE && ((InterfaceDecl const*)decl->node)->symbol != my symbol) continue;
         if (file && (!file->is_stdlib || libs_checked) && source_file_is_checked(file)) first_checked = decl->node;
     }
     if (first_checked == me) {

@@ -186,6 +186,10 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   existing name isn't merged, `add_pattern_declarations` copies only flags and declarations of an export both declare
   (not a nested namespace's exports); names added through an `export *` module reach only that module. Correct: a
   `merge_symbol` that can clone its target. Tested by ttttHackAugmentationAliasConflict (known failing: `export { x as y }` in an augmentation misses TS2323/TS2484).
+  `aug_merge_symbol()` decides tsc's resolveAlias-time getMergedSymbol (resolveIndirectionAlias, for an alias whose
+  target is an alias) at merge time, from PortItem.source_symbol: tsc caches an alias's target when first resolved, so
+  an alias resolved before an earlier augmentation merged would see the declared symbol there; tttt doesn't model that
+  timing (appflare, ttttAugmentationTwoPathsIndirect).
 - `export =`: named imports see only the namespace side; `namespace_import_type` asks `ty_type_of_symbol()` about the
   alias (identifiers only), so `import("./a")` of an `export =` module prints `typeof ns` where tsc spells out
   `{ ...; default: ... }`, and the synthetic `default` prints as `default` in symbols (tsc: the module name). Probed 2026-10-23, matches tsgo (`import("./a")` and `typeof import("./a")` of an `export = namespace` module: types, TS2322 headers).

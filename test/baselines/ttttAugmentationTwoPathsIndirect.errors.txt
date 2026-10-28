@@ -1,0 +1,51 @@
+manager.ts(3,24): error TS2717: Subsequent property declarations must have the same type.  Property 'router' must be of type '{ docs: true; }', but here has type '{ manager: true; }'.
+manager.ts(5,32): error TS2353: Object literal may only specify known properties, and 'manager' does not exist in type '{ docs: true; }'.
+manager1.ts(2,24): error TS2717: Subsequent property declarations must have the same type.  Property 'router' must be of type '{ docs: true; }', but here has type '{ manager: true; }'.
+
+
+==== node_modules/core/index.d.ts (0 errors) ====
+    export type { Register } from "./reg";
+    import type { Register } from "./reg";
+    export type Registered = Register extends { router: infer R } ? R : "none";
+==== node_modules/core/package.json (0 errors) ====
+    { "name": "core", "types": "index.d.ts" }
+==== node_modules/core/reg.d.ts (0 errors) ====
+    export interface Register {}
+==== node_modules/router/index.d.ts (0 errors) ====
+    export type { Register, Registered } from "core";
+==== node_modules/router/package.json (0 errors) ====
+    { "name": "router", "types": "index.d.ts" }
+==== node_modules/start-core/index.d.ts (0 errors) ====
+    export type { Register, Registered } from "core";
+==== node_modules/start-core/package.json (0 errors) ====
+    { "name": "start-core", "types": "index.d.ts" }
+==== node_modules/start/index.d.ts (0 errors) ====
+    export * from "start-core";
+==== node_modules/start/package.json (0 errors) ====
+    { "name": "start", "types": "index.d.ts" }
+==== docs.ts (0 errors) ====
+    import type { Registered } from "start";
+    declare module "start" {
+      interface Register { router: { docs: true } }
+    }
+    export const d: Registered = { docs: true };
+==== manager1.ts (1 errors) ====
+    declare module "start" {
+      interface Register { router: { manager: true } }
+                           ~~~~~~
+!!! error TS2717: Subsequent property declarations must have the same type.  Property 'router' must be of type '{ docs: true; }', but here has type '{ manager: true; }'.
+!!! related TS6203 docs.ts:3:24: 'router' was also declared here.
+    }
+    export {};
+==== manager.ts (2 errors) ====
+    import type { Registered } from "router";
+    declare module "router" {
+      interface Register { router: { manager: true } }
+                           ~~~~~~
+!!! error TS2717: Subsequent property declarations must have the same type.  Property 'router' must be of type '{ docs: true; }', but here has type '{ manager: true; }'.
+!!! related TS6203 docs.ts:3:24: 'router' was also declared here.
+    }
+    export const m: Registered = { manager: true };
+                                   ~~~~~~~
+!!! error TS2353: Object literal may only specify known properties, and 'manager' does not exist in type '{ docs: true; }'.
+    
