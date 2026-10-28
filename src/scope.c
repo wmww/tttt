@@ -253,8 +253,11 @@ ErrorCtx* binder_discarded_errs(Binder* me) {
     return my discarded_errs;
 }
 
+static void suggest_memo_forget(u64 binder);
+
 void binder_destroy(Binder* me) {
     if (!me) return;
+    suggest_memo_forget(my serial);
     free(my symbols);
     free(my pattern_modules);
     free(my augmentations);
@@ -5483,6 +5486,14 @@ static void suggest_memo_clear(SuggestMemo* me) {
     free(my entries);
     for (u32 i = 0; i < my answer_count; i++) free(my answers[i].name);
     *me = (SuggestMemo){0};
+}
+
+// A binder's slots on this thread (the one its merge ran on, usually: another thread's are freed with the thread...
+// never, a few hundred KB each at most)
+static void suggest_memo_forget(u64 binder) {
+    for (u32 i = 0; i < SUGGEST_MEMO_SLOTS; i++) {
+        if (suggest_memo[i].names && suggest_memo[i].binder == binder) suggest_memo_clear(&suggest_memo[i]);
+    }
 }
 
 // spelling_suggestion_ex() over names (count + extra) with suggest_compare_symbols(), of a binder's globals
