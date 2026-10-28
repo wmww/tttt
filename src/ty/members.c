@@ -1650,9 +1650,12 @@ static Ty const* non_augmenting_base_uncached(Checker* me, Ty const* ty) {
     if (!base || base == target || has_base_type(me, base, target)) return nullptr;
     TyList params = target->declared.type_params;
     if (ty->kind == TY_REFERENCE && params.len) base = ty_instantiate(me, base, ty_mapper_new(me, params, ty_reference_args(me, ty)));
-    if (target->declared.this_param) {
-        Ty const* this_arg = ty->kind == TY_REFERENCE && ty->reference.this_arg ? ty->reference.this_arg : ty;
-        base = ty_with_this_arg(me, base, this_arg);
+    // (With the reference's this-argument when it has one: tsc's getSingleBaseForNonAugmentingSubtype only when it
+    // has more type arguments than the target has type parameters. A declared type has none, its base stays without,
+    // so `Top` against `Top<this = X>` normalizes to `Bottom<..>` against `Bottom<.., this = X>`, which compare no
+    // this-argument: effect's makeProto, rw_effect_HttpApiEndpoint_TS2322)
+    if (target->declared.this_param && ty->kind == TY_REFERENCE && ty->reference.this_arg && ty->reference.this_arg != ty) {
+        base = ty_with_this_arg(me, base, ty->reference.this_arg);
     }
     return base;
 }

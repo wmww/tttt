@@ -578,13 +578,20 @@ from there; tsgo's verdicts in test/sourcesweep/tsc.jsonl.gz.
     relates the this-arguments, the source's own declared type (standing for its `this`) to Cond, which fails. tsgo's
     typeArgumentsRelatedTo compares the extra `this` argument covariantly too, so the difference is in which `this`
     argument the source has there (getTypeWithThisArgument of P's constraint with P, or the declared type's own this
-    type parameter), not yet pinned. (claimed: fixE) [open]
+    type parameter), not yet pinned. (claimed: fixE) [dup]
     fixF 2026-10-25, parked again for a flip: reltrace.py on the 11-line repro, the step that differs: tsgo's
     `Bottom<unknown, Top> -> Bottom<unknown, Top>` (P's constraint against Top<this=Cond>) answers T with no nested
     comparison logged at all, while tttt goes on to the this-arguments, `Bottom<unknown, Top> -> Cond` and `P -> Cond`
     (both F). So tsgo's two references there either carry the same `this` (getSingleBaseForNonAugmentingSubtype's
     cachedEquivalentBaseType, cached on the first Top reference it was computed for?) or skip it. Next: an overlay print
     in tsgo's typeArgumentsRelatedTo of the type-argument lists of that pair.
+    cor (2026-10-28): it's the normalization. tsc's getSingleBaseForNonAugmentingSubtype gives the base a this-argument
+    only when the reference has one (more type arguments than the target's type parameters); Top's declared type has
+    none, so `Top` normalizes to `Bottom<unknown, Top>` without one and typeArgumentsRelatedTo (as far as the shorter
+    list) never compares it with Cond. tttt's non_augmenting_base_uncached() (members.c) gave the declared type's base
+    itself as `this`. Fixed there; also reference_related's this-argument comparison now needs both sides to have an
+    explicit one (a declared type, or a reference whose this-argument is itself, has none: relate.c). The 11-line repro
+    rw_effect_HttpApiEndpoint_TS2322 passes. [fixed COMMIT]
 - **foldkit/examples/kanban: -TS2769 at src/view/column.ts:132** (claimed: cor10): `pipe(model.columns, ..., Array.findFirst(({ id }) => id === draggedId))` with `model.columns` any. effect's first findFirst overload is tried first and leaves A `unknown`, so the destructured parameter takes its pattern's type `{ id: any }` for good (assignParameterType). That type is an unwidened object literal in tsc, so the predicate overload's `Card` isn't assignable to it (propertiesRelatedTo's isObjectLiteralType target: `Property 'sortKey' does not exist`). tttt made it a synthetic, non-literal object. Now the fallback is a copy marked KEY_PATTERN_OBJECT_LITERAL, which properties_related() treats as a literal target; repro test/cases/ttttPatternFallbackObjectLiteralTarget.ts. [fixed e5013bbb2]
 - **es-toolkit/tests/types: -TS2344 at compat.spec-d.ts:34** (claimed: cor10): expect-type's `toEqualTypeOf` (identity of `<T>() => T extends (L & T) | T ? ...`) of es-toolkit's `flattenDeep`, whose return is a written conditional `T extends string ? T : ...`, against lodash's `Flat<T>`. tsgo 7.1's check type of a written distributive conditional is the distributed twin, an instantiation onto the same parameter has the original, so `var v: <T>() => T extends string ? 1 : 2` declared twice is TS2403; and identity is cached for the pair in either order (getRelationKey), so the first direction compared answers both. tttt kept the original as the check type and keyed identity by direction. Now identity_structured() tells a conditional as written (or instantiated with every outer parameter to itself) from an instance, and recursive_related() keys identity by the pair in id order; repro test/cases/ttttConditionalIdentityWrittenVsInstantiated.ts. [fixed d06134025]
 - **coop: +TS2345 at server/services/networkingService/index.ts:385** (5 projects, 17 in all): the `default:` of a
