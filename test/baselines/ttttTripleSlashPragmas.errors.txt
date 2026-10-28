@@ -1,0 +1,65 @@
+main.ts(4,1): error TS1084: Invalid 'reference' directive syntax.
+main.ts(5,44): error TS2688: Cannot find type definition file for 'missing2'.
+main.ts(6,1): error TS1084: Invalid 'reference' directive syntax.
+main.ts(7,43): error TS6053: File 'missing4.d.ts' not found.
+main.ts(8,22): error TS6053: File 'missing5.d.ts' not found.
+main.ts(10,1): error TS1084: Invalid 'reference' directive syntax.
+main.ts(11,23): error TS6053: File 'missing7.d.ts' not found.
+main.ts(12,23): error TS2688: Cannot find type definition file for 'missing8'.
+main.ts(12,50): error TS1453: `resolution-mode` should be either `require` or `import`.
+main.ts(13,22): error TS6053: File 'missing9.d.ts' not found.
+main.ts(14,22): error TS6053: File 'missing10.d.ts' not found.
+main.ts(15,21): error TS6053: File 'missing11.d.ts' not found.
+main.ts(17,22): error TS6053: File 'missing13.d.ts' not found.
+
+
+==== main.ts (13 errors) ====
+    /// <amd-module name="one"/>
+    /// <amd-module name="two"/>
+    /// <REFERENCE PATH="types.d.ts"/>
+    /// <reference path=types.d.ts />
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1084: Invalid 'reference' directive syntax.
+    /// <reference path="missing1.d.ts" types="missing2"/>
+                                               ~~~~~~~~
+!!! error TS2688: Cannot find type definition file for 'missing2'.
+    /// <reference foo="x"/>
+    ~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1084: Invalid 'reference' directive syntax.
+    /// <reference path='missing3.d.ts' path='missing4.d.ts'/>
+                                              ~~~~~~~~~~~~~
+!!! error TS6053: File 'missing4.d.ts' not found.
+    /// <reference	path="missing5.d.ts"/>
+                  	      ~~~~~~~~~~~~~
+!!! error TS6053: File 'missing5.d.ts' not found.
+    /// <reference lib="es2015" path="missing6.d.ts"/>
+    /// <reference no-default-lib="false"/>
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1084: Invalid 'reference' directive syntax.
+    /// <reference path ="missing7.d.ts" />
+                          ~~~~~~~~~~~~~
+!!! error TS6053: File 'missing7.d.ts' not found.
+    /// <reference types="missing8" resolution-mode="bad"/>
+                          ~~~~~~~~
+!!! error TS2688: Cannot find type definition file for 'missing8'.
+                                                     ~~~
+!!! error TS1453: `resolution-mode` should be either `require` or `import`.
+    /// <reference path="missing9.d.ts" resolution-mode="bad"/>
+                         ~~~~~~~~~~~~~
+!!! error TS6053: File 'missing9.d.ts' not found.
+    /// <reference path="missing10.d.ts"
+                         ~~~~~~~~~~~~~~
+!!! error TS6053: File 'missing10.d.ts' not found.
+    ///<reference path="missing11.d.ts" preserve="true" />
+                        ~~~~~~~~~~~~~~
+!!! error TS6053: File 'missing11.d.ts' not found.
+    /// <referencex path="missing12.d.ts"/>
+    /// <reference path="missing13.d.ts" bogus=x path="missing14.d.ts"/>
+                         ~~~~~~~~~~~~~~
+!!! error TS6053: File 'missing13.d.ts' not found.
+    export const m = t;
+    
+==== a.ts (0 errors) ====
+    export const a = 1;
+==== types.d.ts (0 errors) ====
+    declare const t: number;

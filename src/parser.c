@@ -587,7 +587,10 @@ static bool expr_ends_with_arrow(Expr const* e);
 static bool jsx_generic_arrow_start(Parser* parent);
 static bool parse_binding_content(Parser* parent, Binding* ret);
 static bool is_reserved_word(csview word);
-static bool is_regex_space(char c);
+// tsc's `\s` in a regex, ASCII only
+static bool is_regex_space(char c) {
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\v' || c == '\f';
+}
 static bool parse_binding_identifier(Parser* parent);
 static void note_top_level_await_identifier(Parser* p, csview name);
 static bool parse_binding_content_or_private_name(Parser* parent, Binding* ret, u32 code, char const* message);
@@ -12295,177 +12298,108 @@ static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     return ret->tag != EXPR_IMPLICIT_ANY;
 }
 
-static bool parse_source_directive(Parser* parent, SourceDirectiveStatement* ret, bool* amd_module_name) {
-    Parser p = parser(parent);
-    if (!hop_start(&p, "///")) {
-        return parse_fail(&p);
-    }
-    hop_whitespace_full(&p, false, false);
-    if (!hop_char(&p, '<')) {
-        return parse_fail(&p);
-    }
-    hop_whitespace_full(&p, false, false);
-    Span xml_tag;
-    Anchor tag_a = anchor(&p);
-    if (!parse_identifier_or_keyword(&p, &xml_tag)) {
-        return parse_fail(&p);
-    }
-    while (*p.pos == '-' && hop_char(&p, '-') && parse_identifier_or_keyword(&p, &xml_tag)) {}
-    xml_tag = span_from(tag_a);
-    hop_whitespace_full(&p, false, false);
-    bool found_reference_attr = false;
-    typeof(ret->tag) reference_attr;
-    cstr reference_path = cstr_null;
-    Span reference_path_span;
-    bool reference_preserve = false;
-    ImportResolutionOverride reference_resolution = IMPORT_RESOLUTION_DEFAULT;
-    bool invalid_resolution = false;
-    Span resolution_span = {0};
-    while (true) {
-        if (hop_start(&p, "/>")) {
-            break;
-        }
+// A `/// <reference .../>` pragma's argument (tsgo's PragmaArgument): its value without the quotes, null if absent
+typedef struct PragmaArg {
+    char const* value;
+    char const* value_end;
+} PragmaArg;
 
-        // (Names like `resolution-mode` are words joined by dashes)
-        Anchor attr_a = anchor(&p);
-        Span attr;
-        if (!parse_identifier_or_keyword(&p, &attr)) {
-            cstr_drop(&reference_path);
-            return parse_fail(&p);
-        }
-        while (*p.pos == '-' && hop_char(&p, '-') && parse_identifier_or_keyword(&p, &attr)) {}
-        attr = span_from(attr_a);
-        hop_whitespace_full(&p, false, false);
-
-        cstr value = cstr_null;
-        Anchor value_a = anchor(&p);
-        if (hop_char(&p, '=')) {
-            hop_whitespace_full(&p, false, false);
-            value_a = anchor(&p);
-            if (*p.pos == '\'' || *p.pos == '"') {
-                // The text between the quotes, no escapes (tsc's pragma regexes): `path='..\x.ts'` is a Windows path
-                char quote = *p.pos;
-                char const* end = p.pos + 1;
-                while (*end && *end != quote && *end != '\n' && *end != '\r') end++;
-                if (*end == quote) {
-                    value = cstr_from_sv((csview){ p.pos + 1, end - p.pos - 1 });
-                    p.pos = end + 1;
-                }
-            } else {
-                Span value_span;
-                if (parse_identifier_or_keyword(&p, &value_span)) {
-                    value = cstr_from_span(value_span);
-                }
-            }
-        }
-
-        if (span_equals(xml_tag, "amd-module") && span_equals(attr, "name") && !cstr_is_empty(&value)) {
-            *amd_module_name = true;
-        }
-        if (span_equals(xml_tag, "reference")) {
-            if (!found_reference_attr) {
-                if ((span_equals(attr, "path")  && (reference_attr = SOURCE_DIRECTIVE_REFERENCE_PATH,  true)) ||
-                    (span_equals(attr, "lib")   && (reference_attr = SOURCE_DIRECTIVE_REFERENCE_LIB,   true)) ||
-                    (span_equals(attr, "types") && (reference_attr = SOURCE_DIRECTIVE_REFERENCE_TYPES, true))
-                ) {
-                    found_reference_attr = true;
-                    reference_path = cstr_move(&value);
-                    // (tsc's resolveTripleslashReference: normalizeSlashes)
-                    if (reference_attr == SOURCE_DIRECTIVE_REFERENCE_PATH) {
-                        for (isize k = 0; k < cstr_size(&reference_path); k++) {
-                            if (cstr_data(&reference_path)[k] == '\\') cstr_data(&reference_path)[k] = '/';
-                        }
-                    }
-                    reference_path_span = span_from(value_a);
-                }
-            }
-            if (span_equals(attr, "preserve") && cstr_equals(&value, "true")) {
-                reference_preserve = true;
-            }
-            if (span_equals(attr, "resolution-mode")) {
-                if (cstr_equals(&value, "import")) reference_resolution = IMPORT_RESOLUTION_IMPORT;
-                else if (cstr_equals(&value, "require")) reference_resolution = IMPORT_RESOLUTION_REQUIRE;
-                else {
-                    invalid_resolution = true;
-                    // (tsgo's parseResolutionMode reports at the value, without its quotes)
-                    resolution_span = span_from(value_a);
-                    if (resolution_span.size >= 2 && (*resolution_span.buf == '"' || *resolution_span.buf == '\'')) {
-                        span_set_sv(&resolution_span, csview_slice(span_sv(resolution_span), 1, resolution_span.size - 1));
-                    }
-                }
-            }
-        }
-
-        cstr_drop(&value);
-        hop_whitespace_full(&p, false, false);
-    }
-
-    if (found_reference_attr) {
-        if (invalid_resolution && reference_attr == SOURCE_DIRECTIVE_REFERENCE_TYPES) {
-            parse_error(&p, resolution_span, 1453, "`resolution-mode` should be either `require` or `import`.");
-        }
-        *ret = (SourceDirectiveStatement){
-            .tag = reference_attr,
-            .path = reference_path,
-            .path_span = reference_path_span,
-            .preserve = reference_preserve,
-            .resolution_override = reference_resolution,
-        };
-        return parse_success(&p);
-    } else {
-        return parse_fail(&p);
-    }
+static char const* pragma_skip_blanks(char const* c, char const* end) {
+    while (c < end && (*c == ' ' || *c == '\t')) c++;
+    return c;
 }
 
-static bool ascii_prefix_equals_ci(const char* a, const char* b, size_t n) {
-    for (size_t i = 0; i < n; i++) {
-        char x = a[i], y = b[i];
+// tsgo's extractName: ASCII letters and dashes, compared lowercased
+static char const* pragma_name_end(char const* c, char const* end) {
+    while (c < end && ((*c >= 'A' && *c <= 'Z') || (*c >= 'a' && *c <= 'z') || *c == '-')) c++;
+    return c;
+}
+
+static bool pragma_name_is(char const* start, char const* end, char const* name) {
+    size_t len = strlen(name);
+    if ((size_t)(end - start) != len) return false;
+    for (size_t i = 0; i < len; i++) {
+        char x = start[i];
         if (x >= 'A' && x <= 'Z') x = (char)(x - 'A' + 'a');
-        if (y >= 'A' && y <= 'Z') y = (char)(y - 'A' + 'a');
-        if (x != y) return false;
+        if (x != name[i]) return false;
     }
     return true;
 }
 
-static bool is_regex_space(char c) {
-    return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\v' || c == '\f';
+static bool pragma_value_is(PragmaArg arg, char const* text) {
+    return arg.value && csview_equals(csview_from_range(arg.value, arg.value_end), text);
 }
 
-// tsc's getNamedArgRegEx on a comment [start, end): `\sname\s*=\s*` and a quoted value, case-insensitively
-static bool triple_slash_has_arg(const char* start, const char* end, const char* name) {
-    size_t len = strlen(name);
-    for (const char* c = start; c + 1 + len <= end; c++) {
-        if (!is_regex_space(*c) || !ascii_prefix_equals_ci(c + 1, name, len)) continue;
-        const char* v = c + 1 + len;
-        while (v < end && is_regex_space(*v)) v++;
-        if (v >= end || *v != '=') continue;
-        v++;
-        while (v < end && is_regex_space(*v)) v++;
-        if (v >= end || (*v != '"' && *v != '\'')) continue;
-        if (memchr(v + 1, *v, (size_t)(end - v - 1))) return true;
-    }
-    return false;
-}
-
-// tsc's tripleSlashXMLCommentStartRegEx (`///\s*<(\S+)\s.*?/>`) names a `<reference>` pragma, which then needs
-// `path`, `types`, `lib` or `no-default-lib` (processPragmasIntoFields: TS1084 on the comment)
-static bool triple_slash_invalid_reference(const char* start, const char* end) {
+// The `/// <reference .../>` pragma of a single-line comment [start, end) and what tsgo's processPragmasIntoFields
+// makes of it: false if the comment is no reference pragma; else *ret is set when it names a path, types or lib, and
+// *invalid when it names none (TS1084, the whole comment). tsgo's extractPragmas: blanks are spaces and tabs, names are
+// case-insensitive, every argument needs a quoted value (the first that doesn't ends the list, `/>` isn't required),
+// a repeated argument's last value wins; `types` then `lib` then `path`, `no-default-lib="true"` is ignored
+static bool parse_reference_pragma(
+    Parser* parent, char const* start, char const* end, SourceDirectiveStatement* ret, bool* has_ret, bool* invalid
+) {
+    *has_ret = *invalid = false;
     if (end - start < 3 || memcmp(start, "///", 3) != 0) return false;
-    const char* c = start + 3;
-    while (c < end && is_regex_space(*c)) c++;
+    char const* c = pragma_skip_blanks(start + 3, end);
     if (c >= end || *c != '<') return false;
-    const char* tag = ++c;
-    while (c < end && !is_regex_space(*c)) c++;
-    if (c >= end || c - tag != 9 || !ascii_prefix_equals_ci(tag, "reference", 9)) return false;
-    bool closed = false;
-    for (const char* d = c + 1; d + 1 < end && !closed; d++) closed = d[0] == '/' && d[1] == '>';
-    if (!closed) return false;
-    return !triple_slash_has_arg(start, end, "types") && !triple_slash_has_arg(start, end, "lib") &&
-        !triple_slash_has_arg(start, end, "path") && !triple_slash_has_arg(start, end, "no-default-lib");
+    char const* name_end = pragma_name_end(c + 1, end);
+    if (!pragma_name_is(c + 1, name_end, "reference")) return false;
+    c = name_end;
+    enum { ARG_TYPES, ARG_LIB, ARG_PATH, ARG_RESOLUTION_MODE, ARG_PRESERVE, ARG_NO_DEFAULT_LIB, ARG_COUNT };
+    static char const* const arg_names[ARG_COUNT] = { "types", "lib", "path", "resolution-mode", "preserve", "no-default-lib" };
+    PragmaArg args[ARG_COUNT] = {0};
+    while (true) {
+        c = pragma_skip_blanks(c, end);
+        if (end - c >= 2 && c[0] == '/' && c[1] == '>') break;
+        char const* arg = c;
+        char const* arg_end = pragma_name_end(c, end);
+        if (arg_end == arg) break;
+        c = pragma_skip_blanks(arg_end, end);
+        if (c >= end || *c != '=') break;
+        c = pragma_skip_blanks(c + 1, end);
+        if (c >= end || (*c != '"' && *c != '\'')) break;
+        char const* value_end = memchr(c + 1, *c, (size_t)(end - c - 1));
+        if (!value_end) break;
+        for (u32 i = 0; i < ARG_COUNT; i++) {
+            if (pragma_name_is(arg, arg_end, arg_names[i])) args[i] = (PragmaArg){ c + 1, value_end };
+        }
+        c = value_end + 1;
+    }
+    if (pragma_value_is(args[ARG_NO_DEFAULT_LIB], "true")) return true;
+    u32 kind = args[ARG_TYPES].value ? ARG_TYPES : args[ARG_LIB].value ? ARG_LIB : args[ARG_PATH].value ? ARG_PATH : ARG_COUNT;
+    if (kind == ARG_COUNT) {
+        *invalid = true;
+        return true;
+    }
+    SourceFile const* source = parent->shared->source;
+    ImportResolutionOverride resolution = IMPORT_RESOLUTION_DEFAULT;
+    PragmaArg mode = args[ARG_RESOLUTION_MODE];
+    if (kind == ARG_TYPES && mode.value) {
+        if (pragma_value_is(mode, "import")) resolution = IMPORT_RESOLUTION_IMPORT;
+        else if (pragma_value_is(mode, "require")) resolution = IMPORT_RESOLUTION_REQUIRE;
+        else parse_error(parent, span_make(source, mode.value, mode.value_end), 1453, "`resolution-mode` should be either `require` or `import`.");
+    }
+    PragmaArg value = args[kind];
+    cstr path = cstr_from_sv(csview_from_range(value.value, value.value_end));
+    // (tsc's resolveTripleslashReference: normalizeSlashes)
+    if (kind == ARG_PATH) {
+        for (isize k = 0; k < cstr_size(&path); k++) {
+            if (cstr_data(&path)[k] == '\\') cstr_data(&path)[k] = '/';
+        }
+    }
+    *ret = (SourceDirectiveStatement){
+        .tag = kind == ARG_TYPES ? SOURCE_DIRECTIVE_REFERENCE_TYPES : kind == ARG_LIB ? SOURCE_DIRECTIVE_REFERENCE_LIB :
+            SOURCE_DIRECTIVE_REFERENCE_PATH,
+        .path = path,
+        .path_span = span_make(source, value.value, value.value_end),
+        .preserve = pragma_value_is(args[ARG_PRESERVE], "true"),
+        .resolution_override = resolution,
+    };
+    *has_ret = true;
+    return true;
 }
 
 static void parse_source_directives(Parser* parent, VecStatement* ret) {
-    bool seen_amd_module = false;
     while (true) {
         hop_whitespace_full(parent, false, true);
 
@@ -12478,20 +12412,11 @@ static void parse_source_directives(Parser* parent, VecStatement* ret) {
         parse_fail(&p);
 
         SourceDirectiveStatement directive;
-        bool amd_module_name = false;
+        bool is_directive, invalid;
         Anchor comment_a = anchor(parent);
-        bool is_directive = parse_source_directive(parent, &directive, &amd_module_name);
-        if (!is_directive && triple_slash_invalid_reference(comment_a.start, comment_end)) {
+        if (parse_reference_pragma(parent, comment_a.start, comment_end, &directive, &is_directive, &invalid) && invalid) {
             parent->pos = comment_end;
             parse_error(parent, span_from(comment_a), 1084, "Invalid 'reference' directive syntax.");
-        }
-        if (amd_module_name) {
-            // tsc's processPragmasIntoFields: every `<amd-module name>` pragma after the first, on its whole comment
-            if (seen_amd_module) {
-                parent->pos = comment_end;
-                parse_error(parent, span_from(comment_a), 2458, "An AMD module cannot have multiple name assignments.");
-            }
-            seen_amd_module = true;
         }
         if (is_directive) {
             list_push(vec_statement, ret, (Statement){
