@@ -304,3 +304,43 @@ not by 16):
 | vscode | 1.16 / 1.13 / 1.07 | 1.16 / 1.15 / 1.11 | 0.94 | none | none |
 | excalidraw | 1.02 / 0.92 / 0.84 | 1.03 / 0.94 / 0.83 | 0.83 | 4-8 | 4-8 |
 | tanstack-router | 1.36 / 1.20 / 1.11 | 1.32 / 1.19 / 1.08 | 0.97 | none | none |
+
+## Can the import graph predict the winners? No (2026-10-29, worker premium)
+Asked: a policy "flag on when ..." is allowed only from a mechanism argument. Is there a program-level predictor,
+computed before checking, that separates the flag's winners from its losers in the table above? The import graph is
+the one `TTTT_DUP_GRAPH=F` dumps (checked files, their bytes, the checked files each imports), taken on the 58 projects.
+"Own" files are those outside the default library and node_modules. The candidates:
+- (a1) the share of own files that transitively import the most-imported own file (the hub);
+- (a3) the same for the union of the top 3 hubs;
+- (b1) and (b3) the same weighted by bytes;
+- (c) the byte-weighted mean share of own bytes in a file's transitive import closure: how much of the program each
+  file drags in, the duplication mechanism itself;
+- (d) the maximum over the top 20 hubs of (share of files importing the hub) x (share of bytes the hub's own closure
+  holds): an aggregating file imported by many.
+The three rerun projects are left out (55 remain). A winner has flag/plain below 1.0.
+
+| target | predictor | winners / losers | best cut (FP, FN) | cut with no loser above it: winners kept |
+|---|---|---|---|---|
+| check CPU N8 | a3 | 22 / 33 | 0.97 (1, 19) | 0 / 22 |
+| check CPU N8 | c | 22 / 33 | 0.53 (3, 16) | 0 / 22 |
+| check CPU N8 | d | 22 / 33 | 0.22 (8, 13) | 0 / 22 |
+| check CPU N16 | any of a1-d | 38 / 17 | everything on (17, 0) | at most 4 / 38 (a3 at 0.97) |
+| wall N8 | a3, b3 | 19 / 36 | 0.84-0.93 (7-8, 7-8) | 0 / 19 |
+| wall N16 | any | 32 / 23 | everything on (19-23, 0-2) | 0 / 32 |
+(FP: losers above the cut, which the policy would turn on; FN: winners below it.)
+
+**No clean separator; most of the candidates point the wrong way.**
+- Nearly every project has a file most of it imports transitively (a1 and b1 are 0.6-1.0 on 52 of the 55): a utility
+  or constants leaf (TypeScript's corePublic.ts, effect's Types.ts, lexical's invariant.ts). Their reach says nothing
+  about type work: tsc, effect, xstate and valibot score 0.95-1.00 and lose.
+- The closure measures (c, d) rank the corpora with deep import closures (tsc, mikro-orm/seeder, vite __tests_dts__)
+  highest, and they lose. The three biggest winners (openbot i18n, team-client, auth-api: 0.38-0.57 wall at N16)
+  score lowest on them (c 0.01-0.04): their hub is the type of an `as const` message catalog that every locale file is
+  checked against. That is a type-level fan-in, which the import graph doesn't see (the files import a little helper,
+  not the catalog).
+- So the mechanism that decides it, how much of the type graph each checker would rebuild, isn't visible in the
+  program's structure before checking. The only predictors that work are measured in a run (hub_regime.md's types
+  K8/K1), which the rules exclude.
+A policy would need either a measured signal at the start of the run (a checker's first files' types, or plain's
+recycle thrash: notes/shared_graph.md "Before reopening it" item 5, adaptive), or the premium bought down until the
+flag doesn't lose where it doesn't win.
