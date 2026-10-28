@@ -171,6 +171,8 @@ typedef struct ParserShared {
     bool disallow_conditional;
     // The type parse_type_inner() parses next is a type operator's operand (`keyof`'s): no constructor type there
     bool type_operator_operand;
+    // parse_modifier_list_ex() parses a type member's modifiers: `static {` is no static block there
+    bool modifiers_in_type;
     // The next identifier type is a heritage element's (tsc's parseExpressionWithTypeArguments, tryParseTypeArguments):
     // its type arguments want a `<` token, not a `<<`. Cleared by the identifier type that reads it
     bool heritage_type_args;
@@ -2576,7 +2578,7 @@ static bool parse_modifier_list_ex(Parser* parent, bool is_member, bool permit_c
                     break;
 
                 case '{': // `constructor(public { x })`, `export {}`; `static {` is a static block
-                    if (is_member && span_equals(mod.span, "static")) goto loop_end;
+                    if (is_member && span_equals(mod.span, "static") && !p.shared->modifiers_in_type) goto loop_end;
                     break;
 
                 case '(':
@@ -9082,16 +9084,23 @@ static bool parse_expr_interface_member(Parser* parent, bool is_type, FunctionFl
 
     Expr expr;
     p.shared->in_property_name++;
-    bool has_key = parse_expr(&p, expr_ctx_null, &expr);
+    // (A missing expression is TS1109 and the member goes on, tsc's parseComputedPropertyName: `{ a: 1; [ }`)
+    bool has_key = expect_expr(&p, expr_ctx_null, &expr) || (expr.tag == EXPR_IMPLICIT_ANY && expr.missing);
     p.shared->in_property_name--;
     if (!has_key) {
         return parse_fail(&p);
     }
     ret->key.expr = ast_new(Expr, expr);
+    Parser before_close = p;
     hop_whitespace(&p);
 
-    expect_char(&p, ']');
-    ret->key.span = span_from(a);
+    if (!expect_char(&p, ']')) {
+        // (Without its `]` the name ends with its expression, before the trivia: tsc's finishNode)
+        ret->key.span = span_from(a);
+        if (span_end_ptr(ret->key.span) > before_close.pos) ret->key.span.size = (i32)(before_close.pos - a.start);
+    } else {
+        ret->key.span = span_from(a);
+    }
     hop_whitespace(&p);
 
     if (hop_char(&p, '?')) {
@@ -9109,6 +9118,8 @@ static bool parse_expr_interface_member(Parser* parent, bool is_type, FunctionFl
     } else if (hop_char(&p, ':')) {
         hop_whitespace(&p);
         expect_type(&p, TYPE_PRECEDENCE_NULL, &ret->type);
+    } else {
+        ret->implicit_any = true; // (TS7008 under noImplicitAny: `{ [k] }`)
     }
     if (is_type && !ret->is_method) {
         // An initializer is parsed (tsc's parsePropertyOrMethodSignature), the grammar check says TS1246/TS1247
@@ -9274,7 +9285,10 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
 
     ModifierList modifiers;
     // (A type member's `const` isn't one: tsc's parseTypeMember has no permitConstAsModifier)
-    if (!parse_modifier_list_ex(&p, true, !is_type, &modifiers)) {
+    p.shared->modifiers_in_type = is_type;
+    bool has_modifiers = parse_modifier_list_ex(&p, true, !is_type, &modifiers);
+    p.shared->modifiers_in_type = false;
+    if (!has_modifiers) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
@@ -9331,6 +9345,15 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             // (tsc's missing node sits at the token's full start, before the trivia)
             name_span = span_make(p.shared->source, token_full_start(&p), token_full_start(&p));
             name_string = cstr_init();
+        } else if (is_type && !is_getter && !is_setter && !vec_spanned_modifier_is_empty(&modifiers.spanned) &&
+            *p.pos != '[' && *p.pos != '(' && *p.pos != '<'
+        ) {
+            // `static` then a line break and `{`: tsc's isTypeMemberStart takes the modifier before what can end the
+            // member, and parsePropertyName's name is missing (TS1003)
+            parse_error(&p, span_from_token_or_eof(&p), 1003, "Identifier expected.");
+            name_span = span_make(p.shared->source, token_full_start(&p), token_full_start(&p));
+            name_string = cstr_init();
+            missing_name = true;
         } else if (!is_type && !is_getter && !is_setter && (decorated || !vec_spanned_modifier_is_empty(&modifiers.spanned)) &&
             *p.pos != '[' && *p.pos != '(' && *p.pos != '<'
         ) {

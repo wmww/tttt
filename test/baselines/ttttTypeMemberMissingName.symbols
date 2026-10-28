@@ -1,0 +1,27 @@
+//// [test/cases/ttttTypeMemberMissingName.ts] ////
+
+=== ttttTypeMemberMissingName.ts ===
+// A type member's modifier before a line break is one (tsc's isTypeMemberStart: what can end the member follows), and
+// its name is missing (TS1003, TS7008 for `(Missing)`); a computed name's missing expression is TS1109 and the member
+// stays, named `[` (TS7008), with no TS1170: a missing identifier is an entity name. A computed property signature
+// without a type is implicitly any too
+declare const k: "x";
+>k : Symbol(k, Decl(ttttTypeMemberMissingName.ts, 4, 13))
+
+type X = { a: 1; static
+>X : Symbol(X, Decl(ttttTypeMemberMissingName.ts, 4, 21))
+>a : Symbol(a, Decl(ttttTypeMemberMissingName.ts, 5, 10))
+
+ {}; b: 2 };
+> : Symbol((Missing), Decl(ttttTypeMemberMissingName.ts, 5, 16))
+
+type Y = { a: 1; [ };
+>Y : Symbol(Y, Decl(ttttTypeMemberMissingName.ts, 6, 12))
+>a : Symbol(a, Decl(ttttTypeMemberMissingName.ts, 7, 10))
+>[ : Symbol([, Decl(ttttTypeMemberMissingName.ts, 7, 16))
+
+interface I { [k] }
+>I : Symbol(I, Decl(ttttTypeMemberMissingName.ts, 7, 21))
+>[k] : Symbol(I[k], Decl(ttttTypeMemberMissingName.ts, 8, 13))
+>k : Symbol(k, Decl(ttttTypeMemberMissingName.ts, 4, 13))
+

@@ -192,8 +192,11 @@ Span interface_member_error_span(InterfaceMember const* me) {
 
 // tsc's reportImplicitAny of a property signature, and of a method signature's return type
 static void interface_member_check_implicit_any(InterfaceMember const* me, ErrorCtx* errs) {
-    if (my implicit_any && compiler_options()->no_implicit_any && span_source(my key.span) && !span_source(my key.span)->is_js) {
-        error_ctx_error_d(errs, my key.span, 7008, "Member '", my key.span, "' implicitly has an 'any' type.");
+    // (A JSDoc type literal's member in a checked JavaScript file too: `@type {{ a }}`)
+    if (my implicit_any && compiler_options()->no_implicit_any && span_source(my key.span)) {
+        // (A missing name is tsc's declarationNameToString of a missing identifier)
+        csview name = my key.span.size ? span_sv(my key.span) : c_sv("(Missing)");
+        error_ctx_error_d(errs, my key.span, 7008, "Member '", name, "' implicitly has an 'any' type.");
     }
     // An accessor pair neither of whose sides says the type (tsc's getTypeOfAccessors): at the setter if there is one,
     // else at the getter; a setter without a getter has an implicitly any parameter too
@@ -285,7 +288,9 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, bool in_t
             if (interface_member_is_misplaced_mapped(me)) break;
             // (An accessor's `[k in T]` is no mapped type's member but a name, and no TS1169: tsc's checkAccessorDeclaration)
             ty_check_computed_name(current_checker, my key.expr, my key.span, !my accessor_kind, errs);
-            if (!my accessor_kind && expr_is_non_bindable_dynamic_name(my key.expr)) {
+            // (A missing expression is a missing identifier to tsc, an entity name: no TS1166-TS1170)
+            bool missing_key = my key.expr->tag == EXPR_IMPLICIT_ANY && my key.expr->missing;
+            if (!my accessor_kind && !missing_key && expr_is_non_bindable_dynamic_name(my key.expr)) {
                 if (is_in_class) {
                     if (my is_method &&
                         my type.tag == TYPE_CALLABLE &&

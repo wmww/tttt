@@ -1,0 +1,14 @@
+a.js(2,14): error TS7008: Member 'a' implicitly has an 'any' type.
+a.js(4,17): error TS7008: Member 'c' implicitly has an 'any' type.
+
+
+==== a.js (2 errors) ====
+    // A JSDoc type literal's member without a type is implicitly any in a checked JavaScript file (TS7008)
+    /** @type {{ a, b: 1 }} */
+                 ~
+!!! error TS7008: Member 'a' implicitly has an 'any' type.
+    const o = { a: 1, b: 1 };
+    /** @typedef {{ c }} T */
+                    ~
+!!! error TS7008: Member 'c' implicitly has an 'any' type.
+    

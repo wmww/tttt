@@ -1,0 +1,31 @@
+ttttTypeMemberMissingName.ts(6,24): error TS7008: Member '(Missing)' implicitly has an 'any' type.
+ttttTypeMemberMissingName.ts(7,2): error TS1003: Identifier expected.
+ttttTypeMemberMissingName.ts(7,11): error TS1128: Declaration or statement expected.
+ttttTypeMemberMissingName.ts(8,18): error TS7008: Member '[' implicitly has an 'any' type.
+ttttTypeMemberMissingName.ts(8,20): error TS1109: Expression expected.
+ttttTypeMemberMissingName.ts(9,15): error TS7008: Member '[k]' implicitly has an 'any' type.
+
+
+==== ttttTypeMemberMissingName.ts (6 errors) ====
+    // A type member's modifier before a line break is one (tsc's isTypeMemberStart: what can end the member follows), and
+    // its name is missing (TS1003, TS7008 for `(Missing)`); a computed name's missing expression is TS1109 and the member
+    // stays, named `[` (TS7008), with no TS1170: a missing identifier is an entity name. A computed property signature
+    // without a type is implicitly any too
+    declare const k: "x";
+    type X = { a: 1; static
+                           
+!!! error TS7008: Member '(Missing)' implicitly has an 'any' type.
+     {}; b: 2 };
+     ~
+!!! error TS1003: Identifier expected.
+              ~
+!!! error TS1128: Declaration or statement expected.
+    type Y = { a: 1; [ };
+                     ~
+!!! error TS7008: Member '[' implicitly has an 'any' type.
+                       ~
+!!! error TS1109: Expression expected.
+    interface I { [k] }
+                  ~~~
+!!! error TS7008: Member '[k]' implicitly has an 'any' type.
+    
