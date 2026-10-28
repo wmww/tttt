@@ -1,0 +1,30 @@
+//// [test/cases/ttttTypeMemberStart.ts] ////
+
+=== ttttTypeMemberStart.ts ===
+// tsc's isTypeMemberStart: a name in a type literal or interface (after any modifiers) followed by something else
+// than `(`, `<`, `?`, `:`, `,` or the end of a statement starts no member: the list ends there (TS1131) and what
+// follows is a statement (found by mutating contextualTypingWithGenericSignature)
+var f2: {
+>f2 : <T, U>(x: T, y: U) => T
+
+    <T, U>(x: T, y: U): T
+>x : T
+>y : U
+
+f2 = (x, y) => { return x }
+>f2 = (x, y) => { return x } : <T, U>(x: T, y: U) => T
+>f2 : <T, U>(x: T, y: U) => T
+>(x, y) => { return x } : <T, U>(x: T, y: U) => T
+>x : T
+>y : U
+>x : T
+
+interface I { a: number; b = 1 }
+>a : number
+>b = 1 : 1
+>b : any
+>1 : 1
+
+type M<T> = { -readonly [K in keyof T]-?: T[K] };
+>M : M<T>
+

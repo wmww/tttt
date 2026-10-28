@@ -6487,6 +6487,52 @@ static inline bool expect_type(Parser* parent, TypePrecedence min_precedence, Ty
 }
 
 // `is_declaration`: an interface's body, else a type literal
+// tsc's isTypeMemberStart: what a type literal's or interface's member list takes as an element. A name (after any
+// modifiers) has to be followed by `(`, `<`, `?`, `:`, `,` or what ends a statement: `{ f2 = 1 }` starts none (TS1131)
+static bool type_member_start_follows(Tok t) {
+    char c = t.start == t.end ? 0 : *t.start;
+    return c == '(' || c == '<' || c == '?' || c == ':' || c == ',' || c == ';' || c == '}' || !c || t.newline_before;
+}
+static bool is_type_member_start(Parser* p) {
+    static char const* const modifiers[] = { "abstract", "accessor", "async", "const", "declare", "default", "export",
+        "in", "out", "private", "protected", "public", "readonly", "static", "override" };
+    Parser look = parser(p);
+    hop_whitespace(&look);
+    Tok t = tok_peek(&look);
+    bool ret = true;
+    // (`+readonly`/`-readonly` start a mapped type's member)
+    if (t.start == t.end || *t.start == '(' || *t.start == '<' || *t.start == '[' || *t.start == '+' || *t.start == '-') {
+        // (a signature, an index signature or a mapped type)
+    } else if (tok_is_word(t) || *t.start == '"' || *t.start == '\'' || is_number_start_char(*t.start)) {
+        // (The usual case first: a name and what follows it)
+        Tok next = tok_next(&look, t);
+        if (!type_member_start_follows(next) && tok_is_word(t) && !tok_is(t, "get") && !tok_is(t, "set")) {
+            // Modifiers, then `[` or a name
+            bool id_token = false;
+            for (;;) {
+                bool modifier = false;
+                for (u32 i = 0; i < c_arraylen(modifiers) && !modifier; i++) modifier = tok_is(t, modifiers[i]);
+                if (!modifier) break;
+                id_token = true;
+                t = tok_next(&look, t);
+            }
+            if (t.start < t.end && *t.start == '[') {
+                ret = true;
+            } else {
+                if (t.start < t.end && (tok_is_word(t) || *t.start == '"' || *t.start == '\'' || is_number_start_char(*t.start))) {
+                    id_token = true;
+                    t = tok_next(&look, t);
+                }
+                ret = id_token && type_member_start_follows(t);
+            }
+        }
+    } else {
+        ret = false;
+    }
+    parse_fail(&look);
+    return ret;
+}
+
 static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
@@ -6515,7 +6561,17 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
         char const* member_start = p.pos;
         p.shared->no_mapped_member = is_declaration || member_count;
         bool accessor_body = false;
-        bool parsed_member = parse_list_member(&p, PARSING_TYPE_MEMBERS, true, true, &item);
+        Parser member_p = parser(&p);
+        bool parsed_member = parse_list_member(&member_p, PARSING_TYPE_MEMBERS, true, true, &item);
+        // (tsc's isTypeMemberStart rejects a name followed by something else than `(`, `<`, `?`, `:`, `,` or the end of
+        // a statement, which only an untyped property of tttt's can be: `{ f2 = 1 }` is TS1131, the list ends)
+        if (parsed_member && item.tag == CLASS_ITEM_FIELD && !item.field.has_explicit_type && !is_type_member_start(&p)) {
+            class_item_drop(&item);
+            parsed_member = false;
+            parse_fail(&member_p);
+        } else {
+            parse_success(&member_p);
+        }
         p.shared->no_mapped_member = outer_no_mapped_member;
         if (parsed_member) {
             // A property or accessor is reported at its name, anything else in full (up to its `;`, below)
