@@ -15,7 +15,7 @@ here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in 
 - **Classes**: TS2687 skips statics and method/accessor pairs (hacks.md). [open]
 - **Accessibility**: `this.x = v` in the constructor of a class merged with an interface declaring `readonly x` (tttt
   exempts any property whose parent is the class). Private names: TS18015. [open]
-- **Declarations**: `export function g() {}` + `function g() {}` is TS2393 in tsc (one local symbol with two implementations; tttt said nothing). Test ttttExportedAndLocalFunctionDuplicate. [fixed 134d2e1c4]
+- **Declarations**: `export function g() {}` + `function g() {}` is TS2393 in tsc (one local symbol with two implementations; tttt said nothing). Test ttttExportedAndLocalFunctionDuplicate. [fixed 17d5794b5]
 - **Implicit any**: widening errors past `report_errors_from_widening` (binding.c; the tests the tsc mechanism ports named for them
   pass since, re-check with a probe: TS7008 class fields, TS7018 through a spread) and of generator yield/next types. [open]
 - **Target-gated**: TS2705 comes only from an inferred return type's demand (tsc's createPromiseReturnType), and tttt
@@ -29,7 +29,7 @@ here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in 
   one type parameter symbol; why only the second check fails in tsgo wasn't looked at). Probe only, no test. [open]
 - The jsxImportSource runtime import (`jsx_runtime_module()`) reports TS2875/TS2792 and TS1479/TS1471, not the other
   resolveExternalModule diagnostics (TS7016 for a JavaScript runtime). [open]
-- `while (a) const x = 1;` still scopes x to the loop (tsc: the enclosing block; a do statement too, a for statement is a block scope container). Test ttttWhileBodyDeclarationScope. [fixed 672143404]
+- `while (a) const x = 1;` still scopes x to the loop (tsc: the enclosing block; a do statement too, a for statement is a block scope container). Test ttttWhileBodyDeclarationScope. [fixed 2a4819ab1]
 - Known-failing tests of hacks.md's audit (2026-10-23; each hack's entry there has the mechanism):
   - ttttHackJsdocUniqueSymbolLet: a JSDoc `@type {unique symbol}` on a `let` misses TS1332. [fixed e04477695]
   - ttttHackAugmentationAliasConflict: `export { x as y }` in a module augmentation misses TS2323/TS2484. [open]
@@ -99,7 +99,7 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   loop touch the members' write types (prop_write_type_touch()); a class getter's circularity through its annotated
   setter is reported at the setter, and an annotation that lowered to another declaration's circularity is any (no
   TS2502 at `v` in `set x(v: C["x"])`). getWriteTypeOfAccessors__01-03/06, getWriteTypeOfSymbol__01/02/04 match. Test
-  ttttAccessorWriteTypeCircularity. [fixed a28963f2c]
+  ttttAccessorWriteTypeCircularity. [fixed e254bf88c]
 - (cor3, 2026-10-29, bun 99-V4, looked at, not fixed) **Accessor and loop leftovers**: (1) checkAccessorDeclaration__04/05:
   tsc checks a getter's code paths against getTypeOfAccessors (any after its circularity), so a `get x(): [C["x"]]`
   whose body can fall off the end has no TS2366; function_impl_check_end() uses the annotation (or the setter's) and
@@ -115,10 +115,10 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   [open]
 - (cor3, 2026-10-29, bun 99-V4 getWriteTypeOfSymbol__03) An interface property merged with class accessors of its name
   (`get x(): string; set x(v: string | number)` plus `interface C { x: string }`) is a SymbolFlags.Property in tsc,
-  written as it is read (getWriteTypeOfSymbol): `c.x = 1` is TS2322 against string; tttt takes the setter's type. Test ttttWriteTypeMergedAndIndexed. [fixed 22649f1bc]
+  written as it is read (getWriteTypeOfSymbol): `c.x = 1` is TS2322 against string; tttt takes the setter's type. Test ttttWriteTypeMergedAndIndexed. [fixed edb8f216e]
 - (cor3, 2026-10-29, bun 99-V4 getWriteTypeOfSymbol__05) A write through a union of a class with a wider setter and a
   type with a string index signature (`u.x = true`, `A | { [k: string]: boolean }`): tsc checks against the union of the
-  write types `string | number` (TS2322 at the assignment); tttt reports nothing there. Test ttttWriteTypeMergedAndIndexed. [fixed 22649f1bc]
+  write types `string | number` (TS2322 at the assignment); tttt reports nothing there. Test ttttWriteTypeMergedAndIndexed. [fixed edb8f216e]
 - **Base constraint circularity and base types resolved through constraints** (re-checked 2026-10-07, errors only).
   Port, plan-sized: a resolution-identity stack for base constraints (tsc's pushTypeResolution with
   ImmediateBaseConstraint plus getImmediateBaseConstraint's 5-deep identity check), TS2313 at the type node being
