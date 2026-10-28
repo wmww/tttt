@@ -132,6 +132,14 @@ typedef struct Program {
     // The resolver's resolutions (they live as long as it does) program_learn_symlink() has learned from, a direct-mapped
     // cache: learning one again changes nothing, and a file can import one name 133k times (`import("@scalar/typebox")`)
     ResolvedModule const* symlinks_learned[256];
+    // The loader's resolutions of the file it loads the imports of (program_load_module_ref_inner()), by name and mode
+    struct ModuleRefMemo {
+        SourceFile const* source;
+        ModuleRef const* ref;
+        ResolutionMode mode;
+        ModuleResolver const* resolver;
+        ResolvedModule const* resolved;
+    } ref_memo[64];
     // Whether symlinks has the links of every emitted file's package's dependencies (program_dependency_links())
     _Atomic bool dependency_links;
     pthread_mutex_t dependency_links_lock;
@@ -996,7 +1004,19 @@ static void program_load_module_ref_inner(Program* me, SourceFile* source, Modul
     ResolutionMode mode = program_module_ref_mode(me, source, ref);
     csview canonical = {0};
     ResolvedModule const* shared = preresolved_take(source->preresolved, ref, mode, &canonical);
-    if (!shared) shared = module_resolver_resolve_shared(resolver, cstr_sv(&ref->path), containing, mode);
+    if (!shared) {
+        // (One file's names, by name and mode: a declaration file can import one name thousands of times, see
+        // program_load_ahead_from(). The resolver's resolutions live as long as it does)
+        struct ModuleRefMemo* memo = &my ref_memo[(c_hash_n(cstr_str(&ref->path), cstr_size(&ref->path)) ^ (u32)mode) % c_arraylen(my ref_memo)];
+        if (memo->source == source && memo->mode == mode && memo->resolver == resolver && memo->ref &&
+            cstr_eq(&memo->ref->path, &ref->path)
+        ) {
+            shared = memo->resolved;
+        } else {
+            shared = module_resolver_resolve_shared(resolver, cstr_sv(&ref->path), containing, mode);
+            *memo = (struct ModuleRefMemo){ .source = source, .ref = ref, .mode = mode, .resolver = resolver, .resolved = shared };
+        }
+    }
     // (The resolver's, unless a referenced project's output may replace what it found: then a copy to change)
     bool owned = my redirects;
     ResolvedModule resolved = owned ? resolved_module_clone(shared) : *shared;
