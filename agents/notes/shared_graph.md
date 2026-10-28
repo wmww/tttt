@@ -258,9 +258,14 @@ variance-specific: xstate at K8 reads 54k private Overlay values and 17k CACHE_D
 ActionFunction/StateNode first read a tainted KEY_SIMPLIFIED or KEY_VARIANCES. Sharing them needs fewer POISONed words
 upstream (or bun's rollback), not a variance rule.
 
-**What it did buy: determinism.** Fewer poisoned variances, fewer private histories: sgcheck at K8/K16, 8 runs per
-(K, deal): drizzle's residue C 12/16 differing runs with the scheduler's deal on main -> 1/16; mikro-orm seeder at K16
-rr 8/8 -> 2/8.
+**What it did buy: determinism.** Residue C is closed by the walk order (b2b3cdcd2); the frames alone, before it,
+already removed most of that schedule dependence (fewer poisoned variances, fewer private histories): sgcheck at
+K8/K16, 8 runs per (K, deal), drizzle's C 12/16 differing runs with the scheduler's deal -> 1/16, mikro-orm seeder at
+K16 rr 8/8 -> 2/8. Both together (rebased on 06f16128c): the default list at K4/8/16, both deals, 2 runs, 0 of 696 differ.
+DeepStamps and the walk order: under walk (and content) a deep cut is no taint event, so the pair it concludes is
+cached CACHE_DEEP and only its hits are events; a hit inside the frame that concluded it is internal (the cut was
+decided by that frame's own stacks). Under id-like orders the cut itself is an external event, so the frame is
+tainted anyway and the stamps change nothing there.
 Gates: quickgate --vs-main -k (plain unchanged, +0.03% instructions), sgcheck default list K4/8/16 both deals x2
 (3 of 696 differ: drizzle C 1 at K16 def, mikro-orm seeder 2 at K16 rr, the known residues),
 fingerprint oracle at K8 (0 variance differences on drizzle, zod, effect, xstate, excalidraw; the oracle's mirror of
