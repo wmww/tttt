@@ -288,8 +288,8 @@ at any thread count (the suite runs it at one); `TTTT_PARALLEL_RESOLVE=1` uses t
 
 **The chunked walk** of big declaration files (`chunked_walk_new()`: lib.dom.d.ts is 2.4 MB, most of a small
 project's walk on one thread). A declaration file of >= 256 KB and >= 64 statements, every one an interface, type
-alias, `declare var` without initializer, bodiless `declare function` or plain `declare namespace` made of the same
-(`statement_walks_alone()`), is walked in runs of statements of >= 128 KB, each a job of the lane with a shard of its
+alias, `declare var` without initializer, bodiless `declare function`, plain import or export (no decorators,
+attributes or phase) or plain `declare namespace` made of the same (`statement_walks_alone()`), is walked in runs of statements of >= 128 KB, each a job of the lane with a shard of its
 own; the file's shards merge in statement order (`resolve_shard_merge_chunks()`: each list of every chunk in turn,
 the one shard's lists). The file scope's flow builder is `&flow_builder_per_thread`, so `scope_flow()` gives each chunk
 its own copy of the builder the serial walk starts with (start node made); every statement must leave it as it was

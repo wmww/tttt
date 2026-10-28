@@ -3911,6 +3911,16 @@ static bool statement_walks_alone(Statement const* statement) {
             return true;
         case STATEMENT_DECL_FUNCTION:
             return !statement->decl.function.impl->has_body;
+        case STATEMENT_IMPORT_EXPORT: {
+            // An import or export with nothing unusual about it (no decorators, attributes or phase): its walk reports
+            // on its module_ref into the chunk's errors, and an `export { x }` of a local variable marks it assigned
+            // anywhere, a constant nothing in a declaration file's walk reads (port_statement_lookup_names(); its
+            // aliases are binder_link()'s). A generated declaration file starts with its imports and ends with
+            // `export type { X }`s (@scalar/workspace-store's openapi-document.d.ts: 6.2 MB, a 56 ms walk on one
+            // thread, the walk's critical path on nitro)
+            PortStatement const* port = statement->import_export;
+            return !port->rare && !port->attributes && !port->wrong_context && !port->jsdoc && !port->in_namespace;
+        }
         case STATEMENT_DECL_NAMESPACE: {
             NamespaceDecl const* namespace = statement->decl.namespace;
             if (namespace->is_global || namespace->is_invalid_global || namespace->is_ambient_module ||
