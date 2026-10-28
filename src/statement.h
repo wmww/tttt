@@ -242,6 +242,11 @@ static inline DeclExported statement_get_exported(Statement const* me) {
 }
 
 void statement_drop(Statement* me);
+bool statements_module_indicator(VecStatement const* statements, Span* at);
+struct CompilerOptions;
+bool source_file_module_by_detection(
+    struct SourceFile const* file, struct CompilerOptions const* options, bool import_meta, bool jsx
+);
 void statement_add_names(Statement* me, Scope* scope);
 void statement_hoist_names(Statement* me, Scope* scope);
 // The names of the `var`s nested in a statement, hoisted out of it in strict code (see statement_hoist_names())

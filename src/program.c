@@ -1338,54 +1338,15 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
     }
 }
 
-// What of a file's top-level statements makes it a module (tsc's isAnExternalModuleIndicatorNode): set once, on the
-// thread that parsed it (a load pool worker), so the loader doesn't walk a file's statements for it
+// What of a file's top-level statements makes it a module (statements_module_indicator()): set once, on the thread
+// that parsed it (a load pool worker), so the loader doesn't walk a file's statements for it
 static void source_scan_module_indicators(SourceFile* source) {
     if (source->module_indicators_scanned) return;
     source->module_indicators_scanned = true;
-    for_each (i, vec_statement, &source->ast.statements) {
-        Statement* statement = (Statement*)i;
-        switch (statement->tag) {
-            case STATEMENT_IMPORT_EXPORT: {
-                PortStatement* port = statement->import_export;
-                // (`export as namespace` is no indicator: tsc's isAnExternalModuleIndicatorNode)
-                if ((port->main.tag != PORT_IMPORT_ALIAS || port->main.export_import) && port->main.tag != PORT_EXPORT_AS_NAMESPACE &&
-                    !port->jsdoc
-                ) {
-                    source->is_module = true;
-                    if (!span_valid(source->module_indicator)) source->module_indicator = statement->span;
-                }
-            }   break;
-
-            case STATEMENT_EXPORT_DEFAULT_EXPR:
-                source->is_module = true;
-                if (!span_valid(source->module_indicator)) source->module_indicator = statement->span;
-                break;
-
-            case STATEMENT_DECL_NAMESPACE:
-            case STATEMENT_DECL_VARIABLE:
-            case STATEMENT_DECL_FUNCTION:
-            case STATEMENT_DECL_ENUM:
-            case STATEMENT_DECL_CLASS:
-            case STATEMENT_DECL_TYPE:
-            case STATEMENT_DECL_INTERFACE:
-                // (A JSDoc `@enum` of `exports.C = {}` is exported, but no module syntax)
-                if (statement->decl.props.exported && !(statement->tag == STATEMENT_DECL_TYPE && statement->decl.type->jsdoc)) {
-                    source->is_module = true;
-                    if (!span_valid(source->module_indicator)) {
-                        Span name = statement->tag == STATEMENT_DECL_CLASS ? statement->decl.class->name :
-                            statement->tag == STATEMENT_DECL_FUNCTION ? statement->decl.function.impl->name :
-                            statement->tag == STATEMENT_DECL_ENUM ? statement->decl.enum_->name :
-                            statement->tag == STATEMENT_DECL_INTERFACE ? statement->decl.interface->name :
-                            statement->tag == STATEMENT_DECL_TYPE ? statement->decl.type->name :
-                            statement->tag == STATEMENT_DECL_NAMESPACE ? statement->decl.namespace->name : span_null;
-                        source->module_indicator = span_valid(name) ? name : statement->span;
-                    }
-                }
-                break;
-            default:
-                break;
-        }
+    Span at = span_null;
+    if (statements_module_indicator(&source->ast.statements, &at)) {
+        source->is_module = true;
+        if (!span_valid(source->module_indicator)) source->module_indicator = at;
     }
 }
 
@@ -2244,21 +2205,8 @@ static SourceFile* program_add_made_source(Program* me, cstr canonical_path, Sou
     // module, `auto` (the default) too for `import.meta`, a module format (.mts/.cts/.mjs/.cjs, an ESM package), and
     // a JSX tag under react-jsx
     if (!source_file->is_module && !source_file->is_declaration && !my loading_stdlib) {
-        csview name = cstr_sv(&source_file->canonical_path);
-        switch (my options.module_detection) {
-            case MODULE_DETECTION_FORCE:
-                source_file->is_module = true;
-                break;
-            case MODULE_DETECTION_AUTO:
-                source_file->is_module = source_file->has_import_meta || source_file->is_esm ||
-                    csview_ends_with(name, ".mts") || csview_ends_with(name, ".cts") ||
-                    csview_ends_with(name, ".mjs") || csview_ends_with(name, ".cjs") ||
-                    (source_file->has_jsx && (my options.jsx == JSX_REACT_JSX || my options.jsx == JSX_REACT_JSXDEV));
-                break;
-            case MODULE_DETECTION_LEGACY:
-                source_file->is_module = source_file->has_import_meta;
-                break;
-        }
+        source_file->is_module = source_file_module_by_detection(source_file, &my options, source_file->has_import_meta,
+            source_file->has_jsx);
     }
     if (my options.import_helpers && source_file->is_module && !source_file->is_declaration && !my loading_stdlib) {
         Span at = span_from_sv(source_file, csview_from_n(source_file_start(source_file), 0));

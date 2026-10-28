@@ -3205,3 +3205,66 @@ void source_file_check_verbatim_exports(SourceFile const* file, ErrorCtx* errs) 
         }
     }
 }
+
+// Whether a file's top-level statements make it a module (tsc's isAnExternalModuleIndicatorNode), and where the first
+// such statement says so (its name if it has one)
+bool statements_module_indicator(VecStatement const* statements, Span* at) {
+    for_each (statement, vec_statement, statements) {
+        switch (statement->tag) {
+            case STATEMENT_IMPORT_EXPORT: {
+                PortStatement const* port = statement->import_export;
+                // (`export as namespace` is no indicator: tsc's isAnExternalModuleIndicatorNode)
+                if ((port->main.tag != PORT_IMPORT_ALIAS || port->main.export_import) && port->main.tag != PORT_EXPORT_AS_NAMESPACE &&
+                    !port->jsdoc
+                ) {
+                    *at = statement->span;
+                    return true;
+                }
+            }   break;
+
+            case STATEMENT_EXPORT_DEFAULT_EXPR:
+                *at = statement->span;
+                return true;
+
+            case STATEMENT_DECL_NAMESPACE:
+            case STATEMENT_DECL_VARIABLE:
+            case STATEMENT_DECL_FUNCTION:
+            case STATEMENT_DECL_ENUM:
+            case STATEMENT_DECL_CLASS:
+            case STATEMENT_DECL_TYPE:
+            case STATEMENT_DECL_INTERFACE:
+                // (A JSDoc `@enum` of `exports.C = {}` is exported, but no module syntax)
+                if (statement->decl.props.exported && !(statement->tag == STATEMENT_DECL_TYPE && statement->decl.type->jsdoc)) {
+                    Span name = statement->tag == STATEMENT_DECL_CLASS ? statement->decl.class->name :
+                        statement->tag == STATEMENT_DECL_FUNCTION ? statement->decl.function.impl->name :
+                        statement->tag == STATEMENT_DECL_ENUM ? statement->decl.enum_->name :
+                        statement->tag == STATEMENT_DECL_INTERFACE ? statement->decl.interface->name :
+                        statement->tag == STATEMENT_DECL_TYPE ? statement->decl.type->name :
+                        statement->tag == STATEMENT_DECL_NAMESPACE ? statement->decl.namespace->name : span_null;
+                    *at = span_valid(name) ? name : statement->span;
+                    return true;
+                }
+                break;
+            default:
+                break;
+        }
+    }
+    return false;
+}
+
+// tsc's setExternalModuleIndicator by moduleDetection for a file no statement makes a module: `force` makes every file
+// that isn't a declaration file a module, `auto` (the default) too for `import.meta`, a module format
+// (.mts/.cts/.mjs/.cjs, an ESM package), and a JSX tag under react-jsx
+bool source_file_module_by_detection(SourceFile const* file, CompilerOptions const* options, bool import_meta, bool jsx) {
+    if (file->is_declaration) return false;
+    csview name = cstr_sv(&file->canonical_path);
+    switch (options->module_detection) {
+        case MODULE_DETECTION_FORCE: return true;
+        case MODULE_DETECTION_LEGACY: return import_meta;
+        case MODULE_DETECTION_AUTO:
+        default:
+            return import_meta || file->is_esm || csview_ends_with(name, ".mts") || csview_ends_with(name, ".cts") ||
+                csview_ends_with(name, ".mjs") || csview_ends_with(name, ".cjs") ||
+                (jsx && (options->jsx == JSX_REACT_JSX || options->jsx == JSX_REACT_JSXDEV));
+    }
+}

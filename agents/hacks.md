@@ -161,8 +161,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   ExpressionWithTypeArguments node. Probed 2026-10-23, matches tsgo (`class C extends A, B {}`).
 - `jsdoc_type_outside_jsdoc()`: `?T`/`T?`/`!T`/`T!` are a `TYPE_JSDOC` wrapper; `*` reports TS8020 without a node.
 - Top-level await (`parse_file()`): the whole file is reparsed with the statements that saw an `await` identifier as
-  await contexts (`ParserShared.await_statements`); module-ness guessed by `parsed_file_is_module()`, a copy of
-  program.c's rules (keep in sync).
+  await contexts (`ParserShared.await_statements`).
 - `undefined` is a literal; `expr_lookup_names` rewrites it into an identifier when a non-global declaration is in
   scope (`Expr.undefined_assigned` for targets). Correct: an identifier resolved to undefinedSymbol.
 

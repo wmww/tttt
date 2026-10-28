@@ -1,0 +1,15 @@
+ttttTopLevelAwaitExportAsNamespace.ts(3,1): error TS1314: Global module exports may only appear in module files.
+ttttTopLevelAwaitExportAsNamespace.ts(5,7): error TS2322: Type 'number' is not assignable to type '1'.
+
+
+==== ttttTopLevelAwaitExportAsNamespace.ts (2 errors) ====
+    // `export as namespace` makes no module (tsc's isAnExternalModuleIndicatorNode), so a top-level `await` stays an
+    // identifier: the parser's module test is the program's
+    export as namespace N;
+    ~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1314: Global module exports may only appear in module files.
+    declare function await(x: number): number;
+    const y: 1 = await(1);
+          ~
+!!! error TS2322: Type 'number' is not assignable to type '1'.
+    

@@ -15757,34 +15757,6 @@ static bool json_parse_value(Parser* parent, Expr* ret) {
     return parse_success(&p);
 }
 
-// Whether the file just parsed is a module, as far as the parser can tell (what the program decides later: tsc's
-// externalModuleIndicator and moduleDetection, see program.c)
-static bool parsed_file_is_module(SourceFile const* source, ParserShared const* shared) {
-    for_each (i, vec_statement, &source->ast.statements) {
-        switch (i->tag) {
-            case STATEMENT_IMPORT_EXPORT: {
-                PortStatement const* port = i->import_export;
-                if ((port->main.tag != PORT_IMPORT_ALIAS || port->main.export_import || port->main.is_require) && !port->jsdoc) {
-                    return true;
-                }
-            }   break;
-            case STATEMENT_EXPORT_DEFAULT_EXPR: return true;
-            case STATEMENT_DECL_NAMESPACE: case STATEMENT_DECL_VARIABLE: case STATEMENT_DECL_FUNCTION:
-            case STATEMENT_DECL_ENUM: case STATEMENT_DECL_CLASS: case STATEMENT_DECL_TYPE: case STATEMENT_DECL_INTERFACE:
-                if (i->decl.props.exported) return true;
-                break;
-            default: break;
-        }
-    }
-    CompilerOptions const* options = compiler_options();
-    if (options->module_detection == MODULE_DETECTION_FORCE) return true;
-    if (options->module_detection == MODULE_DETECTION_LEGACY) return shared->saw_import_meta;
-    csview name = cstr_sv(&source->canonical_path);
-    return shared->saw_import_meta || source->is_esm || csview_ends_with(name, ".mts") || csview_ends_with(name, ".cts") ||
-        csview_ends_with(name, ".mjs") || csview_ends_with(name, ".cjs") ||
-        (shared->saw_jsx && (options->jsx == JSX_REACT_JSX || options->jsx == JSX_REACT_JSXDEV));
-}
-
 static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_await, FirstPassStatement** await_statements, u32* await_count);
 
 // ---- A big declaration file's parse in chunks, on several threads ----
@@ -16222,7 +16194,8 @@ static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_a
 
     // tsc's reparseTopLevelAwait, for the whole file rather than the statements with an `await`
     if (!top_level_await && shared.await_statement_count && !source->is_declaration && !source->is_json &&
-        parsed_file_is_module(source, &shared)
+        (statements_module_indicator(&source->ast.statements, &(Span){0}) ||
+            source_file_module_by_detection(source, compiler_options(), shared.saw_import_meta, shared.saw_jsx))
     ) {
         *await_statements = shared.await_statements;
         *await_count = shared.first_pass_count;

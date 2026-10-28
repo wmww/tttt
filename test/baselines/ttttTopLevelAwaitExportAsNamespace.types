@@ -1,0 +1,18 @@
+//// [test/cases/ttttTopLevelAwaitExportAsNamespace.ts] ////
+
+=== ttttTopLevelAwaitExportAsNamespace.ts ===
+// `export as namespace` makes no module (tsc's isAnExternalModuleIndicatorNode), so a top-level `await` stays an
+// identifier: the parser's module test is the program's
+export as namespace N;
+>N : any
+
+declare function await(x: number): number;
+>await : (x: number) => number
+>x : number
+
+const y: 1 = await(1);
+>y : 1
+>await(1) : number
+>await : (x: number) => number
+>1 : 1
+
