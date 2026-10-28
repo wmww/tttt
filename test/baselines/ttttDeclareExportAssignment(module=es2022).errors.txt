@@ -1,0 +1,13 @@
+ttttDeclareExportAssignment.ts(3,1): error TS1120: An export assignment cannot have modifiers.
+ttttDeclareExportAssignment.ts(3,18): error TS2714: The expression of an export assignment must be an identifier or qualified name in an ambient context.
+
+
+==== ttttDeclareExportAssignment.ts (2 errors) ====
+    // `declare export = 1` is TS1120, and ambient all the same (tsgo's parser's NodeFlagsAmbient): checkExportAssignment's
+    // TS2714 on a non-entity expression, no TS1294, and TS1203 only in an ES module declaration (bun 03-C17a, 03-C17b)
+    declare export = 1;
+    ~~~~~~~
+!!! error TS1120: An export assignment cannot have modifiers.
+                     ~
+!!! error TS2714: The expression of an export assignment must be an identifier or qualified name in an ambient context.
+    

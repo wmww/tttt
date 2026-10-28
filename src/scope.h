@@ -968,7 +968,8 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props);
 void scope_add_port(Scope* me, PortItem* item);
 // `export default <expr>`, export_equals: `export = x`, under the name `export=` like in tsc
 // False if it isn't at the top level of a file or namespace (reported)
-bool scope_export_default_expr(Scope* me, Expr* expr, struct TypeNode const* jsdoc_type, Span statement, bool export_equals);
+bool scope_export_default_expr(Scope* me, Expr* expr, struct TypeNode const* jsdoc_type, Span statement, bool export_equals,
+    bool declared);
 // The exports of a CommonJS file: every `exports.x = v`, `module.exports.x = v`, `Object.defineProperty(exports, ...)`
 // declares x and `module.exports = v` the `export=`, wherever it is (tsc's getAssignmentDeclarationKind), then its
 // `module` and `exports` variables

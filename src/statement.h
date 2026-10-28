@@ -167,6 +167,9 @@ typedef struct Statement {
     // STATEMENT_EXPORT_DEFAULT_EXPR not at the top level of a file or namespace (TS1231/TS1258): its expression is
     // neither resolved nor checked (tsc's checkExportAssignment bails out)
     bool export_misplaced;
+    // STATEMENT_EXPORT_DEFAULT_EXPR written with `declare` (TS1120): ambient all the same (tsgo's parser's
+    // NodeFlagsAmbient): TS2714, no TS1203 outside an ES module declaration, no TS1294
+    bool export_declared;
     // In a range of unreachable code the binder found (TS7027 if reported at all): nothing in it is reported again
     // (tsc's withinUnreachableCode)
     bool unreachable;

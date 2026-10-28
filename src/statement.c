@@ -1270,7 +1270,8 @@ void statement_add_names(Statement* me, Scope* scope) {
             break;
 
         case STATEMENT_EXPORT_DEFAULT_EXPR:
-            my export_misplaced = !scope_export_default_expr(scope, &my expr, my expr_jsdoc_type, my span, my export_equals);
+            my export_misplaced = !scope_export_default_expr(scope, &my expr, my expr_jsdoc_type, my span, my export_equals,
+                my export_declared);
             break;
 
         case STATEMENT_IMPORT_EXPORT:
@@ -3064,12 +3065,12 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                 ty_check_assignable_expr(current_checker, type, declared, expr_outer_span(&my expr), &my expr, errs);
                 break;
             }
-            if (my export_equals && compiler_options()->erasable_syntax_only && !ctx.ambient) { // (tsc's checkExportAssignment)
+            if (my export_equals && compiler_options()->erasable_syntax_only && !ctx.ambient && !my export_declared) { // (tsc's checkExportAssignment)
                 error_ctx_error_d(errs, span_with_semicolon(my span), 1294, "This syntax is not allowed when 'erasableSyntaxOnly' is enabled.");
             }
             expr_typecheck_export_assignment(&my expr, errs);
             // (`undefined` is an identifier to tsc's isEntityNameExpression)
-            if (ctx.ambient && !expr_is_entity_name(&my expr) &&
+            if ((ctx.ambient || my export_declared) && !expr_is_entity_name(&my expr) &&
                 !(my expr.tag == EXPR_LITERAL && my expr.literal.tag == VALUE_UNDEFINED && span_equals(my expr.inner_span, "undefined"))
             ) {
                 error_ctx_grammar_error_d(errs, expr_outer_span(&my expr), 2714, "The expression of an export assignment must be "

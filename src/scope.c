@@ -2299,7 +2299,8 @@ static bool is_unparenthesized_entity_name(Expr const* me) {
 // alias, a member only if it means a value (getNamedMembers: symbolIsValue)
 static void declare_function_export(Scope* me, Expr* expr, bool export_equals);
 
-bool scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type, Span statement, bool export_equals) {
+bool scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type, Span statement, bool export_equals,
+    bool declared) {
     // tsc's checkExportAssignment -> checkGrammarModuleElementContext: only in a file or a namespace body (on the
     // first token; nothing is exported)
     bool top = my kind == SCOPE_MODULE || my kind == SCOPE_SCRIPT || my kind == SCOPE_GLOBAL_AUGMENTATION ||
@@ -2338,7 +2339,7 @@ bool scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
         module_kind != MODULE_KIND_PRESERVE
     ) {
         ModuleKind implied = source_file_implied_format_for_emit(my file);
-        if (my ambient ? implied == MODULE_KIND_ESNEXT : implied != MODULE_KIND_COMMONJS) {
+        if (my ambient || declared ? implied == MODULE_KIND_ESNEXT : implied != MODULE_KIND_COMMONJS) {
             error_ctx_grammar_error_d(binder_errs(my binder), statement, 1203,
                 "Export assignment cannot be used when targeting ECMAScript modules. Consider using 'export default' or "
                 "another module format instead.");

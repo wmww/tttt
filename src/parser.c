@@ -15892,6 +15892,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         unsigned code = 0;
         if (ret->tag == STATEMENT_EXPORT_DEFAULT_EXPR) {
             modified.kind = MODIFIED_EXPORT_ASSIGNMENT;
+            ret->export_declared = modifiers.includes[MODIFIER_DECLARE];
             code = 1120;
         } else {
             PortItem* main = &ret->import_export->main;
