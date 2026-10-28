@@ -8018,7 +8018,8 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
         }
     }
 
-    if (newline_after_args) {
+    // (A missing `=>` is tsc's zero-width missing token, whose text has no line break: no TS1200)
+    if (newline_after_args && function_impl_arrow_span(ret).size) {
         // This will generate an error in the typecheck phase, why it's not a parse error I have no idea.
         ret->newline_before_arrow = true;
     }

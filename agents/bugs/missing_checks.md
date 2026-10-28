@@ -292,7 +292,8 @@ tsc keeps one local symbol per block for a name's exported and local declaration
   type arguments need the same and then tsgo's recovery of the leftover (ttttJsxShiftTypeArguments). [fixed 817676058]
 - `(a.b: any)(...args)` (babel's transform-spread call-context/flow-type-cast, a Flow cast): tttt adds TS1200 "Line
   terminator not permitted before arrow" at the end of the file to tsgo's recovery through an arrow function missing
-  its `=>`. Known-failing test ttttFlowTypeCastRecovery. [open]
+  its `=>`: a missing `=>` is tsgo's zero-width missing token, whose text checkGrammarArrowFunction finds no line break
+  in (also mutation seed 20261101's declarationEmitOptionalMethod). ttttFlowTypeCastRecovery. [fixed bun8-9]
 - `interface I extends f<<T>(v: T) => void> {}`: errors match tsgo since 38655f2c9, the types baseline doesn't (tsgo
   parses the leftover `<<T>(v` as a shift with a missing left operand, tttt drops the `<<`). [open]
 - Older parser leftovers (2026-09-29; see documentation.md "Error recovery") are history now; `scripts/syntaxstats.py --list A` (B..E, M)

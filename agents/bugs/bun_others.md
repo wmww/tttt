@@ -512,7 +512,7 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   parse-broken type parameter list; ttttInstantiationExpressionInterface). [fixed a93c7044d]
 - Mutation testing seed 20261101 (2000 mutants, 3 errors-component differences; `--syntax` 14, 3 render) leaves:
   infiniteConstraints2 (missing TS2589), noInferCommonPropertyCheck1 (TS2345 text), arrayFrom again (above), and on
-  `--syntax` es6ModuleInternalNamedImports2 (+TS2303), declarationEmitOptionalMethod (+TS1200),
+  `--syntax` es6ModuleInternalNamedImports2 (+TS2303), declarationEmitOptionalMethod (+TS1200, fixed: missing_checks.md),
   conditionalPromptInference (-TS2300), destructuringObjectBindingPatternAndAssignment4 (TS1005 text x2), and
   contextualParamTypeVsNestedReturnTypeInference1: in a type literal broken by a missing `}>`, `g(Foo, h(function ()
   {` is tsc's method `g` whose list aborts at `(`, then a call signature `(function` whose list reports TS1390 and
