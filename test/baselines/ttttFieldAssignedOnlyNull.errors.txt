@@ -1,0 +1,41 @@
+ttttFieldAssignedOnlyNull.ts(6,34): error TS7008: Member 'value' implicitly has an 'any' type.
+ttttFieldAssignedOnlyNull.ts(7,25): error TS7008: Member 'value' implicitly has an 'any' type.
+ttttFieldAssignedOnlyNull.ts(8,27): error TS7008: Member 'value' implicitly has an 'any' type.
+ttttFieldAssignedOnlyNull.ts(9,12): error TS7008: Member 'x' implicitly has an 'any' type.
+ttttFieldAssignedOnlyNull.ts(10,12): error TS7008: Member 'x' implicitly has an 'any[]' type.
+ttttFieldAssignedOnlyNull.ts(15,31): error TS2322: Type 'null' is not assignable to type 'number'.
+ttttFieldAssignedOnlyNull.ts(16,12): error TS7008: Member 'x' implicitly has an 'any' type.
+
+
+==== ttttFieldAssignedOnlyNull.ts (7 errors) ====
+    // A field without a type or initializer that the constructor or static blocks only assign null or undefined infers no
+    // type from them (tsc's getFlowTypeInConstructor, getFlowTypeInStaticBlocks): TS7008; still the auto type at the end
+    // of the constructor is TS7008 too (found by mutation of controlFlowAutoAccessor1)
+    declare var n: number;
+    declare var a: any;
+    class Example4 { static accessor value; static { if (n < 0) { this.value = null; } } }
+                                     ~~~~~
+!!! error TS7008: Member 'value' implicitly has an 'any' type.
+    class Example5 { static value; static { if (n < 0) { this.value = null; } } }
+                            ~~~~~
+!!! error TS7008: Member 'value' implicitly has an 'any' type.
+    class Example6 { accessor value; constructor() { if (n < 0) { this.value = null; } } }
+                              ~~~~~
+!!! error TS7008: Member 'value' implicitly has an 'any' type.
+    class A1 { x; constructor() { this.x = undefined; } }
+               ~
+!!! error TS7008: Member 'x' implicitly has an 'any' type.
+    class A2 { x; constructor() { this.x = []; } }
+               ~
+!!! error TS7008: Member 'x' implicitly has an 'any[]' type.
+    class A3 { x; constructor() { this.x = []; this.x.push(1); } }
+    class A4 { x; constructor() { this.x = a; } }
+    class A5 { x; constructor() { throw 1; this.x = 1; } }
+    class A6 { x; constructor() { if (n) this.x = 1; else this.x = null; } }
+    class A7 { static x; static { this.x = null; } static { this.x = 1; } }
+                                  ~~~~~~
+!!! error TS2322: Type 'null' is not assignable to type 'number'.
+    class A8 { x; y; constructor() { this.y = this.x; this.x = null; } }
+               ~
+!!! error TS7008: Member 'x' implicitly has an 'any' type.
+    

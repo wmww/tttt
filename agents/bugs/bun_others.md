@@ -441,7 +441,10 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   declared after the import, TS2693 for a type; a first name that is only a type is TS2702, not TS2503
   (checkAndReportErrorForUsingTypeAsNamespace; its TS2713 alternative needs the declared type's properties, which the
   binder doesn't have: still TS2702 for `import x = I.p` of an interface I with a property p); TS1380 through a
-  type-only first name whether the rest resolves or not. [fixed HASH]
+  type-only first name whether the rest resolves or not. [fixed e5478c1f3]
+- 93-P04c `(<a><c<<T>()=>void> x="1"/></a>)`: tsc reports one TS1003 at the `<<` and nothing after it (its child
+  parse isn't understood: see 93-P04b's note above); tttt took `<<` for type arguments before 8981a243d (spurious
+  TS7026/TS2558), and recovers in the attribute list since (TS1003 x2, TS1382 x3 spurious). [open]
 
 ## Not looked at, by code
 - Each paragraph below is a code and direction with the cases it mismatches in, uninvestigated: at least one open

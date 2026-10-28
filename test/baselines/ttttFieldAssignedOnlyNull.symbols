@@ -1,0 +1,113 @@
+//// [test/cases/ttttFieldAssignedOnlyNull.ts] ////
+
+=== ttttFieldAssignedOnlyNull.ts ===
+// A field without a type or initializer that the constructor or static blocks only assign null or undefined infers no
+// type from them (tsc's getFlowTypeInConstructor, getFlowTypeInStaticBlocks): TS7008; still the auto type at the end
+// of the constructor is TS7008 too (found by mutation of controlFlowAutoAccessor1)
+declare var n: number;
+>n : Symbol(n, Decl(ttttFieldAssignedOnlyNull.ts, 3, 11))
+
+declare var a: any;
+>a : Symbol(a, Decl(ttttFieldAssignedOnlyNull.ts, 4, 11))
+
+class Example4 { static accessor value; static { if (n < 0) { this.value = null; } } }
+>Example4 : Symbol(Example4, Decl(ttttFieldAssignedOnlyNull.ts, 4, 19))
+>value : Symbol(Example4.value, Decl(ttttFieldAssignedOnlyNull.ts, 5, 16))
+>n : Symbol(n, Decl(ttttFieldAssignedOnlyNull.ts, 3, 11))
+>this.value : Symbol(Example4.value, Decl(ttttFieldAssignedOnlyNull.ts, 5, 16))
+>this : Symbol(Example4, Decl(ttttFieldAssignedOnlyNull.ts, 4, 19))
+>value : Symbol(Example4.value, Decl(ttttFieldAssignedOnlyNull.ts, 5, 16))
+
+class Example5 { static value; static { if (n < 0) { this.value = null; } } }
+>Example5 : Symbol(Example5, Decl(ttttFieldAssignedOnlyNull.ts, 5, 86))
+>value : Symbol(Example5.value, Decl(ttttFieldAssignedOnlyNull.ts, 6, 16))
+>n : Symbol(n, Decl(ttttFieldAssignedOnlyNull.ts, 3, 11))
+>this.value : Symbol(Example5.value, Decl(ttttFieldAssignedOnlyNull.ts, 6, 16))
+>this : Symbol(Example5, Decl(ttttFieldAssignedOnlyNull.ts, 5, 86))
+>value : Symbol(Example5.value, Decl(ttttFieldAssignedOnlyNull.ts, 6, 16))
+
+class Example6 { accessor value; constructor() { if (n < 0) { this.value = null; } } }
+>Example6 : Symbol(Example6, Decl(ttttFieldAssignedOnlyNull.ts, 6, 77))
+>value : Symbol(Example6.value, Decl(ttttFieldAssignedOnlyNull.ts, 7, 16))
+>n : Symbol(n, Decl(ttttFieldAssignedOnlyNull.ts, 3, 11))
+>this.value : Symbol(Example6.value, Decl(ttttFieldAssignedOnlyNull.ts, 7, 16))
+>this : Symbol(Example6, Decl(ttttFieldAssignedOnlyNull.ts, 6, 77))
+>value : Symbol(Example6.value, Decl(ttttFieldAssignedOnlyNull.ts, 7, 16))
+
+class A1 { x; constructor() { this.x = undefined; } }
+>A1 : Symbol(A1, Decl(ttttFieldAssignedOnlyNull.ts, 7, 86))
+>x : Symbol(A1.x, Decl(ttttFieldAssignedOnlyNull.ts, 8, 10))
+>this.x : Symbol(A1.x, Decl(ttttFieldAssignedOnlyNull.ts, 8, 10))
+>this : Symbol(A1, Decl(ttttFieldAssignedOnlyNull.ts, 7, 86))
+>x : Symbol(A1.x, Decl(ttttFieldAssignedOnlyNull.ts, 8, 10))
+>undefined : Symbol(undefined)
+
+class A2 { x; constructor() { this.x = []; } }
+>A2 : Symbol(A2, Decl(ttttFieldAssignedOnlyNull.ts, 8, 53))
+>x : Symbol(A2.x, Decl(ttttFieldAssignedOnlyNull.ts, 9, 10))
+>this.x : Symbol(A2.x, Decl(ttttFieldAssignedOnlyNull.ts, 9, 10))
+>this : Symbol(A2, Decl(ttttFieldAssignedOnlyNull.ts, 8, 53))
+>x : Symbol(A2.x, Decl(ttttFieldAssignedOnlyNull.ts, 9, 10))
+
+class A3 { x; constructor() { this.x = []; this.x.push(1); } }
+>A3 : Symbol(A3, Decl(ttttFieldAssignedOnlyNull.ts, 9, 46))
+>x : Symbol(A3.x, Decl(ttttFieldAssignedOnlyNull.ts, 10, 10))
+>this.x : Symbol(A3.x, Decl(ttttFieldAssignedOnlyNull.ts, 10, 10))
+>this : Symbol(A3, Decl(ttttFieldAssignedOnlyNull.ts, 9, 46))
+>x : Symbol(A3.x, Decl(ttttFieldAssignedOnlyNull.ts, 10, 10))
+>this.x.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>this.x : Symbol(A3.x, Decl(ttttFieldAssignedOnlyNull.ts, 10, 10))
+>this : Symbol(A3, Decl(ttttFieldAssignedOnlyNull.ts, 9, 46))
+>x : Symbol(A3.x, Decl(ttttFieldAssignedOnlyNull.ts, 10, 10))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+
+class A4 { x; constructor() { this.x = a; } }
+>A4 : Symbol(A4, Decl(ttttFieldAssignedOnlyNull.ts, 10, 62))
+>x : Symbol(A4.x, Decl(ttttFieldAssignedOnlyNull.ts, 11, 10))
+>this.x : Symbol(A4.x, Decl(ttttFieldAssignedOnlyNull.ts, 11, 10))
+>this : Symbol(A4, Decl(ttttFieldAssignedOnlyNull.ts, 10, 62))
+>x : Symbol(A4.x, Decl(ttttFieldAssignedOnlyNull.ts, 11, 10))
+>a : Symbol(a, Decl(ttttFieldAssignedOnlyNull.ts, 4, 11))
+
+class A5 { x; constructor() { throw 1; this.x = 1; } }
+>A5 : Symbol(A5, Decl(ttttFieldAssignedOnlyNull.ts, 11, 45))
+>x : Symbol(A5.x, Decl(ttttFieldAssignedOnlyNull.ts, 12, 10))
+>this.x : Symbol(A5.x, Decl(ttttFieldAssignedOnlyNull.ts, 12, 10))
+>this : Symbol(A5, Decl(ttttFieldAssignedOnlyNull.ts, 11, 45))
+>x : Symbol(A5.x, Decl(ttttFieldAssignedOnlyNull.ts, 12, 10))
+
+class A6 { x; constructor() { if (n) this.x = 1; else this.x = null; } }
+>A6 : Symbol(A6, Decl(ttttFieldAssignedOnlyNull.ts, 12, 54))
+>x : Symbol(A6.x, Decl(ttttFieldAssignedOnlyNull.ts, 13, 10))
+>n : Symbol(n, Decl(ttttFieldAssignedOnlyNull.ts, 3, 11))
+>this.x : Symbol(A6.x, Decl(ttttFieldAssignedOnlyNull.ts, 13, 10))
+>this : Symbol(A6, Decl(ttttFieldAssignedOnlyNull.ts, 12, 54))
+>x : Symbol(A6.x, Decl(ttttFieldAssignedOnlyNull.ts, 13, 10))
+>this.x : Symbol(A6.x, Decl(ttttFieldAssignedOnlyNull.ts, 13, 10))
+>this : Symbol(A6, Decl(ttttFieldAssignedOnlyNull.ts, 12, 54))
+>x : Symbol(A6.x, Decl(ttttFieldAssignedOnlyNull.ts, 13, 10))
+
+class A7 { static x; static { this.x = null; } static { this.x = 1; } }
+>A7 : Symbol(A7, Decl(ttttFieldAssignedOnlyNull.ts, 13, 72))
+>x : Symbol(A7.x, Decl(ttttFieldAssignedOnlyNull.ts, 14, 10))
+>this.x : Symbol(A7.x, Decl(ttttFieldAssignedOnlyNull.ts, 14, 10))
+>this : Symbol(A7, Decl(ttttFieldAssignedOnlyNull.ts, 13, 72))
+>x : Symbol(A7.x, Decl(ttttFieldAssignedOnlyNull.ts, 14, 10))
+>this.x : Symbol(A7.x, Decl(ttttFieldAssignedOnlyNull.ts, 14, 10))
+>this : Symbol(A7, Decl(ttttFieldAssignedOnlyNull.ts, 13, 72))
+>x : Symbol(A7.x, Decl(ttttFieldAssignedOnlyNull.ts, 14, 10))
+
+class A8 { x; y; constructor() { this.y = this.x; this.x = null; } }
+>A8 : Symbol(A8, Decl(ttttFieldAssignedOnlyNull.ts, 14, 71))
+>x : Symbol(A8.x, Decl(ttttFieldAssignedOnlyNull.ts, 15, 10))
+>y : Symbol(A8.y, Decl(ttttFieldAssignedOnlyNull.ts, 15, 13))
+>this.y : Symbol(A8.y, Decl(ttttFieldAssignedOnlyNull.ts, 15, 13))
+>this : Symbol(A8, Decl(ttttFieldAssignedOnlyNull.ts, 14, 71))
+>y : Symbol(A8.y, Decl(ttttFieldAssignedOnlyNull.ts, 15, 13))
+>this.x : Symbol(A8.x, Decl(ttttFieldAssignedOnlyNull.ts, 15, 10))
+>this : Symbol(A8, Decl(ttttFieldAssignedOnlyNull.ts, 14, 71))
+>x : Symbol(A8.x, Decl(ttttFieldAssignedOnlyNull.ts, 15, 10))
+>this.x : Symbol(A8.x, Decl(ttttFieldAssignedOnlyNull.ts, 15, 10))
+>this : Symbol(A8, Decl(ttttFieldAssignedOnlyNull.ts, 14, 71))
+>x : Symbol(A8.x, Decl(ttttFieldAssignedOnlyNull.ts, 15, 10))
+

@@ -101,10 +101,18 @@ ClassItem* class_decl_find_member(ClassDecl const* me, csview name, bool is_stat
 }
 
 // What `this.x` is at the end of a flow container: null if nothing but null/undefined was assigned (tsc's
-// getFlowTypeInConstructor)
-static Ty const* field_flow_type(Checker* checker, Expr const* reference, FlowNode const* end) {
+// getFlowTypeInConstructor). `implicit`: set to 1 when it is still the auto type there (any: TS7008), 2 when the auto
+// array type (any[])
+static Ty const* field_flow_type(Checker* checker, Expr const* reference, FlowNode const* end, int* implicit) {
     Ty const* ret = ty_flow_type(checker, reference, ty_intrinsic(checker, TY_AUTO), ty_intrinsic(checker, TY_UNDEFINED), end);
-    if (ret == ty_intrinsic(checker, TY_AUTO)) return ty_intrinsic(checker, TY_ANY);
+    if (ret == ty_intrinsic(checker, TY_AUTO)) {
+        if (implicit) *implicit = 1;
+        return ty_intrinsic(checker, TY_ANY);
+    }
+    if (ret == ty_auto_array(checker)) {
+        if (implicit) *implicit = 2;
+        return ty_array(checker, ty_intrinsic(checker, TY_ANY), false);
+    }
     if (ret->kind != TY_UNION) return ret->flags & TYF_NULLABLE ? nullptr : ret;
     for (u32 i = 0; i < ret->composite.types.len; i++) {
         if (!(ret->composite.types.data[i]->flags & TYF_NULLABLE)) return ret;
@@ -113,19 +121,22 @@ static Ty const* field_flow_type(Checker* checker, Expr const* reference, FlowNo
 }
 
 // A TypeScript field without a type or initializer under noImplicitAny: the type `this.x` has at the end of the
-// constructor, or of the first static block that assigns more than null/undefined. Null: none (any)
-static Ty const* field_type_from_assignments(Checker* checker, ClassItem const* me) {
+// constructor, or of the first static block that assigns more than null/undefined. Null: none (any). `implicit`: see
+// field_flow_type(), the first block's that says so
+static Ty const* field_type_from_assignments(Checker* checker, ClassItem const* me, int* implicit) {
     // (In JavaScript always: tsc's getWidenedTypeForVariableLikeDeclaration)
     Expr const* assigned = class_untyped_field_ts_assigned(me);
     if (!assigned || !(compiler_options()->no_implicit_any || (span_source(my field.name_span) && span_source(my field.name_span)->is_js))) return nullptr;
     for_each (i, vec_class_item, &class_untyped_field_ts_assigned_class(me)->items) {
         if (my field.is_static && i->tag == CLASS_ITEM_STATIC_BLOCK && i->static_block_return_flow) {
-            Ty const* ret = field_flow_type(checker, assigned, i->static_block_return_flow);
+            int block_implicit = 0;
+            Ty const* ret = field_flow_type(checker, assigned, i->static_block_return_flow, &block_implicit);
+            if (implicit && !*implicit) *implicit = block_implicit;
             if (ret) return ret;
         }
         if (!my field.is_static && i->tag == CLASS_ITEM_CONSTRUCTOR && i->constructor.func.has_body) {
             FlowNode const* end = function_impl_return_flow(&i->constructor.func);
-            return end ? field_flow_type(checker, assigned, end) : nullptr;
+            return end ? field_flow_type(checker, assigned, end, implicit) : nullptr;
         }
     }
     return nullptr;
@@ -137,7 +148,7 @@ Ty const* class_item_field_evaluate_type(ClassItem* me) {
     if (my field.has_explicit_type) return ty_of_node(&my field.explicit_type);
     if (my field.js_assigned) return ty_type_of_symbol(checker, my field.js_assigned);
     if (my field.value.tag == EXPR_IMPLICIT_ANY) {
-        Ty const* assigned = field_type_from_assignments(checker, me);
+        Ty const* assigned = field_type_from_assignments(checker, me, nullptr);
         if (assigned) return assigned;
     }
     // A call of a single non-generic signature has its type without the call being resolved (tsc's
@@ -2069,8 +2080,18 @@ static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const*
         cstr_drop(&type);
         return;
     }
-    // (Without an initializer, what the constructor assigns is its type: see field_type_from_assignments())
-    if (class_untyped_field_ts_assigned(item)) return;
+    // (Without an initializer, what the constructor assigns is its type: see field_type_from_assignments(). Unless
+    // only null or undefined is assigned, which infers nothing; the auto type left at the end is TS7008 too, tsc's
+    // getFlowTypeInConstructor and getFlowTypeInStaticBlocks)
+    if (class_untyped_field_ts_assigned(item)) {
+        int implicit = 0;
+        Ty const* assigned = field_type_from_assignments(current_checker, item, &implicit);
+        if (implicit) {
+            error_ctx_error_d(errs, name, 7008, "Member '", shown, "' implicitly has an '", implicit == 2 ? "any[]" : "any", "' type.");
+        }
+        if (assigned) return;
+        if (implicit) return;
+    }
     // (`static prototype;` merges into the class's prototype property, whose type is the instance type: tsc's
     // getTypeOfPrototypeProperty. TS2699 says the rest)
     if (item->field.is_static && !item->field.computed_key && cstr_equals(&item->field.name_string, "prototype")) return;

@@ -1,0 +1,141 @@
+//// [test/cases/ttttFieldAssignedOnlyNull.ts] ////
+
+=== ttttFieldAssignedOnlyNull.ts ===
+// A field without a type or initializer that the constructor or static blocks only assign null or undefined infers no
+// type from them (tsc's getFlowTypeInConstructor, getFlowTypeInStaticBlocks): TS7008; still the auto type at the end
+// of the constructor is TS7008 too (found by mutation of controlFlowAutoAccessor1)
+declare var n: number;
+>n : number
+
+declare var a: any;
+>a : any
+
+class Example4 { static accessor value; static { if (n < 0) { this.value = null; } } }
+>Example4 : Example4
+>value : any
+>n < 0 : boolean
+>n : number
+>0 : 0
+>this.value = null : null
+>this.value : any
+>this : typeof Example4
+>value : any
+
+class Example5 { static value; static { if (n < 0) { this.value = null; } } }
+>Example5 : Example5
+>value : any
+>n < 0 : boolean
+>n : number
+>0 : 0
+>this.value = null : null
+>this.value : any
+>this : typeof Example5
+>value : any
+
+class Example6 { accessor value; constructor() { if (n < 0) { this.value = null; } } }
+>Example6 : Example6
+>value : any
+>n < 0 : boolean
+>n : number
+>0 : 0
+>this.value = null : null
+>this.value : any
+>this : this
+>value : any
+
+class A1 { x; constructor() { this.x = undefined; } }
+>A1 : A1
+>x : any
+>this.x = undefined : undefined
+>this.x : any
+>this : this
+>x : any
+>undefined : undefined
+
+class A2 { x; constructor() { this.x = []; } }
+>A2 : A2
+>x : any[]
+>this.x = [] : never[]
+>this.x : any[]
+>this : this
+>x : any[]
+>[] : never[]
+
+class A3 { x; constructor() { this.x = []; this.x.push(1); } }
+>A3 : A3
+>x : number[]
+>this.x = [] : never[]
+>this.x : number[]
+>this : this
+>x : number[]
+>[] : never[]
+>this.x.push(1) : number
+>this.x.push : (...items: number[]) => number
+>this.x : number[]
+>this : this
+>x : number[]
+>push : (...items: number[]) => number
+>1 : 1
+
+class A4 { x; constructor() { this.x = a; } }
+>A4 : A4
+>x : any
+>this.x = a : any
+>this.x : any
+>this : this
+>x : any
+>a : any
+
+class A5 { x; constructor() { throw 1; this.x = 1; } }
+>A5 : A5
+>x : any
+>1 : 1
+>this.x = 1 : 1
+>this.x : any
+>this : this
+>x : any
+>1 : 1
+
+class A6 { x; constructor() { if (n) this.x = 1; else this.x = null; } }
+>A6 : A6
+>x : number | null
+>n : number
+>this.x = 1 : 1
+>this.x : number | null
+>this : this
+>x : number | null
+>1 : 1
+>this.x = null : null
+>this.x : number | null
+>this : this
+>x : number | null
+
+class A7 { static x; static { this.x = null; } static { this.x = 1; } }
+>A7 : A7
+>x : number
+>this.x = null : null
+>this.x : number
+>this : typeof A7
+>x : number
+>this.x = 1 : 1
+>this.x : number
+>this : typeof A7
+>x : number
+>1 : 1
+
+class A8 { x; y; constructor() { this.y = this.x; this.x = null; } }
+>A8 : A8
+>x : any
+>y : any
+>this.y = this.x : any
+>this.y : any
+>this : this
+>y : any
+>this.x : any
+>this : this
+>x : any
+>this.x = null : null
+>this.x : any
+>this : this
+>x : any
+
