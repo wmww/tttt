@@ -1,0 +1,47 @@
+ttttDeleteIntersectionPropertyOptional.ts(7,8): error TS2790: The operand of a 'delete' operator must be optional.
+ttttDeleteIntersectionPropertyOptional.ts(9,8): error TS2790: The operand of a 'delete' operator must be optional.
+ttttDeleteIntersectionPropertyOptional.ts(13,8): error TS2790: The operand of a 'delete' operator must be optional.
+ttttDeleteIntersectionPropertyOptional.ts(15,8): error TS2790: The operand of a 'delete' operator must be optional.
+ttttDeleteIntersectionPropertyOptional.ts(19,8): error TS2790: The operand of a 'delete' operator must be optional.
+ttttDeleteIntersectionPropertyOptional.ts(21,8): error TS2790: The operand of a 'delete' operator must be optional.
+
+
+==== ttttDeleteIntersectionPropertyOptional.ts (6 errors) ====
+    // TS2790 for a property of an intersection: optional only when all its members' are, its type the intersection of
+    // theirs (tsc's createUnionOrIntersectionProperty, checkDeleteExpressionMustBeOptional)
+    type Writable<T> = { -readonly [K in keyof T]: T[K] }
+    declare class D { get id(): string | number; other: 1 }
+    type W = Partial<Writable<D>>
+    declare const wd: W & D
+    delete wd.id
+           ~~~~~
+!!! error TS2790: The operand of a 'delete' operator must be optional.
+    declare const dw: D & W
+    delete dw.id
+           ~~~~~
+!!! error TS2790: The operand of a 'delete' operator must be optional.
+    interface E { readonly id?: string | number; other: 1 }
+    type V = Omit<Writable<E>, 'other'>
+    declare const wdp: V & E & { id: string | number }
+    delete wdp.id
+           ~~~~~~
+!!! error TS2790: The operand of a 'delete' operator must be optional.
+    declare const x: { a?: 1 } & { a: 1 }
+    delete x.a
+           ~~~
+!!! error TS2790: The operand of a 'delete' operator must be optional.
+    declare const y: { a?: 1 } & { readonly a?: 1 }
+    delete y.a
+    declare const z: { a: unknown } & { a: 1 }
+    delete z.a
+           ~~~
+!!! error TS2790: The operand of a 'delete' operator must be optional.
+    declare const w: { a: never } | { a: 1 }
+    delete w.a
+           ~~~
+!!! error TS2790: The operand of a 'delete' operator must be optional.
+    declare const v: { a: any } & { a: 1 }
+    delete v.a
+    declare const u: { a: unknown } | { a: 1 }
+    delete u.a
+    

@@ -3005,6 +3005,65 @@ static bool readonly_assignment(Checker* me, PropertyExpr const* access, Ty cons
     return true;
 }
 
+// What tsc's checkDeleteExpressionMustBeOptional reads off the property it makes of a union's or intersection's members
+// (createUnionOrIntersectionProperty): optional when one of a union's is, all of an intersection's; its type the
+// union or intersection of theirs (an optional one's with undefined), which can be undefined (`undefined`), or is any,
+// unknown or never (no error)
+typedef struct DeleteOperandFacts {
+    bool found, optional, undefined, any, unknown, never;
+} DeleteOperandFacts;
+
+static DeleteOperandFacts delete_operand_facts(Checker* me, Ty const* object, Atom const* name, u32 depth) {
+    DeleteOperandFacts none = {0};
+    if (depth > 8) return none;
+    bool exact = compiler_options()->exact_optional_property_types;
+    object = ty_reduced(me, object);
+    if (object->kind != TY_UNION && object->kind != TY_INTERSECTION) object = ty_apparent_type(me, object);
+    if ((object->kind == TY_UNION && !(object->flags & TYF_BOOLEAN)) || object->kind == TY_INTERSECTION) {
+        bool is_union = object->kind == TY_UNION;
+        DeleteOperandFacts ret = { .optional = !is_union, .undefined = !is_union, .unknown = !is_union, .never = is_union };
+        for (u32 i = 0; i < object->composite.types.len; i++) {
+            Ty const* member = object->composite.types.data[i];
+            if (member->flags & TYF_NULLABLE) continue;
+            DeleteOperandFacts facts = delete_operand_facts(me, member, name, depth + 1);
+            if (!facts.found && is_union) {
+                // (A union member without it: through an index signature, see member_refs())
+                Ty const* apparent = ty_apparent_type(me, member);
+                IndexInfo const* info = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ?
+                    ty_applicable_index_info(me, apparent, ty_intrinsic(me, TY_STRING)) : nullptr;
+                if (!info) return none;
+                facts = (DeleteOperandFacts){ .found = true, .any = (info->value->flags & TYF_ANY) != 0,
+                    .unknown = (info->value->flags & TYF_UNKNOWN) != 0, .never = (info->value->flags & TYF_NEVER) != 0,
+                    .undefined = !exact && ty_can_be_undefined(me, info->value) };
+            }
+            if (!facts.found) continue;
+            ret.found = true;
+            // (any absorbs both; unknown absorbs a union and drops out of an intersection, never the reverse)
+            ret.any |= facts.any;
+            if (is_union) {
+                ret.optional |= facts.optional;
+                ret.undefined |= facts.undefined;
+                ret.unknown |= facts.unknown;
+                ret.never &= facts.never;
+            } else {
+                ret.optional &= facts.optional;
+                ret.undefined &= facts.undefined;
+                ret.unknown &= facts.unknown;
+                ret.never |= facts.never;
+            }
+        }
+        return ret.found ? ret : none;
+    }
+    if (!(object->flags & TYF_OBJECT)) return none;
+    Prop const* prop = ty_get_object_prop(me, object, name);
+    if (!prop) return none;
+    Ty const* type = prop_type(me, prop);
+    bool optional = (prop->flags & PROP_OPTIONAL) && (exact || !(prop->flags & PROP_STRIP_UNDEFINED));
+    return (DeleteOperandFacts){ .found = true, .optional = optional, .any = (type->flags & TYF_ANY) != 0,
+        .unknown = (type->flags & TYF_UNKNOWN) != 0, .never = (type->flags & TYF_NEVER) != 0,
+        .undefined = !exact && (optional || ty_can_be_undefined(me, type)) };
+}
+
 void ty_check_delete_operand(Checker* me, Expr const* operand, ErrorCtx* errs) {
     if (operand->tag != EXPR_PROPERTY) {
         error_ctx_error_d(errs, expr_error_span_skip_parens(operand), 2703, "The operand of a 'delete' operator must be a property reference.");
@@ -3039,15 +3098,8 @@ void ty_check_delete_operand(Checker* me, Expr const* operand, ErrorCtx* errs) {
     if (!compiler_options()->strict_null_checks) return;
     // The property tsc makes of them: optional if any is, of the union of their types (and of the index signatures'
     // of a union's members without it)
-    bool exact = compiler_options()->exact_optional_property_types;
-    if (refs.index_mask & INDEX_REF_ANY_UNKNOWN || (!exact && refs.index_mask & INDEX_REF_UNDEFINED)) return;
-    for (u32 i = 0; i < refs.len; i++) {
-        Prop const* prop = refs.props[i];
-        if (exact ? (prop->flags & PROP_OPTIONAL) : (prop->flags & PROP_OPTIONAL) && !(prop->flags & PROP_STRIP_UNDEFINED)) return;
-        Ty const* type = prop_type(me, prop);
-        if (type->flags & (TYF_ANY | TYF_UNKNOWN | TYF_NEVER)) return;
-        if (!exact && ty_can_be_undefined(me, type)) return;
-    }
+    DeleteOperandFacts facts = delete_operand_facts(me, object, name, 0);
+    if (!facts.found || facts.any || facts.unknown || facts.never || facts.optional || facts.undefined) return;
     error_ctx_error_d(errs, operand->inner_span, 2790, "The operand of a 'delete' operator must be optional.");
 }
 
