@@ -654,3 +654,13 @@ missing_checks.md, together with variances for a declared type against its insta
   (+TS2339, +TS7006). initializer_ignores_context() skipped the pattern's implied type for a call without type
   parameters, but an IIFE's return expressions take the call's contextual type (tsc's getContextualReturnType).
   ty_call_may_ask_context() says yes for an IIFE. Repro ttttIifeDestructuredTuple. [fixed 62eb5e438]
+
+## monkeytype/frontend's instantiation count (cor5, 2026-10-30)
+- `src/ts/components/pages/settings/SearchableAutoSetting.tsx:56/59` (spurious TS2578 and TS2322 on main since at
+  least 2026-10-29, triage.md's entry): tsgo reaches its instantiationCount limit (5M per statement, the stack only
+  two instantiateType frames deep: not the depth limit) relating `<form.Field name={props.key} />`'s attributes to
+  TanStack form's FieldComponentBoundProps (DeepKeys / DeepKeysAndValuesImpl over `{ [x: number]: Config[T] }`) and
+  reports TS2589 at the attribute, which the source's `@ts-expect-error` covers; tttt instantiates fewer types there,
+  never hits the limit, and reports the TS2322 the relation then finds at `validators`. Matching needs tsgo's
+  instantiation count (what it caches and what it re-instantiates), the depth/instantiation-limit design family.
+  Known-failing test ttttMonkeytypeInstantiationCount (reduce.py, 19 files). [design]

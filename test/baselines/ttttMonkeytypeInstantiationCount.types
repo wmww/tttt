@@ -1,0 +1,405 @@
+//// [test/cases/ttttMonkeytypeInstantiationCount.tsx] ////
+
+=== frontend/node_modules/@monkeytype/schemas/src/configs.ts ===
+import { z, ZodSchema } from "zod";
+>z : typeof z
+>ZodSchema : any
+
+export const ConfigSchema = z
+>ConfigSchema : z.ZodObject<{ ads: any; }, "strip", ZodTypeAny, { ads?: unknown; }, { [x: string]: baseObjectInputType<T>; }>
+>z  .object({    ads: AdsSchema,  } satisfies Record<string, ZodSchema>) : z.ZodObject<{ ads: any; }, "strip", ZodTypeAny, { ads?: unknown; }, { [x: string]: baseObjectInputType<T>; }>
+>z  .object : <T extends ZodRawShape>(shape: T, params?: RawCreateParams) => z.ZodObject<T, "strip", ZodTypeAny, { [k in keyof import("../../../zod/lib/helpers/util").objectUtil.addQuestionMarks<z.baseObjectOutputType<T>, any>]: import("../../../zod/lib/helpers/util").objectUtil.addQuestionMarks<z.baseObjectOutputType<T>, any>[k]; }, { [k_1 in keyof baseObjectInputType<T>]: baseObjectInputType<T>[k_1]; }>
+>z : typeof z
+
+  .object({
+>object : <T extends ZodRawShape>(shape: T, params?: RawCreateParams) => z.ZodObject<T, "strip", ZodTypeAny, { [k in keyof import("../../../zod/lib/helpers/util").objectUtil.addQuestionMarks<z.baseObjectOutputType<T>, any>]: import("../../../zod/lib/helpers/util").objectUtil.addQuestionMarks<z.baseObjectOutputType<T>, any>[k]; }, { [k_1 in keyof baseObjectInputType<T>]: baseObjectInputType<T>[k_1]; }>
+>{    ads: AdsSchema,  } satisfies Record<string, ZodSchema> : { ads: any; }
+>{    ads: AdsSchema,  } : { ads: any; }
+
+    ads: AdsSchema,
+>ads : any
+>AdsSchema : any
+
+  } satisfies Record<string, ZodSchema>)
+export type Config = z.infer<typeof ConfigSchema>;
+>Config : { ads?: unknown; }
+>z : any
+>ConfigSchema : z.ZodObject<{ ads: any; }, "strip", ZodTypeAny, { ads?: unknown; }, { [x: string]: baseObjectInputType<T>; }>
+
+=== frontend/node_modules/@tanstack/solid-form/dist/esm/createField.d.ts ===
+import { FieldApi, DeepKeys, DeepValue, FieldAsyncValidateOrFn, FieldValidateOrFn, FieldValidators, FormAsyncValidateOrFn, FormValidateOrFn } from '@tanstack/form-core';
+>FieldApi : any
+>DeepKeys : any
+>DeepValue : any
+>FieldAsyncValidateOrFn : any
+>FieldValidateOrFn : any
+>FieldValidators : any
+>FormAsyncValidateOrFn : any
+>FormValidateOrFn : any
+
+/**
+ */
+export type FieldComponent<in out TParentData, in out TFormOnMount extends undefined | FormValidateOrFn<TParentData>, in out TFormOnChange extends undefined | FormValidateOrFn<TParentData>, in out TFormOnChangeAsync extends undefined | FormAsyncValidateOrFn<TParentData>, in out TFormOnBlur extends undefined | FormValidateOrFn<TParentData>, in out TFormOnBlurAsync extends undefined | FormAsyncValidateOrFn<TParentData>, in out TFormOnSubmit extends undefined | FormValidateOrFn<TParentData>, in out TFormOnSubmitAsync extends undefined | FormAsyncValidateOrFn<TParentData>, in out TFormOnDynamic extends undefined | FormValidateOrFn<TParentData>, in out TFormOnDynamicAsync extends undefined | FormAsyncValidateOrFn<TParentData>, in out TFormOnServer extends undefined | FormAsyncValidateOrFn<TParentData>, in out TPatentSubmitMeta, in out ExtendedApi = {}> = <const TName extends DeepKeys<TParentData>, TData extends DeepValue<TParentData, TName>, TOnMount extends undefined | FieldValidateOrFn<TParentData, TName, TData>, TOnChange extends undefined | FieldValidateOrFn<TParentData, TName, TData>, TOnChangeAsync extends undefined | FieldAsyncValidateOrFn<TParentData, TName, TData>, TOnBlur extends undefined | FieldValidateOrFn<TParentData, TName, TData>, TOnBlurAsync extends undefined | FieldAsyncValidateOrFn<TParentData, TName, TData>, TOnSubmit extends undefined | FieldValidateOrFn<TParentData, TName, TData>, TOnSubmitAsync extends undefined | FieldAsyncValidateOrFn<TParentData, TName, TData>, TOnDynamic extends undefined | FieldValidateOrFn<TParentData, TName, TData>, TOnDynamicAsync extends undefined | FieldAsyncValidateOrFn<TParentData, TName, TData>>({ children, ...fieldOptions }: FieldComponentBoundProps<TParentData, TName, TData, TOnMount, TOnChange, TOnChangeAsync, TOnBlur, TOnBlurAsync, TOnSubmit, TOnSubmitAsync, TOnDynamic, TOnDynamicAsync, TFormOnMount, TFormOnChange, TFormOnChangeAsync, TFormOnBlur, TFormOnBlurAsync, TFormOnSubmit, TFormOnSubmitAsync, TFormOnDynamic, TFormOnDynamicAsync, TFormOnServer, TPatentSubmitMeta, ExtendedApi>) => JSX.Element;
+>FieldComponent : FieldComponent<TParentData, TFormOnMount, TFormOnChange, TFormOnChangeAsync, TFormOnBlur, TFormOnBlurAsync, TFormOnSubmit, TFormOnSubmitAsync, TFormOnDynamic, TFormOnDynamicAsync, TFormOnServer, TPatentSubmitMeta, ExtendedApi>
+>children : FieldComponentBoundProps<TParentData, TName, TData, TOnMount, TOnChange, TOnChangeAsync, TOnBlur, TOnBlurAsync, TOnSubmit, TOnSubmitAsync, TOnDynamic, TOnDynamicAsync, TFormOnMount, TFormOnChange, TFormOnChangeAsync, TFormOnBlur, TFormOnBlurAsync, TFormOnSubmit, TFormOnSubmitAsync, TFormOnDynamic, TFormOnDynamicAsync, TFormOnServer, TPatentSubmitMeta, ExtendedApi>
+>fieldOptions : FieldComponentBoundProps<TParentData, TName, TData, TOnMount, TOnChange, TOnChangeAsync, TOnBlur, TOnBlurAsync, TOnSubmit, TOnSubmitAsync, TOnDynamic, TOnDynamicAsync, TFormOnMount, TFormOnChange, TFormOnChangeAsync, TFormOnBlur, TFormOnBlurAsync, TFormOnSubmit, TFormOnSubmitAsync, TFormOnDynamic, TFormOnDynamicAsync, TFormOnServer, TPatentSubmitMeta, ExtendedApi>
+>JSX : any
+
+/**
+ */
+=== frontend/node_modules/@tanstack/solid-form/dist/esm/createForm.d.ts ===
+import { FormApi, FormAsyncValidateOrFn, FormOptions, FormState, FormValidateOrFn } from '@tanstack/form-core';
+>FormApi : typeof FormApi
+>FormAsyncValidateOrFn : any
+>FormOptions : any
+>FormState : any
+>FormValidateOrFn : any
+
+import { FieldComponent } from './createField.js';
+>FieldComponent : any
+
+export interface SolidFormApi<TParentData, TFormOnMount extends undefined | FormValidateOrFn<TParentData>, TFormOnChange extends undefined | FormValidateOrFn<TParentData>, TFormOnChangeAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnBlur extends undefined | FormValidateOrFn<TParentData>, TFormOnBlurAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnSubmit extends undefined | FormValidateOrFn<TParentData>, TFormOnSubmitAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnDynamic extends undefined | FormValidateOrFn<TParentData>, TFormOnDynamicAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnServer extends undefined | FormAsyncValidateOrFn<TParentData>, TSubmitMeta> {
+    Field: FieldComponent<TParentData, TFormOnMount, TFormOnChange, TFormOnChangeAsync, TFormOnBlur, TFormOnBlurAsync, TFormOnSubmit, TFormOnSubmitAsync, TFormOnDynamic, TFormOnDynamicAsync, TFormOnServer, TSubmitMeta>;
+>Field : FieldComponent<TParentData, TFormOnMount, TFormOnChange, TFormOnChangeAsync, TFormOnBlur, TFormOnBlurAsync, TFormOnSubmit, TFormOnSubmitAsync, TFormOnDynamic, TFormOnDynamicAsync, TFormOnServer, TSubmitMeta>
+}
+export declare function createForm<TParentData, TFormOnMount extends undefined | FormValidateOrFn<TParentData>, TFormOnChange extends undefined | FormValidateOrFn<TParentData>, TFormOnChangeAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnBlur extends undefined | FormValidateOrFn<TParentData>, TFormOnBlurAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnSubmit extends undefined | FormValidateOrFn<TParentData>, TFormOnSubmitAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnDynamic extends undefined | FormValidateOrFn<TParentData>, TFormOnDynamicAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnServer extends undefined | FormAsyncValidateOrFn<TParentData>, TSubmitMeta>(opts?: () => FormOptions<TParentData, TFormOnMount, TFormOnChange, TFormOnChangeAsync, TFormOnBlur, TFormOnBlurAsync, TFormOnSubmit, TFormOnSubmitAsync, TFormOnDynamic, TFormOnDynamicAsync, TFormOnServer, TSubmitMeta>): FormApi<TParentData, TFormOnMount, TFormOnChange, TFormOnChangeAsync, TFormOnBlur, TFormOnBlurAsync, TFormOnSubmit, TFormOnSubmitAsync, TFormOnDynamic, TFormOnDynamicAsync, TFormOnServer, TSubmitMeta> & SolidFormApi<TParentData, TFormOnMount, TFormOnChange, TFormOnChangeAsync, TFormOnBlur, TFormOnBlurAsync, TFormOnSubmit, TFormOnSubmitAsync, TFormOnDynamic, TFormOnDynamicAsync, TFormOnServer, TSubmitMeta>;
+>createForm : <TParentData, TFormOnMount extends undefined | FormValidateOrFn<TParentData>, TFormOnChange extends undefined | FormValidateOrFn<TParentData>, TFormOnChangeAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnBlur extends undefined | FormValidateOrFn<TParentData>, TFormOnBlurAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnSubmit extends undefined | FormValidateOrFn<TParentData>, TFormOnSubmitAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnDynamic extends undefined | FormValidateOrFn<TParentData>, TFormOnDynamicAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnServer extends undefined | FormAsyncValidateOrFn<TParentData>, TSubmitMeta>(opts?: () => FormOptions<TParentData, TFormOnMount, TFormOnChange, TFormOnChangeAsync, TFormOnBlur, TFormOnBlurAsync, TFormOnSubmit, TFormOnSubmitAsync, TFormOnDynamic, TFormOnDynamicAsync, TFormOnServer, TSubmitMeta>) => FormApi<TParentData, TFormOnMount, TFormOnChange, TFormOnChangeAsync, TFormOnBlur, TFormOnBlurAsync, TFormOnSubmit, TFormOnSubmitAsync, TFormOnDynamic, TFormOnDynamicAsync, TFormOnServer, TSubmitMeta> & SolidFormApi<TParentData, TFormOnMount, TFormOnChange, TFormOnChangeAsync, TFormOnBlur, TFormOnBlurAsync, TFormOnSubmit, TFormOnSubmitAsync, TFormOnDynamic, TFormOnDynamicAsync, TFormOnServer, TSubmitMeta>
+>opts : (() => FormOptions<TParentData, TFormOnMount, TFormOnChange, TFormOnChangeAsync, TFormOnBlur, TFormOnBlurAsync, TFormOnSubmit, TFormOnSubmitAsync, TFormOnDynamic, TFormOnDynamicAsync, TFormOnServer, TSubmitMeta>) | undefined
+
+=== frontend/node_modules/@tanstack/solid-form/dist/esm/index.d.ts ===
+
+export * from './createForm.js';
+=== frontend/node_modules/@types/node/index.d.ts ===
+
+export {};
+=== frontend/node_modules/solid-js/store/types/index.d.ts ===
+export { $RAW, createStore, unwrap } from "./store.js";
+>$RAW : any
+>createStore : <T extends object = {}>(...[store, options]: {} extends T ? [store?: T | import("./store.js").Store<T>, options?: {}] : [store: T | import("./store.js").Store<T>, options?: {}]) => import("./store.js").StoreReturn<T>
+>unwrap : any
+
+=== frontend/node_modules/solid-js/store/types/store.d.ts ===
+export type Store<T> = T;
+>Store : T
+
+export type StoreReturn<T> = [get: Store<T>, set: SetStoreFunction<T>];
+>StoreReturn : StoreReturn<T>
+
+/**
+ */
+export declare function createStore<T extends object = {}>(...[store, options]: {} extends T ? [store?: T | Store<T>, options?: {
+>createStore : <T extends object = {}>(...[store, options]: {} extends T ? [store?: T | Store<T>, options?: {}] : [store: T | Store<T>, options?: {}]) => StoreReturn<T>
+>store : T | undefined
+>options : {} | {} | undefined
+
+}] : [store: T | Store<T>, options?: {
+}]): StoreReturn<T>;
+=== frontend/node_modules/vite/client.d.ts ===
+
+export {};
+=== frontend/node_modules/zod/index.d.ts ===
+
+export * from "./lib";
+=== frontend/node_modules/zod/lib/external.d.ts ===
+
+export * from "./types";
+=== frontend/node_modules/zod/lib/helpers/util.d.ts ===
+export declare namespace objectUtil {
+    export type addQuestionMarks<T extends object, _O = any> = {
+>addQuestionMarks : addQuestionMarks<T, _O>
+
+        [k in keyof T]?: unknown;
+    };
+}
+=== frontend/node_modules/zod/lib/index.d.ts ===
+import * as z from "./external";
+>z : typeof z
+
+export { z };
+>z : typeof z
+
+=== frontend/node_modules/zod/lib/types.d.ts ===
+import { objectUtil, util } from "./helpers/util";
+>objectUtil : any
+>util : any
+
+export declare type TypeOf<T extends ZodType<any, any, any>> = T["_output"];
+>TypeOf : TypeOf<T>
+
+export type { TypeOf as infer };
+>TypeOf : any
+>infer : TypeOf<T>
+
+export declare abstract class ZodType<Output = any, Def extends ZodTypeDef = ZodTypeDef, Input = Output> {
+>ZodType : ZodType<Output, Def, Input>
+
+    readonly _output: Output;
+>_output : Output
+}
+export declare type objectOutputType<Shape extends ZodRawShape, Catchall extends ZodTypeAny, UnknownKeys extends UnknownKeysParam = UnknownKeysParam> = objectUtil.flatten<objectUtil.addQuestionMarks<baseObjectOutputType<Shape>>> & CatchallOutput<Catchall> & PassthroughType<UnknownKeys>;
+>objectOutputType : any
+>objectUtil : any
+>objectUtil : any
+
+export declare type baseObjectOutputType<Shape extends ZodRawShape> = {
+>baseObjectOutputType : baseObjectOutputType<Shape>
+
+    [k in keyof Shape]: Shape[k]["_output"];
+};
+export declare type CatchallOutput<T extends ZodType> = ZodType extends T ? unknown : {
+>CatchallOutput : CatchallOutput<T>
+
+};
+export declare type PassthroughType<T extends UnknownKeysParam> = T extends "passthrough" ? {
+>PassthroughType : PassthroughType<T>
+
+} : unknown;
+export declare class ZodObject<T extends ZodRawShape, UnknownKeys extends UnknownKeysParam = UnknownKeysParam, Catchall extends ZodTypeAny = ZodTypeAny, Output = objectOutputType<T, Catchall, UnknownKeys>, Input = objectInputType<T, Catchall, UnknownKeys>> extends ZodType<Output, ZodObjectDef<T, UnknownKeys, Catchall>, Input> {
+>ZodObject : ZodObject<T, UnknownKeys, Catchall, Output, Input>
+>ZodType : ZodType<Output, ZodObjectDef<T, UnknownKeys, Catchall>, Input>
+
+    strict(message?: errorUtil.ErrMessage): ZodObject<T, "strict", Catchall>;
+>strict : (message?: errorUtil.ErrMessage) => ZodObject<T, "strict", Catchall>
+>message : any
+>errorUtil : any
+}
+declare const objectType: <T extends ZodRawShape>(shape: T, params?: RawCreateParams) => ZodObject<T, "strip", ZodTypeAny, { [k in keyof objectUtil.addQuestionMarks<baseObjectOutputType<T>, any>]: objectUtil.addQuestionMarks<baseObjectOutputType<T>, any>[k]; }, { [k_1 in keyof baseObjectInputType<T>]: baseObjectInputType<T>[k_1]; }>;
+>objectType : <T extends ZodRawShape>(shape: T, params?: RawCreateParams) => ZodObject<T, "strip", ZodTypeAny, { [k in keyof objectUtil.addQuestionMarks<baseObjectOutputType<T>, any>]: objectUtil.addQuestionMarks<baseObjectOutputType<T>, any>[k]; }, { [k_1 in keyof baseObjectInputType<T>]: baseObjectInputType<T>[k_1]; }>
+>shape : T
+>params : any
+>objectUtil : any
+>objectUtil : any
+
+export { anyType as any, arrayType as array, bigIntType as bigint, booleanType as boolean, dateType as date, discriminatedUnionType as discriminatedUnion, effectsType as effect, enumType as enum, functionType as function, instanceOfType as instanceof, intersectionType as intersection, lazyType as lazy, literalType as literal, mapType as map, nanType as nan, nativeEnumType as nativeEnum, neverType as never, nullType as null, nullableType as nullable, numberType as number, objectType as object, oboolean, onumber, optionalType as optional, ostring, pipelineType as pipeline, preprocessType as preprocess, promiseType as promise, recordType as record, setType as set, strictObjectType as strictObject, stringType as string, symbolType as symbol, effectsType as transformer, tupleType as tuple, undefinedType as undefined, unionType as union, unknownType as unknown, voidType as void, };
+>anyType : any
+>any : any
+>arrayType : any
+>array : any
+>bigIntType : any
+>bigint : any
+>booleanType : any
+>boolean : any
+>dateType : any
+>date : any
+>discriminatedUnionType : any
+>discriminatedUnion : any
+>effectsType : any
+>effect : any
+>enumType : any
+>enum : any
+>functionType : any
+>function : any
+>instanceOfType : any
+>instanceof : any
+>intersectionType : any
+>intersection : any
+>lazyType : any
+>lazy : any
+>literalType : any
+>literal : any
+>mapType : any
+>map : any
+>nanType : any
+>nan : any
+>nativeEnumType : any
+>nativeEnum : any
+>neverType : any
+>never : any
+>nullType : any
+>null : any
+>nullableType : any
+>nullable : any
+>numberType : any
+>number : any
+>objectType : <T extends ZodRawShape>(shape: T, params?: RawCreateParams) => ZodObject<T, "strip", ZodTypeAny, { [k in keyof objectUtil.addQuestionMarks<baseObjectOutputType<T>, any>]: objectUtil.addQuestionMarks<baseObjectOutputType<T>, any>[k]; }, { [k_1 in keyof baseObjectInputType<T>]: baseObjectInputType<T>[k_1]; }>
+>object : <T extends ZodRawShape>(shape: T, params?: RawCreateParams) => ZodObject<T, "strip", ZodTypeAny, { [k in keyof objectUtil.addQuestionMarks<baseObjectOutputType<T>, any>]: objectUtil.addQuestionMarks<baseObjectOutputType<T>, any>[k]; }, { [k_1 in keyof baseObjectInputType<T>]: baseObjectInputType<T>[k_1]; }>
+>oboolean : any
+>onumber : any
+>optionalType : any
+>optional : any
+>ostring : any
+>pipelineType : any
+>pipeline : any
+>preprocessType : any
+>preprocess : any
+>promiseType : any
+>promise : any
+>recordType : any
+>record : any
+>setType : any
+>set : any
+>strictObjectType : any
+>strictObject : any
+>stringType : any
+>string : any
+>symbolType : any
+>symbol : any
+>effectsType : any
+>transformer : any
+>tupleType : any
+>tuple : any
+>undefinedType : any
+>undefined : any
+>unionType : any
+>union : any
+>unknownType : any
+>unknown : any
+>voidType : any
+>void : any
+
+=== frontend/src/ts/components/pages/settings/SearchableAutoSetting.tsx ===
+import { createForm } from "@tanstack/solid-form";
+>createForm : <TParentData, TFormOnMount extends undefined | FormValidateOrFn<TParentData>, TFormOnChange extends undefined | FormValidateOrFn<TParentData>, TFormOnChangeAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnBlur extends undefined | FormValidateOrFn<TParentData>, TFormOnBlurAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnSubmit extends undefined | FormValidateOrFn<TParentData>, TFormOnSubmitAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnDynamic extends undefined | FormValidateOrFn<TParentData>, TFormOnDynamicAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnServer extends undefined | FormAsyncValidateOrFn<TParentData>, TSubmitMeta>(opts?: () => import("@tanstack/form-core").FormOptions<TParentData, TFormOnMount, TFormOnChange, TFormOnChangeAsync, TFormOnBlur, TFormOnBlurAsync, TFormOnSubmit, TFormOnSubmitAsync, TFormOnDynamic, TFormOnDynamicAsync, TFormOnServer, TSubmitMeta>) => import("@tanstack/form-core").FormApi<TParentData, TFormOnMount, TFormOnChange, TFormOnChangeAsync, TFormOnBlur, TFormOnBlurAsync, TFormOnSubmit, TFormOnSubmitAsync, TFormOnDynamic, TFormOnDynamicAsync, TFormOnServer, TSubmitMeta> & import("@tanstack/solid-form").SolidFormApi<TParentData, TFormOnMount, TFormOnChange, TFormOnChangeAsync, TFormOnBlur, TFormOnBlurAsync, TFormOnSubmit, TFormOnSubmitAsync, TFormOnDynamic, TFormOnDynamicAsync, TFormOnServer, TSubmitMeta>
+
+import { getConfig } from "../../../config/store";
+>getConfig : { ads?: unknown; }
+
+export function SearchableAutoSetting<T extends ConfigKey>(props: {
+>SearchableAutoSetting : <T extends ConfigKey>(props: { key: T; }) => JSXElement
+>props : { key: T; }
+
+  key: T;
+>key : T
+
+}): JSXElement {
+  const form = createForm(() => ({
+>form : import("@tanstack/form-core").FormApi<{ [props.key]: { ads?: unknown; }[T]; }, any, any, any, any, any, any, any, any, any, any, unknown> & import("@tanstack/solid-form").SolidFormApi<{ [props.key]: { ads?: unknown; }[T]; }, any, any, any, any, any, any, any, any, any, any, unknown>
+>createForm(() => ({    defaultValues: {      [props.key]: getConfig[props.key],    },  })) : import("@tanstack/form-core").FormApi<{ [props.key]: { ads?: unknown; }[T]; }, any, any, any, any, any, any, any, any, any, any, unknown> & import("@tanstack/solid-form").SolidFormApi<{ [props.key]: { ads?: unknown; }[T]; }, any, any, any, any, any, any, any, any, any, any, unknown>
+>createForm : <TParentData, TFormOnMount extends undefined | FormValidateOrFn<TParentData>, TFormOnChange extends undefined | FormValidateOrFn<TParentData>, TFormOnChangeAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnBlur extends undefined | FormValidateOrFn<TParentData>, TFormOnBlurAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnSubmit extends undefined | FormValidateOrFn<TParentData>, TFormOnSubmitAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnDynamic extends undefined | FormValidateOrFn<TParentData>, TFormOnDynamicAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnServer extends undefined | FormAsyncValidateOrFn<TParentData>, TSubmitMeta>(opts?: () => import("@tanstack/form-core").FormOptions<TParentData, TFormOnMount, TFormOnChange, TFormOnChangeAsync, TFormOnBlur, TFormOnBlurAsync, TFormOnSubmit, TFormOnSubmitAsync, TFormOnDynamic, TFormOnDynamicAsync, TFormOnServer, TSubmitMeta>) => import("@tanstack/form-core").FormApi<TParentData, TFormOnMount, TFormOnChange, TFormOnChangeAsync, TFormOnBlur, TFormOnBlurAsync, TFormOnSubmit, TFormOnSubmitAsync, TFormOnDynamic, TFormOnDynamicAsync, TFormOnServer, TSubmitMeta> & import("@tanstack/solid-form").SolidFormApi<TParentData, TFormOnMount, TFormOnChange, TFormOnChangeAsync, TFormOnBlur, TFormOnBlurAsync, TFormOnSubmit, TFormOnSubmitAsync, TFormOnDynamic, TFormOnDynamicAsync, TFormOnServer, TSubmitMeta>
+>() => ({    defaultValues: {      [props.key]: getConfig[props.key],    },  }) : () => { defaultValues: { [props.key]: { ads?: unknown; }[T]; }; }
+>({    defaultValues: {      [props.key]: getConfig[props.key],    },  }) : { defaultValues: { [props.key]: { ads?: unknown; }[T]; }; }
+>{    defaultValues: {      [props.key]: getConfig[props.key],    },  } : { defaultValues: { [props.key]: { ads?: unknown; }[T]; }; }
+
+    defaultValues: {
+>defaultValues : { [props.key]: { ads?: unknown; }[T]; }
+>{      [props.key]: getConfig[props.key],    } : { [props.key]: { ads?: unknown; }[T]; }
+
+      [props.key]: getConfig[props.key],
+>[props.key] : { ads?: unknown; }[T]
+>props.key : T
+>props : { key: T; }
+>key : T
+>getConfig[props.key] : { ads?: unknown; }[T]
+>getConfig : { ads?: unknown; }
+>props.key : T
+>props : { key: T; }
+>key : T
+
+    },
+  }));
+    if (
+      z.ZodFirstPartyTypeKind.ZodNumber
+>z.ZodFirstPartyTypeKind.ZodNumber : any
+>z.ZodFirstPartyTypeKind : any
+>z : any
+>ZodFirstPartyTypeKind : any
+>ZodNumber : any
+
+    ) {
+        <div class="grid w-full gap-2">
+><div class="grid w-full gap-2">          <form          >            <form.Field              name={props.key}            />          </form>        </div> : any
+>div : any
+>class : string
+
+          <form
+><form          >            <form.Field              name={props.key}            />          </form> : any
+>form : import("@tanstack/form-core").FormApi<{ [props.key]: { ads?: unknown; }[T]; }, any, any, any, any, any, any, any, any, any, any, unknown> & import("@tanstack/solid-form").SolidFormApi<{ [props.key]: { ads?: unknown; }[T]; }, any, any, any, any, any, any, any, any, any, any, unknown>
+
+          >
+            <form.Field
+><form.Field              name={props.key}            /> : any
+>form.Field : import("../../../../../node_modules/@tanstack/solid-form/dist/esm/createField").FieldComponent<{ [props.key]: { ads?: unknown; }[T]; }, any, any, any, any, any, any, any, any, any, any, unknown>
+>form : import("@tanstack/form-core").FormApi<{ [props.key]: { ads?: unknown; }[T]; }, any, any, any, any, any, any, any, any, any, any, unknown> & import("@tanstack/solid-form").SolidFormApi<{ [props.key]: { ads?: unknown; }[T]; }, any, any, any, any, any, any, any, any, any, any, unknown>
+>Field : import("../../../../../node_modules/@tanstack/solid-form/dist/esm/createField").FieldComponent<{ [props.key]: { ads?: unknown; }[T]; }, any, any, any, any, any, any, any, any, any, any, unknown>
+
+              name={props.key}
+>name : T
+>props.key : T
+>props : { key: T; }
+>key : T
+
+            />
+          </form>
+>form : import("@tanstack/form-core").FormApi<{ [props.key]: { ads?: unknown; }[T]; }, any, any, any, any, any, any, any, any, any, any, unknown> & import("@tanstack/solid-form").SolidFormApi<{ [props.key]: { ads?: unknown; }[T]; }, any, any, any, any, any, any, any, any, any, any, unknown>
+
+        </div>
+>div : any
+    }
+}
+=== frontend/src/ts/components/ui/form/utils.ts ===
+
+=== frontend/src/ts/config/store.ts ===
+import type { Config as ConfigSchema } from "@monkeytype/schemas/configs";
+>Config : any
+>ConfigSchema : { ads?: unknown; }
+
+import { createStore, reconcile } from "solid-js/store";
+>createStore : <T extends object = {}>(...[store, options]: {} extends T ? [store?: T | import("solid-js/store/types/store.js").Store<T>, options?: {}] : [store: T | import("solid-js/store/types/store.js").Store<T>, options?: {}]) => import("solid-js/store/types/store.js").StoreReturn<T>
+>reconcile : any
+
+const [getConfigStore, setConfigStoreRaw] =
+>getConfigStore : { ads?: unknown; }
+>setConfigStoreRaw : SetStoreFunction<T>
+
+  createStore<ConfigSchema>(getDefaultConfig());
+>createStore<ConfigSchema>(getDefaultConfig()) : import("solid-js/store/types/store.js").StoreReturn<{ ads?: unknown; }>
+>createStore : <T extends object = {}>(...[store, options]: {} extends T ? [store?: T | import("solid-js/store/types/store.js").Store<T>, options?: {}] : [store: T | import("solid-js/store/types/store.js").Store<T>, options?: {}]) => import("solid-js/store/types/store.js").StoreReturn<T>
+>getDefaultConfig() : any
+>getDefaultConfig : any
+
+export const getConfig = getConfigStore;
+>getConfig : { ads?: unknown; }
+>getConfigStore : { ads?: unknown; }
+
+=== node_modules/@tanstack/form-core/dist/esm/FormApi.d.ts ===
+export interface BaseFormOptions<in out TFormData, in out TSubmitMeta = never> {
+    /**
+     */
+    defaultValues?: TFormData;
+>defaultValues : TFormData | undefined
+}
+/**
+ */
+export interface FormOptions<in out TFormData, in out TOnMount extends undefined | FormValidateOrFn<TFormData>, in out TOnChange extends undefined | FormValidateOrFn<TFormData>, in out TOnChangeAsync extends undefined | FormAsyncValidateOrFn<TFormData>, in out TOnBlur extends undefined | FormValidateOrFn<TFormData>, in out TOnBlurAsync extends undefined | FormAsyncValidateOrFn<TFormData>, in out TOnSubmit extends undefined | FormValidateOrFn<TFormData>, in out TOnSubmitAsync extends undefined | FormAsyncValidateOrFn<TFormData>, in out TOnDynamic extends undefined | FormValidateOrFn<TFormData>, in out TOnDynamicAsync extends undefined | FormAsyncValidateOrFn<TFormData>, in out TOnServer extends undefined | FormAsyncValidateOrFn<TFormData>, in out TSubmitMeta = never> extends BaseFormOptions<TFormData, TSubmitMeta> {
+}
+/**
+ */
+export declare class FormApi<in out TFormData, in out TOnMount extends undefined | FormValidateOrFn<TFormData>, in out TOnChange extends undefined | FormValidateOrFn<TFormData>, in out TOnChangeAsync extends undefined | FormAsyncValidateOrFn<TFormData>, in out TOnBlur extends undefined | FormValidateOrFn<TFormData>, in out TOnBlurAsync extends undefined | FormAsyncValidateOrFn<TFormData>, in out TOnSubmit extends undefined | FormValidateOrFn<TFormData>, in out TOnSubmitAsync extends undefined | FormAsyncValidateOrFn<TFormData>, in out TOnDynamic extends undefined | FormValidateOrFn<TFormData>, in out TOnDynamicAsync extends undefined | FormAsyncValidateOrFn<TFormData>, in out TOnServer extends undefined | FormAsyncValidateOrFn<TFormData>, in out TSubmitMeta = never> implements FormLikeAPI<TFormData, TSubmitMeta> {
+>FormApi : FormApi<TFormData, TOnMount, TOnChange, TOnChangeAsync, TOnBlur, TOnBlurAsync, TOnSubmit, TOnSubmitAsync, TOnDynamic, TOnDynamicAsync, TOnServer, TSubmitMeta>
+}
+=== node_modules/@tanstack/form-core/dist/esm/index.d.ts ===
+
+export * from './FormApi.js';
+export * from './util-types.js';
+=== node_modules/@tanstack/form-core/dist/esm/util-types.d.ts ===
+export interface AnyDeepKeyAndValue<K extends string = string, V extends any = any> {
+    value: V;
+>value : V
+}
+export type DeepKeyAndValueArray<TParent extends AnyDeepKeyAndValue, T extends ReadonlyArray<any>, TAcc> = DeepKeysAndValuesImpl<NonNullable<T[number]>, ArrayDeepKeyAndValue<TParent, T>, TAcc | ArrayDeepKeyAndValue<TParent, T>>;
+>DeepKeyAndValueArray : DeepKeyAndValueArray<TParent, T, TAcc>
+
+export type AllTupleKeys<T> = T extends any ? keyof T & `${number}` : never;
+>AllTupleKeys : AllTupleKeys<T>
+
+export type DeepKeyAndValueTuple<TParent extends AnyDeepKeyAndValue, T extends ReadonlyArray<any>, TAcc, TAllKeys extends AllTupleKeys<T> = AllTupleKeys<T>> = TAllKeys extends any ? DeepKeysAndValuesImpl<NonNullable<T[TAllKeys]>, TupleDeepKeyAndValue<TParent, T, TAllKeys>, TAcc | TupleDeepKeyAndValue<TParent, T, TAllKeys>> : never;
+>DeepKeyAndValueTuple : DeepKeyAndValueTuple<TParent, T, TAcc, TAllKeys>
+
+export type AllObjectKeys<T> = T extends any ? keyof T & (string | number) : never;
+>AllObjectKeys : AllObjectKeys<T>
+
+export type DeepKeyAndValueObject<TParent extends AnyDeepKeyAndValue, T, TAcc, TAllKeys extends AllObjectKeys<T> = AllObjectKeys<T>> = TAllKeys extends any ? DeepKeysAndValuesImpl<NonNullable<T[TAllKeys]>, ObjectDeepKeyAndValue<TParent, T, TAllKeys>, TAcc | ObjectDeepKeyAndValue<TParent, T, TAllKeys>> : never;
+>DeepKeyAndValueObject : DeepKeyAndValueObject<TParent, T, TAcc, TAllKeys>
+
+export type DeepKeysAndValues<T> = DeepKeysAndValuesImpl<T> extends AnyDeepKeyAndValue ? DeepKeysAndValuesImpl<T> : never;
+>DeepKeysAndValues : DeepKeysAndValues<T>
+
+export type DeepKeysAndValuesImpl<T, TParent extends AnyDeepKeyAndValue = never, TAcc = never> = unknown extends T ? TAcc | UnknownDeepKeyAndValue<TParent> : unknown extends T ? T : T extends string | number | boolean | bigint | Date ? TAcc : T extends ReadonlyArray<any> ? number extends T['length'] ? DeepKeyAndValueArray<TParent, T, TAcc> : DeepKeyAndValueTuple<TParent, T, TAcc> : keyof T extends never ? TAcc | UnknownDeepKeyAndValue<TParent> : T extends object ? DeepKeyAndValueObject<TParent, T, TAcc> : TAcc;
+>DeepKeysAndValuesImpl : DeepKeysAndValuesImpl<T, TParent, TAcc>
+
+export type DeepKeys<T> = unknown extends T ? string : DeepKeysAndValues<T>['key'];
+>DeepKeys : DeepKeys<T>
+
+/**
+ */
+

@@ -1,0 +1,887 @@
+//// [test/cases/ttttMonkeytypeInstantiationCount.tsx] ////
+
+=== frontend/node_modules/@monkeytype/schemas/src/configs.ts ===
+import { z, ZodSchema } from "zod";
+>z : Symbol(z, Decl(configs.ts, 0, 8))
+>ZodSchema : Symbol(ZodSchema, Decl(configs.ts, 0, 11))
+
+export const ConfigSchema = z
+>ConfigSchema : Symbol(ConfigSchema, Decl(configs.ts, 1, 12))
+>z  .object : Symbol(z.object, Decl(types.d.ts, 18, 475))
+>z : Symbol(z, Decl(configs.ts, 0, 8))
+
+  .object({
+>object : Symbol(z.object, Decl(types.d.ts, 18, 475))
+
+    ads: AdsSchema,
+>ads : Symbol(ads, Decl(configs.ts, 2, 11))
+
+  } satisfies Record<string, ZodSchema>)
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>ZodSchema : Symbol(ZodSchema, Decl(configs.ts, 0, 11))
+
+export type Config = z.infer<typeof ConfigSchema>;
+>Config : Symbol(Config, Decl(configs.ts, 4, 40))
+>z : Symbol(z, Decl(configs.ts, 0, 8))
+>infer : Symbol(z.infer, Decl(types.d.ts, 2, 13))
+>ConfigSchema : Symbol(ConfigSchema, Decl(configs.ts, 1, 12))
+
+=== frontend/node_modules/@tanstack/solid-form/dist/esm/createField.d.ts ===
+import { FieldApi, DeepKeys, DeepValue, FieldAsyncValidateOrFn, FieldValidateOrFn, FieldValidators, FormAsyncValidateOrFn, FormValidateOrFn } from '@tanstack/form-core';
+>FieldApi : Symbol(FieldApi, Decl(createField.d.ts, 0, 8))
+>DeepKeys : Symbol(DeepKeys, Decl(createField.d.ts, 0, 18))
+>DeepValue : Symbol(DeepValue, Decl(createField.d.ts, 0, 28))
+>FieldAsyncValidateOrFn : Symbol(FieldAsyncValidateOrFn, Decl(createField.d.ts, 0, 39))
+>FieldValidateOrFn : Symbol(FieldValidateOrFn, Decl(createField.d.ts, 0, 63))
+>FieldValidators : Symbol(FieldValidators, Decl(createField.d.ts, 0, 82))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn, Decl(createField.d.ts, 0, 99))
+>FormValidateOrFn : Symbol(FormValidateOrFn, Decl(createField.d.ts, 0, 122))
+
+/**
+ */
+export type FieldComponent<in out TParentData, in out TFormOnMount extends undefined | FormValidateOrFn<TParentData>, in out TFormOnChange extends undefined | FormValidateOrFn<TParentData>, in out TFormOnChangeAsync extends undefined | FormAsyncValidateOrFn<TParentData>, in out TFormOnBlur extends undefined | FormValidateOrFn<TParentData>, in out TFormOnBlurAsync extends undefined | FormAsyncValidateOrFn<TParentData>, in out TFormOnSubmit extends undefined | FormValidateOrFn<TParentData>, in out TFormOnSubmitAsync extends undefined | FormAsyncValidateOrFn<TParentData>, in out TFormOnDynamic extends undefined | FormValidateOrFn<TParentData>, in out TFormOnDynamicAsync extends undefined | FormAsyncValidateOrFn<TParentData>, in out TFormOnServer extends undefined | FormAsyncValidateOrFn<TParentData>, in out TPatentSubmitMeta, in out ExtendedApi = {}> = <const TName extends DeepKeys<TParentData>, TData extends DeepValue<TParentData, TName>, TOnMount extends undefined | FieldValidateOrFn<TParentData, TName, TData>, TOnChange extends undefined | FieldValidateOrFn<TParentData, TName, TData>, TOnChangeAsync extends undefined | FieldAsyncValidateOrFn<TParentData, TName, TData>, TOnBlur extends undefined | FieldValidateOrFn<TParentData, TName, TData>, TOnBlurAsync extends undefined | FieldAsyncValidateOrFn<TParentData, TName, TData>, TOnSubmit extends undefined | FieldValidateOrFn<TParentData, TName, TData>, TOnSubmitAsync extends undefined | FieldAsyncValidateOrFn<TParentData, TName, TData>, TOnDynamic extends undefined | FieldValidateOrFn<TParentData, TName, TData>, TOnDynamicAsync extends undefined | FieldAsyncValidateOrFn<TParentData, TName, TData>>({ children, ...fieldOptions }: FieldComponentBoundProps<TParentData, TName, TData, TOnMount, TOnChange, TOnChangeAsync, TOnBlur, TOnBlurAsync, TOnSubmit, TOnSubmitAsync, TOnDynamic, TOnDynamicAsync, TFormOnMount, TFormOnChange, TFormOnChangeAsync, TFormOnBlur, TFormOnBlurAsync, TFormOnSubmit, TFormOnSubmitAsync, TFormOnDynamic, TFormOnDynamicAsync, TFormOnServer, TPatentSubmitMeta, ExtendedApi>) => JSX.Element;
+>FieldComponent : Symbol(FieldComponent, Decl(createField.d.ts, 0, 169))
+>TParentData : Symbol(TParentData, Decl(createField.d.ts, 3, 27))
+>TFormOnMount : Symbol(TFormOnMount, Decl(createField.d.ts, 3, 46))
+>FormValidateOrFn : Symbol(FormValidateOrFn, Decl(createField.d.ts, 0, 122))
+>TParentData : Symbol(TParentData, Decl(createField.d.ts, 3, 27))
+>TFormOnChange : Symbol(TFormOnChange, Decl(createField.d.ts, 3, 117))
+>FormValidateOrFn : Symbol(FormValidateOrFn, Decl(createField.d.ts, 0, 122))
+>TParentData : Symbol(TParentData, Decl(createField.d.ts, 3, 27))
+>TFormOnChangeAsync : Symbol(TFormOnChangeAsync, Decl(createField.d.ts, 3, 189))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn, Decl(createField.d.ts, 0, 99))
+>TParentData : Symbol(TParentData, Decl(createField.d.ts, 3, 27))
+>TFormOnBlur : Symbol(TFormOnBlur, Decl(createField.d.ts, 3, 271))
+>FormValidateOrFn : Symbol(FormValidateOrFn, Decl(createField.d.ts, 0, 122))
+>TParentData : Symbol(TParentData, Decl(createField.d.ts, 3, 27))
+>TFormOnBlurAsync : Symbol(TFormOnBlurAsync, Decl(createField.d.ts, 3, 341))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn, Decl(createField.d.ts, 0, 99))
+>TParentData : Symbol(TParentData, Decl(createField.d.ts, 3, 27))
+>TFormOnSubmit : Symbol(TFormOnSubmit, Decl(createField.d.ts, 3, 421))
+>FormValidateOrFn : Symbol(FormValidateOrFn, Decl(createField.d.ts, 0, 122))
+>TParentData : Symbol(TParentData, Decl(createField.d.ts, 3, 27))
+>TFormOnSubmitAsync : Symbol(TFormOnSubmitAsync, Decl(createField.d.ts, 3, 493))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn, Decl(createField.d.ts, 0, 99))
+>TParentData : Symbol(TParentData, Decl(createField.d.ts, 3, 27))
+>TFormOnDynamic : Symbol(TFormOnDynamic, Decl(createField.d.ts, 3, 575))
+>FormValidateOrFn : Symbol(FormValidateOrFn, Decl(createField.d.ts, 0, 122))
+>TParentData : Symbol(TParentData, Decl(createField.d.ts, 3, 27))
+>TFormOnDynamicAsync : Symbol(TFormOnDynamicAsync, Decl(createField.d.ts, 3, 648))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn, Decl(createField.d.ts, 0, 99))
+>TParentData : Symbol(TParentData, Decl(createField.d.ts, 3, 27))
+>TFormOnServer : Symbol(TFormOnServer, Decl(createField.d.ts, 3, 731))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn, Decl(createField.d.ts, 0, 99))
+>TParentData : Symbol(TParentData, Decl(createField.d.ts, 3, 27))
+>TPatentSubmitMeta : Symbol(TPatentSubmitMeta, Decl(createField.d.ts, 3, 808))
+>ExtendedApi : Symbol(ExtendedApi, Decl(createField.d.ts, 3, 834))
+>TName : Symbol(TName, Decl(createField.d.ts, 3, 863))
+>DeepKeys : Symbol(DeepKeys, Decl(createField.d.ts, 0, 18))
+>TParentData : Symbol(TParentData, Decl(createField.d.ts, 3, 27))
+>TData : Symbol(TData, Decl(createField.d.ts, 3, 905))
+>DeepValue : Symbol(DeepValue, Decl(createField.d.ts, 0, 28))
+>TParentData : Symbol(TParentData, Decl(createField.d.ts, 3, 27))
+>TName : Symbol(TName, Decl(createField.d.ts, 3, 863))
+>TOnMount : Symbol(TOnMount, Decl(createField.d.ts, 3, 950))
+>FieldValidateOrFn : Symbol(FieldValidateOrFn, Decl(createField.d.ts, 0, 63))
+>TParentData : Symbol(TParentData, Decl(createField.d.ts, 3, 27))
+>TName : Symbol(TName, Decl(createField.d.ts, 3, 863))
+>TData : Symbol(TData, Decl(createField.d.ts, 3, 905))
+>TOnChange : Symbol(TOnChange, Decl(createField.d.ts, 3, 1025))
+>FieldValidateOrFn : Symbol(FieldValidateOrFn, Decl(createField.d.ts, 0, 63))
+>TParentData : Symbol(TParentData, Decl(createField.d.ts, 3, 27))
+>TName : Symbol(TName, Decl(createField.d.ts, 3, 863))
+>TData : Symbol(TData, Decl(createField.d.ts, 3, 905))
+>TOnChangeAsync : Symbol(TOnChangeAsync, Decl(createField.d.ts, 3, 1101))
+>FieldAsyncValidateOrFn : Symbol(FieldAsyncValidateOrFn, Decl(createField.d.ts, 0, 39))
+>TParentData : Symbol(TParentData, Decl(createField.d.ts, 3, 27))
+>TName : Symbol(TName, Decl(createField.d.ts, 3, 863))
+>TData : Symbol(TData, Decl(createField.d.ts, 3, 905))
+>TOnBlur : Symbol(TOnBlur, Decl(createField.d.ts, 3, 1187))
+>FieldValidateOrFn : Symbol(FieldValidateOrFn, Decl(createField.d.ts, 0, 63))
+>TParentData : Symbol(TParentData, Decl(createField.d.ts, 3, 27))
+>TName : Symbol(TName, Decl(createField.d.ts, 3, 863))
+>TData : Symbol(TData, Decl(createField.d.ts, 3, 905))
+>TOnBlurAsync : Symbol(TOnBlurAsync, Decl(createField.d.ts, 3, 1261))
+>FieldAsyncValidateOrFn : Symbol(FieldAsyncValidateOrFn, Decl(createField.d.ts, 0, 39))
+>TParentData : Symbol(TParentData, Decl(createField.d.ts, 3, 27))
+>TName : Symbol(TName, Decl(createField.d.ts, 3, 863))
+>TData : Symbol(TData, Decl(createField.d.ts, 3, 905))
+>TOnSubmit : Symbol(TOnSubmit, Decl(createField.d.ts, 3, 1345))
+>FieldValidateOrFn : Symbol(FieldValidateOrFn, Decl(createField.d.ts, 0, 63))
+>TParentData : Symbol(TParentData, Decl(createField.d.ts, 3, 27))
+>TName : Symbol(TName, Decl(createField.d.ts, 3, 863))
+>TData : Symbol(TData, Decl(createField.d.ts, 3, 905))
+>TOnSubmitAsync : Symbol(TOnSubmitAsync, Decl(createField.d.ts, 3, 1421))
+>FieldAsyncValidateOrFn : Symbol(FieldAsyncValidateOrFn, Decl(createField.d.ts, 0, 39))
+>TParentData : Symbol(TParentData, Decl(createField.d.ts, 3, 27))
+>TName : Symbol(TName, Decl(createField.d.ts, 3, 863))
+>TData : Symbol(TData, Decl(createField.d.ts, 3, 905))
+>TOnDynamic : Symbol(TOnDynamic, Decl(createField.d.ts, 3, 1507))
+>FieldValidateOrFn : Symbol(FieldValidateOrFn, Decl(createField.d.ts, 0, 63))
+>TParentData : Symbol(TParentData, Decl(createField.d.ts, 3, 27))
+>TName : Symbol(TName, Decl(createField.d.ts, 3, 863))
+>TData : Symbol(TData, Decl(createField.d.ts, 3, 905))
+>TOnDynamicAsync : Symbol(TOnDynamicAsync, Decl(createField.d.ts, 3, 1584))
+>FieldAsyncValidateOrFn : Symbol(FieldAsyncValidateOrFn, Decl(createField.d.ts, 0, 39))
+>TParentData : Symbol(TParentData, Decl(createField.d.ts, 3, 27))
+>TName : Symbol(TName, Decl(createField.d.ts, 3, 863))
+>TData : Symbol(TData, Decl(createField.d.ts, 3, 905))
+>children : Symbol(children, Decl(createField.d.ts, 3, 1673))
+>fieldOptions : Symbol(fieldOptions, Decl(createField.d.ts, 3, 1683))
+>FieldComponentBoundProps : Symbol(FieldComponentBoundProps)
+>TParentData : Symbol(TParentData, Decl(createField.d.ts, 3, 27))
+>TName : Symbol(TName, Decl(createField.d.ts, 3, 863))
+>TData : Symbol(TData, Decl(createField.d.ts, 3, 905))
+>TOnMount : Symbol(TOnMount, Decl(createField.d.ts, 3, 950))
+>TOnChange : Symbol(TOnChange, Decl(createField.d.ts, 3, 1025))
+>TOnChangeAsync : Symbol(TOnChangeAsync, Decl(createField.d.ts, 3, 1101))
+>TOnBlur : Symbol(TOnBlur, Decl(createField.d.ts, 3, 1187))
+>TOnBlurAsync : Symbol(TOnBlurAsync, Decl(createField.d.ts, 3, 1261))
+>TOnSubmit : Symbol(TOnSubmit, Decl(createField.d.ts, 3, 1345))
+>TOnSubmitAsync : Symbol(TOnSubmitAsync, Decl(createField.d.ts, 3, 1421))
+>TOnDynamic : Symbol(TOnDynamic, Decl(createField.d.ts, 3, 1507))
+>TOnDynamicAsync : Symbol(TOnDynamicAsync, Decl(createField.d.ts, 3, 1584))
+>TFormOnMount : Symbol(TFormOnMount, Decl(createField.d.ts, 3, 46))
+>TFormOnChange : Symbol(TFormOnChange, Decl(createField.d.ts, 3, 117))
+>TFormOnChangeAsync : Symbol(TFormOnChangeAsync, Decl(createField.d.ts, 3, 189))
+>TFormOnBlur : Symbol(TFormOnBlur, Decl(createField.d.ts, 3, 271))
+>TFormOnBlurAsync : Symbol(TFormOnBlurAsync, Decl(createField.d.ts, 3, 341))
+>TFormOnSubmit : Symbol(TFormOnSubmit, Decl(createField.d.ts, 3, 421))
+>TFormOnSubmitAsync : Symbol(TFormOnSubmitAsync, Decl(createField.d.ts, 3, 493))
+>TFormOnDynamic : Symbol(TFormOnDynamic, Decl(createField.d.ts, 3, 575))
+>TFormOnDynamicAsync : Symbol(TFormOnDynamicAsync, Decl(createField.d.ts, 3, 648))
+>TFormOnServer : Symbol(TFormOnServer, Decl(createField.d.ts, 3, 731))
+>TPatentSubmitMeta : Symbol(TPatentSubmitMeta, Decl(createField.d.ts, 3, 808))
+>ExtendedApi : Symbol(ExtendedApi, Decl(createField.d.ts, 3, 834))
+>JSX : Symbol(JSX)
+>Element : Symbol(JSX.Element)
+
+/**
+ */
+=== frontend/node_modules/@tanstack/solid-form/dist/esm/createForm.d.ts ===
+import { FormApi, FormAsyncValidateOrFn, FormOptions, FormState, FormValidateOrFn } from '@tanstack/form-core';
+>FormApi : Symbol(FormApi, Decl(createForm.d.ts, 0, 8))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn, Decl(createForm.d.ts, 0, 17))
+>FormOptions : Symbol(FormOptions, Decl(createForm.d.ts, 0, 40))
+>FormState : Symbol(FormState, Decl(createForm.d.ts, 0, 53))
+>FormValidateOrFn : Symbol(FormValidateOrFn, Decl(createForm.d.ts, 0, 64))
+
+import { FieldComponent } from './createField.js';
+>FieldComponent : Symbol(FieldComponent, Decl(createForm.d.ts, 1, 8))
+
+export interface SolidFormApi<TParentData, TFormOnMount extends undefined | FormValidateOrFn<TParentData>, TFormOnChange extends undefined | FormValidateOrFn<TParentData>, TFormOnChangeAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnBlur extends undefined | FormValidateOrFn<TParentData>, TFormOnBlurAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnSubmit extends undefined | FormValidateOrFn<TParentData>, TFormOnSubmitAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnDynamic extends undefined | FormValidateOrFn<TParentData>, TFormOnDynamicAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnServer extends undefined | FormAsyncValidateOrFn<TParentData>, TSubmitMeta> {
+>SolidFormApi : Symbol(SolidFormApi, Decl(createForm.d.ts, 1, 50))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 2, 30))
+>TFormOnMount : Symbol(TFormOnMount, Decl(createForm.d.ts, 2, 42))
+>FormValidateOrFn : Symbol(FormValidateOrFn, Decl(createForm.d.ts, 0, 64))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 2, 30))
+>TFormOnChange : Symbol(TFormOnChange, Decl(createForm.d.ts, 2, 106))
+>FormValidateOrFn : Symbol(FormValidateOrFn, Decl(createForm.d.ts, 0, 64))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 2, 30))
+>TFormOnChangeAsync : Symbol(TFormOnChangeAsync, Decl(createForm.d.ts, 2, 171))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn, Decl(createForm.d.ts, 0, 17))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 2, 30))
+>TFormOnBlur : Symbol(TFormOnBlur, Decl(createForm.d.ts, 2, 246))
+>FormValidateOrFn : Symbol(FormValidateOrFn, Decl(createForm.d.ts, 0, 64))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 2, 30))
+>TFormOnBlurAsync : Symbol(TFormOnBlurAsync, Decl(createForm.d.ts, 2, 309))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn, Decl(createForm.d.ts, 0, 17))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 2, 30))
+>TFormOnSubmit : Symbol(TFormOnSubmit, Decl(createForm.d.ts, 2, 382))
+>FormValidateOrFn : Symbol(FormValidateOrFn, Decl(createForm.d.ts, 0, 64))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 2, 30))
+>TFormOnSubmitAsync : Symbol(TFormOnSubmitAsync, Decl(createForm.d.ts, 2, 447))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn, Decl(createForm.d.ts, 0, 17))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 2, 30))
+>TFormOnDynamic : Symbol(TFormOnDynamic, Decl(createForm.d.ts, 2, 522))
+>FormValidateOrFn : Symbol(FormValidateOrFn, Decl(createForm.d.ts, 0, 64))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 2, 30))
+>TFormOnDynamicAsync : Symbol(TFormOnDynamicAsync, Decl(createForm.d.ts, 2, 588))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn, Decl(createForm.d.ts, 0, 17))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 2, 30))
+>TFormOnServer : Symbol(TFormOnServer, Decl(createForm.d.ts, 2, 664))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn, Decl(createForm.d.ts, 0, 17))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 2, 30))
+>TSubmitMeta : Symbol(TSubmitMeta, Decl(createForm.d.ts, 2, 734))
+
+    Field: FieldComponent<TParentData, TFormOnMount, TFormOnChange, TFormOnChangeAsync, TFormOnBlur, TFormOnBlurAsync, TFormOnSubmit, TFormOnSubmitAsync, TFormOnDynamic, TFormOnDynamicAsync, TFormOnServer, TSubmitMeta>;
+>Field : Symbol(SolidFormApi.Field, Decl(createForm.d.ts, 2, 749))
+>FieldComponent : Symbol(FieldComponent, Decl(createForm.d.ts, 1, 8))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 2, 30))
+>TFormOnMount : Symbol(TFormOnMount, Decl(createForm.d.ts, 2, 42))
+>TFormOnChange : Symbol(TFormOnChange, Decl(createForm.d.ts, 2, 106))
+>TFormOnChangeAsync : Symbol(TFormOnChangeAsync, Decl(createForm.d.ts, 2, 171))
+>TFormOnBlur : Symbol(TFormOnBlur, Decl(createForm.d.ts, 2, 246))
+>TFormOnBlurAsync : Symbol(TFormOnBlurAsync, Decl(createForm.d.ts, 2, 309))
+>TFormOnSubmit : Symbol(TFormOnSubmit, Decl(createForm.d.ts, 2, 382))
+>TFormOnSubmitAsync : Symbol(TFormOnSubmitAsync, Decl(createForm.d.ts, 2, 447))
+>TFormOnDynamic : Symbol(TFormOnDynamic, Decl(createForm.d.ts, 2, 522))
+>TFormOnDynamicAsync : Symbol(TFormOnDynamicAsync, Decl(createForm.d.ts, 2, 588))
+>TFormOnServer : Symbol(TFormOnServer, Decl(createForm.d.ts, 2, 664))
+>TSubmitMeta : Symbol(TSubmitMeta, Decl(createForm.d.ts, 2, 734))
+}
+export declare function createForm<TParentData, TFormOnMount extends undefined | FormValidateOrFn<TParentData>, TFormOnChange extends undefined | FormValidateOrFn<TParentData>, TFormOnChangeAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnBlur extends undefined | FormValidateOrFn<TParentData>, TFormOnBlurAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnSubmit extends undefined | FormValidateOrFn<TParentData>, TFormOnSubmitAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnDynamic extends undefined | FormValidateOrFn<TParentData>, TFormOnDynamicAsync extends undefined | FormAsyncValidateOrFn<TParentData>, TFormOnServer extends undefined | FormAsyncValidateOrFn<TParentData>, TSubmitMeta>(opts?: () => FormOptions<TParentData, TFormOnMount, TFormOnChange, TFormOnChangeAsync, TFormOnBlur, TFormOnBlurAsync, TFormOnSubmit, TFormOnSubmitAsync, TFormOnDynamic, TFormOnDynamicAsync, TFormOnServer, TSubmitMeta>): FormApi<TParentData, TFormOnMount, TFormOnChange, TFormOnChangeAsync, TFormOnBlur, TFormOnBlurAsync, TFormOnSubmit, TFormOnSubmitAsync, TFormOnDynamic, TFormOnDynamicAsync, TFormOnServer, TSubmitMeta> & SolidFormApi<TParentData, TFormOnMount, TFormOnChange, TFormOnChangeAsync, TFormOnBlur, TFormOnBlurAsync, TFormOnSubmit, TFormOnSubmitAsync, TFormOnDynamic, TFormOnDynamicAsync, TFormOnServer, TSubmitMeta>;
+>createForm : Symbol(createForm, Decl(createForm.d.ts, 4, 1))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 5, 35))
+>TFormOnMount : Symbol(TFormOnMount, Decl(createForm.d.ts, 5, 47))
+>FormValidateOrFn : Symbol(FormValidateOrFn, Decl(createForm.d.ts, 0, 64))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 5, 35))
+>TFormOnChange : Symbol(TFormOnChange, Decl(createForm.d.ts, 5, 111))
+>FormValidateOrFn : Symbol(FormValidateOrFn, Decl(createForm.d.ts, 0, 64))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 5, 35))
+>TFormOnChangeAsync : Symbol(TFormOnChangeAsync, Decl(createForm.d.ts, 5, 176))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn, Decl(createForm.d.ts, 0, 17))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 5, 35))
+>TFormOnBlur : Symbol(TFormOnBlur, Decl(createForm.d.ts, 5, 251))
+>FormValidateOrFn : Symbol(FormValidateOrFn, Decl(createForm.d.ts, 0, 64))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 5, 35))
+>TFormOnBlurAsync : Symbol(TFormOnBlurAsync, Decl(createForm.d.ts, 5, 314))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn, Decl(createForm.d.ts, 0, 17))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 5, 35))
+>TFormOnSubmit : Symbol(TFormOnSubmit, Decl(createForm.d.ts, 5, 387))
+>FormValidateOrFn : Symbol(FormValidateOrFn, Decl(createForm.d.ts, 0, 64))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 5, 35))
+>TFormOnSubmitAsync : Symbol(TFormOnSubmitAsync, Decl(createForm.d.ts, 5, 452))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn, Decl(createForm.d.ts, 0, 17))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 5, 35))
+>TFormOnDynamic : Symbol(TFormOnDynamic, Decl(createForm.d.ts, 5, 527))
+>FormValidateOrFn : Symbol(FormValidateOrFn, Decl(createForm.d.ts, 0, 64))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 5, 35))
+>TFormOnDynamicAsync : Symbol(TFormOnDynamicAsync, Decl(createForm.d.ts, 5, 593))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn, Decl(createForm.d.ts, 0, 17))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 5, 35))
+>TFormOnServer : Symbol(TFormOnServer, Decl(createForm.d.ts, 5, 669))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn, Decl(createForm.d.ts, 0, 17))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 5, 35))
+>TSubmitMeta : Symbol(TSubmitMeta, Decl(createForm.d.ts, 5, 739))
+>opts : Symbol(opts, Decl(createForm.d.ts, 5, 753))
+>FormOptions : Symbol(FormOptions, Decl(createForm.d.ts, 0, 40))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 5, 35))
+>TFormOnMount : Symbol(TFormOnMount, Decl(createForm.d.ts, 5, 47))
+>TFormOnChange : Symbol(TFormOnChange, Decl(createForm.d.ts, 5, 111))
+>TFormOnChangeAsync : Symbol(TFormOnChangeAsync, Decl(createForm.d.ts, 5, 176))
+>TFormOnBlur : Symbol(TFormOnBlur, Decl(createForm.d.ts, 5, 251))
+>TFormOnBlurAsync : Symbol(TFormOnBlurAsync, Decl(createForm.d.ts, 5, 314))
+>TFormOnSubmit : Symbol(TFormOnSubmit, Decl(createForm.d.ts, 5, 387))
+>TFormOnSubmitAsync : Symbol(TFormOnSubmitAsync, Decl(createForm.d.ts, 5, 452))
+>TFormOnDynamic : Symbol(TFormOnDynamic, Decl(createForm.d.ts, 5, 527))
+>TFormOnDynamicAsync : Symbol(TFormOnDynamicAsync, Decl(createForm.d.ts, 5, 593))
+>TFormOnServer : Symbol(TFormOnServer, Decl(createForm.d.ts, 5, 669))
+>TSubmitMeta : Symbol(TSubmitMeta, Decl(createForm.d.ts, 5, 739))
+>FormApi : Symbol(FormApi, Decl(createForm.d.ts, 0, 8))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 5, 35))
+>TFormOnMount : Symbol(TFormOnMount, Decl(createForm.d.ts, 5, 47))
+>TFormOnChange : Symbol(TFormOnChange, Decl(createForm.d.ts, 5, 111))
+>TFormOnChangeAsync : Symbol(TFormOnChangeAsync, Decl(createForm.d.ts, 5, 176))
+>TFormOnBlur : Symbol(TFormOnBlur, Decl(createForm.d.ts, 5, 251))
+>TFormOnBlurAsync : Symbol(TFormOnBlurAsync, Decl(createForm.d.ts, 5, 314))
+>TFormOnSubmit : Symbol(TFormOnSubmit, Decl(createForm.d.ts, 5, 387))
+>TFormOnSubmitAsync : Symbol(TFormOnSubmitAsync, Decl(createForm.d.ts, 5, 452))
+>TFormOnDynamic : Symbol(TFormOnDynamic, Decl(createForm.d.ts, 5, 527))
+>TFormOnDynamicAsync : Symbol(TFormOnDynamicAsync, Decl(createForm.d.ts, 5, 593))
+>TFormOnServer : Symbol(TFormOnServer, Decl(createForm.d.ts, 5, 669))
+>TSubmitMeta : Symbol(TSubmitMeta, Decl(createForm.d.ts, 5, 739))
+>SolidFormApi : Symbol(SolidFormApi, Decl(createForm.d.ts, 1, 50))
+>TParentData : Symbol(TParentData, Decl(createForm.d.ts, 5, 35))
+>TFormOnMount : Symbol(TFormOnMount, Decl(createForm.d.ts, 5, 47))
+>TFormOnChange : Symbol(TFormOnChange, Decl(createForm.d.ts, 5, 111))
+>TFormOnChangeAsync : Symbol(TFormOnChangeAsync, Decl(createForm.d.ts, 5, 176))
+>TFormOnBlur : Symbol(TFormOnBlur, Decl(createForm.d.ts, 5, 251))
+>TFormOnBlurAsync : Symbol(TFormOnBlurAsync, Decl(createForm.d.ts, 5, 314))
+>TFormOnSubmit : Symbol(TFormOnSubmit, Decl(createForm.d.ts, 5, 387))
+>TFormOnSubmitAsync : Symbol(TFormOnSubmitAsync, Decl(createForm.d.ts, 5, 452))
+>TFormOnDynamic : Symbol(TFormOnDynamic, Decl(createForm.d.ts, 5, 527))
+>TFormOnDynamicAsync : Symbol(TFormOnDynamicAsync, Decl(createForm.d.ts, 5, 593))
+>TFormOnServer : Symbol(TFormOnServer, Decl(createForm.d.ts, 5, 669))
+>TSubmitMeta : Symbol(TSubmitMeta, Decl(createForm.d.ts, 5, 739))
+
+=== frontend/node_modules/@tanstack/solid-form/dist/esm/index.d.ts ===
+
+export * from './createForm.js';
+=== frontend/node_modules/@types/node/index.d.ts ===
+
+export {};
+=== frontend/node_modules/solid-js/store/types/index.d.ts ===
+export { $RAW, createStore, unwrap } from "./store.js";
+>$RAW : Symbol($RAW, Decl(index.d.ts, 0, 8))
+>createStore : Symbol(createStore, Decl(index.d.ts, 0, 14))
+>unwrap : Symbol(unwrap, Decl(index.d.ts, 0, 27))
+
+=== frontend/node_modules/solid-js/store/types/store.d.ts ===
+export type Store<T> = T;
+>Store : Symbol(Store, Decl(store.d.ts, 0, 0))
+>T : Symbol(T, Decl(store.d.ts, 0, 18))
+>T : Symbol(T, Decl(store.d.ts, 0, 18))
+
+export type StoreReturn<T> = [get: Store<T>, set: SetStoreFunction<T>];
+>StoreReturn : Symbol(StoreReturn, Decl(store.d.ts, 0, 25))
+>T : Symbol(T, Decl(store.d.ts, 1, 24))
+>Store : Symbol(Store, Decl(store.d.ts, 0, 0))
+>T : Symbol(T, Decl(store.d.ts, 1, 24))
+>SetStoreFunction : Symbol(SetStoreFunction)
+>T : Symbol(T, Decl(store.d.ts, 1, 24))
+
+/**
+ */
+export declare function createStore<T extends object = {}>(...[store, options]: {} extends T ? [store?: T | Store<T>, options?: {
+>createStore : Symbol(createStore, Decl(store.d.ts, 1, 71))
+>T : Symbol(T, Decl(store.d.ts, 4, 36))
+>store : Symbol(store, Decl(store.d.ts, 4, 63))
+>options : Symbol(options, Decl(store.d.ts, 4, 69))
+>T : Symbol(T, Decl(store.d.ts, 4, 36))
+>T : Symbol(T, Decl(store.d.ts, 4, 36))
+>Store : Symbol(Store, Decl(store.d.ts, 0, 0))
+>T : Symbol(T, Decl(store.d.ts, 4, 36))
+
+}] : [store: T | Store<T>, options?: {
+>T : Symbol(T, Decl(store.d.ts, 4, 36))
+>Store : Symbol(Store, Decl(store.d.ts, 0, 0))
+>T : Symbol(T, Decl(store.d.ts, 4, 36))
+
+}]): StoreReturn<T>;
+>StoreReturn : Symbol(StoreReturn, Decl(store.d.ts, 0, 25))
+>T : Symbol(T, Decl(store.d.ts, 4, 36))
+
+=== frontend/node_modules/vite/client.d.ts ===
+
+export {};
+=== frontend/node_modules/zod/index.d.ts ===
+
+export * from "./lib";
+=== frontend/node_modules/zod/lib/external.d.ts ===
+
+export * from "./types";
+=== frontend/node_modules/zod/lib/helpers/util.d.ts ===
+export declare namespace objectUtil {
+>objectUtil : Symbol(objectUtil, Decl(util.d.ts, 0, 0))
+
+    export type addQuestionMarks<T extends object, _O = any> = {
+>addQuestionMarks : Symbol(addQuestionMarks, Decl(util.d.ts, 0, 37))
+>T : Symbol(T, Decl(util.d.ts, 1, 33))
+>_O : Symbol(_O, Decl(util.d.ts, 1, 50))
+
+        [k in keyof T]?: unknown;
+>k : Symbol(k, Decl(util.d.ts, 2, 9))
+>T : Symbol(T, Decl(util.d.ts, 1, 33))
+
+    };
+}
+=== frontend/node_modules/zod/lib/index.d.ts ===
+import * as z from "./external";
+>z : Symbol(z, Decl(index.d.ts, 0, 6))
+
+export { z };
+>z : Symbol(z, Decl(index.d.ts, 1, 8))
+
+=== frontend/node_modules/zod/lib/types.d.ts ===
+import { objectUtil, util } from "./helpers/util";
+>objectUtil : Symbol(objectUtil, Decl(types.d.ts, 0, 8))
+>util : Symbol(util, Decl(types.d.ts, 0, 20))
+
+export declare type TypeOf<T extends ZodType<any, any, any>> = T["_output"];
+>TypeOf : Symbol(TypeOf, Decl(types.d.ts, 0, 50))
+>T : Symbol(T, Decl(types.d.ts, 1, 27))
+>ZodType : Symbol(ZodType, Decl(types.d.ts, 2, 32))
+>T : Symbol(T, Decl(types.d.ts, 1, 27))
+
+export type { TypeOf as infer };
+>TypeOf : Symbol(TypeOf, Decl(types.d.ts, 0, 50))
+>infer : Symbol(infer, Decl(types.d.ts, 2, 13))
+
+export declare abstract class ZodType<Output = any, Def extends ZodTypeDef = ZodTypeDef, Input = Output> {
+>ZodType : Symbol(ZodType, Decl(types.d.ts, 2, 32))
+>Output : Symbol(Output, Decl(types.d.ts, 3, 38))
+>Def : Symbol(Def, Decl(types.d.ts, 3, 51))
+>ZodTypeDef : Symbol(ZodTypeDef)
+>ZodTypeDef : Symbol(ZodTypeDef)
+>Input : Symbol(Input, Decl(types.d.ts, 3, 88))
+>Output : Symbol(Output, Decl(types.d.ts, 3, 38))
+
+    readonly _output: Output;
+>_output : Symbol(ZodType._output, Decl(types.d.ts, 3, 106))
+>Output : Symbol(Output, Decl(types.d.ts, 3, 38))
+}
+export declare type objectOutputType<Shape extends ZodRawShape, Catchall extends ZodTypeAny, UnknownKeys extends UnknownKeysParam = UnknownKeysParam> = objectUtil.flatten<objectUtil.addQuestionMarks<baseObjectOutputType<Shape>>> & CatchallOutput<Catchall> & PassthroughType<UnknownKeys>;
+>objectOutputType : Symbol(objectOutputType, Decl(types.d.ts, 5, 1))
+>Shape : Symbol(Shape, Decl(types.d.ts, 6, 37))
+>ZodRawShape : Symbol(ZodRawShape)
+>Catchall : Symbol(Catchall, Decl(types.d.ts, 6, 63))
+>ZodTypeAny : Symbol(ZodTypeAny)
+>UnknownKeys : Symbol(UnknownKeys, Decl(types.d.ts, 6, 92))
+>UnknownKeysParam : Symbol(UnknownKeysParam)
+>UnknownKeysParam : Symbol(UnknownKeysParam)
+>objectUtil : Symbol(objectUtil, Decl(types.d.ts, 0, 8))
+>flatten : Symbol(objectUtil.flatten)
+>objectUtil : Symbol(objectUtil, Decl(types.d.ts, 0, 8))
+>addQuestionMarks : Symbol(objectUtil.addQuestionMarks, Decl(util.d.ts, 0, 37))
+>baseObjectOutputType : Symbol(baseObjectOutputType, Decl(types.d.ts, 6, 287))
+>Shape : Symbol(Shape, Decl(types.d.ts, 6, 37))
+>CatchallOutput : Symbol(CatchallOutput, Decl(types.d.ts, 9, 2))
+>Catchall : Symbol(Catchall, Decl(types.d.ts, 6, 63))
+>PassthroughType : Symbol(PassthroughType, Decl(types.d.ts, 11, 2))
+>UnknownKeys : Symbol(UnknownKeys, Decl(types.d.ts, 6, 92))
+
+export declare type baseObjectOutputType<Shape extends ZodRawShape> = {
+>baseObjectOutputType : Symbol(baseObjectOutputType, Decl(types.d.ts, 6, 287))
+>Shape : Symbol(Shape, Decl(types.d.ts, 7, 41))
+>ZodRawShape : Symbol(ZodRawShape)
+
+    [k in keyof Shape]: Shape[k]["_output"];
+>k : Symbol(k, Decl(types.d.ts, 8, 5))
+>Shape : Symbol(Shape, Decl(types.d.ts, 7, 41))
+>Shape : Symbol(Shape, Decl(types.d.ts, 7, 41))
+>k : Symbol(k, Decl(types.d.ts, 8, 5))
+
+};
+export declare type CatchallOutput<T extends ZodType> = ZodType extends T ? unknown : {
+>CatchallOutput : Symbol(CatchallOutput, Decl(types.d.ts, 9, 2))
+>T : Symbol(T, Decl(types.d.ts, 10, 35))
+>ZodType : Symbol(ZodType, Decl(types.d.ts, 2, 32))
+>ZodType : Symbol(ZodType, Decl(types.d.ts, 2, 32))
+>T : Symbol(T, Decl(types.d.ts, 10, 35))
+
+};
+export declare type PassthroughType<T extends UnknownKeysParam> = T extends "passthrough" ? {
+>PassthroughType : Symbol(PassthroughType, Decl(types.d.ts, 11, 2))
+>T : Symbol(T, Decl(types.d.ts, 12, 36))
+>UnknownKeysParam : Symbol(UnknownKeysParam)
+>T : Symbol(T, Decl(types.d.ts, 12, 36))
+
+} : unknown;
+export declare class ZodObject<T extends ZodRawShape, UnknownKeys extends UnknownKeysParam = UnknownKeysParam, Catchall extends ZodTypeAny = ZodTypeAny, Output = objectOutputType<T, Catchall, UnknownKeys>, Input = objectInputType<T, Catchall, UnknownKeys>> extends ZodType<Output, ZodObjectDef<T, UnknownKeys, Catchall>, Input> {
+>ZodObject : Symbol(ZodObject, Decl(types.d.ts, 13, 12))
+>T : Symbol(T, Decl(types.d.ts, 14, 31))
+>ZodRawShape : Symbol(ZodRawShape)
+>UnknownKeys : Symbol(UnknownKeys, Decl(types.d.ts, 14, 53))
+>UnknownKeysParam : Symbol(UnknownKeysParam)
+>UnknownKeysParam : Symbol(UnknownKeysParam)
+>Catchall : Symbol(Catchall, Decl(types.d.ts, 14, 110))
+>ZodTypeAny : Symbol(ZodTypeAny)
+>ZodTypeAny : Symbol(ZodTypeAny)
+>Output : Symbol(Output, Decl(types.d.ts, 14, 152))
+>objectOutputType : Symbol(objectOutputType, Decl(types.d.ts, 5, 1))
+>T : Symbol(T, Decl(types.d.ts, 14, 31))
+>Catchall : Symbol(Catchall, Decl(types.d.ts, 14, 110))
+>UnknownKeys : Symbol(UnknownKeys, Decl(types.d.ts, 14, 53))
+>Input : Symbol(Input, Decl(types.d.ts, 14, 205))
+>objectInputType : Symbol(objectInputType)
+>T : Symbol(T, Decl(types.d.ts, 14, 31))
+>Catchall : Symbol(Catchall, Decl(types.d.ts, 14, 110))
+>UnknownKeys : Symbol(UnknownKeys, Decl(types.d.ts, 14, 53))
+>ZodType : Symbol(ZodType, Decl(types.d.ts, 2, 32))
+>Output : Symbol(Output, Decl(types.d.ts, 14, 152))
+>ZodObjectDef : Symbol(ZodObjectDef)
+>T : Symbol(T, Decl(types.d.ts, 14, 31))
+>UnknownKeys : Symbol(UnknownKeys, Decl(types.d.ts, 14, 53))
+>Catchall : Symbol(Catchall, Decl(types.d.ts, 14, 110))
+>Input : Symbol(Input, Decl(types.d.ts, 14, 205))
+
+    strict(message?: errorUtil.ErrMessage): ZodObject<T, "strict", Catchall>;
+>strict : Symbol(ZodObject.strict, Decl(types.d.ts, 14, 329))
+>message : Symbol(message, Decl(types.d.ts, 15, 11))
+>errorUtil : Symbol(errorUtil)
+>ErrMessage : Symbol(errorUtil.ErrMessage)
+>ZodObject : Symbol(ZodObject, Decl(types.d.ts, 13, 12))
+>T : Symbol(T, Decl(types.d.ts, 14, 31))
+>Catchall : Symbol(Catchall, Decl(types.d.ts, 14, 110))
+}
+declare const objectType: <T extends ZodRawShape>(shape: T, params?: RawCreateParams) => ZodObject<T, "strip", ZodTypeAny, { [k in keyof objectUtil.addQuestionMarks<baseObjectOutputType<T>, any>]: objectUtil.addQuestionMarks<baseObjectOutputType<T>, any>[k]; }, { [k_1 in keyof baseObjectInputType<T>]: baseObjectInputType<T>[k_1]; }>;
+>objectType : Symbol(objectType, Decl(types.d.ts, 17, 13))
+>T : Symbol(T, Decl(types.d.ts, 17, 27))
+>ZodRawShape : Symbol(ZodRawShape)
+>shape : Symbol(shape, Decl(types.d.ts, 17, 50))
+>T : Symbol(T, Decl(types.d.ts, 17, 27))
+>params : Symbol(params, Decl(types.d.ts, 17, 59))
+>RawCreateParams : Symbol(RawCreateParams)
+>ZodObject : Symbol(ZodObject, Decl(types.d.ts, 13, 12))
+>T : Symbol(T, Decl(types.d.ts, 17, 27))
+>ZodTypeAny : Symbol(ZodTypeAny)
+>k : Symbol(k, Decl(types.d.ts, 17, 126))
+>objectUtil : Symbol(objectUtil, Decl(types.d.ts, 0, 8))
+>addQuestionMarks : Symbol(objectUtil.addQuestionMarks, Decl(util.d.ts, 0, 37))
+>baseObjectOutputType : Symbol(baseObjectOutputType, Decl(types.d.ts, 6, 287))
+>T : Symbol(T, Decl(types.d.ts, 17, 27))
+>objectUtil : Symbol(objectUtil, Decl(types.d.ts, 0, 8))
+>addQuestionMarks : Symbol(objectUtil.addQuestionMarks, Decl(util.d.ts, 0, 37))
+>baseObjectOutputType : Symbol(baseObjectOutputType, Decl(types.d.ts, 6, 287))
+>T : Symbol(T, Decl(types.d.ts, 17, 27))
+>k : Symbol(k, Decl(types.d.ts, 17, 126))
+>k_1 : Symbol(k_1, Decl(types.d.ts, 17, 265))
+>baseObjectInputType : Symbol(baseObjectInputType)
+>T : Symbol(T, Decl(types.d.ts, 17, 27))
+>baseObjectInputType : Symbol(baseObjectInputType)
+>T : Symbol(T, Decl(types.d.ts, 17, 27))
+>k_1 : Symbol(k_1, Decl(types.d.ts, 17, 265))
+
+export { anyType as any, arrayType as array, bigIntType as bigint, booleanType as boolean, dateType as date, discriminatedUnionType as discriminatedUnion, effectsType as effect, enumType as enum, functionType as function, instanceOfType as instanceof, intersectionType as intersection, lazyType as lazy, literalType as literal, mapType as map, nanType as nan, nativeEnumType as nativeEnum, neverType as never, nullType as null, nullableType as nullable, numberType as number, objectType as object, oboolean, onumber, optionalType as optional, ostring, pipelineType as pipeline, preprocessType as preprocess, promiseType as promise, recordType as record, setType as set, strictObjectType as strictObject, stringType as string, symbolType as symbol, effectsType as transformer, tupleType as tuple, undefinedType as undefined, unionType as union, unknownType as unknown, voidType as void, };
+>any : Symbol(any, Decl(types.d.ts, 18, 8))
+>array : Symbol(array, Decl(types.d.ts, 18, 24))
+>bigint : Symbol(bigint, Decl(types.d.ts, 18, 44))
+>boolean : Symbol(boolean, Decl(types.d.ts, 18, 66))
+>date : Symbol(date, Decl(types.d.ts, 18, 90))
+>discriminatedUnion : Symbol(discriminatedUnion, Decl(types.d.ts, 18, 108))
+>effect : Symbol(effect, Decl(types.d.ts, 18, 154))
+>enum : Symbol(enum, Decl(types.d.ts, 18, 177))
+>function : Symbol(function, Decl(types.d.ts, 18, 195))
+>instanceof : Symbol(instanceof, Decl(types.d.ts, 18, 221))
+>intersection : Symbol(intersection, Decl(types.d.ts, 18, 251))
+>lazy : Symbol(lazy, Decl(types.d.ts, 18, 285))
+>literal : Symbol(literal, Decl(types.d.ts, 18, 303))
+>map : Symbol(map, Decl(types.d.ts, 18, 327))
+>nan : Symbol(nan, Decl(types.d.ts, 18, 343))
+>nativeEnum : Symbol(nativeEnum, Decl(types.d.ts, 18, 359))
+>never : Symbol(never, Decl(types.d.ts, 18, 389))
+>null : Symbol(null, Decl(types.d.ts, 18, 409))
+>nullable : Symbol(nullable, Decl(types.d.ts, 18, 427))
+>number : Symbol(number, Decl(types.d.ts, 18, 453))
+>objectType : Symbol(objectType, Decl(types.d.ts, 17, 13))
+>object : Symbol(object, Decl(types.d.ts, 18, 475))
+>oboolean : Symbol(oboolean, Decl(types.d.ts, 18, 497))
+>onumber : Symbol(onumber, Decl(types.d.ts, 18, 507))
+>optional : Symbol(optional, Decl(types.d.ts, 18, 516))
+>ostring : Symbol(ostring, Decl(types.d.ts, 18, 542))
+>pipeline : Symbol(pipeline, Decl(types.d.ts, 18, 551))
+>preprocess : Symbol(preprocess, Decl(types.d.ts, 18, 577))
+>promise : Symbol(promise, Decl(types.d.ts, 18, 607))
+>record : Symbol(record, Decl(types.d.ts, 18, 631))
+>set : Symbol(set, Decl(types.d.ts, 18, 653))
+>strictObject : Symbol(strictObject, Decl(types.d.ts, 18, 669))
+>string : Symbol(string, Decl(types.d.ts, 18, 703))
+>symbol : Symbol(symbol, Decl(types.d.ts, 18, 725))
+>transformer : Symbol(transformer, Decl(types.d.ts, 18, 747))
+>tuple : Symbol(tuple, Decl(types.d.ts, 18, 775))
+>undefined : Symbol(undefined, Decl(types.d.ts, 18, 795))
+>union : Symbol(union, Decl(types.d.ts, 18, 823))
+>unknown : Symbol(unknown, Decl(types.d.ts, 18, 843))
+>void : Symbol(void, Decl(types.d.ts, 18, 867))
+
+=== frontend/src/ts/components/pages/settings/SearchableAutoSetting.tsx ===
+import { createForm } from "@tanstack/solid-form";
+>createForm : Symbol(createForm, Decl(SearchableAutoSetting.tsx, 0, 8))
+
+import { getConfig } from "../../../config/store";
+>getConfig : Symbol(getConfig, Decl(SearchableAutoSetting.tsx, 1, 8))
+
+export function SearchableAutoSetting<T extends ConfigKey>(props: {
+>SearchableAutoSetting : Symbol(SearchableAutoSetting, Decl(SearchableAutoSetting.tsx, 1, 50))
+>T : Symbol(T, Decl(SearchableAutoSetting.tsx, 2, 38))
+>ConfigKey : Symbol(ConfigKey)
+>props : Symbol(props, Decl(SearchableAutoSetting.tsx, 2, 59))
+
+  key: T;
+>key : Symbol(key, Decl(SearchableAutoSetting.tsx, 2, 67))
+>T : Symbol(T, Decl(SearchableAutoSetting.tsx, 2, 38))
+
+}): JSXElement {
+>JSXElement : Symbol(JSXElement)
+
+  const form = createForm(() => ({
+>form : Symbol(form, Decl(SearchableAutoSetting.tsx, 5, 7))
+>createForm : Symbol(createForm, Decl(SearchableAutoSetting.tsx, 0, 8))
+
+    defaultValues: {
+>defaultValues : Symbol(defaultValues, Decl(SearchableAutoSetting.tsx, 5, 34))
+
+      [props.key]: getConfig[props.key],
+>[props.key] : Symbol([props.key], Decl(SearchableAutoSetting.tsx, 6, 20))
+>props.key : Symbol(key, Decl(SearchableAutoSetting.tsx, 2, 67))
+>props : Symbol(props, Decl(SearchableAutoSetting.tsx, 2, 59))
+>key : Symbol(key, Decl(SearchableAutoSetting.tsx, 2, 67))
+>getConfig : Symbol(getConfig, Decl(SearchableAutoSetting.tsx, 1, 8))
+>props.key : Symbol(key, Decl(SearchableAutoSetting.tsx, 2, 67))
+>props : Symbol(props, Decl(SearchableAutoSetting.tsx, 2, 59))
+>key : Symbol(key, Decl(SearchableAutoSetting.tsx, 2, 67))
+
+    },
+  }));
+    if (
+      z.ZodFirstPartyTypeKind.ZodNumber
+    ) {
+        <div class="grid w-full gap-2">
+>class : Symbol(class, Decl(SearchableAutoSetting.tsx, 13, 12))
+
+          <form
+          >
+            <form.Field
+>form.Field : Symbol(SolidFormApi.Field, Decl(createForm.d.ts, 2, 749))
+>form : Symbol(form, Decl(SearchableAutoSetting.tsx, 5, 7))
+>Field : Symbol(SolidFormApi.Field, Decl(createForm.d.ts, 2, 749))
+
+              name={props.key}
+>name : Symbol(name, Decl(SearchableAutoSetting.tsx, 16, 23))
+>props.key : Symbol(key, Decl(SearchableAutoSetting.tsx, 2, 67))
+>props : Symbol(props, Decl(SearchableAutoSetting.tsx, 2, 59))
+>key : Symbol(key, Decl(SearchableAutoSetting.tsx, 2, 67))
+
+            />
+          </form>
+        </div>
+    }
+}
+=== frontend/src/ts/components/ui/form/utils.ts ===
+
+=== frontend/src/ts/config/store.ts ===
+import type { Config as ConfigSchema } from "@monkeytype/schemas/configs";
+>Config : Symbol(ConfigSchema, Decl(configs.ts, 4, 40))
+>ConfigSchema : Symbol(ConfigSchema, Decl(store.ts, 0, 13))
+
+import { createStore, reconcile } from "solid-js/store";
+>createStore : Symbol(createStore, Decl(store.ts, 1, 8))
+>reconcile : Symbol(reconcile, Decl(store.ts, 1, 21))
+
+const [getConfigStore, setConfigStoreRaw] =
+>getConfigStore : Symbol(getConfigStore, Decl(store.ts, 2, 7))
+>setConfigStoreRaw : Symbol(setConfigStoreRaw, Decl(store.ts, 2, 22))
+
+  createStore<ConfigSchema>(getDefaultConfig());
+>createStore : Symbol(createStore, Decl(store.ts, 1, 8))
+>ConfigSchema : Symbol(ConfigSchema, Decl(store.ts, 0, 13))
+
+export const getConfig = getConfigStore;
+>getConfig : Symbol(getConfig, Decl(store.ts, 4, 12))
+>getConfigStore : Symbol(getConfigStore, Decl(store.ts, 2, 7))
+
+=== node_modules/@tanstack/form-core/dist/esm/FormApi.d.ts ===
+export interface BaseFormOptions<in out TFormData, in out TSubmitMeta = never> {
+>BaseFormOptions : Symbol(BaseFormOptions, Decl(FormApi.d.ts, 0, 0))
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 0, 33))
+>TSubmitMeta : Symbol(TSubmitMeta, Decl(FormApi.d.ts, 0, 50))
+
+    /**
+     */
+    defaultValues?: TFormData;
+>defaultValues : Symbol(BaseFormOptions.defaultValues, Decl(FormApi.d.ts, 0, 80))
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 0, 33))
+}
+/**
+ */
+export interface FormOptions<in out TFormData, in out TOnMount extends undefined | FormValidateOrFn<TFormData>, in out TOnChange extends undefined | FormValidateOrFn<TFormData>, in out TOnChangeAsync extends undefined | FormAsyncValidateOrFn<TFormData>, in out TOnBlur extends undefined | FormValidateOrFn<TFormData>, in out TOnBlurAsync extends undefined | FormAsyncValidateOrFn<TFormData>, in out TOnSubmit extends undefined | FormValidateOrFn<TFormData>, in out TOnSubmitAsync extends undefined | FormAsyncValidateOrFn<TFormData>, in out TOnDynamic extends undefined | FormValidateOrFn<TFormData>, in out TOnDynamicAsync extends undefined | FormAsyncValidateOrFn<TFormData>, in out TOnServer extends undefined | FormAsyncValidateOrFn<TFormData>, in out TSubmitMeta = never> extends BaseFormOptions<TFormData, TSubmitMeta> {
+>FormOptions : Symbol(FormOptions, Decl(FormApi.d.ts, 4, 1))
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 7, 29))
+>TOnMount : Symbol(TOnMount, Decl(FormApi.d.ts, 7, 46))
+>FormValidateOrFn : Symbol(FormValidateOrFn)
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 7, 29))
+>TOnChange : Symbol(TOnChange, Decl(FormApi.d.ts, 7, 111))
+>FormValidateOrFn : Symbol(FormValidateOrFn)
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 7, 29))
+>TOnChangeAsync : Symbol(TOnChangeAsync, Decl(FormApi.d.ts, 7, 177))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn)
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 7, 29))
+>TOnBlur : Symbol(TOnBlur, Decl(FormApi.d.ts, 7, 253))
+>FormValidateOrFn : Symbol(FormValidateOrFn)
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 7, 29))
+>TOnBlurAsync : Symbol(TOnBlurAsync, Decl(FormApi.d.ts, 7, 317))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn)
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 7, 29))
+>TOnSubmit : Symbol(TOnSubmit, Decl(FormApi.d.ts, 7, 391))
+>FormValidateOrFn : Symbol(FormValidateOrFn)
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 7, 29))
+>TOnSubmitAsync : Symbol(TOnSubmitAsync, Decl(FormApi.d.ts, 7, 457))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn)
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 7, 29))
+>TOnDynamic : Symbol(TOnDynamic, Decl(FormApi.d.ts, 7, 533))
+>FormValidateOrFn : Symbol(FormValidateOrFn)
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 7, 29))
+>TOnDynamicAsync : Symbol(TOnDynamicAsync, Decl(FormApi.d.ts, 7, 600))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn)
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 7, 29))
+>TOnServer : Symbol(TOnServer, Decl(FormApi.d.ts, 7, 677))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn)
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 7, 29))
+>TSubmitMeta : Symbol(TSubmitMeta, Decl(FormApi.d.ts, 7, 748))
+>BaseFormOptions : Symbol(BaseFormOptions, Decl(FormApi.d.ts, 0, 0))
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 7, 29))
+>TSubmitMeta : Symbol(TSubmitMeta, Decl(FormApi.d.ts, 7, 748))
+}
+/**
+ */
+export declare class FormApi<in out TFormData, in out TOnMount extends undefined | FormValidateOrFn<TFormData>, in out TOnChange extends undefined | FormValidateOrFn<TFormData>, in out TOnChangeAsync extends undefined | FormAsyncValidateOrFn<TFormData>, in out TOnBlur extends undefined | FormValidateOrFn<TFormData>, in out TOnBlurAsync extends undefined | FormAsyncValidateOrFn<TFormData>, in out TOnSubmit extends undefined | FormValidateOrFn<TFormData>, in out TOnSubmitAsync extends undefined | FormAsyncValidateOrFn<TFormData>, in out TOnDynamic extends undefined | FormValidateOrFn<TFormData>, in out TOnDynamicAsync extends undefined | FormAsyncValidateOrFn<TFormData>, in out TOnServer extends undefined | FormAsyncValidateOrFn<TFormData>, in out TSubmitMeta = never> implements FormLikeAPI<TFormData, TSubmitMeta> {
+>FormApi : Symbol(FormApi, Decl(FormApi.d.ts, 8, 1))
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 11, 29))
+>TOnMount : Symbol(TOnMount, Decl(FormApi.d.ts, 11, 46))
+>FormValidateOrFn : Symbol(FormValidateOrFn)
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 11, 29))
+>TOnChange : Symbol(TOnChange, Decl(FormApi.d.ts, 11, 111))
+>FormValidateOrFn : Symbol(FormValidateOrFn)
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 11, 29))
+>TOnChangeAsync : Symbol(TOnChangeAsync, Decl(FormApi.d.ts, 11, 177))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn)
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 11, 29))
+>TOnBlur : Symbol(TOnBlur, Decl(FormApi.d.ts, 11, 253))
+>FormValidateOrFn : Symbol(FormValidateOrFn)
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 11, 29))
+>TOnBlurAsync : Symbol(TOnBlurAsync, Decl(FormApi.d.ts, 11, 317))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn)
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 11, 29))
+>TOnSubmit : Symbol(TOnSubmit, Decl(FormApi.d.ts, 11, 391))
+>FormValidateOrFn : Symbol(FormValidateOrFn)
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 11, 29))
+>TOnSubmitAsync : Symbol(TOnSubmitAsync, Decl(FormApi.d.ts, 11, 457))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn)
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 11, 29))
+>TOnDynamic : Symbol(TOnDynamic, Decl(FormApi.d.ts, 11, 533))
+>FormValidateOrFn : Symbol(FormValidateOrFn)
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 11, 29))
+>TOnDynamicAsync : Symbol(TOnDynamicAsync, Decl(FormApi.d.ts, 11, 600))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn)
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 11, 29))
+>TOnServer : Symbol(TOnServer, Decl(FormApi.d.ts, 11, 677))
+>FormAsyncValidateOrFn : Symbol(FormAsyncValidateOrFn)
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 11, 29))
+>TSubmitMeta : Symbol(TSubmitMeta, Decl(FormApi.d.ts, 11, 748))
+>TFormData : Symbol(TFormData, Decl(FormApi.d.ts, 11, 29))
+>TSubmitMeta : Symbol(TSubmitMeta, Decl(FormApi.d.ts, 11, 748))
+}
+=== node_modules/@tanstack/form-core/dist/esm/index.d.ts ===
+
+export * from './FormApi.js';
+export * from './util-types.js';
+=== node_modules/@tanstack/form-core/dist/esm/util-types.d.ts ===
+export interface AnyDeepKeyAndValue<K extends string = string, V extends any = any> {
+>AnyDeepKeyAndValue : Symbol(AnyDeepKeyAndValue, Decl(util-types.d.ts, 0, 0))
+>K : Symbol(K, Decl(util-types.d.ts, 0, 36))
+>V : Symbol(V, Decl(util-types.d.ts, 0, 62))
+
+    value: V;
+>value : Symbol(AnyDeepKeyAndValue.value, Decl(util-types.d.ts, 0, 85))
+>V : Symbol(V, Decl(util-types.d.ts, 0, 62))
+}
+export type DeepKeyAndValueArray<TParent extends AnyDeepKeyAndValue, T extends ReadonlyArray<any>, TAcc> = DeepKeysAndValuesImpl<NonNullable<T[number]>, ArrayDeepKeyAndValue<TParent, T>, TAcc | ArrayDeepKeyAndValue<TParent, T>>;
+>DeepKeyAndValueArray : Symbol(DeepKeyAndValueArray, Decl(util-types.d.ts, 2, 1))
+>TParent : Symbol(TParent, Decl(util-types.d.ts, 3, 33))
+>AnyDeepKeyAndValue : Symbol(AnyDeepKeyAndValue, Decl(util-types.d.ts, 0, 0))
+>T : Symbol(T, Decl(util-types.d.ts, 3, 68))
+>ReadonlyArray : Symbol(ReadonlyArray, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 3 more)
+>TAcc : Symbol(TAcc, Decl(util-types.d.ts, 3, 98))
+>DeepKeysAndValuesImpl : Symbol(DeepKeysAndValuesImpl, Decl(util-types.d.ts, 8, 122))
+>NonNullable : Symbol(NonNullable, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(util-types.d.ts, 3, 68))
+>ArrayDeepKeyAndValue : Symbol(ArrayDeepKeyAndValue)
+>TParent : Symbol(TParent, Decl(util-types.d.ts, 3, 33))
+>T : Symbol(T, Decl(util-types.d.ts, 3, 68))
+>TAcc : Symbol(TAcc, Decl(util-types.d.ts, 3, 98))
+>ArrayDeepKeyAndValue : Symbol(ArrayDeepKeyAndValue)
+>TParent : Symbol(TParent, Decl(util-types.d.ts, 3, 33))
+>T : Symbol(T, Decl(util-types.d.ts, 3, 68))
+
+export type AllTupleKeys<T> = T extends any ? keyof T & `${number}` : never;
+>AllTupleKeys : Symbol(AllTupleKeys, Decl(util-types.d.ts, 3, 228))
+>T : Symbol(T, Decl(util-types.d.ts, 4, 25))
+>T : Symbol(T, Decl(util-types.d.ts, 4, 25))
+>T : Symbol(T, Decl(util-types.d.ts, 4, 25))
+
+export type DeepKeyAndValueTuple<TParent extends AnyDeepKeyAndValue, T extends ReadonlyArray<any>, TAcc, TAllKeys extends AllTupleKeys<T> = AllTupleKeys<T>> = TAllKeys extends any ? DeepKeysAndValuesImpl<NonNullable<T[TAllKeys]>, TupleDeepKeyAndValue<TParent, T, TAllKeys>, TAcc | TupleDeepKeyAndValue<TParent, T, TAllKeys>> : never;
+>DeepKeyAndValueTuple : Symbol(DeepKeyAndValueTuple, Decl(util-types.d.ts, 4, 76))
+>TParent : Symbol(TParent, Decl(util-types.d.ts, 5, 33))
+>AnyDeepKeyAndValue : Symbol(AnyDeepKeyAndValue, Decl(util-types.d.ts, 0, 0))
+>T : Symbol(T, Decl(util-types.d.ts, 5, 68))
+>ReadonlyArray : Symbol(ReadonlyArray, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 3 more)
+>TAcc : Symbol(TAcc, Decl(util-types.d.ts, 5, 98))
+>TAllKeys : Symbol(TAllKeys, Decl(util-types.d.ts, 5, 104))
+>AllTupleKeys : Symbol(AllTupleKeys, Decl(util-types.d.ts, 3, 228))
+>T : Symbol(T, Decl(util-types.d.ts, 5, 68))
+>AllTupleKeys : Symbol(AllTupleKeys, Decl(util-types.d.ts, 3, 228))
+>T : Symbol(T, Decl(util-types.d.ts, 5, 68))
+>TAllKeys : Symbol(TAllKeys, Decl(util-types.d.ts, 5, 104))
+>DeepKeysAndValuesImpl : Symbol(DeepKeysAndValuesImpl, Decl(util-types.d.ts, 8, 122))
+>NonNullable : Symbol(NonNullable, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(util-types.d.ts, 5, 68))
+>TAllKeys : Symbol(TAllKeys, Decl(util-types.d.ts, 5, 104))
+>TupleDeepKeyAndValue : Symbol(TupleDeepKeyAndValue)
+>TParent : Symbol(TParent, Decl(util-types.d.ts, 5, 33))
+>T : Symbol(T, Decl(util-types.d.ts, 5, 68))
+>TAllKeys : Symbol(TAllKeys, Decl(util-types.d.ts, 5, 104))
+>TAcc : Symbol(TAcc, Decl(util-types.d.ts, 5, 98))
+>TupleDeepKeyAndValue : Symbol(TupleDeepKeyAndValue)
+>TParent : Symbol(TParent, Decl(util-types.d.ts, 5, 33))
+>T : Symbol(T, Decl(util-types.d.ts, 5, 68))
+>TAllKeys : Symbol(TAllKeys, Decl(util-types.d.ts, 5, 104))
+
+export type AllObjectKeys<T> = T extends any ? keyof T & (string | number) : never;
+>AllObjectKeys : Symbol(AllObjectKeys, Decl(util-types.d.ts, 5, 333))
+>T : Symbol(T, Decl(util-types.d.ts, 6, 26))
+>T : Symbol(T, Decl(util-types.d.ts, 6, 26))
+>T : Symbol(T, Decl(util-types.d.ts, 6, 26))
+
+export type DeepKeyAndValueObject<TParent extends AnyDeepKeyAndValue, T, TAcc, TAllKeys extends AllObjectKeys<T> = AllObjectKeys<T>> = TAllKeys extends any ? DeepKeysAndValuesImpl<NonNullable<T[TAllKeys]>, ObjectDeepKeyAndValue<TParent, T, TAllKeys>, TAcc | ObjectDeepKeyAndValue<TParent, T, TAllKeys>> : never;
+>DeepKeyAndValueObject : Symbol(DeepKeyAndValueObject, Decl(util-types.d.ts, 6, 83))
+>TParent : Symbol(TParent, Decl(util-types.d.ts, 7, 34))
+>AnyDeepKeyAndValue : Symbol(AnyDeepKeyAndValue, Decl(util-types.d.ts, 0, 0))
+>T : Symbol(T, Decl(util-types.d.ts, 7, 69))
+>TAcc : Symbol(TAcc, Decl(util-types.d.ts, 7, 72))
+>TAllKeys : Symbol(TAllKeys, Decl(util-types.d.ts, 7, 78))
+>AllObjectKeys : Symbol(AllObjectKeys, Decl(util-types.d.ts, 5, 333))
+>T : Symbol(T, Decl(util-types.d.ts, 7, 69))
+>AllObjectKeys : Symbol(AllObjectKeys, Decl(util-types.d.ts, 5, 333))
+>T : Symbol(T, Decl(util-types.d.ts, 7, 69))
+>TAllKeys : Symbol(TAllKeys, Decl(util-types.d.ts, 7, 78))
+>DeepKeysAndValuesImpl : Symbol(DeepKeysAndValuesImpl, Decl(util-types.d.ts, 8, 122))
+>NonNullable : Symbol(NonNullable, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(util-types.d.ts, 7, 69))
+>TAllKeys : Symbol(TAllKeys, Decl(util-types.d.ts, 7, 78))
+>ObjectDeepKeyAndValue : Symbol(ObjectDeepKeyAndValue)
+>TParent : Symbol(TParent, Decl(util-types.d.ts, 7, 34))
+>T : Symbol(T, Decl(util-types.d.ts, 7, 69))
+>TAllKeys : Symbol(TAllKeys, Decl(util-types.d.ts, 7, 78))
+>TAcc : Symbol(TAcc, Decl(util-types.d.ts, 7, 72))
+>ObjectDeepKeyAndValue : Symbol(ObjectDeepKeyAndValue)
+>TParent : Symbol(TParent, Decl(util-types.d.ts, 7, 34))
+>T : Symbol(T, Decl(util-types.d.ts, 7, 69))
+>TAllKeys : Symbol(TAllKeys, Decl(util-types.d.ts, 7, 78))
+
+export type DeepKeysAndValues<T> = DeepKeysAndValuesImpl<T> extends AnyDeepKeyAndValue ? DeepKeysAndValuesImpl<T> : never;
+>DeepKeysAndValues : Symbol(DeepKeysAndValues, Decl(util-types.d.ts, 7, 311))
+>T : Symbol(T, Decl(util-types.d.ts, 8, 30))
+>DeepKeysAndValuesImpl : Symbol(DeepKeysAndValuesImpl, Decl(util-types.d.ts, 8, 122))
+>T : Symbol(T, Decl(util-types.d.ts, 8, 30))
+>AnyDeepKeyAndValue : Symbol(AnyDeepKeyAndValue, Decl(util-types.d.ts, 0, 0))
+>DeepKeysAndValuesImpl : Symbol(DeepKeysAndValuesImpl, Decl(util-types.d.ts, 8, 122))
+>T : Symbol(T, Decl(util-types.d.ts, 8, 30))
+
+export type DeepKeysAndValuesImpl<T, TParent extends AnyDeepKeyAndValue = never, TAcc = never> = unknown extends T ? TAcc | UnknownDeepKeyAndValue<TParent> : unknown extends T ? T : T extends string | number | boolean | bigint | Date ? TAcc : T extends ReadonlyArray<any> ? number extends T['length'] ? DeepKeyAndValueArray<TParent, T, TAcc> : DeepKeyAndValueTuple<TParent, T, TAcc> : keyof T extends never ? TAcc | UnknownDeepKeyAndValue<TParent> : T extends object ? DeepKeyAndValueObject<TParent, T, TAcc> : TAcc;
+>DeepKeysAndValuesImpl : Symbol(DeepKeysAndValuesImpl, Decl(util-types.d.ts, 8, 122))
+>T : Symbol(T, Decl(util-types.d.ts, 9, 34))
+>TParent : Symbol(TParent, Decl(util-types.d.ts, 9, 36))
+>AnyDeepKeyAndValue : Symbol(AnyDeepKeyAndValue, Decl(util-types.d.ts, 0, 0))
+>TAcc : Symbol(TAcc, Decl(util-types.d.ts, 9, 80))
+>T : Symbol(T, Decl(util-types.d.ts, 9, 34))
+>TAcc : Symbol(TAcc, Decl(util-types.d.ts, 9, 80))
+>UnknownDeepKeyAndValue : Symbol(UnknownDeepKeyAndValue)
+>TParent : Symbol(TParent, Decl(util-types.d.ts, 9, 36))
+>T : Symbol(T, Decl(util-types.d.ts, 9, 34))
+>T : Symbol(T, Decl(util-types.d.ts, 9, 34))
+>T : Symbol(T, Decl(util-types.d.ts, 9, 34))
+>Date : Symbol(Date, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2020.date.d.ts, --, --) ... and 1 more)
+>TAcc : Symbol(TAcc, Decl(util-types.d.ts, 9, 80))
+>T : Symbol(T, Decl(util-types.d.ts, 9, 34))
+>ReadonlyArray : Symbol(ReadonlyArray, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 3 more)
+>T : Symbol(T, Decl(util-types.d.ts, 9, 34))
+>DeepKeyAndValueArray : Symbol(DeepKeyAndValueArray, Decl(util-types.d.ts, 2, 1))
+>TParent : Symbol(TParent, Decl(util-types.d.ts, 9, 36))
+>T : Symbol(T, Decl(util-types.d.ts, 9, 34))
+>TAcc : Symbol(TAcc, Decl(util-types.d.ts, 9, 80))
+>DeepKeyAndValueTuple : Symbol(DeepKeyAndValueTuple, Decl(util-types.d.ts, 4, 76))
+>TParent : Symbol(TParent, Decl(util-types.d.ts, 9, 36))
+>T : Symbol(T, Decl(util-types.d.ts, 9, 34))
+>TAcc : Symbol(TAcc, Decl(util-types.d.ts, 9, 80))
+>T : Symbol(T, Decl(util-types.d.ts, 9, 34))
+>TAcc : Symbol(TAcc, Decl(util-types.d.ts, 9, 80))
+>UnknownDeepKeyAndValue : Symbol(UnknownDeepKeyAndValue)
+>TParent : Symbol(TParent, Decl(util-types.d.ts, 9, 36))
+>T : Symbol(T, Decl(util-types.d.ts, 9, 34))
+>DeepKeyAndValueObject : Symbol(DeepKeyAndValueObject, Decl(util-types.d.ts, 6, 83))
+>TParent : Symbol(TParent, Decl(util-types.d.ts, 9, 36))
+>T : Symbol(T, Decl(util-types.d.ts, 9, 34))
+>TAcc : Symbol(TAcc, Decl(util-types.d.ts, 9, 80))
+>TAcc : Symbol(TAcc, Decl(util-types.d.ts, 9, 80))
+
+export type DeepKeys<T> = unknown extends T ? string : DeepKeysAndValues<T>['key'];
+>DeepKeys : Symbol(DeepKeys, Decl(util-types.d.ts, 9, 516))
+>T : Symbol(T, Decl(util-types.d.ts, 10, 21))
+>T : Symbol(T, Decl(util-types.d.ts, 10, 21))
+>DeepKeysAndValues : Symbol(DeepKeysAndValues, Decl(util-types.d.ts, 7, 311))
+>T : Symbol(T, Decl(util-types.d.ts, 10, 21))
+
+/**
+ */
+
