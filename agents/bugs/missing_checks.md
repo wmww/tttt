@@ -102,10 +102,10 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   ttttAccessorWriteTypeCircularity. [fixed a28963f2c]
 - (cor3, 2026-10-29, bun 99-V4 getWriteTypeOfSymbol__03) An interface property merged with class accessors of its name
   (`get x(): string; set x(v: string | number)` plus `interface C { x: string }`) is a SymbolFlags.Property in tsc,
-  written as it is read (getWriteTypeOfSymbol): `c.x = 1` is TS2322 against string; tttt takes the setter's type. Test ttttWriteTypeMergedAndIndexed. [fixed in the next commit]
+  written as it is read (getWriteTypeOfSymbol): `c.x = 1` is TS2322 against string; tttt takes the setter's type. Test ttttWriteTypeMergedAndIndexed. [fixed 22649f1bc]
 - (cor3, 2026-10-29, bun 99-V4 getWriteTypeOfSymbol__05) A write through a union of a class with a wider setter and a
   type with a string index signature (`u.x = true`, `A | { [k: string]: boolean }`): tsc checks against the union of the
-  write types `string | number` (TS2322 at the assignment); tttt reports nothing there. Test ttttWriteTypeMergedAndIndexed. [fixed in the next commit]
+  write types `string | number` (TS2322 at the assignment); tttt reports nothing there. Test ttttWriteTypeMergedAndIndexed. [fixed 22649f1bc]
 - **Base constraint circularity and base types resolved through constraints** (re-checked 2026-10-07, errors only).
   Port, plan-sized: a resolution-identity stack for base constraints (tsc's pushTypeResolution with
   ImmediateBaseConstraint plus getImmediateBaseConstraint's 5-deep identity check), TS2313 at the type node being
