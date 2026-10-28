@@ -131,8 +131,8 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   element defaults referencing the pattern's own parameter type are TS7022 circular and any; the lazy parameter typing
   of agents/notes/reentrancy.md (cor3's). [dup]
 - TS6133 missing for a parameter property outside a constructor (04-C6, 32-C11: still a parameter to tsc's unused
-  check) and spurious use from a parameter decorator tsc never checks (04-C4, no experimentalDecorators). [fixed
-  ccffc8cee]
+  check) and spurious use from a parameter decorator tsc never checks (04-C4, no experimentalDecorators).
+  [fixed ccffc8cee]
 - TS6133 spurious for an import only an untyped signature parameter names (`(Foo) => void`, 31-SC6): tsc's
   reportImplicitAny resolves the parameter's name as a type use (TS7051), the signature's type parameters first.
   [fixed 9cafcc7cf]
@@ -162,8 +162,7 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
 - 83-R01c (+TS2304 33): the for-initializer DisallowIn leak, missing_checks.md (ttttForInitializerDisallowInLeak). [dup]
 
 - 56-L15, 28-C11b: TS1358 for every tagged template whose tag is in an optional chain, not only right after `?.`.
-  [fixed 4352de83b] (28-C11b keeps a spurious TS1099 for `o?.a<>\`x\``: tsc says nothing about the empty type
-  arguments there. [open])
+  (28-C11b's spurious TS1099 for `o?.a<>\`x\`` went with 2a93a79fe.) [fixed 4352de83b]
 - 58-L01 / 63-L03b (accessor `this` parameters), the rule found in tsc: getAccessorThisParameter counts a `this`
   first parameter only when the accessor has 1 (getter) or 2 (setter) parameters; an accessor without its own takes
   the other accessor's (getSignatureFromDeclaration, getAnnotatedAccessorThisParameter), so `this` in both bodies is
