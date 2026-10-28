@@ -281,21 +281,21 @@ The laptop (measurements.md "The 12-core box at 15f15fdeb") had vscode's flag wa
   (span less run less run queue, summed): plain 0.16-1.3 s, flag 1.2-13.5 s (load 23-36). The D-state samples were
   mprotect() under malloc (memo_at, declare_symbol_flags, add_member_entry, binder_new_symbol: any malloc), the S ones
   shard-mutex waits behind holders stuck there. strace: the flag made 11.3k mprotect() calls, plain 41. The graph's
-  memory (shared tables' slot arrays at every doubling, memo pages) and the first-touch stamp chunks were malloc'd on
-  the checker threads, past what the front end had freed, and a non-main glibc arena grows its heap a page at a time,
+  memory (shared tables' slot arrays at every doubling, memo pages) and the first-touch stamp chunks (since deleted
+  with the stamps, b2b3cdcd2) were malloc'd on the checker threads, past what the front end had freed, and a non-main glibc arena grows its heap a page at a time,
   an mprotect() each, which takes the mm lock for writing while every other thread's faults (and the arenas'
-  MADV_POPULATE_WRITE ranges, which hold it for reading) queue. Fixed by ZeroPages (1449a150a, 9bff3a182, dbd14ff0b):
+  MADV_POPULATE_WRITE ranges, which hold it for reading) queue. Fixed by ZeroPages (ba727aa29, 246925f4f, 033070c1d):
   that memory now comes from mappings of its own, bumped under a lock, faulted in 256 KB ahead, freed with its owner:
-  39 mprotect() calls, blocked time at plain's level (0.7-0.9 s against 0.6-1.3 at load 24), check wall 2.4 -> 1.64-1.74 s
+  39-44 mprotect() calls, blocked time at plain's level (0.7-0.9 s against 0.6-1.3 at load 24), check wall 2.4 -> 1.64-1.74 s
   against plain's 1.50-1.77, check CPU 19.5 -> 18.9 s against 17.5 (+8%), flag instructions -1.2% (no memset of the
   doubled tables). The mechanism doesn't need load: a writer waiting on the mm lock stalls every new fault behind it.
 - **Shard locks: rare contention, long waits under load.** `TTTT_GRAPH_STATS` counts the inserts that found their
   shard locked: vscode K16 0.07% of 5.1M, effect K16 0.2% of 1.1M. Holds are short (99.8% under 1 us, TSC histogram),
   but each contended insert waited ~50-100 us: inserts are ~12% of the flag's check CPU, so a preempted thread is often
   a holder, and at ~400k inserts a second every thread reaches its shard within milliseconds (lock waits come in bursts,
-  20-30% of a 20 ms window). 256 shards (8bc9217fb) cut the contended inserts 2.5x and effect K16's lock-wait samples
+  20-30% of a 20 ms window). 256 shards (bf7b2a36e) cut the contended inserts 2.5x and effect K16's lock-wait samples
   from 5.3-6.7% to 2.5-4.5%. A spinning mutex, a spin-yield lock and probing before the lock were tried and not kept
-  (8bc9217fb's message). What would remove it: a lock-free insert (CAS the slot; a doubling marks the empty slots moved
+  (bf7b2a36e's message). What would remove it: a lock-free insert (CAS the slot; a doubling marks the empty slots moved
   so a racing insert retries in the new array); only worth it if the laptop at 24/24 shows lock waits.
 - **Not the deal, not a serial part.** The checkers' finishing spread (the idle tail) is the same in both modes (vscode
   88 ms plain, 107 flag; effect 11 / 14), the main thread's serial parts are equal (checkers start 2-4 ms into the
@@ -306,8 +306,8 @@ The laptop (measurements.md "The 12-core box at 15f15fdeb") had vscode's flag wa
   at K8, its costliest files slower by more (Schema.ts 95 -> 124 ms CPU, stream.ts 72 -> 95): the per-read premium
   of "The premium, attributed" on the files the span waits for, plus the shard-lock waits above at K16.
 
-**For the laptop** (confirms the fix where the loss was measured): `B=$(scripts/abbuild.sh 8c9afd512 --fast)`,
-`A=$(scripts/abbuild.sh ee2e5289f --fast)`, then for MODE in nothing and `--threads 24 --checkers 24`:
+**For the laptop** (confirms the fix where the loss was measured): `B=$(scripts/abbuild.sh becddb01b --fast)` (main
+before the series), `A=$(scripts/abbuild.sh main --fast)` (with the series landed), then for MODE in nothing and `--threads 24 --checkers 24`:
 `TTTT_SHARED_GRAPH=1 scripts/abbench.sh -n 5 $B $A vscode effect zod drizzle $DOKPLOY -- $MODE` and once plain
 (`scripts/abbench.sh -n 5 $B $B vscode effect -- $MODE`: the plain path is unchanged). Expected: vscode's flag wall
 from +10..12% to about its user loss (+4..5%). Whether shard locks still matter at 24/24: `strace -f -c -e

@@ -1835,8 +1835,8 @@ threads everywhere; "24/24" is `--threads 24 --checkers 24`. dokploy and openbot
   run; the other five projects were identical in every run. Far more often than the 5/10 at K8 recorded on this box.
 
 ## The flag's wall loss on vscode: the mm-lock storm fixed (2026-10-29, sgwall, this box at load 12-22)
-Fast builds: main 8c9afd512 ("flag base", and plain) against wt-sgwall 10f159e48 ("flag new": ZeroPages for the graph's
-memory and the stamp chunks, 256 shards; notes/shared_graph.md "The wall loss beyond the CPU loss"). 5 interleaved
+Fast builds: main 8c9afd512 ("flag base", and plain) against wt-sgwall 10f159e48 before its rebase onto becddb01b (as
+a63f51e46 after; "flag new": ZeroPages for the graph's memory and the stamp chunks, 256 shards; notes/shared_graph.md "The wall loss beyond the CPU loss"). 5 interleaved
 rounds, `TTTT_SYNC_EXIT=1`, whole-run wall and user+sys from /usr/bin/time; "def" is the defaults (16 threads, K16 on
 vscode, K8 on effect), "16" is `--threads 16 --checkers 16`. Medians (best in brackets); other workers loaded the box.
 
