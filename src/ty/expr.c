@@ -425,13 +425,9 @@ Ty const* ty_check_expr_skipping_sensitive(Checker* me, Expr const* expr, Ty con
 
 // Unions and widening
 
-// tsc's isUnitType
-static bool is_unit_for_reduction(Ty const* ty) {
-    return ty->kind != TY_UNION && (ty->flags & (TYF_LITERAL | TYF_ENUM | TYF_UNIQUE_ES_SYMBOL | TYF_NULLABLE));
-}
-
+// tsc's isUnitType (computed enum members included)
 bool ty_is_unit(Ty const* ty) {
-    return is_unit_for_reduction(ty);
+    return ty->kind != TY_UNION && (ty->flags & (TYF_LITERAL | TYF_ENUM | TYF_UNIQUE_ES_SYMBOL | TYF_NULLABLE));
 }
 
 // An instance type of a class (tsc's ObjectFlags.Class on getTargetType()), a class merged with an interface too
@@ -486,14 +482,14 @@ static Atom const* reduction_key(Checker* me, Ty const* keyed, Ty const** key_ty
                 for (u32 q = 0; q < parts.len && !unit_somewhere; q++) {
                     if (!(parts.data[q]->flags & TYF_OBJECT)) {
                         Ty const* t = ty_prop_type_of(me, parts.data[q], name); // (a type variable's apparent type's)
-                        unit_somewhere = t && is_unit_for_reduction(t);
+                        unit_somewhere = t && ty_is_unit(t);
                         continue;
                     }
                     Prop const* own = q == p ? m->props[k] : ty_get_prop(me, parts.data[q], name);
-                    unit_somewhere = own && is_unit_for_reduction(prop_type(me, own));
+                    unit_somewhere = own && ty_is_unit(prop_type(me, own));
                 }
                 Ty const* t = unit_somewhere ? ty_prop_type_of(me, keyed, name) : nullptr;
-                if (t && is_unit_for_reduction(t)) {
+                if (t && ty_is_unit(t)) {
                     key = m->props[k]->name;
                     key_type = ty_regular(me, t);
                 }
@@ -503,7 +499,7 @@ static Atom const* reduction_key(Checker* me, Ty const* keyed, Ty const** key_ty
         Members const* m = ty_members(me, keyed);
         for (u32 k = 0; k < m->prop_count && !key; k++) {
             Ty const* t = prop_type(me, m->props[k]);
-            if (is_unit_for_reduction(t)) {
+            if (ty_is_unit(t)) {
                 key = m->props[k]->name;
                 key_type = ty_regular(me, t);
             }
@@ -584,7 +580,7 @@ Ty const* ty_union_subtype_reduced(Checker* me, Ty const* const* types, u32 len)
                 ((target->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) && target->kind != TY_KEYOF))
             ) {
                 Ty const* t = ty_prop_type_of(me, target, key);
-                if (t && is_unit_for_reduction(t) && ty_regular(me, t) != key_type) continue;
+                if (t && ty_is_unit(t) && ty_regular(me, t) != key_type) continue;
             }
             // The symbolless `{}`s stay next to an empty object literal or type literal, which they would be mutual
             // subtypes of (tsc's removeSubtypes: `u || {}` with u unknown is the narrowed `{}`, without an inferable index)

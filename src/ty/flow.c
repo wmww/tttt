@@ -1990,11 +1990,6 @@ bool ty_has_prop(Checker* me, Ty const* ty, Atom const* name) {
     return ty_find_prop(me, ty, name).found;
 }
 
-// tsc's isUnitType (unlike is_unit_type(), with computed enum members)
-static bool is_key_unit(Ty const* ty) {
-    return ty->kind != TY_UNION && (ty->flags & (TYF_LITERAL | TYF_ENUM | TYF_UNIQUE_ES_SYMBOL | TYF_NULLABLE));
-}
-
 static bool is_key_holder(Ty const* ty) {
     return ty->flags & (TYF_OBJECT | TYF_TYPE_PARAM | TYF_DEFERRED);
 }
@@ -2082,7 +2077,7 @@ static Atom const* key_property_uncached(Checker* me, Ty const* ty) {
         if (!is_key_holder(member)) continue;
         Members const* props = ty_members(me, member->flags & TYF_OBJECT ? member : ty_apparent_type(me, member));
         for (u32 j = 0; j < props->prop_count && !name; j++) {
-            if (is_key_unit(prop_type(me, props->props[j]))) name = props->props[j]->name;
+            if (ty_is_unit(prop_type(me, props->props[j]))) name = props->props[j]->name;
         }
     }
     return name && map_by_key_property(me, ty, name) ? name : nullptr;
@@ -2325,7 +2320,7 @@ static Ty const* narrow_by_key_equality(
     if (!candidate) return nullptr;
     if ((op == BINARY_OP_TRIPLE_EQUAL) == assume_true) return candidate;
     Ty const* candidate_key = ty_prop_type_of(me, candidate, key);
-    return candidate_key && is_key_unit(candidate_key) ? filter_type(me, type, is_not_type, candidate) : type;
+    return candidate_key && ty_is_unit(candidate_key) ? filter_type(me, type, is_not_type, candidate) : type;
 }
 
 static Ty const* narrow_prop_by_facts(FlowQuery* q, Ty const* prop_type, void const* arg) {
