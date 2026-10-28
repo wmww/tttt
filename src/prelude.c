@@ -39,8 +39,6 @@ static void read_debug_env() {
         .debug_containers = getenv("TTTT_DEBUG_CONTAINERS") != nullptr,
         .resolve_times = getenv("TTTT_RESOLVE_TIMES") != nullptr,
         .walk_chunk_bytes = getenv("TTTT_WALK_CHUNK_BYTES") ? (u32)strtoul(getenv("TTTT_WALK_CHUNK_BYTES"), nullptr, 0) : 0,
-        .huge_pages = !getenv("TTTT_HUGEPAGES") || !strcmp(getenv("TTTT_HUGEPAGES"), "0") ? 0 :
-            !strcmp(getenv("TTTT_HUGEPAGES"), "budget") ? -1 : 1,
         .ast_small_kb = getenv("TTTT_AST_SMALL_KB") ? (u32)strtoul(getenv("TTTT_AST_SMALL_KB"), nullptr, 0) : 0,
         .ast_poison = getenv("TTTT_AST_POISON") != nullptr,
         .ast_stats = getenv("TTTT_AST_STATS") != nullptr,
@@ -55,39 +53,6 @@ static void read_debug_env() {
         .deep_hit_no_taint = getenv("TTTT_DEEP_HIT_NO_TAINT") != nullptr,
         .vma_names = getenv("TTTT_VMA_NAMES") != nullptr,
     };
-}
-
-static atomic_llong huge_page_budget;
-static pthread_once_t huge_page_budget_once = PTHREAD_ONCE_INIT;
-
-// The free memory in blocks of 2 MB and more, -1 if unknown
-static long long free_huge_block_bytes(void) {
-    FILE* file = fopen("/proc/buddyinfo", "r");
-    if (!file) return -1;
-    long long bytes = 0;
-    char line[512];
-    while (fgets(line, sizeof(line), file)) {
-        // "Node 0, zone   Normal 104016 78420 ..." : the count of free blocks of each order, from 4 KB up
-        char const* counts = strstr(line, "zone");
-        if (!counts) continue;
-        counts += 4;
-        while (*counts == ' ') counts++;
-        while (*counts && *counts != ' ') counts++;
-        for (int order = 0; order <= 20; order++) {
-            char* end;
-            long long count = strtoll(counts, &end, 10);
-            if (end == counts) break;
-            counts = end;
-            if (order >= 9) bytes += count << (order + 12);
-        }
-    }
-    fclose(file);
-    return bytes;
-}
-
-static void read_huge_page_budget(void) {
-    long long bytes = free_huge_block_bytes();
-    if (bytes > 0) atomic_store(&huge_page_budget, bytes);
 }
 
 u64 process_resident_bytes(void) {
@@ -173,43 +138,6 @@ void vma_name(void* addr, size_t len, char const* name) {
     prctl(0x53564d41, 0, (unsigned long)addr, len, (unsigned long)full);
 }
 
-// The budget itself (what huge_pages_take() does under --huge-pages)
-static _Atomic u64 huge_page_budget_read_ns; // When /proc/buddyinfo was last read again (CLOCK_MONOTONIC)
-#define HUGE_PAGE_BUDGET_MS 20
-static bool huge_pages_budget_take(size_t bytes) {
-    pthread_once(&huge_page_budget_once, read_huge_page_budget);
-    // (Read again at most every HUGE_PAGE_BUDGET_MS, and only ever lowered by it: to half of what is free now, when other
-    // processes took blocks since. Raised by it, our own threads drained the blocks it counted and stalled anyway)
-    struct timespec now;
-    clock_gettime(CLOCK_MONOTONIC, &now);
-    u64 now_ns = (u64)now.tv_sec * 1000000000u + (u64)now.tv_nsec + 1;
-    u64 last = atomic_load_explicit(&huge_page_budget_read_ns, memory_order_relaxed);
-    if (now_ns - last > (u64)HUGE_PAGE_BUDGET_MS * 1000000u &&
-        atomic_compare_exchange_strong(&huge_page_budget_read_ns, &last, now_ns)
-    ) {
-        long long free_now = free_huge_block_bytes();
-        long long cap = free_now >= 0 ? free_now / 2 : INT64_MAX;
-        long long budget = atomic_load(&huge_page_budget);
-        while (budget > cap && !atomic_compare_exchange_weak(&huge_page_budget, &budget, cap)) {}
-    }
-    if (atomic_fetch_sub(&huge_page_budget, (long long)bytes) >= (long long)bytes) return true;
-    atomic_fetch_add(&huge_page_budget, (long long)bytes);
-    return false;
-}
-
-bool huge_pages_take(size_t bytes) {
-    if (debug_env.huge_pages >= 0) return debug_env.huge_pages;
-    return huge_pages_budget_take(bytes);
-}
-
-void huge_pages_set_budgeted(void) {
-    if (debug_env.huge_pages == 0) debug_env.huge_pages = -1;
-}
-
-void huge_pages_give(size_t bytes) {
-    if (debug_env.huge_pages < 0) atomic_fetch_add(&huge_page_budget, (long long)bytes);
-}
-
 // Big tables by size class (log2 of the pages' bytes, from 2 MB): what big_table_free() kept
 enum { BIG_TABLE_MIN_SHIFT = 21 };
 static pthread_mutex_t big_tables_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -231,15 +159,9 @@ void* big_table(size_t count, size_t size) {
     if (ret) big_tables_free[shift] = *(void**)ret;
     pthread_mutex_unlock(&big_tables_lock);
     if (ret) return memset(ret, 0, bytes);
-    // (2 MB aligned: map 2 MB more and cut the ends off)
-    size_t align = (size_t)1 << BIG_TABLE_MIN_SHIFT;
-    char* raw = mmap(nullptr, mapped + align, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    panic_if(raw == MAP_FAILED, "out of memory");
-    char* start = (char*)(((uintptr_t)raw + align - 1) & ~(uintptr_t)(align - 1));
-    if (start > raw) munmap(raw, (size_t)(start - raw));
-    if (start + mapped < raw + mapped + align) munmap(start + mapped, (size_t)(raw + mapped + align - (start + mapped)));
+    char* start = mmap(nullptr, mapped, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    panic_if(start == MAP_FAILED, "out of memory");
     vma_name(start, mapped, "table");
-    if (huge_pages_take(mapped)) madvise(start, mapped, MADV_HUGEPAGE);
     // (Written before read: no zero page to copy)
     madvise(start, bytes, MADV_POPULATE_WRITE);
     return start;

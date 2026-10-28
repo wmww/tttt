@@ -7,7 +7,7 @@ reached), shared with other agents' builds (load 10-35 during these runs: walls 
 
 ## Tool: `scripts/rsstimeline.py -- TTTT-ARGS`
 `TTTT_VMA_NAMES=1` (prelude.c `vma_name()`, PR_SET_VMA_ANON_NAME) names tttt's anonymous mappings by kind in
-/proc/PID/smaps: `checker` (checker arenas: Arena.huge_first), `arena` (every other Arena: the binder's), `table`
+/proc/PID/smaps: `checker` (checker arenas: Arena.checker), `arena` (every other Arena: the binder's), `table`
 (big_table(): intern, link, node link and relation tables of 2 MB and more), `ast` (the AST segments: parsed files and
 materialized deferred bodies), `text` (read() source text chunks), `stack`, `span`. Unnamed anonymous memory is malloc's
 thread arenas (LazyMemo pages, small tables, the rest), `[heap]` the main heap, `*.ts` mappings the mapped source text.

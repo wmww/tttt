@@ -44,9 +44,6 @@ typedef struct DebugEnv {
     // TTTT_WALK_CHUNK_BYTES: every declaration file the chunked walk could take is walked in chunks of this many bytes
     // of statements (1: a statement each), whatever its size (program.c's chunked walk; its oracle)
     u32 walk_chunk_bytes;
-    // TTTT_HUGEPAGES: 1 madvises every arena chunk for huge pages; `budget` as many as the system has free (--huge-pages,
-    // -1 here); unset or 0 none (huge_pages_take())
-    int8_t huge_pages;
     // TTTT_AST_SMALL_KB: a thread's first AST bytes on 4 KB pages (ast_alloc.c's populate()), its default when 0
     u32 ast_small_kb;
     bool ast_poison;           // TTTT_AST_POISON: a dropped file's AST pages fault on access instead of reading as zeroes
@@ -69,16 +66,6 @@ typedef struct DebugEnv {
 } DebugEnv;
 extern DebugEnv debug_env;
 
-// Whether an arena chunk (or an AST slab, a big table) of `bytes` may be madvise(MADV_HUGEPAGE)d. Off by default: under
-// the common THP setting (defrag=madvise) a madvised fault that finds no free 2 MB block compacts memory synchronously,
-// so a program's wall depended on the machine's fragmentation (agents/notes/kernel_time.md): madvising past the free
-// blocks took openclaw from 7 s to 35-41 s and vscode from 1.6 to 5.3 s, and the budget below, read once, went stale
-// while other processes churned memory (a budget re-read every 20 ms was slower still: our own 16 threads drain the
-// blocks it counts). Off costs within noise to +5% (2026-10-24). --huge-pages (TTTT_HUGEPAGES=budget) madvises while
-// the free blocks of order >= 9 /proc/buddyinfo listed at the first call cover them; TTTT_HUGEPAGES=1 every chunk
-bool huge_pages_take(size_t bytes);
-// --huge-pages: huge_pages_take() goes by the budget (unless TTTT_HUGEPAGES said 1)
-void huge_pages_set_budgeted(void);
 // The process's resident set, bytes (/proc/self/statm; 0 if unreadable). A read of an fd kept open: cheap enough per file
 u64 process_resident_bytes(void);
 // The memory the system could give the process now, bytes: /proc/meminfo's MemAvailable, and when it runs in cgroups
@@ -88,8 +75,6 @@ u64 memory_available_bytes(void);
 // Under TTTT_VMA_NAMES, names an anonymous mapping `[anon:tttt-NAME]` in /proc/PID/smaps (PR_SET_VMA_ANON_NAME), for
 // RSS attribution by kind (scripts/rsstimeline.py); a no-op otherwise
 void vma_name(void* addr, size_t len, char const* name);
-// A madvised chunk of `bytes` that huge_pages_take() allowed is unmapped: its blocks are free again
-void huge_pages_give(size_t bytes);
 
 // calloc() for tables that are probed (read) before they are written: fresh pages calloc() gets from the kernel are
 // mapped to the shared zero page on the first read, and the first write then copies it, which flushes the TLB of every
@@ -102,8 +87,7 @@ static inline void* zeroed_table(size_t count, size_t size) {
 }
 
 // zeroed_table() for a checker's growing hash tables (intern, link and relation tables, which double), freed only
-// with big_table_free(p, bytes). A table of 2 MB or more is pages of its own, huge pages while huge_pages_take()
-// allows, and its free keeps them for the next table of its size (re-zeroed) rather than unmapping them: glibc's
+// with big_table_free(p, bytes). A table of 2 MB or more is pages of its own, and its free keeps them for the next table of its size (re-zeroed) rather than unmapping them: glibc's
 // pages are faulted 4 KB at a time, and a munmap() is a TLB shootdown on every thread
 void* big_table(size_t count, size_t size);
 void big_table_free(void* table, size_t bytes);

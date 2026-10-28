@@ -100,6 +100,10 @@ on the rest of the machine:
     (+1%), vscode 1.71 against 1.69 s (+1%), drizzle 0.24-0.26 against 0.22-0.24 s (+5%: sys 0.19 against 0.08 s,
     the 4 KB faults of a short run). `--huge-pages`: within noise of the old default on all three. On a machine with
     many free blocks huge pages helped more (measurements.md "2 MB-aligned huge"): `--huge-pages` there.
+  - **Removed 2026-10-28**, `--huge-pages`, TTTT_HUGEPAGES and the budget with it: on the 12-core laptop huge pages cut
+    faults 3.6x but wall and user cycles stayed within noise on drizzle and vscode (measurements.md "The 12-core box at
+    df95ec2f"), so the machinery wasn't worth its stall risk and code. Everything is on 4 KB pages, prefaulted with
+    MADV_POPULATE_WRITE as before.
 - **The memory pool** (program_set_memory_pool()): a checker recycles once the process's resident set passes
   startup's resident set + 80% of MemAvailable. With other jobs holding memory at startup, openclaw root (22.8 GB peak)
   got an 18.5 GB pool, recycled 15-16 times and ran ~15% slower, while 40 GB was available by then. Now, past the pool,

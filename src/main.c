@@ -1636,9 +1636,6 @@ static void print_help(void) {
         "                circularity, keep their output instead of checking everything again in one checker\n"
         "                (faster; where such a diagnostic lands may then depend on the checkers). --rerun: the\n"
         "                default, tsc --singleThreaded's output at any K; TTTT_NO_RERUN=1 is --no-rerun\n"
-        "  --huge-pages  madvise the checkers' arenas and the AST for transparent huge pages while the system has\n"
-        "                free 2 MB blocks (counted at startup): a few percent faster on an unfragmented machine, but\n"
-        "                a fault that finds no free block compacts memory (TTTT_HUGEPAGES=budget is the same)\n"
         "  --first-touch-stamps  deep nesting orders types by when each checker met them first, not by id\n"
         "                The output doesn't depend on it\n"
         "  --threads N   parse, bind and check on N threads (default: the number of cores; checking uses at\n"
@@ -1772,8 +1769,6 @@ static int run(int argc, const char** argv) {
             opts.keep_going = true;
         } else if (streq(argv[i], "--no-defer-bodies")) {
             opts.no_defer_bodies = true;
-        } else if (streq(argv[i], "--huge-pages")) {
-            huge_pages_set_budgeted();
         } else if (streq(argv[i], "--no-rerun")) {
             opts.rerun = 0;
         } else if (streq(argv[i], "--rerun")) {

@@ -58,7 +58,7 @@ typedef struct AstThread {
     AstSlab other; // The slab not in use: materializations' while parsing files, files' while materializing
     AstSlab lasting; // Lasting materializations' (ast_materialize_begin()), swapped like `other`
     AstSlab* swapped; // Materializing: where the files' slab is meanwhile
-    bool no_huge; // Materializing a lasting materialization: its pages are given back one by one
+    bool page_by_page; // Materializing a lasting materialization: its pages are given back one by one
     char* cursor_chunk; // The materialization slab's chunk the next materialization starts in, which it holds
     size_t populated_bytes; // Faulted in over all its slabs (populate())
     void* free_lists[AST_FREE_MAX / 8 + 1];
@@ -103,11 +103,9 @@ static char* take_slab(size_t size, char** end) {
     return ret;
 }
 
-// A materialization slab's 2 MB chunks are given back whole, when the last materialization in one is dropped, so that
-// they can be huge pages: dropping part of a huge page (MADV_DONTNEED) splits it, and the kernel frees its memory only
-// at its deferred split, under memory pressure. Per segment, a count per chunk: the materializations with a range in it,
-// plus one while a thread's next materialization may start in it (AstThread.cursor_chunk); CHUNK_HUGE when madvised
-#define CHUNK_HUGE ((u32)1 << 31)
+// A materialization slab's 2 MB chunks are given back whole, when the last materialization in one is dropped (made
+// for huge pages, which dropping part of splits; those were removed 2026-10-28, the chunk-wise give-back stays). Per
+// segment, a count per chunk: the materializations with a range in it, plus one while a thread's next materialization may start in it (AstThread.cursor_chunk)
 static _Atomic(u32)* _Atomic chunk_counts[(size_t)1 << (47 - AST_SEGMENT_SHIFT)];
 
 static inline char* chunk_of(char const* p) {
@@ -126,19 +124,14 @@ static _Atomic(u32)* chunk_count(char const* chunk) {
     return &counts[((uintptr_t)chunk & (AST_SEGMENT - 1)) / AST_POPULATE];
 }
 
-static void chunk_mark_huge(char const* chunk) {
-    atomic_fetch_or_explicit(chunk_count(chunk), CHUNK_HUGE, memory_order_relaxed);
-}
-
 // Adds delta to the count of every chunk [start, end) touches; a chunk whose count drops to zero is given back
 static void chunks_ref(char const* start, char const* end, int delta) {
     if (end <= start) return;
     for (char* chunk = chunk_of(start); chunk < end; chunk += AST_POPULATE) {
         _Atomic(u32)* count = chunk_count(chunk);
         u32 old = atomic_fetch_add_explicit(count, (u32)delta, memory_order_acq_rel);
-        if (delta > 0 || (old & ~CHUNK_HUGE) != 1) continue;
+        if (delta > 0 || old != 1) continue;
         if (!debug_env.ast_poison) madvise(chunk, AST_POPULATE, MADV_DONTNEED);
-        if (old & CHUNK_HUGE) huge_pages_give(AST_POPULATE);
     }
 }
 
@@ -193,7 +186,7 @@ void ast_materialize_begin(AstArena* arena, bool lasting) {
     if (debug_env.ast_malloc) return;
     check(!t->arena);
     t->swapped = lasting ? &t->lasting : &t->other;
-    t->no_huge = lasting;
+    t->page_by_page = lasting;
     swap_slabs(t, t->swapped);
     arena->materialization = true;
     arena->lasting = lasting;
@@ -215,19 +208,19 @@ void ast_materialize_end(void) {
         all_stats.bumped += t->arena->total;
         pthread_mutex_unlock(&stats_lock);
     }
-    for (u32 i = t->arena->ranges_counted; i < t->arena->range_count && !t->no_huge; i++) {
+    for (u32 i = t->arena->ranges_counted; i < t->arena->range_count && !t->page_by_page; i++) {
         chunks_ref(t->arena->ranges[i].start, t->arena->ranges[i].end, 1);
     }
     t->arena->ranges_counted = t->arena->range_count;
     // (The chunk the slab continues in stays until the thread's next materialization is past it)
     char* cursor = t->pos < t->end ? chunk_of(t->pos) : nullptr;
-    if (!t->no_huge && cursor != t->cursor_chunk) {
+    if (!t->page_by_page && cursor != t->cursor_chunk) {
         if (cursor) chunks_ref(cursor, cursor + 1, 1);
         if (t->cursor_chunk) chunks_ref(t->cursor_chunk, t->cursor_chunk + 1, -1);
         t->cursor_chunk = cursor;
     }
     t->arena = nullptr;
-    t->no_huge = false;
+    t->page_by_page = false;
     swap_slabs(t, t->swapped);
 }
 
@@ -296,11 +289,11 @@ void ast_arena_drop(AstArena* arena) {
 }
 
 // Faults the slab's pages in up to past pos, 2 MB at a time with one call rather than a trap per page (a tenth of
-// vscode's parse), as huge pages while the system has them free (slabs are 2 MB aligned). But a thread's first
+// vscode's parse). But a thread's first
 // AST_SMALL_PAGES bytes (over all its slabs) on 4 KB pages, AST_SMALL_STEP at a time: every thread of every phase takes
-// fresh slabs, and on a small program each one's last huge page was mostly unused (nest at 16 threads: peak RSS 192 ->
+// fresh slabs, and on a small program each one's last 2 MB was mostly unused (nest at 16 threads: peak RSS 192 ->
 // 170 MB, react 292 -> 270). A big program's threads pass it soon (vscode: +4% faults, populated a step at a time;
-// sys and user within noise). TTTT_AST_SMALL_KB=N sets it (1: huge from its second step)
+// sys and user within noise). TTTT_AST_SMALL_KB=N sets it (1: 2 MB steps from its second step)
 [[gnu::noinline]] static void populate(AstThread* t, char* pos) {
     while (t->populated < pos && t->populated < t->end) {
         char* from = t->populated;
@@ -312,10 +305,6 @@ void ast_arena_drop(AstArena* arena) {
             to = step_end < t->end ? step_end : t->end;
         } else {
             to = (size_t)(t->end - from) > AST_POPULATE ? from + AST_POPULATE : t->end;
-            if (to - from == AST_POPULATE && !t->no_huge && huge_pages_take(AST_POPULATE)) {
-                madvise(from, AST_POPULATE, MADV_HUGEPAGE);
-                if (t->arena && t->arena->materialization) chunk_mark_huge(from);
-            }
         }
         madvise(from, (size_t)(to - from), MADV_POPULATE_WRITE);
         t->populated_bytes += (size_t)(to - from);

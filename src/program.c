@@ -5719,7 +5719,7 @@ static Checker* checker_recycled(Program* me, Checker* old, u32 c) {
     // The deferred bodies the old one read for other files are likely read again (a module many import): the new one
     // holds them, as long as it reads them too (plan 78 stage 2: vscode at one checker materializes ~1100 files again
     // without). Only those materialized for another file (lasting, ast_materialize_begin()): one a file's own check made
-    // would keep the huge page it shares with that segment's other files (vscode K1 +150 MB)
+    // would keep the 2 MB chunk it shares with that segment's other files (vscode K1 +150 MB)
     for (u32 i = 0; i < old->held_count; i++) {
         DeferredBodies* list = old->held[i];
         SourceFile* file = deferred_bodies_file(list);
