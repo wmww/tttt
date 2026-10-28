@@ -2075,7 +2075,7 @@ static Atom const* key_property_uncached(Checker* me, Ty const* ty) {
         if (!is_key_holder(member)) continue;
         Members const* props = ty_members(me, member->flags & TYF_OBJECT ? member : ty_apparent_type(me, member));
         for (u32 j = 0; j < props->prop_count && !name; j++) {
-            if (ty_is_unit(prop_type(me, props->props[j]))) name = props->props[j]->name;
+            if (ty_is_unit(prop_type(me, members_prop(me, props, j)))) name = members_prop_name(props, j);
         }
     }
     return name && map_by_key_property(me, ty, name) ? name : nullptr;

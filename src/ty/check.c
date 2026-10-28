@@ -1024,7 +1024,7 @@ static Ty const* type_without_signatures(Checker* me, Ty const* ty) {
     if (!members->call_count && !members->construct_count) return ty;
     ObjectLiteralProp* props = malloc(sizeof(ObjectLiteralProp) * (members->prop_count ? members->prop_count : 1));
     panic_if(!props, "out of memory");
-    for (u32 i = 0; i < members->prop_count; i++) props[i] = (ObjectLiteralProp){ .reuse = members->props[i] };
+    for (u32 i = 0; i < members->prop_count; i++) props[i] = (ObjectLiteralProp){ .reuse = members_prop(me, members, i) };
     Ty const* ret = ty_object_literal(me, props, members->prop_count, nullptr, 0, OBJECT_SYNTHETIC);
     free(props);
     return ret;
@@ -1624,8 +1624,8 @@ Prop const* ty_suggested_property(Checker* me, Ty const* object, csview name) {
         panic_if(!props, "out of memory");
         for (u32 i = 0; i < members->prop_count; i++) {
             bool seen = false;
-            for (u32 k = 0; k < count && !seen; k++) seen = props[k]->name == members->props[i]->name;
-            if (!seen) props[count++] = members->props[i];
+            for (u32 k = 0; k < count && !seen; k++) seen = props[k]->name == members_prop_name(members, i);
+            if (!seen) props[count++] = members_prop(me, members, i);
         }
     }
     if (!count) {
@@ -3129,7 +3129,7 @@ static bool may_have_readonly_member(Checker* me, Ty const* object) {
     Members const* members = ty_members(me, apparent);
     if (members->call_count || members->construct_count) return true;
     for (u32 i = 0; i < members->prop_count; i++) {
-        if (members->props[i]->flags & PROP_READONLY) return true;
+        if (members_prop_flags(members, i) & PROP_READONLY) return true;
     }
     for (u32 i = 0; i < members->index_count; i++) {
         if (members->index[i].readonly) return true;
@@ -4705,7 +4705,7 @@ void ty_check_index_constraints(
     if (!members->index_count) return;
     bool interface = owner && !(owner->flags & SYMBOL_CLASS);
     for (u32 p = 0; p < members->prop_count; p++) {
-        Prop const* prop = members->props[p];
+        Prop const* prop = members_prop(me, members, p);
         Prop const* root = prop;
         while (root->target) root = root->target;
         if (span_valid(root->decl->name_span) && root->decl->name_span.buf[0] == '#') continue;
@@ -5331,7 +5331,7 @@ bool ty_check_private_name_access(Checker* me, PropertyExpr const* access, Ty co
     // A private name of the same spelling on the type is another class's
     Prop const* other = nullptr;
     for (u32 i = 0; i < members->prop_count && !other; i++) {
-        Prop const* prop = members->props[i];
+        Prop const* prop = members_prop(me, members, i);
         if (ty_private_name_class(me, prop->name) && csview_equals_sv(atom_sv(prop->name), span_sv(name))) other = prop;
     }
     if (!other) {

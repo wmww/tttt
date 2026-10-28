@@ -3770,10 +3770,10 @@ Symbol* ty_dynamic_import_module(Checker* me, CallExpr const* call, ModuleRef co
     attributes = (ModuleAttrs){0};
     Members const* members = with ? ty_members(me, with) : nullptr;
     for (u32 i = 0; members && i < members->prop_count && attributes.count < c_arraylen(attributes.items); i++) {
-        Ty const* type = ty_prop_type_of(me, with, members->props[i]->name);
+        Ty const* type = ty_prop_type_of(me, with, members_prop_name(members, i));
         bool known = type && type->kind == TY_LITERAL && type->flags & TYF_STRING_LITERAL;
         attributes.items[attributes.count++] = (ModuleAttr){
-            .name = atom_sv(members->props[i]->name), .value = known ? atom_sv(type->literal.string) : c_sv(""), .known = known,
+            .name = atom_sv(members_prop_name(members, i)), .value = known ? atom_sv(type->literal.string) : c_sv(""), .known = known,
         };
     }
     return binder_find_module_with(my binder, ref, &attributes);

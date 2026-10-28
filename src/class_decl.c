@@ -1041,7 +1041,7 @@ static void class_check_member_overrides(ClassDecl* me, Ty const* type, Ty const
         if (!(part_type->flags & TYF_OBJECT)) continue;
         Members const* base_members = ty_members(checker, part_type);
         for (u32 i = 0; i < base_members->prop_count; i++) {
-            Prop const* base_prop = base_members->props[i];
+            Prop const* base_prop = members_prop(checker, base_members, i);
             if (base_prop->flags & PROP_STATIC) continue;
             bool seen = false;
             for (u32 earlier = 0; earlier < part && !seen; earlier++) {
@@ -1191,8 +1191,8 @@ static Atom const* override_suggestion(Checker* checker, Ty const* base, Atom co
     for (u32 i = 0; i < parts.len; i++) {
         Members const* members = ty_members(checker, ty_apparent_type(checker, parts.data[i]));
         for (u32 j = 0; j < members->prop_count; j++) {
-            atoms[n] = members->props[j]->name;
-            names[n++] = atom_sv(members->props[j]->name);
+            atoms[n] = members_prop_name(members, j);
+            names[n++] = atom_sv(members_prop_name(members, j));
         }
     }
     isize best = spelling_suggestion(atom_sv(name), names, n);

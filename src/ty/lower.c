@@ -2075,7 +2075,7 @@ static u32 intersection_props(Checker* me, Ty const* ty, ObjectLiteralProp** out
         if (!(part->flags & TYF_OBJECT)) continue;
         Members const* members = ty_members(me, part);
         for (u32 i = 0; i < members->prop_count; i++) {
-            Prop const* prop = members->props[i];
+            Prop const* prop = members_prop(me, members, i);
             bool seen = false;
             for (u32 k = 0; k < count && !seen; k++) seen = (*out)[k].name == prop->name;
             if (seen) continue;
@@ -2116,7 +2116,7 @@ static Ty const* with_synthetic_default(Checker* me, Ty const* type, bool spread
         from = malloc(sizeof(ObjectLiteralProp) * (members->prop_count + 1));
         panic_if(!from, "out of memory");
         for (u32 i = 0; i < members->prop_count; i++) {
-            Prop const* prop = members->props[i];
+            Prop const* prop = members_prop(me, members, i);
             // (A class's methods, accessors and private or protected members don't spread: tsc's getSpreadType with
             // isSpreadableProperty, `import * as R` of an `export = class R { static bundle() }` has no `bundle`)
             if (!ty_is_spreadable_prop(me, prop)) continue;
@@ -2158,7 +2158,7 @@ static Ty const* module_type_clone(Checker* me, Ty const* type, ObjectLiteralKin
     Members const* members = ty_members(me, type);
     if (members->call_count || members->construct_count) return nullptr;
     ObjectLiteralProp* props = arena_new_n(&my arena, ObjectLiteralProp, members->prop_count + 1);
-    for (u32 i = 0; i < members->prop_count; i++) props[i] = (ObjectLiteralProp){ .reuse = members->props[i] };
+    for (u32 i = 0; i < members->prop_count; i++) props[i] = (ObjectLiteralProp){ .reuse = members_prop(me, members, i) };
     return ty_object_literal(me, props, members->prop_count, members->index, members->index_count, OBJECT_SYNTHETIC | kind);
 }
 
@@ -3474,16 +3474,16 @@ static Ty const* intersection_rest_type(Checker* me, Ty const* source, TyList pa
     for (u32 i = 0; i < parts.len; i++) {
         Members const* members = ty_members(me, ty_apparent_type(me, parts.data[i]));
         for (u32 j = 0; j < members->prop_count; j++) {
-            Atom const* name = members->props[j]->name;
+            Atom const* name = members_prop_name(members, j);
             bool seen = false;
             for (u32 k = 0; k < count && !seen; k++) seen = props[k].name == name;
-            if (seen || pattern_names(me, pattern, name, prop_has_numeric_name(members->props[j]))) continue;
+            if (seen || pattern_names(me, pattern, name, prop_has_numeric_name(members_prop(me, members, j)))) continue;
             FoundProp found = ty_find_prop(me, source, name);
             if (!found.found || (found.flags & (PROP_PRIVATE | PROP_PROTECTED))) continue;
             if (found.prop && !ty_is_spreadable_prop(me, found.prop)) continue;
             // (One member's property, not the intersection's own: the same property unless that makes it writable,
             // tsc's getSpreadSymbol)
-            Prop const* single = members->props[j];
+            Prop const* single = members_prop(me, members, j);
             for (u32 k = i + 1; k < parts.len && single; k++) {
                 if (ty_get_prop(me, ty_apparent_type(me, parts.data[k]), name)) single = nullptr;
             }
@@ -3538,7 +3538,7 @@ static Ty const* generic_rest_type(Checker* me, Ty const* source, TyList pattern
     if (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
         Members const* members = ty_members(me, apparent);
         for (u32 i = 0; i < members->prop_count; i++) {
-            Prop const* prop = members->props[i];
+            Prop const* prop = members_prop(me, members, i);
             // (tsc's getLiteralTypeFromProperty of every property, in order: the creation order its union goes by)
             if (ty_is_spreadable_prop(me, prop)) continue;
             // (A private or protected member, or a `#x`, has no key to omit: keyof lacks it already. tsc's
@@ -3597,7 +3597,7 @@ static Ty const* object_rest_type(Checker* me, Ty const* source, TyList pattern,
     panic_if(!props, "out of memory");
     u32 count = 0;
     for (u32 i = 0; i < members->prop_count; i++) {
-        Prop const* prop = members->props[i];
+        Prop const* prop = members_prop(me, members, i);
         if (!ty_is_spreadable_prop(me, prop)) continue;
         if (pattern_names(me, pattern, prop->name, prop_has_numeric_name(prop))) continue;
         // (tsc's getSpreadSymbol: the same property unless that makes it writable)
@@ -3638,11 +3638,11 @@ static Ty const* with_pattern_props(Checker* me, Ty const* type, Ty const* patte
     ObjectLiteralProp* props = malloc(sizeof(ObjectLiteralProp) * (have->prop_count + implied->prop_count + 1));
     panic_if(!props, "out of memory");
     u32 count = 0;
-    for (u32 i = 0; i < have->prop_count; i++) props[count++] = (ObjectLiteralProp){ .reuse = have->props[i] };
+    for (u32 i = 0; i < have->prop_count; i++) props[count++] = (ObjectLiteralProp){ .reuse = members_prop(me, have, i) };
     bool added = false;
     for (u32 i = 0; i < implied->prop_count; i++) {
-        if (ty_get_object_prop(me, type, implied->props[i]->name)) continue;
-        props[count++] = (ObjectLiteralProp){ .reuse = implied->props[i] };
+        if (ty_get_object_prop(me, type, members_prop_name(implied, i))) continue;
+        props[count++] = (ObjectLiteralProp){ .reuse = members_prop(me, implied, i) };
         added = true;
     }
     Ty const* ret = added ? ty_object_literal(me, props, count, have->index, have->index_count, OBJECT_LITERAL_FRESH) : type;
@@ -3871,7 +3871,7 @@ Ty const* ty_pad_initializer_type(Checker* me, Ty const* type, Binding const* pa
             if (!props) {
                 props = malloc(sizeof(ObjectLiteralProp) * (members->prop_count + vec_object_binding_item_size(&pattern->object)));
                 panic_if(!props, "out of memory");
-                for (u32 i = 0; i < members->prop_count; i++) props[count++] = (ObjectLiteralProp){ .reuse = members->props[i] };
+                for (u32 i = 0; i < members->prop_count; i++) props[count++] = (ObjectLiteralProp){ .reuse = members_prop(me, members, i) };
             }
             props[count++] = (ObjectLiteralProp){
                 .name = name,

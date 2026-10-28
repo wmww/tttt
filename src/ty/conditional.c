@@ -277,7 +277,7 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
             for (u32 i = 0; i < members->prop_count; i++) {
                 // (An object literal getter whose return type is being inferred further up: unsure, asking would infer
                 // it again from below the barrier, where tsc's permissive instantiation doesn't look at properties)
-                Prop const* prop = members->props[i];
+                Prop const* prop = members_prop(me, members, i);
                 Prop const* root = prop;
                 while (!prop_type_peek(me, root) && root->target && !root->mapped) root = root->target;
                 if (!prop_type_peek(me, root) && (root->flags & PROP_GETTER) && !root->target &&
@@ -470,7 +470,7 @@ static bool object_literal_type_mentions(Checker* me, Ty const* ty, TyList* out)
     // have been resolved inside its own circularity, and an instance resolving it again later is what gets it right:
     // the identity instance made recursive-types.test.ts's TS2344 spurious)
     for (u32 i = 0; i < members->prop_count; i++) {
-        Prop const* prop = members->props[i];
+        Prop const* prop = members_prop(me, members, i);
         // (A property type not known yet: unknown, a peek that selects between results, so an event (rule 5))
         if (TAINT_IF(TAINT_IN_FLIGHT_OTHER, !prop_type_peek(me, prop)) || prop->target || (prop->flags & PROP_GETTER)) return false;
     }
@@ -710,7 +710,7 @@ static bool callable_definitely_related(Checker* me, Ty const* check_type, Ty co
     if (!any_function) {
         Ty const* function_type = ty_global_function_type(me);
         for (u32 i = 0; i < source->prop_count; i++) {
-            if (ty_get_prop(me, function_type, source->props[i]->name)) return false;
+            if (ty_get_prop(me, function_type, members_prop_name(source, i))) return false;
         }
     }
     return true;

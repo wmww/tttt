@@ -3725,7 +3725,7 @@ static bool instanceof_target_ok(Checker* checker, Ty const* ty) {
     if (members->call_count || members->construct_count) return true;
     for (u32 i = 0; i < members->prop_count; i++) {
         // (A well-known symbol's escaped name: `__@hasInstance@<id>`)
-        csview name = atom_sv(members->props[i]->name);
+        csview name = atom_sv(members_prop_name(members, i));
         for (isize c = 0; c + 12 <= name.size; c++) {
             if (memcmp(name.buf + c, "@hasInstance", 12) == 0) return true;
         }

@@ -383,7 +383,7 @@ static u64 fp_members(Members const* members) {
     for (u32 i = 0; i < members->prop_count; i++) {
         // (A property without an identity in this history (a synthetic one whose owner this checker never saw, its type
         // not resolved yet): the members can't be compared)
-        u64 prop = fp_prop(members->props[i], 0);
+        u64 prop = fp_prop(members_prop(current_checker, members, i), 0);
         if (!prop) return 0;
         h = M(h, prop);
     }

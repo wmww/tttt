@@ -3385,7 +3385,7 @@ static bool type_prints_type(Checker* me, Ty const* ty, Ty const* target, u32 de
             if (ty->anonymous.applies_type_args) return false;
             Members const* members = ty_members(me, ty);
             for (u32 i = 0; i < members->prop_count; i++) {
-                if (type_prints_type(me, prop_type(me, members->props[i]), target, depth + 1)) return true;
+                if (type_prints_type(me, prop_type(me, members_prop(me, members, i)), target, depth + 1)) return true;
             }
             return false;
         }
@@ -5234,14 +5234,14 @@ static bool prop_declared_at(Prop const* prop, ObjectExprItem const* item) {
 static Prop const* pseudo_member_prop(Members const* members, ObjectExprItem const* item, u32 hint) {
     csview name = item->computed_key ? (csview){0} : cstr_sv(&item->name_string);
     if (name.size) {
-        if (hint < members->prop_count && csview_equals_sv(atom_sv(members->props[hint]->name), name)) return members->props[hint];
+        if (hint < members->prop_count && csview_equals_sv(atom_sv(members_prop_name(members, hint)), name)) return members_prop(current_checker, members, hint);
         for (u32 i = 0; i < members->prop_count; i++) {
-            if (csview_equals_sv(atom_sv(members->props[i]->name), name)) return members->props[i];
+            if (csview_equals_sv(atom_sv(members_prop_name(members, i)), name)) return members_prop(current_checker, members, i);
         }
     }
-    if (hint < members->prop_count && prop_declared_at(members->props[hint], item)) return members->props[hint];
+    if (hint < members->prop_count && prop_declared_at(members_prop(current_checker, members, hint), item)) return members_prop(current_checker, members, hint);
     for (u32 i = 0; i < members->prop_count; i++) {
-        if (prop_declared_at(members->props[i], item)) return members->props[i];
+        if (prop_declared_at(members_prop(current_checker, members, i), item)) return members_prop(current_checker, members, i);
     }
     return nullptr;
 }
@@ -5332,7 +5332,7 @@ static bool pseudo_equivalent(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty
             }
             Members const* members = ty_members(me, stripped);
             u32 declarations = 0;
-            for (u32 i = 0; i < members->prop_count; i++) declarations += prop_declaration_count(members->props[i]);
+            for (u32 i = 0; i < members->prop_count; i++) declarations += prop_declaration_count(members_prop(me, members, i));
             if (declarations != pseudo->count) return false;
             for (u32 i = 0; i < pseudo->count; i++) {
                 PseudoMember const* member = &pseudo->members[i];
@@ -6031,7 +6031,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             cut = true;
             i = members->prop_count - 1;
         }
-        Prop const* prop = members->props[i];
+        Prop const* prop = members_prop(me, members, i);
         if (d.tracker) {
             if (d.tracker->truncated) break;
             if (track_property(me, d, prop)) continue;
@@ -6420,7 +6420,7 @@ static bool is_mixin_static_side(Checker* me, Ty const* ty) {
 static u32 written_prop_count(TyDisplay d, Members const* members) {
     u32 count = members->prop_count;
     if (!d.tracker) return count;
-    for (u32 i = 0; i < members->prop_count; i++) count -= (members->props[i]->flags & PROP_PROTOTYPE) != 0;
+    for (u32 i = 0; i < members->prop_count; i++) count -= (members_prop_flags(members, i) & PROP_PROTOTYPE) != 0;
     return count;
 }
 
@@ -7474,7 +7474,7 @@ static bool object_literal_is_context_sensitive(Checker* me, Ty const* ty, u32 d
     if (depth > 4) return false;
     Members const* members = ty_members(me, ty);
     for (u32 i = 0; i < members->prop_count; i++) {
-        Prop const* prop = members->props[i];
+        Prop const* prop = members_prop(me, members, i);
         if (prop->decl->function && ty_function_is_context_sensitive(prop->decl->function)) return true;
         Ty const* type = prop_type_peek(me, prop);
         if (!type || type->kind != TY_ANONYMOUS || type->anonymous.target) continue;
@@ -7545,7 +7545,7 @@ Scope const* ty_report_enclosing(Checker* me, Ty const* ty) {
     // (Where a property written in the literal is: one spread from elsewhere was written elsewhere)
     Span at = span_null;
     for (u32 i = 0; i < members->prop_count && !span_valid(at); i++) {
-        if (members->props[i]->decl->literal_own) at = members->props[i]->decl->name_span;
+        if (members_prop(me, members, i)->decl->literal_own) at = members_prop(me, members, i)->decl->name_span;
     }
     // (Else where the literal is: one of spread properties only)
     if (!span_valid(at) && ty->anonymous.literal_expr) at = ty->anonymous.literal_expr->inner_span;

@@ -914,7 +914,8 @@ Ty const* ty_mapped_template_instantiated(Checker* me, MappedInfo const* mapped,
 
 struct Members {
     // (The counts are packed in pairs: there are tens of thousands of these)
-    Prop* const* props; // declaration order
+    // Declaration order. Read through members_prop(): an instantiation's are made on first use (null until then)
+    Prop* const* lazy_props;
     u32 prop_count;
     u32 call_count;
     union {
@@ -996,6 +997,49 @@ static inline MembersRare const* members_rare(Members const* me) {
     // (Acquire: a rare part attached after publication, members.c's members_rare_published(), is read whole)
     MembersRare const* rare = __atomic_load_n(&my rare, __ATOMIC_ACQUIRE);
     return rare ? rare : &none;
+}
+
+// An instantiation's props are made on first use (instantiate_members(): most are never read, zod's 1.3M of them four
+// fifths). Until then its slot holds the prop it would be made from with the low bit set (a source prop: the same name,
+// flags and declaration chain), and the array is preceded by what makes it (MembersLazy): members_prop_make() makes
+// the i-th like instantiate_members() did and publishes it in its slot, first one wins. Equal Members, equal Props
+typedef struct MembersLazy {
+    Members const* source;
+    TyMapper const* mapper;
+} MembersLazy;
+static inline MembersLazy const* members_lazy(Members const* members) {
+    return (MembersLazy const*)(void const*)members->lazy_props - 1;
+}
+enum { MEMBERS_PROP_UNMADE = 1 };
+static inline uintptr_t members_slot(Members const* members, u32 i) {
+    return (uintptr_t)__atomic_load_n(&members->lazy_props[i], __ATOMIC_ACQUIRE);
+}
+// (Made in current_checker, the checker on this thread: `me` isn't kept alive for the rare slow path, a frame in every
+// lookup otherwise)
+Prop* members_prop_make(Members const* members, u32 i); // members.c
+static inline Prop* members_prop(Checker* me, Members const* members, u32 i) {
+    (void)me;
+    uintptr_t slot = members_slot(members, i);
+    return __builtin_expect(!(slot & MEMBERS_PROP_UNMADE), 1) ? (Prop*)slot : members_prop_make(members, i);
+}
+// The i-th prop if it is made, else the one it would be made from: the same name, flags and declaration, for what
+// reads only those (ty_prop_is_key(), ty_prop_key_literal() go down the target chain to the declaration anyway)
+static inline Prop const* members_prop_keyed(Members const* members, u32 i) {
+    return (Prop const*)(members_slot(members, i) & ~(uintptr_t)MEMBERS_PROP_UNMADE);
+}
+static inline Atom const* members_prop_name(Members const* members, u32 i) {
+    return members_prop_keyed(members, i)->name;
+}
+static inline u32 members_prop_flags(Members const* members, u32 i) {
+    return members_prop_keyed(members, i)->flags;
+}
+// Every prop made, in order: for the readers that want the array
+Prop* const* members_props_slow(Checker* me, Members const* members); // members.c
+static inline Prop* const* members_props(Checker* me, Members const* members) {
+    for (u32 i = 0; i < members->prop_count; i++) {
+        if (members_slot(members, i) & MEMBERS_PROP_UNMADE) return members_props_slow(me, members);
+    }
+    return members->lazy_props;
 }
 
 // sources[i] -> targets[i]. Always flat in stage 1 (composition builds a new flat mapper).

@@ -964,7 +964,7 @@ static bool constraint_resolves_through(Checker* me, Ty const* ty, Ty const* sou
         if (!(object->flags & TYF_OBJECT) || ty_is_generic_object(me, object) || !ty_is_generic_index(ty->indexed.index)) return false;
         Members const* members = ty_members(me, object);
         for (u32 i = 0; i < members->prop_count; i++) {
-            if (constraint_resolves_through(me, prop_type(me, members->props[i]), source, declared, depth + 1)) return true;
+            if (constraint_resolves_through(me, prop_type(me, members_prop(me, members, i)), source, declared, depth + 1)) return true;
         }
     }
     return false;
@@ -1268,7 +1268,7 @@ static bool exact_optional_unassignable_in(Checker* me, Ty const* source, Ty con
     if (!(owner->flags & TYF_OBJECT)) return false;
     Members const* members = ty_members(me, owner);
     for (u32 i = 0; i < members->prop_count; i++) {
-        Prop const* target_prop = members->props[i];
+        Prop const* target_prop = members_prop(me, members, i);
         Ty const* target_type;
         if (owner != target) {
             // (A union's or an intersection's property is the combined one)
@@ -1741,7 +1741,7 @@ static bool is_static_private_name(Checker* me, Prop const* prop);
 // require_optional)
 static bool has_unmatched_target_prop(Checker* me, Ty const* source, Members const* target_members, u32 from, bool require_optional) {
     for (u32 i = from; i < target_members->prop_count; i++) {
-        Prop const* target_prop = target_members->props[i];
+        Prop const* target_prop = members_prop(me, target_members, i);
         if (target_prop->flags & PROP_PROTOTYPE) continue;
         if ((target_prop->flags & PROP_OPTIONAL) && !require_optional) continue;
         if (source_has_prop(me, source, target_prop->name, 0) || is_static_private_name(me, target_prop)) continue;
@@ -2800,7 +2800,7 @@ static Ternary props_related_impl(
         Prop const* missing_prop = nullptr;
         u32 missing_count = 0;
         for (u32 i = 0; i < target_members->prop_count; i++) {
-            Prop const* target_prop = target_members->props[i];
+            Prop const* target_prop = members_prop(me, target_members, i);
             // (Untyped: tsc's getUnmatchedProperties asks getPropertyOfType)
             if ((target_prop->flags & PROP_OPTIONAL) || source_has_prop(me, source, target_prop->name, 0)) continue;
             if (is_static_private_name(me, target_prop)) continue;
@@ -2911,7 +2911,7 @@ static Ternary props_related_impl(
 
     Ternary result = TERNARY_TRUE;
     for (u32 i = 0; i < target_members->prop_count; i++) {
-        Prop const* target_prop = target_members->props[i];
+        Prop const* target_prop = members_prop(me, target_members, i);
         if (optionals_only && !(target_prop->flags & PROP_OPTIONAL)) continue;
         // (A class's `prototype` is what its construct signatures return: tsc's propertiesRelatedTo skips it)
         if (target_prop->flags & PROP_PROTOTYPE) continue;
@@ -3098,7 +3098,7 @@ static SourceProp* source_props(Checker* me, Ty const* source, Members const* so
     for (u32 i = 0; i < parts.len; i++) {
         Members const* members = source->kind == TY_INTERSECTION ? ty_members(me, parts.data[i]) : source_members;
         for (u32 j = 0; j < members->prop_count; j++) {
-            Prop const* prop = members->props[j];
+            Prop const* prop = members_prop(me, members, j);
             SourceProp entry = { .prop = prop, .type = nullptr, .flags = prop->flags };
             if (source->kind == TY_INTERSECTION) {
                 bool seen = false;
@@ -3298,7 +3298,7 @@ static bool is_numeric_prop_name(Atom const* name);
 static bool has_numeric_props(Checker* me, Ty const* ty) {
     Members const* members = ty_members(me, ty);
     for (u32 i = 0; i < members->prop_count; i++) {
-        if (is_numeric_prop_name(members->props[i]->name)) return true;
+        if (is_numeric_prop_name(members_prop_name(members, i))) return true;
     }
     return false;
 }
@@ -4191,7 +4191,7 @@ static bool could_access_optional_property(Checker* me, Ty const* object, Ty con
     if (!index_constraint) return false;
     Members const* members = ty_members(me, object);
     for (u32 i = 0; i < members->prop_count; i++) {
-        Prop const* prop = members->props[i];
+        Prop const* prop = members_prop(me, members, i);
         if (!(prop->flags & PROP_OPTIONAL)) continue;
         Ty const* key = ty_prop_key_literal(me, prop);
         if (key && ty_is_related(me, key, index_constraint, TY_RELATION_ASSIGNABLE)) return true;
@@ -4522,9 +4522,9 @@ static Ty const* apparent_mapped_type_keys(Checker* me, MappedInfo const* mapped
         // (A generic mapped part has the properties of the lower bound of its keys, `Omit<E[T], K>` those every E[T]
         // has: tsc's getPropertiesOfType resolves its members)
         for (u32 i = 0; i < members->prop_count + members->index_count; i++) {
-            Ty const* key = i < members->prop_count ? ty_prop_key_literal(me, members->props[i]) :
+            Ty const* key = i < members->prop_count ? ty_prop_key_literal(me, members_prop_keyed(members, i)) :
                 members->index[i - members->prop_count].key;
-            if (i < members->prop_count && (members->props[i]->flags & (PROP_PRIVATE | PROP_PROTECTED))) continue;
+            if (i < members->prop_count && (members_prop_flags(members, i) & (PROP_PRIVATE | PROP_PROTECTED))) continue;
             TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &key, .len = 1 });
             ty_buf_push(&keys, ty_instantiate(me, mapped->name_type, mapper));
         }
@@ -4556,8 +4556,8 @@ Ty const* ty_mapped_type_name_keys(Checker* me, MappedInfo const* mapped) {
                 return nullptr;
             }
             for (u32 i = 0; i < members->prop_count; i++) {
-                if (!ty_prop_is_key(me, members->props[i])) continue;
-                ty_buf_push(&part_keys, ty_prop_key_literal(me, members->props[i]));
+                if (!ty_prop_is_key(me, members_prop_keyed(members, i))) continue;
+                ty_buf_push(&part_keys, ty_prop_key_literal(me, members_prop_keyed(members, i)));
             }
             for (u32 i = 0; i < members->index_count; i++) ty_buf_push(&part_keys, members->index[i].key);
         }
@@ -5278,7 +5278,7 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
         if (!(part->flags & TYF_OBJECT)) continue;
         Members const* source_members = ty_members(me, part);
         for (u32 i = 0; i < source_members->prop_count; i++) {
-            Prop const* prop = source_members->props[i];
+            Prop const* prop = members_prop(me, source_members, i);
             bool seen = false;
             for (u32 d = 0; d < count && !seen; d++) seen = discriminants[d] == prop->name;
             if (seen || !ty_is_discriminant_property(me, object_target, prop->name)) continue;
@@ -5348,7 +5348,7 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
             }
             Members const* part_members = ty_members(me, part);
             for (u32 i = 0; i < part_members->prop_count && result; i++) {
-                Atom const* name = part_members->props[i]->name;
+                Atom const* name = members_prop_name(part_members, i);
                 bool skip = false;
                 for (u32 d = 0; d < count; d++) skip |= discriminants[d] == name;
                 Ty const* name_type = ty_prop_name_literal(me, name);
@@ -5360,7 +5360,7 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
                 // `Omit<Node, 'shape'>` to Node while ShapeID is resolving)
                 FoundProp source_prop = find_prop(me, apparent, name, 0);
                 if (!source_prop.found) {
-                    u32 target_flags = part_members->props[i]->flags;
+                    u32 target_flags = members_prop_flags(part_members, i);
                     if (member->kind == TY_INTERSECTION) {
                         FoundProp target_prop = find_prop(me, member, name, 0);
                         if (!target_prop.found) continue;
@@ -5557,7 +5557,7 @@ structural:;
     if (source_members->prop_count != target_members->prop_count) return TERNARY_FALSE;
     Ternary result = TERNARY_TRUE;
     for (u32 i = 0; i < source_members->prop_count && result; i++) {
-        Prop const* source_prop = source_members->props[i];
+        Prop const* source_prop = members_prop(me, source_members, i);
         Prop const* target_prop = ty_get_prop(me, target, source_prop->name);
         if (!target_prop) return TERNARY_FALSE;
         result &= props_identical(me, st, source_prop, target_prop);
@@ -5695,7 +5695,7 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
     for (u32 m = 0; m < members.len && result; m++) {
         Members const* member = ty_members(me, members.data[m]);
         for (u32 i = 0; i < member->prop_count && result; i++) {
-            Atom const* name = member->props[i]->name;
+            Atom const* name = members_prop_name(member, i);
             // Each name once: at the first member that has it
             bool seen = false;
             for (u32 earlier = 0; earlier < m && !seen; earlier++) seen = ty_get_prop(me, members.data[earlier], name) != nullptr;
@@ -5745,11 +5745,11 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
                     // (tsc names the member the property is in)
                     cstr source_str, target_str;
                     display_pair(me, source, true, members.data[m], &source_str, &target_str);
-                    cstr prop_name = ty_prop_written_name(me, member->props[i]);
+                    cstr prop_name = ty_prop_written_name(me, members_prop(me, member, i));
                     report_line(st, 2741, cstr_d(
                         "Property '", prop_name, "' is missing in type '", source_str, "' but required in type '", target_str, "'."
                     ));
-                    report_related(st, 2728, cstr_d("'", prop_name, "' is declared here."), ty_prop_decl_span(member->props[i]));
+                    report_related(st, 2728, cstr_d("'", prop_name, "' is declared here."), ty_prop_decl_span(members_prop(me, member, i)));
                     c_drop(cstr, &source_str, &target_str, &prop_name);
                 }
                 result = TERNARY_FALSE;
@@ -7612,7 +7612,7 @@ static Ty const* discriminated_union_target(
     }
     bool discriminated = false;
     for (u32 p = 0; p < prop_count; p++) {
-        Prop const* prop = props ? props[p].prop : members->props[p];
+        Prop const* prop = props ? props[p].prop : members_prop(me, members, p);
         if (!ty_is_discriminant_property(me, target, prop->name)) continue;
         *discriminants = true;
         Ty const* prop_ty = props ? props[p].type : prop_type(me, prop);
@@ -7758,7 +7758,7 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
             index_keys = members->index_count > 0;
             props = malloc(sizeof(SourceProp) * (prop_count ? prop_count : 1));
             panic_if(!props, "out of memory");
-            for (u32 p = 0; p < prop_count; p++) props[p] = (SourceProp){ .prop = members->props[p] };
+            for (u32 p = 0; p < prop_count; p++) props[p] = (SourceProp){ .prop = members_prop(me, members, p) };
         }
         u32 best_count = 0;
         // An intersection with a type variable among its members has generic keys (`keyof (undefined & T)` is
@@ -7794,7 +7794,7 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
                 Ty const* apparent = apparent_type(me, keyed);
                 Members const* target_members = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty_members(me, apparent) : nullptr;
                 for (u32 p = 0; target_members && p < target_members->prop_count; p++) {
-                    Atom const* name = target_members->props[p]->name;
+                    Atom const* name = members_prop_name(target_members, p);
                     if (!ty_get_prop(me, source, name) && ty_applicable_index_info(me, source, ty_prop_name_literal(me, name))) count++;
                 }
             }
@@ -7895,7 +7895,7 @@ static void collect_prop_names(Checker* me, Ty const* ty, csview** names, u32* c
             *names = realloc(*names, sizeof(csview) * *cap);
             panic_if(!*names, "out of memory");
         }
-        (*names)[(*count)++] = atom_sv(members->props[i]->name);
+        (*names)[(*count)++] = atom_sv(members_prop_name(members, i));
     }
 }
 
@@ -7947,7 +7947,7 @@ static bool has_excess_properties(Checker* me, RelationState* st, Ty const* sour
     }
     Members const* members = ty_members(me, source);
     for (u32 i = 0; i < members->prop_count; i++) {
-        Prop const* prop = members->props[i];
+        Prop const* prop = members_prop(me, members, i);
         if (!prop->decl->literal_own) continue;
         // A hyphenated JSX attribute (`data-x`) is never excess (tsc's isIgnoredJsxProperty)
         if (is_jsx && csview_contains(atom_sv(prop->name), "-")) continue;
@@ -8044,7 +8044,7 @@ static bool is_weak_type(Checker* me, Ty const* ty) {
         return false;
     }
     for (u32 i = 0; i < members->prop_count; i++) {
-        if (!(members->props[i]->flags & PROP_OPTIONAL)) return false;
+        if (!(members_prop_flags(members, i) & PROP_OPTIONAL)) return false;
     }
     return true;
 }
@@ -8071,8 +8071,8 @@ static bool lacks_common_properties(Checker* me, RelationState* st, Ty const* so
         Members const* part = apparent->kind == TY_INTERSECTION ? ty_members(me, parts.data[p]) : members;
         ret |= part->prop_count != 0;
         for (u32 i = 0; i < part->prop_count; i++) {
-            if (is_known_property(me, target, part->props[i]->name)) return false;
-            if (is_jsx && csview_contains(atom_sv(part->props[i]->name), "-")) return false; // `data-x`
+            if (is_known_property(me, target, members_prop_name(part, i))) return false;
+            if (is_jsx && csview_contains(atom_sv(members_prop_name(part, i)), "-")) return false; // `data-x`
         }
     }
     return ret;

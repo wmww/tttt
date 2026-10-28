@@ -552,7 +552,7 @@ static bool literal_instance_is_itself(Checker* me, Ty const* target, TyMapper c
     Members const* members = ty_members_peek(me, state);
     if (members->call_count || members->construct_count || members->mapped || members_rare(members)->base_count) return false;
     for (u32 i = 0; i < members->prop_count; i++) {
-        Prop const* prop = members->props[i];
+        Prop const* prop = members_prop(me, members, i);
         Ty const* prop_ty = prop_type_peek(me, prop);
         if (TAINT_IF(TAINT_PEEK, !prop_ty)) return false;
         Ty const* write = intern_get(&my links, (u64[]){ KEY_PROP_WRITE_TYPE, (u64)(uintptr_t)prop }, 2);

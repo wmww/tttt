@@ -349,7 +349,7 @@ void graph_fp_result(unsigned kind, void const* subject, void const* result, boo
             if (!owner) owner = fp_ty(subject);
             pthread_mutex_lock(&owners_lock);
             bool inserted;
-            u64* slot = map_find(&prop_owners, (u64)(uintptr_t)members->props[i], true, true, &inserted);
+            u64* slot = map_find(&prop_owners, (u64)(uintptr_t)members_prop(current_checker, members, i), true, true, &inserted);
             if (inserted) *slot = fp_mix(owner, i) | 1;
             pthread_mutex_unlock(&owners_lock);
         }

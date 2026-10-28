@@ -281,6 +281,8 @@ typedef struct MembersBuilder {
     u32 indexed;
     // The four arrays are in the arena, at their final size (never grown): builder_finish() takes them as they are
     bool arena_arrays;
+    // An instantiation's (instantiate_members()): `props` are null, made on first use; their names are these Members'
+    Members const* lazy_names;
 } MembersBuilder;
 
 enum { BUILDER_INDEXED = 16 };
@@ -648,7 +650,17 @@ static Members const* builder_finish(Checker* me, MembersBuilder* builder) {
     builder_unindex(builder);
     Members* ret = arena_new(&my arena, Members);
     u32 count = builder->props_count;
-    if (count > 8) {
+    if (builder->lazy_names) {
+        // (The source's names in its order: its index, or its names' filter)
+        Members const* same = builder->lazy_names;
+        if (count > 8) {
+            ret->by_name = same->by_name ? same->by_name : prop_name_index_new(me, members_props(me, same), count);
+        } else {
+            u64 filter = 0;
+            for (u32 i = 0; i < count; i++) filter |= ty_prop_filter_bit(members_prop_name(same, i));
+            ret->props_filter = filter;
+        }
+    } else if (count > 8) {
         // (An instantiation's props have its source's names, in its order: the source's index, which each lookup in any
         // of them then reads, warm)
         Members const* same = builder->same_names;
@@ -663,21 +675,21 @@ static Members const* builder_finish(Checker* me, MembersBuilder* builder) {
         for (u32 i = 0; i < count; i++) filter |= ty_prop_filter_bit(builder->props[i]->name);
         ret->props_filter = filter;
     }
-#define FINISH(field, count_field, T) \
+#define FINISH(field, ret_field, count_field, T) \
     if (builder->arena_arrays) { \
-        if (builder->field##_count) ret->field = builder->field; \
+        if (builder->field##_count) ret->ret_field = builder->field; \
         ret->count_field = builder->field##_count; \
     } else if (builder->field##_count) { \
         T* copy = arena_new_n(&my arena, T, builder->field##_count); \
         memcpy(copy, builder->field, sizeof(T) * builder->field##_count); \
-        ret->field = copy; \
+        ret->ret_field = copy; \
         ret->count_field = builder->field##_count; \
     } \
     if (builder->field && !builder->arena_arrays) free(builder->field);
-    FINISH(props, prop_count, Prop*)
-    FINISH(call, call_count, Signature*)
-    FINISH(construct, construct_count, Signature*)
-    FINISH(index, index_count, IndexInfo)
+    FINISH(props, lazy_props, prop_count, Prop*)
+    FINISH(call, call, call_count, Signature*)
+    FINISH(construct, construct, construct_count, Signature*)
+    FINISH(index, index, index_count, IndexInfo)
 #undef FINISH
     ret->mapped = builder->mapped;
     return ret;
@@ -1210,7 +1222,7 @@ static void builder_add_parts_members(Checker* me, MembersBuilder* builder, Ty c
         if (!(listed->flags & TYF_OBJECT)) continue;
         Members const* members = ty_members(me, listed);
         for (u32 j = 0; j < members->prop_count; j++) {
-            Prop* prop = members->props[j];
+            Prop* prop = members_prop(me, members, j);
             if (builder_find_prop(builder, prop->name)) continue;
             found_len = 0;
             u32 own = 0;
@@ -1305,8 +1317,8 @@ static void builder_add_inherited(Checker* me, MembersBuilder* builder, Ty const
     }
     for (u32 i = 0; i < members->prop_count; i++) {
         // A static `#x` stays the base's (tsc's isStaticPrivateIdentifierProperty in addInheritedMembers)
-        if ((members->props[i]->flags & PROP_STATIC) && ty_private_name_class(me, members->props[i]->name)) continue;
-        Atom const* name = members->props[i]->name;
+        if ((members_prop_flags(members, i) & PROP_STATIC) && ty_private_name_class(me, members_prop_name(members, i))) continue;
+        Atom const* name = members_prop_name(members, i);
         Prop* derived = nullptr;
         if (slots) {
             u32 h = (u32)(((uintptr_t)name >> 3) * 0x9E3779B1u) & (hash_cap - 1);
@@ -1316,7 +1328,7 @@ static void builder_add_inherited(Checker* me, MembersBuilder* builder, Ty const
             for (u32 j = 0; j < own && !derived; j++) if (builder->props[j]->name == name) derived = builder->props[j];
         }
         // (A JavaScript `this.x = v` member overrides too: tsgo's addInheritedMembers)
-        if (!derived) builder_push(builder, props, members->props[i]);
+        if (!derived) builder_push(builder, props, members_prop(me, members, i));
     }
     free(slots);
     // Signatures of the bases come after the type's own (they're overloads of each other). An index signature is
@@ -2484,7 +2496,7 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
         Members* partial = arena_new(&my arena, Members);
         Prop** props = arena_new_n(&my arena, Prop*, builder->props_count ? builder->props_count : 1);
         memcpy(props, builder->props, sizeof(Prop*) * builder->props_count);
-        partial->props = props;
+        partial->lazy_props = props;
         partial->prop_count = builder->props_count;
         set_early_members(me, state, partial);
     }
@@ -2561,9 +2573,9 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
         Members const* base_members = ty_members(me, base_constructor);
         for (u32 i = 0; i < base_members->prop_count; i++) {
             // A static `#x` isn't inherited (tsc's addInheritedMembers: isStaticPrivateIdentifierProperty)
-            if (ty_private_name_class(me, base_members->props[i]->name)) continue;
-            if (!builder_find_prop(builder, base_members->props[i]->name)) {
-                builder_push(builder, props, base_members->props[i]);
+            if (ty_private_name_class(me, members_prop_name(base_members, i))) continue;
+            if (!builder_find_prop(builder, members_prop_name(base_members, i))) {
+                builder_push(builder, props, members_prop(me, base_members, i));
             }
         }
     }
@@ -2699,7 +2711,7 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Ty co
                 Ty const* entry = entries[i];
                 if (entry->kind != TY_DECLARED || entry->declared.kind != TY_DECLARED_NAMESPACE) continue;
                 Members const* members = ty_members(me, entry);
-                for (u32 j = 0; j < members->prop_count; j++) builder_push(&early, props, (Prop*)members->props[j]);
+                for (u32 j = 0; j < members->prop_count; j++) builder_push(&early, props, (Prop*)members_prop(me, members, j));
             }
             set_early_members(me, state, builder_finish(me, &early));
         }
@@ -2715,7 +2727,7 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Ty co
         if (!(entry->flags & TYF_OBJECT)) continue;
         Members const* members = ty_members(me, entry);
         for (u32 j = 0; j < members->prop_count; j++) {
-            Prop* existing = builder_find_prop(builder, members->props[j]->name);
+            Prop* existing = builder_find_prop(builder, members_prop_name(members, j));
             bool is_shared = false;
             for (u32 k = 0; existing && k < shared.len && !is_shared; k++) is_shared = (Prop const*)(void const*)shared.data[k] == existing;
             if (is_shared) {
@@ -2727,16 +2739,16 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Ty co
             // (Unless the export is an alias, `export import X = ...`, which has no value flags of its own: the inherited
             // static stays, tsgo's addInheritedMembers replaces a member without SymbolFlagsValue)
             Symbol const* own_export = existing && existing->parent && existing->parent != decl ?
-                symbol_get_export(decl, atom_sv(members->props[j]->name)) : nullptr;
+                symbol_get_export(decl, atom_sv(members_prop_name(members, j))) : nullptr;
             if (own_export && (own_export->flags & SYMBOL_ALIAS) && !(own_export->flags & SYMBOL_VALUE)) continue;
-            if (existing && existing->parent && existing->parent != decl && members->props[j]->parent == decl) {
+            if (existing && existing->parent && existing->parent != decl && members_prop(me, members, j)->parent == decl) {
                 // The symbol's own export (a JavaScript class's expando `C.x = v`) hides a static the class inherits
                 // (tsc: the class's exports come before the base constructor's members). The props here are copies
-                prop_copy_into(me, existing, members->props[j], false); // (Its type resolved again unless known)
+                prop_copy_into(me, existing, members_prop(me, members, j), false); // (Its type resolved again unless known)
             } else if (existing) {
-                prop_add_shared_decl_spans(me, existing, members->props[j]->decl->decl_spans, members->props[j]->decl->decl_span_count);
+                prop_add_shared_decl_spans(me, existing, members_prop(me, members, j)->decl->decl_spans, members_prop(me, members, j)->decl->decl_span_count);
             } else {
-                Prop* prop = (Prop*)members->props[j];
+                Prop* prop = (Prop*)members_prop(me, members, j);
                 ty_buf_push(&shared, (Ty const*)(void const*)prop);
                 builder_push(builder, props, prop);
             }
@@ -3261,7 +3273,7 @@ static bool base_is_dynamic(Checker* me, Ty const* base, u32 depth) {
 static Members const* complete_members(Checker* me, Members const* raw, Symbol const* container) {
     if (!members_rare(raw)->base_count) return raw;
     MembersBuilder builder = {0};
-    for (u32 i = 0; i < raw->prop_count; i++) builder_push(&builder, props, raw->props[i]);
+    for (u32 i = 0; i < raw->prop_count; i++) builder_push(&builder, props, members_prop(me, raw, i));
     for (u32 i = 0; i < raw->call_count; i++) builder_push(&builder, call, raw->call[i]);
     for (u32 i = 0; i < raw->construct_count; i++) builder_push(&builder, construct, raw->construct[i]);
     for (u32 i = 0; i < raw->index_count; i++) builder_push(&builder, index, raw->index[i]);
@@ -3501,7 +3513,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                     Members* partial = arena_new(&my arena, Members);
                     Prop** props = arena_new_n(&my arena, Prop*, builder.props_count ? builder.props_count : 1);
                     memcpy(props, builder.props, sizeof(Prop*) * builder.props_count);
-                    partial->props = props;
+                    partial->lazy_props = props;
                     partial->prop_count = builder.props_count;
                     set_early_members(me, state, partial);
                 }
@@ -3699,7 +3711,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 if (host && host != decl) {
                     Members const* expandos = ty_members(me, ty_namespace_type(me, host));
                     for (u32 i = 0; i < expandos->prop_count; i++) {
-                        if (!builder_find_prop(&builder, expandos->props[i]->name)) builder_push(&builder, props, expandos->props[i]);
+                        if (!builder_find_prop(&builder, members_prop_name(expandos, i))) builder_push(&builder, props, members_prop(me, expandos, i));
                     }
                 }
                 builder_prototype_last(&builder);
@@ -3819,44 +3831,91 @@ MappedInfo const* ty_mapped_info_instantiate(Checker* me, MappedInfo const* sour
     return mapped;
 }
 
+// An instantiation's prop: `from` through `mapper` (its type instantiated on first use, prop_type())
+static Prop* instance_prop(Checker* me, Prop const* from, TyMapper const* mapper) {
+    // (Field by field: the arena's memory is zeroed, the rest of a Prop is zeros)
+    Prop* prop = arena_new(&my arena, Prop);
+    prop->name = from->name;
+    prop->flags = from->flags;
+    prop->parent = from->parent;
+    prop->target = from;
+    prop->mapper = mapper;
+    prop->decl = prop_decl_none();
+    return prop;
+}
+
+__attribute__((noinline)) Prop* members_prop_make(Members const* members, u32 i) {
+    Checker* me = current_checker;
+    MembersLazy const* lazy = members_lazy(members);
+    Prop* prop = instance_prop(me, members_prop(me, lazy->source, i), lazy->mapper);
+    // (Published like a shared word: with --shared-graph another worker may make it too, and the first one is it.
+    // Without, the members are this checker's alone)
+    Prop** slot = (Prop**)&members->lazy_props[i];
+    if (!my graph) {
+        __atomic_store_n(slot, prop, __ATOMIC_RELEASE);
+        return prop;
+    }
+    Prop* known = (Prop*)members_slot(members, i);
+    while (((uintptr_t)known & MEMBERS_PROP_UNMADE)) {
+        if (__atomic_compare_exchange_n(slot, &known, prop, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE)) return prop;
+    }
+    return known;
+}
+
+__attribute__((noinline)) Prop* const* members_props_slow(Checker* me, Members const* members) {
+    for (u32 i = 0; i < members->prop_count; i++) members_prop(me, members, i);
+    return members->lazy_props;
+}
+
 static Members const* instantiate_members(
     Checker* me, Members const* source, TyMapper const* mapper, bool applies_type_args, bool this_only
 ) {
     MembersBuilder builder = {0};
     // (At most the source's: one allocation rather than a growing one. Without bases nothing is added past the
     // source's, and they are the result's arrays: in the arena, as builder_finish() would copy them)
-    if (!members_rare(source)->base_count) {
+    bool lazy = !members_rare(source)->base_count;
+    if (lazy) {
         builder.arena_arrays = true;
 #define RESERVE(field, count) \
         if (count) { \
             builder.field = arena_new_n(&my arena, typeof(*builder.field), count); \
             builder.field##_cap = count; \
         }
-        RESERVE(props, source->prop_count)
         RESERVE(call, source->call_count)
         RESERVE(construct, source->construct_count)
         RESERVE(index, source->index_count)
 #undef RESERVE
+        // The props are made on first use (members_prop_make()): their array, null, after what makes them
+        if (source->prop_count) {
+            MembersLazy* header = arena_alloc(&my arena, sizeof(MembersLazy) + sizeof(Prop*) * source->prop_count);
+            *header = (MembersLazy){ .source = source, .mapper = mapper };
+            builder.props = (Prop**)(void*)(header + 1);
+            builder.props_cap = builder.props_count = source->prop_count;
+            builder.lazy_names = source;
+            // (Plain reads, vectorized: a source slot another worker makes meanwhile (--shared-graph) is either value,
+            // and either names the same prop)
+            uintptr_t const* restrict from = (uintptr_t const*)(void const*)source->lazy_props;
+            uintptr_t* restrict to = (uintptr_t*)(void*)builder.props;
+            for (u32 i = 0; i < source->prop_count; i++) to[i] = from[i] | MEMBERS_PROP_UNMADE;
+            // (Only `this` mapped: a prop that can't mention it is the source's own, tsc's mappingThisOnly. One not made
+            // yet is an instantiation, never thisless)
+            for (u32 i = 0; this_only && i < source->prop_count; i++) {
+                uintptr_t from = members_slot(source, i);
+                if (!(from & MEMBERS_PROP_UNMADE) && ((Prop const*)from)->thisless) builder.props[i] = (Prop*)from;
+            }
+        }
     } else if (source->prop_count) {
         builder.props = malloc(sizeof(*builder.props) * source->prop_count);
         panic_if(!builder.props, "out of memory");
         builder.props_cap = source->prop_count;
     }
-    for (u32 i = 0; i < source->prop_count; i++) {
-        if (this_only && source->props[i]->thisless) {
-            builder_push(&builder, props, source->props[i]);
+    for (u32 i = 0; !lazy && i < source->prop_count; i++) {
+        Prop* from = members_prop(me, source, i);
+        if (this_only && from->thisless) {
+            builder_push(&builder, props, from);
             continue;
         }
-        Prop* prop = arena_new(&my arena, Prop);
-        *prop = (Prop){
-            .name = source->props[i]->name,
-            .flags = source->props[i]->flags,
-            .parent = source->props[i]->parent,
-            .target = source->props[i],
-            .mapper = mapper,
-            .decl = prop_decl_none(),
-        };
-        builder_push(&builder, props, prop);
+        builder_push(&builder, props, instance_prop(me, from, mapper));
     }
     ThislessSignatures const* thisless = this_only ? intern_get(&my links, (u64[]){ KEY_THISLESS_SIGNATURES, (u64)(uintptr_t)source }, 2) : nullptr;
     for (u32 pass = 0; pass < 2; pass++) {
@@ -4260,7 +4319,7 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
     template->is_template = true;
     MembersBuilder builder = { .mapped = mapped };
     for (u32 i = 0; i < source->prop_count; i++) {
-        Prop const* from = source->props[i];
+        Prop const* from = members_prop(me, source, i);
         if (!ty_prop_is_key(me, from)) continue;
         Ty const* key = ty_prop_key_literal(me, from);
         TyMapper const* mapper = ty_mapper_new(
@@ -4355,7 +4414,7 @@ static Members const* expand_generic_intersection_homomorphic(Checker* me, Membe
             if (!(source_type->flags & TYF_OBJECT)) continue;
             Members const* source = ty_members(me, source_type);
             for (u32 i = 0; i < source->prop_count; i++) {
-                Prop const* from = source->props[i];
+                Prop const* from = members_prop(me, source, i);
                 if (!ty_prop_is_key(me, from) || builder_find_prop(&builder, from->name)) continue;
                 // Optional only if every part that has it has it optional, readonly if any has it readonly
                 u32 flags = from->flags & (PROP_OPTIONAL | PROP_READONLY);
@@ -4708,8 +4767,8 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
             if (!(part->flags & TYF_OBJECT)) continue;
             Members const* source = ty_members(me, part);
             for (u32 i = 0; i < source->prop_count + source->index_count; i++) {
-                if (i < source->prop_count && !ty_prop_is_key(me, source->props[i])) continue;
-                Ty const* key = i < source->prop_count ? ty_prop_key_literal(me, source->props[i]) :
+                if (i < source->prop_count && !ty_prop_is_key(me, members_prop_keyed(source, i))) continue;
+                Ty const* key = i < source->prop_count ? ty_prop_key_literal(me, members_prop_keyed(source, i)) :
                     source->index[i - source->prop_count].key;
                 bool seen = false;
                 for (u32 j = 0; j < key_count && !seen; j++) seen = member_keys[j] == key;
@@ -5069,9 +5128,9 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
             // (builder_add_inherited(): the own names are `length` and the elements' indices)
             Members const* members = ty_members(me, array);
             for (u32 i = 0; i < members->prop_count; i++) {
-                Atom const* name = members->props[i]->name;
+                Atom const* name = members_prop_name(members, i);
                 if (name == length_prop->name || is_index_name_below(name, fixed)) continue;
-                builder_push(&builder, props, members->props[i]);
+                builder_push(&builder, props, members_prop(me, members, i));
             }
             for (u32 i = 0; i < members->call_count; i++) builder_push(&builder, call, members->call[i]);
             for (u32 i = 0; i < members->construct_count; i++) builder_push(&builder, construct, members->construct[i]);
@@ -5315,7 +5374,7 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
                 if (host) {
                     Members const* expandos = ty_members(me, ty_namespace_type(me, host));
                     for (u32 i = 0; i < expandos->prop_count; i++) {
-                        builder_push(&builder, props, expandos->props[i]);
+                        builder_push(&builder, props, members_prop(me, expandos, i));
                     }
                 }
             } else if (ty->anonymous.overload_count) {
@@ -5568,13 +5627,18 @@ Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name) {
         while (lo < hi) {
             u32 mid = lo + (hi - lo) / 2;
             Atom const* mid_name = index->names[mid];
-            if (mid_name == name) return members->props[index->order[mid]];
+            if (mid_name == name) return members_prop(me, members, index->order[mid]);
             if ((uintptr_t)mid_name < (uintptr_t)name) lo = mid + 1; else hi = mid;
         }
         return nullptr;
     }
-    for (u32 i = 0; i < members->prop_count; i++) {
-        if (members->props[i]->name == name) return members->props[i];
+    // (The array and count in registers: the slots' acquire loads would reload them every step)
+    Prop* const* props = members->lazy_props;
+    u32 count = members->prop_count;
+    for (u32 i = 0; i < count; i++) {
+        uintptr_t slot = (uintptr_t)__atomic_load_n(&props[i], __ATOMIC_ACQUIRE);
+        if (((Prop const*)(slot & ~(uintptr_t)MEMBERS_PROP_UNMADE))->name != name) continue;
+        return __builtin_expect(!(slot & MEMBERS_PROP_UNMADE), 1) ? (Prop*)slot : members_prop_make(members, i);
     }
     return nullptr;
 }
@@ -6853,7 +6917,7 @@ static void context_props(Checker* me, WideningCtx* ctx) {
         if (!ty_is_object_literal_without_spread(me, siblings->data[i])) continue;
         Members const* members = ty_members(me, siblings->data[i]);
         for (u32 j = 0; j < members->prop_count; j++) {
-            Prop const* prop = members->props[j];
+            Prop const* prop = members_prop(me, members, j);
             u32 k = 0;
             while (k < ctx->prop_count && ctx->props[k]->name != prop->name) k++;
             if (k == ctx->prop_count) {
@@ -6880,7 +6944,7 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
     u32 capacity = members->prop_count + (ctx ? ctx->prop_count : 0);
     ObjectLiteralProp* props = calloc(capacity ? capacity : 1, sizeof(ObjectLiteralProp));
     for (u32 i = 0; i < members->prop_count; i++) {
-        Prop const* prop = members->props[i];
+        Prop const* prop = members_prop(me, members, i);
         // (An accessor pair a spread kept with its write type stays itself: tsc's getWidenedProperty returns what isn't a
         // SymbolFlags.Property as it is)
         if (!prop->decl->function && prop_write_type(me, prop)) {
@@ -6921,7 +6985,7 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
     for (u32 i = 0; ctx && i < ctx->prop_count; i++) {
         Prop const* prop = ctx->props[i];
         bool has = false;
-        for (u32 j = 0; j < members->prop_count && !has; j++) has = members->props[j]->name == prop->name;
+        for (u32 j = 0; j < members->prop_count && !has; j++) has = members_prop_name(members, j) == prop->name;
         if (has) continue;
         // (tsc's getUndefinedProperty: undefinedOrMissingType, missing under exactOptionalPropertyTypes, an absent
         // value which getNonMissingTypeOfSymbol drops, so `x?: never` is how it prints. A copy of the context's
@@ -7074,7 +7138,7 @@ static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
         ObjectLiteralProp* props = calloc(members->prop_count ? members->prop_count : 1, sizeof(ObjectLiteralProp));
         bool changed = false;
         for (u32 i = 0; i < members->prop_count; i++) {
-            Prop const* prop = members->props[i];
+            Prop const* prop = members_prop(me, members, i);
             Ty const* type = prop->decl->function ? nullptr : prop_type(me, prop);
             Ty const* widened = type ? widen_nullable(me, type, depth + 1) : type;
             changed |= widened != type;
@@ -7152,7 +7216,7 @@ Ty const* ty_regular_object_literal(Checker* me, Ty const* ty) {
     Members const* members = ty_members(me, ty);
     ObjectLiteralProp* props = calloc(members->prop_count ? members->prop_count : 1, sizeof(ObjectLiteralProp));
     for (u32 i = 0; i < members->prop_count; i++) {
-        Prop const* prop = members->props[i];
+        Prop const* prop = members_prop(me, members, i);
         props[i] = (ObjectLiteralProp){
             .name = prop->name,
             .flags = prop->flags,

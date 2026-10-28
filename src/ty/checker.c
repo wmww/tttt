@@ -1936,7 +1936,7 @@ static Atom const* never_reduced_literal_prop(Checker* me, Ty const* const* type
         if (!literal_object && !known_object) continue;
         Members const* members = ty_members(me, known);
         for (u32 p = 0; p < members->prop_count; p++) {
-            Prop const* prop = members->props[p];
+            Prop const* prop = members_prop(me, members, p);
             Ty const* a_type = nullptr;
             for (u32 j = 0; j < len; j++) {
                 Ty const* other_type = types[j];
@@ -2023,7 +2023,7 @@ static Atom const* never_reduced_generic_literal_prop(Checker* me, Ty const* con
         if (!root) continue;
         Members const* members = ty_members(me, root);
         for (u32 p = 0; p < members->prop_count; p++) {
-            Prop const* prop = members->props[p];
+            Prop const* prop = members_prop(me, members, p);
             Ty const* a_type = nullptr;
             for (u32 j = 0; j < len; j++) {
                 if (j == i) continue;
@@ -2095,7 +2095,7 @@ static Atom const* never_reduced_prop_grouped(Checker* me, Ty const* const* type
         if (!is_known_object_for_reduction(me, types[i])) continue;
         Members const* members = ty_members(me, types[i]);
         for (u32 p = 0; p < members->prop_count && holder_count < total; p++) {
-            Prop const* prop = members->props[p];
+            Prop const* prop = members_prop(me, members, p);
             u32 s = (u32)(((uintptr_t)prop->name >> 3) * 0x9E3779B97F4A7C15ull >> 32) & (cap - 1);
             while (slots[s].name && slots[s].name != prop->name) s = (s + 1) & (cap - 1);
             u32 h = holder_count++;
@@ -2200,7 +2200,7 @@ static Atom const* never_reduced_prop_known(Checker* me, Ty const* const* types,
         if (!is_known_object_for_reduction(me, a)) continue;
         Members const* members = ty_members(me, a);
         for (u32 p = 0; p < members->prop_count; p++) {
-            Prop const* prop = members->props[p];
+            Prop const* prop = members_prop(me, members, p);
             if (!private_name && has_conflicting_private(me, prop, types, i, len)) private_name = prop->name;
             // (The intersection's property is required if one of them is: an optional one is that type or undefined
             // then, `{ a: string } & Partial<{ a: never }>` is never, string & undefined)
@@ -3852,8 +3852,8 @@ Ty const* ty_keyof_without_index_signatures(Checker* me, Ty const* operand) {
     }
     TyBuf parts = {0};
     for (u32 i = 0; i < members->prop_count; i++) {
-        if (!ty_prop_is_key(me, members->props[i])) continue;
-        ty_buf_push(&parts, ty_prop_key_literal(me, members->props[i]));
+        if (!ty_prop_is_key(me, members_prop_keyed(members, i))) continue;
+        ty_buf_push(&parts, ty_prop_key_literal(me, members_prop_keyed(members, i)));
     }
     Ty const* ret = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
     ty_buf_drop(&parts);
@@ -3873,7 +3873,7 @@ static Ty const* keyof_keyof(Checker* me) {
         if (!(apparent[i]->flags & TYF_OBJECT)) continue;
         Members const* members = ty_members(me, apparent[i]);
         for (u32 j = 0; j < members->prop_count; j++) {
-            Prop const* prop = members->props[j];
+            Prop const* prop = members_prop(me, members, j);
             if (ty_private_name_class(me, prop->name)) continue;
             bool common = true;
             for (u32 k = 0; k < 3 && common; k++) {
@@ -3998,8 +3998,8 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
             TyBuf parts = {0};
             u32 entries = 0; // (tsc's list of one type per property and per index info: getUnionType returns one alone as it is)
             for (u32 i = 0; i < members->prop_count; i++) {
-                if (!ty_prop_is_key(me, members->props[i])) continue;
-                ty_buf_push(&parts, ty_prop_key_literal(me, members->props[i]));
+                if (!ty_prop_is_key(me, members_prop_keyed(members, i))) continue;
+                ty_buf_push(&parts, ty_prop_key_literal(me, members_prop_keyed(members, i)));
                 entries++;
             }
             // (An enum object's reverse mapping `[x: number]: string` is not a key: tsc's getLiteralTypeFromProperties
@@ -4126,7 +4126,7 @@ static bool is_reducible_intersection(Checker* me, Ty const* ty) {
         if (!is_known_object(me, a)) continue;
         Members const* members = ty_members(me, a);
         for (u32 p = 0; p < members->prop_count; p++) {
-            Prop const* prop = members->props[p];
+            Prop const* prop = members_prop(me, members, p);
             Ty const* a_type = nullptr;
             for (u32 j = 0; j < parts.len; j++) {
                 if (j == i || !is_known_object(me, parts.data[j])) continue;

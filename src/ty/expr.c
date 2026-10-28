@@ -477,7 +477,7 @@ static Atom const* reduction_key(Checker* me, Ty const* keyed, Ty const** key_ty
             for (u32 k = 0; k < m->prop_count && !key; k++) {
                 // (It is only a unit type if some member's own is: a literal and its primitive are the literal,
                 // two literals never)
-                Atom const* name = m->props[k]->name;
+                Atom const* name = members_prop_name(m, k);
                 bool unit_somewhere = false;
                 for (u32 q = 0; q < parts.len && !unit_somewhere; q++) {
                     if (!(parts.data[q]->flags & TYF_OBJECT)) {
@@ -485,12 +485,12 @@ static Atom const* reduction_key(Checker* me, Ty const* keyed, Ty const** key_ty
                         unit_somewhere = t && ty_is_unit(t);
                         continue;
                     }
-                    Prop const* own = q == p ? m->props[k] : ty_get_prop(me, parts.data[q], name);
+                    Prop const* own = q == p ? members_prop(me, m, k) : ty_get_prop(me, parts.data[q], name);
                     unit_somewhere = own && ty_is_unit(prop_type(me, own));
                 }
                 Ty const* t = unit_somewhere ? ty_prop_type_of(me, keyed, name) : nullptr;
                 if (t && ty_is_unit(t)) {
-                    key = m->props[k]->name;
+                    key = members_prop_name(m, k);
                     key_type = ty_regular(me, t);
                 }
             }
@@ -498,9 +498,9 @@ static Atom const* reduction_key(Checker* me, Ty const* keyed, Ty const** key_ty
     } else if (keyed && (keyed->flags & TYF_OBJECT)) {
         Members const* m = ty_members(me, keyed);
         for (u32 k = 0; k < m->prop_count && !key; k++) {
-            Ty const* t = prop_type(me, m->props[k]);
+            Ty const* t = prop_type(me, members_prop(me, m, k));
             if (ty_is_unit(t)) {
-                key = m->props[k]->name;
+                key = members_prop_name(m, k);
                 key_type = ty_regular(me, t);
             }
         }
@@ -3816,7 +3816,7 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
     }
     Members const* members = ty_members(me, object);
     for (u32 j = 0; j < members->prop_count; j++) {
-        Prop const* prop = members->props[j];
+        Prop const* prop = members_prop(me, members, j);
         if (prop->flags & (PROP_PRIVATE | PROP_PROTECTED)) literal_builder_skip(out, prop->name);
         if (!ty_is_spreadable_prop(me, prop)) continue;
         if ((prop->flags & PROP_METHOD) && prop->decl->function) continue; // (a class method)
@@ -4429,7 +4429,7 @@ static void push_missing_discriminators(
         if (!(part->flags & TYF_OBJECT)) continue;
         Members const* members = ty_members(me, part);
         for (u32 i = 0; i < members->prop_count; i++) {
-            Atom const* name = members->props[i]->name;
+            Atom const* name = members_prop_name(members, i);
             if (name == skip || has(literal, me, name)) continue;
             // A property of the union (every member has it), optional if it is in some member
             bool in_all = true, optional = false;
@@ -5715,7 +5715,7 @@ static Ty const* object_literal_rechecked(Checker* me, Expr const* expr, Ty cons
     ObjectLiteralProp* props = calloc(members->prop_count ? members->prop_count : 1, sizeof(ObjectLiteralProp));
     bool changed = false;
     for (u32 i = 0; i < members->prop_count; i++) {
-        Prop const* prop = members->props[i];
+        Prop const* prop = members_prop(me, members, i);
         props[i] = (ObjectLiteralProp){ .reuse = prop };
         ObjectExprItem const* item = prop->decl->item;
         if (!item || item->tag != OBJECT_ITEM_PROPERTY || prop->decl->function || !prop->decl->literal_own) continue;
@@ -6406,7 +6406,7 @@ static Ty const* object_literal_access(Checker* me, Ty const* object, Ty const* 
             part = ty_intrinsic(me, TY_UNDEFINED);
         } else if (!part && (keys.data[i]->flags & (TYF_STRING | TYF_NUMBER))) {
             Members const* members = ty_members(me, object);
-            for (u32 j = 0; j < members->prop_count; j++) ty_buf_push(&parts, prop_type(me, members->props[j]));
+            for (u32 j = 0; j < members->prop_count; j++) ty_buf_push(&parts, prop_type(me, members_prop(me, members, j)));
             part = ty_intrinsic(me, TY_UNDEFINED);
         }
         if (!part) {

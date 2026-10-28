@@ -383,7 +383,7 @@ static void complete(unsigned kind, TaintFrame frame, u64 key, void const* subje
         u64 owner = 0;
         for (u32 i = 0; i < members->prop_count; i++) {
             bool inserted;
-            u64* slot = map_find(&prop_owners, (u64)(uintptr_t)members->props[i], true, true, &inserted);
+            u64* slot = map_find(&prop_owners, (u64)(uintptr_t)members_prop(current_checker, members, i), true, true, &inserted);
             if (!inserted) continue;
             if (!owner) owner = fp_ty(subject);
             *slot = fp_mix(owner, i) | 1;

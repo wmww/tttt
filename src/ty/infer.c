@@ -819,7 +819,7 @@ static bool is_partially_inferable(Checker* me, Ty const* ty, u32 depth) {
     if (ty->kind != TY_ANONYMOUS || !(ty->flags & TYF_OBJECT)) return false;
     Members const* members = ty_members(me, ty);
     for (u32 i = 0; i < members->prop_count; i++) {
-        if (is_partially_inferable(me, prop_type(me, members->props[i]), depth + 1)) return true;
+        if (is_partially_inferable(me, prop_type(me, members_prop(me, members, i)), depth + 1)) return true;
     }
     return false;
 }
@@ -834,7 +834,7 @@ u32 ty_reverse_mapped_source_props(Checker* me, Ty const* source, Ty const* limi
         panic_if(!*out, "out of memory");
         u32 count = 0;
         for (u32 i = 0; i < members->prop_count; i++) {
-            Prop const* prop = members->props[i];
+            Prop const* prop = members_prop(me, members, i);
             // (Numeric and unique symbol keys too: tsc's getLiteralTypeFromProperty with StringOrNumberLiteralOrUnique)
             if (limited && !ty_is_related(me, ty_prop_key_literal(me, prop), limited, TY_RELATION_ASSIGNABLE)) continue;
             // (Declared where the source's is: tsc's createReverseMappedType copies its declarations, which is where
@@ -863,7 +863,7 @@ u32 ty_reverse_mapped_source_props(Checker* me, Ty const* source, Ty const* limi
         if (!(part->flags & TYF_OBJECT)) continue;
         Members const* members = ty_members(me, part);
         for (u32 i = 0; i < members->prop_count; i++) {
-            Atom const* name = members->props[i]->name;
+            Atom const* name = members_prop_name(members, i);
             bool seen = false;
             for (u32 k = 0; k < count && !seen; k++) seen = (*out)[k].name == name;
             if (seen) continue;
@@ -970,7 +970,7 @@ static bool infer_to_mapped(Checker* me, Inference* inf, Ty const* source, Mappe
         }
         Ty const** types = malloc(sizeof(Ty const*) * count);
         panic_if(!types, "out of memory");
-        for (u32 i = 0; i < prop_count; i++) types[i] = intersected ? intersected[i].type : prop_type(me, members->props[i]);
+        for (u32 i = 0; i < prop_count; i++) types[i] = intersected ? intersected[i].type : prop_type(me, members_prop(me, members, i));
         for (u32 i = 0; i < members->index_count; i++) types[prop_count + i] = members->index[i].value;
         free(intersected);
         // (tsc's getTemplateTypeFromMappedType: a `?` mapped type's template is optional, which takes the optional
@@ -1239,7 +1239,7 @@ static bool has_unmatched_prop(Checker* me, Ty const* source, Ty const* target, 
             Members const* members = ty_members(me, part);
             for (u32 i = 0; i < members->prop_count; i++) {
                 // (Required in one member is required in the intersection: its other members' copies are seen too)
-                Prop const* prop = members->props[i];
+                Prop const* prop = members_prop(me, members, i);
                 if (prop->flags & PROP_OPTIONAL) continue;
                 Ty const* target_type = discriminants ? ty_find_prop(me, target, prop->name).type : nullptr;
                 if (unmatched_prop_of(me, source, prop->name, target_type, discriminants)) return true;
@@ -1249,7 +1249,7 @@ static bool has_unmatched_prop(Checker* me, Ty const* source, Ty const* target, 
     }
     Members const* members = ty_members(me, target);
     for (u32 i = 0; i < members->prop_count; i++) {
-        Prop const* target_prop = members->props[i];
+        Prop const* target_prop = members_prop(me, members, i);
         if (target_prop->flags & PROP_OPTIONAL) continue;
         Ty const* target_type = discriminants ? prop_type(me, target_prop) : nullptr;
         if (unmatched_prop_of(me, source, target_prop->name, target_type, discriminants)) return true;
@@ -1346,7 +1346,7 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
     }
     if (!(ty_is_tuple(source) && ty_is_tuple(target)) && types_definitely_unrelated(me, source, target)) return;
     for (u32 i = 0; i < target_members->prop_count; i++) {
-        Prop const* target_prop = target_members->props[i];
+        Prop const* target_prop = members_prop(me, target_members, i);
         FoundProp source_prop = ty_find_prop(me, source, target_prop->name);
         if (!source_prop.found) continue;
         // An optional property's type has its undefined, except under exactOptionalPropertyTypes (tsc's
@@ -1388,7 +1388,7 @@ static void infer_from_signatures_and_indexes(Checker* me, Inference* inf, Ty co
         for (u32 p = 0; p < parts.len; p++) {
             Members const* part_members = ty_members(me, parts.data[p]);
             for (u32 j = 0; j < part_members->prop_count; j++) {
-                Prop const* prop = part_members->props[j];
+                Prop const* prop = members_prop(me, part_members, j);
                 Ty const* key = ty_prop_name_literal(me, prop->name);
                 bool applies = target_info->key->flags & TYF_STRING ? !(key->flags & TYF_ES_SYMBOL_LIKE) :
                     ty_specific_index_applies(me, target_info, key);
@@ -1818,10 +1818,10 @@ static void force_source_parts(Checker* me, Ty const* source, Ty const* target, 
     Members const* sources = ty_members(me, source);
     // An index signature takes an inferable index of every property (tsc's inferFromIndexTypes, getImplicitIndexInfo)
     if (targets->index_count && inferable_index(me, source, 0)) {
-        for (u32 i = 0; i < sources->prop_count; i++) (void)ty_prop_type_of(me, source, sources->props[i]->name);
+        for (u32 i = 0; i < sources->prop_count; i++) (void)ty_prop_type_of(me, source, members_prop_name(sources, i));
     }
     for (u32 i = 0; i < targets->prop_count; i++) {
-        Prop const* prop = targets->props[i];
+        Prop const* prop = members_prop(me, targets, i);
         if (!ty_get_prop(me, source, prop->name)) continue;
         Ty const* part = ty_prop_type_of(me, source, prop->name);
         if (part) force_source_parts(me, part, ty_prop_type_of(me, target, prop->name), depth - 1);

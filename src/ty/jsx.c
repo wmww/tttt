@@ -106,7 +106,7 @@ static Atom const* container_prop_name(Checker* me, JsxElement const* element, c
     if (!container || !(container->flags & TYF_OBJECT)) return nullptr;
     Members const* members = ty_members(me, container);
     if (members->prop_count == 0) return my atoms.empty;
-    if (members->prop_count == 1) return members->props[0]->name;
+    if (members->prop_count == 1) return members_prop_name(members, 0);
     return nullptr; // TODO: TS2608 on its declaration
 }
 

@@ -101,13 +101,13 @@ static bool inherited_props_identical(
     panic_if(!seen, "out of memory");
     u32 seen_count = 0;
     for (u32 i = 0; i < own->prop_count; i++) {
-        if (is_own_prop(own->props[i], symbol)) seen[seen_count++] = (Seen){ own->props[i], -1 };
+        if (is_own_prop(members_prop(checker, own, i), symbol)) seen[seen_count++] = (Seen){ members_prop(checker, own, i), -1 };
     }
     bool identical = true;
     for (u32 b = 0; b < base_count; b++) {
         Members const* members = ty_members(checker, bases[b].with_this);
         for (u32 i = 0; i < members->prop_count; i++) {
-            Prop const* prop = members->props[i];
+            Prop const* prop = members_prop(checker, members, i);
             Seen const* existing = nullptr;
             for (u32 j = 0; j < seen_count && !existing; j++) {
                 if (seen[j].prop->name == prop->name) existing = &seen[j];

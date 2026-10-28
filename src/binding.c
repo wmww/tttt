@@ -1054,7 +1054,7 @@ static bool report_widening_errors_in_type(Checker* checker, Ty const* ty, Error
     } else if (ty->kind == TY_ANONYMOUS && ty->anonymous.object_literal) {
         Members const* members = ty_members(checker, ty);
         for (u32 i = 0; i < members->prop_count; i++) {
-            Prop const* prop = members->props[i];
+            Prop const* prop = members_prop(checker, members, i);
             if (prop->decl->function) continue;
             Ty const* t = prop_type(checker, prop);
             if (!(t->xflags & TYX_CONTAINS_WIDENING)) continue;
