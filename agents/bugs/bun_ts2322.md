@@ -137,7 +137,8 @@ last line. The real cause is then elsewhere, and the entry says where. Show a ca
   tsc's `C.prototype` is the declared member's type (number from the getter) and K7 (`keyof typeof G7`) takes null;
   tttt gives the instance type. TS2322 spurious and missing. [open]
 - 62-L04a: a class with `get foo()` and `set [k]` where `const k = "foo"`. tsc merges the late-bound setter with
-  the getter (the write type is the setter's), tttt reports TS2540 read-only. TS2322 missing. [open]
+  the getter (the write type is the setter's), tttt reports TS2540 read-only. TS2322 missing (60-L20a too, and 60-L20b but for
+  its errors). [fixed PENDING]
 - 62-L07a: an interface with late-bound `[k10]` and `[k10b]` members whose key types are themselves indexed accesses
   of the interface (`I10[typeof k10b]`). tsc reports the circular name as no property (TS2339), tttt binds it.
   TS2322 missing and spurious. [open]

@@ -4160,17 +4160,22 @@ ClassMemberSymbols const* ty_class_member_symbols(Checker* me, ClassDecl const* 
         panic_if(!entry_accessor[k], "out of memory");
         for (u32 e = 0; e < tables->count; e++) entry_accessor[k][e] = -1;
     }
-    for (u32 pass = 0; pass < 2; pass++) {
+    for (u32 i = 0; i < item_count; i++) accessor_first[i] = accessor_getter[i] = accessor_setter[i] = -1;
+    // (Every accessor of a class where a written one may pair with a late-bound one, see class_decl.c: the written
+    // ones first, the order of the merged symbol's declarations (mergeSymbol), then the late-bound ones, then each
+    // takes its entry's)
+    for (u32 pass = 0; pass < 3; pass++) {
         for (u32 i = 0; i < item_count; i++) {
             ClassItem const* item = &class_decl->items.data[i];
-            accessor_first[i] = accessor_getter[i] = accessor_setter[i] = -1;
-            if (item->tag != CLASS_ITEM_METHOD || !item->method.accessor || !accessor_late(item)) continue;
+            if (item->tag != CLASS_ITEM_METHOD || !item->method.accessor || !accessor_late_class(item)) continue;
+            bool late = accessor_late(item);
+            if (pass < 2 && late != (pass == 1)) continue;
             bool get = item->method.accessor == CLASS_ACCESSOR_GET;
             i32 e = entries[i];
             if (e < 0) {
                 accessor_first[i] = (i32)i;
                 (get ? accessor_getter : accessor_setter)[i] = (i32)i;
-            } else if (pass == 0) {
+            } else if (pass < 2) {
                 if (entry_accessor[0][e] < 0) entry_accessor[0][e] = (i32)i;
                 if (entry_accessor[get ? 1 : 2][e] < 0) entry_accessor[get ? 1 : 2][e] = (i32)i;
             } else {

@@ -822,6 +822,27 @@ static void class_decl_lookup_names_in_owner(ClassDecl* me, Scope* names, ErrorC
             }
         }
     }
+    // In a class with a late-bound accessor, a written one can pair with it (`get x()` and `set [k](v)` with k of type
+    // "x": tsc's late-bound symbol merges into the early one, mergeSymbol): every accessor is paired by the checker then
+    // (ty_class_member_symbols(), early declarations first)
+    bool any_late_accessor = false;
+    for_each (i, vec_class_item, &my items) {
+        if (i->tag == CLASS_ITEM_METHOD && i->method.accessor && item_late_key(i)) any_late_accessor = true;
+    }
+    if (any_late_accessor) {
+        for_each (i, vec_class_item, &my items) {
+            if (i->tag != CLASS_ITEM_METHOD || !i->method.accessor || item_late_key(i)) continue;
+            function_impl_rare_mut(&i->method.func)->late_accessor_class = me;
+            function_impl_rare_mut(&i->method.func)->late_accessor_item = i;
+            for_each (arg, vec_function_arg, &i->method.func.args) {
+                Binding const* binding = &arg->initializer.binding;
+                if (i->method.accessor != CLASS_ACCESSOR_SET) break;
+                if (binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
+                if (!binding->has_explicit_type) initialized_binding_rare_mut(&arg->initializer)->late_setter = &i->method.func;
+                break;
+            }
+        }
+    }
     // A property an accessor after it joined: the accessors type their symbol
     for_each (i, vec_class_item, &my items) {
         if (i->tag != CLASS_ITEM_FIELD) continue;

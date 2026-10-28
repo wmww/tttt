@@ -1,0 +1,163 @@
+//// [test/cases/ttttAccessorPairWrittenLate.ts] ////
+
+=== ttttAccessorPairWrittenLate.ts ===
+// A written accessor and a late-bound one of the same name are one symbol (tsc's late-bound symbol merges into the
+// early one): read from the getter, written through the setter
+declare const k: "x";
+>k : "x"
+
+declare const s: unique symbol;
+>s : unique symbol
+
+class C {
+>C : C
+
+    get x(): number { return 1; }
+>x : number
+>1 : 1
+
+    set [k](v: string) {}
+>[k] : number
+>k : "x"
+>v : string
+}
+declare const c: C;
+>c : C
+
+const r = c.x;
+>r : number
+>c.x : number
+>c : C
+>x : number
+
+c.x = 1;
+>c.x = 1 : 1
+>c.x : string
+>c : C
+>x : string
+>1 : 1
+
+c.x = "a";
+>c.x = "a" : "a"
+>c.x : string
+>c : C
+>x : string
+>"a" : "a"
+
+class D {
+>D : D
+
+    get [k](): number { return 1; }
+>[k] : number
+>k : "x"
+>1 : 1
+
+    set x(v: string) {}
+>x : number
+>v : string
+}
+declare const d: D;
+>d : D
+
+const t = d.x;
+>t : number
+>d.x : number
+>d : D
+>x : number
+
+d.x = "a";
+>d.x = "a" : "a"
+>d.x : string
+>d : D
+>x : string
+>"a" : "a"
+
+d.x = 1;
+>d.x = 1 : 1
+>d.x : string
+>d : D
+>x : string
+>1 : 1
+
+class E {
+>E : E
+
+    static get x() { return 1; }
+>x : number
+>1 : 1
+
+    static set [k](v) {}
+>[k] : number
+>k : "x"
+>v : number
+
+    get y() { return ""; }
+>y : string
+>"" : ""
+
+    set y(v) {}
+>y : string
+>v : string
+
+    get [s]() { return true; }
+>[s] : boolean
+>s : unique symbol
+>true : true
+}
+E.x = 2;
+>E.x = 2 : 2
+>E.x : number
+>E : typeof E
+>x : number
+>2 : 2
+
+E.x = "a";
+>E.x = "a" : "a"
+>E.x : number
+>E : typeof E
+>x : number
+>"a" : "a"
+
+new E().y = "b";
+>new E().y = "b" : "b"
+>new E().y : string
+>new E() : E
+>E : typeof E
+>y : string
+>"b" : "b"
+
+const u = new E()[s];
+>u : boolean
+>new E()[s] : boolean
+>new E() : E
+>E : typeof E
+>s : unique symbol
+
+class F {
+>F : F
+
+    get x() { return 1; }
+>x : number
+>1 : 1
+}
+class G extends F {
+>G : G
+>F : F
+
+    get [k]() { return 2; }
+>[k] : number
+>k : "x"
+>2 : 2
+
+    set x(v: number) {}
+>x : number
+>v : number
+}
+new G().x = 3;
+>new G().x = 3 : 3
+>new G().x : number
+>new G() : G
+>G : typeof G
+>x : number
+>3 : 3
+

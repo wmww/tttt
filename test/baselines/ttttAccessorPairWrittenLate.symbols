@@ -1,0 +1,138 @@
+//// [test/cases/ttttAccessorPairWrittenLate.ts] ////
+
+=== ttttAccessorPairWrittenLate.ts ===
+// A written accessor and a late-bound one of the same name are one symbol (tsc's late-bound symbol merges into the
+// early one): read from the getter, written through the setter
+declare const k: "x";
+>k : Symbol(k, Decl(ttttAccessorPairWrittenLate.ts, 2, 13))
+
+declare const s: unique symbol;
+>s : Symbol(s, Decl(ttttAccessorPairWrittenLate.ts, 3, 13))
+
+class C {
+>C : Symbol(C, Decl(ttttAccessorPairWrittenLate.ts, 3, 31))
+
+    get x(): number { return 1; }
+>x : Symbol(C.x, Decl(ttttAccessorPairWrittenLate.ts, 4, 9), Decl(ttttAccessorPairWrittenLate.ts, 5, 33))
+
+    set [k](v: string) {}
+>[k] : Symbol(C.x, Decl(ttttAccessorPairWrittenLate.ts, 4, 9), Decl(ttttAccessorPairWrittenLate.ts, 5, 33))
+>k : Symbol(k, Decl(ttttAccessorPairWrittenLate.ts, 2, 13))
+>v : Symbol(v, Decl(ttttAccessorPairWrittenLate.ts, 6, 12))
+}
+declare const c: C;
+>c : Symbol(c, Decl(ttttAccessorPairWrittenLate.ts, 8, 13))
+>C : Symbol(C, Decl(ttttAccessorPairWrittenLate.ts, 3, 31))
+
+const r = c.x;
+>r : Symbol(r, Decl(ttttAccessorPairWrittenLate.ts, 9, 5))
+>c.x : Symbol(C.x, Decl(ttttAccessorPairWrittenLate.ts, 4, 9), Decl(ttttAccessorPairWrittenLate.ts, 5, 33))
+>c : Symbol(c, Decl(ttttAccessorPairWrittenLate.ts, 8, 13))
+>x : Symbol(C.x, Decl(ttttAccessorPairWrittenLate.ts, 4, 9), Decl(ttttAccessorPairWrittenLate.ts, 5, 33))
+
+c.x = 1;
+>c.x : Symbol(C.x, Decl(ttttAccessorPairWrittenLate.ts, 4, 9), Decl(ttttAccessorPairWrittenLate.ts, 5, 33))
+>c : Symbol(c, Decl(ttttAccessorPairWrittenLate.ts, 8, 13))
+>x : Symbol(C.x, Decl(ttttAccessorPairWrittenLate.ts, 4, 9), Decl(ttttAccessorPairWrittenLate.ts, 5, 33))
+
+c.x = "a";
+>c.x : Symbol(C.x, Decl(ttttAccessorPairWrittenLate.ts, 4, 9), Decl(ttttAccessorPairWrittenLate.ts, 5, 33))
+>c : Symbol(c, Decl(ttttAccessorPairWrittenLate.ts, 8, 13))
+>x : Symbol(C.x, Decl(ttttAccessorPairWrittenLate.ts, 4, 9), Decl(ttttAccessorPairWrittenLate.ts, 5, 33))
+
+class D {
+>D : Symbol(D, Decl(ttttAccessorPairWrittenLate.ts, 11, 10))
+
+    get [k](): number { return 1; }
+>[k] : Symbol(D.x, Decl(ttttAccessorPairWrittenLate.ts, 13, 35), Decl(ttttAccessorPairWrittenLate.ts, 12, 9))
+>k : Symbol(k, Decl(ttttAccessorPairWrittenLate.ts, 2, 13))
+
+    set x(v: string) {}
+>x : Symbol(D.x, Decl(ttttAccessorPairWrittenLate.ts, 13, 35), Decl(ttttAccessorPairWrittenLate.ts, 12, 9))
+>v : Symbol(v, Decl(ttttAccessorPairWrittenLate.ts, 14, 10))
+}
+declare const d: D;
+>d : Symbol(d, Decl(ttttAccessorPairWrittenLate.ts, 16, 13))
+>D : Symbol(D, Decl(ttttAccessorPairWrittenLate.ts, 11, 10))
+
+const t = d.x;
+>t : Symbol(t, Decl(ttttAccessorPairWrittenLate.ts, 17, 5))
+>d.x : Symbol(D.x, Decl(ttttAccessorPairWrittenLate.ts, 13, 35), Decl(ttttAccessorPairWrittenLate.ts, 12, 9))
+>d : Symbol(d, Decl(ttttAccessorPairWrittenLate.ts, 16, 13))
+>x : Symbol(D.x, Decl(ttttAccessorPairWrittenLate.ts, 13, 35), Decl(ttttAccessorPairWrittenLate.ts, 12, 9))
+
+d.x = "a";
+>d.x : Symbol(D.x, Decl(ttttAccessorPairWrittenLate.ts, 13, 35), Decl(ttttAccessorPairWrittenLate.ts, 12, 9))
+>d : Symbol(d, Decl(ttttAccessorPairWrittenLate.ts, 16, 13))
+>x : Symbol(D.x, Decl(ttttAccessorPairWrittenLate.ts, 13, 35), Decl(ttttAccessorPairWrittenLate.ts, 12, 9))
+
+d.x = 1;
+>d.x : Symbol(D.x, Decl(ttttAccessorPairWrittenLate.ts, 13, 35), Decl(ttttAccessorPairWrittenLate.ts, 12, 9))
+>d : Symbol(d, Decl(ttttAccessorPairWrittenLate.ts, 16, 13))
+>x : Symbol(D.x, Decl(ttttAccessorPairWrittenLate.ts, 13, 35), Decl(ttttAccessorPairWrittenLate.ts, 12, 9))
+
+class E {
+>E : Symbol(E, Decl(ttttAccessorPairWrittenLate.ts, 19, 8))
+
+    static get x() { return 1; }
+>x : Symbol(E.x, Decl(ttttAccessorPairWrittenLate.ts, 20, 9), Decl(ttttAccessorPairWrittenLate.ts, 21, 32))
+
+    static set [k](v) {}
+>[k] : Symbol(E.x, Decl(ttttAccessorPairWrittenLate.ts, 20, 9), Decl(ttttAccessorPairWrittenLate.ts, 21, 32))
+>k : Symbol(k, Decl(ttttAccessorPairWrittenLate.ts, 2, 13))
+>v : Symbol(v, Decl(ttttAccessorPairWrittenLate.ts, 22, 19))
+
+    get y() { return ""; }
+>y : Symbol(E.y, Decl(ttttAccessorPairWrittenLate.ts, 22, 24), Decl(ttttAccessorPairWrittenLate.ts, 23, 26))
+
+    set y(v) {}
+>y : Symbol(E.y, Decl(ttttAccessorPairWrittenLate.ts, 22, 24), Decl(ttttAccessorPairWrittenLate.ts, 23, 26))
+>v : Symbol(v, Decl(ttttAccessorPairWrittenLate.ts, 24, 10))
+
+    get [s]() { return true; }
+>[s] : Symbol(E[s], Decl(ttttAccessorPairWrittenLate.ts, 24, 15))
+>s : Symbol(s, Decl(ttttAccessorPairWrittenLate.ts, 3, 13))
+}
+E.x = 2;
+>E.x : Symbol(E.x, Decl(ttttAccessorPairWrittenLate.ts, 20, 9), Decl(ttttAccessorPairWrittenLate.ts, 21, 32))
+>E : Symbol(E, Decl(ttttAccessorPairWrittenLate.ts, 19, 8))
+>x : Symbol(E.x, Decl(ttttAccessorPairWrittenLate.ts, 20, 9), Decl(ttttAccessorPairWrittenLate.ts, 21, 32))
+
+E.x = "a";
+>E.x : Symbol(E.x, Decl(ttttAccessorPairWrittenLate.ts, 20, 9), Decl(ttttAccessorPairWrittenLate.ts, 21, 32))
+>E : Symbol(E, Decl(ttttAccessorPairWrittenLate.ts, 19, 8))
+>x : Symbol(E.x, Decl(ttttAccessorPairWrittenLate.ts, 20, 9), Decl(ttttAccessorPairWrittenLate.ts, 21, 32))
+
+new E().y = "b";
+>new E().y : Symbol(E.y, Decl(ttttAccessorPairWrittenLate.ts, 22, 24), Decl(ttttAccessorPairWrittenLate.ts, 23, 26))
+>E : Symbol(E, Decl(ttttAccessorPairWrittenLate.ts, 19, 8))
+>y : Symbol(E.y, Decl(ttttAccessorPairWrittenLate.ts, 22, 24), Decl(ttttAccessorPairWrittenLate.ts, 23, 26))
+
+const u = new E()[s];
+>u : Symbol(u, Decl(ttttAccessorPairWrittenLate.ts, 30, 5))
+>E : Symbol(E, Decl(ttttAccessorPairWrittenLate.ts, 19, 8))
+>s : Symbol(s, Decl(ttttAccessorPairWrittenLate.ts, 3, 13))
+
+class F {
+>F : Symbol(F, Decl(ttttAccessorPairWrittenLate.ts, 30, 21))
+
+    get x() { return 1; }
+>x : Symbol(F.x, Decl(ttttAccessorPairWrittenLate.ts, 31, 9))
+}
+class G extends F {
+>G : Symbol(G, Decl(ttttAccessorPairWrittenLate.ts, 33, 1))
+>F : Symbol(F, Decl(ttttAccessorPairWrittenLate.ts, 30, 21))
+
+    get [k]() { return 2; }
+>[k] : Symbol(G.x, Decl(ttttAccessorPairWrittenLate.ts, 35, 27), Decl(ttttAccessorPairWrittenLate.ts, 34, 19))
+>k : Symbol(k, Decl(ttttAccessorPairWrittenLate.ts, 2, 13))
+
+    set x(v: number) {}
+>x : Symbol(G.x, Decl(ttttAccessorPairWrittenLate.ts, 35, 27), Decl(ttttAccessorPairWrittenLate.ts, 34, 19))
+>v : Symbol(v, Decl(ttttAccessorPairWrittenLate.ts, 36, 10))
+}
+new G().x = 3;
+>new G().x : Symbol(G.x, Decl(ttttAccessorPairWrittenLate.ts, 35, 27), Decl(ttttAccessorPairWrittenLate.ts, 34, 19))
+>G : Symbol(G, Decl(ttttAccessorPairWrittenLate.ts, 33, 1))
+>x : Symbol(G.x, Decl(ttttAccessorPairWrittenLate.ts, 35, 27), Decl(ttttAccessorPairWrittenLate.ts, 34, 19))
+

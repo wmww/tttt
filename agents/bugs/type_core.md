@@ -251,7 +251,9 @@ passing tests).
   declarations first, mergeSymbol's order) and set `late_accessor_class` on every accessor of a class with a
   late-bound one, but the early pass would then type late keys (the circularity classDeclarationShouldBeOutOfScopeIn
   ComputedNames guards): only look the table up when a late-bound accessor's key could name the written one. Rare in
-  real code (no oracle shows it). [open]
+  real code (no oracle shows it). Fixed by pairing every accessor of a class that has a late-bound one in
+  ty_class_member_symbols() (written ones first); the circularity didn't show in the suite. Test
+  ttttAccessorPairWrittenLate. [fixed PENDING]
 
 - (types only) ttttTypeofFunctionExpressionInFakeScope: a named function expression's `typeof somefn` prints as
   `typeof x` in tsc (the variable it initializes), and `typeof w[]` needs parentheses, `(typeof w)[]`: the printer's
