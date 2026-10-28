@@ -1,0 +1,42 @@
+0.js(6,22): error TS8032: Qualified name 'opts5.whatX.bad' is not allowed without a leading '@param {object} opts5.whatX'.
+0.js(7,20): error TS8032: Qualified name 'opts5.what.bad.idea' is not allowed without a leading '@param {object} opts5.what.bad'.
+0.js(8,21): error TS8032: Qualified name 'opts5.what.bad.oh' is not allowed without a leading '@param {object} opts5.what.bad'.
+0.js(9,20): error TS8032: Qualified name 'opts5.unnest' is not allowed without a leading '@param {object} opts5'.
+0.js(12,19): error TS2339: Property 'bad' does not exist on type '{ a: string; }'.
+0.js(13,14): error TS2339: Property 'unnest' does not exist on type '{ help: string; what: { a: string; }; }'.
+0.js(16,39): error TS2353: Object literal may only specify known properties, and 'bad' does not exist in type '{ a: string; }'.
+
+
+==== 0.js (7 errors) ====
+    /**
+     * @param {object[]} opts5 - Let's test out some multiple nesting levels
+     * @param {string} opts5[].help - (This one is just normal)
+     * @param {object} opts5[].what - Look at us go! Here's the first nest!
+     * @param {string} opts5[].what.a - (Another normal one)
+     * @param {Object[]} opts5[].whatX.bad - Now we're nesting inside a nested type
+                         ~~~~~~~~~~~~~~~~~
+!!! error TS8032: Qualified name 'opts5.whatX.bad' is not allowed without a leading '@param {object} opts5.whatX'.
+     * @param {string} opts5[].what.bad[].idea - I don't think you can get back out of this level...
+                       ~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS8032: Qualified name 'opts5.what.bad.idea' is not allowed without a leading '@param {object} opts5.what.bad'.
+     * @param {boolean} opts5[].what.bad[].oh - Oh ... that's how you do it.
+                        ~~~~~~~~~~~~~~~~~~~~~
+!!! error TS8032: Qualified name 'opts5.what.bad.oh' is not allowed without a leading '@param {object} opts5.what.bad'.
+     * @param {number} opts5[].unnest - Here we are almost all the way back at the beginning.
+                       ~~~~~~~~~~~~~~
+!!! error TS8032: Qualified name 'opts5.unnest' is not allowed without a leading '@param {object} opts5'.
+     */
+    function foo5(opts5) {
+        opts5[0].what.bad[0].idea;
+                      ~~~
+!!! error TS2339: Property 'bad' does not exist on type '{ a: string; }'.
+        opts5[0].unnest;
+                 ~~~~~~
+!!! error TS2339: Property 'unnest' does not exist on type '{ help: string; what: { a: string; }; }'.
+    }
+    
+    foo5([{ help: "help", what: { a: 'a', bad: [{ idea: 'idea', oh: false }] }, unnest: 1 }]);
+                                          ~~~
+!!! error TS2353: Object literal may only specify known properties, and 'bad' does not exist in type '{ a: string; }'.
+!!! related TS6500 0.js:4:28: The expected type comes from property 'what' which is declared here on type '{ help: string; what: { a: string; }; }'
+    

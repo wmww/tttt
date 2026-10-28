@@ -1351,6 +1351,20 @@ static void function_check_circular_return(FunctionImpl const* me, ErrorCtx* err
     }
 }
 
+// A JSDoc `@param` name as tsc's entity name prints: escapes decoded, the `[]`s of `o[].a` left out
+static cstr jsdoc_entity_name_text(csview raw) {
+    csview cooked = name_cooked(raw);
+    cstr ret = cstr_with_capacity(cooked.size);
+    for (isize i = 0; i < cooked.size; i++) {
+        if (cooked.buf[i] == '[' && i + 1 < cooked.size && cooked.buf[i + 1] == ']') {
+            i++;
+            continue;
+        }
+        cstr_append_n(&ret, cooked.buf + i, 1);
+    }
+    return ret;
+}
+
 // Parameters without a type (and default) that nothing gives a type are implicitly any
 void function_impl_check_implicit_any_parameters(FunctionImpl const* me, ErrorCtx* errs) {
     if (!compiler_options()->no_implicit_any || my private_ambient || my jsdoc_type) return;
@@ -1603,14 +1617,18 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     }
     for (u32 i = 0; i < function_impl_rare(me)->jsdoc_param_issue_count && !my uses_arguments; i++) {
         JsDocParamIssue const* issue = &function_impl_rare(me)->jsdoc_param_issues[i];
+        // (The names as tsc's entity names have them: escapes decoded, `[]`s left out, parseJSDocEntityName)
+        cstr name = jsdoc_entity_name_text(span_sv(issue->name));
         if (span_valid(issue->left)) {
-            // (The names as tsc's scanner has them: escapes decoded)
-            error_ctx_error_d(errs, issue->name, 8032, "Qualified name '", name_cooked(span_sv(issue->name)),
-                "' is not allowed without a leading '@param {object} ", name_cooked(span_sv(issue->left)), "'.");
+            cstr left = jsdoc_entity_name_text(span_sv(issue->left));
+            error_ctx_error_d(errs, issue->name, 8032, "Qualified name '", name,
+                "' is not allowed without a leading '@param {object} ", left, "'.");
+            cstr_drop(&left);
         } else {
-            error_ctx_error_d(errs, issue->name, 8024, "JSDoc '@param' tag has name '", name_cooked(span_sv(issue->name)),
+            error_ctx_error_d(errs, issue->name, 8024, "JSDoc '@param' tag has name '", name,
                 "', but there is no parameter with that name.");
         }
+        cstr_drop(&name);
     }
 
     if (my newline_before_arrow) {

@@ -5621,6 +5621,31 @@ static bool jsdoc_names_equal(csview a, csview b) {
     }
 }
 
+// How many of the tags after `parent` nest under it (tsc's parseNestedTypeLiteral, recursively): a `@param` whose name's
+// left is exactly an open object tag's (`{Object}`/`{object}`, maybe an array) is its child, any other closes the open
+// tags inside the one it is under, and one under none of them ends the nesting for good: `o.a.b` after a string `o.a`,
+// or after `o.x` of another middle name, leaves every later tag top level (jsdoc_find_param_issues() goes the same way)
+static isize jsdoc_nested_count(VecJsDocTag const* tags, JsDocTag const* parent) {
+    bool array;
+    if (!parent->has_type || !jsdoc_is_object_type(parent, &array) || !span_valid(parent->name)) return 0;
+    Span open[8];
+    u32 depth = 0;
+    open[depth++] = parent->name;
+    isize count = 0;
+    for (JsDocTag const* t = parent + 1; t < tags->data + tags->size && t->kind == JSDOC_TAG_PARAM && span_valid(t->name); t++) {
+        csview name = span_sv(t->name);
+        char const* dot = nullptr;
+        for (isize k = name.size; k-- > 0 && !dot;) if (name.buf[k] == '.') dot = name.buf + k;
+        if (!dot) break;
+        csview left = csview_from_range(name.buf, dot);
+        while (depth && !jsdoc_names_equal(span_sv(open[depth - 1]), left)) depth--;
+        if (!depth) break;
+        count++;
+        if (t->has_type && jsdoc_is_object_type(t, &array) && depth < c_arraylen(open)) open[depth++] = t->name;
+    }
+    return count;
+}
+
 // A tag's node span, the type literal its nested tags made included (tsgo's tag ends with its children)
 static Span jsdoc_tag_node_span_with(JsDocTag const* tag, TypeNode const* type) {
     Span span = jsdoc_tag_node_span(tag);
@@ -6007,12 +6032,7 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
         bool variadic = tag->variadic;
         bool bracketed = tag->bracketed;
         // `@param {Object} o` + `@param {string} o.a`: a literal of the nested ones
-        isize children = 0;
-        while (tag + 1 + children < tags->data + tags->size && tag[1 + children].kind == JSDOC_TAG_PARAM &&
-            span_valid(tag[1 + children].name) && jsdoc_name_is_under(span_sv(tag[1 + children].name), span_sv(tag->name))
-        ) {
-            children++;
-        }
+        isize children = jsdoc_nested_count(tags, tag);
         bool direct = false; // (`o.a.b` without `o.a` is TS8032, which isn't reported: o keeps its type)
         for (isize j = 1; j <= children && !direct; j++) {
             csview rest = {0};
