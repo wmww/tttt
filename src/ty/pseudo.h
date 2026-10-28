@@ -201,6 +201,9 @@ void pseudo_report_inferred_node(PseudoReporter const* reporter, Pseudo const* p
 void pseudo_report_inferred(PseudoReporter const* reporter, Pseudo const* pseudo);
 // tsc's isEntityNameExpression: a name, or a dotted name of names
 bool pseudo_is_entity_name(Expr const* expr);
+// tsc's isPrimitiveLiteralValue: a boolean, number or string literal (a bigint too with `include_bigint`), or `-1`,
+// `+1`, `-1n` (the operand not parenthesized)
+bool pseudo_is_primitive_literal_value(Expr const* expr, bool include_bigint);
 
 // pseudoTypeToType (ty_display.c): the type a pseudo type stands for where it is direct, null for the structures
 Ty const* ty_pseudo_type(Checker* me, Pseudo const* pseudo);

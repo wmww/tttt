@@ -452,10 +452,6 @@ static bool is_tuple(Ty const* ty) {
     return ty->kind == TY_REFERENCE && ty->reference.target->declared.kind == TY_DECLARED_TUPLE_TARGET;
 }
 
-static bool is_empty_tuple(Ty const* ty) {
-    return ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_TUPLE_TARGET;
-}
-
 // tsc's isArrayOrTupleType && !isGenericTupleType of every member
 static bool every_array_or_tuple(Checker* me, Ty const* ty) {
     TyList types = ty->kind == TY_UNION ? ty->composite.types : (TyList){ .data = &ty, .len = 1 };

@@ -1006,14 +1006,6 @@ static void check_entity_name(Walk* me, Symbol const* symbol, Span first, u32 me
     report_access(me, SYMBOL_NOT_ACCESSIBLE, span_sv(first), c_sv(""), false, first);
 }
 
-static Expr const* entity_leftmost(Expr const* expr) {
-    while (true) {
-        if (expr->tag == EXPR_PROPERTY) expr = &expr->property->expr;
-        else if (expr->tag == EXPR_GENERIC_PARAMS) expr = &expr->generic_params->expr;
-        else return expr;
-    }
-}
-
 // The first identifier of an entity name expression (`a` of `a.b.c`), checked
 static void check_entity_expression(Walk* me, Expr const* expr) {
     Expr const* first = entity_leftmost(expr);
@@ -1141,32 +1133,6 @@ static void report_declaration(Walk* me, Near near) {
 
 static bool is_numeric_literal(Expr const* expr) {
     return expr->tag == EXPR_LITERAL && expr->literal.tag == VALUE_NUMBER;
-}
-
-static bool is_bigint_literal(Expr const* expr) {
-    return expr->tag == EXPR_LITERAL && expr->literal.tag == VALUE_BIGINT;
-}
-
-// tsc's isPrimitiveLiteralValue (parentheses are seen through: tttt has no node for them)
-static bool is_primitive_literal_value(Expr const* expr, bool include_bigint) {
-    switch (expr->tag) {
-        case EXPR_LITERAL:
-            switch (expr->literal.tag) {
-                case VALUE_BOOLEAN:
-                case VALUE_NUMBER:
-                case VALUE_STRING: return true;
-                case VALUE_BIGINT: return include_bigint;
-                default: return false;
-            }
-        case EXPR_UNARY_OP: {
-            Expr const* operand = &expr->unary_op->expr;
-            if (expr->unary_op->op == UNARY_OP_MINUS) {
-                return is_numeric_literal(operand) || (include_bigint && is_bigint_literal(operand));
-            }
-            return expr->unary_op->op == UNARY_OP_PLUS && is_numeric_literal(operand);
-        }
-        default: return false;
-    }
 }
 
 // tsc's isDefinitelyReferenceToGlobalSymbolObject: exactly `Symbol.x` (or `globalThis.Symbol.x`) with the global Symbol
@@ -2080,7 +2046,7 @@ static void serialize_variable(Walk* me, InitializedBinding const* decl, bool is
     bool initialized = init->tag != EXPR_IMPLICIT_ANY;
     if (is_const && initialized && is_literal_const(me, binding->symbol)) {
         // A literal const is written with its initializer, which must be a literal (ensureNoInitializer)
-        if (!is_primitive_literal_value(init, true)) report_variable(me, decl);
+        if (!pseudo_is_primitive_literal_value(init, true)) report_variable(me, decl);
         // (An enum member's names the enum: createLiteralConstValue's symbolToExpression, tracked)
         Ty const* type = ty_type_of_symbol(my checker, binding->symbol);
         if (type && (type->flags & TYF_ENUM_LITERAL)) print_type(me, type, false);
@@ -2230,7 +2196,7 @@ static void check_field(Walk* me, ClassItem const* item) {
     Ty const* type = lazy_type_get((LazyType*)&item->field.lazy_type);
     if (item->field.is_readonly && init->tag != EXPR_IMPLICIT_ANY && is_literal_const_field(item)) {
         // A readonly literal is written with its initializer, which must be a literal (ensureNoInitializer)
-        if (!is_primitive_literal_value(init, true)) {
+        if (!pseudo_is_primitive_literal_value(init, true)) {
             bool outer = fallback_begin(me);
             report_fallback(me, &(PseudoError){ .kind = PSEUDO_ERROR_FIELD, .field = item });
             fallback_end(me, outer, type);
@@ -5690,7 +5656,7 @@ static void emit_export_assignment_of(
     // `declare const _default: T; export default _default;` (a literal's: `= "x"`)
     cstr text = cstr_init();
     Ty const* expr_type = lazy_type_get((LazyType*)&expr->lazy_type);
-    bool literal_value = !annotation && expr_type && ty_is_fresh(expr_type) && is_primitive_literal_value(expr, true);
+    bool literal_value = !annotation && expr_type && ty_is_fresh(expr_type) && pseudo_is_primitive_literal_value(expr, true);
     cstr* outer = my type_out;
     my type_out = annotation ? nullptr : &text;
     Emitting saved = emit_enter(me, EMIT_DEFAULT_EXPORT, SIG_FUNCTION, span_null, span);

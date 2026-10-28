@@ -1,4 +1,5 @@
 #include "ty/ty_internal.h"
+#include "string_helpers.h"
 #include "unicode_case.h"
 #include <math.h>
 
@@ -535,14 +536,6 @@ static bool placeholder_accepts(Checker* me, Ty const* source, Ty const* target,
             template_compare(me, compare, source->template_literal.types.data[0], target);
     }
     return false;
-}
-
-static bool sv_starts_with(csview s, csview prefix) {
-    return s.size >= prefix.size && memcmp(s.buf, prefix.buf, prefix.size) == 0;
-}
-
-static bool sv_ends_with(csview s, csview suffix) {
-    return s.size >= suffix.size && memcmp(s.buf + s.size - suffix.size, suffix.buf, suffix.size) == 0;
 }
 
 static isize_t sv_find_from(csview s, csview needle, isize_t from) {

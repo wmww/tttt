@@ -10,6 +10,25 @@ static inline bool streq(const char* a, const char* b) {
     return (a == b || (a && b && strcmp(a, b) == 0));
 }
 
+static inline bool sv_starts_with(csview s, csview prefix) {
+    return s.size >= prefix.size && !memcmp(s.buf, prefix.buf, (size_t)prefix.size);
+}
+
+static inline bool sv_ends_with(csview s, csview suffix) {
+    return s.size >= suffix.size && !memcmp(s.buf + s.size - suffix.size, suffix.buf, (size_t)suffix.size);
+}
+
+static inline bool path_contains_node_modules(csview path) {
+    return csview_find_sv(path, c_sv("/node_modules/")) != c_NPOS;
+}
+
+// A path pattern's first `*` replaced by `star` (tsc's module resolution and specifier patterns)
+static inline cstr replace_first_star(csview text, csview star) {
+    isize at = csview_find_sv(text, c_sv("*"));
+    if (at == c_NPOS) return cstr_from_sv(text);
+    return cstr_d(csview_slice(text, 0, at), star, csview_slice(text, at + 1, text.size));
+}
+
 // Parses a double from the string start. Does not access string beyond end. If end is null assumes start is
 // null-terminated. Either sets ret and returns a pointer to the end of the section parsed (one past last character
 // used), or does not change ret and returns null. Fails if the string starts with whitespace or anything else not a

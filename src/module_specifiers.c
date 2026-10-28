@@ -1,4 +1,5 @@
 #include "module_specifiers.h"
+#include "string_helpers.h"
 #include "json.h"
 #include <pthread.h>
 
@@ -171,10 +172,6 @@ static bool contains_path(csview parent, csview child) {
 static bool path_is_relative(csview path) {
     return starts_with(path, c_sv("./")) || starts_with(path, c_sv("../")) || csview_equals(path, ".") ||
         csview_equals(path, "..");
-}
-
-static bool path_contains_node_modules(csview path) {
-    return csview_find_sv(path, c_sv("/node_modules/")) != c_NPOS;
 }
 
 // A path relative to another, either both absolute or both relative (tsc's getRelativePathFromDirectory)
@@ -546,12 +543,6 @@ typedef enum MatchingMode {
 static MatchingMode matching_mode_of(csview key) {
     if (ends_with(key, c_sv("/"))) return MATCH_DIRECTORY;
     return csview_find_sv(key, c_sv("*")) != c_NPOS ? MATCH_PATTERN : MATCH_EXACT;
-}
-
-static cstr replace_first_star(csview text, csview star) {
-    isize at = csview_find_sv(text, c_sv("*"));
-    if (at == c_NPOS) return cstr_from_sv(text);
-    return cstr_d(csview_slice(text, 0, at), star, csview_slice(text, at + 1, text.size));
 }
 
 // tsc's tryGetModuleNameFromExportsOrImports, empty if the entry doesn't lead to target. (The output files an

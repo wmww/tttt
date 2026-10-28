@@ -95,8 +95,7 @@ static bool is_const_type(TypeNode const* type) {
 static bool is_numeric_literal(Expr const* expr) { return expr->tag == EXPR_LITERAL && expr->literal.tag == VALUE_NUMBER; }
 static bool is_bigint_literal(Expr const* expr) { return expr->tag == EXPR_LITERAL && expr->literal.tag == VALUE_BIGINT; }
 
-// isPrimitiveLiteralValue
-static bool is_primitive_literal_value(Expr const* expr, bool include_bigint) {
+bool pseudo_is_primitive_literal_value(Expr const* expr, bool include_bigint) {
     switch (expr->tag) {
         case EXPR_LITERAL:
             switch (expr->literal.tag) {
@@ -254,7 +253,7 @@ static Pseudo const* type_from_object_literal(Build* me, Expr const* expr, Pseud
         PseudoError error = { .item = i };
         if (i->tag == OBJECT_ITEM_SHORTHAND || i->tag == OBJECT_ITEM_SPREAD || object_item_is_private_name(i)) {
             error.kind = PSEUDO_ERROR_OBJECT_MEMBER;
-        } else if (i->computed_key && !is_primitive_literal_value(i->computed_key, false)) {
+        } else if (i->computed_key && !pseudo_is_primitive_literal_value(i->computed_key, false)) {
             error.kind = PSEUDO_ERROR_COMPUTED_NAME;
         } else {
             continue;
@@ -334,7 +333,7 @@ static Pseudo const* type_from_expression(Build* me, Expr const* expr, PseudoPla
             if (expr->as_type->is_satisfies) return inferred(me, expr);
             return type_from_type_assertion(me, expr, place);
         case EXPR_UNARY_OP:
-            if (is_primitive_literal_value(expr, true)) return type_from_primitive_literal_prefix(me, expr, place);
+            if (pseudo_is_primitive_literal_value(expr, true)) return type_from_primitive_literal_prefix(me, expr, place);
             return inferred(me, expr);
         case EXPR_ARRAY: return type_from_array_literal(me, expr, place);
         case EXPR_OBJECT: return type_from_object_literal(me, expr, place);

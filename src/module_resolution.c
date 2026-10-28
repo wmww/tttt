@@ -295,14 +295,6 @@ static bool ends_with(csview s, const char* suffix) {
     return csview_ends_with(s, suffix);
 }
 
-static bool sv_starts_with(csview s, csview prefix) {
-    return s.size >= prefix.size && !memcmp(s.buf, prefix.buf, (size_t)prefix.size);
-}
-
-static bool sv_ends_with(csview s, csview suffix) {
-    return s.size >= suffix.size && !memcmp(s.buf + s.size - suffix.size, suffix.buf, (size_t)suffix.size);
-}
-
 // Of a normalised absolute path, without a trailing separator ("/" for what is directly in the root)
 static csview parent_of(csview path) {
     isize i = path.size;
@@ -318,10 +310,6 @@ static bool go_up(cstr* dir) {
     cstr parent = cstr_from_sv(parent_of(cstr_sv(dir)));
     cstr_take(dir, parent);
     return true;
-}
-
-static bool path_contains_node_modules(csview path) {
-    return csview_find_sv(path, c_sv("/node_modules/")) != c_NPOS;
 }
 
 // ---- Files ----
@@ -837,12 +825,6 @@ static bool pattern_matches(csview pattern, csview name, csview* star, isize* pr
     *star = csview_slice(name, prefix.size, name.size - suffix.size);
     *prefix_len = prefix.size;
     return true;
-}
-
-static cstr replace_first_star(csview text, csview star) {
-    isize at = csview_find_sv(text, c_sv("*"));
-    if (at == c_NPOS) return cstr_from_sv(text);
-    return cstr_d(csview_slice(text, 0, at), star, csview_slice(text, at + 1, text.size));
 }
 
 typedef bool (*Loader)(State* me, csview candidate, int extensions, Found* out);

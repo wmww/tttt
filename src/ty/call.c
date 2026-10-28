@@ -186,10 +186,6 @@ static void args_drop(Args* args) {
     if (args->data != args->small) free(args->data);
 }
 
-static bool is_empty_tuple(Ty const* ty) {
-    return ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_TUPLE_TARGET;
-}
-
 // tsc's isGenericFunctionReturningFunction for some call signature of the callee of `expr`, a call without type arguments
 bool ty_calls_generic_function_returning_function(Checker* me, Expr const* expr) {
     if (expr->tag != EXPR_CALL || expr->call->uses_new || expr->call->is_extends) return false;

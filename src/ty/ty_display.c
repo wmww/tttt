@@ -1977,7 +1977,6 @@ static bool jsdoc_reference_reusable(Checker* me, TyDisplay d, TypeNode const* n
     return (u32)vec_spanned_type_size(&identifier->generic_params) >= min;
 }
 
-static Expr const* entity_leftmost(Expr const* expr);
 
 // How tsc's tryVisitTypeReference reprints a (non-keyword, non-import) type reference: as written, by a name of its
 // target from where it's printed (serializeTypeName), or not at all (the node prints its type)
@@ -2249,15 +2248,6 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
         out_mapped(d, identifier->name);
     }
     display_node_args(me, d, &identifier->generic_params);
-}
-
-// The entity name of `typeof a.b<T>`
-static Expr const* entity_leftmost(Expr const* expr) {
-    while (true) {
-        if (expr->tag == EXPR_PROPERTY) expr = &expr->property->expr;
-        else if (expr->tag == EXPR_GENERIC_PARAMS) expr = &expr->generic_params->expr;
-        else return expr;
-    }
 }
 
 static void display_entity_expr(Checker* me, TyDisplay d, Expr const* expr) {

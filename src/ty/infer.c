@@ -675,10 +675,6 @@ static void infer_from_signature_lists(
     }
 }
 
-static bool is_empty_tuple(Ty const* ty) {
-    return ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_TUPLE_TARGET;
-}
-
 // What a property of type `source` says about `T[K]` in the template of `{ [K in keyof T]: Template }` (tsc's
 // inferReverseMappedType): the template is inferred to with `T[K]` as the one type variable
 static Ty const* reverse_mapped_prop_type_uncached(Checker* me, Ty const* source, MappedInfo const* mapped, Ty const* operand);

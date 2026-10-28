@@ -519,6 +519,17 @@ Symbol const* ty_global_type_alias_reported(Checker* me, csview name, u32 arity)
 void ty_report_missing_global_type(Checker* me, csview name); // tsc's getGlobalType with reportErrors: TS2318
 bool ty_conditional_distribution_dependent(Checker* me, Ty const* conditional);
 bool ty_elides_default_type_args(Checker* me, Ty const* target); // iterate.c
+static inline bool is_empty_tuple(Ty const* ty) { // The empty tuple's type: its own target
+    return ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_TUPLE_TARGET;
+}
+// The entity name of `typeof a.b<T>` (or an expression `a.b.c`): `a`
+static inline Expr const* entity_leftmost(Expr const* expr) {
+    while (true) {
+        if (expr->tag == EXPR_PROPERTY) expr = &expr->property->expr;
+        else if (expr->tag == EXPR_GENERIC_PARAMS) expr = &expr->generic_params->expr;
+        else return expr;
+    }
+}
 bool ty_is_tuple(Ty const* ty); // Not the empty tuple, which is its own target (TY_DECLARED)
 bool ty_is_generic_tuple(Checker* me, Ty const* ty); // checker.c, tsc's isGenericTupleType
 // inner, then outer: what inner maps to gets instantiated by outer, and outer's own mappings are carried along
