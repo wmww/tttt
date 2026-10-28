@@ -32,6 +32,10 @@ threads busy at 2.2 GB on vscode: the existence proof that sharing can pay.
   event); moved no limit counter and met no deeply-nested cut or depth limit in a relation; reported nothing at the
   current node; `flow_uncached == 0` for expression kinds; ran in the typecheck phase. A done-ness peek that selects
   between results counts as a read.
+- **Identities are published whatever their taint, so what they are made of must not be private**: an identity
+  built from a record this worker resolved privately (a signature's type parameters, its clones) is this worker's
+  only (KEY_SIGNATURE_INSTANCE_OWN, bugs/shared_graph.md: effect's and folo's residues, 2026-10-29). Any other
+  identity whose fields come from a resolved record has the same shape.
 - **Why deterministic**: a clean value is a function of published clean values and hash-consed identities, so any
   worker computing that key cleanly computes the same value. A worker's view is a history a sequential checker could
   have had (the class recycling, stealing and K already produce).

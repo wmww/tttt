@@ -44,23 +44,25 @@ scripts/sharedgraph/sgcheck_projects.txt, load 8-15): main at ab39dce20 12 of 34
     comparison itself (or where bun cuts that tttt doesn't model) decides those two. Next, if wanted: reltrace or
     TTTT_DEBUG_RELATE_NESTED on webpack's generate-types.js(397,35) under both orders, the first relation whose
     verdict parts. [note]
-- **effect: Schema.ts's `X.pipe(lowercased(...))` classes** (the known Schema.tst.ts cascade, now (2892,39) TS2345 and
-  80-110 lines): 2-3/10 K8 runs with either nesting order, not the never-intersection commits (9967c8e35 2/10,
-  73f823ccc 3/10). `TTTT_GRAPH_RECHECK=1` (a fresh checker over the finished graph) reproduces it in 3 of 6 runs:
-  Schema.ts(4543,33) TS2507 "Type 'never' is not a constructor function type" for `class Lowercased extends
-  String$.pipe(lowercased(...))` and TS2345 `typeof String$` not assignable to `typeof String$ & Schema<A, string,
-  never>` ("Types of property 'Type' are incompatible"): a wrong value is *published* (a fresh checker reads it), not
-  only seen privately. The fingerprint oracle never reproduces it (0/40: its K1 record pass before the workers moves
-  the timing or pre-fills something they race on). Repro: `scripts/sgcheck.py -f '^effect$' -k 8 --deals def -n 10`;
-  next step a fingerprint build without the record pass (compare against a stored K1 dump). [note]
-- **folo/apps/desktop/layer/renderer** (residue W): data-control.tsx(36,77) and CustomIntegrationSection.tsx(18,3)
-  TS2345, `GeneralSettings[K]` with `K extends keyof ReturnType<typeof getSettingsRaw>` read as `never`, 1/6 K8 runs
-  with the scheduler's deal (2/3 on main before b9a8bc824, so possibly partly the private-name race), 0/6 round robin.
-  Repro: `scripts/sgcheck.py -f 'folo/apps/desktop/layer/renderer' -k 8 -n 6`. [note]
+- **A signature's instance shared while its signature's resolution was private** (effect's Schema.ts
+  `X.pipe(lowercased(...))` cascade: TS2507 "never is not a constructor", Schema.tst.ts(2892,39) TS2345, 2-3 of 10 K8
+  runs; folo/apps/desktop/layer/renderer's residue W: `GeneralSettings[K]` read as never, TS2345 at
+  data-control.tsx(36,77) and CustomIntegrationSection.tsx(18,3), 4/4 at K16 with the scheduler's deal).
+  ty_signature_instantiation() published (signature, args) -> instance as an identity whose mapper's sources were the
+  signature's type parameters as *this* worker resolved them; a resolution kept privately (POISONed or shadowed) has
+  this worker's own clones, so another worker's instance lookup got a mapper that never matched its type parameters.
+  Found on folo by elimination (TTTT_GRAPH_NOSHARE over identity kinds; poisoning every shared word, not sharing memo
+  kinds or relations didn't remove it). Taint rules: not a missed taint event but an identity built from a private
+  record, which identities never check ("Clean, precisely" in notes/shared_graph.md covers computed values only).
+  After: effect 0/28, folo 0/16. [fixed 720b23760]
 - **mikro-orm/packages/seeder at K16, round robin**: packages/core/src/entity/Reference.ts(131,44) TS2322 "Type
   'object' is not assignable to type 'T'", 2/2 runs at K16 rr, 0/10 at K4/K8 and K16 with the scheduler's deal
-  (shared_graph.md's residue C listed mikro-orm; not yet run under the content order). Repro: `scripts/sgcheck.py -f
-  'mikro-orm/packages/seeder' -k 16 --deals rr -n 4`. [note]
+  (shared_graph.md's residue C listed mikro-orm). 0/4 under `TTTT_NESTING_ORDER=content TTTT_FIRST_TOUCH_STAMPS=0`
+  against 2/4 without (2026-10-29), and 2/4 still after 720b23760: residue C's family (the stamps), with drizzle's.
+  Repro: `scripts/sgcheck.py -f 'mikro-orm/packages/seeder' -k 16 --deals rr -n 4`. [note]
+
+After 720b23760 (2026-10-29, the default list at K 4/8/16, both deals, 2 runs, 696 runs): 3 differ, all drizzle's C
+(K8 and K16 with the scheduler's deal); mikro-orm seeder's shows at a lower rate (0/4 there, 2/4 in a targeted run).
 
 Final state on wt-sg rebased on fc64a1ea3 (2026-10-29, the default list at K 4/8/16, both deals, 2 runs, 696 runs):
 9 differ in 4 projects: drizzle 2 (K8 def, C), effect 3, folo renderer 2 (K16 def), mikro-orm seeder 2 (K16 rr).
