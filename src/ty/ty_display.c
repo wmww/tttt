@@ -4654,7 +4654,8 @@ static void pattern_element_comments(cstr* out, char const* start) {
 }
 
 static void append_binding_pattern_mapped(cstr* out, Binding const* binding, SourceFile const* map) {
-    if (binding->rest) cstr_append_sv(out, c_sv("..."));
+    // (A rest element with a property name, `{ ...a: b }` (TS2566): its `...` goes before the name, below)
+    if (binding->rest && !binding->rest_property_name) cstr_append_sv(out, c_sv("..."));
     if (binding->tag == BINDING_ARRAY) {
         mark_span_in(out, map, binding->content_span, false);
         cstr_append_sv(out, c_sv("["));
@@ -4688,7 +4689,7 @@ static void append_binding_pattern_mapped(cstr* out, Binding const* binding, Sou
         for (isize_t i = 0; i < binding->object.size; i++) {
             ObjectBindingItem const* item = &binding->object.data[i];
             if (i) cstr_append_sv(out, c_sv(", "));
-            bool shorthand = item->target.rest || (item->target.tag == BINDING_IDENTIFIER &&
+            bool shorthand = (item->target.rest && !item->target.rest_property_name) || (item->target.tag == BINDING_IDENTIFIER &&
                 item->target.content_span.buf == item->source_span.buf);
             Binding const* target = &item->target;
             char const* start = shorthand ? (span_valid(target->content_span) ? target->content_span.buf : nullptr) :
@@ -4701,6 +4702,7 @@ static void append_binding_pattern_mapped(cstr* out, Binding const* binding, Sou
             pattern_element_comments(out, start);
             mark_in(out, map, start);
             if (!shorthand) {
+                if (target->rest) cstr_append_sv(out, c_sv("..."));
                 mark_span_in(out, map, item->source_span, false);
                 Span key = item->computed_key ? expr_outer_span(item->computed_key) : span_null;
                 if (map && span_valid(key) && span_valid(item->source_span) && key.buf >= item->source_span.buf &&

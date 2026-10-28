@@ -1,0 +1,146 @@
+//// [test/cases/ttttUnusedRenamingSameNamedTypeParameter.ts] ////
+
+=== ttttUnusedRenamingSameNamedTypeParameter.ts ===
+// tsc binds a signature's type parameters and parameter names into one symbol table, where a type parameter X and
+// a renaming `{ a: X }` merge: a reference to the type X in the signature counts as a use of the renaming (no TS2842).
+// A rest element with a property name (TS2566) is a renaming too, and a bodiless one needs no `__rest` helper (TS2354)
+export {};
+type D1 = <T, X>({ a: X }: { a: X }) => void;
+>D1 : Symbol(D1, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 3, 10))
+>T : Symbol(T, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 4, 11))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 4, 13), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 4, 18))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 4, 28))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 4, 13), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 4, 18))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 4, 28))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 4, 13), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 4, 18))
+
+type D2 = <T, X>({ a: X }: { a: any }) => X;
+>D2 : Symbol(D2, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 4, 45))
+>T : Symbol(T, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 5, 11))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 5, 13), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 5, 18))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 5, 28))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 5, 13), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 5, 18))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 5, 28))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 5, 13), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 5, 18))
+
+type D3 = <X>({ a: X }: { a: any }, b: X) => void;
+>D3 : Symbol(D3, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 5, 44))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 6, 11), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 6, 15))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 6, 25))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 6, 11), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 6, 15))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 6, 25))
+>b : Symbol(b, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 6, 35))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 6, 11), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 6, 15))
+
+type D4 = <X>({ a: X }: { a: any }) => void;
+>D4 : Symbol(D4, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 6, 50))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 7, 11), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 7, 15))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 7, 25))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 7, 11), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 7, 15))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 7, 25))
+
+type D5 = <X>({ a: X }: { a: any }) => typeof X;
+>D5 : Symbol(D5, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 7, 44))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 8, 11), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 8, 15))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 8, 25))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 8, 11), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 8, 15))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 8, 25))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 8, 11), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 8, 15))
+
+type D6 = <X>({ a: X }: { a: any }) => X is string;
+>D6 : Symbol(D6, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 8, 48))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 9, 11), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 9, 15))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 9, 25))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 9, 11), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 9, 15))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 9, 25))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 9, 11), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 9, 15))
+
+type D7 = <X>({ a: { b: X } }: { a: { b: X } }) => void;
+>D7 : Symbol(D7, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 9, 51))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 10, 11), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 10, 20))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 10, 32))
+>b : Symbol(b, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 10, 37))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 10, 11), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 10, 20))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 10, 32))
+>b : Symbol(b, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 10, 37))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 10, 11), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 10, 20))
+
+type D8 = <X, Y extends X>({ a: X }: { a: any }, y: Y) => void;
+>D8 : Symbol(D8, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 10, 56))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 11, 11), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 11, 28))
+>Y : Symbol(Y, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 11, 13))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 11, 11), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 11, 28))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 11, 38))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 11, 11), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 11, 28))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 11, 38))
+>y : Symbol(y, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 11, 48))
+>Y : Symbol(Y, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 11, 13))
+
+type D9 = <X>({ a: X, b: Y }: { a: X; b: any }) => void;
+>D9 : Symbol(D9, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 11, 63))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 12, 11), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 12, 15))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 12, 31))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 12, 11), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 12, 15))
+>b : Symbol(b, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 12, 37))
+>Y : Symbol(Y, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 12, 21))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 12, 31))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 12, 11), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 12, 15))
+>b : Symbol(b, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 12, 37))
+
+interface I { m<X>({ a: X }: { a: X }): void; n<X>({ a: X }: { a: any }): void; }
+>I : Symbol(I, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 12, 56))
+>m : Symbol(I.m, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 13, 13))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 13, 16), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 13, 20))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 13, 30))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 13, 16), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 13, 20))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 13, 30))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 13, 16), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 13, 20))
+>n : Symbol(I.n, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 13, 45))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 13, 48), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 13, 52))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 13, 62))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 13, 48), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 13, 52))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 13, 62))
+
+abstract class C { abstract m<X>({ a: X }: { a: any }): X; }
+>C : Symbol(C, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 13, 81))
+>m : Symbol(C.m, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 14, 18))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 14, 30), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 14, 34))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 14, 44))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 14, 30), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 14, 34))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 14, 44))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 14, 30), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 14, 34))
+
+declare function f<X>({ a: X }: { a: X[] }): void;
+>f : Symbol(f, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 14, 60))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 15, 19), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 15, 23))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 15, 33))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 15, 19), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 15, 23))
+>a : Symbol(a, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 15, 33))
+>X : Symbol(X, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 15, 19), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 15, 23))
+
+type R = ({ ...a: b }: any) => void;
+>R : Symbol(R, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 15, 50))
+>b : Symbol(b, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 16, 11))
+
+declare function g({ ...a: b }: any): void;
+>g : Symbol(g, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 16, 36))
+>b : Symbol(b, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 17, 20))
+
+function h({ ...a: b }: { x: number }): void;
+>h : Symbol(h, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 17, 43), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 18, 45))
+>b : Symbol(b, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 18, 12))
+>x : Symbol(x, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 18, 25))
+
+function h(x: any) {}
+>h : Symbol(h, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 17, 43), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 18, 45))
+>x : Symbol(x, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 19, 11))
+
+function k({ ...rest }: { x: number }): void;
+>k : Symbol(k, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 19, 21), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 20, 45))
+>rest : Symbol(rest, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 20, 12))
+>x : Symbol(x, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 20, 25))
+
+function k(x: any) {}
+>k : Symbol(k, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 19, 21), Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 20, 45))
+>x : Symbol(x, Decl(ttttUnusedRenamingSameNamedTypeParameter.ts, 21, 11))
+

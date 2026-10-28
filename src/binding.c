@@ -692,7 +692,7 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
                 }
                 // (A renaming in a signature without a body is only TS2842, nothing about the property: tsc's
                 // checkVariableLikeDeclaration returns there, `type H = ({ x: a }: {}) => void`)
-                if (bodiless && i->target.tag == BINDING_IDENTIFIER && !i->target.rest &&
+                if (bodiless && i->target.tag == BINDING_IDENTIFIER && (!i->target.rest || i->target.rest_property_name) &&
                     (i->computed_key || !span_eq(i->source_span, i->target.content_span))
                 ) {
                     continue;

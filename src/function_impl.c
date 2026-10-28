@@ -850,19 +850,25 @@ static bool function_impl_check_grammar_accessor(FunctionImpl const* me, ErrorCt
     return false;
 }
 
-static bool type_node_queries(TypeNode const* node, Symbol const* symbol);
+static bool type_node_queries(TypeNode const* node, Symbol const* symbol, Symbol const* type);
 
 // Whether a `typeof x` in the signature's types names the symbol (tsc's isReferenced, which only a type query can set
 // in a signature without a body; tttt tracks references only for noUnusedLocals)
-static bool signature_queries(FunctionImpl const* function, Symbol const* symbol) {
-    for_each (i, vec_function_arg, &function->args) {
-        if (i->initializer.binding.has_explicit_type && type_node_queries(binding_type(&i->initializer.binding), symbol)) return true;
+// Whether a signature's types mention a value in a `typeof` or, `type` not null, a type by name
+static bool signature_queries(FunctionImpl const* function, Symbol const* symbol, Symbol const* type) {
+    if (type) {
+        for_each (i, vec_generic_item, &function->generic.items) {
+            if (type_node_queries(&i->extends, symbol, type) || (i->fallback && type_node_queries(i->fallback, symbol, type))) return true;
+        }
     }
-    if (function->predicate && function->predicate->has_type && type_node_queries(&function->predicate->type, symbol)) return true;
-    return type_node_queries(&function->ret, symbol);
+    for_each (i, vec_function_arg, &function->args) {
+        if (i->initializer.binding.has_explicit_type && type_node_queries(binding_type(&i->initializer.binding), symbol, type)) return true;
+    }
+    if (function->predicate && function->predicate->has_type && type_node_queries(&function->predicate->type, symbol, type)) return true;
+    return type_node_queries(&function->ret, symbol, type);
 }
 
-static bool type_node_queries(TypeNode const* node, Symbol const* symbol) {
+static bool type_node_queries(TypeNode const* node, Symbol const* symbol, Symbol const* type) {
     switch (node->tag) {
         case TYPE_TYPEOF: {
             Expr const* e = node->typeof_->expr;
@@ -874,27 +880,40 @@ static bool type_node_queries(TypeNode const* node, Symbol const* symbol) {
             return e->tag == EXPR_IDENTIFIER && e->identifier.symbol == symbol;
         }
         case TYPE_UNION: case TYPE_INTERSECTION:
-            for_each (i, vec_type, &node->composite) if (type_node_queries(i, symbol)) return true;
+            for_each (i, vec_type, &node->composite) if (type_node_queries(i, symbol, type)) return true;
             return false;
-        case TYPE_ARRAY: return type_node_queries(node->array.element, symbol);
+        case TYPE_ARRAY: return type_node_queries(node->array.element, symbol, type);
         case TYPE_TUPLE:
-            for_each (i, vec_tuple_element, &node->tuple.elements) if (type_node_queries(&i->type, symbol)) return true;
+            for_each (i, vec_tuple_element, &node->tuple.elements) if (type_node_queries(&i->type, symbol, type)) return true;
             return false;
         case TYPE_IDENTIFIER:
-            for_each (i, vec_spanned_type, &node->identifier->generic_params) if (type_node_queries(&i->type, symbol)) return true;
+            if (type && node->identifier->target == type) return true;
+            for_each (i, vec_spanned_type, &node->identifier->generic_params) if (type_node_queries(&i->type, symbol, type)) return true;
             return false;
-        case TYPE_INDEXED: return type_node_queries(&node->indexed->interface, symbol) || type_node_queries(&node->indexed->index, symbol);
-        case TYPE_KEYOF: return type_node_queries(&node->keyof->interface, symbol);
+        case TYPE_INDEXED: return type_node_queries(&node->indexed->interface, symbol, type) || type_node_queries(&node->indexed->index, symbol, type);
+        case TYPE_KEYOF: return type_node_queries(&node->keyof->interface, symbol, type);
         case TYPE_TERNARY:
-            return type_node_queries(&node->ternary->maybe_sub, symbol) || type_node_queries(&node->ternary->maybe_super, symbol) ||
-                type_node_queries(&node->ternary->if_true, symbol) || type_node_queries(&node->ternary->if_false, symbol);
-        case TYPE_CALLABLE: return signature_queries(node->callable->function, symbol);
+            return type_node_queries(&node->ternary->maybe_sub, symbol, type) || type_node_queries(&node->ternary->maybe_super, symbol, type) ||
+                type_node_queries(&node->ternary->if_true, symbol, type) || type_node_queries(&node->ternary->if_false, symbol, type);
+        case TYPE_CALLABLE: return signature_queries(node->callable->function, symbol, type);
         case TYPE_INTERFACE:
-            for_each (i, vec_interface_member, &node->interface.members) if (type_node_queries(&i->type, symbol)) return true;
+            for_each (i, vec_interface_member, &node->interface.members) if (type_node_queries(&i->type, symbol, type)) return true;
             return false;
-        case TYPE_JSDOC: return type_node_queries(&node->jsdoc->type, symbol);
+        case TYPE_JSDOC: return type_node_queries(&node->jsdoc->type, symbol, type);
         default: return false;
     }
+}
+
+// tsc binds a function's type parameters and its parameters' names into one symbol table, where a type parameter and
+// a binding of the same name merge into one symbol (they mean different things): a reference to the type parameter
+// in the signature is a reference to the renaming too (tsc's symbolReferenced, referenceKinds)
+static Symbol const* same_named_type_parameter(FunctionImpl const* function, Span name) {
+    csview b = span_sv(name);
+    for_each (i, vec_generic_item, &function->generic.items) {
+        csview a = span_sv(i->name);
+        if (i->owned_symbol && csview_eq(&a, &b)) return i->owned_symbol;
+    }
+    return nullptr;
 }
 
 // `type F = ({ a: string }) => void` renames `a` to `string` (tsc's checkPotentialUncheckedRenamedBindingElementsInTypes):
@@ -905,11 +924,12 @@ static void binding_check_unused_renamings(FunctionImpl const* function, Binding
     } else if (my tag == BINDING_OBJECT) {
         for_each (i, vec_object_binding_item, &my object) {
             Binding const* target = &i->target;
-            if (target->tag != BINDING_IDENTIFIER || target->rest || span_eq(i->source_span, target->content_span)) {
+            if (target->tag != BINDING_IDENTIFIER || (target->rest && !target->rest_property_name) || span_eq(i->source_span, target->content_span)) {
                 binding_check_unused_renamings(function, target, arg, errs);
                 continue;
             }
-            if (target->symbol && (target->symbol->referenced || signature_queries(function, target->symbol))) continue;
+            if (target->symbol && (target->symbol->referenced ||
+                signature_queries(function, target->symbol, same_named_type_parameter(function, target->content_span)))) continue;
             // (declarationNameToString: a name recovery left missing is "(Missing)")
             csview name = target->content_span.size ? span_sv(target->content_span) : c_sv("(Missing)");
             Error* e = error_ctx_error_d(errs, target->content_span, 2842, "'", name,

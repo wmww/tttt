@@ -1,0 +1,121 @@
+//// [test/cases/ttttUnusedRenamingSameNamedTypeParameter.ts] ////
+
+=== ttttUnusedRenamingSameNamedTypeParameter.ts ===
+// tsc binds a signature's type parameters and parameter names into one symbol table, where a type parameter X and
+// a renaming `{ a: X }` merge: a reference to the type X in the signature counts as a use of the renaming (no TS2842).
+// A rest element with a property name (TS2566) is a renaming too, and a bodiless one needs no `__rest` helper (TS2354)
+export {};
+type D1 = <T, X>({ a: X }: { a: X }) => void;
+>D1 : D1
+>a : any
+>X : X
+>a : X
+
+type D2 = <T, X>({ a: X }: { a: any }) => X;
+>D2 : D2
+>a : any
+>X : any
+>a : any
+
+type D3 = <X>({ a: X }: { a: any }, b: X) => void;
+>D3 : D3
+>a : any
+>X : any
+>a : any
+>b : X
+
+type D4 = <X>({ a: X }: { a: any }) => void;
+>D4 : D4
+>a : any
+>X : any
+>a : any
+
+type D5 = <X>({ a: X }: { a: any }) => typeof X;
+>D5 : D5
+>a : any
+>X : any
+>a : any
+>X : any
+
+type D6 = <X>({ a: X }: { a: any }) => X is string;
+>D6 : D6
+>a : any
+>X : any
+>a : any
+
+type D7 = <X>({ a: { b: X } }: { a: { b: X } }) => void;
+>D7 : D7
+>a : any
+>b : any
+>X : X
+>a : { b: X; }
+>b : X
+
+type D8 = <X, Y extends X>({ a: X }: { a: any }, y: Y) => void;
+>D8 : D8
+>a : any
+>X : any
+>a : any
+>y : Y
+
+type D9 = <X>({ a: X, b: Y }: { a: X; b: any }) => void;
+>D9 : D9
+>a : any
+>X : X
+>b : any
+>Y : any
+>a : X
+>b : any
+
+interface I { m<X>({ a: X }: { a: X }): void; n<X>({ a: X }: { a: any }): void; }
+>m : <X>({ a: X }: { a: X; }) => void
+>a : any
+>X : X
+>a : X
+>n : <X>({ a: X }: { a: any; }) => void
+>a : any
+>X : any
+>a : any
+
+abstract class C { abstract m<X>({ a: X }: { a: any }): X; }
+>C : C
+>m : <X>({ a: X }: { a: any; }) => X
+>a : any
+>X : any
+>a : any
+
+declare function f<X>({ a: X }: { a: X[] }): void;
+>f : <X>({ a: X }: { a: X[]; }) => void
+>a : any
+>X : X[]
+>a : X[]
+
+type R = ({ ...a: b }: any) => void;
+>R : R
+>a : any
+>b : any
+
+declare function g({ ...a: b }: any): void;
+>g : ({ ...a: b }: any) => void
+>a : any
+>b : any
+
+function h({ ...a: b }: { x: number }): void;
+>h : ({ ...a: b }: { x: number; }) => void
+>a : any
+>b : { x: number; }
+>x : number
+
+function h(x: any) {}
+>h : ({ ...a: b }: { x: number; }) => void
+>x : any
+
+function k({ ...rest }: { x: number }): void;
+>k : ({ ...rest }: { x: number; }) => void
+>rest : { x: number; }
+>x : number
+
+function k(x: any) {}
+>k : ({ ...rest }: { x: number; }) => void
+>x : any
+
