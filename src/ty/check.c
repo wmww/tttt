@@ -1045,21 +1045,10 @@ static Ty const* static_side_for_display(Ty const* part, Ty const* without) {
 }
 
 bool ty_check_static_heritage(Checker* me, Ty const* static_type, Ty const* base_static, Span span, ErrorCtx* errs) {
-    if (!(static_type->flags & TYF_OBJECT) || !(base_static->flags & (TYF_OBJECT | TYF_INTERSECTION))) return true;
+    // (`static_type` is the class's type of symbol: `typeof C & K` for a base constructor `X & K`, K a type variable,
+    // tsc's getBaseTypeVariableOfClass)
+    if (!(static_type->flags & (TYF_OBJECT | TYF_INTERSECTION)) || !(base_static->flags & (TYF_OBJECT | TYF_INTERSECTION))) return true;
     TyList parts = base_static->kind == TY_INTERSECTION ? base_static->composite.types : (TyList){ .data = &base_static, .len = 1 };
-    // HACK: a class whose base constructor is `X & K` (K a type variable) has the static type `typeof C & K` in tsc
-    // (getBaseTypeVariableOfClass in getTypeOfFuncClassEnumModule); tttt's static types don't, so it's added here
-    if (parts.len > 1) {
-        Ty const** with = malloc(sizeof(Ty const*) * (parts.len + 1));
-        panic_if(!with, "out of memory");
-        u32 len = 0;
-        with[len++] = static_type;
-        for (u32 i = 0; i < parts.len; i++) {
-            if (parts.data[i]->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) with[len++] = parts.data[i];
-        }
-        if (len > 1) static_type = ty_intersection(me, with, len, nullptr, (TyList){0});
-        free(with);
-    }
     Ty const* target = type_without_signatures(me, base_static);
     u32 limit_hits = my instantiation_limit_hits;
     if (ty_is_related(me, static_type, target, TY_RELATION_ASSIGNABLE)) return true;

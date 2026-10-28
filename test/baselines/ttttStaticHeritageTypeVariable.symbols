@@ -1,0 +1,82 @@
+//// [test/cases/ttttStaticHeritageTypeVariable.ts] ////
+
+=== ttttStaticHeritageTypeVariable.ts ===
+// The static side of a class whose base constructor is `X & K` (K a type variable) is `typeof C & K` (tsc's
+// getBaseTypeVariableOfClass), what TS2417 relates to the base's static side
+type Ctor = new (...args: any[]) => {};
+>Ctor : Symbol(Ctor, Decl(ttttStaticHeritageTypeVariable.ts, 0, 0))
+>args : Symbol(args, Decl(ttttStaticHeritageTypeVariable.ts, 2, 17))
+
+declare class Base { static s: number; static t: string; }
+>Base : Symbol(Base, Decl(ttttStaticHeritageTypeVariable.ts, 2, 39))
+>s : Symbol(Base.s, Decl(ttttStaticHeritageTypeVariable.ts, 3, 20))
+>t : Symbol(Base.t, Decl(ttttStaticHeritageTypeVariable.ts, 3, 38))
+
+function mix<K extends Ctor>(k: K) {
+>mix : Symbol(mix, Decl(ttttStaticHeritageTypeVariable.ts, 3, 58))
+>K : Symbol(K, Decl(ttttStaticHeritageTypeVariable.ts, 4, 13))
+>Ctor : Symbol(Ctor, Decl(ttttStaticHeritageTypeVariable.ts, 0, 0))
+>k : Symbol(k, Decl(ttttStaticHeritageTypeVariable.ts, 4, 29))
+>K : Symbol(K, Decl(ttttStaticHeritageTypeVariable.ts, 4, 13))
+
+    const B = Base as typeof Base & K;
+>B : Symbol(B, Decl(ttttStaticHeritageTypeVariable.ts, 5, 9))
+>Base : Symbol(Base, Decl(ttttStaticHeritageTypeVariable.ts, 2, 39))
+>Base : Symbol(Base, Decl(ttttStaticHeritageTypeVariable.ts, 2, 39))
+>K : Symbol(K, Decl(ttttStaticHeritageTypeVariable.ts, 4, 13))
+
+    class C extends B {
+>C : Symbol(C, Decl(ttttStaticHeritageTypeVariable.ts, 5, 38))
+>B : Symbol(B, Decl(ttttStaticHeritageTypeVariable.ts, 5, 9))
+
+        static s = 1;
+>s : Symbol(C.s, Decl(ttttStaticHeritageTypeVariable.ts, 6, 23))
+    }
+    class D extends B {
+>D : Symbol(D, Decl(ttttStaticHeritageTypeVariable.ts, 8, 5))
+>B : Symbol(B, Decl(ttttStaticHeritageTypeVariable.ts, 5, 9))
+
+        static s = "no";
+>s : Symbol(D.s, Decl(ttttStaticHeritageTypeVariable.ts, 9, 23))
+    }
+    class E extends B {
+>E : Symbol(E, Decl(ttttStaticHeritageTypeVariable.ts, 11, 5))
+>B : Symbol(B, Decl(ttttStaticHeritageTypeVariable.ts, 5, 9))
+
+        static t = 2;
+>t : Symbol(E.t, Decl(ttttStaticHeritageTypeVariable.ts, 12, 23))
+    }
+    return [C, D, E];
+>C : Symbol(C, Decl(ttttStaticHeritageTypeVariable.ts, 5, 38))
+>D : Symbol(D, Decl(ttttStaticHeritageTypeVariable.ts, 8, 5))
+>E : Symbol(E, Decl(ttttStaticHeritageTypeVariable.ts, 11, 5))
+}
+function mix2<K extends Ctor, L extends Ctor>(k: K, l: L) {
+>mix2 : Symbol(mix2, Decl(ttttStaticHeritageTypeVariable.ts, 16, 1))
+>K : Symbol(K, Decl(ttttStaticHeritageTypeVariable.ts, 17, 14))
+>Ctor : Symbol(Ctor, Decl(ttttStaticHeritageTypeVariable.ts, 0, 0))
+>L : Symbol(L, Decl(ttttStaticHeritageTypeVariable.ts, 17, 29))
+>Ctor : Symbol(Ctor, Decl(ttttStaticHeritageTypeVariable.ts, 0, 0))
+>k : Symbol(k, Decl(ttttStaticHeritageTypeVariable.ts, 17, 46))
+>K : Symbol(K, Decl(ttttStaticHeritageTypeVariable.ts, 17, 14))
+>l : Symbol(l, Decl(ttttStaticHeritageTypeVariable.ts, 17, 51))
+>L : Symbol(L, Decl(ttttStaticHeritageTypeVariable.ts, 17, 29))
+
+    const B = Base as typeof Base & K & L;
+>B : Symbol(B, Decl(ttttStaticHeritageTypeVariable.ts, 18, 9))
+>Base : Symbol(Base, Decl(ttttStaticHeritageTypeVariable.ts, 2, 39))
+>Base : Symbol(Base, Decl(ttttStaticHeritageTypeVariable.ts, 2, 39))
+>K : Symbol(K, Decl(ttttStaticHeritageTypeVariable.ts, 17, 14))
+>L : Symbol(L, Decl(ttttStaticHeritageTypeVariable.ts, 17, 29))
+
+    class F extends B {
+>F : Symbol(F, Decl(ttttStaticHeritageTypeVariable.ts, 18, 42))
+>B : Symbol(B, Decl(ttttStaticHeritageTypeVariable.ts, 18, 9))
+
+        static s = "no";
+>s : Symbol(F.s, Decl(ttttStaticHeritageTypeVariable.ts, 19, 23))
+    }
+    return F;
+>F : Symbol(F, Decl(ttttStaticHeritageTypeVariable.ts, 18, 42))
+}
+

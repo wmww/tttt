@@ -705,8 +705,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `source_file_check_verbatim_exports()` (TS1287) finds `export` by text scan (`export_keyword_of()`): statements don't
   keep modifier spans.
 - `ty_check_static_heritage()` relates a synthetic object literal (tsc's getTypeWithoutSignatures keeps the class
-  symbol, printing `typeof Base`); `Checker.display_of`/`display_as` patch the messages. HACK: adds `& K` to the source
-  because `ty_static_type_of` doesn't make `X & K` bases' static side `typeof C & K`. Fix: a synthetic anonymous type
+  symbol, printing `typeof Base`); `Checker.display_of`/`display_as` patch the messages. Fix: a synthetic anonymous type
   remembering the symbol it prints as.
 - `check_access` (TS2339): bracket access never reports there (`ty_check_element_implicit_any`, TS7053, mirrors
   getPropertyTypeForIndexType's errors separately); said to fire on modules too (TS2339 next to TS2307: not

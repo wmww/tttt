@@ -1,0 +1,77 @@
+//// [test/cases/ttttStaticHeritageTypeVariable.ts] ////
+
+=== ttttStaticHeritageTypeVariable.ts ===
+// The static side of a class whose base constructor is `X & K` (K a type variable) is `typeof C & K` (tsc's
+// getBaseTypeVariableOfClass), what TS2417 relates to the base's static side
+type Ctor = new (...args: any[]) => {};
+>Ctor : Ctor
+>args : any[]
+
+declare class Base { static s: number; static t: string; }
+>Base : Base
+>s : number
+>t : string
+
+function mix<K extends Ctor>(k: K) {
+>mix : <K extends Ctor>(k: K) => (({ new (): C; s: number; t: string; prototype: mix.C; } & K) | ({ new (): D; s: string; t: string; prototype: mix.D; } & K) | ({ new (): E; t: number; s: number; prototype: mix.E; } & K))[]
+>k : K
+
+    const B = Base as typeof Base & K;
+>B : typeof Base & K
+>Base as typeof Base & K : typeof Base & K
+>Base : typeof Base
+>Base : typeof Base
+
+    class C extends B {
+>C : C
+>B : Base
+
+        static s = 1;
+>s : number
+>1 : 1
+    }
+    class D extends B {
+>D : D
+>B : Base
+
+        static s = "no";
+>s : string
+>"no" : "no"
+    }
+    class E extends B {
+>E : E
+>B : Base
+
+        static t = 2;
+>t : number
+>2 : 2
+    }
+    return [C, D, E];
+>[C, D, E] : (({ new (): C; s: number; t: string; prototype: mix.C; } & K) | ({ new (): D; s: string; t: string; prototype: mix.D; } & K) | ({ new (): E; t: number; s: number; prototype: mix.E; } & K))[]
+>C : { new (): C; s: number; t: string; prototype: mix.C; } & K
+>D : { new (): D; s: string; t: string; prototype: mix.D; } & K
+>E : { new (): E; t: number; s: number; prototype: mix.E; } & K
+}
+function mix2<K extends Ctor, L extends Ctor>(k: K, l: L) {
+>mix2 : <K extends Ctor, L extends Ctor>(k: K, l: L) => { new (): F; s: string; t: string; prototype: mix2.F; } & K
+>k : K
+>l : L
+
+    const B = Base as typeof Base & K & L;
+>B : typeof Base & K & L
+>Base as typeof Base & K & L : typeof Base & K & L
+>Base : typeof Base
+>Base : typeof Base
+
+    class F extends B {
+>F : F
+>B : Base
+
+        static s = "no";
+>s : string
+>"no" : "no"
+    }
+    return F;
+>F : { new (): F; s: string; t: string; prototype: mix2.F; } & K
+}
+
