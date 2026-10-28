@@ -563,6 +563,15 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   initializer resolves silently (712fb465d), a namespace body's missing `}` has no TS1007 (161cda90c). Left: [open]
   circularInlineMappedGenericTupleTypeNoCrash: TS2464's underline on a broken computed name `[P in keyof Elements]`
   in an object literal is one character shorter than tsgo's (render only).
+- Mutation seed 20261107 (bun11, `--syntax`, 2000: 8 errors-component differences) and 20261106 without `--syntax`
+  (4, all known: distributiveConditionalBaseConstraint, distributiveConditionalTypeConstraints, two render): TS1338
+  is a grammar error (0540d6753). Checker, relayed: controlFlowForStatementContinueIntoIncrementor1 undefined-init
+  (`let i = undefined` in a for loop with `continue`: missing TS18048 'i' is possibly 'undefined' at the incrementor)
+  [open]; recursiveTypeInferenceReturnTypeConstraint str-to-num (missing TS7022/TS2615, the known item) [open];
+  newTargetNarrowing member-typo (`.targetX`: missing TS2345 boolean to true) [open]; octalIntegerLiteralES6
+  num-to-str (TS2551 'Did you mean' on a property named `5.462437423415177e+244` is TS7053 in tttt: a numeric literal
+  key's name) [open]; generatorTypeCheck46 member-typo (`[Symbol.iteratorX]`: missing TS2488 on a type with only a
+  number index signature) [open]; two render.
 - Mutation seeds 20261105 and 20261106 (bun10, `--syntax`, 2000 each: 8 and 15 errors-component differences; 20261104
   without `--syntax`: 0). Fixed: a `]` ends a parameter list (fb750f459), a misplaced `import x = N` (TS1232) isn't
   resolved (a43889a36), the end of the file ends a type or class member (3aca4984e), a for-of's expression is no comma
