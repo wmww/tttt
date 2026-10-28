@@ -547,7 +547,8 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   unlooked at, checker (cor8 2026-10-28, seed 20261103 `--syntax` rerun: recursiveTypeRelations delete-stmt is parser
   recovery: tsgo's argument list after the arrow meets `}` (TS1005 ',' expected) and takes a missing expression as a
   second argument, so `reduce<C>(cb, <missing>)` fits the generic overload's arity and the callback is TS2345; tttt's
-  list has one argument (TS2554) [open, parser]. isolatedDeclarationErrorsObjects ann-number-string: an object
+  list has one argument (TS2554). Not an extra argument (tsgo's tree has one): the call misses its `)`, which tsc's
+  hasCorrectArity takes as incomplete, too few arguments being fine (CallExpr.args_incomplete) [fixed fb2d31070]. isolatedDeclarationErrorsObjects ann-number-string: an object
   literal accessor pair annotated `get x(): string { return 0 }` / `set x(value: number)` is TS9009 at the setter's
   parameter in tsgo only when another member of the literal needs the equivalence check (an unannotated pair before
   it); alone it is clean in both. The setter's pseudoTypeEquivalentToType against getWriteTypeOfSymbol fails there in

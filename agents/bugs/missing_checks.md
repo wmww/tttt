@@ -603,7 +603,8 @@ umd7, typeTagNoErasure, importHelpersES6: the seeds 2311/2312 entries).
   (a grandchild under a wrong middle name), `opts5[].unnest`: tsgo's parseChildParameterOrPropertyTag accepts a child
   only when its name's left is exactly the parent's, so the wrong grandchild ends `what`'s and `opts5`'s nesting both:
   every later `@param` is top level (TS8032 for each, names printed without `[]`), and `opts5[0].unnest` is TS2339.
-  tttt keeps nesting and prints the names with `[]`. JSDoc parser (bun's area). [open]
+  tttt keeps nesting and prints the names with `[]`. JSDoc parser (bun's area). jsdoc_nested_count(),
+  jsdoc_entity_name_text() [fixed 9bb350a0d]
 - jsdocTypeTagFunctionTypePredicate delete-stmt: TS2355 for a JSDoc `@type {(e) => e is X}` function expression
   without a return is at the `@type` tag's type (8,27) in tsgo, at its return type (8,43) in tttt: tsgo's errorNode is
   the FullSignature the reparser set; function_impl_check_end now takes jsdoc_signature_span when the return type
@@ -652,7 +653,7 @@ Diagnostics-class leftovers, not fixed:
   [fixed 8fbeb9b4d] Left, JSDoc parser (bun's area): `/** @type {\n */` and `/** @type { */` miss tsgo's TS1110 at the
   newline/whitespace token after `{` (tsgo's JSDoc scanner makes whitespace a token); `/** @type {\n * number} */` is
   `*` (JSDocAllType) then '}' expected at `number` in tsgo, number without errors in tttt (the continuation's `*`
-  skipped). Text: `{ x: 1 } satisfies ;`'s types line prints `satisfies ` with a trailing space (the missing type's span
+  skipped) [fixed 25b84631b: parse_jsdoc_type_expression, test ttttJsdocTypeBraceAtEnd]. Text: `{ x: 1 } satisfies ;`'s types line prints `satisfies ` with a trailing space (the missing type's span
   starts after the whitespace; tsc's ends at the keyword). [open]
 - Seed 2313 (multi/js, 40 / 3977): the stop seed, two new diagnostics-class divergences. The harness's TS5024 location
   in an extended config is fixed. Not fixed: tsgo's doubled TS2304 next to its TS2552 for `export { StringHash }` of a
