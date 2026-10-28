@@ -1833,3 +1833,32 @@ threads everywhere; "24/24" is `--threads 24 --checkers 24`. dokploy and openbot
   outputs in 5 runs, 1 of 8 more matched K1 (the others add a TS2430 at mysql-core/query-builders/select.ts(1076,18),
   one also drops the TS2416 at mysql2/session.ts(281,17)); at the defaults 3 of 10 differ. Plain matched K1 in every
   run; the other five projects were identical in every run. Far more often than the 5/10 at K8 recorded on this box.
+
+## The flag's wall loss on vscode: the mm-lock storm fixed (2026-10-29, sgwall, this box at load 12-22)
+Fast builds: main 8c9afd512 ("flag base", and plain) against wt-sgwall 10f159e48 ("flag new": ZeroPages for the graph's
+memory and the stamp chunks, 256 shards; notes/shared_graph.md "The wall loss beyond the CPU loss"). 5 interleaved
+rounds, `TTTT_SYNC_EXIT=1`, whole-run wall and user+sys from /usr/bin/time; "def" is the defaults (16 threads, K16 on
+vscode, K8 on effect), "16" is `--threads 16 --checkers 16`. Medians (best in brackets); other workers loaded the box.
+
+| project | mode | plain wall | flag base wall | flag new wall | plain CPU | flag base CPU | flag new CPU |
+|---|---|---|---|---|---|---|---|
+| zod | def | 0.19 (0.19) | 0.22 (0.21) | 0.23 (0.22) | 1.1 | 1.3 | 1.3 |
+| zod | 16 | 0.26 (0.24) | 0.24 (0.22) | 0.27 (0.24) | 1.5 | 1.5 | 1.6 |
+| drizzle | def | 0.28 (0.26) | 0.27 (0.26) | 0.27 (0.27) | 1.7 | 1.7 | 1.8 |
+| drizzle | 16 | 0.33 (0.31) | 0.29 (0.25) | 0.28 (0.25) | 2.4 | 2.0 | 2.1 |
+| effect | def | 0.32 (0.31) | 0.35 (0.35) | 0.37 (0.36) | 2.0 | 2.3 | 2.5 |
+| effect | 16 | 0.32 (0.29) | 0.35 (0.33) | 0.36 (0.35) | 2.3 | 2.6 | 2.7 |
+| dokploy/apps/dokploy | def | 0.93 (0.90) | 0.96 (0.94) | 0.98 (0.94) | 6.3 | 6.5 | 6.6 |
+| dokploy/apps/dokploy | 16 | 1.34 (1.33) | 1.22 (1.05) | 1.11 (0.99) | 11.0 | 9.2 | 8.3 |
+| vscode | def | 2.01 (1.92) | 2.63 (2.62) | 2.12 (2.05) | 19.1 | 20.4 | 20.6 |
+| vscode | 16 | 2.06 (1.98) | 2.70 (2.64) | 2.50 (2.19) | 19.1 | 20.9 | 20.9 |
+
+- vscode: the flag's wall loss at the defaults falls from +31% to +5%, about its CPU loss (+8% in the check phase).
+  The timeline's check phase at load 24 (3 runs each, defaults and 16/16): checker threads' blocked time, summed,
+  plain 0.6-1.3 s, flag base 9.2-10.6 s, flag new 0.7-0.9 s; check wall 1.50-1.77 / 2.38-2.57 / 1.62-1.74 s.
+  strace: mprotect() calls plain 41, flag base 11.3k, flag new 39.
+- effect: 8 more interleaved rounds at the defaults, check CPU medians 2182 / 2206 (ZeroPages alone) / 2233 ms (with
+  256 shards), mins 2052 / 2013 / 2092, check wall 380 / 344 / 333: noise at load 21; cachegrind at one thread K8 has
+  the 256 shards' D1 misses +0.4%, LL +0.1%. effect's loss is CPU on its costliest files (notes/shared_graph.md).
+- Flag K8 at one thread, callgrind: zod -1.2%, drizzle -1.2% instructions (ZeroPages: no memset of doubled tables).
+- Peak RSS under the flag +6..10 MB on zod and drizzle (the 256 KB populated ahead per ZeroPages, one per checker).

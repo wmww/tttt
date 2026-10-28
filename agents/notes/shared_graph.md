@@ -272,6 +272,40 @@ fingerprint oracle at K8 (0 variance differences on drizzle, zod, effect, xstate
 the Variances layout was off by a byte before, now ty_variances_data()), TSan clean at T4/T8 on the five,
 -DTTTT_GRAPH_CHECKS main's one site.
 
+## The wall loss beyond the CPU loss, attributed (2026-10-29, worker sgwall)
+The laptop (measurements.md "The 12-core box at 15f15fdeb") had vscode's flag wall +10..12% on +4..5% user, effect
++4/+14% wall. On this box (16 vCPU, load 10-35 from other workers all day: no quiet number exists) with the timeline
+(bench/timeline, `TIMELINE_ALL=1`, now `timeline.py --blocked`) and `TTTT_FILE_TIMES=1`:
+
+- **vscode: the checkers slept in the kernel's mm lock.** Check phase at K16, the checker threads' blocked time
+  (span less run less run queue, summed): plain 0.16-1.3 s, flag 1.2-13.5 s (load 23-36). The D-state samples were
+  mprotect() under malloc (memo_at, declare_symbol_flags, add_member_entry, binder_new_symbol: any malloc), the S ones
+  shard-mutex waits behind holders stuck there. strace: the flag made 11.3k mprotect() calls, plain 41. The graph's
+  memory (shared tables' slot arrays at every doubling, memo pages) and the first-touch stamp chunks were malloc'd on
+  the checker threads, past what the front end had freed, and a non-main glibc arena grows its heap a page at a time,
+  an mprotect() each, which takes the mm lock for writing while every other thread's faults (and the arenas'
+  MADV_POPULATE_WRITE ranges, which hold it for reading) queue. Fixed by ZeroPages (1449a150a, 9bff3a182, dbd14ff0b):
+  that memory now comes from mappings of its own, bumped under a lock, faulted in 256 KB ahead, freed with its owner:
+  39 mprotect() calls, blocked time at plain's level (0.7-0.9 s against 0.6-1.3 at load 24), check wall 2.4 -> 1.64-1.74 s
+  against plain's 1.50-1.77, check CPU 19.5 -> 18.9 s against 17.5 (+8%), flag instructions -1.2% (no memset of the
+  doubled tables). The mechanism doesn't need load: a writer waiting on the mm lock stalls every new fault behind it.
+- **Shard locks: rare contention, long waits under load.** `TTTT_GRAPH_STATS` counts the inserts that found their
+  shard locked: vscode K16 0.07% of 5.1M, effect K16 0.2% of 1.1M. Holds are short (99.8% under 1 us, TSC histogram),
+  but each contended insert waited ~50-100 us: inserts are ~12% of the flag's check CPU, so a preempted thread is often
+  a holder, and at ~400k inserts a second every thread reaches its shard within milliseconds (lock waits come in bursts,
+  20-30% of a 20 ms window). 256 shards (8bc9217fb) cut the contended inserts 2.5x and effect K16's lock-wait samples
+  from 5.3-6.7% to 2.5-4.5%. A spinning mutex, a spin-yield lock and probing before the lock were tried and not kept
+  (8bc9217fb's message). What would remove it: a lock-free insert (CAS the slot; a doubling marks the empty slots moved
+  so a racing insert retries in the new array); only worth it if the laptop at 24/24 shows lock waits.
+- **Not the deal, not a serial part.** The checkers' finishing spread (the idle tail) is the same in both modes (vscode
+  88 ms plain, 107 flag; effect 11 / 14), the main thread's serial parts are equal (checkers start 2-4 ms into the
+  phase, the join ~10 ms), vscode doesn't recycle the graph (no `recycle due` line) and doesn't rerun. vscode's tail is
+  a cost-proxy problem of both modes: its costliest file, mapSessionEvents.test.ts (274 ms check), is dealt by its
+  bytes and starts ~840 ms into a 1.1 s phase.
+- **effect is CPU on the critical path.** No mprotect storm there (the fix changes nothing); flag check CPU +17-20%
+  at K8, its costliest files slower by more (Schema.ts 95 -> 124 ms CPU, stream.ts 72 -> 95): the per-read premium
+  of "The premium, attributed" on the files the span waits for, plus the shard-lock waits above at K16.
+
 ## The ceiling, measured (2026-10-22)
 The most a shared graph could take off a checker: the share of its check instructions that only repeat what one
 checker would do once, (W(K) - W(1)) / W(K), with W the instructions inside check_share (callgrind per thread,
