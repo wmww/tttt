@@ -100,6 +100,19 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   setter is reported at the setter, and an annotation that lowered to another declaration's circularity is any (no
   TS2502 at `v` in `set x(v: C["x"])`). getWriteTypeOfAccessors__01-03/06, getWriteTypeOfSymbol__01/02/04 match. Test
   ttttAccessorWriteTypeCircularity. [fixed a28963f2c]
+- (cor3, 2026-10-29, bun 99-V4, looked at, not fixed) **Accessor and loop leftovers**: (1) checkAccessorDeclaration__04/05:
+  tsc checks a getter's code paths against getTypeOfAccessors (any after its circularity), so a `get x(): [C["x"]]`
+  whose body can fall off the end has no TS2366; function_impl_check_end() uses the annotation (or the setter's) and
+  can't tell a class getter from an object literal's to ask the accessor's type. (2) __01-03: an unannotated setter
+  parameter is the getter's *signature* return type, which tsc infers apart from the accessor symbol's type
+  (getReturnTypeOfSignature vs getTypeOfAccessors' getReturnTypeFromBody), so it stays `number` where the accessor is
+  circular; tttt's one function-return memo makes both any (types only). (3) loop__through_await / checkForOfStatement:
+  `for (const child of f(children))` in a loop whose `const { children } = d` reads the loop's variable: tsc re-enters
+  `child` below the call's barrier and the second round's push of `children` fails (TS7022 on both, reported at the
+  failing push); tttt sees the cycle on the pattern's LazyType (TTTT_DEBUG_CYCLE) but the pattern retry
+  (pattern_retried) settles it without a report. A plain `for (const child of children)` matches. (4)
+  getTypeOfInitializer__07: an annotated pattern initialized by a generic call in a loop, spurious TS7022 on its name.
+  [open]
 - (cor3, 2026-10-29, bun 99-V4 getWriteTypeOfSymbol__03) An interface property merged with class accessors of its name
   (`get x(): string; set x(v: string | number)` plus `interface C { x: string }`) is a SymbolFlags.Property in tsc,
   written as it is read (getWriteTypeOfSymbol): `c.x = 1` is TS2322 against string; tttt takes the setter's type. Test ttttWriteTypeMergedAndIndexed. [fixed 22649f1bc]
