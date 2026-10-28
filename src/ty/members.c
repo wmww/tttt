@@ -80,7 +80,7 @@ static PropDecl* prop_decl_none(void) {
 
 // Whether decl is one of the shared read-only declarations (to write, a prop needs one of its own)
 static bool prop_decl_shared(PropDecl const* decl) {
-    return decl == &ty_prop_decl_none || decl == &ty_prop_decl_value_name;
+    return decl == &ty_prop_decl_none || decl == &ty_prop_decl_value_name || decl->shared;
 }
 
 // A property without a declaration of its own
@@ -99,8 +99,61 @@ static Prop* prop_new_declared(Checker* me) {
 
 // The rare part of a prop's declaration, to write
 static PropDeclRare* prop_decl_rare_mut(Checker* me, PropDecl* decl) {
-    if (!decl->rare) decl->rare = arena_new(&my arena, PropDeclRare);
+    check(!decl->shared);
+    if (!decl->rare) {
+        decl->rare = arena_new(&my arena, PropDeclRare);
+    } else if (decl->rare->shared) {
+        PropDeclRare* own = arena_new(&my arena, PropDeclRare);
+        *own = *decl->rare;
+        own->shared = false;
+        decl->rare = own;
+    }
     return decl->rare;
+}
+
+// A prop's declaration, to write: its own (a copy of a shared one)
+static PropDecl* prop_decl_mut(Checker* me, Prop* prop) {
+    if (!prop_decl_shared(prop->decl)) return prop->decl;
+    PropDecl* own = arena_new(&my arena, PropDecl);
+    *own = *prop->decl;
+    own->shared = false;
+    prop->decl = own;
+    return own;
+}
+
+// The declaration of a mapped type's property declared where `declared` is (tsc's mapped symbol's declarations):
+// `declared`'s name and spans, and with `mapped_from` its rare part says so (and the modifiers type when it is an
+// intersection, `intersection`). Pure of its inputs, so one per inputs, shared by every mapped type over that property
+// (drizzle: ~100k mapped props of 336 bytes each, mostly over the same few thousand columns), read-only
+typedef struct MappedDeclSlot {
+    Prop const* declared;
+    uintptr_t mode;
+    PropDecl* decl;
+} MappedDeclSlot;
+enum { MAPPED_DECL_SLOTS = 4096 };
+
+static PropDecl* mapped_prop_decl(Checker* me, Prop const* declared, bool mapped_from, Ty const* intersection) {
+    // (A cache, not an identity: a decl evicted is made again, equal)
+    uintptr_t mode = mapped_from ? (uintptr_t)intersection | 1 : 0;
+    if (!my mapped_decls) my mapped_decls = arena_new_n(&my arena, MappedDeclSlot, MAPPED_DECL_SLOTS);
+    MappedDeclSlot* slot = &my mapped_decls[(((uintptr_t)declared ^ mode) * 0x9e3779b97f4a7c15ull) >> (64 - 12)];
+    static_assert(MAPPED_DECL_SLOTS == 1 << 12);
+    if (slot->declared == declared && slot->mode == mode) return slot->decl;
+    PropDecl* decl = arena_new(&my arena, PropDecl);
+    decl->name_span = declared->decl->name_span;
+    decl->name_form = ty_prop_name_form_of(declared);
+    decl->decl_spans = declared->decl->decl_spans;
+    decl->decl_span_count = declared->decl->decl_span_count;
+    decl->name_is_value = declared->decl->name_is_value;
+    if (mapped_from) {
+        PropDeclRare* rare = prop_decl_rare_mut(me, decl);
+        rare->mapped_from = declared;
+        rare->mapped_intersection = intersection;
+        rare->shared = true;
+    }
+    decl->shared = true;
+    *slot = (MappedDeclSlot){ declared, mode, decl };
+    return decl;
 }
 
 // `*to = *from`, with a declaration of its own to add to
@@ -116,7 +169,7 @@ static void prop_copy_into(Checker* me, Prop* to, Prop const* from, bool keep_in
     if (prop_decl_shared(from->decl)) return;
     to->decl = arena_new(&my arena, PropDecl);
     *to->decl = *from->decl;
-    if (from->decl->rare) {
+    if (from->decl->rare && !from->decl->rare->shared) {
         to->decl->rare = arena_new(&my arena, PropDeclRare);
         *to->decl->rare = *from->decl->rare;
     }
@@ -684,11 +737,7 @@ static Signature* builder_add_callable(Checker* me, MembersBuilder* builder, Fun
 
 static void prop_add_decl_spans(Checker* me, Prop* prop, Span const* spans, u32 count) {
     if (!count) return;
-    if (prop_decl_shared(prop->decl)) {
-        PropDecl* own = arena_new(&my arena, PropDecl);
-        *own = *prop->decl;
-        prop->decl = own;
-    }
+    prop_decl_mut(me, prop);
     // (A prop's span lists are never written once made, and are replaced to add to them)
     Span* all = arena_new_n(&my arena, Span, prop->decl->decl_span_count + count);
     if (prop->decl->decl_span_count) memcpy(all, prop->decl->decl_spans, sizeof(Span) * prop->decl->decl_span_count);
@@ -4203,14 +4252,7 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
             .decl = prop_decl_none() };
         Prop const* declared = from;
         while (declared && declared->target && !declared->decl->decl_span_count) declared = declared->target;
-        if (declared) {
-            prop->decl = arena_new(&my arena, PropDecl);
-            prop->decl->name_span = declared->decl->name_span;
-            prop->decl->name_form = ty_prop_name_form_of(declared);
-            prop->decl->decl_spans = declared->decl->decl_spans;
-            prop->decl->decl_span_count = declared->decl->decl_span_count;
-            prop->decl->name_is_value = declared->decl->name_is_value;
-        }
+        if (declared) prop->decl = mapped_prop_decl(me, declared, false, nullptr);
         builder_push(&builder, props, prop);
     }
     // And an index signature per index signature of the constraint (tsc's addMemberForKeyTypeWorker)
@@ -4323,12 +4365,7 @@ static Members const* expand_generic_intersection_homomorphic(Checker* me, Membe
                 Prop const* declared = from;
                 while (declared && declared->target && !declared->decl->decl_span_count) declared = declared->target;
                 if (declared) {
-                    prop->decl = arena_new(&my arena, PropDecl);
-                    prop->decl->name_span = declared->decl->name_span;
-                    prop->decl->name_form = ty_prop_name_form_of(declared);
-                    prop->decl->decl_spans = declared->decl->decl_spans;
-                    prop->decl->decl_span_count = declared->decl->decl_span_count;
-                    prop->decl->name_is_value = declared->decl->name_is_value;
+                    prop->decl = mapped_prop_decl(me, declared, false, nullptr);
                     // (A union's property is declared by every member's: tsc's createUnionOrIntersectionProperty)
                     if (whole) add_member_decl_spans(me, prop, whole, from->name, 0);
                 }
@@ -4715,7 +4752,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                     // (tsc's nameType becomes the union of both names, which is no member's: the plain literal)
                     Ty const* existing_name = prop_decl_rare(existing->decl)->name_type;
                     if (existing_name && (existing_name->flags & TYF_ENUM_LITERAL) && existing_name != ty_regular(me, prop_name)) {
-                        prop_decl_rare_mut(me, existing->decl)->name_type = (existing_name->flags & TYF_NUMBER_LITERAL) ?
+                        prop_decl_rare_mut(me, prop_decl_mut(me, existing))->name_type = (existing_name->flags & TYF_NUMBER_LITERAL) ?
                             ty_literal(me, &existing_name->literal.value) : nullptr;
                     }
                     Ty const* both[2] = { existing->mapper->targets[0], key };
@@ -4755,14 +4792,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                 Prop const* declared = !remapping ? from : nullptr;
                 while (declared && declared->target && !declared->decl->decl_span_count) declared = declared->target;
                 if (declared) {
-                    prop->decl = arena_new(&my arena, PropDecl);
-                    prop->decl->name_span = declared->decl->name_span;
-                    prop->decl->name_form = ty_prop_name_form_of(declared);
-                    prop->decl->decl_spans = declared->decl->decl_spans;
-                    prop->decl->decl_span_count = declared->decl->decl_span_count;
-                    prop->decl->name_is_value = declared->decl->name_is_value;
-                    prop_decl_rare_mut(me, prop->decl)->mapped_from = declared;
-                    if (modifiers->kind == TY_INTERSECTION) prop_decl_rare_mut(me, prop->decl)->mapped_intersection = modifiers;
+                    prop->decl = mapped_prop_decl(me, declared, true, modifiers->kind == TY_INTERSECTION ? modifiers : nullptr);
                     // (Of a union, declared where each member's property is: tsc's union property symbol)
                     if (modifiers->kind == TY_UNION) {
                         for (u32 m = 0; m < modifiers->composite.types.len; m++) {
@@ -4783,8 +4813,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                 // A number key is a number to keyof (tsc's mapped symbol's nameType, getLiteralTypeFromProperty), which
                 // the name, a string, doesn't say; an enum member is that member (and prints as one, `[E.A]`)
                 if (prop_name->flags & (TYF_NUMBER_LITERAL | TYF_ENUM_LITERAL)) {
-                    if (prop->decl == prop_decl_none()) prop->decl = arena_new(&my arena, PropDecl);
-                    prop_decl_rare_mut(me, prop->decl)->name_type = ty_regular(me, prop_name);
+                    prop_decl_rare_mut(me, prop_decl_mut(me, prop))->name_type = ty_regular(me, prop_name);
                 }
                 builder_push(&builder, props, prop);
             } else {

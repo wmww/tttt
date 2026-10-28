@@ -599,6 +599,17 @@ typedef struct PropDeclRare {
     // An overloaded method: all of its signatures (a source of the type, see PropDecl)
     FunctionImpl const* const* overloads;
     u32 overload_count;
+    uint8_t asserted_dropped_flight; // (asserted_dropped's default-path byte: never in flight, sw_finish() wants one)
+    // The spread made a fresh symbol (tsc's getSpreadSymbol of a readonly or set-only one, a partial spread's): not
+    // spread_variable's, no parent, a bare name in the symbols baseline
+    bool spread_fresh : 1;
+    // spread_variable is reached through an alias export (`export { v }` of an import): the property is the alias symbol,
+    // which has no value declaration, so declaration emit neither reuses the variable's declaration nor writes a
+    // function as a method (tsgo's serializeTypeForDeclaration of the export specifier: its type, `typeof ns.v`)
+    bool spread_alias : 1;
+    bool class_auto_accessor : 1; // `accessor x`: printed as a getter and a setter the same way
+    // Shared by the declarations of many props (mapped_prop_decl()): prop_decl_rare_mut() writes to a copy
+    bool shared : 1;
     Ty const* name_type; // An object literal's computed literal name's type, as it was (fresh): what keyof gives
     // A divergent accessor's setter parameter type (tsc's write type), lowered with `ctx`; instantiations follow
     // `target`. See prop_write_type()
@@ -622,25 +633,16 @@ typedef struct PropDeclRare {
     // A reverse mapped property's type no longer says `asserted`'s annotation (prop_type() finds out): a shared word,
     // PROP_ASSERTED_DROPPED once it doesn't (prop_decl_asserted()), written by the type's computation
     SharedWord asserted_dropped;
-    uint8_t asserted_dropped_flight; // (Its default-path byte: never in flight, sw_finish() wants one)
     // Types baseline only: a property spread from a module's variable (`{ ...ns }`) is declared by that variable (tsc's
     // getSpreadSymbol keeps the declarations), whose annotation or literal initializer is reused
     Symbol const* spread_variable;
     Symbol const* spread_namespace; // The namespace or module whose export spread_variable is (symbols baseline)
-    // The spread made a fresh symbol (tsc's getSpreadSymbol of a readonly or set-only one, a partial spread's): not
-    // spread_variable's, no parent, a bare name in the symbols baseline
-    bool spread_fresh;
-    // spread_variable is reached through an alias export (`export { v }` of an import): the property is the alias symbol,
-    // which has no value declaration, so declaration emit neither reuses the variable's declaration nor writes a
-    // function as a method (tsgo's serializeTypeForDeclaration of the export specifier: its type, `typeof ns.v`)
-    bool spread_alias;
     // A type member getter with a body (TS1183) and no return annotation: its type is the body's return type
     FunctionImpl const* getter_body;
     // A class accessor's get and set declarations: declaration emit prints the property as them in an object type (tsc's
     // addPropertyToElementList)
     FunctionImpl const* class_getter;
     FunctionImpl const* class_setter;
-    bool class_auto_accessor; // `accessor x`: printed as a getter and a setter the same way
     // A late bound class or type member's computed name (`[a.b]`): what its first identifier resolves to where it is
     // written is what declaration emit tracks when it doesn't resolve where the type is printed (trackComputedName)
     struct Expr const* late_name;
@@ -666,6 +668,9 @@ typedef struct PropDecl {
     // A type member's: the kinds of declaration its symbol has so far (1 property, 2 method, 4 get, 8 set; 0 unknown),
     // what a later member of its name joins or conflicts with (builder_add_interface_member())
     uint8_t member_kinds;
+    // Shared by many props (the mapped props declared where one property is, members.c mapped_prop_decl()): read-only
+    // like ty_prop_decl_none, a prop that adds to it takes a copy (prop_decl_shared())
+    bool shared;
     // Types baseline only: an annotation that still says the property's type, reused (see ty_display.c): of a property
     // it was spread or mapped from, an object literal property's JSDoc `@type`
     TypeNode const* asserted;
@@ -678,6 +683,7 @@ typedef struct PropDecl {
 } PropDecl;
 
 static_assert(sizeof(PropDecl) == 96);
+static_assert(sizeof(PropDeclRare) == 160);
 
 static inline PropDeclRare const* prop_decl_rare(PropDecl const* decl) {
     static const PropDeclRare none = {0};
@@ -1290,6 +1296,8 @@ struct Checker {
     // The lists mappers recently kept, by their types (mapper_list()): most mappers map a declaration's type parameters,
     // and inference makes the same results over and over
     TyList mapper_lists[1024];
+    // members.c mapped_prop_decl()'s cache, direct-mapped by (declared prop, mode): arena-allocated on first use
+    struct MappedDeclSlot* mapped_decls;
     // The root conditional type a distributive constraint is being instantiated from (tsc's forConstraint): a definitely
     // false check of it gives both branches
     Ty const* for_constraint_root;
