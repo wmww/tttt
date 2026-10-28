@@ -8942,14 +8942,13 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         Expr key;
         p.shared->in_property_name++;
         bool saved_in = allow_in_enter(&p);
-        bool has_key = parse_expr(&p, expr_ctx_null, &key);
-        if (has_key) parse_computed_key_comma(&p, &key);
+        // (A missing expression is TS1109 and the member goes on, tsc's parseComputedPropertyName: `{ []: 1 }`)
+        // (A missing one is the left operand of a comma expression too: `{ [ , b: 1 }`)
+        if (expect_expr(&p, expr_ctx_null, &key) || (key.tag == EXPR_IMPLICIT_ANY && key.missing)) {
+            parse_computed_key_comma(&p, &key);
+        }
         allow_in_leave(&p, saved_in);
         p.shared->in_property_name--;
-        if (!has_key) {
-            modifier_list_drop(&modifiers);
-            return parse_fail(&p);
-        }
         hop_whitespace(&p);
         // (tsc's parseComputedPropertyName: `{ [s: symbol]: 1 }` is missing its `]`)
         expect_char(&p, ']');
@@ -9578,7 +9577,8 @@ static bool parse_expr_interface_member(Parser* parent, bool is_type, FunctionFl
     // (A missing expression is TS1109 and the member goes on, tsc's parseComputedPropertyName: `{ a: 1; [ }`)
     bool has_key = expect_expr(&p, expr_ctx_null, &expr) || (expr.tag == EXPR_IMPLICIT_ANY && expr.missing);
     // (TS1171 is the checker's: after TS1166-TS1170, interface_member_typecheck())
-    if (has_key && !(expr.tag == EXPR_IMPLICIT_ANY && expr.missing)) parse_computed_key_comma(&p, &expr);
+    // (A missing one too, the left operand of a comma expression: `{ [ , b]: 1 }`)
+    if (has_key) parse_computed_key_comma(&p, &expr);
     allow_in_leave(&p, saved_in);
     p.shared->in_property_name--;
     if (!has_key) {
@@ -9666,7 +9666,8 @@ static bool parse_class_computed_key(Parser* parent, Expr** ret) {
     Expr key;
     p.shared->in_property_name++;
     bool saved_in = allow_in_enter(&p);
-    bool has_key = parse_expr(&p, expr_ctx_null, &key);
+    // (A missing expression is TS1109 and the member goes on, tsc's parseComputedPropertyName: `[ , b]: 1`)
+    bool has_key = expect_expr(&p, expr_ctx_null, &key) || (key.tag == EXPR_IMPLICIT_ANY && key.missing);
     if (has_key) parse_computed_key_comma(&p, &key);
     allow_in_leave(&p, saved_in);
     p.shared->in_property_name--;

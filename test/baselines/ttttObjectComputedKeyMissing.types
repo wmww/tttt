@@ -1,0 +1,51 @@
+//// [test/cases/ttttObjectComputedKeyMissing.ts] ////
+
+=== ttttObjectComputedKeyMissing.ts ===
+// An object literal's (a type's, a class's) computed property name missing its expression is TS1109 and the member goes on (tsc's
+// parseComputedPropertyName), not a member that fails and the list's TS1136 at each token (mutation seed 20261106,
+// declarationEmitShadowingInferNotRenamed: `{ any[]) => infer C }`)
+let o = { a [] ) };
+>o : { [x: number]: any; a: any; }
+>{ a [] ) } : { [x: number]: any; a: any; }
+>a : any
+>[] : any
+> : any
+> : any
+
+let q = { []: 1 };
+>q : { [x: number]: number; }
+>{ []: 1 } : { [x: number]: number; }
+>[] : number
+> : any
+>1 : 1
+
+let r = { [] };
+>r : { [x: number]: any; }
+>{ [] } : { [x: number]: any; }
+>[] : any
+> : any
+> : any
+
+let s = { [ , b: 1 };
+>s : { [x: number]: number; }
+>{ [ , b: 1 } : { [x: number]: number; }
+>[ , b : number
+>, b : any
+> : any
+>b : any
+>1 : 1
+
+type T = { [ , b]: 1 };
+>T : T
+>[ , b] : 1
+>, b : any
+> : any
+>b : any
+
+class C { [ , b]: 1 }
+>C : C
+>[ , b] : 1
+>, b : any
+> : any
+>b : any
+

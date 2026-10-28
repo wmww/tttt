@@ -1,0 +1,67 @@
+ttttObjectComputedKeyMissing.ts(4,11): error TS18004: No value exists in scope for the shorthand property 'a'. Either declare one or provide an initializer.
+ttttObjectComputedKeyMissing.ts(4,13): error TS1005: ',' expected.
+ttttObjectComputedKeyMissing.ts(4,14): error TS1109: Expression expected.
+ttttObjectComputedKeyMissing.ts(4,16): error TS1005: ':' expected.
+ttttObjectComputedKeyMissing.ts(5,12): error TS1109: Expression expected.
+ttttObjectComputedKeyMissing.ts(6,12): error TS1109: Expression expected.
+ttttObjectComputedKeyMissing.ts(6,14): error TS1005: ':' expected.
+ttttObjectComputedKeyMissing.ts(7,12): error TS2695: Left side of comma operator is unused and has no side effects.
+ttttObjectComputedKeyMissing.ts(7,13): error TS1109: Expression expected.
+ttttObjectComputedKeyMissing.ts(7,15): error TS2304: Cannot find name 'b'.
+ttttObjectComputedKeyMissing.ts(7,16): error TS1005: ']' expected.
+ttttObjectComputedKeyMissing.ts(8,13): error TS2695: Left side of comma operator is unused and has no side effects.
+ttttObjectComputedKeyMissing.ts(8,14): error TS1109: Expression expected.
+ttttObjectComputedKeyMissing.ts(8,16): error TS2304: Cannot find name 'b'.
+ttttObjectComputedKeyMissing.ts(9,11): error TS2564: Property '[ , b]' has no initializer and is not definitely assigned in the constructor.
+ttttObjectComputedKeyMissing.ts(9,12): error TS2695: Left side of comma operator is unused and has no side effects.
+ttttObjectComputedKeyMissing.ts(9,13): error TS1109: Expression expected.
+ttttObjectComputedKeyMissing.ts(9,15): error TS2304: Cannot find name 'b'.
+
+
+==== ttttObjectComputedKeyMissing.ts (18 errors) ====
+    // An object literal's (a type's, a class's) computed property name missing its expression is TS1109 and the member goes on (tsc's
+    // parseComputedPropertyName), not a member that fails and the list's TS1136 at each token (mutation seed 20261106,
+    // declarationEmitShadowingInferNotRenamed: `{ any[]) => infer C }`)
+    let o = { a [] ) };
+              ~
+!!! error TS18004: No value exists in scope for the shorthand property 'a'. Either declare one or provide an initializer.
+                ~
+!!! error TS1005: ',' expected.
+                 ~
+!!! error TS1109: Expression expected.
+                   ~
+!!! error TS1005: ':' expected.
+    let q = { []: 1 };
+               ~
+!!! error TS1109: Expression expected.
+    let r = { [] };
+               ~
+!!! error TS1109: Expression expected.
+                 ~
+!!! error TS1005: ':' expected.
+    let s = { [ , b: 1 };
+               
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+                ~
+!!! error TS1109: Expression expected.
+                  ~
+!!! error TS2304: Cannot find name 'b'.
+                   ~
+!!! error TS1005: ']' expected.
+    type T = { [ , b]: 1 };
+                
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+                 ~
+!!! error TS1109: Expression expected.
+                   ~
+!!! error TS2304: Cannot find name 'b'.
+    class C { [ , b]: 1 }
+              ~~~~~~
+!!! error TS2564: Property '[ , b]' has no initializer and is not definitely assigned in the constructor.
+               
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+                ~
+!!! error TS1109: Expression expected.
+                  ~
+!!! error TS2304: Cannot find name 'b'.
+    

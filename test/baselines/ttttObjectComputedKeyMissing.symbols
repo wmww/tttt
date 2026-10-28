@@ -1,0 +1,31 @@
+//// [test/cases/ttttObjectComputedKeyMissing.ts] ////
+
+=== ttttObjectComputedKeyMissing.ts ===
+// An object literal's (a type's, a class's) computed property name missing its expression is TS1109 and the member goes on (tsc's
+// parseComputedPropertyName), not a member that fails and the list's TS1136 at each token (mutation seed 20261106,
+// declarationEmitShadowingInferNotRenamed: `{ any[]) => infer C }`)
+let o = { a [] ) };
+>o : Symbol(o, Decl(ttttObjectComputedKeyMissing.ts, 3, 3))
+>a : Symbol(a, Decl(ttttObjectComputedKeyMissing.ts, 3, 9))
+>[] : Symbol([], Decl(ttttObjectComputedKeyMissing.ts, 3, 11))
+
+let q = { []: 1 };
+>q : Symbol(q, Decl(ttttObjectComputedKeyMissing.ts, 4, 3))
+>[] : Symbol([], Decl(ttttObjectComputedKeyMissing.ts, 4, 9))
+
+let r = { [] };
+>r : Symbol(r, Decl(ttttObjectComputedKeyMissing.ts, 5, 3))
+>[] : Symbol([], Decl(ttttObjectComputedKeyMissing.ts, 5, 9))
+
+let s = { [ , b: 1 };
+>s : Symbol(s, Decl(ttttObjectComputedKeyMissing.ts, 6, 3))
+>[ , b : Symbol([ , b, Decl(ttttObjectComputedKeyMissing.ts, 6, 9))
+
+type T = { [ , b]: 1 };
+>T : Symbol(T, Decl(ttttObjectComputedKeyMissing.ts, 6, 21))
+>[ , b] : Symbol([ , b], Decl(ttttObjectComputedKeyMissing.ts, 7, 10))
+
+class C { [ , b]: 1 }
+>C : Symbol(C, Decl(ttttObjectComputedKeyMissing.ts, 7, 23))
+>[ , b] : Symbol(C[ , b], Decl(ttttObjectComputedKeyMissing.ts, 8, 9))
+
