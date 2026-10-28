@@ -1,0 +1,45 @@
+//// [test/cases/ttttUnionNonPublicCommonDeclaration.ts] ////
+
+=== ttttUnionNonPublicCommonDeclaration.ts ===
+// A union's property that is protected or private in some member exists only if every member has it from the same
+// declaration (tsc's hasCommonDeclaration): a homomorphic mapped type's property is declared where the property it
+// maps is, so `Pick<D, "id"> | D` has `id`; and a mapped property has no value declaration of its own, so it is public
+// (getDeclarationModifierFlagsFromSymbol): the union's `id` is readonly (TS2540), not protected
+declare class D { protected readonly id: string; x: number }
+>D : Symbol(D, Decl(ttttUnionNonPublicCommonDeclaration.ts, 0, 0))
+>id : Symbol(D.id, Decl(ttttUnionNonPublicCommonDeclaration.ts, 4, 17))
+>x : Symbol(D.x, Decl(ttttUnionNonPublicCommonDeclaration.ts, 4, 48))
+
+declare class E { protected readonly id: string }
+>E : Symbol(E, Decl(ttttUnionNonPublicCommonDeclaration.ts, 4, 60))
+>id : Symbol(E.id, Decl(ttttUnionNonPublicCommonDeclaration.ts, 5, 17))
+
+declare const u: Pick<D, "id"> | D;
+>u : Symbol(u, Decl(ttttUnionNonPublicCommonDeclaration.ts, 6, 13))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>D : Symbol(D, Decl(ttttUnionNonPublicCommonDeclaration.ts, 0, 0))
+>D : Symbol(D, Decl(ttttUnionNonPublicCommonDeclaration.ts, 0, 0))
+
+u.id = "x";
+>u.id : Symbol(D.id, Decl(ttttUnionNonPublicCommonDeclaration.ts, 4, 17))
+>u : Symbol(u, Decl(ttttUnionNonPublicCommonDeclaration.ts, 6, 13))
+>id : Symbol(D.id, Decl(ttttUnionNonPublicCommonDeclaration.ts, 4, 17))
+
+declare const v: Pick<D, "id">;
+>v : Symbol(v, Decl(ttttUnionNonPublicCommonDeclaration.ts, 8, 13))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>D : Symbol(D, Decl(ttttUnionNonPublicCommonDeclaration.ts, 0, 0))
+
+v.id;
+>v.id : Symbol(id, Decl(ttttUnionNonPublicCommonDeclaration.ts, 4, 17))
+>v : Symbol(v, Decl(ttttUnionNonPublicCommonDeclaration.ts, 8, 13))
+>id : Symbol(id, Decl(ttttUnionNonPublicCommonDeclaration.ts, 4, 17))
+
+declare const w: D | E;
+>w : Symbol(w, Decl(ttttUnionNonPublicCommonDeclaration.ts, 10, 13))
+>D : Symbol(D, Decl(ttttUnionNonPublicCommonDeclaration.ts, 0, 0))
+>E : Symbol(E, Decl(ttttUnionNonPublicCommonDeclaration.ts, 4, 60))
+
+w.id;
+>w : Symbol(w, Decl(ttttUnionNonPublicCommonDeclaration.ts, 10, 13))
+

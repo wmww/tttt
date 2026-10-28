@@ -1,0 +1,42 @@
+//// [test/cases/ttttUnionNonPublicCommonDeclaration.ts] ////
+
+=== ttttUnionNonPublicCommonDeclaration.ts ===
+// A union's property that is protected or private in some member exists only if every member has it from the same
+// declaration (tsc's hasCommonDeclaration): a homomorphic mapped type's property is declared where the property it
+// maps is, so `Pick<D, "id"> | D` has `id`; and a mapped property has no value declaration of its own, so it is public
+// (getDeclarationModifierFlagsFromSymbol): the union's `id` is readonly (TS2540), not protected
+declare class D { protected readonly id: string; x: number }
+>D : D
+>id : string
+>x : number
+
+declare class E { protected readonly id: string }
+>E : E
+>id : string
+
+declare const u: Pick<D, "id"> | D;
+>u : D | Pick<D, "id">
+
+u.id = "x";
+>u.id = "x" : "x"
+>u.id : any
+>u : D | Pick<D, "id">
+>id : any
+>"x" : "x"
+
+declare const v: Pick<D, "id">;
+>v : Pick<D, "id">
+
+v.id;
+>v.id : string
+>v : Pick<D, "id">
+>id : string
+
+declare const w: D | E;
+>w : D | E
+
+w.id;
+>w.id : any
+>w : D | E
+>id : any
+

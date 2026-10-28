@@ -3264,6 +3264,8 @@ Ty const* ty_of_node(TypeNode const* node); // A written type, by the current ch
 // tsc's createUnionOrIntersectionProperty: a union has no property that is private or protected in some member unless
 // every member has it from the same declaration
 bool ty_union_non_public_conflict(Checker* me, Ty const* object, Atom const* name);
+// Whether two properties share a declaration (tsc's hasCommonDeclaration), mapped ones where the property they map is
+bool ty_props_share_declaration(Prop const* a, Prop const* b);
 // The flags of an index type as a key: those of its members for an intersection (`string & Tag` is a string key, tsc's
 // isTypeAssignableToKind)
 static inline u32 ty_key_flags(Ty const* index) {

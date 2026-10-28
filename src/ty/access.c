@@ -200,8 +200,20 @@ static Ty const* access_index_infos(Checker* me, Ty const* object, Ty const* ind
     return info ? info->value : nullptr;
 }
 
+// tsc's createUnionOrIntersectionProperty: a union property some of whose members' declarations are private or
+// protected exists only if they share a declaration (hasCommonDeclaration). A mapped property is declared where the
+// property it maps is (`Pick<D, "id"> | D`: mapped_prop_decl() copies the name span), an instantiated one where its
+// target is
+bool ty_props_share_declaration(Prop const* a, Prop const* b) {
+    Span x = a->decl->name_span, y = b->decl->name_span;
+    if (span_valid(x) && span_valid(y) && x.size && y.size) return span_eq(x, y);
+    while (a->target) a = a->target;
+    while (b->target) b = b->target;
+    return a == b;
+}
+
 bool ty_union_non_public_conflict(Checker* me, Ty const* object, Atom const* name) {
-    Prop const* first_root = nullptr;
+    Prop const* first = nullptr;
     bool non_public = false, differ = false;
     for (u32 i = 0; i < object->composite.types.len; i++) {
         Ty const* member = object->composite.types.data[i];
@@ -214,9 +226,7 @@ bool ty_union_non_public_conflict(Checker* me, Ty const* object, Atom const* nam
             continue;
         }
         non_public |= (prop->flags & (PROP_PRIVATE | PROP_PROTECTED)) != 0;
-        Prop const* root = prop;
-        while (root->target) root = root->target;
-        if (!first_root) first_root = root; else differ |= root != first_root;
+        if (!first) first = prop; else differ |= !ty_props_share_declaration(prop, first);
     }
     return non_public && differ;
 }

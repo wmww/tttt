@@ -3334,7 +3334,9 @@ static unsigned char synth_kind(u32 modifiers) {
 static unsigned char synth_effective(SyntheticAccess const* access, bool writing) {
     if (!access->synthetic) {
         Prop const* prop = access->single;
-        u32 modifiers = prop->flags & (PROP_PRIVATE | PROP_PROTECTED);
+        // (A mapped type's property has no value declaration of its own: public, whatever the property it maps is,
+        // getDeclarationModifierFlagsFromSymbol)
+        u32 modifiers = prop->mapped ? 0 : prop->flags & (PROP_PRIVATE | PROP_PROTECTED);
         if ((prop->flags & PROP_ACCESSOR) && writing) {
             modifiers = (prop->flags & PROP_SET_PRIVATE ? PROP_PRIVATE : 0) | (prop->flags & PROP_SET_PROTECTED ? PROP_PROTECTED : 0);
         }
@@ -3397,7 +3399,7 @@ static void synthetic_access(Checker* me, Ty const* object, Atom const* name, Sy
         // A union's property with a private or protected member's that isn't the same declaration everywhere (tsc's
         // hasCommonDeclaration): none if that's for reading, else written as the most restricted member's
         bool common = out->leaves.len > 0;
-        for (u32 i = 1; i < out->leaves.len && common; i++) common = prop_root(out->leaves.props[i]) == prop_root(out->leaves.props[0]);
+        for (u32 i = 1; i < out->leaves.len && common; i++) common = ty_props_share_declaration(out->leaves.props[i], out->leaves.props[0]);
         if (is_union && ((out->read | out->write) & (SYNTH_PROTECTED | SYNTH_PRIVATE)) && !common) {
             if (out->read & (SYNTH_PROTECTED | SYNTH_PRIVATE)) {
                 out->found = false;

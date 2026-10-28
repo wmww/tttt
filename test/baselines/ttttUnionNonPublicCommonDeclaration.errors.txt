@@ -1,0 +1,28 @@
+ttttUnionNonPublicCommonDeclaration.ts(7,26): error TS2344: Type '"id"' does not satisfy the constraint '"x"'.
+ttttUnionNonPublicCommonDeclaration.ts(8,3): error TS2540: Cannot assign to 'id' because it is a read-only property.
+ttttUnionNonPublicCommonDeclaration.ts(9,26): error TS2344: Type '"id"' does not satisfy the constraint '"x"'.
+ttttUnionNonPublicCommonDeclaration.ts(12,3): error TS2339: Property 'id' does not exist on type 'D | E'.
+
+
+==== ttttUnionNonPublicCommonDeclaration.ts (4 errors) ====
+    // A union's property that is protected or private in some member exists only if every member has it from the same
+    // declaration (tsc's hasCommonDeclaration): a homomorphic mapped type's property is declared where the property it
+    // maps is, so `Pick<D, "id"> | D` has `id`; and a mapped property has no value declaration of its own, so it is public
+    // (getDeclarationModifierFlagsFromSymbol): the union's `id` is readonly (TS2540), not protected
+    declare class D { protected readonly id: string; x: number }
+    declare class E { protected readonly id: string }
+    declare const u: Pick<D, "id"> | D;
+                             ~~~~
+!!! error TS2344: Type '"id"' does not satisfy the constraint '"x"'.
+    u.id = "x";
+      ~~
+!!! error TS2540: Cannot assign to 'id' because it is a read-only property.
+    declare const v: Pick<D, "id">;
+                             ~~~~
+!!! error TS2344: Type '"id"' does not satisfy the constraint '"x"'.
+    v.id;
+    declare const w: D | E;
+    w.id;
+      ~~
+!!! error TS2339: Property 'id' does not exist on type 'D | E'.
+    

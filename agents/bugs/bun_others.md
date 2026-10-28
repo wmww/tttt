@@ -46,7 +46,10 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   tttt TS2339): tsc's createUnionOrIntersectionProperty keeps a union property whose non-public declarations are
   common to all members (hasCommonDeclaration: Pick's mapped id is declared at D.id), tttt's
   ty_union_non_public_conflict() compares prop_root()s, and a mapped prop's root is its template (`.target`), not the
-  property it maps; the Pick prop seen there also had no name span in its decl. [open]
+  property it maps. Now compared by declaration (ty_props_share_declaration(): the name span mapped_prop_decl() copies),
+  and a mapped property reads as public (no value declaration of its own). [fixed COMMIT8]
+- 99-V1's protected_* files are other shapes than the union above (intersections `W & D`, spreads and Writable of
+  them, `delete`): 20 +TS2445, 13 +TS2339, 9 -TS2540, -TS2536, -TS2704. [open]
 - Circular mapped types and interfaces whose members are being resolved: 10-C8c (`interface I9 extends
   Array<typeof a9>`), 11-C15 (`{ [K in "a"]: A1["a"] }`: tsc's property is missing, TS2339, where tttt says TS2615),
   93-R01a, 93-R01c, 93-R01d (mapped types with `as` clauses through each other), 12-C1d (`Alt<B, A>` alternating),
@@ -215,7 +218,7 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
   await expression: 56-L11 93-P01b. [fixed 2ef4eb206]
 - `<await>(x: await) => x` and `<T, await>(x: T) => x` at a module's top level: any `await` Identifier (a type
   parameter's, a type reference's, inside a function too) marks the statement for the await-context reparse, where
-  they start no arrow function; a failed speculative arrow function marks nothing (74-R15d). [fixed COMMIT7]
+  they start no arrow function; a failed speculative arrow function marks nothing (74-R15d). [fixed 6e6b12bcc]
 - JSX lexing and recovery: attribute names and values (`b=>x`, `<a << />`, `<a /= />`, a comment before a value,
   backslashes in attribute strings: 43-C13e 43-C13f 43-C13g 43-C5c), `<<`/`<=` after a tag name (tsc scans one token:
   43-C4b 93-P04a 93-P04c 93-P04d 93-P04e), a merge conflict marker among the children (tsc ends the element there:
