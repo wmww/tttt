@@ -1,0 +1,33 @@
+//// [test/cases/ttttJsxAttributeStringAfterComment.tsx] ////
+
+=== ttttJsxAttributeStringAfterComment.tsx ===
+// A JSX attribute's quote right after the `=` (whitespace aside) starts a JSX string, without escapes; after a comment
+// it is an ordinary string literal (tsgo's ScanJsxAttributeValue skips whitespace only, then Scan()): `\"` is a quote
+// and an octal escape is TS1487 (bun 43-C5a, 43-C5c)
+declare namespace JSX { interface Element {} interface IntrinsicElements { a: { b?: string } } }
+>JSX : Symbol(JSX, Decl(ttttJsxAttributeStringAfterComment.tsx, 0, 0))
+>Element : Symbol(Element, Decl(ttttJsxAttributeStringAfterComment.tsx, 3, 23))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(ttttJsxAttributeStringAfterComment.tsx, 3, 44))
+>a : Symbol(IntrinsicElements.a, Decl(ttttJsxAttributeStringAfterComment.tsx, 3, 74))
+>b : Symbol(b, Decl(ttttJsxAttributeStringAfterComment.tsx, 3, 79))
+
+declare function Foo(p: { x: string }): JSX.Element;
+>Foo : Symbol(Foo, Decl(ttttJsxAttributeStringAfterComment.tsx, 3, 96))
+>p : Symbol(p, Decl(ttttJsxAttributeStringAfterComment.tsx, 4, 21))
+>x : Symbol(x, Decl(ttttJsxAttributeStringAfterComment.tsx, 4, 25))
+>JSX : Symbol(JSX, Decl(ttttJsxAttributeStringAfterComment.tsx, 0, 0))
+>Element : Symbol(JSX.Element, Decl(ttttJsxAttributeStringAfterComment.tsx, 3, 23))
+
+<Foo x=/**/"\"" />;
+>Foo : Symbol(Foo, Decl(ttttJsxAttributeStringAfterComment.tsx, 3, 96))
+>x : Symbol(x, Decl(ttttJsxAttributeStringAfterComment.tsx, 5, 4))
+
+<Foo x= "\" />;
+>Foo : Symbol(Foo, Decl(ttttJsxAttributeStringAfterComment.tsx, 3, 96))
+>x : Symbol(x, Decl(ttttJsxAttributeStringAfterComment.tsx, 6, 4))
+
+var v = <a b=/**/"\1" />;
+>v : Symbol(v, Decl(ttttJsxAttributeStringAfterComment.tsx, 7, 3))
+>a : Symbol(JSX.IntrinsicElements.a, Decl(ttttJsxAttributeStringAfterComment.tsx, 3, 74))
+>b : Symbol(b, Decl(ttttJsxAttributeStringAfterComment.tsx, 7, 10))
+

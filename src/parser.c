@@ -12304,10 +12304,20 @@ static const char* parse_jsx_attributes(Parser* p, const char* end, VecJsxAttrib
             parse_fail(&eq);
         } else {
             parse_success(&eq);
+            // (tsgo's ScanJsxAttributeValue skips whitespace only: a quote after a comment starts an ordinary string
+            // literal, escapes and all)
+            char const* value_start = p->pos;
+            while (*value_start == ' ' || *value_start == '\t' || *value_start == '\n' || *value_start == '\r') value_start++;
             hop_whitespace(p);
             Anchor value_a = anchor(p);
             char quote = *p->pos;
-            if (quote == '"' || quote == '\'') {
+            cstr js_string = cstr_null;
+            if ((quote == '"' || quote == '\'') && p->pos != value_start) {
+                if (!parse_string(p, &js_string)) js_string = cstr_init();
+                ast_cstr_seal(&js_string);
+                attr.tag = JSX_ATTRIBUTE_STRING;
+                attr.value = expr_literal(span_from(value_a), value_string(js_string));
+            } else if (quote == '"' || quote == '\'') {
                 // A JSX string: no escapes, line breaks allowed
                 p->pos++;
                 const char* start = p->pos;

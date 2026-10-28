@@ -1,0 +1,32 @@
+//// [test/cases/ttttJsxAttributeStringAfterComment.tsx] ////
+
+=== ttttJsxAttributeStringAfterComment.tsx ===
+// A JSX attribute's quote right after the `=` (whitespace aside) starts a JSX string, without escapes; after a comment
+// it is an ordinary string literal (tsgo's ScanJsxAttributeValue skips whitespace only, then Scan()): `\"` is a quote
+// and an octal escape is TS1487 (bun 43-C5a, 43-C5c)
+declare namespace JSX { interface Element {} interface IntrinsicElements { a: { b?: string } } }
+>a : { b?: string; }
+>b : string | undefined
+
+declare function Foo(p: { x: string }): JSX.Element;
+>Foo : (p: { x: string; }) => JSX.Element
+>p : { x: string; }
+>x : string
+>JSX : any
+
+<Foo x=/**/"\"" />;
+><Foo x=/**/"\"" /> : JSX.Element
+>Foo : (p: { x: string; }) => JSX.Element
+>x : string
+
+<Foo x= "\" />;
+><Foo x= "\" /> : JSX.Element
+>Foo : (p: { x: string; }) => JSX.Element
+>x : string
+
+var v = <a b=/**/"\1" />;
+>v : JSX.Element
+><a b=/**/"\1" /> : JSX.Element
+>a : any
+>b : string
+
