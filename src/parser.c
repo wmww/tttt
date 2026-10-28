@@ -6788,8 +6788,9 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
         // `[K in T]: X`, which ends at a `;`, a `}` or a newline (tsc's parseMappedType: parseSemicolon, then a `,`
         // starts no member, TS1131: `[K in T]: X\n,` is that alone)
         bool separated = !(first_mapped && member_count == 1) && hop_char(&p, ',');
+        // (The end of the file ends a member too, tsc's canParseSemicolon: the list's `}` is what's missing there)
         if (!separated &&
-            *p.pos != '}' &&
+            *p.pos != '}' && !at_eof(&p, p.pos) &&
             p.whitespace != WHITESPACE_NEWLINE
         ) {
             separated = expect_char(&p, ';');
@@ -10232,7 +10233,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
         }
 
         hop_whitespace(&p);
-        if (p.whitespace != WHITESPACE_NEWLINE && *p.pos != ';' && *p.pos != ',' && *p.pos != '}') {
+        if (p.whitespace != WHITESPACE_NEWLINE && *p.pos != ';' && *p.pos != ',' && *p.pos != '}' && !at_eof(&p, p.pos)) {
             expect_char(&p, ';');
         }
     }

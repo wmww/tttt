@@ -1,0 +1,35 @@
+//// [test/cases/ttttTypeMemberEndsAtEof.ts] ////
+
+=== a.ts ===
+interface I {
+>I : Symbol(I, Decl(a.ts, 0, 0))
+
+    a: {
+>a : Symbol(I.a, Decl(a.ts, 0, 13))
+
+        b: () => { return; };
+>b : Symbol(b, Decl(a.ts, 1, 8))
+>return : Symbol(return, Decl(a.ts, 2, 18))
+    }
+=== b.ts ===
+type M = { [K in string]: 1
+>M : Symbol(M, Decl(b.ts, 0, 0))
+>K : Symbol(K, Decl(b.ts, 0, 12))
+
+=== c.ts ===
+type T = {
+>T : Symbol(T, Decl(c.ts, 0, 0))
+
+    m(): void
+>m : Symbol(m, Decl(c.ts, 0, 10))
+
+=== d.ts ===
+class C { x = 1
+>C : Symbol(C, Decl(d.ts, 0, 0))
+>x : Symbol(C.x, Decl(d.ts, 0, 9))
+
+=== e.ts ===
+declare class D { [x: string]: 1
+>D : Symbol(D, Decl(e.ts, 0, 0))
+>x : Symbol(x, Decl(e.ts, 0, 19))
+

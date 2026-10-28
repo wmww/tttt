@@ -1,0 +1,33 @@
+//// [test/cases/ttttTypeMemberEndsAtEof.ts] ////
+
+=== a.ts ===
+interface I {
+    a: {
+>a : { b: () => { return: any; }; }
+
+        b: () => { return; };
+>b : () => { return: any; }
+>return : any
+    }
+=== b.ts ===
+type M = { [K in string]: 1
+>M : M
+
+=== c.ts ===
+type T = {
+>T : T
+
+    m(): void
+>m : () => void
+
+=== d.ts ===
+class C { x = 1
+>C : C
+>x : number
+>1 : 1
+
+=== e.ts ===
+declare class D { [x: string]: 1
+>D : D
+>x : string
+

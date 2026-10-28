@@ -1,0 +1,34 @@
+a.ts(3,20): error TS7008: Member 'return' implicitly has an 'any' type.
+a.ts(4,6): error TS1005: '}' expected.
+b.ts(1,28): error TS1005: '}' expected.
+c.ts(2,14): error TS1005: '}' expected.
+d.ts(1,16): error TS1005: '}' expected.
+e.ts(1,33): error TS1005: '}' expected.
+
+
+==== a.ts (2 errors) ====
+    interface I {
+        a: {
+            b: () => { return; };
+                       ~~~~~~
+!!! error TS7008: Member 'return' implicitly has an 'any' type.
+        }
+         
+!!! error TS1005: '}' expected.
+==== b.ts (1 errors) ====
+    type M = { [K in string]: 1
+                               
+!!! error TS1005: '}' expected.
+==== c.ts (1 errors) ====
+    type T = {
+        m(): void
+                 
+!!! error TS1005: '}' expected.
+==== d.ts (1 errors) ====
+    class C { x = 1
+                   
+!!! error TS1005: '}' expected.
+==== e.ts (1 errors) ====
+    declare class D { [x: string]: 1
+                                    
+!!! error TS1005: '}' expected.
