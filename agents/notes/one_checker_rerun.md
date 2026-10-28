@@ -50,7 +50,9 @@ Only diagnostics the output shows count. Ignored are diagnostics in an unchecked
   Byte-identical to --threads 1 at the defaults and at K2 to K16 with the rerun; main before this commit differed at
   K2 and K4.
 - **openclaw**: kdiff -k 16 0 / 160. 6 configs were unmeasurable on memory at -j 2: the root, extensions,
-  extensions/codex, src/gateway, test and ui.
+  extensions/codex, src/gateway, test and ui. (At kdiff's old default -j 16 these K16 runs, 4-7 GB each without
+  recycling, filled the 60 GB box on 2026-10-28: kdiff's -j and its runs now come from tttt_run's memory budget,
+  jobs_for() and budget_gb, scripts/tttt_run.py.)
 - **sequelize and sequelize/packages/core**: TS7022 (rule 3): 15/15 runs identical to K1 at the defaults.
 - **bun 92-R16b**: TS2615 across two files (rule 2). buncases K-dependent: 0.
 - **sunmao-ui**: TS2590 from several checkers (rule 1).

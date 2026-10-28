@@ -122,13 +122,13 @@ def run_tsc(projects, jobs, extra=(), cwd=DT, progress=False):
 # (No --keep-going: the caches are tsgo's CLI, which stops at syntactic and options diagnostics like tttt's.) At tttt's
 # default checker count, what users run (tsgo's output doesn't depend on its count: plan 62); one thread, so -j still
 # counts processes
-def run_tttt(package, timeout, mem_gb, flags=(), cwd=DT, defaults=False):
+def run_tttt(package, timeout, mem_gb, flags=(), cwd=DT, defaults=False, budget_gb=None):
     """tttt on one project at --threads 1 (one checker), or with defaults at the CLI's default threads and checkers
     (what users run: a checker-count or schedule dependence shows only there)"""
     # (tttt_run: the address space limit scaled to the threads, killed/memory apart from crashes)
     threads = [] if defaults else ['--threads', '1']
     r = tttt_run.run([os.path.join(ROOT, 'release/tttt'), '--pretty', 'false', *threads, '--noEmit', '-p',
-                      package, *flags], cwd, timeout=timeout, mem_gb=mem_gb, log_errors=True)
+                      package, *flags], cwd, timeout=timeout, mem_gb=mem_gb, log_errors=True, budget_gb=budget_gb)
     text = re.sub(r'\x1b\[[0-9;]*m', '', r.text())
     # (A diagnostic without a file, options or missing type libraries, is ('', 0), as tsc's oracle says)
     diags = [[f, l, c, m] for f, l, _, c, m in tscformat.parse(text)]

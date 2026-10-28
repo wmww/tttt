@@ -28,6 +28,14 @@ The limit: RLIMIT_AS = mem_gb + THREAD_GB per thread (threads: the --threads giv
 CLI's default). tttt reserves address space per thread (AST slabs, arenas, stacks; MAP_NORESERVE, so nothing is
 used until touched): VmPeak measured 2026-10-23 on zod's test config 1 GB at --threads 1, 2 at 4, 3 at 8, 5 at 16,
 types/lodash 0 / 1 / 2 / 3. mem_gb is then what the project itself may take.
+
+The memory budget: RLIMIT_AS bounds one run, not the sum of a driver's parallel runs (2026-10-28: kdiff.py at -j 16,
+openclaw's configs at K16 without recycling taking 4-7 GB each, filled the 60 GB box; the openclaw line of
+agents/notes/one_checker_rerun.md). A run given `budget_gb` (what it may really use, typically its mem_gb) takes that much from a process-wide
+budget of BUDGET_FRACTION of MemAvailable (read at the first such run) and waits while the budget is spent, so a
+ThreadPoolExecutor of any size never has more than the budget's worth running; a run larger than the whole budget
+still runs, alone. `jobs_for(gb)` is the number of such runs that fit, for a driver's default -j. Drivers whose runs
+are small (--checkers 1 on DefinitelyTyped packages) don't pass it and keep os.cpu_count() jobs.
 """
 import atexit
 import dataclasses
@@ -47,6 +55,55 @@ OK_CODES = (0, 1, 2)
 MEMORY_TEXT = re.compile(r"Couldn't reserve address space|couldn't start a \w+ thread|Cannot allocate memory|"
                          r"[Oo]ut of memory|mmap failed|MemoryError|std::bad_alloc|fatal error: runtime: out of memory")
 LOG_ERROR = re.compile(r'\.c:\d+: (error|panic):')
+
+
+BUDGET_FRACTION = 0.8
+
+
+def mem_available():
+    """MemAvailable in bytes (/proc/meminfo), None if unknown"""
+    try:
+        with open('/proc/meminfo') as f:
+            for line in f:
+                if line.startswith('MemAvailable:'):
+                    return int(line.split()[1]) * 1024
+    except OSError:
+        pass
+    return None
+
+
+def jobs_for(gb, fraction=BUDGET_FRACTION):
+    """How many runs of `gb` GB each fit in fraction of MemAvailable (at least 1, at most the cores; the cores when
+    MemAvailable is unknown)"""
+    cores = os.cpu_count() or 1
+    avail = mem_available()
+    if not avail or not gb:
+        return cores
+    return max(1, min(cores, int(avail * fraction // (gb * (1 << 30)))))
+
+
+class _Budget:
+    def __init__(self):
+        self.cond = threading.Condition()
+        self.total = None
+        self.used = 0
+
+    def acquire(self, n):
+        with self.cond:
+            if self.total is None:
+                avail = mem_available()
+                self.total = int(avail * BUDGET_FRACTION) if avail else 1 << 62
+            # (One larger than the whole budget runs alone rather than never)
+            self.cond.wait_for(lambda: self.used == 0 or self.used + n <= self.total)
+            self.used += n
+
+    def release(self, n):
+        with self.cond:
+            self.used -= n
+            self.cond.notify_all()
+
+
+_budget = _Budget()
 
 
 def limit_bytes(mem_gb, threads=None):
@@ -112,11 +169,23 @@ def resource_status(status):
 
 
 def run(cmd, cwd, timeout=None, mem_gb=8, threads=None, env=None, stderr=subprocess.STDOUT, ok_codes=OK_CODES,
-        log_errors=False, stdin=None):
+        log_errors=False, stdin=None, budget_gb=None):
     """Runs cmd (stdout piped, stderr merged into it unless stderr=PIPE), the address space limited to
-    limit_bytes(mem_gb, threads) (threads: from cmd's --threads when not given; mem_gb None: no limit)"""
+    limit_bytes(mem_gb, threads) (threads: from cmd's --threads when not given; mem_gb None: no limit); with
+    budget_gb, once that much of the process-wide memory budget is free (the module's comment)"""
     limit = limit_bytes(mem_gb, threads or threads_of(cmd)) if mem_gb else None
     cmd = freeze(cmd, cwd)
+    budget = int(budget_gb * (1 << 30)) if budget_gb else 0
+    if budget:
+        _budget.acquire(budget)
+    try:
+        return _run(cmd, cwd, timeout, limit, env, stderr, ok_codes, log_errors, stdin)
+    finally:
+        if budget:
+            _budget.release(budget)
+
+
+def _run(cmd, cwd, timeout, limit, env, stderr, ok_codes, log_errors, stdin):
     start = time.time()
     try:
         p = subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=stderr, timeout=timeout, env=env, input=stdin,

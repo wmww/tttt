@@ -28,10 +28,11 @@ import sweep, sourcesweep, tttt_run
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def run(project, cwd, k, timeout, memory='off', mem_gb=8):
+def run(project, cwd, k, timeout, memory='off', mem_gb=8, budget_gb=None):
     """(output, exit code, tttt_run status)"""
     r = tttt_run.run([os.path.join(ROOT, 'release/tttt'), '--pretty', 'false', '--threads', '1', '--checkers', str(k),
-                      '--checker-memory', memory, '--noEmit', '-p', project], cwd, timeout=timeout, mem_gb=mem_gb)
+                      '--checker-memory', memory, '--noEmit', '-p', project], cwd, timeout=timeout, mem_gb=mem_gb,
+                     budget_gb=budget_gb)
     return r.text(), r.code, r.status
 
 
@@ -43,7 +44,10 @@ def main():
                          "order-independence oracle)")
     ap.add_argument('--dt', action='store_true', help='the DefinitelyTyped sweep instead of the source sweep')
     ap.add_argument('-f', '--filter', help='regex the project must match (re.search)')
-    ap.add_argument('-j', '--jobs', type=int, default=os.cpu_count())
+    ap.add_argument('-j', '--jobs', type=int,
+                    help="projects at once (default: the cores for --dt; else as many runs of --mem-gb as fit in 80%% of "
+                         "MemAvailable, tttt_run.jobs_for(), and the runs share that budget whatever -j is: K runs "
+                         "without recycling take GBs each, openclaw's 4-7)")
     ap.add_argument('--timeout', type=int, default=300)
     ap.add_argument('--mem-gb', type=int, default=8, help="each run's address space beyond the threads' (tttt_run)")
     args = ap.parse_args()
@@ -54,11 +58,14 @@ def main():
         jobs = [(p, sweep.DT) for p in sweep.list_packages(args.filter)]
     else:
         jobs = [(p, sourcesweep.SOURCES) for p in sourcesweep.list_projects(args.filter)]
+    budget_gb = None if args.dt else args.mem_gb
+    if args.jobs is None:
+        args.jobs = os.cpu_count() if args.dt else tttt_run.jobs_for(args.mem_gb)
 
     def one(job):
         project, cwd = job
-        return (project, run(project, cwd, 1, args.timeout, mem_gb=args.mem_gb),
-                run(project, cwd, args.k, args.timeout, args.memory, args.mem_gb))
+        return (project, run(project, cwd, 1, args.timeout, mem_gb=args.mem_gb, budget_gb=budget_gb),
+                run(project, cwd, args.k, args.timeout, args.memory, args.mem_gb, budget_gb))
 
     differ, timeouts, crashes = 0, [], []
     with concurrent.futures.ThreadPoolExecutor(args.jobs) as ex:

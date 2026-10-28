@@ -348,7 +348,8 @@ def main():
         order = sorted(projects, key=lambda p: -oracle[p]['ms'])
         with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
             run = run_tttt_build if args.build else \
-                lambda p, t, m: sweep.run_tttt(p, t, m, cwd=SOURCES, defaults=args.defaults)
+                lambda p, t, m: sweep.run_tttt(p, t, m, cwd=SOURCES, defaults=args.defaults,
+                                               budget_gb=m if args.defaults else None)  # (tttt_run's memory budget)
             results = list(pool.map(lambda p: runs_of(run, p, args.timeout, args.mem_gb, args.runs), order))
         results.sort(key=lambda r: r['package'])
         elapsed = time.time() - start
