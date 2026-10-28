@@ -1120,11 +1120,11 @@ Ty const* ty_unique_symbol(Checker* me, UniqueSymbolDecl const* decl) {
         cstr escaped = cstr_d("__@", name, "@", ty_seeded_id(ret->id));
         ret->literal.string = checker_atom(me, cstr_sv(&escaped));
         cstr_drop(&escaped);
-        // (Its name is the winner's to map, with --shared-graph)
-        if (intern_set(me, &my types, slot, ret) == ret) {
-            u64 name_key[2] = { KEY_UNIQUE_SYMBOL_NAME, (u64)(uintptr_t)ret->literal.string };
-            intern_set(me, &my links, intern_slot(me, &my links, name_key, 2), ret);
-        }
+        // (Its name first: with --shared-graph whoever finds the type published must find its name's entry. A loser's
+        // name, its id's, is nobody's)
+        u64 name_key[2] = { KEY_UNIQUE_SYMBOL_NAME, (u64)(uintptr_t)ret->literal.string };
+        intern_set(me, &my links, intern_slot(me, &my links, name_key, 2), ret);
+        intern_set(me, &my types, slot, ret);
     }
     return *slot;
 }
@@ -3794,10 +3794,13 @@ Atom const* ty_private_name(Checker* me, Symbol const* class_symbol, csview text
     atom->len = plain->len;
     memcpy(atom->str, plain->str, plain->len);
     atom->str[plain->len] = 0;
-    intern_set(me, &my links, intern_slot(me, &my links, key, 3), atom);
+    // (Its class first: with --shared-graph the atom is published by the second entry, and whoever reads it there must
+    // find its class. Another checker's atom may have come first: it is the name, this one is unreferenced. Returning
+    // this one made a class's members, built with the winner's atom, miss their own private names: openbot/apps/
+    // auth-api's spurious TS18014s and TS6133s)
     u64 back[2] = { KEY_PRIVATE_NAME_CLASS, (u64)(uintptr_t)atom };
     intern_set(me, &my links, intern_slot(me, &my links, back, 2), class_symbol);
-    return atom;
+    return intern_set(me, &my links, intern_slot(me, &my links, key, 3), atom);
 }
 
 Symbol const* ty_private_name_class(Checker* me, Atom const* name) {
