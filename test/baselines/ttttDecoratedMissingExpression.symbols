@@ -1,0 +1,18 @@
+//// [test/cases/ttttDecoratedMissingExpression.ts] ////
+
+=== ttttDecoratedMissingExpression.ts ===
+// Decorators on no expression are a missing declaration that the member, call and binary expression parsers go on
+// with (tsc's parseDecoratedExpression): `@x as T` is an `as` expression of it
+declare function mk<A>(a: A): A[];
+>mk : Symbol(mk, Decl(ttttDecoratedMissingExpression.ts, 0, 0))
+>A : Symbol(A, Decl(ttttDecoratedMissingExpression.ts, 2, 20))
+>a : Symbol(a, Decl(ttttDecoratedMissingExpression.ts, 2, 23))
+>A : Symbol(A, Decl(ttttDecoratedMissingExpression.ts, 2, 20))
+>A : Symbol(A, Decl(ttttDecoratedMissingExpression.ts, 2, 20))
+
+function g<T>() { return @null! as typeof mk<number>|; }
+>g : Symbol(g, Decl(ttttDecoratedMissingExpression.ts, 2, 34))
+>T : Symbol(T, Decl(ttttDecoratedMissingExpression.ts, 3, 11))
+>mk : Symbol(mk, Decl(ttttDecoratedMissingExpression.ts, 0, 0))
+> : Symbol(unknown)
+

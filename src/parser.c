@@ -9971,7 +9971,8 @@ static bool parse_dot_prop(Parser* parent, bool* optional_chain_ret, Span* ret) 
     if (!hop_char(&p, '.')) {
         return parse_fail(&p);
     }
-    if ((*p.pos >= '0' && *p.pos <= '9') || *p.pos == '.') {
+    // (`?.` is one token before anything but a digit, tsc's scanner: `a?..b` is `a?.` missing its name)
+    if ((*p.pos >= '0' && *p.pos <= '9') || (*p.pos == '.' && !optional_chain)) {
         return parse_fail(&p); // `a ? .5 : b`, `01.0`: a number; `@dec ...rest`: a spread
     }
     const char* after_dot = p.pos;
@@ -10958,6 +10959,14 @@ static inline bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left
         case ';': case ',': case ')': case ']': case '}': case ':': case '\0': return parse_fail(&p);
         default: break;
     }
+    // (A `?.` missing its name ends the member expression, tsc's parseMemberExpressionRest returns there: `(a?..b)` is
+    // `(a?.` missing its `)`, then `.b`)
+    if (c == '.' && left_and_ret->tag == EXPR_PROPERTY && left_and_ret->property->optional_chain &&
+        left_and_ret->property->form == PROPERTY_EXPR_DOT && !left_and_ret->property->name_.size &&
+        expr_outer_span(left_and_ret).size == left_and_ret->inner_span.size
+    ) {
+        return parse_fail(&p);
+    }
 
     union {
         VecExpr args;
@@ -11008,6 +11017,7 @@ static inline bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left
     bool missing_call_args = false;
     // `a?.(x)`, `a?.[i]`, also with whitespace or comments after the `?.` (`f?. (x)`: tsc's scanner makes `?.` one
     // token, and the call or element access follows it like any other token)
+    bool generic_optional_template = false;
     char after_question_dot = 0;
     if (p.pos[0] == '?' && p.pos[1] == '.' && !(p.pos[2] >= '0' && p.pos[2] <= '9')) {
         Parser q = parser(&p);
@@ -11035,14 +11045,20 @@ static inline bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left
             bool can_follow = *q.pos == '(' || *q.pos == '`' || (!tok_is(next, "<") && !tok_is(next, ">") &&
                 !tok_is(next, "+") && !tok_is(next, "-") && (q.whitespace == WHITESPACE_NEWLINE ||
                 tok_is_binary_operator(next) || !tok_is_start_of_expression(&q, next)));
-            if (can_follow && *q.pos != '`') {
+            if (can_follow) {
                 *left_and_ret = expr_generic_params(span_from(args_a), ast_new(GenericParamsExpr, {
                     .expr = *left_and_ret,
                     .params = params,
                 }));
                 parse_success(&q);
-                optional_chain = true;
-                missing_call_args = *p.pos != '(';
+                // (Before a template: a tagged template with type arguments, in the chain, TS1358: tsc's
+                // parseCallExpressionRest's parseTaggedTemplateRest)
+                if (*p.pos == '`') {
+                    generic_optional_template = true;
+                } else {
+                    optional_chain = true;
+                    missing_call_args = *p.pos != '(';
+                }
             } else {
                 vec_spanned_type_drop(&params);
                 parse_fail(&q);
@@ -11134,7 +11150,7 @@ static inline bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left
         }
         // (tsc's checkGrammarTaggedTemplateChain: grammarErrorOnNode of the whole template. parseTaggedTemplateRest flags
         // the tagged template as part of a chain whose tag is: `o?.a\`x\``, `o?.a\`x\`.b\`y\``)
-        bool chain = optional_template || tag_in_optional_chain(left_and_ret);
+        bool chain = optional_template || generic_optional_template || tag_in_optional_chain(left_and_ret);
         if (chain) {
             grammar_error(&p, span_from(template_a), 1358, "Tagged template expressions are not permitted in an optional chain.");
             // (checkTaggedTemplateExpression checks the type arguments only without TS1358: `o?.a<>\`x\`` has no
@@ -12425,6 +12441,16 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         parse_error(&p, span_from_pos(&p), 1109, "Expression expected.");
         *ret = expr_implicit_any(span_from_pos(&p));
         ret->missing_decorators = ast_new(VecExpr, decorators); // (Not `missing`: no expression to the baselines)
+        // (What follows continues it, tsc's parsePrimaryExpression returns the MissingDeclaration to the member, call
+        // and binary expression parsers: `@x as T`)
+        // (Which then start at the decorators, where tsc's MissingDeclaration starts)
+        Expr wide = *ret;
+        wide.inner_span = span_from(a);
+        expr_set_outer_span(&wide, span_from(a));
+        if (parse_expr_right_side(&p, ctx, &wide)) {
+            *ret = wide;
+            while (parse_expr_right_side(&p, ctx, ret)) {}
+        }
         return parse_success(&p); // (Its span is where it's missing)
     } else if (c == 'n' && parse_new_target(&p, ret)) {
     } else if (hop_start_if_ends_on_word_break(&p, "new")) {
