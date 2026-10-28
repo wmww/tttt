@@ -1,0 +1,52 @@
+//// [test/cases/ttttObjectLiteralCommaKeyDestructuring.ts] ////
+
+=== ttttObjectLiteralCommaKeyDestructuring.ts ===
+// A comma expression as an object literal's computed key is TS1171 from the checker's
+// checkGrammarObjectLiteralExpression (bun 28-C12), which a destructuring assignment's target never reaches
+declare function g(): any;
+>g : () => any
+
+let a: any;
+>a : any
+
+({ [g(), "a"]: a } = {} as any);
+>({ [g(), "a"]: a } = {} as any) : any
+>{ [g(), "a"]: a } = {} as any : any
+>{ [g(), "a"]: a } : { a: any; }
+>[g(), "a"] : any
+>g(), "a" : "a"
+>g() : any
+>g : () => any
+>"a" : "a"
+>a : any
+>{} as any : any
+>{} : {}
+
+for ({ [g(), "d"]: a } of [] as any[]) {}
+>{ [g(), "d"]: a } : { d: any; }
+>[g(), "d"] : any
+>g(), "d" : "d"
+>g() : any
+>g : () => any
+>"d" : "d"
+>a : any
+>[] as any[] : any[]
+>[] : never[]
+
+const o = { [g(), "b"]: 1, [(g(), "c")]: 2 };
+>o : { b: number; c: number; }
+>{ [g(), "b"]: 1, [(g(), "c")]: 2 } : { b: number; c: number; }
+>[g(), "b"] : number
+>g(), "b" : "b"
+>g() : any
+>g : () => any
+>"b" : "b"
+>1 : 1
+>[(g(), "c")] : number
+>(g(), "c") : "c"
+>g(), "c" : "c"
+>g() : any
+>g : () => any
+>"c" : "c"
+>2 : 2
+

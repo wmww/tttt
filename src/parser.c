@@ -603,7 +603,7 @@ static Span span_from_token_or_eof(Parser* parent);
 static const char* token_full_start(Parser* me);
 static bool parse_template(Parser* parent, VecExpr* ret, AstCStrs* texts);
 static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret);
-static void parse_computed_key_comma(Parser* p, Expr* key);
+static void parse_computed_key_comma(Parser* p, Expr* key, bool report);
 static bool parse_decorators(Parser* parent, VecExpr* ret);
 static void unhop_trivia(Parser* me);
 static bool parse_type_compat_literal(Parser* parent, Value* ret);
@@ -8706,7 +8706,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         Expr key;
         p.shared->in_property_name++;
         bool has_key = parse_expr(&p, expr_ctx_null, &key);
-        if (has_key) parse_computed_key_comma(&p, &key);
+        if (has_key) parse_computed_key_comma(&p, &key, false);
         p.shared->in_property_name--;
         if (!has_key) {
             modifier_list_drop(&modifiers);
@@ -9387,17 +9387,17 @@ static bool is_construct_signature_start(const char* pos) {
     return *pos == '(' || *pos == '<';
 }
 
-// The `[k]` of a class member
+// The `[k]` of a class member or an object literal's member
 // tsc's parseComputedPropertyName takes a whole expression, a comma expression too (checkGrammarComputedPropertyName:
-// TS1171 on it)
-static void parse_computed_key_comma(Parser* p, Expr* key) {
+// TS1171 on it; an object literal's is the checker's object_check_grammar(), never in a destructuring assignment)
+static void parse_computed_key_comma(Parser* p, Expr* key, bool report) {
     Parser comma = parser(p);
     hop_whitespace(&comma);
     bool is_comma = *comma.pos == ',';
     parse_fail(&comma);
     if (!is_comma) return;
     parse_comma_ops_right_side(p, key);
-    grammar_error(p, expr_outer_span(key), 1171, "A comma expression is not allowed in a computed property name.");
+    if (report) grammar_error(p, expr_outer_span(key), 1171, "A comma expression is not allowed in a computed property name.");
 }
 
 static bool parse_class_computed_key(Parser* parent, Expr** ret) {
@@ -9408,7 +9408,7 @@ static bool parse_class_computed_key(Parser* parent, Expr** ret) {
     Expr key;
     p.shared->in_property_name++;
     bool has_key = parse_expr(&p, expr_ctx_null, &key);
-    if (has_key) parse_computed_key_comma(&p, &key);
+    if (has_key) parse_computed_key_comma(&p, &key, true);
     p.shared->in_property_name--;
     if (!has_key) return parse_fail(&p);
     hop_whitespace(&p);

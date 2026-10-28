@@ -3402,6 +3402,11 @@ static void object_check_grammar(Expr const* me, ErrorCtx* errs) {
     NameIndex index = name_index_make(count);
     for (isize n = 0; n < count; n++) {
         ObjectExprItem const* item = vec_object_expr_item_at(object, n);
+        if (item->computed_key && item->computed_key->tag == EXPR_BINARY_OP &&
+            item->computed_key->binary_op->op == BINARY_OP_COMMA && !expr_is_perenthisized(item->computed_key)) {
+            error_ctx_grammar_error_d(errs, expr_outer_span(item->computed_key), 1171,
+                "A comma expression is not allowed in a computed property name.");
+        }
         uint8_t kind;
         switch (item->tag) {
             case OBJECT_ITEM_PROPERTY: case OBJECT_ITEM_SHORTHAND:

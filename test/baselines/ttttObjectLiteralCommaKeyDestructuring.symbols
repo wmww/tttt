@@ -1,0 +1,28 @@
+//// [test/cases/ttttObjectLiteralCommaKeyDestructuring.ts] ////
+
+=== ttttObjectLiteralCommaKeyDestructuring.ts ===
+// A comma expression as an object literal's computed key is TS1171 from the checker's
+// checkGrammarObjectLiteralExpression (bun 28-C12), which a destructuring assignment's target never reaches
+declare function g(): any;
+>g : Symbol(g, Decl(ttttObjectLiteralCommaKeyDestructuring.ts, 0, 0))
+
+let a: any;
+>a : Symbol(a, Decl(ttttObjectLiteralCommaKeyDestructuring.ts, 3, 3))
+
+({ [g(), "a"]: a } = {} as any);
+>[g(), "a"] : Symbol([g(), "a"], Decl(ttttObjectLiteralCommaKeyDestructuring.ts, 4, 2))
+>g : Symbol(g, Decl(ttttObjectLiteralCommaKeyDestructuring.ts, 0, 0))
+>a : Symbol(a, Decl(ttttObjectLiteralCommaKeyDestructuring.ts, 3, 3))
+
+for ({ [g(), "d"]: a } of [] as any[]) {}
+>[g(), "d"] : Symbol([g(), "d"], Decl(ttttObjectLiteralCommaKeyDestructuring.ts, 5, 6))
+>g : Symbol(g, Decl(ttttObjectLiteralCommaKeyDestructuring.ts, 0, 0))
+>a : Symbol(a, Decl(ttttObjectLiteralCommaKeyDestructuring.ts, 3, 3))
+
+const o = { [g(), "b"]: 1, [(g(), "c")]: 2 };
+>o : Symbol(o, Decl(ttttObjectLiteralCommaKeyDestructuring.ts, 6, 5))
+>[g(), "b"] : Symbol([g(), "b"], Decl(ttttObjectLiteralCommaKeyDestructuring.ts, 6, 11))
+>g : Symbol(g, Decl(ttttObjectLiteralCommaKeyDestructuring.ts, 0, 0))
+>[(g(), "c")] : Symbol([(g(), "c")], Decl(ttttObjectLiteralCommaKeyDestructuring.ts, 6, 26))
+>g : Symbol(g, Decl(ttttObjectLiteralCommaKeyDestructuring.ts, 0, 0))
+
