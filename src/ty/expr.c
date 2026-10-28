@@ -2536,6 +2536,54 @@ static Ty const* narrowable_type(Checker* me, bool constraint_position, Expr con
     return ty_substitute_constraints(me, type);
 }
 
+// A parameter's circularity through its default (tsc's reportCircularityError of its symbol): TS2502 when annotated,
+// else TS7022 under noImplicitAny, at the whole parameter (symbol.valueDeclaration)
+static void report_parameter_circularity(Checker* me, InitializedBinding const* initialized) {
+    Binding const* binding = &initialized->binding;
+    if (binding->tag != BINDING_IDENTIFIER) return;
+    Span at = span_between(binding->content_span, expr_outer_span(initialized_binding_value(initialized)));
+    if (binding->has_explicit_type) {
+        ty_error_at(me, at, 2502, cstr_d("'", binding->content_span,
+            "' is referenced directly or indirectly in its own type annotation."));
+    } else if (compiler_options()->no_implicit_any) {
+        ty_error_at(me, at, 7022, cstr_d("'", binding->content_span, "' implicitly has type 'any' "
+            "because it does not have a type annotation and is referenced directly or indirectly in its own initializer."));
+    }
+}
+
+static char const initializer_undefined_yes, initializer_undefined_no;
+
+// Whether a parameter's default can be undefined (tsc's parameterInitializerContainsUndefined): resolved once, under a
+// resolution entry of its own, so a default that reaches the parameter again through a function whose return type is
+// being inferred is circular there (`(n: number | undefined = [1].map(() => n)[0])`: TS2502 and the arrow's TS7024).
+// Circular, it can be undefined
+static bool parameter_initializer_contains_undefined(Checker* me, InitializedBinding const* initialized) {
+    void const* memo = ty_link_get(me, KEY_INITIALIZER_UNDEFINED, initialized);
+    if (memo) return memo == &initializer_undefined_yes;
+    if (ty_resolving_find(me, RESOLVING_INITIALIZER_UNDEFINED, initialized)) {
+        ty_resolving_cycle(me, RESOLVING_INITIALIZER_UNDEFINED, initialized);
+        report_parameter_circularity(me, initialized);
+        return true;
+    }
+    ty_resolving_push(me, RESOLVING_INITIALIZER_UNDEFINED, initialized);
+    // (tsc's checkDeclarationInitializer: the quick type first, `= g(x)` of a non-generic g doesn't check x)
+    Expr const* initializer = initialized_binding_value(initialized);
+    Ty const* value = ty_quick_expr_type(me, initializer, false);
+    if (!value) value = ty_expr_type(me, initializer);
+    if (ty_resolving_pop(me)) {
+        report_parameter_circularity(me, initialized);
+        return true;
+    }
+    // (`any` and `unknown` can't be undefined here, tsc's UnknownFacts)
+    // (A type parameter by its constraint: tsc's hasTypeFacts(IsUndefined))
+    bool may_be_undefined = ty_contains_undefined_type(value) || (value->flags & TYF_VOID) ||
+        (!(value->flags & (TYF_ANY | TYF_UNKNOWN)) && ty_can_be_undefined(me, value));
+    if (!ty_link_get(me, KEY_INITIALIZER_UNDEFINED, initialized)) {
+        ty_link_set(me, KEY_INITIALIZER_UNDEFINED, initialized, may_be_undefined ? &initializer_undefined_yes : &initializer_undefined_no);
+    }
+    return may_be_undefined;
+}
+
 // `(o: T | undefined = {})` (or an optional parameter typed by the context or a JSDoc `@type` tag) is a T in the body
 // unless the default can be undefined (tsc's removeOptionalityFromDeclaredType)
 static Ty const* parameter_initial_type(Checker* me, Binding const* binding, Ty const* type) {
@@ -2545,30 +2593,8 @@ static Ty const* parameter_initial_type(Checker* me, Binding const* binding, Ty 
         return type;
     }
     InitializedBinding const* initialized = c_container_of(binding->source, InitializedBinding, lazy_type);
-    // (Not from inside the default itself: `(x: number | undefined = x > 0 ? x : 0)`)
-    LazyMemo const* memo = lazy_type_state_peek((LazyType*)&initialized_binding_value(initialized)->lazy_type);
-    bool in_flight = memo && memo->evaluation_started && !memo->done;
-    // (There tsc's pushTypeResolution of the parameter's declared type fails: reportCircularityError)
-    if (in_flight && binding->tag == BINDING_IDENTIFIER) {
-        // (At the whole parameter: tsc's error(symbol.valueDeclaration))
-        Span at = span_between(binding->content_span, expr_outer_span(initialized_binding_value(initialized)));
-        if (binding->has_explicit_type) {
-            ty_error_at(me, at, 2502, cstr_d("'", binding->content_span,
-                "' is referenced directly or indirectly in its own type annotation."));
-        } else if (compiler_options()->no_implicit_any) {
-            ty_error_at(me, at, 7022, cstr_d("'", binding->content_span, "' implicitly has type 'any' "
-                "because it does not have a type annotation and is referenced directly or indirectly in its own initializer."));
-        }
-    }
-    Ty const* value = initialized_binding_value(initialized)->tag == EXPR_IMPLICIT_ANY || in_flight ? nullptr : ty_expr_type(me, initialized_binding_value(initialized));
-    // (`any` and `unknown` can't be undefined here, tsc's UnknownFacts)
-    // (A type parameter by its constraint: tsc's hasTypeFacts(IsUndefined))
-    bool may_be_undefined = value && (ty_contains_undefined_type(value) || (value->flags & TYF_VOID) ||
-        (!(value->flags & (TYF_ANY | TYF_UNKNOWN)) && ty_can_be_undefined(me, value)));
-    if (value && !may_be_undefined) {
-        return ty_without_undefined(me, type);
-    }
-    return type;
+    if (initialized_binding_value(initialized)->tag == EXPR_IMPLICIT_ANY) return type;
+    return parameter_initializer_contains_undefined(me, initialized) ? type : ty_without_undefined(me, type);
 }
 
 // The tail of tsc's checkIdentifier(): a variable or parameter has the type control flow gives it where it is read

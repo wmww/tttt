@@ -2697,6 +2697,9 @@ typedef enum ResolvingKind {
     RESOLVING_ALIAS,
     RESOLVING_BINDING, // An annotated Binding, or an identifier in a pattern (see ty_binding_type())
     RESOLVING_PATTERN, // A LazyType of a root binding pattern (see lazy_type.c)
+    // A parameter's default asked whether it can be undefined (an InitializedBinding: tsc's
+    // TypeSystemPropertyNameInitializerIsUndefined, parameterInitializerContainsUndefined)
+    RESOLVING_INITIALIZER_UNDEFINED,
     RESOLVING_SIGNATURE_RETURN,
     RESOLVING_BASES, // The bases of a declared class or interface type
     RESOLVING_BASE_CONSTRAINT, // A type whose base constraint is computed (relate.c base_constraint())

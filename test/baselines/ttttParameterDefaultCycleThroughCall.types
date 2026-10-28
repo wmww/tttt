@@ -1,0 +1,39 @@
+//// [test/cases/ttttParameterDefaultCycleThroughCall.ts] ////
+
+=== ttttParameterDefaultCycleThroughCall.ts ===
+// Whether a parameter's default can be undefined is resolved under an entry of its own (tsc's
+// parameterInitializerContainsUndefined, TypeSystemPropertyNameInitializerIsUndefined): a default reaching the parameter
+// through a function whose return type is being inferred is circular there, TS2502 at the parameter and TS7024 at the
+// arrow. (Types: the arrow's `n` prints `number | undefined`, tsc's `number`: tsc checks the body again later and asks
+// afresh, tttt keeps the expression's type from inside the cycle)
+function f(n: number | undefined = [1].map(() => n)[0]) {}
+>f : (n?: number | undefined) => void
+>n : number | undefined
+>[1].map(() => n)[0] : any
+>[1].map(() => n) : any[]
+>[1].map : <U>(callbackfn: (value: number, index: number, array: number[]) => U, thisArg?: any) => U[]
+>[1] : number[]
+>1 : 1
+>map : <U>(callbackfn: (value: number, index: number, array: number[]) => U, thisArg?: any) => U[]
+>() => n : () => any
+>n : number
+>0 : 0
+
+declare function g(a: any): number;
+>g : (a: any) => number
+>a : any
+
+function f1(x: number | undefined = g(x)) { return x; }
+>f1 : (x?: number | undefined) => number
+>x : number | undefined
+>g(x) : number
+>g : (a: any) => number
+>x : number
+>x : number
+
+function f2(y: number | undefined = 1) { return y; }
+>f2 : (y?: number | undefined) => number
+>y : number | undefined
+>1 : 1
+>y : number
+

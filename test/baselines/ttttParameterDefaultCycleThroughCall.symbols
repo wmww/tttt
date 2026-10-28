@@ -1,0 +1,31 @@
+//// [test/cases/ttttParameterDefaultCycleThroughCall.ts] ////
+
+=== ttttParameterDefaultCycleThroughCall.ts ===
+// Whether a parameter's default can be undefined is resolved under an entry of its own (tsc's
+// parameterInitializerContainsUndefined, TypeSystemPropertyNameInitializerIsUndefined): a default reaching the parameter
+// through a function whose return type is being inferred is circular there, TS2502 at the parameter and TS7024 at the
+// arrow. (Types: the arrow's `n` prints `number | undefined`, tsc's `number`: tsc checks the body again later and asks
+// afresh, tttt keeps the expression's type from inside the cycle)
+function f(n: number | undefined = [1].map(() => n)[0]) {}
+>f : Symbol(f, Decl(ttttParameterDefaultCycleThroughCall.ts, 0, 0))
+>n : Symbol(n, Decl(ttttParameterDefaultCycleThroughCall.ts, 5, 11))
+>[1].map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>n : Symbol(n, Decl(ttttParameterDefaultCycleThroughCall.ts, 5, 11))
+
+declare function g(a: any): number;
+>g : Symbol(g, Decl(ttttParameterDefaultCycleThroughCall.ts, 5, 58))
+>a : Symbol(a, Decl(ttttParameterDefaultCycleThroughCall.ts, 6, 19))
+
+function f1(x: number | undefined = g(x)) { return x; }
+>f1 : Symbol(f1, Decl(ttttParameterDefaultCycleThroughCall.ts, 6, 35))
+>x : Symbol(x, Decl(ttttParameterDefaultCycleThroughCall.ts, 7, 12))
+>g : Symbol(g, Decl(ttttParameterDefaultCycleThroughCall.ts, 5, 58))
+>x : Symbol(x, Decl(ttttParameterDefaultCycleThroughCall.ts, 7, 12))
+>x : Symbol(x, Decl(ttttParameterDefaultCycleThroughCall.ts, 7, 12))
+
+function f2(y: number | undefined = 1) { return y; }
+>f2 : Symbol(f2, Decl(ttttParameterDefaultCycleThroughCall.ts, 7, 55))
+>y : Symbol(y, Decl(ttttParameterDefaultCycleThroughCall.ts, 8, 12))
+>y : Symbol(y, Decl(ttttParameterDefaultCycleThroughCall.ts, 8, 12))
+

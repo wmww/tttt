@@ -1,0 +1,22 @@
+ttttParameterDefaultCycleThroughCall.ts(6,12): error TS2502: 'n' is referenced directly or indirectly in its own type annotation.
+ttttParameterDefaultCycleThroughCall.ts(6,44): error TS7024: Function implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+ttttParameterDefaultCycleThroughCall.ts(8,39): error TS2372: Parameter 'x' cannot reference itself.
+
+
+==== ttttParameterDefaultCycleThroughCall.ts (3 errors) ====
+    // Whether a parameter's default can be undefined is resolved under an entry of its own (tsc's
+    // parameterInitializerContainsUndefined, TypeSystemPropertyNameInitializerIsUndefined): a default reaching the parameter
+    // through a function whose return type is being inferred is circular there, TS2502 at the parameter and TS7024 at the
+    // arrow. (Types: the arrow's `n` prints `number | undefined`, tsc's `number`: tsc checks the body again later and asks
+    // afresh, tttt keeps the expression's type from inside the cycle)
+    function f(n: number | undefined = [1].map(() => n)[0]) {}
+               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2502: 'n' is referenced directly or indirectly in its own type annotation.
+                                               ~~~~~~~
+!!! error TS7024: Function implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    declare function g(a: any): number;
+    function f1(x: number | undefined = g(x)) { return x; }
+                                          ~
+!!! error TS2372: Parameter 'x' cannot reference itself.
+    function f2(y: number | undefined = 1) { return y; }
+    

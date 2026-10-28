@@ -82,14 +82,19 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   Two tsc orders were missing: checkVariableLikeDeclaration resolves the pattern's first name before the initializer
   (initialized_binding_typecheck()), and a function with a contextual signature infers its return type at its first
   contextual check outside calls too (ty_check_expr's EXPR_FUNCTION); a variable's pattern root asked again with a
-  name since is evaluated again (lazy_type.c: tsc has no entry for it). Test ttttTuplePatternCircularElement. [fixed dacb0c044]
+  name since is evaluated again (lazy_type.c: tsc has no entry for it). Test ttttTuplePatternCircularElement. [fixed e77cf389d]
 - **Base constraint circularity and base types resolved through constraints** (re-checked 2026-10-07, errors only).
   Port, plan-sized: a resolution-identity stack for base constraints (tsc's pushTypeResolution with
   ImmediateBaseConstraint plus getImmediateBaseConstraint's 5-deep identity check), TS2313 at the type node being
   checked, default type arguments instantiated during base type resolution. None of the corpora show these shapes
   (circularConstraintYieldsAppropriateError, its suite test, passes since 2026-10-14). [design]
 - A parameter's default reaching the parameter through a call's return type (`(n: number | undefined = [1].map(() =>
-  n)[0])`: TS2502 and TS7024 in tsc, nothing here; the direct read is done in `parameter_initial_type()`). [open]
+  n)[0])`: TS2502 and TS7024 in tsc, nothing here; the direct read is done in `parameter_initial_type()`). Now
+  parameter_initializer_contains_undefined() (expr.c) is tsc's parameterInitializerContainsUndefined: a resolution
+  entry of its own (RESOLVING_INITIALIZER_UNDEFINED), the quick type first, memoized when not circular; the cycle
+  marks the arrow's nested return inference (TS7024). Left: the arrow's `n` prints `number | undefined` where tsc's
+  later body check asks afresh and prints `number` (types only; test ttttParameterDefaultCycleThroughCall fails its
+  types component). [fixed]
 - recursiveMappedTypes against tsgo's CLI (the suite baseline is JS-emit order: tsgo_divergences.md): (1) no TS2502
   on ListWidget's `"each": Child<ListWidget>` (and its type stays `Child<ListWidget>`, tsc's `any`): tsgo's
   instantiateMappedType instantiates the non-homomorphic Child's constraint `NonOptionalKeys<ListWidget>` eagerly while

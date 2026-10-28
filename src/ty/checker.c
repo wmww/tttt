@@ -4777,6 +4777,7 @@ static Span resolving_entry_span(Resolving const* entry) {
             span = function_error_span(entry->key);
             break;
         case RESOLVING_BINDING: span = ((Binding const*)entry->key)->content_span; break;
+        case RESOLVING_INITIALIZER_UNDEFINED: span = ((InitializedBinding const*)entry->key)->binding.content_span; break;
         case RESOLVING_ALIAS: {
             Symbol const* symbol = entry->key;
             if (symbol->decl_count) span = symbol->decls[0].full;

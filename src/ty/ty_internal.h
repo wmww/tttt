@@ -148,6 +148,7 @@ enum {
     KEY_FUNCTION_FREE_PARAMS, // FunctionImpl (node_links) -> TyFreeParams of its annotations, see ty_function_free_params()
     KEY_FUNCTION_TYPE_MENTIONS, // function type -> FunctionMentions, see ty_function_type_mentions()
     KEY_CIRCULAR_BINDING, // Binding (or an `export default` SymbolDecl) -> non-null if its type references it (TS2502, TS7022, see ty_binding_type())
+    KEY_INITIALIZER_UNDEFINED, // InitializedBinding (a parameter) -> initializer_undefined_yes/_no (tsc's InitializerIsUndefinedComputed, expr.c)
     KEY_ELEMENT_WIDENED_ANY, // binding element -> its type before widening, when that widens to any
     KEY_ARRAY_THIS_PROPS, // Array/ReadonlyArray target -> ThisProps, its members that mention `this` (members.c)
     KEY_TUPLE_NAME_ORDER, // (array type's target, prop count) -> u32 indices of a tuple's inherited props in name order (members.c)
