@@ -59,6 +59,8 @@ void block_add_names(Block const* me, Scope* scope);
 bool block_has_export_declarations(Block const* me);
 // The resolve walk over the statements
 void block_lookup_names_as(Block const* me, Scope* names, ErrorCtx* errs);
+// block_lookup_names_as() of the statements [from, to) only (a namespace body walked in chunks, program.c)
+void block_lookup_names_range(Block const* me, u32 from, u32 to, Scope* names, ErrorCtx* errs);
 /// A statement an ambient context doesn't allow (tsc's checkGrammarStatementInAmbientContext: TS1036)
 bool block_statement_is_ambient_disallowed(Statement const* me);
 // Same, as a control flow container of its own (flow.h): a file, a namespace body, a static block. `kind` and `name`

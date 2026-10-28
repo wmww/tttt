@@ -4002,15 +4002,27 @@ static bool resolves_in_parallel(SourceFile const* source) {
 //   symbols of the earlier ones, which their walks make (scope_new_generic_merged()): its chunk waits for theirs
 // - The file's unused names: none (a declaration file's never are, unused_register())
 typedef struct WalkChunk {
-    u32 from, to; // Top-level statements
+    u32 from, to; // Top-level statements, or the statements of a namespace's body (namespace)
+    u32 namespace; // 0: the file's statements, else 1 + the index of its NamespaceWalk
     isize start; // Where it starts in the text (the first chunk: 0), chunked_walk_chunk_at()
     u32* after; // malloc'd: the chunks that must be walked before this one starts
     u32 after_count;
     atomic_bool done;
 } WalkChunk;
 
+// A top-level namespace of the file whose body is walked in chunks of its own (one namespace can be nearly all of a
+// file: googleapis' 10 MB compute APIs, typescript.d.ts, playwright's protocol.d.ts): what namespace_decl_resolve_names()
+// and block_lookup_names_container() do around the body happens once, around the chunks (chunked_walk_start(),
+// chunked_walk_finish()), and its body's chunks walk with copies of its builder like the file's
+typedef struct NamespaceWalk {
+    NamespaceDecl* namespace;
+    FlowBuilder flow; // The builder each of its chunks starts with
+} NamespaceWalk;
+
 typedef struct ChunkedWalk {
     SourceFile* file;
+    NamespaceWalk* namespaces;
+    u32 namespace_count;
     FlowBuilder flow; // The builder each chunk starts with
     FlowBuilder* outer; // What the scope's builder was
     WalkChunk* chunks;
@@ -4108,6 +4120,12 @@ static bool statement_walks_alone(Statement const* statement) {
             // (Its walk declares into its own scopes: the generic ones of a merged class wait like an interface's,
             // chunked_walk_pair())
             return class_walks_alone(statement->decl.class);
+        case STATEMENT_EXPORT_DEFAULT_EXPR:
+            // `export = ts;`, `export default Protocol;` after the namespace that is the rest of the file: the walk looks the
+            // name up (its builder flags set and restored around it; export_assignment_check_isolated() skips a
+            // declaration file)
+            return !statement->expr_jsdoc_type && (statement->expr.tag == EXPR_IDENTIFIER || statement->expr.tag == EXPR_PROPERTY) &&
+                expr_walks_alone(&statement->expr);
         case STATEMENT_DECL_ENUM:
             // (Its members' initializers are walked in its own namespace scope, the enum declaration's)
             for_each (i, vec_enum_case, &statement->decl.enum_->cases) {
@@ -4153,6 +4171,22 @@ static isize statement_offset(SourceFile const* source, Span span, bool end) {
     return at >= text && at <= text + cstr_size(&source->contents) ? at - text : -1;
 }
 
+// A top-level namespace whose body is chunked (it walks alone: chunked_walk_new() checked every statement): a plain
+// namespace of chunk_bytes or more with two statements or more
+static bool chunked_walk_split(SourceFile const* source, Statement const* statement, u32 chunk_bytes) {
+    if (statement->tag != STATEMENT_DECL_NAMESPACE || vec_statement_size(&statement->decl.namespace->contents.statements) < 2) return false;
+    isize start = statement_offset(source, statement->span, false), end = statement_offset(source, statement->span, true);
+    return start >= 0 && end - start >= chunk_bytes;
+}
+
+// A new chunk (start: where it starts in the text, the first chunk's is 0; -1 when none of it is in the text: the
+// previous chunk's start then, which leaves the text to the previous one)
+static void chunked_walk_add(ChunkedWalk* me, u32 from, u32 to, isize start, u32 namespace) {
+    u32 at = my chunk_count++;
+    if (start < 0) start = at ? my chunks[at - 1].start : 0;
+    my chunks[at] = (WalkChunk){ .from = from, .to = to, .start = at ? start : 0, .namespace = namespace };
+}
+
 // The chunks of a file the chunked walk takes, null for any other file
 static ChunkedWalk* chunked_walk_new(SourceFile* source) {
     if (!source->is_declaration || source->is_js || source->is_json || source->resolve_serial || flow_dump_enabled()) return nullptr;
@@ -4160,7 +4194,7 @@ static ChunkedWalk* chunked_walk_new(SourceFile* source) {
     u32 count = (u32)vec_statement_size(statements);
     isize size = cstr_size(&source->contents);
     u32 chunk_bytes = debug_env.walk_chunk_bytes ? debug_env.walk_chunk_bytes : 128 * 1024;
-    if (count < 2 || (!debug_env.walk_chunk_bytes && size < 256 * 1024)) {
+    if (!count || (!debug_env.walk_chunk_bytes && size < 256 * 1024)) {
         if (getenv("TTTT_WALK_CENSUS") && size >= 256 * 1024) {
             // (What the statements are: one big namespace?)
             isize biggest = 0;
@@ -4193,31 +4227,66 @@ static ChunkedWalk* chunked_walk_new(SourceFile* source) {
     }
     if (getenv("TTTT_WALK_CENSUS")) eprintln("walk census: ", (i64)size, " chunked - ", source->canonical_path);
     ChunkedWalk* ret = c_new(ChunkedWalk, { .file = source });
-    ret->chunks = c_new_n(WalkChunk, count);
     // (Chunks of at least chunk_bytes from the start of their first statement to the end of their last, where the
-    // statements' spans are in the text: not every one's is)
+    // statements' spans are in the text: not every one's is. A top-level namespace of at least chunk_bytes is
+    // chunked inside, chunked_walk_split(); a chunk's start is where it starts in the text, so the starts are in order)
+    u32 cap = count, namespace_cap = 0;
+    for_each (i, vec_statement, statements) {
+        if (chunked_walk_split(source, i, chunk_bytes)) {
+            cap += (u32)vec_statement_size(&i->decl.namespace->contents.statements) + 1;
+            namespace_cap++;
+        }
+    }
+    ret->chunks = c_new_n(WalkChunk, cap);
+    ret->namespaces = namespace_cap ? c_new_n(NamespaceWalk, namespace_cap) : nullptr;
     u32 from = 0;
     isize start = -1;
     for (u32 i = 0; i < count; i++) {
         Statement const* statement = vec_statement_at(statements, i);
+        if (chunked_walk_split(source, statement, chunk_bytes)) {
+            // (What comes before it: a chunk of its own)
+            if (from < i) chunked_walk_add(ret, from, i, start < 0 ? statement_offset(source, statement->span, false) : start, 0);
+            u32 namespace = ++ret->namespace_count;
+            ret->namespaces[namespace - 1] = (NamespaceWalk){ .namespace = statement->decl.namespace };
+            VecStatement const* body = &statement->decl.namespace->contents.statements;
+            u32 body_count = (u32)vec_statement_size(body);
+            u32 body_from = 0;
+            // (Its first chunk starts with the namespace's own text)
+            isize body_start = statement_offset(source, statement->span, false);
+            for (u32 j = 0; j < body_count; j++) {
+                Statement const* inner = vec_statement_at(body, j);
+                if (body_start < 0) body_start = statement_offset(source, inner->span, false);
+                isize end = statement_offset(source, inner->span, true);
+                if ((body_start >= 0 && end >= 0 && end - body_start >= chunk_bytes) || j + 1 == body_count) {
+                    chunked_walk_add(ret, body_from, j + 1, body_start, namespace);
+                    body_from = j + 1;
+                    body_start = -1;
+                }
+            }
+            from = i + 1;
+            start = -1;
+            continue;
+        }
         if (start < 0) start = statement_offset(source, statement->span, false);
         isize end = statement_offset(source, statement->span, true);
         if (start >= 0 && end >= 0 && end - start >= chunk_bytes && i + 1 < count) {
-            u32 at = ret->chunk_count++;
-            ret->chunks[at] = (WalkChunk){ .from = from, .to = i + 1, .start = at ? start : 0 };
+            chunked_walk_add(ret, from, i + 1, start, 0);
             from = i + 1;
             start = -1;
         }
     }
-    // (The rest: a chunk of its own if any of its statements is in the text, else the last chunk's)
-    if (start >= 0 || !ret->chunk_count) {
-        u32 at = ret->chunk_count++;
-        ret->chunks[at] = (WalkChunk){ .from = from, .to = count, .start = at ? start : 0 };
-    } else {
-        ret->chunks[ret->chunk_count - 1].to = count;
+    // (The rest: a chunk of its own if any of its statements is in the text or the last chunk is a namespace's, else
+    // the last chunk's)
+    if (from < count) {
+        if (start >= 0 || !ret->chunk_count || ret->chunks[ret->chunk_count - 1].namespace) {
+            chunked_walk_add(ret, from, count, start, 0);
+        } else {
+            ret->chunks[ret->chunk_count - 1].to = count;
+        }
     }
     if (ret->chunk_count < 2) {
         free(ret->chunks);
+        free(ret->namespaces);
         free(ret);
         return nullptr;
     }
@@ -4228,6 +4297,7 @@ static ChunkedWalk* chunked_walk_new(SourceFile* source) {
 static void chunked_walk_drop(ChunkedWalk* me) {
     for (u32 i = 0; i < my chunk_count; i++) free(my chunks[i].after);
     free(my chunks);
+    free(my namespaces);
     free(my shards);
     free(me);
 }
@@ -4292,35 +4362,49 @@ static void chunked_walk_start(ChunkedWalk* me) {
     my flow.statement_list = &my file->ast.statements;
     my flow.lookup_statements = &my file->ast.statements;
     scope->flow_ = &flow_builder_per_thread;
+    // (A namespace walked in chunks: namespace_decl_resolve_names() and block_lookup_names_container() around its body,
+    // with the file's builder outside, which its statement leaves as it found it)
+    for (u32 i = 0; i < my namespace_count; i++) {
+        NamespaceWalk* walk = &my namespaces[i];
+        NamespaceDecl* namespace = walk->namespace;
+        Scope* inner = namespace->inner_scope;
+        inner->self = namespace->symbol;
+        flow_builder_init(&walk->flow, &my flow, inner, nullptr, nullptr);
+        walk->flow.current = flow_new_start(&walk->flow, nullptr, false);
+        walk->flow.container = &namespace->contents;
+        walk->flow.statement_list = &namespace->contents.statements;
+        walk->flow.lookup_statements = &namespace->contents.statements;
+        inner->flow_ = &flow_builder_per_thread;
+    }
 }
 
-// Whether a chunk's builder is the one it started with, but for what is its own
-static bool chunked_walk_flow_unchanged(ChunkedWalk const* me, FlowBuilder const* flow) {
+// Whether a chunk's builder is the one it started with (master: the file's or its namespace's), but for what is its own
+static bool chunked_walk_flow_unchanged(FlowBuilder const* master, FlowBuilder const* flow) {
     FlowBuilder probe = *flow;
-    probe.arena = my flow.arena;
-    probe.errs = my flow.errs;
-    probe.next_id = my flow.next_id;
-    probe.id_counter = my flow.id_counter;
-    probe.statement_list = my flow.statement_list;
-    probe.lookup_statements = my flow.lookup_statements;
+    probe.arena = master->arena;
+    probe.errs = master->errs;
+    probe.next_id = master->next_id;
+    probe.id_counter = master->id_counter;
+    probe.statement_list = master->statement_list;
+    probe.lookup_statements = master->lookup_statements;
     // (A cache of equal contexts: a chunk's first property access makes one the serial walk might have shared)
-    probe.property_context = my flow.property_context;
-    return memcmp(&probe, &my flow, sizeof probe) == 0;
+    probe.property_context = master->property_context;
+    return memcmp(&probe, master, sizeof probe) == 0;
 }
 
 // The chunk this thread walks, if any
 static thread_local ChunkedWalk* walk_chunked;
 static thread_local u32 walk_chunk;
 
-// The chunk of a symbol's first variable declaration in the file walked in chunks (top_level: whether it is in the
-// file's own scope rather than a namespace's), UINT32_MAX when it has none there
-static u32 chunked_walk_binding_chunk(ChunkedWalk const* walk, Symbol const* symbol, bool* top_level) {
+// The chunk of a symbol's first variable declaration in the file walked in chunks (block: its scope), UINT32_MAX when it
+// has none there
+static u32 chunked_walk_binding_chunk(ChunkedWalk const* walk, Symbol const* symbol, Scope const** block) {
     for (u32 i = 0; i < symbol->decl_count; i++) {
         SymbolDecl const* decl = &symbol->decls[i];
         if (decl->kind != SYMBOL_DECL_VARIABLE) continue;
         if (span_source(decl->full) != walk->file) return UINT32_MAX;
         if (!decl->block) log_error("A variable declaration without its scope");
-        *top_level = decl->block == walk->file->scope;
+        *block = decl->block;
 #ifdef DEBUG_BUILD
         // (The first variable declaration is the first binding the serial walk reaches: source order in the file)
         for (u32 j = i + 1; j < symbol->decl_count; j++) {
@@ -4338,20 +4422,32 @@ static u32 chunked_walk_binding_chunk(ChunkedWalk const* walk, Symbol const* sym
 bool chunked_walk_writes_flow_start(Symbol const* symbol) {
     ChunkedWalk const* walk = walk_chunked;
     if (!walk) return true;
-    bool top_level = false;
-    u32 chunk = chunked_walk_binding_chunk(walk, symbol, &top_level);
+    Scope const* block = nullptr;
+    u32 chunk = chunked_walk_binding_chunk(walk, symbol, &block);
     return chunk == UINT32_MAX || chunk == walk_chunk;
+}
+
+// The start node of the container whose scope is block, if it is the file or a namespace walked in chunks (the others'
+// start nodes are made by the chunk that walks them), else null
+static FlowNode const* chunked_walk_container_start(ChunkedWalk const* walk, Scope const* block) {
+    if (block == walk->file->scope) return walk->flow.container_start;
+    for (u32 i = 0; i < walk->namespace_count; i++) {
+        if (block == walk->namespaces[i].namespace->inner_scope) return walk->namespaces[i].flow.container_start;
+    }
+    return nullptr;
 }
 
 bool chunked_walk_flow_start_differs(Symbol const* symbol, FlowNode const* container_start) {
     ChunkedWalk const* walk = walk_chunked;
-    bool top_level = false;
-    u32 chunk = walk ? chunked_walk_binding_chunk(walk, symbol, &top_level) : UINT32_MAX;
+    Scope const* block = nullptr;
+    u32 chunk = walk ? chunked_walk_binding_chunk(walk, symbol, &block) : UINT32_MAX;
     if (chunk == UINT32_MAX || chunk == walk_chunk) return symbol->flow_start && container_start != symbol->flow_start;
     // (The serial walk hasn't walked the binding yet)
     if (chunk > walk_chunk) return false;
-    // It has: the binding's container is the file, or a namespace walked in another chunk (never this one)
-    return !top_level || container_start != walk->flow.container_start;
+    // It has: the binding's container is the file, a namespace walked in chunks (its start node is known), or a
+    // namespace walked whole in another chunk (never this one's container)
+    FlowNode const* start = chunked_walk_container_start(walk, block);
+    return !start || container_start != start;
 }
 
 static void chunked_walk_run(ChunkedWalk* me, u32 c, ErrorCtx* errs) {
@@ -4360,21 +4456,27 @@ static void chunked_walk_run(ChunkedWalk* me, u32 c, ErrorCtx* errs) {
         while (!atomic_load_explicit(&my chunks[chunk->after[i]].done, memory_order_acquire)) sched_yield();
     }
     SourceFile* source = my file;
-    FlowBuilder flow = my flow;
+    NamespaceWalk const* namespace = chunk->namespace ? &my namespaces[chunk->namespace - 1] : nullptr;
+    FlowBuilder const* master = namespace ? &namespace->flow : &my flow;
+    FlowBuilder flow = *master;
     flow.next_id = &flow.id_counter;
     flow.arena = binder_arena(source->scope->binder);
     flow.errs = errs;
     flow_thread_builder = &flow;
     walk_chunked = me;
     walk_chunk = c;
-    VecStatement* statements = &source->ast.statements;
+    VecStatement* statements = namespace ? &namespace->namespace->contents.statements : &source->ast.statements;
     for (u32 i = chunk->from; i < chunk->to; i++) {
         flow.statement_list = statements;
         flow.lookup_statements = statements;
-        statement_resolve_names(vec_statement_at_mut(statements, i), source->scope, errs);
-        if (!chunked_walk_flow_unchanged(me, &flow)) {
+        if (namespace) {
+            block_lookup_names_range(&namespace->namespace->contents, i, i + 1, namespace->namespace->inner_scope, errs);
+        } else {
+            statement_resolve_names(vec_statement_at_mut(statements, i), source->scope, errs);
+        }
+        if (!chunked_walk_flow_unchanged(master, &flow)) {
             log_error("A statement of a file walked in chunks changed its flow builder: ", span_line_index(vec_statement_at(statements, i)->span) + 1);
-            my flow = flow; // (Once)
+            *(FlowBuilder*)master = flow; // (Once)
         }
     }
     flow_thread_builder = nullptr;
@@ -4385,6 +4487,10 @@ static void chunked_walk_run(ChunkedWalk* me, u32 c, ErrorCtx* errs) {
 // After the lane, in program order: the chunks' shards merged as the file's one would be
 static void chunked_walk_finish(ChunkedWalk* me) {
     resolve_shard_merge_chunks(my shards, my chunk_count);
+    for (u32 i = 0; i < my namespace_count; i++) {
+        flow_builder_finish(&my namespaces[i].flow, c_sv("namespace"), my namespaces[i].namespace->name);
+        my namespaces[i].namespace->inner_scope->flow_ = nullptr;
+    }
     flow_builder_finish(&my flow, c_sv("file"), span_null);
     my file->scope->flow_ = my outer;
     resolve_file_finish(my file);

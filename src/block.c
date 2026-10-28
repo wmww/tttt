@@ -53,8 +53,13 @@ bool block_has_export_declarations(Block const* me) {
 }
 
 void block_lookup_names_as(Block const* me, Scope* names, ErrorCtx* errs) {
+    block_lookup_names_range(me, 0, (u32)vec_statement_size(&my statements), names, errs);
+}
+
+void block_lookup_names_range(Block const* me, u32 from, u32 to, Scope* names, ErrorCtx* errs) {
+    if (from >= to) return;
     FlowBuilder* flow = scope_flow(names);
-    for_each (i, vec_statement, &my statements) {
+    for (Statement* i = (Statement*)vec_statement_at(&my statements, from), *end = i + (to - from); i < end; i++) {
         flow->statement_list = &my statements;
         flow->lookup_statements = &my statements;
         // (A JSDoc `{@link x}` before it names x from here: see unused_mark_leading_jsdoc_links())
