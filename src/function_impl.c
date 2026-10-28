@@ -1405,6 +1405,25 @@ u32 function_impl_jsdoc_required_params(FunctionImpl const* me) {
     return count;
 }
 
+// A parameter of a function, an object literal member or a signature (a function type, an interface's or type literal's
+// method) can't be decorated (tsc's checkGrammarModifiers, nodeCanBeDecorated: TS1206 at the first decorator's `@`)
+void function_impl_check_parameter_decorators(FunctionImpl const* me, ErrorCtx* errs) {
+    for_each (i, vec_function_arg, &my args) {
+        if (!vec_expr_size(function_arg_decorators(i))) continue;
+        if (span_valid(i->span)) {
+            Span at = i->span;
+            span_set_sv(&at, csview_from_n(span_start_ptr(i->span), 1));
+            error_ctx_grammar_error_d(errs, at, 1206, "Decorators are not valid here.");
+        }
+        // (Never decorated: tsc's checkDecorators doesn't look at them)
+        ErrorCtx ignored = error_ctx_scratch(errs);
+        for_each (decorator, vec_expr, function_arg_decorators(i)) {
+            expr_typecheck(decorator, &ignored);
+        }
+        error_ctx_drop(&ignored);
+    }
+}
+
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     function_check_emit_helpers(me, errs);
     function_impl_check_implicit_any_parameters(me, errs);
@@ -1413,22 +1432,8 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     // (The parameter decorators of a class member are the class's to check: they are calls with synthetic arguments,
     // which is what gives them their contextual type)
     bool class_member = !my is_expression && (span_valid(function_impl_member_name(me)) || function_impl_rare(me)->constructed_class);
+    if (!class_member) function_impl_check_parameter_decorators(me, errs);
     for_each (i, vec_function_arg, &my args) {
-        if (!class_member && vec_expr_size(function_arg_decorators(i))) {
-            // A parameter of a function or object literal member can't be decorated (tsc's checkGrammarModifiers,
-            // nodeCanBeDecorated: TS1206 at the first decorator's `@`)
-            if (span_valid(i->span)) {
-                Span at = i->span;
-                span_set_sv(&at, csview_from_n(span_start_ptr(i->span), 1));
-                error_ctx_grammar_error_d(errs, at, 1206, "Decorators are not valid here.");
-            }
-            // (Never decorated: tsc's checkDecorators doesn't look at them)
-            ErrorCtx ignored = error_ctx_scratch(errs);
-            for_each (decorator, vec_expr, function_arg_decorators(i)) {
-                expr_typecheck(decorator, &ignored);
-            }
-            error_ctx_drop(&ignored);
-        }
         // (The type of a JSDoc `@this {T}` isn't checked: tsc's checkJSDocThisTag only looks at its host)
         if (i->jsdoc_this) continue;
         // (An overload's or ambient function's initializer is TS2371 and nothing else: tsc's checkVariableLikeDeclaration

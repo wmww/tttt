@@ -1,0 +1,60 @@
+//// [test/cases/ttttSignatureParameterDecorators.ts] ////
+
+=== ttttSignatureParameterDecorators.ts ===
+// A signature's parameters take decorators like a function's (tsc's parseParameter), which can't decorate them:
+// TS1206 from the checker. A type is outside the await context, so `@await` there decorates with an identifier
+declare const dec: any;
+>dec : any
+
+let a: new (@dec y: any) => void;
+>a : new (y: any) => void
+>dec : any
+>y : any
+
+let b: <T>(@dec y: T) => void;
+>b : <T>(y: T) => void
+>dec : any
+>y : T
+
+let c: { m(@dec y: any): void; (@dec y: any): void; new (@dec y: any): void };
+>c : { (y: any): void; new (y: any): void; m(y: any): void; }
+>m : (y: any) => void
+>dec : any
+>y : any
+>dec : any
+>y : any
+>dec : any
+>y : any
+
+interface I { m(@dec y: any): void; (@dec y: any): void; new (@dec y: any): void }
+>m : (y: any) => void
+>dec : any
+>y : any
+>dec : any
+>y : any
+>dec : any
+>y : any
+
+async function f() {
+>f : () => Promise<void>
+
+    let x: new (@await y: any) => void;
+>x : new (y: any) => void
+>await : any
+>y : any
+
+    let x2: abstract new (a: any, @await.b y: any) => void;
+>x2 : abstract new (a: any, y: any) => void
+>a : any
+>await.b : any
+>await : any
+>b : any
+>y : any
+
+    let x3: { m(@await y: any): void };
+>x3 : { m(y: any): void; }
+>m : (y: any) => void
+>await : any
+>y : any
+}
+

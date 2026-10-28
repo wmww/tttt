@@ -452,6 +452,7 @@ struct FunctionArg const* function_impl_paired_this(FunctionImpl const* me);
 // The getter a late-bound setter is paired with, null if none
 FunctionImpl const* function_impl_late_getter(FunctionImpl const* setter);
 void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, ErrorCtx* errs);
+void function_impl_check_parameter_decorators(FunctionImpl const* me, ErrorCtx* errs);
 // TS2842 for the unused renamings in a bodiless signature's patterns (part of function_impl_typecheck_signature())
 void function_impl_check_unused_renamings(FunctionImpl const* me, ErrorCtx* errs);
 void function_impl_check_jsdoc_overloads(FunctionImpl const* me, Span name, ErrorCtx* errs);

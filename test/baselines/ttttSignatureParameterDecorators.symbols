@@ -1,0 +1,58 @@
+//// [test/cases/ttttSignatureParameterDecorators.ts] ////
+
+=== ttttSignatureParameterDecorators.ts ===
+// A signature's parameters take decorators like a function's (tsc's parseParameter), which can't decorate them:
+// TS1206 from the checker. A type is outside the await context, so `@await` there decorates with an identifier
+declare const dec: any;
+>dec : Symbol(dec, Decl(ttttSignatureParameterDecorators.ts, 2, 13))
+
+let a: new (@dec y: any) => void;
+>a : Symbol(a, Decl(ttttSignatureParameterDecorators.ts, 3, 3))
+>dec : Symbol(dec, Decl(ttttSignatureParameterDecorators.ts, 2, 13))
+>y : Symbol(y, Decl(ttttSignatureParameterDecorators.ts, 3, 12))
+
+let b: <T>(@dec y: T) => void;
+>b : Symbol(b, Decl(ttttSignatureParameterDecorators.ts, 4, 3))
+>T : Symbol(T, Decl(ttttSignatureParameterDecorators.ts, 4, 8))
+>dec : Symbol(dec, Decl(ttttSignatureParameterDecorators.ts, 2, 13))
+>y : Symbol(y, Decl(ttttSignatureParameterDecorators.ts, 4, 11))
+>T : Symbol(T, Decl(ttttSignatureParameterDecorators.ts, 4, 8))
+
+let c: { m(@dec y: any): void; (@dec y: any): void; new (@dec y: any): void };
+>c : Symbol(c, Decl(ttttSignatureParameterDecorators.ts, 5, 3))
+>m : Symbol(m, Decl(ttttSignatureParameterDecorators.ts, 5, 8))
+>dec : Symbol(dec, Decl(ttttSignatureParameterDecorators.ts, 2, 13))
+>y : Symbol(y, Decl(ttttSignatureParameterDecorators.ts, 5, 11))
+>dec : Symbol(dec, Decl(ttttSignatureParameterDecorators.ts, 2, 13))
+>y : Symbol(y, Decl(ttttSignatureParameterDecorators.ts, 5, 32))
+>dec : Symbol(dec, Decl(ttttSignatureParameterDecorators.ts, 2, 13))
+>y : Symbol(y, Decl(ttttSignatureParameterDecorators.ts, 5, 57))
+
+interface I { m(@dec y: any): void; (@dec y: any): void; new (@dec y: any): void }
+>I : Symbol(I, Decl(ttttSignatureParameterDecorators.ts, 5, 78))
+>m : Symbol(I.m, Decl(ttttSignatureParameterDecorators.ts, 6, 13))
+>dec : Symbol(dec, Decl(ttttSignatureParameterDecorators.ts, 2, 13))
+>y : Symbol(y, Decl(ttttSignatureParameterDecorators.ts, 6, 16))
+>dec : Symbol(dec, Decl(ttttSignatureParameterDecorators.ts, 2, 13))
+>y : Symbol(y, Decl(ttttSignatureParameterDecorators.ts, 6, 37))
+>dec : Symbol(dec, Decl(ttttSignatureParameterDecorators.ts, 2, 13))
+>y : Symbol(y, Decl(ttttSignatureParameterDecorators.ts, 6, 62))
+
+async function f() {
+>f : Symbol(f, Decl(ttttSignatureParameterDecorators.ts, 6, 82))
+
+    let x: new (@await y: any) => void;
+>x : Symbol(x, Decl(ttttSignatureParameterDecorators.ts, 8, 7))
+>y : Symbol(y, Decl(ttttSignatureParameterDecorators.ts, 8, 16))
+
+    let x2: abstract new (a: any, @await.b y: any) => void;
+>x2 : Symbol(x2, Decl(ttttSignatureParameterDecorators.ts, 9, 7))
+>a : Symbol(a, Decl(ttttSignatureParameterDecorators.ts, 9, 26))
+>y : Symbol(y, Decl(ttttSignatureParameterDecorators.ts, 9, 33))
+
+    let x3: { m(@await y: any): void };
+>x3 : Symbol(x3, Decl(ttttSignatureParameterDecorators.ts, 10, 7))
+>m : Symbol(m, Decl(ttttSignatureParameterDecorators.ts, 10, 13))
+>y : Symbol(y, Decl(ttttSignatureParameterDecorators.ts, 10, 16))
+}
+

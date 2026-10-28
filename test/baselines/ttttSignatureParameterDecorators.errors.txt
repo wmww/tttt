@@ -1,0 +1,49 @@
+ttttSignatureParameterDecorators.ts(4,13): error TS1206: Decorators are not valid here.
+ttttSignatureParameterDecorators.ts(5,12): error TS1206: Decorators are not valid here.
+ttttSignatureParameterDecorators.ts(6,12): error TS1206: Decorators are not valid here.
+ttttSignatureParameterDecorators.ts(6,33): error TS1206: Decorators are not valid here.
+ttttSignatureParameterDecorators.ts(6,58): error TS1206: Decorators are not valid here.
+ttttSignatureParameterDecorators.ts(7,17): error TS1206: Decorators are not valid here.
+ttttSignatureParameterDecorators.ts(7,38): error TS1206: Decorators are not valid here.
+ttttSignatureParameterDecorators.ts(7,63): error TS1206: Decorators are not valid here.
+ttttSignatureParameterDecorators.ts(9,17): error TS1206: Decorators are not valid here.
+ttttSignatureParameterDecorators.ts(10,35): error TS1206: Decorators are not valid here.
+ttttSignatureParameterDecorators.ts(11,17): error TS1206: Decorators are not valid here.
+
+
+==== ttttSignatureParameterDecorators.ts (11 errors) ====
+    // A signature's parameters take decorators like a function's (tsc's parseParameter), which can't decorate them:
+    // TS1206 from the checker. A type is outside the await context, so `@await` there decorates with an identifier
+    declare const dec: any;
+    let a: new (@dec y: any) => void;
+                ~
+!!! error TS1206: Decorators are not valid here.
+    let b: <T>(@dec y: T) => void;
+               ~
+!!! error TS1206: Decorators are not valid here.
+    let c: { m(@dec y: any): void; (@dec y: any): void; new (@dec y: any): void };
+               ~
+!!! error TS1206: Decorators are not valid here.
+                                    ~
+!!! error TS1206: Decorators are not valid here.
+                                                             ~
+!!! error TS1206: Decorators are not valid here.
+    interface I { m(@dec y: any): void; (@dec y: any): void; new (@dec y: any): void }
+                    ~
+!!! error TS1206: Decorators are not valid here.
+                                         ~
+!!! error TS1206: Decorators are not valid here.
+                                                                  ~
+!!! error TS1206: Decorators are not valid here.
+    async function f() {
+        let x: new (@await y: any) => void;
+                    ~
+!!! error TS1206: Decorators are not valid here.
+        let x2: abstract new (a: any, @await.b y: any) => void;
+                                      ~
+!!! error TS1206: Decorators are not valid here.
+        let x3: { m(@await y: any): void };
+                    ~
+!!! error TS1206: Decorators are not valid here.
+    }
+    

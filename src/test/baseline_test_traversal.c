@@ -1271,6 +1271,8 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             u32 saved = baseline_test_case_enter_generic(ctx, &my callable->function->generic);
             generic_compile_test_info(&my callable->function->generic, ctx);
             for_each (i, vec_function_arg, &my callable->function->args) {
+                // (A signature's parameter decorators, TS1206, are expressions all the same)
+                for_each (decorator, vec_expr, function_arg_decorators(i)) expr_compile_test_info(decorator, ctx);
                 binding_content_compile_test_info(&i->initializer.binding, ctx);
                 if (i->initializer.binding.has_explicit_type) {
                     type_compile_test_info(binding_type(&i->initializer.binding), ctx);

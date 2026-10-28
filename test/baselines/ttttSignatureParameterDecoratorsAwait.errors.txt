@@ -1,0 +1,37 @@
+ttttSignatureParameterDecoratorsAwait.ts(6,39): error TS1109: Expression expected.
+ttttSignatureParameterDecoratorsAwait.ts(6,62): error TS1109: Expression expected.
+ttttSignatureParameterDecoratorsAwait.ts(7,37): error TS1109: Expression expected.
+ttttSignatureParameterDecoratorsAwait.ts(8,18): error TS1109: Expression expected.
+ttttSignatureParameterDecoratorsAwait.ts(9,36): error TS1110: Type expected.
+ttttSignatureParameterDecoratorsAwait.ts(9,49): error TS1005: ':' expected.
+ttttSignatureParameterDecoratorsAwait.ts(9,56): error TS1005: ';' expected.
+ttttSignatureParameterDecoratorsAwait.ts(9,57): error TS1131: Property or signature expected.
+
+
+==== ttttSignatureParameterDecoratorsAwait.ts (8 errors) ====
+    // An interface's signatures are in the await context they are in: `@await` there is a missing identifier (tsc's
+    // parseDecoratorExpression), a static block's too. And `(` then `@` starts no function type (skipParameterStart): a
+    // parenthesized type, TS1110
+    export {};
+    declare const dec: any;
+    async function f() { interface I { m(@await y: any): void; (@await y: any): void } }
+                                          ~~~~~
+!!! error TS1109: Expression expected.
+                                                                 ~~~~~
+!!! error TS1109: Expression expected.
+    class K { static { interface I { m(@await y: any): void } } }
+                                        ~~~~~
+!!! error TS1109: Expression expected.
+    interface J { m(@await y: any): void }
+                     ~~~~~
+!!! error TS1109: Expression expected.
+    function g() { interface I { m(a: (@dec y: any) => void): void } }
+                                       ~
+!!! error TS1110: Type expected.
+                                                    ~~
+!!! error TS1005: ':' expected.
+                                                           ~
+!!! error TS1005: ';' expected.
+                                                            ~
+!!! error TS1131: Property or signature expected.
+    

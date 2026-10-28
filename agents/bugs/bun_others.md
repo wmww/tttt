@@ -53,7 +53,7 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   walks to the declared one), and `D & (J | W)` = `(D & J) | (D & W)` (tsc's hasCommonDeclaration counts every
   declaration of a member's synthetic property, so D's `id` is common, and the union's property is public through `D &
   J`: synthetic_common_declaration(); TS2536 rather than TS4105 for `T["id"]`, getConstituentProperty's intersection
-  property being public: intersection_prop_non_public()). [fixed]
+  property being public: intersection_prop_non_public()). [fixed be0df3a7a]
 - 99-V1, still open: a mapped type over a non-generic union's keys, `{ [K in keyof typeof u]: (typeof u)[K] }` with `u:
   W | D`, has the union's properties to tsc (forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType reads
   getPropertiesOfType of the modifiers type, a union property with a common non-public declaration and public through
@@ -213,9 +213,13 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
 - Object literal accessors with `abstract` on one of a pair: TS2676 on both (02-C13c, missing); a class expression with
   modifiers in an expression (`@dec public class {}`, 80-R08: tsc parses them, TS1184). [open]
 - Decorators on the parameters of signatures (function and constructor types, interface members, `@await` in an
-  async body): tsc's parseParameter takes them (TS1206 from the checker, TS1109 for `@await`); tttt fails the type
-  and cascades (+TS1005 +TS1109 +TS1128 +TS1131 +TS1146 +TS1434): 56-L14b 83-R20a. JavaScript `function h(export
-  @dec x)`: modifiers before decorators, TS8012 (tttt TS1359): 84-R01. [open]
+  async body): tsc's parseParameter takes them (TS1206 from the checker, TS1109 for `@await`); tttt failed the type
+  and cascaded: 56-L14b 83-R20a (and 28-C16e 33-P6b). A type is outside the await and yield contexts (parse_type()), a
+  signature's parameters too, their decorators in the context the signature is in (parse_signature_args(),
+  parse_function_header()); `@await` outside an await context decorates with the identifier `await`, a static block
+  is one; `(` then `@` starts no function type (skipParameterStart); TS1206 for a signature's
+  (function_impl_check_parameter_decorators() from callable_type_typecheck()). [fixed]
+- JavaScript `function h(export @dec x)`: modifiers before decorators, TS8012 (tttt TS1359): 84-R01. [open]
 - `yield` takes an operand only on the same line and is an AssignmentExpression (no `?:` or binary operator after
   it): -TS1109/-TS1005 43-X6a 43-X6b 43-X6c 43-X6e. [fixed 69c3e0a83]
 - A private name where an identifier name goes: tsc's tokenIsIdentifierOrKeyword says yes to PrivateIdentifier (it

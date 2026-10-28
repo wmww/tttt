@@ -3900,7 +3900,14 @@ static bool parse_function_type_keeping_context(Parser* p, bool disallow_conditi
 
 static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* ret) {
     bool disallow_conditional = parent->shared->disallow_conditional;
+    // (A type is outside the yield and await contexts, tsc's parseType: `@await` decorates a function type's parameter)
+    bool in_async = parent->shared->in_async, outer_in_async = parent->shared->outer_in_async;
+    bool in_generator = parent->shared->in_generator;
+    parent->shared->in_async = parent->shared->outer_in_async = parent->shared->in_generator = false;
     bool parsed = parse_type_inner(parent, min_precedence, ret);
+    parent->shared->in_async = in_async;
+    parent->shared->outer_in_async = outer_in_async;
+    parent->shared->in_generator = in_generator;
     parent->shared->disallow_conditional = disallow_conditional;
     if (parsed && (ret->tag == TYPE_UNION || ret->tag == TYPE_INTERSECTION)) shrink_list(vec_type, &ret->composite);
     return parsed;
@@ -7176,6 +7183,14 @@ static bool parse_function_args_inner(
                 Anchor arg_start = anchor(&p);
                 VecExpr decorators = {0};
                 ignore parse_decorators(&p, &decorators);
+                // (tsc's skipParameterStart: a decorator starts no parameter of a function type that isn't one yet, `(`
+                // then `@` is a parenthesized type; after `new` or `<` it is one)
+                if (vec_expr_size(&decorators) && parse_type_return_syntax && !is_definitely_function &&
+                    !ret->is_constructor && vec_function_arg_is_empty(&ret->args)
+                ) {
+                    vec_expr_drop(&decorators);
+                    goto drop_and_fail;
+                }
                 if (vec_expr_size(&decorators) && reports_js_syntax(&p) && !compiler_options()->experimental_decorators) {
                     // (A JavaScript file the checker doesn't check still says this, tsgo's
                     // getAdditionalJSSyntacticDiagnostics: from the `@` to the end of the first decorator)
@@ -7702,14 +7717,33 @@ static void signature_arrow_return_type(Parser* parent, FunctionImpl* func) {
     parse_success(&p);
 }
 
+// A class member's or a type member's parameters: a signature's (`is_type`) are in no await context, their decorators
+// in the one the signature is in (tsc's parseParametersWorker, parseParameterEx's inOuterAwaitContext)
+static bool parse_signature_args(Parser* p, bool is_type, FunctionImpl* ret) {
+    if (!is_type) return parse_function_args(p, true, false, true, false, ret);
+    bool in_async = p->shared->in_async, outer_in_async = p->shared->outer_in_async;
+    p->shared->outer_in_async = in_async;
+    p->shared->in_async = false;
+    bool parsed = parse_function_args(p, true, false, true, false, ret);
+    p->shared->in_async = in_async;
+    p->shared->outer_in_async = outer_in_async;
+    return parsed;
+}
+
 static bool parse_function_header(Parser* parent, FunctionFlags flags, FunctionImpl* ret) {
     ignore flags;
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
-    if (!parse_function_args(&p, false, false, true, true, ret)) {
-        return parse_fail(&p);
-    }
+    // (A signature's parameters are in no await context, their decorators in the one the signature is in, as
+    // parse_signature_args())
+    bool in_async = p.shared->in_async, outer_in_async = p.shared->outer_in_async;
+    p.shared->outer_in_async = in_async;
+    p.shared->in_async = false;
+    bool parsed = parse_function_args(&p, false, false, true, true, ret);
+    p.shared->in_async = in_async;
+    p.shared->outer_in_async = outer_in_async;
+    if (!parsed) return parse_fail(&p);
     signature_arrow_return_type(&p, ret);
 
     ret->full_span = span_from(a);
@@ -9582,7 +9616,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             if (member->key.tag == INTERFACE_KEY_MAPPED && member->readonly && !member->key.mapped->readonly) {
                 member->key.mapped->readonly = 1;
             }
-        } else if (parse_function_args(&p, true, false, true, false, &func)) {
+        } else if (parse_signature_args(&p, is_type, &func)) {
             if (is_type) signature_arrow_return_type(&p, &func);
             if (!span_valid(func.full_span)) func.full_span = span_from(a); // (What function_impl_typecheck_signature() checks)
             check_modifiers(&p, &modifiers, (ModifiedNode){
@@ -11486,12 +11520,24 @@ static bool parse_decorators(Parser* parent, VecExpr* ret) {
             expr.missing = true;
             parse_expr_right_side(&p, ctx, &expr);
             vec_expr_push(ret, expr);
-        } else if (p.shared->in_async && starts_with_followed_by_word_break(&p, "await")) {
+        } else if ((p.shared->in_async || p.shared->in_static_block) && starts_with_followed_by_word_break(&p, "await")) {
             // tsc's parseDecoratorExpression: `@await` in an await context is a missing identifier, then the rest
             parse_error(&p, span_make(p.shared->source, p.pos, p.pos + 5), 1109, "Expression expected.");
             expr = expr_implicit_any(span_make(p.shared->source, p.pos, p.pos));
             p.pos += 5;
             parse_expr_right_side(&p, ctx, &expr);
+            vec_expr_push(ret, expr);
+        } else if (!p.shared->in_static_block && (starts_with_followed_by_word_break(&p, "await") ||
+            (!p.shared->in_generator && starts_with_followed_by_word_break(&p, "yield")))
+        ) {
+            // (Outside an await context `await` is an identifier here, no operator: tsc's parseLeftHandSideExpressionOrHigher
+            // has no unary expressions, `@await y` decorates `y`)
+            Span name = span_make(p.shared->source, p.pos, p.pos + 5);
+            p.pos += 5;
+            note_top_level_await_identifier(&p, span_sv(name));
+            expr = expr_identifier(name, (IdentifierExpr){0});
+            parse_expr_right_side(&p, ctx, &expr);
+            decorator_check_grammar(&p, &expr);
             vec_expr_push(ret, expr);
         } else if (expect_expr(&p, ctx, &expr)) {
             decorator_check_grammar(&p, &expr);

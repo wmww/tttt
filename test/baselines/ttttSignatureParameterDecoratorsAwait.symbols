@@ -1,0 +1,38 @@
+//// [test/cases/ttttSignatureParameterDecoratorsAwait.ts] ////
+
+=== ttttSignatureParameterDecoratorsAwait.ts ===
+// An interface's signatures are in the await context they are in: `@await` there is a missing identifier (tsc's
+// parseDecoratorExpression), a static block's too. And `(` then `@` starts no function type (skipParameterStart): a
+// parenthesized type, TS1110
+export {};
+declare const dec: any;
+>dec : Symbol(dec, Decl(ttttSignatureParameterDecoratorsAwait.ts, 4, 13))
+
+async function f() { interface I { m(@await y: any): void; (@await y: any): void } }
+>f : Symbol(f, Decl(ttttSignatureParameterDecoratorsAwait.ts, 4, 23))
+>I : Symbol(I, Decl(ttttSignatureParameterDecoratorsAwait.ts, 5, 20))
+>m : Symbol(I.m, Decl(ttttSignatureParameterDecoratorsAwait.ts, 5, 34))
+>y : Symbol(y, Decl(ttttSignatureParameterDecoratorsAwait.ts, 5, 37))
+>y : Symbol(y, Decl(ttttSignatureParameterDecoratorsAwait.ts, 5, 60))
+
+class K { static { interface I { m(@await y: any): void } } }
+>K : Symbol(K, Decl(ttttSignatureParameterDecoratorsAwait.ts, 5, 84))
+>I : Symbol(I, Decl(ttttSignatureParameterDecoratorsAwait.ts, 6, 18))
+>m : Symbol(I.m, Decl(ttttSignatureParameterDecoratorsAwait.ts, 6, 32))
+>y : Symbol(y, Decl(ttttSignatureParameterDecoratorsAwait.ts, 6, 35))
+
+interface J { m(@await y: any): void }
+>J : Symbol(J, Decl(ttttSignatureParameterDecoratorsAwait.ts, 6, 61))
+>m : Symbol(J.m, Decl(ttttSignatureParameterDecoratorsAwait.ts, 7, 13))
+>y : Symbol(y, Decl(ttttSignatureParameterDecoratorsAwait.ts, 7, 16))
+
+function g() { interface I { m(a: (@dec y: any) => void): void } }
+>g : Symbol(g, Decl(ttttSignatureParameterDecoratorsAwait.ts, 7, 38))
+>I : Symbol(I, Decl(ttttSignatureParameterDecoratorsAwait.ts, 8, 14))
+>m : Symbol(I.m, Decl(ttttSignatureParameterDecoratorsAwait.ts, 8, 28))
+>a : Symbol(a, Decl(ttttSignatureParameterDecoratorsAwait.ts, 8, 31))
+> : Symbol(unknown)
+>dec : Symbol(dec, Decl(ttttSignatureParameterDecoratorsAwait.ts, 4, 13))
+>y : Symbol(y, Decl(ttttSignatureParameterDecoratorsAwait.ts, 8, 35))
+>void : Symbol(I.void, Decl(ttttSignatureParameterDecoratorsAwait.ts, 8, 57))
+

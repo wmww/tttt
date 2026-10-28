@@ -22,7 +22,12 @@ static bool is_type_keyword(csview name) {
 }
 
 void callable_type_resolve_names(CallableType* me, Scope* names, ErrorCtx* errs) {
+    // (In a type: no uses of values, and `await`/`yield` aren't operators there, the parser has no such context in a type)
+    FlowBuilder* flow = scope_flow(names);
+    bool saved_type_query = flow && flow->in_type_query;
+    if (flow) flow->in_type_query = true;
     function_impl_lookup_names(my function, false, names, errs);
+    if (flow) flow->in_type_query = saved_type_query;
     // (tsc's reportImplicitAny: the name resolves as a type where the signature is, its own type parameters first, or
     // is a type keyword. Resolved as a use, whatever noImplicitAny says: `(Foo) => void` uses an imported type Foo)
     for_each (i, vec_function_arg, &my function->args) {
@@ -48,6 +53,7 @@ void callable_type_resolve_names(CallableType* me, Scope* names, ErrorCtx* errs)
 
 void callable_type_typecheck(CallableType const* me, ErrorCtx* errs) {
     function_impl_typecheck_signature(my function, true, errs);
+    function_impl_check_parameter_decorators(my function, errs);
     function_impl_check_implicit_any_parameters(my function, errs);
     for_each (i, vec_function_arg, &my function->args) {
         Binding* binding = &i->initializer.binding;

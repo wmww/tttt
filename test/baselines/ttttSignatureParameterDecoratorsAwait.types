@@ -1,0 +1,37 @@
+//// [test/cases/ttttSignatureParameterDecoratorsAwait.ts] ////
+
+=== ttttSignatureParameterDecoratorsAwait.ts ===
+// An interface's signatures are in the await context they are in: `@await` there is a missing identifier (tsc's
+// parseDecoratorExpression), a static block's too. And `(` then `@` starts no function type (skipParameterStart): a
+// parenthesized type, TS1110
+export {};
+declare const dec: any;
+>dec : any
+
+async function f() { interface I { m(@await y: any): void; (@await y: any): void } }
+>f : () => Promise<void>
+>m : (y: any) => void
+> : any
+>y : any
+> : any
+>y : any
+
+class K { static { interface I { m(@await y: any): void } } }
+>K : K
+>m : (y: any) => void
+> : any
+>y : any
+
+interface J { m(@await y: any): void }
+>m : (y: any) => void
+> : any
+>y : any
+
+function g() { interface I { m(a: (@dec y: any) => void): void } }
+>g : () => void
+>m : (a: (any), y: any) => void
+>a : any
+>dec : any
+>y : any
+>void : any
+
