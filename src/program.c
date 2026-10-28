@@ -725,7 +725,8 @@ static bool program_load_lib_replacement(Program* me, csview name) {
     if (!cstr_size(&replacement)) return false;
     bool loading_stdlib = my loading_stdlib;
     my loading_stdlib = false;
-    program_add_source_idempotent(me, cstr_sv(&replacement));
+    SourceFile* file = program_add_source_idempotent(me, cstr_sv(&replacement));
+    if (file) file->is_lib_replacement = true;
     my loading_stdlib = loading_stdlib;
     cstr_drop(&replacement);
     return true;

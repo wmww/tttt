@@ -585,7 +585,10 @@ umd7, typeTagNoErasure, importHelpersES6: the seeds 2311/2312 entries).
   the FullSignature the reparser set; function_impl_check_end now takes jsdoc_signature_span when the return type
   came from it. Test ttttJsdocSignatureMissingReturn. [fixed 6b52bc19d]
 - bigintArbirtraryIdentifier drop-as: TS2460's "exported as" name is symbolToString's, quoted when it isn't an
-  identifier (`'"0n"'`). Test ttttExportedAsStringName. [fixed HASH]
+  identifier (`'"0n"'`). Test ttttExportedAsStringName. [fixed 67f661581]
+- libTypeScriptSubfileResolvingConfig ann-string-number: a spurious related TS6500 into a libReplacement's file
+  (`@typescript/lib-dom`), which tsgo's IsSourceFileDefaultLibrary counts as a lib (relater.go skips the related info).
+  SourceFile.is_lib_replacement, check.c in_lib(). Test ttttLibReplacementNoRelatedInfo. [fixed HASH]
 - Text leftovers of the seed, not looked into further: checkJsdocTypeTag6 never-const (a JS `: never` annotation next
   to `@type {() => void}`: tsgo gives the function expression the tag's signature then, `() => void`);
   declarationsForIndirectTypeAliasReference ann-string-number (TS2353 names `Hash<string>` for an empty interface

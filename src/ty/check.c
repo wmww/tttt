@@ -218,7 +218,10 @@ static Span type_decl_span(Checker* me, Ty const* ty) {
     return (Span){0};
 }
 
-static bool in_lib(Span span) { return !span_valid(span) || !span_source(span) || span_source(span)->is_stdlib; }
+// (A libReplacement's file too: tsgo's IsSourceFileDefaultLibrary)
+static bool in_lib(Span span) {
+    return !span_valid(span) || !span_source(span) || span_source(span)->is_stdlib || span_source(span)->is_lib_replacement;
+}
 
 // The property a target has for a name (tsc's getPropertyOfType): of a union, only if every member has it
 static Prop const* target_prop_of(Checker* me, Ty const* target, Atom const* name) {

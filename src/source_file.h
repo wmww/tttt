@@ -160,6 +160,9 @@ typedef struct SourceFile {
     AstArena arena; // What the parser allocated for `ast` (ast_alloc.h)
     // If true this file is not typechecked and duplicate identifiers are blamed on the other file exclusively.
     bool is_stdlib;
+    // Loaded as a libReplacement's file (`@typescript/lib-dom`): not a lib file to tttt (checked, its diagnostics shown),
+    // but a default library to tsgo's IsSourceFileDefaultLibrary (no TS6500 pointing into it)
+    bool is_lib_replacement;
     // First loaded because an import (not a module augmentation, not a root or `/// <reference path>`) resolved to it
     // (a package's file found so gets no declaration diagnostics: tsc's isSourceFileFromExternalLibrary)
     bool loaded_by_import;
