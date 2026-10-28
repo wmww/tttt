@@ -1,0 +1,52 @@
+//// [test/cases/ttttJsdocUniqueSymbolHosts.ts] ////
+
+=== a.js ===
+const o = {
+>o : Symbol(o, Decl(a.js, 0, 5))
+
+    /** @type {unique symbol} */
+    a: Symbol(),
+>a : Symbol(a, Decl(a.js, 0, 11))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+
+    /** @type {unique symbol} */
+    get b() { return Symbol(); },
+>b : Symbol(b, Decl(a.js, 2, 16))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+
+};
+function f() {}
+>f : Symbol(f, Decl(a.js, 5, 2))
+
+/** @type {unique symbol} */
+f.x = Symbol();
+>f.x : Symbol(f.x, Decl(a.js, 6, 15))
+>f : Symbol(f, Decl(a.js, 5, 2))
+>x : Symbol(f.x, Decl(a.js, 6, 15))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+
+class C {
+>C : Symbol(C, Decl(a.js, 8, 15))
+
+    constructor() {
+        /** @type {unique symbol} */
+        this.z = Symbol();
+>this.z : Symbol(C.z, Decl(a.js, 10, 19))
+>this : Symbol(C, Decl(a.js, 8, 15))
+>z : Symbol(C.z, Decl(a.js, 10, 19))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+    }
+    /** @type {unique symbol} */
+    static get g() { return Symbol(); }
+>g : Symbol(C.g, Decl(a.js, 13, 5))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+}
+/** @type {unique symbol} */
+module.exports.w = Symbol();
+>module.exports.w : Symbol(w, Decl(a.js, 16, 1))
+>module.exports : Symbol(exports, Decl(a.js, 0, 0))
+>module : Symbol(module, Decl(a.js, 0, 0))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>w : Symbol(w, Decl(a.js, 16, 1))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+

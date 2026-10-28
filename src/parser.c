@@ -5693,6 +5693,10 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
     // A getter's `@type` is the property's, its return type (tsc's getAnnotatedAccessorType; a setter's isn't looked at)
     JsDocTag* type_tag = jsdoc_find_typed(tags, JSDOC_TAG_TYPE);
     if (type_tag && function->accessor == 1 && !function->ret_explicit) {
+        // (A return type annotation then, where a `unique symbol` isn't allowed: checkGrammarTypeOperatorNode)
+        if (type_tag->type.tag == TYPE_UNIQUE_SYMBOL) {
+            grammar_error(p, type_tag->type_span, 1335, "'unique symbol' types are not allowed here.");
+        }
         Span ret_span;
         function->ret = jsdoc_take_type(type_tag, &ret_span);
         function_impl_set_ret_span(function, ret_span);

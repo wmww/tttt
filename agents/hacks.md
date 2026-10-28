@@ -111,9 +111,10 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `unique symbol` placement (TS1330-TS1335): checked while parsing through `ParserShared.unique_allowed_at`
   (`parse_type_inner`, `expect_annotation_type`, `parse_jsdoc_type_expression`), not on the tree
   (checkGrammarTypeOperatorNode). A JSDoc `@type`'s host is checked where the tag is applied (variables:
-  `unique_symbol_variable_check()`, casts in `jsdoc_apply_parenthesized()`, class fields as written ones); an `@type`
-  applied anywhere else (an expando assignment, an object literal property, `export default`) accepts it silently.
-  Oracle: ttttJsdocUniqueSymbolPlaces, ttttHackJsdocUniqueSymbolLet, mutate.py on JS tests.
+  `unique_symbol_variable_check()`, casts in `jsdoc_apply_parenthesized()`, getters in `jsdoc_apply_function()`,
+  class fields as written ones); where tsgo's reparser makes no annotation of an `@type` (an expando, an object literal
+  property, `this.x =`, `export default`) neither checks it. A new host that takes an `@type` as its annotation needs
+  the check added there. Oracle: ttttJsdocUniqueSymbolPlaces/Hosts, ttttHackJsdocUniqueSymbolLet, mutate.py on JS tests.
 - Strings are UTF-8: a lone surrogate escape is kept as WTF-8 bytes (`append_code_point()`), which strict decoders
   (`cutf8_encode`) drop; `regex_check_literal()` ports tsc's UTF-16 scanner on a UTF-16 copy of the literal. A NUL byte is a
   character for tokens and lists (`at_eof()`) but some lookaheads still stop at it.

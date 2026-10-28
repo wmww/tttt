@@ -1,0 +1,62 @@
+//// [test/cases/ttttJsdocUniqueSymbolHosts.ts] ////
+
+=== a.js ===
+const o = {
+>o : { a: unique symbol; readonly b: unique symbol; }
+>{    /** @type {unique symbol} */    a: Symbol(),    /** @type {unique symbol} */    get b() { return Symbol(); },} : { a: unique symbol; readonly b: unique symbol; }
+
+    /** @type {unique symbol} */
+    a: Symbol(),
+>a : symbol
+>Symbol() : symbol
+>Symbol : SymbolConstructor
+
+    /** @type {unique symbol} */
+    get b() { return Symbol(); },
+>b : symbol
+>Symbol() : symbol
+>Symbol : SymbolConstructor
+
+};
+function f() {}
+>f : { (): void; x: symbol; }
+
+/** @type {unique symbol} */
+f.x = Symbol();
+>f.x = Symbol() : symbol
+>f.x : symbol
+>f : { (): void; x: symbol; }
+>x : symbol
+>Symbol() : symbol
+>Symbol : SymbolConstructor
+
+class C {
+>C : C
+
+    constructor() {
+        /** @type {unique symbol} */
+        this.z = Symbol();
+>this.z = Symbol() : symbol
+>this.z : symbol
+>this : this
+>z : symbol
+>Symbol() : symbol
+>Symbol : SymbolConstructor
+    }
+    /** @type {unique symbol} */
+    static get g() { return Symbol(); }
+>g : symbol
+>Symbol() : symbol
+>Symbol : SymbolConstructor
+}
+/** @type {unique symbol} */
+module.exports.w = Symbol();
+>module.exports.w = Symbol() : symbol
+>module.exports.w : symbol
+>module.exports : typeof import("./a")
+>module : { exports: typeof import("./a"); }
+>exports : typeof import("./a")
+>w : symbol
+>Symbol() : symbol
+>Symbol : SymbolConstructor
+

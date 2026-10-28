@@ -1,0 +1,29 @@
+a.js(4,16): error TS1335: 'unique symbol' types are not allowed here.
+a.js(15,16): error TS1335: 'unique symbol' types are not allowed here.
+
+
+==== a.js (2 errors) ====
+    const o = {
+        /** @type {unique symbol} */
+        a: Symbol(),
+        /** @type {unique symbol} */
+                   ~~~~~~~~~~~~~
+!!! error TS1335: 'unique symbol' types are not allowed here.
+        get b() { return Symbol(); },
+    };
+    function f() {}
+    /** @type {unique symbol} */
+    f.x = Symbol();
+    class C {
+        constructor() {
+            /** @type {unique symbol} */
+            this.z = Symbol();
+        }
+        /** @type {unique symbol} */
+                   ~~~~~~~~~~~~~
+!!! error TS1335: 'unique symbol' types are not allowed here.
+        static get g() { return Symbol(); }
+    }
+    /** @type {unique symbol} */
+    module.exports.w = Symbol();
+    
