@@ -858,6 +858,10 @@ typedef struct ObjectExprItem {
     // `{ readonly a: 1 }`, `{ readonly m() {} }`: TS1042, but the property is readonly all the same (tsc's
     // getDeclarationModifierFlagsFromSymbol reads the modifier off the declaration)
     bool readonly_modifier : 1;
+    // An accessor's `abstract`, `protected` (1) or `private` (2) (TS1042), which a getter and setter pair still compare
+    // (tsc's checkAccessorDeclaration: TS2676, TS2808)
+    bool abstract_modifier : 1;
+    uint8_t access_modifier : 2;
     // A private name inside a class body: a property of the literal's type (tsc's binder names it in the class's
     // private scope), else it is dropped. Set by expr_lookup_names()
     bool private_name_in_class : 1;

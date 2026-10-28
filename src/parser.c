@@ -8833,6 +8833,8 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         item.modifiers_failed = failed;
     }
     item.readonly_modifier = modifiers.includes[MODIFIER_READONLY];
+    item.abstract_modifier = modifiers.includes[MODIFIER_ABSTRACT];
+    item.access_modifier = modifiers.includes[MODIFIER_PRIVATE] ? 2 : modifiers.includes[MODIFIER_PROTECTED] ? 1 : 0;
     modifier_list_drop(&modifiers);
     ast_cstr_seal(&item.name_string);
     *ret = item;

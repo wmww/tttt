@@ -1,0 +1,63 @@
+ttttObjectLiteralAccessorPairModifiers.ts(4,14): error TS1042: 'abstract' modifier cannot be used here.
+ttttObjectLiteralAccessorPairModifiers.ts(4,14): error TS1244: Abstract methods can only appear within an abstract class.
+ttttObjectLiteralAccessorPairModifiers.ts(4,27): error TS2676: Accessors must both be abstract or non-abstract.
+ttttObjectLiteralAccessorPairModifiers.ts(4,49): error TS2676: Accessors must both be abstract or non-abstract.
+ttttObjectLiteralAccessorPairModifiers.ts(5,18): error TS2676: Accessors must both be abstract or non-abstract.
+ttttObjectLiteralAccessorPairModifiers.ts(5,36): error TS1042: 'abstract' modifier cannot be used here.
+ttttObjectLiteralAccessorPairModifiers.ts(5,36): error TS1244: Abstract methods can only appear within an abstract class.
+ttttObjectLiteralAccessorPairModifiers.ts(5,49): error TS2676: Accessors must both be abstract or non-abstract.
+ttttObjectLiteralAccessorPairModifiers.ts(6,14): error TS1042: 'private' modifier cannot be used here.
+ttttObjectLiteralAccessorPairModifiers.ts(6,26): error TS2808: A get accessor must be at least as accessible as the setter
+ttttObjectLiteralAccessorPairModifiers.ts(6,48): error TS2808: A get accessor must be at least as accessible as the setter
+ttttObjectLiteralAccessorPairModifiers.ts(7,14): error TS1042: 'protected' modifier cannot be used here.
+ttttObjectLiteralAccessorPairModifiers.ts(7,46): error TS1042: 'private' modifier cannot be used here.
+ttttObjectLiteralAccessorPairModifiers.ts(8,18): error TS2676: Accessors must both be abstract or non-abstract.
+ttttObjectLiteralAccessorPairModifiers.ts(8,27): error TS1042: 'abstract' modifier cannot be used here.
+ttttObjectLiteralAccessorPairModifiers.ts(8,27): error TS1244: Abstract methods can only appear within an abstract class.
+ttttObjectLiteralAccessorPairModifiers.ts(8,40): error TS2676: Accessors must both be abstract or non-abstract.
+
+
+==== ttttObjectLiteralAccessorPairModifiers.ts (17 errors) ====
+    // A getter and setter pair of an object literal agree on `abstract` (TS2676) and the getter is at least as accessible as
+    // the setter (TS2808), at both names (tsc's checkAccessorDeclaration): their modifiers are TS1042 there, but the
+    // declarations still have them
+    const o3 = { abstract get x() { return 1 }, set x(v) {} };
+                 ~~~~~~~~
+!!! error TS1042: 'abstract' modifier cannot be used here.
+                 ~~~~~~~~
+!!! error TS1244: Abstract methods can only appear within an abstract class.
+                              ~
+!!! error TS2676: Accessors must both be abstract or non-abstract.
+                                                    ~
+!!! error TS2676: Accessors must both be abstract or non-abstract.
+    const o4 = { get y() { return 1 }, abstract set y(v) {} };
+                     ~
+!!! error TS2676: Accessors must both be abstract or non-abstract.
+                                       ~~~~~~~~
+!!! error TS1042: 'abstract' modifier cannot be used here.
+                                       ~~~~~~~~
+!!! error TS1244: Abstract methods can only appear within an abstract class.
+                                                    ~
+!!! error TS2676: Accessors must both be abstract or non-abstract.
+    const o5 = { private get z() { return 1 }, set z(v) {} };
+                 ~~~~~~~
+!!! error TS1042: 'private' modifier cannot be used here.
+                             ~
+!!! error TS2808: A get accessor must be at least as accessible as the setter
+                                                   ~
+!!! error TS2808: A get accessor must be at least as accessible as the setter
+    const o6 = { protected get w() { return 1 }, private set w(v) {} };
+                 ~~~~~~~~~
+!!! error TS1042: 'protected' modifier cannot be used here.
+                                                 ~~~~~~~
+!!! error TS1042: 'private' modifier cannot be used here.
+    const o7 = { set u(v) {}, abstract get u() { return 1 } };
+                     ~
+!!! error TS2676: Accessors must both be abstract or non-abstract.
+                              ~~~~~~~~
+!!! error TS1042: 'abstract' modifier cannot be used here.
+                              ~~~~~~~~
+!!! error TS1244: Abstract methods can only appear within an abstract class.
+                                           ~
+!!! error TS2676: Accessors must both be abstract or non-abstract.
+    

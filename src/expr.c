@@ -4849,6 +4849,28 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                             "' implicitly has type 'any', because its set accessor lacks a parameter type annotation.");
                     }
                 }
+                // tsc's checkAccessorDeclaration: a getter and setter pair agree on `abstract` (TS2676), and the getter is
+                // at least as accessible as the setter (TS2808), at both names. Their modifiers are TS1042 in an object
+                // literal, but the declarations still have them
+                if (i->tag == OBJECT_ITEM_SETTER && !i->computed_key && span_source(i->name_span)) {
+                    ObjectExprItem const* getter = nullptr;
+                    for_each (j, vec_object_expr_item, &my object) {
+                        if (j->tag == OBJECT_ITEM_GETTER && !j->computed_key && cstr_equals_sv(&j->name_string, cstr_sv(&i->name_string))) {
+                            getter = j;
+                            break;
+                        }
+                    }
+                    if (getter && getter->abstract_modifier != i->abstract_modifier) {
+                        error_ctx_error_d(errs, getter->name_span, 2676, "Accessors must both be abstract or non-abstract.");
+                        error_ctx_error_d(errs, i->name_span, 2676, "Accessors must both be abstract or non-abstract.");
+                    }
+                    if (getter && ((getter->access_modifier == 1 && i->access_modifier == 0) ||
+                        (getter->access_modifier == 2 && i->access_modifier != 2))
+                    ) {
+                        error_ctx_error_d(errs, getter->name_span, 2808, "A get accessor must be at least as accessible as the setter");
+                        error_ctx_error_d(errs, i->name_span, 2808, "A get accessor must be at least as accessible as the setter");
+                    }
+                }
                 // (A getter without body or annotation and no setter, which only parser recovery makes: TS7033)
                 if (i->tag == OBJECT_ITEM_GETTER && i->value.tag == EXPR_FUNCTION && compiler_options()->no_implicit_any &&
                     span_source(i->name_span) && !object_item_rare(i)->jsdoc_type && !i->value.function->ret_explicit &&
