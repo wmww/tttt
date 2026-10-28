@@ -5791,7 +5791,13 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
     // / getTypeOfAccessors when popTypeResolution fails). (What the annotation lowered to is already any-like)
     if (circular && !prop->target && !prop->mapped && span_valid(prop_annotation_circularity_span(prop))) {
         Span name = prop_annotation_circularity_span(prop);
-        ty_error_at(me, name, 2502, cstr_d("'", span_sv(name), "' is referenced directly or indirectly in its own type annotation."));
+        if (prop_decl_rare(prop->decl)->class_auto_accessor) {
+            // (An auto accessor's: tsgo's getTypeOfAccessors reports it at the setter, which it doesn't have, a
+            // diagnostic without a file)
+            error_ctx_global_error_d(my errs, 2502, "'", span_sv(name), "' is referenced directly or indirectly in its own type annotation.");
+        } else {
+            ty_error_at(me, name, 2502, cstr_d("'", span_sv(name), "' is referenced directly or indirectly in its own type annotation."));
+        }
     }
     if (clear_asserted) {
         // (Its own word, settled with the type's taint before the type is: published if clean, else this worker's own)

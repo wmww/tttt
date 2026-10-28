@@ -2003,6 +2003,12 @@ bool class_item_private_in_ambient(ClassDecl const* me, ClassItem const* item) {
 static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const* item, ErrorCtx* errs) {
     Span name = item->field.name_span;
     // An initializer that needs the field's own type (tsc's reportCircularityError)
+    // (Not an auto accessor's: tsgo's getTypeOfAccessors reports a circularity at its getter, which it doesn't have)
+    if (item->field.is_auto_accessor && !item->field.has_explicit_type &&
+        class_item_get_type((ClassItem*)item) == ty_intrinsic(current_checker, TY_CIRCULAR)
+    ) {
+        return;
+    }
     if (span_valid(name) && !item->field.has_explicit_type && compiler_options()->no_implicit_any &&
         !(span_source(name) && span_source(name)->is_js) && item->field.value.tag != EXPR_IMPLICIT_ANY &&
         class_item_get_type((ClassItem*)item) == ty_intrinsic(current_checker, TY_CIRCULAR)

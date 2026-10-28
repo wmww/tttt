@@ -1,0 +1,57 @@
+error TS2502: 'a' is referenced directly or indirectly in its own type annotation.
+ttttAccessorCircularityReports.ts(7,23): error TS2729: Property 'a' is used before its initialization.
+ttttAccessorCircularityReports.ts(8,5): error TS7022: 'b' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+ttttAccessorCircularityReports.ts(8,14): error TS2729: Property 'b' is used before its initialization.
+ttttAccessorCircularityReports.ts(12,5): error TS2502: 'b' is referenced directly or indirectly in its own type annotation.
+ttttAccessorCircularityReports.ts(16,9): error TS2502: 'x' is referenced directly or indirectly in its own type annotation.
+ttttAccessorCircularityReports.ts(19,9): error TS2300: Duplicate identifier 'x'.
+ttttAccessorCircularityReports.ts(19,9): error TS7023: 'x' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+ttttAccessorCircularityReports.ts(20,5): error TS2300: Duplicate identifier 'x'.
+ttttAccessorCircularityReports.ts(20,5): error TS2717: Subsequent property declarations must have the same type.  Property 'x' must be of type 'any', but here has type 'number'.
+
+
+!!! error TS2502: 'a' is referenced directly or indirectly in its own type annotation.
+==== ttttAccessorCircularityReports.ts (9 errors) ====
+    // Where tsc's getTypeOfAccessors reports an accessor's circularity (bun 99-V4 getTypeOfAccessors__01-03,
+    // getWriteTypeOfAccessors__06): an auto accessor has no getter, so an unannotated one says nothing (no TS7022) and an
+    // annotated one reports at its setter, which it doesn't have either (a TS2502 without a file); a getter without an
+    // annotation whose setter is annotated reports at the setter; a circular accessor's type is any, not the error type, so
+    // a field of its name declared after it is TS2717
+    class A {
+        accessor a = this.a;
+                          ~
+!!! error TS2729: Property 'a' is used before its initialization.
+!!! related TS2728 ttttAccessorCircularityReports.ts:7:14: 'a' is declared here.
+        b = this.b;
+        ~
+!!! error TS7022: 'b' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                 ~
+!!! error TS2729: Property 'b' is used before its initialization.
+!!! related TS2728 ttttAccessorCircularityReports.ts:8:5: 'b' is declared here.
+    }
+    class B {
+        accessor a: B["a"] = 1 as any;
+        b: B["b"] = 1 as any;
+        ~
+!!! error TS2502: 'b' is referenced directly or indirectly in its own type annotation.
+    }
+    class C {
+        get x() { return 1; }
+        set x(v: C["x"]) {}
+            ~
+!!! error TS2502: 'x' is referenced directly or indirectly in its own type annotation.
+    }
+    class D {
+        get x() { return this.x; }
+            ~
+!!! error TS2300: Duplicate identifier 'x'.
+            ~
+!!! error TS7023: 'x' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+        x: number = 1;
+        ~
+!!! error TS2300: Duplicate identifier 'x'.
+        ~
+!!! error TS2717: Subsequent property declarations must have the same type.  Property 'x' must be of type 'any', but here has type 'number'.
+!!! related TS6203 ttttAccessorCircularityReports.ts:19:9: 'x' was also declared here.
+    }
+    

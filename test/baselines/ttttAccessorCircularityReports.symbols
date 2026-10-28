@@ -1,0 +1,58 @@
+//// [test/cases/ttttAccessorCircularityReports.ts] ////
+
+=== ttttAccessorCircularityReports.ts ===
+// Where tsc's getTypeOfAccessors reports an accessor's circularity (bun 99-V4 getTypeOfAccessors__01-03,
+// getWriteTypeOfAccessors__06): an auto accessor has no getter, so an unannotated one says nothing (no TS7022) and an
+// annotated one reports at its setter, which it doesn't have either (a TS2502 without a file); a getter without an
+// annotation whose setter is annotated reports at the setter; a circular accessor's type is any, not the error type, so
+// a field of its name declared after it is TS2717
+class A {
+>A : Symbol(A, Decl(ttttAccessorCircularityReports.ts, 0, 0))
+
+    accessor a = this.a;
+>a : Symbol(A.a, Decl(ttttAccessorCircularityReports.ts, 5, 9))
+>this.a : Symbol(A.a, Decl(ttttAccessorCircularityReports.ts, 5, 9))
+>this : Symbol(A, Decl(ttttAccessorCircularityReports.ts, 0, 0))
+>a : Symbol(A.a, Decl(ttttAccessorCircularityReports.ts, 5, 9))
+
+    b = this.b;
+>b : Symbol(A.b, Decl(ttttAccessorCircularityReports.ts, 6, 24))
+>this.b : Symbol(A.b, Decl(ttttAccessorCircularityReports.ts, 6, 24))
+>this : Symbol(A, Decl(ttttAccessorCircularityReports.ts, 0, 0))
+>b : Symbol(A.b, Decl(ttttAccessorCircularityReports.ts, 6, 24))
+}
+class B {
+>B : Symbol(B, Decl(ttttAccessorCircularityReports.ts, 8, 1))
+
+    accessor a: B["a"] = 1 as any;
+>a : Symbol(B.a, Decl(ttttAccessorCircularityReports.ts, 9, 9))
+>B : Symbol(B, Decl(ttttAccessorCircularityReports.ts, 8, 1))
+
+    b: B["b"] = 1 as any;
+>b : Symbol(B.b, Decl(ttttAccessorCircularityReports.ts, 10, 34))
+>B : Symbol(B, Decl(ttttAccessorCircularityReports.ts, 8, 1))
+}
+class C {
+>C : Symbol(C, Decl(ttttAccessorCircularityReports.ts, 12, 1))
+
+    get x() { return 1; }
+>x : Symbol(C.x, Decl(ttttAccessorCircularityReports.ts, 13, 9), Decl(ttttAccessorCircularityReports.ts, 14, 25))
+
+    set x(v: C["x"]) {}
+>x : Symbol(C.x, Decl(ttttAccessorCircularityReports.ts, 13, 9), Decl(ttttAccessorCircularityReports.ts, 14, 25))
+>v : Symbol(v, Decl(ttttAccessorCircularityReports.ts, 15, 10))
+>C : Symbol(C, Decl(ttttAccessorCircularityReports.ts, 12, 1))
+}
+class D {
+>D : Symbol(D, Decl(ttttAccessorCircularityReports.ts, 16, 1))
+
+    get x() { return this.x; }
+>x : Symbol(D.x, Decl(ttttAccessorCircularityReports.ts, 17, 9), Decl(ttttAccessorCircularityReports.ts, 18, 30))
+>this.x : Symbol(D.x, Decl(ttttAccessorCircularityReports.ts, 17, 9), Decl(ttttAccessorCircularityReports.ts, 18, 30))
+>this : Symbol(D, Decl(ttttAccessorCircularityReports.ts, 16, 1))
+>x : Symbol(D.x, Decl(ttttAccessorCircularityReports.ts, 17, 9), Decl(ttttAccessorCircularityReports.ts, 18, 30))
+
+    x: number = 1;
+>x : Symbol(D.x, Decl(ttttAccessorCircularityReports.ts, 17, 9), Decl(ttttAccessorCircularityReports.ts, 18, 30))
+}
+

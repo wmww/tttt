@@ -4110,6 +4110,10 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
         // (A field's type has undefined when it's optional: addOptionality of its declaration)
         Ty const* first_type = class_item_get_type(first_item);
         if (first_item->tag == CLASS_ITEM_FIELD) first_type = with_optionality(me, first_type, first_item->field.is_optional);
+        // (A circular accessor is any, not the error type: getTypeOfAccessors after a failing pop)
+        if (first_item->tag == CLASS_ITEM_METHOD && first_item->method.accessor && first_type == ty_intrinsic(me, TY_CIRCULAR)) {
+            first_type = ty_intrinsic(me, TY_ANY);
+        }
         check_subsequent_property(me, item->field.name_span, first_type,
             with_optionality(me, class_item_get_type(item), item->field.is_optional), first->span, errs);
     }
