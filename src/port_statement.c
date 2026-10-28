@@ -503,6 +503,8 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
             // a `declare export { }` is too: its parser's NodeFlagsAmbient)
             if (my module_ref) {
                 error_ctx_error_d(errs, my module_ref->span, 1194, "Export declarations are not permitted in a namespace.");
+            } else if (span_valid(port_statement_rare(me)->non_string_specifier)) {
+                // (`from 123`: checkExternalImportOrExportDeclaration's TS1141 alone, port_statement_add_names())
             } else if (!my in_ambient_namespace && !my main.declared && my main.tag != PORT_REEXPORT_SPLAT && my main.tag != PORT_REEXPORT_GATHER) {
                 error_ctx_error_d(errs, span_with_semicolon(span), 1194, "Export declarations are not permitted in a namespace.");
             }

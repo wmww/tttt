@@ -1,0 +1,15 @@
+//// [test/cases/ttttNamespaceExportNonStringSpecifier.ts] ////
+
+=== ttttNamespaceExportNonStringSpecifier.ts ===
+// An export declaration in a namespace with a module specifier that isn't a string literal is TS1141 alone: tsc's
+// checkExternalImportOrExportDeclaration returns there, before TS1194 (bun 96-H2)
+export { default } from 123;
+>default : Symbol(default, Decl(ttttNamespaceExportNonStringSpecifier.ts, 2, 8))
+
+export namespace N {
+>N : Symbol(N, Decl(ttttNamespaceExportNonStringSpecifier.ts, 2, 28))
+
+  export { J } from 123;
+>J : Symbol(J, Decl(ttttNamespaceExportNonStringSpecifier.ts, 4, 10))
+}
+

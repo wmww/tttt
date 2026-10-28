@@ -1,0 +1,16 @@
+ttttNamespaceExportNonStringSpecifier.ts(3,25): error TS1141: String literal expected.
+ttttNamespaceExportNonStringSpecifier.ts(5,21): error TS1141: String literal expected.
+
+
+==== ttttNamespaceExportNonStringSpecifier.ts (2 errors) ====
+    // An export declaration in a namespace with a module specifier that isn't a string literal is TS1141 alone: tsc's
+    // checkExternalImportOrExportDeclaration returns there, before TS1194 (bun 96-H2)
+    export { default } from 123;
+                            ~~~
+!!! error TS1141: String literal expected.
+    export namespace N {
+      export { J } from 123;
+                        ~~~
+!!! error TS1141: String literal expected.
+    }
+    
