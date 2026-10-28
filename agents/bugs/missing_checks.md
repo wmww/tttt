@@ -469,10 +469,14 @@ Seed 41: 10 -> 7 differing, seed 42: 13 -> 5. Left, each looked at:
   type), not with the rest alone; tttt reports neither and then TS2322 instead of TS2741 for `({ b, ...na } = o)`.
   Re-probed 2026-10-28: TS2700 now goes with TS2462/TS1186 on the element (binding.c checked it only when the grammar
   was fine), and the rest of null or undefined alone is `{}` (lower.c object_rest_type(), tsc's getRestType filter):
-  TS2739 at the assignment. Tests ttttObjectRestNotLastNonObject, ttttObjectRestOfUndefined. [fixed PENDING]
+  TS2739 at the assignment. Tests ttttObjectRestNotLastNonObject, ttttObjectRestOfUndefined. [fixed ebd4af3a4]
 - seed 42 signatureCombiningRestParameters1 add-optional: a union of signatures one of which has a rest parameter of
   type `[string] | undefined` (TS2370): tsgo's combined signature reports a spread argument as TS2556, tttt combines
-  the rest parameter to never and says TS2345. [open]
+  the rest parameter to never and says TS2345. (cor7 2026-10-28: tsgo's TS2556 is getArgumentArityError, the combined
+  signature failing hasCorrectArity's spread rule (spread index >= getMinArgumentCount and an effective rest parameter
+  or index < getParameterCount); with the rest param `[string] | undefined` (TS2370, not a tuple) its combination
+  leaves tttt an effective `never[]` rest. Which of the three differs wasn't traced: an instrumented
+  combineUnionOrIntersectionParameters/hasCorrectArity print is the next step. Only behind TS2370.) [open]
 
 ## Mutation seed 2026102001 (2026-10-20, -n 3000: 5 / 1552 differ)
 Fixed: a computed key naming no property against a generic mapped contextual type, recursive-return skip with type

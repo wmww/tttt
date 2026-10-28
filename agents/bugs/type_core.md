@@ -192,10 +192,6 @@ passing tests).
   value: any } }`), and the deferred `this` prints differently. Needs object literal getter properties typed lazily
   (a Prop whose type is the getter's, resolved on first ask, shared by the widened copy): medium-sized, broad (widening,
   freshness, relations of literals). [text]
-- type-fest's `test-d/opaque.ts` (~90% of type-fest's check time) runs into TS2589 at line 68 (`Tagged`/`UnwrapTagged`
-  over `TagContainer`) plus four TS7022 tsc doesn't report: a correctness bug with a perf symptom. [open]
-- Spurious TS7022 on `const can = composite && o?.e && !out` when the type of `e` mentions an unresolved name (`Map`
-  without lib es2015). Probe: test/probes/plan08/alias_optional_chain.ts minus its `@target`. [open]
 - `check_with()` (ty/expr.c) computes an expression with a contextual type outside the LazyType, so no cycle detection
   (`let [x = x] = []` is stopped by the pattern's names being on the resolution stack; other contextual
   self-references can still overflow the stack). [open]
@@ -204,7 +200,8 @@ passing tests).
   nothing, and types the cycle differently (`variantA` any where tsc has `Schema<{ kind: "a"; readonly child: any }>`).
   Where the cycle is entered differs: tsc defers the getter bodies, and the getter's return type is asked for while
   `tree`'s initializer resolves `variantA`'s type. Not caused by the deferral/checkReturnStatement work (base fails it
-  identically); worth a TTTT_DEBUG_CYCLE look. [open]
+  identically); worth a TTTT_DEBUG_CYCLE look. Re-probed 2026-10-28 (cor7): the errors match now, the types
+  component still differs. [open]
 - (mut0806) `class D extends class extends Base1 { root() { return undefined } }` with `abstract root(): D`
   (strictNullChecks): tsc's checkClassExpression -> checkClassLikeDeclaration runs eagerly inside D's
   getBaseConstructorTypeOfClass; relating `() => undefined` to `() => D` calls isWeakType(D), which needs D's members
@@ -540,9 +537,6 @@ export const mockCreateIntegration = (requests: unknown[], response?: () => Resp
 ## New suite tests of the 7.1.0-beta (2026-10-23) that tttt fails: pre-existing divergences
 The beta's #64850 added tests reduced from top-1000 repo failures; the nightly tsgo already gave their expected
 output (checked with the old CLI), so these are tttt bugs the re-pin exposed, not beta changes:
-- contextualReturnSpreadPickInference: `return { title: "", ...pick(page, ["intro"]) }` against `Promise<{ title;
-  intro }>` with `pick<T extends object, Key extends keyof T>(object: T, ...props: Many<Key>[]): Pick<T, Key>` and
-  `page: any`: tsgo infers Key `"intro"` (the spread's contextual type), tttt `string` -> spurious TS2741. [open]
 - iteratorZip (both exactOptionalPropertyTypes configs; the new esnext.iterator lib): the erroring
   `Iterator.zip(..., { mode: "shortest", padding: [1] })` prints the literal `{ ...; padding: [number] }` where tsgo
   has `number[]` (the overload whose argument types are printed after resolution fails), and f2's
