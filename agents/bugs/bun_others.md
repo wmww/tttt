@@ -192,26 +192,25 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
   the heritage clauses' TS1172/TS1174/TS1175 before the class's type parameters, TS1358 before a tag's type
   arguments) or never looks (import type arguments, the heritage elements past the base): 28-C10a 28-P6a 28-P6b
   28-P6c 28-P7b 02-C21a 28-C10b 28-C11b 28-P8a 28-P8b 28-C23 56-L20 62-L12. [fixed 2a93a79fe]
-- Grammar errors in what tsc never checks, still open: the initializers of a function type's parameters (84-R02c:
-  +TS1174/TS1172/TS1173/TS1098 in a class expression there; tsc says TS2371 only), a `for` statement's declaration
-  list after TS1036 in an ambient block (28-C26d: +TS1009), 56-L09 (+TS1326 for `extends import<string>, v`: the
-  checker reports it for the base although TS1174 ends tsc's chain first, class_decl.c). 51-L12: `typeof
-  import("./m").g<>` is TS2635 for a non-generic `g` (missing), and the empty list instantiates a generic `f` to `() =>
-  void` in tsc (tttt keeps `<T>() => T`). [open]
+- Grammar errors in what tsc never checks: the initializers of a function type's (type member's, ambient function's)
+  parameters (84-R02c: tsc says TS2371 only) [fixed 89d48df8d]; 56-L09 (TS1326 for `extends import<string>, v`:
+  checkGrammarHeritageClause's, which TS1174 ends first) [fixed 5ce2f341b]; 51-L12 (`typeof import("./m").g<>` is
+  TS2635 for a non-generic `g`, the empty list instantiates a generic `f`) [fixed 9b92debaa].
+- Still open: a `for` statement's declaration list after TS1036 in an ambient block (28-C26d: +TS1009). [open]
 - Decorators followed by something other than a class: tsc's parseDeclarationWorker dispatches on the keyword after
   the decorators and modifiers without the lookahead a statement takes, and says TS1146 "Declaration expected" only
   when none matches; a class member that is only decorators is a property missing its name (TS1146): 28-P4b 32-C25
   32-C25b 32-C25c 34-P5 57-L02b 57-L02f 61-L14. [fixed e51ced678]
 - Decorators before `export;` (57-L02c: '{' expected, an export declaration) and before `import(...)`/`import.meta`
-  (84-R08c, 84-R08d: an import declaration whose module specifier is an expression, TS1141/TS1109; tttt's import
-  parser has no such path), decorators in an object binding pattern (53-L16b: TS1180). tttt: TS1146 then +TS1128.
-  [open]
+  (84-R08c, 84-R08d: an import declaration whose module specifier is an expression, TS1141/TS1109).
+  [fixed] (ParserShared.import_export_committed; the commit after c90e4b077)
+- Decorators in an object binding pattern (53-L16b: TS1180). [open]
 - Modifiers on an object literal's methods: tsc's checkGrammarMethod runs the whole checkGrammarModifiers first
   (TS1244 abstract, TS1024 readonly, TS1028/TS1029/TS1040...) and says TS1184 only when that passes; either ends the
   member's grammar checks (no '{' expected for a missing body); `readonly` stays a modifier of the property (TS2540,
   TS2704): 02-C13b 28-C18a 32-C10a 32-C10c 32-C10d 53-L18. [fixed a6685537f]
-- Object literal accessors with `abstract` on one of a pair: TS2676 on both (02-C13c, missing); a class expression with
-  modifiers in an expression (`@dec public class {}`, 80-R08: tsc parses them, TS1184). [open]
+- Object literal accessors with `abstract` on one of a pair: TS2676 on both (02-C13c). [fixed c90e4b077]
+- A class expression with modifiers in an expression (`@dec public class {}`, 80-R08: tsc parses them, TS1184). [open]
 - Decorators on the parameters of signatures (function and constructor types, interface members, `@await` in an
   async body): tsc's parseParameter takes them (TS1206 from the checker, TS1109 for `@await`); tttt failed the type
   and cascaded: 56-L14b 83-R20a (and 28-C16e 33-P6b). A type is outside the await and yield contexts (parse_type()), a

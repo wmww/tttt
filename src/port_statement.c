@@ -187,13 +187,22 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
     ) {
         my wrong_context = true;
         bool is_export = csview_equals(span_sv(my keyword_span), "export");
+        // (On the declaration's first token, tsc's grammarErrorOnFirstToken: a decorator's `@`)
+        Span at = my keyword_span;
+        VecExpr const* decorators = my rare ? &port_statement_rare(me)->decorators : nullptr;
+        if (decorators && vec_expr_size(decorators)) {
+            char const* c = span_start_ptr(expr_outer_span(vec_expr_at(decorators, 0)));
+            char const* file_start = cstr_str(&span_source(my keyword_span)->contents);
+            while (c > file_start && c[-1] != '@') c--;
+            if (c > file_start) at = span_make_in(my keyword_span, c - 1, c);
+        }
         // (A JavaScript file has no namespaces to mention)
         if (span_source(my keyword_span) && span_source(my keyword_span)->is_js) {
-            error_ctx_grammar_error_d(binder_errs(scope->binder), my keyword_span, is_export ? 1474 : 1473, is_export ?
+            error_ctx_grammar_error_d(binder_errs(scope->binder), at, is_export ? 1474 : 1473, is_export ?
                 "An export declaration can only be used at the top level of a module." :
                 "An import declaration can only be used at the top level of a module.");
         } else {
-            error_ctx_grammar_error_d(binder_errs(scope->binder), my keyword_span, is_export ? 1233 : 1232, is_export ?
+            error_ctx_grammar_error_d(binder_errs(scope->binder), at, is_export ? 1233 : 1232, is_export ?
                 "An export declaration can only be used at the top level of a namespace or module." :
                 "An import declaration can only be used at the top level of a namespace or module.");
         }

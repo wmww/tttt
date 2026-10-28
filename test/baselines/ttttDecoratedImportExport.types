@@ -1,0 +1,44 @@
+//// [test/cases/ttttDecoratedImportExport.ts] ////
+
+=== m.ts ===
+
+export {};
+=== a.ts ===
+declare function dec(...x: any[]): any;
+>dec : (...x: any[]) => any
+>x : any[]
+
+@dec import("./m");
+>dec : (...x: any[]) => any
+>("./m") : "./m"
+>"./m" : "./m"
+
+export @dec import("./m");
+>dec : (...x: any[]) => any
+>("./m") : "./m"
+>"./m" : "./m"
+
+function f() { @dec import("./m"); }
+>f : () => void
+>dec : (...x: any[]) => any
+>("./m") : "./m"
+>"./m" : "./m"
+
+=== b.ts ===
+declare const dec: any;
+>dec : any
+
+@dec export;
+>dec : any
+
+=== c.ts ===
+declare function dec2(...x: any[]): any;
+>dec2 : (...x: any[]) => any
+>x : any[]
+
+@dec2 import.meta;
+>dec2 : (...x: any[]) => any
+>.meta : any
+> : any
+>meta : any
+

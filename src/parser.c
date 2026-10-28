@@ -184,6 +184,10 @@ typedef struct ParserShared {
     bool single_less_than;
     // The parameters parse_function_args() parses next are a type member's (set and cleared around one call)
     bool type_member_args;
+    // The import or export declaration parse_import_export_statement() parses next follows decorators: it is one
+    // whatever follows the keyword (tsc's parseDeclarationWorker), `@dec import("./m")` has no clause and an expression
+    // for a module specifier, `@dec export;` misses its `{`
+    bool import_export_committed;
     // The `{` of the innermost Block (statement block, function body) being parsed, for TernaryType.enclosing_block
     const char* block_open;
     ModifiedParent statement_parent;
@@ -13355,6 +13359,8 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
     PortStatement statement = {0};
 
     bool is_export = false, no_clause = false;
+    bool committed = p.shared->import_export_committed;
+    p.shared->import_export_committed = false;
     if (hop_start_if_ends_on_word_break(&p, "import")) {
     } else if (hop_start_if_ends_on_word_break(&p, "export")) {
         is_export = true;
@@ -13563,6 +13569,15 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         // clause, the module specifier is an expression (tsc's parseModuleSpecifier)
         statement.main.tag = PORT_NOOP;
         no_clause = true;
+    } else if (committed && !is_export) {
+        // (After decorators, `import(` and `import.` too: see ParserShared.import_export_committed)
+        statement.main.tag = PORT_NOOP;
+        no_clause = true;
+    } else if (committed) {
+        // (`@dec export;`: tsc's parseNamedImportsOrExports expects the `{`)
+        expected_token_error(&p, "{");
+        statement.main.tag = PORT_NOOP;
+        statement.items = vec_port_item_init();
     } else {
         return parse_fail(&p);
     }
@@ -13598,7 +13613,8 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         bool complete = parsed || expect_expr(&p, expr_ctx_null, &path_expr);
         // (tsc's parseModuleSpecifier parses an expression: commas included, after a missing one too)
         if (!parsed) parse_comma_ops_right_side(&p, &path_expr);
-        if (path_expr.tag == EXPR_LITERAL && path_expr.literal.tag == VALUE_STRING) {
+        // (A parenthesized string is no string literal: `@dec import("./m")`, TS1141)
+        if (path_expr.tag == EXPR_LITERAL && path_expr.literal.tag == VALUE_STRING && !expr_is_perenthisized(&path_expr)) {
             port_statement_rare_mut(&statement)->target_path = ast_cstr_take(&path_expr.literal.string);
             statement.target_path_span = path_expr.inner_span;
         } else if (path_expr.tag == EXPR_IMPLICIT_ANY) {
@@ -13607,7 +13623,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
             if (path_expr.tag == EXPR_IDENTIFIER) port_statement_rare_mut(&statement)->missing_specifier = path_expr.inner_span;
             // The checker's (tsc's checkExternalImportOrExportDeclaration: any specifier that isn't missing, a
             // missing operand's binary expression `* }` included)
-            port_statement_rare_mut(&statement)->non_string_specifier = path_expr.inner_span;
+            port_statement_rare_mut(&statement)->non_string_specifier = expr_outer_span(&path_expr);
             if (path_expr.tag != EXPR_IDENTIFIER) {
                 port_statement_rare_mut(&statement)->bad_specifier = ast_new(Expr, path_expr);
                 path_expr = expr_implicit_any(span_null);
@@ -15755,7 +15771,9 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         };
     } else if ((!vec_spanned_modifier_is_empty(&modifiers.spanned) || !vec_expr_is_empty(&decorators)) &&
         (*p.pos == 'i' || *p.pos == 'e') &&
-        parse_import_export_statement(&p, ret)
+        (p.shared->import_export_committed = !vec_expr_is_empty(&decorators) &&
+            (starts_with_followed_by_word_break(&p, "import") || starts_with_followed_by_word_break(&p, "export")),
+         parse_import_export_statement(&p, ret))
     ) {
         // `export public import a = b`, `export export = x`, `declare import x from "m"`: tsc parses modifiers in front
         // of any declaration and complains in the checker
@@ -15784,16 +15802,21 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             }
         }
         p.shared->in_ambient = outer_ambient;
-        // (tsc's checkGrammarModifiers: decorators first, at their first token)
-        if (!vec_expr_is_empty(&decorators)) {
+        // (tsc's checkGrammarModifiers: decorators first, at their first token. Not in a block or function, where
+        // checkGrammarModuleElementContext's TS1232 comes first and ends the check)
+        bool misplaced = ret->tag == STATEMENT_IMPORT_EXPORT && p.shared->statement_parent == MODIFIED_IN_OTHER &&
+            !ret->import_export->main.is_require;
+        bool decorators_invalid = !vec_expr_is_empty(&decorators) && !misplaced;
+        if (decorators_invalid) {
             grammar_error(&p, span_make(p.shared->source, decorators_span.buf, decorators_span.buf + 1), 1206,
                 "Decorators are not valid here.");
-            if (ret->tag == STATEMENT_IMPORT_EXPORT) {
-                port_statement_rare_mut(ret->import_export)->decorators = decorators;
-                decorators = (VecExpr){0};
-            }
         }
-        if (vec_spanned_modifier_is_empty(&modifiers.spanned)) {
+        if (!vec_expr_is_empty(&decorators) && ret->tag == STATEMENT_IMPORT_EXPORT) {
+            port_statement_rare_mut(ret->import_export)->decorators = decorators;
+            decorators = (VecExpr){0};
+        }
+        // (TS1206 ends tsc's checkGrammarModifiers: no TS1191 for `export @dec import("./m")`)
+        if (vec_spanned_modifier_is_empty(&modifiers.spanned) || decorators_invalid) {
             modifier_list_drop(&modifiers);
             vec_expr_drop(&decorators);
             return parse_success(&p);

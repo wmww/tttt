@@ -1,0 +1,40 @@
+a.ts(2,1): error TS1206: Decorators are not valid here.
+a.ts(2,12): error TS1141: String literal expected.
+a.ts(3,8): error TS1206: Decorators are not valid here.
+a.ts(3,19): error TS1141: String literal expected.
+a.ts(4,16): error TS1232: An import declaration can only be used at the top level of a namespace or module.
+b.ts(2,12): error TS1005: '{' expected.
+c.ts(2,13): error TS1109: Expression expected.
+c.ts(2,13): error TS1141: String literal expected.
+
+
+==== m.ts (0 errors) ====
+    export {};
+==== a.ts (5 errors) ====
+    declare function dec(...x: any[]): any;
+    @dec import("./m");
+    ~
+!!! error TS1206: Decorators are not valid here.
+               ~~~~~~~
+!!! error TS1141: String literal expected.
+    export @dec import("./m");
+           ~
+!!! error TS1206: Decorators are not valid here.
+                      ~~~~~~~
+!!! error TS1141: String literal expected.
+    function f() { @dec import("./m"); }
+                   ~
+!!! error TS1232: An import declaration can only be used at the top level of a namespace or module.
+==== b.ts (1 errors) ====
+    declare const dec: any;
+    @dec export;
+               ~
+!!! error TS1005: '{' expected.
+==== c.ts (2 errors) ====
+    declare function dec2(...x: any[]): any;
+    @dec2 import.meta;
+                ~
+!!! error TS1109: Expression expected.
+                ~~~~~
+!!! error TS1141: String literal expected.
+    
