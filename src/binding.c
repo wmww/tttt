@@ -824,7 +824,7 @@ void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, Erro
             binding_type(&my binding), initialized_binding_value(me)
         );
     }
-    if (initialized_binding_rare(me)->require_port_count) module_ref_report(initialized_binding_rare(me)->require_ports[0].module_ref, names, errs);
+    if (initialized_binding_rare(me)->require_port_count) module_ref_report_require(initialized_binding_rare(me)->require_ports[0].module_ref, names, errs);
     InitializedBinding const* outer = scope_flow(names)->initializing;
     scope_flow(names)->initializing = me;
     binding_lookup_names(&my binding, names, errs);

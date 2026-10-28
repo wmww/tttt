@@ -342,6 +342,9 @@ bool computed_key_early_name(Expr const* key, cstr* out);
 
 // What there is to say about a module name that an import-like construct uses (TS2307 & co.)
 void module_ref_report(ModuleRef* ref, Scope* names, ErrorCtx* errs);
+// The same for a JavaScript `require("m")` call, which isn't an emittable import (tsgo's IsEmittableImport): no
+// TS5097/TS2846 for naming a .ts or .d.ts file
+void module_ref_report_require(ModuleRef* ref, Scope* names, ErrorCtx* errs);
 
 // CommonJS in JavaScript files: what the left operand of an `=` declares (tsc's getAssignmentDeclarationKind)
 typedef enum CommonJsTarget {

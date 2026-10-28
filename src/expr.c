@@ -471,19 +471,22 @@ static void check_type_only_value(IdentifierExpr const* me, Scope const* names, 
 }
 
 // What there is to say about a module name that an import-like construct uses
-void module_ref_report(ModuleRef* ref, Scope* names, ErrorCtx* errs) {
+static void module_ref_report_in(ModuleRef* ref, Scope* names, ErrorCtx* errs, bool emittable) {
     if (!ref) return;
     if (ref->file) {
-        module_ref_report_resolved(ref, false, false, errs);
+        module_ref_report_resolved(ref, false, !emittable, errs);
     } else if (!binder_module_of_ref(names->binder, ref)) {
         module_ref_report_unresolved(ref, errs);
     }
 }
 
+void module_ref_report(ModuleRef* ref, Scope* names, ErrorCtx* errs) { module_ref_report_in(ref, names, errs, true); }
+void module_ref_report_require(ModuleRef* ref, Scope* names, ErrorCtx* errs) { module_ref_report_in(ref, names, errs, false); }
+
 // A JavaScript `require("m")` call that isn't an alias (tsc's checkRequireCall -> resolveExternalModuleName): a file
 // that isn't a module is TS2306 too
 static void require_call_report(ModuleRef* ref, Scope* names, ErrorCtx* errs) {
-    module_ref_report(ref, names, errs);
+    module_ref_report_require(ref, names, errs);
     if (ref && ref->file && !binder_module_of_ref(names->binder, ref)) {
         cstr shown = module_ref_file_message_path(ref);
         error_ctx_error_d(errs, ref->span, 2306, "File '", shown, "' is not a module.");

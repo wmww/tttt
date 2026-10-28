@@ -520,7 +520,8 @@ static inline cstr module_ref_file_message_path(ModuleRef const* me) {
 
 // What there is to say about a module name that did find its file (TS5097)
 // type_only: of an `import type`/`export type` declaration or a side effect import (no TS2846 for naming a .d.ts)
-void module_ref_report_resolved(ModuleRef const* me, bool type_only, bool side_effect, struct ErrorCtx* errs);
+// not_emittable: a side effect import or a `require()` call (neither TS5097 nor TS2846: tsgo's IsEmittableImport)
+void module_ref_report_resolved(ModuleRef const* me, bool type_only, bool not_emittable, struct ErrorCtx* errs);
 // tsgo's isInternalDeclaration: a leading comment of the declaration starting at `at` says `@internal` (block comments
 // and whole-line `//` comments right before it)
 bool source_text_internal_before(struct SourceFile const* me, char const* at);

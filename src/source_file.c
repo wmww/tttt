@@ -563,9 +563,10 @@ void module_ref_report_resolved_import_type(ModuleRef const* me, ErrorCtx* errs)
     }
 }
 
-// side_effect: an import without a clause, `import "./a.ts"`: neither TS5097 nor TS2846 (tsgo's resolveExternalModule
-// reports both only inside an IsEmittableImport, which an import declaration is only with a clause)
-void module_ref_report_resolved(ModuleRef const* me, bool type_only, bool side_effect, ErrorCtx* errs) {
+// not_emittable: an import without a clause, `import "./a.ts"`, or a JavaScript `require("./a.ts")`: neither TS5097 nor
+// TS2846 (tsgo's resolveExternalModule reports both only inside an IsEmittableImport, which an import declaration is
+// only with a clause, and a call only when it's `import()`)
+void module_ref_report_resolved(ModuleRef const* me, bool type_only, bool not_emittable, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();
     report_types_package(me, errs);
     if (my failure == MODULE_REF_JSX_NOT_SET) {
@@ -575,7 +576,7 @@ void module_ref_report_resolved(ModuleRef const* me, bool type_only, bool side_e
     // A declaration file named with its extension (tsc's resolveExternalModule: resolvedUsingTsExtension and
     // isDeclarationFileName), outside a type-only import; the suggestion is getSuggestedImportSource's
     csview dts = declaration_extension(cstr_sv(&my path));
-    if (dts.size && !type_only && !side_effect && my file && my used_ts_extension) {
+    if (dts.size && !type_only && !not_emittable && my file && my used_ts_extension) {
         csview stem = csview_slice(cstr_sv(&my path), 0, cstr_size(&my path) - dts.size);
         bool esm = (options->module >= MODULE_KIND_ES2015 && options->module <= MODULE_KIND_ESNEXT) ||
             (span_source(my span) && span_source(my span)->is_esm);
@@ -592,7 +593,7 @@ void module_ref_report_resolved(ModuleRef const* me, bool type_only, bool side_e
         (span_source(my span) && span_source(my span)->is_declaration);
     module_ref_report_require_of_esm(me, my span, errs);
     // (Not for a type-only import or export, or an import type: tsc's resolveExternalModule)
-    if (my used_ts_extension && !allowed && !type_only && !side_effect && my file && !dts.size) {
+    if (my used_ts_extension && !allowed && !type_only && !not_emittable && my file && !dts.size) {
         isize dot = cstr_size(&my path);
         while (dot > 0 && cstr_str(&my path)[dot - 1] != '.') dot--;
         csview extension = csview_slice(cstr_sv(&my path), dot > 0 ? dot - 1 : 0, cstr_size(&my path));
