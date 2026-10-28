@@ -247,3 +247,8 @@ intersection's property symbol to bugs/type_core.md.
   the sampled source sweep; tsgo reports neither). No bugs entry names it; cor2 called it "written up as won't-fix" but
   nothing in bugs/ does. Reduce with `scripts/reduce.py --project thirdparty/sources/monkeytype/frontend --keep
   'SearchableAutoSetting.*TS2322' --tttt-has` and fix or write up. [open]
+
+- Harness: tttt's test harness doesn't report TS2554 for a call whose argument failed to parse (`f(else)`), where tsc's
+  harness does (bun3, 2026-10-30; its test ttttEscapedReservedWords avoids the shape). Probably the CLI's "no semantic
+  diagnostics after syntax errors in the same file" rule applied where tsc's harness checks anyway: compare with
+  `scripts/tscbaseline.sh` on a one-line probe and with the CLI (`projdiff.py`). [harness]
