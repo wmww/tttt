@@ -1,0 +1,63 @@
+//// [test/cases/ttttDecoratorsBeforeNonClass.ts] ////
+
+=== a.ts ===
+declare const dec: any;
+>dec : any
+
+class C { @dec; }
+>C : C
+>dec : any
+> : any
+
+class D { @dec }
+>D : D
+>dec : any
+> : any
+
+=== b.ts ===
+@dec public x;
+>dec : any
+>x : any
+
+=== c.ts ===
+@dec interface
+>dec : any
+
+I {}
+@dec interface = 1
+>dec : any
+>1 : 1
+
+=== d.ts ===
+@dec namespace class {}
+>dec : any
+
+=== e.ts ===
+@dec type
+>dec : any
+
+T = 1
+>T : 1
+
+=== f.ts ===
+@dec in class E {}
+>dec : any
+>E : E
+
+=== g.ts ===
+type A = 1;
+>A : 1
+
+export @dec type { A }
+>dec : any
+> : (Missing)
+>A : any
+
+=== h.ts ===
+@dec
+>dec : any
+
+await 1
+>await 1 : 1
+>1 : 1
+

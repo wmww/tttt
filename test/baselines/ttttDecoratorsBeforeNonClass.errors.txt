@@ -1,0 +1,65 @@
+a.ts(2,15): error TS1146: Declaration expected.
+a.ts(2,15): error TS7008: Member '(Missing)' implicitly has an 'any' type.
+a.ts(3,15): error TS1146: Declaration expected.
+a.ts(3,15): error TS7008: Member '(Missing)' implicitly has an 'any' type.
+b.ts(1,12): error TS1146: Declaration expected.
+b.ts(1,13): error TS2304: Cannot find name 'x'.
+c.ts(3,16): error TS1003: Identifier expected.
+d.ts(1,16): error TS1359: Identifier expected. 'class' is a reserved word that cannot be used here.
+e.ts(2,1): error TS1142: Line break not permitted here.
+f.ts(1,6): error TS1274: 'in' modifier can only appear on a type parameter of a class, interface or type alias
+g.ts(2,18): error TS1003: Identifier expected.
+g.ts(2,20): error TS7008: Member 'A' implicitly has an 'any' type.
+h.ts(1,5): error TS1146: Declaration expected.
+
+
+==== a.ts (4 errors) ====
+    declare const dec: any;
+    class C { @dec; }
+                  
+!!! error TS1146: Declaration expected.
+                  
+!!! error TS7008: Member '(Missing)' implicitly has an 'any' type.
+    class D { @dec }
+                  
+!!! error TS1146: Declaration expected.
+                  
+!!! error TS7008: Member '(Missing)' implicitly has an 'any' type.
+==== b.ts (2 errors) ====
+    @dec public x;
+               
+!!! error TS1146: Declaration expected.
+                ~
+!!! error TS2304: Cannot find name 'x'.
+==== c.ts (1 errors) ====
+    @dec interface
+    I {}
+    @dec interface = 1
+                   ~
+!!! error TS1003: Identifier expected.
+==== d.ts (1 errors) ====
+    @dec namespace class {}
+                   ~~~~~
+!!! error TS1359: Identifier expected. 'class' is a reserved word that cannot be used here.
+==== e.ts (1 errors) ====
+    @dec type
+    T = 1
+    ~
+!!! error TS1142: Line break not permitted here.
+==== f.ts (1 errors) ====
+    @dec in class E {}
+         ~~
+!!! error TS1274: 'in' modifier can only appear on a type parameter of a class, interface or type alias
+==== g.ts (2 errors) ====
+    type A = 1;
+    export @dec type { A }
+                     ~
+!!! error TS1003: Identifier expected.
+                       ~
+!!! error TS7008: Member 'A' implicitly has an 'any' type.
+==== h.ts (1 errors) ====
+    @dec
+        
+!!! error TS1146: Declaration expected.
+    await 1
+    

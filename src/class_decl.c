@@ -2027,12 +2027,14 @@ static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const*
         return;
     }
     if (item->field.has_explicit_type || !compiler_options()->no_implicit_any || !span_valid(name)) return;
+    // (A name recovery left missing, `@dec }`: declarationNameToString's "(Missing)")
+    csview shown = name.size ? span_sv(name) : c_sv("(Missing)");
     // (Typed by the accessors it joined: its own declaration's type is never asked for)
     if (item->field.joined_accessor) return;
     if (span_source(name) && span_source(name)->is_js && item->field.value.tag != EXPR_IMPLICIT_ANY && !item->field.js_assigned &&
         ty_is_empty_array_literal_type(current_checker, ty_expr_type(current_checker, &item->field.value))
     ) {
-        error_ctx_error_d(errs, name, 7008, "Member '", name, "' implicitly has an 'any[]' type.");
+        error_ctx_error_d(errs, name, 7008, "Member '", shown, "' implicitly has an 'any[]' type.");
         return;
     }
     // (In JavaScript a field without an initializer nothing assigns is any too; one `this.x = v` assigns has the
@@ -2046,7 +2048,7 @@ static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const*
         Ty const* value = ty_expr_type(current_checker, &item->field.value);
         if (!(value->xflags & TYX_CONTAINS_WIDENING) || binding_report_widening_errors_in_type(value, errs)) return;
         cstr type = ty_to_cstr(current_checker, ty_widened_nullable(current_checker, value));
-        error_ctx_error_d(errs, name, 7008, "Member '", name, "' implicitly has an '", type, "' type.");
+        error_ctx_error_d(errs, name, 7008, "Member '", shown, "' implicitly has an '", type, "' type.");
         cstr_drop(&type);
         return;
     }
@@ -2055,7 +2057,7 @@ static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const*
     // (`static prototype;` merges into the class's prototype property, whose type is the instance type: tsc's
     // getTypeOfPrototypeProperty. TS2699 says the rest)
     if (item->field.is_static && !item->field.computed_key && cstr_equals(&item->field.name_string, "prototype")) return;
-    error_ctx_error_d(errs, name, 7008, "Member '", name, "' implicitly has an 'any' type.");
+    error_ctx_error_d(errs, name, 7008, "Member '", shown, "' implicitly has an 'any' type.");
 }
 
 // tsc's resolveBaseTypesOfClass: a base constructor that is a class is referenced like a type (getTypeFromClassOrInterfaceReference),

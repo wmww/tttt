@@ -69,6 +69,13 @@ typedef struct ParserShared {
     // After modifiers `let` is a variable statement whatever follows (tsc's parseDeclarationWorker, reached without
     // isLetDeclaration's lookahead: `declare let` then a line break and `=` is an empty list)
     bool let_forced;
+    // After decorators the keyword decides the declaration, without the lookahead a statement takes (tsc's
+    // parseDeclarationWorker, reached from parseDeclaration on `@`): `@dec interface\nI {}` is an interface, `@dec
+    // namespace = 1` one missing its name (TS1003). Set by parse_decl_statement() for the declaration parser it tries
+    // next, which takes it (take_decl_committed())
+    bool decl_committed;
+    // parse_modifier_list_ex() after decorators: every modifier keyword is one (tsc's parseModifiersEx), `@dec in class`
+    bool modifiers_after_decorators;
     // What kind of function the parser is currently inside, decides if `await` and `yield` are operators
     bool in_async;
     bool in_generator;
@@ -881,6 +888,13 @@ static void jsdoc_error_s(Parser* me, Span span, unsigned ts_code, cstr message)
 
 static intptr_t error_mark(Parser const* me) {
     return vec_error_size(&my shared->errors);
+}
+
+// Whether the declaration parser called now was committed to by decorators (see ParserShared.decl_committed)
+static bool take_decl_committed(Parser* me) {
+    bool committed = my shared->decl_committed;
+    my shared->decl_committed = false;
+    return committed;
 }
 
 // A function's type parameters (`type_params`: of a declaration, not of a signature in a type) and return type in
@@ -2570,9 +2584,9 @@ static bool parse_modifier_list_ex(Parser* parent, bool is_member, bool permit_c
             mod.tag = MODIFIER_PUBLIC;
         } else if (is_member && span_equals(mod.span, "const") && (permit_const || starts_with_followed_by_word_break(&p, "enum"))) {
             mod.tag = MODIFIER_CONST;
-        } else if (is_member && span_equals(mod.span, "in")) {
+        } else if ((is_member || p.shared->modifiers_after_decorators) && span_equals(mod.span, "in")) {
             mod.tag = MODIFIER_IN; // (Only on a type parameter: TS1274)
-        } else if (is_member && span_equals(mod.span, "out")) {
+        } else if ((is_member || p.shared->modifiers_after_decorators) && span_equals(mod.span, "out")) {
             mod.tag = MODIFIER_OUT;
         } else {
             break;
@@ -6379,18 +6393,22 @@ static bool parse_type_decl(Parser* parent, bool after_declare, TypeDecl* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
+    // (After decorators tsc's parseTypeAliasDeclaration takes whatever follows: TS1142, a missing name)
+    bool decorated = take_decl_committed(&p);
     if (!hop_start_if_ends_on_word_break(&p, "type")) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
     if (p.whitespace == WHITESPACE_NEWLINE) {
-        if (!after_declare) return parse_fail(&p);
+        if (!after_declare && !decorated) return parse_fail(&p);
         parse_error(&p, span_from_token(&p), 1142, "Line break not permitted here.");
     }
 
     // (tsc's nextTokenIsIdentifierOnSameLine: `type void = I` is the expression statement `type`, then `void = I`)
     Span name;
-    if (!parse_identifier(&p, &name) || is_reserved_word(span_sv(name))) {
+    if (decorated && !tok_is_identifier(tok_peek(&p))) {
+        expect_non_reserved_identifier(&p, &name);
+    } else if (!parse_identifier(&p, &name) || is_reserved_word(span_sv(name))) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
@@ -6651,20 +6669,24 @@ static bool parse_interface_decl(Parser* parent, bool committed, InterfaceDecl* 
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
+    bool decorated = take_decl_committed(&p);
     if (!hop_start_if_ends_on_word_break(&p, "interface")) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
     // tsc's isStartOfDeclaration: `interface` followed by a name on the same line, else `interface` is an expression
-    // (`interface { }`: TS1438 from parseErrorForMissingSemicolonAfter, `interface & {}` an expression)
-    bool named = p.whitespace != WHITESPACE_NEWLINE && tok_is_identifier(tok_peek(&p));
-    if (!named && !committed) {
+    // (`interface { }`: TS1438 from parseErrorForMissingSemicolonAfter, `interface & {}` an expression). After
+    // decorators parseInterfaceDeclaration takes any name, reserved words TS1359
+    bool named = (decorated || p.whitespace != WHITESPACE_NEWLINE) && tok_is_identifier(tok_peek(&p));
+    if (!named && !committed && !decorated) {
         return parse_fail(&p);
     }
 
     u32 this_count = p.shared->this_count;
     Span name;
-    if (!named) {
+    if (!named && decorated) {
+        expect_non_reserved_identifier(&p, &name);
+    } else if (!named) {
         parse_error(&p, span_from_token_or_eof(&p), 1003, "Identifier expected.");
         // (tsc's missing identifier, at the token's full start: the binder declares it, `(Missing)`)
         name = span_make(p.shared->source, token_full_start(&p), token_full_start(&p));
@@ -8864,7 +8886,7 @@ static bool parse_expr_interface_member(Parser* parent, bool is_type, FunctionFl
     return parse_success(&p);
 }
 
-static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstract, ClassItem* ret);
+static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstract, bool decorated, ClassItem* ret);
 
 // In a type: `new` directly followed by a parameter or type parameter list
 static bool is_construct_signature_start(const char* pos) {
@@ -8992,7 +9014,7 @@ static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, Cla
     if (!is_type) {
         ignore parse_decorators(&p, &decorators);
     }
-    if (!parse_class_item_inner(&p, is_type, is_abstract, ret)) {
+    if (!parse_class_item_inner(&p, is_type, is_abstract, !vec_expr_is_empty(&decorators), ret)) {
         vec_expr_drop(&decorators);
         return parse_fail(&p);
     }
@@ -9002,7 +9024,7 @@ static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, Cla
     return parse_success(&p);
 }
 
-static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstract, ClassItem* ret) {
+static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstract, bool decorated, ClassItem* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
@@ -9065,11 +9087,11 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             // (tsc's missing node sits at the token's full start, before the trivia)
             name_span = span_make(p.shared->source, token_full_start(&p), token_full_start(&p));
             name_string = cstr_init();
-        } else if (!is_type && !is_getter && !is_setter && !vec_spanned_modifier_is_empty(&modifiers.spanned) &&
+        } else if (!is_type && !is_getter && !is_setter && (decorated || !vec_spanned_modifier_is_empty(&modifiers.spanned)) &&
             *p.pos != '[' && *p.pos != '(' && *p.pos != '<'
         ) {
-            // `public {}`: tsc's parseClassElement, a property whose name is missing after the modifiers (TS1146 where
-            // it would be, before the trivia)
+            // `public {}`, `@dec }`: tsc's parseClassElement, a property whose name is missing after the decorators and
+            // modifiers (TS1146 where it would be, before the trivia)
             Parser missing = parser(&p);
             unhop_trivia(&missing);
             parse_error(&missing, span_from_pos(&missing), 1146, "Declaration expected.");
@@ -14685,6 +14707,8 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
+    // (After decorators tsc's parseModuleDeclaration takes whatever follows: a name on the next line, a missing one)
+    bool decorated = take_decl_committed(&p);
     bool is_module_keyword = false;
     if (hop_start_if_ends_on_word_break(&p, "module")) {
         is_module_keyword = true;
@@ -14693,7 +14717,7 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
     }
     hop_whitespace(&p);
 
-    if (p.whitespace == WHITESPACE_NEWLINE) {
+    if (p.whitespace == WHITESPACE_NEWLINE && !decorated) {
         return parse_fail(&p);
     }
 
@@ -14701,7 +14725,11 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
 
     VecSpan names = vec_span_init();
     Span name;
-    if (parse_identifier(&p, &name)) {
+    if (decorated && *p.pos != '"' && *p.pos != '\'' && !tok_is_identifier_here(&p, tok_peek(&p))) {
+        // (tsc's parseIdentifier: TS1359 or TS1003, a missing name; the body's '{' expected is at the same token)
+        expect_non_reserved_identifier(&p, &name);
+        vec_span_push(&names, name);
+    } else if (parse_identifier(&p, &name)) {
         // (`await` in an async function or static block, `yield` in a generator: no identifier either, tsc's isIdentifier)
         bool contextual = (span_equals(name, "await") && (p.shared->in_async || p.shared->in_static_block)) ||
             (span_equals(name, "yield") && p.shared->in_generator);
@@ -14924,8 +14952,12 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         decorators_span = span_from(a);
     }
 
+    bool decorated = !vec_expr_is_empty(&decorators);
     ModifierList modifiers;
-    if (!parse_modifier_list(&p, false, &modifiers)) {
+    p.shared->modifiers_after_decorators = decorated;
+    bool has_modifiers = parse_modifier_list(&p, false, &modifiers);
+    p.shared->modifiers_after_decorators = false;
+    if (!has_modifiers) {
         vec_expr_drop(&decorators);
         return parse_fail(&p);
     }
@@ -14999,6 +15031,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         vec_expr_drop(&trailing);
         modifier_list_drop(&more);
     }
+    decorated = !vec_expr_is_empty(&decorators); // (Trailing ones too: `export @dec type { A }` is a type alias)
     const char* keyword = p.pos;
     DeclStatementProps decl_props = {
         .exported = modifiers.includes[MODIFIER_EXPORT_DEFAULT] ?
@@ -15071,8 +15104,8 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 .class = ast_new(ClassDecl, parsed.class),
             },
         };
-    } else if (parse_type_decl(&p, vec_spanned_modifier_size(&modifiers.spanned) &&
-        vec_spanned_modifier_back(&modifiers.spanned)->tag == MODIFIER_DECLARE, &parsed.type_decl)
+    } else if ((p.shared->decl_committed = decorated, parse_type_decl(&p, vec_spanned_modifier_size(&modifiers.spanned) &&
+        vec_spanned_modifier_back(&modifiers.spanned)->tag == MODIFIER_DECLARE, &parsed.type_decl))
     ) {
         modified.kind = MODIFIED_TYPE_ALIAS;
         parsed.type_decl.full_span = span_from(a);
@@ -15083,7 +15116,9 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 .type = ast_new(TypeDecl, parsed.type_decl),
             },
         };
-    } else if (parse_interface_decl(&p, decl_props.exported == DECL_EXPORTED_YES_DEFAULT, &parsed.interface_decl)) {
+    } else if ((p.shared->decl_committed = decorated,
+        parse_interface_decl(&p, decl_props.exported == DECL_EXPORTED_YES_DEFAULT, &parsed.interface_decl))
+    ) {
         modified.kind = MODIFIED_INTERFACE;
         parsed.interface_decl.full_span = span_from(a);
         *ret = (Statement){
@@ -15131,7 +15166,9 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             .tag = STATEMENT_EXPORT_DEFAULT_EXPR,
             .expr = parsed.expr,
         };
-    } else if (decl_props.exported != DECL_EXPORTED_YES_DEFAULT && parse_namespace(&p, &parsed.namespace_decl)) {
+    } else if (decl_props.exported != DECL_EXPORTED_YES_DEFAULT &&
+        (p.shared->decl_committed = decorated, parse_namespace(&p, &parsed.namespace_decl))
+    ) {
         modified.kind = MODIFIED_MODULE;
         parsed.namespace_decl.full_span = span_from(a);
         *ret = (Statement){
@@ -15195,6 +15232,22 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         }
         modifier_list_drop(&modifiers);
         vec_expr_drop(&decorators);
+        return parse_success(&p);
+    } else if (decorated && decl_props.exported != DECL_EXPORTED_YES_DEFAULT) {
+        // Decorators and modifiers before no declaration (tsc's parseDeclarationWorker: a MissingDeclaration, TS1146
+        // where its end is, before the trivia; parse_statement() keeps the decorators the same way)
+        p.shared->in_ambient = outer_ambient;
+        const char* end = span_end_ptr(expr_outer_span(&vec_expr_back(&decorators)[0]));
+        for_each (i, vec_spanned_modifier, &modifiers.spanned) {
+            if (span_end_ptr(i->span) > end) end = span_end_ptr(i->span);
+        }
+        modifier_list_drop(&modifiers);
+        p.pos = end;
+        p.whitespace = WHITESPACE_NONE;
+        p.whitespace_end = nullptr;
+        parse_error(&p, span_from_pos(&p), 1146, "Declaration expected.");
+        *ret = (Statement){ .tag = STATEMENT_EXPR, .expr = expr_implicit_any(span_from_pos(&p)) };
+        ret->expr.missing_decorators = ast_new(VecExpr, decorators);
         return parse_success(&p);
     } else {
         p.shared->in_ambient = outer_ambient;

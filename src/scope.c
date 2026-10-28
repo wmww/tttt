@@ -1052,7 +1052,9 @@ static void report_conflicts(
     if (!same_file && existing->flags & SYMBOL_NAMESPACE_MODULE && !existing->is_global_this) {
         // Across files symbols are merged by the checker in tsc, whose mergeSymbol says this into a namespace
         if (span_valid(name) && span_source(name) && !span_source(name)->is_stdlib) {
-            error_ctx_error_d(errs, name, 2649, "Cannot augment module '", existing->name,
+            // (A missing name is tsc's "__missing", shown as "(Missing)")
+            error_ctx_error_d(errs, name, 2649, "Cannot augment module '",
+                existing->name.size ? existing->name : c_sv("(Missing)"),
                 "' with value exports because it resolves to a non-module entity.");
         }
         return;
@@ -1345,7 +1347,8 @@ static void report_file_conflict(Binder* binder, PendingFileConflict const* conf
     if (target_flags & SYMBOL_NAMESPACE_MODULE) {
         Span at = source->decls[0].name;
         if (span_valid(at) && span_source(at) && !span_source(at)->is_stdlib) {
-            error_ctx_error_d(errs, at, 2649, "Cannot augment module '", target->name,
+            error_ctx_error_d(errs, at, 2649, "Cannot augment module '",
+                target->name.size ? target->name : c_sv("(Missing)"),
                 "' with value exports because it resolves to a non-module entity.");
         }
         return;

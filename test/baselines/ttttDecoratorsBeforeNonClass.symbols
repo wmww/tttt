@@ -1,0 +1,63 @@
+//// [test/cases/ttttDecoratorsBeforeNonClass.ts] ////
+
+=== a.ts ===
+declare const dec: any;
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+
+class C { @dec; }
+>C : Symbol(C, Decl(a.ts, 0, 23))
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+> : Symbol(C[(Missing)], Decl(a.ts, 1, 9))
+
+class D { @dec }
+>D : Symbol(D, Decl(a.ts, 1, 17))
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+> : Symbol(D[(Missing)], Decl(a.ts, 2, 9))
+
+=== b.ts ===
+@dec public x;
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+
+=== c.ts ===
+@dec interface
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+
+I {}
+>I : Symbol(I, Decl(c.ts, 0, 0))
+
+@dec interface = 1
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+> : Symbol((Missing), Decl(c.ts, 1, 4), Decl(d.ts, 0, 0))
+
+=== d.ts ===
+@dec namespace class {}
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+> : Symbol((Missing), Decl(c.ts, 1, 4), Decl(d.ts, 0, 0))
+
+=== e.ts ===
+@dec type
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+
+T = 1
+>T : Symbol(T, Decl(e.ts, 0, 0))
+
+=== f.ts ===
+@dec in class E {}
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+>E : Symbol(E, Decl(f.ts, 0, 0))
+
+=== g.ts ===
+type A = 1;
+>A : Symbol(A, Decl(g.ts, 0, 0))
+
+export @dec type { A }
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+> : Symbol((Missing), Decl(g.ts, 0, 11))
+>A : Symbol(A, Decl(g.ts, 1, 18))
+
+=== h.ts ===
+@dec
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+
+await 1
+
