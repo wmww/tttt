@@ -306,6 +306,15 @@ The laptop (measurements.md "The 12-core box at 15f15fdeb") had vscode's flag wa
   at K8, its costliest files slower by more (Schema.ts 95 -> 124 ms CPU, stream.ts 72 -> 95): the per-read premium
   of "The premium, attributed" on the files the span waits for, plus the shard-lock waits above at K16.
 
+**For the laptop** (confirms the fix where the loss was measured): `B=$(scripts/abbuild.sh 8c9afd512 --fast)`,
+`A=$(scripts/abbuild.sh ee2e5289f --fast)`, then for MODE in nothing and `--threads 24 --checkers 24`:
+`TTTT_SHARED_GRAPH=1 scripts/abbench.sh -n 5 $B $A vscode effect zod drizzle $DOKPLOY -- $MODE` and once plain
+(`scripts/abbench.sh -n 5 $B $B vscode effect -- $MODE`: the plain path is unchanged). Expected: vscode's flag wall
+from +10..12% to about its user loss (+4..5%). Whether shard locks still matter at 24/24: `strace -f -c -e
+trace=mprotect` (flag ~40 calls, as plain), and the timeline of a release build, `LD_PRELOAD=timeline.so
+TIMELINE_ALL=1 ... --time` then `timeline.py OUT --phase typecheck --blocked`: lock waits (`__lll_lock_wait <
+shared_*_insert`) above ~2% of the samples there make the lock-free insert worth building.
+
 ## The ceiling, measured (2026-10-22)
 The most a shared graph could take off a checker: the share of its check instructions that only repeat what one
 checker would do once, (W(K) - W(1)) / W(K), with W the instructions inside check_share (callgrind per thread,
