@@ -93,14 +93,14 @@ static void* arena_alloc_chunk(Arena* me, size_t size) {
         // arena never reaches are never touched
         size_t mapped = sizeof(ArenaChunk) + cap;
         // Transparent huge pages as huge_pages_take() says (prelude.h): a few hundred MB of types page faulted 4 KB at a
-        // time is a tenth of a big project's time. Not an arena's first chunk unless it's a checker's
-        // (Arena.checker: nest's 253 export star walks spent 12 ms of its link zeroing huge pages). Such a chunk is
+        // time is a tenth of a big project's time. Not an arena's first chunk unless it says it grows big
+        // (Arena.huge_first: nest's 253 export star walks spent 12 ms of its link zeroing huge pages). Such a chunk is
         // whole 2 MB pages, 2 MB aligned, its header included: an unaligned 8 MB + header got huge pages only on the 3 aligned blocks
         // inside it, its ends (~2 MB a chunk) zeroed and mapped 4 KB at a time (drizzle: 40k of the checkers' 47k faults)
         size_t const huge_page = (size_t)2 << 20;
         size_t huge_cap = size > ARENA_CHUNK_SIZE - sizeof(ArenaChunk) ? size : ARENA_CHUNK_SIZE - sizeof(ArenaChunk);
         size_t huge_mapped = (sizeof(ArenaChunk) + huge_cap + huge_page - 1) & ~(huge_page - 1);
-        int huge = my head || my checker ? huge_pages_take(huge_mapped) : HUGE_NO;
+        int huge = my head || my huge_first ? huge_pages_take(huge_mapped) : HUGE_NO;
         void* memory;
         if (huge != HUGE_NO) {
             mapped = huge_mapped;
@@ -117,7 +117,7 @@ static void* arena_alloc_chunk(Arena* me, size_t size) {
             memory = mmap(nullptr, mapped, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
             panic_if(memory == MAP_FAILED, "out of memory");
         }
-        vma_name(memory, mapped, my checker ? "checker" : "arena");
+        vma_name(memory, mapped, my huge_first ? "checker" : "arena");
         ArenaChunk* chunk = memory;
         chunk->huge = huge != HUGE_NO;
         chunk->cap = cap;
@@ -212,7 +212,7 @@ void arena_drop(Arena* me) {
         munmap(i, i->mapped);
         i = next;
     }
-    *me = (Arena){ .ast_backed = ast_backed, .checker = my checker };
+    *me = (Arena){ .ast_backed = ast_backed, .huge_first = my huge_first };
 }
 
 // Intern table
@@ -1059,7 +1059,7 @@ static Checker* checker_make(Program* program, bool join_graph) {
     my binder = program_get_binder(program);
     my errs = program_errors(program);
     my atom_table = program_atoms(program);
-    my arena.checker = true;
+    my arena.huge_first = true; // (Types: tens to hundreds of MB)
     {
         typeof(my atoms)* a = &my atoms;
         static struct { size_t offset; char const* name; } const known[] = {

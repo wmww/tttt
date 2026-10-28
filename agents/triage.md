@@ -105,7 +105,7 @@ intersection's property symbol to bugs/type_core.md.
 
 - Per-checker memory is the fault/RSS lever on small projects (2026-10-23, fe5; `--time` prints faults per phase):
   react peak RSS ~300 MB at the defaults against ~169 at --threads 1 (nest ~195 / ~136), typecheck 16.8k minor faults
-  against 7.7k, libs 2.9k against 0.2k. Suspects: checker arenas starting on huge pages (Arena.checker, 2 MB+
+  against 7.7k, libs 2.9k against 0.2k. Suspects: checker arenas starting on huge pages (Arena.huge_first, 2 MB+
   populated per checker for 1-4 MB used), 8 sets of intern tables, per-thread malloc heaps. For a checker worker. [note]
 
 - The indexed-access recursion identity rule (tsc's getRecursionIdentityTarget: an indexed access takes its object
