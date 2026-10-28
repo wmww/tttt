@@ -1,0 +1,69 @@
+ttttAwaitInParameterInitializer.ts(3,18): error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+ttttAwaitInParameterInitializer.ts(3,18): error TS2524: 'await' expressions cannot be used in a parameter initializer.
+ttttAwaitInParameterInitializer.ts(4,17): error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+ttttAwaitInParameterInitializer.ts(4,17): error TS2524: 'await' expressions cannot be used in a parameter initializer.
+ttttAwaitInParameterInitializer.ts(5,23): error TS2524: 'await' expressions cannot be used in a parameter initializer.
+ttttAwaitInParameterInitializer.ts(6,17): error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+ttttAwaitInParameterInitializer.ts(6,17): error TS2524: 'await' expressions cannot be used in a parameter initializer.
+ttttAwaitInParameterInitializer.ts(7,23): error TS2524: 'await' expressions cannot be used in a parameter initializer.
+ttttAwaitInParameterInitializer.ts(8,38): error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+ttttAwaitInParameterInitializer.ts(8,38): error TS2524: 'await' expressions cannot be used in a parameter initializer.
+ttttAwaitInParameterInitializer.ts(8,68): error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+ttttAwaitInParameterInitializer.ts(8,68): error TS2524: 'await' expressions cannot be used in a parameter initializer.
+ttttAwaitInParameterInitializer.ts(9,17): error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+ttttAwaitInParameterInitializer.ts(9,17): error TS2524: 'await' expressions cannot be used in a parameter initializer.
+ttttAwaitInParameterInitializer.ts(9,45): error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+ttttAwaitInParameterInitializer.ts(9,45): error TS2524: 'await' expressions cannot be used in a parameter initializer.
+
+
+==== ttttAwaitInParameterInitializer.ts (16 errors) ====
+    // An `await` in a parameter initializer is TS2524, and TS1308 too where the parameters aren't an await context
+    // (tsc's checkGrammarAwaitOrAwaitUsing: a function's parameters are in its own await context, not the outer one)
+    function r2(a = [await 1]) {}
+                     ~~~~~
+!!! error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+!!! related TS1356 ttttAwaitInParameterInitializer.ts:3:10: Did you mean to mark this function as 'async'?
+                     ~~~~~~~
+!!! error TS2524: 'await' expressions cannot be used in a parameter initializer.
+    function r3(a = await 1) {}
+                    ~~~~~
+!!! error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+!!! related TS1356 ttttAwaitInParameterInitializer.ts:4:10: Did you mean to mark this function as 'async'?
+                    ~~~~~~~
+!!! error TS2524: 'await' expressions cannot be used in a parameter initializer.
+    async function r4(a = await 1) {}
+                          ~~~~~~~
+!!! error TS2524: 'await' expressions cannot be used in a parameter initializer.
+    const f1 = (a = await 1) => 0;
+                    ~~~~~
+!!! error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+!!! related TS1356 ttttAwaitInParameterInitializer.ts:6:12: Did you mean to mark this function as 'async'?
+                    ~~~~~~~
+!!! error TS2524: 'await' expressions cannot be used in a parameter initializer.
+    const f2 = async (a = await 1) => 0;
+                          ~~~~~~~
+!!! error TS2524: 'await' expressions cannot be used in a parameter initializer.
+    async function g() { const f3 = (a = await 1) => 0; function h(b = await 2) {} }
+                                         ~~~~~
+!!! error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+!!! related TS1356 ttttAwaitInParameterInitializer.ts:8:33: Did you mean to mark this function as 'async'?
+                                         ~~~~~~~
+!!! error TS2524: 'await' expressions cannot be used in a parameter initializer.
+                                                                       ~~~~~
+!!! error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+!!! related TS1356 ttttAwaitInParameterInitializer.ts:8:62: Did you mean to mark this function as 'async'?
+                                                                       ~~~~~~~
+!!! error TS2524: 'await' expressions cannot be used in a parameter initializer.
+    class C { m(a = await 1) {} constructor(b = await 1) {} }
+                    ~~~~~
+!!! error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+!!! related TS1356 ttttAwaitInParameterInitializer.ts:9:11: Did you mean to mark this function as 'async'?
+                    ~~~~~~~
+!!! error TS2524: 'await' expressions cannot be used in a parameter initializer.
+                                                ~~~~~
+!!! error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+                                                ~~~~~~~
+!!! error TS2524: 'await' expressions cannot be used in a parameter initializer.
+    
+    export {};
+    

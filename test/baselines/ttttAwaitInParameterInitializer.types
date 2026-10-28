@@ -1,0 +1,65 @@
+//// [test/cases/ttttAwaitInParameterInitializer.ts] ////
+
+=== ttttAwaitInParameterInitializer.ts ===
+// An `await` in a parameter initializer is TS2524, and TS1308 too where the parameters aren't an await context
+// (tsc's checkGrammarAwaitOrAwaitUsing: a function's parameters are in its own await context, not the outer one)
+function r2(a = [await 1]) {}
+>r2 : (a?: number[]) => void
+>a : number[]
+>[await 1] : number[]
+>await 1 : 1
+>1 : 1
+
+function r3(a = await 1) {}
+>r3 : (a?: number) => void
+>a : number
+>await 1 : 1
+>1 : 1
+
+async function r4(a = await 1) {}
+>r4 : (a?: number) => Promise<void>
+>a : number
+>await 1 : 1
+>1 : 1
+
+const f1 = (a = await 1) => 0;
+>f1 : (a?: number) => number
+>(a = await 1) => 0 : (a?: number) => number
+>a : number
+>await 1 : 1
+>1 : 1
+>0 : 0
+
+const f2 = async (a = await 1) => 0;
+>f2 : (a?: number) => Promise<number>
+>async (a = await 1) => 0 : (a?: number) => Promise<number>
+>a : number
+>await 1 : 1
+>1 : 1
+>0 : 0
+
+async function g() { const f3 = (a = await 1) => 0; function h(b = await 2) {} }
+>g : () => Promise<void>
+>f3 : (a?: number) => number
+>(a = await 1) => 0 : (a?: number) => number
+>a : number
+>await 1 : 1
+>1 : 1
+>0 : 0
+>h : (b?: number) => void
+>b : number
+>await 2 : 2
+>2 : 2
+
+class C { m(a = await 1) {} constructor(b = await 1) {} }
+>C : C
+>m : (a?: number) => void
+>a : number
+>await 1 : 1
+>1 : 1
+>b : number
+>await 1 : 1
+>1 : 1
+
+export {};
+

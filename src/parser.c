@@ -10667,7 +10667,7 @@ static inline bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* r
     hop_whitespace(&p);
 
     bool in_parameters = p.shared->in_parameters;
-    AwaitPlace await_place = op == UNARY_OP_AWAIT && !in_parameters ? parser_await_place(&p) : AWAIT_ALLOWED;
+    AwaitPlace await_place = op == UNARY_OP_AWAIT ? parser_await_place(&p) : AWAIT_ALLOWED;
 
     Expr expr;
     ctx.min_precedence = unary_op_get_precedence(op);

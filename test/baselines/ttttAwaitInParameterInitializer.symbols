@@ -1,0 +1,40 @@
+//// [test/cases/ttttAwaitInParameterInitializer.ts] ////
+
+=== ttttAwaitInParameterInitializer.ts ===
+// An `await` in a parameter initializer is TS2524, and TS1308 too where the parameters aren't an await context
+// (tsc's checkGrammarAwaitOrAwaitUsing: a function's parameters are in its own await context, not the outer one)
+function r2(a = [await 1]) {}
+>r2 : Symbol(r2, Decl(ttttAwaitInParameterInitializer.ts, 0, 0))
+>a : Symbol(a, Decl(ttttAwaitInParameterInitializer.ts, 2, 12))
+
+function r3(a = await 1) {}
+>r3 : Symbol(r3, Decl(ttttAwaitInParameterInitializer.ts, 2, 29))
+>a : Symbol(a, Decl(ttttAwaitInParameterInitializer.ts, 3, 12))
+
+async function r4(a = await 1) {}
+>r4 : Symbol(r4, Decl(ttttAwaitInParameterInitializer.ts, 3, 27))
+>a : Symbol(a, Decl(ttttAwaitInParameterInitializer.ts, 4, 18))
+
+const f1 = (a = await 1) => 0;
+>f1 : Symbol(f1, Decl(ttttAwaitInParameterInitializer.ts, 5, 5))
+>a : Symbol(a, Decl(ttttAwaitInParameterInitializer.ts, 5, 12))
+
+const f2 = async (a = await 1) => 0;
+>f2 : Symbol(f2, Decl(ttttAwaitInParameterInitializer.ts, 6, 5))
+>a : Symbol(a, Decl(ttttAwaitInParameterInitializer.ts, 6, 18))
+
+async function g() { const f3 = (a = await 1) => 0; function h(b = await 2) {} }
+>g : Symbol(g, Decl(ttttAwaitInParameterInitializer.ts, 6, 36))
+>f3 : Symbol(f3, Decl(ttttAwaitInParameterInitializer.ts, 7, 26))
+>a : Symbol(a, Decl(ttttAwaitInParameterInitializer.ts, 7, 33))
+>h : Symbol(h, Decl(ttttAwaitInParameterInitializer.ts, 7, 51))
+>b : Symbol(b, Decl(ttttAwaitInParameterInitializer.ts, 7, 63))
+
+class C { m(a = await 1) {} constructor(b = await 1) {} }
+>C : Symbol(C, Decl(ttttAwaitInParameterInitializer.ts, 7, 80))
+>m : Symbol(C.m, Decl(ttttAwaitInParameterInitializer.ts, 8, 9))
+>a : Symbol(a, Decl(ttttAwaitInParameterInitializer.ts, 8, 12))
+>b : Symbol(b, Decl(ttttAwaitInParameterInitializer.ts, 8, 40))
+
+export {};
+
