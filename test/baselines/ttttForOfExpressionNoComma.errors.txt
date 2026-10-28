@@ -1,0 +1,50 @@
+ttttForOfExpressionNoComma.ts(5,18): error TS2695: Left side of comma operator is unused and has no side effects.
+ttttForOfExpressionNoComma.ts(5,18): error TS1005: ')' expected.
+ttttForOfExpressionNoComma.ts(5,21): error TS1005: ';' expected.
+ttttForOfExpressionNoComma.ts(6,17): error TS2695: Left side of comma operator is unused and has no side effects.
+ttttForOfExpressionNoComma.ts(7,18): error TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+ttttForOfExpressionNoComma.ts(7,20): error TS1136: Property assignment expected.
+ttttForOfExpressionNoComma.ts(7,23): error TS2695: Left side of comma operator is unused and has no side effects.
+ttttForOfExpressionNoComma.ts(7,23): error TS1005: ')' expected.
+ttttForOfExpressionNoComma.ts(7,25): error TS2304: Cannot find name 'intermediate'.
+ttttForOfExpressionNoComma.ts(7,37): error TS1005: ';' expected.
+ttttForOfExpressionNoComma.ts(7,47): error TS1128: Declaration or statement expected.
+ttttForOfExpressionNoComma.ts(7,48): error TS1128: Declaration or statement expected.
+ttttForOfExpressionNoComma.ts(7,49): error TS1128: Declaration or statement expected.
+
+
+==== ttttForOfExpressionNoComma.ts (13 errors) ====
+    // A for-of statement's expression is an assignment expression, a for-in's may be a comma expression (tsc's
+    // parseForOrForInOrForOfStatement): `for (x of a, b)` is ')' expected at the `,`, the rest a statement (mutation seed
+    // 20261106, controlFlowNoCircularity: `[{ -1], intermediate: ...]` once a property was dropped)
+    declare var a: any, b: any;
+    for (const p of a, b) {}
+                     
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+                     ~
+!!! error TS1005: ')' expected.
+                        ~
+!!! error TS1005: ';' expected.
+    for (const p in a, b) {}
+                    ~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+    for (const p of [{ -1], intermediate: [-1, 0] }]) {}
+                     ~
+!!! error TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+                       ~
+!!! error TS1136: Property assignment expected.
+                          
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+                          ~
+!!! error TS1005: ')' expected.
+                            ~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'intermediate'.
+                                        ~
+!!! error TS1005: ';' expected.
+                                                  ~
+!!! error TS1128: Declaration or statement expected.
+                                                   ~
+!!! error TS1128: Declaration or statement expected.
+                                                    ~
+!!! error TS1128: Declaration or statement expected.
+    

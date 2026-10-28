@@ -15000,7 +15000,9 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
 
         hop_whitespace(&p);
 
-        if (expect_expr(&p, expr_ctx_null, &right_expr)) {
+        // (A for-in's expression may be a comma expression, a for-of's is an assignment expression: tsc's
+        // parseForOrForInOrForOfStatement, `for (x of a, b)` is ')' expected at the `,`)
+        if (expect_expr(&p, expr_ctx_null, &right_expr) && keyword_is_in) {
             parse_comma_ops_right_side(&p, &right_expr);
         }
         hop_whitespace(&p);
