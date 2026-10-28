@@ -4741,6 +4741,78 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
     return c;
 }
 
+// A `{@link name}` (`@linkcode`, `@linkplain`) at `c` (a `{`) in a JSDoc's text: its name's parse errors (tsc's
+// parseJSDocLink, parseJSDocLinkName: `Map.` misses a name, `Map#delete` names a member with a reserved word, TS1359,
+// `Map#}` has an invalid character). Returns where the link's text ends (its `}`, the line's end), null if `c` starts
+// no link. ASCII names only
+static const char* jsdoc_parse_link(Parser* parent, const char* c, const char* end) {
+    SourceFile const* source = parent->shared->source;
+    if (c + 1 >= end || c[1] != '@') return nullptr;
+    // (The JSDoc scanner's identifiers take `-` too: `{@link-x}` is no link)
+    const char* word = c + 2;
+    const char* word_end = word;
+    while (word_end < end && (is_identifier_char(*word_end) || *word_end == '-')) word_end++;
+    csview kind = csview_from_range(word, word_end);
+    if (!csview_equals(kind, "link") && !csview_equals(kind, "linkcode") && !csview_equals(kind, "linkplain")) return nullptr;
+    bool report = source->is_js;
+    const char* p = word_end;
+    while (p < end && (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r')) p++;
+    if (p < end && is_identifier_start_char(*p)) {
+        // The first name is the JSDoc scanner's token, the rest the ordinary scanner's (whitespace skipped)
+        while (p < end && (is_identifier_char(*p) || *p == '-')) p++;
+        for (;;) {
+            const char* t = p;
+            while (t < end && (*t == ' ' || *t == '\t' || *t == '\n' || *t == '\r')) t++;
+            if (t >= end || *t != '.') break;
+            t++;
+            while (t < end && (*t == ' ' || *t == '\t' || *t == '\n' || *t == '\r')) t++;
+            p = t;
+            if (t < end && *t == '#') break; // (A private name after the dot: a missing name, no error)
+            if (t < end && is_identifier_start_char(*t)) {
+                while (p < end && is_identifier_char(*p)) p++;
+            } else {
+                if (report) {
+                    const char* token_end = t < end ? t + 1 : t;
+                    jsdoc_error(parent, span_make(source, t, token_end), 1003, "Identifier expected.");
+                }
+                break;
+            }
+        }
+        for (;;) {
+            const char* t = p;
+            while (t < end && (*t == ' ' || *t == '\t' || *t == '\n' || *t == '\r')) t++;
+            if (t >= end || *t != '#') break;
+            // (`#` not before a name is an invalid character, the ordinary scanner's private identifier all the same)
+            if (report && !(t + 1 < end && is_identifier_start_char(t[1]))) {
+                jsdoc_error(parent, span_make(source, t, t + 1), 1127, "Invalid character.");
+            }
+            // After the `#`, the JSDoc scanner's token, which parseIdentifier wants a (non-reserved) identifier of
+            const char* name = t + 1;
+            const char* name_end = name;
+            if (name < end && is_identifier_start_char(*name)) {
+                while (name_end < end && (is_identifier_char(*name_end) || *name_end == '-')) name_end++;
+            }
+            csview text = csview_from_range(name, name_end);
+            if (name_end > name && !is_reserved_word(text)) {
+                p = name_end;
+                continue;
+            }
+            if (report) {
+                if (name_end > name) {
+                    jsdoc_error(parent, span_make(source, name, name_end), 1359, "Identifier expected. '", text,
+                        "' is a reserved word that cannot be used here.");
+                } else {
+                    jsdoc_error(parent, span_make(source, name, name < end ? name + 1 : name), 1003, "Identifier expected.");
+                }
+            }
+            p = name;
+            break;
+        }
+    }
+    while (p < end && *p != '}' && *p != '\n') p++;
+    return p;
+}
+
 // The tags of the comment `range` (tsc's parseJSDocCommentWorker: a tag starts at an `@` at the start of a line, after
 // whitespace and at most one `*`, or after whitespace and before something else anywhere; not in backticks of a tag's
 // comment)
@@ -4851,7 +4923,9 @@ static void parse_jsdoc_comment(Parser* parent, JsDocRange range, VecJsDocTag* t
                 backtick_run++;
             }
             line_start = false;
-            c++;
+            // (Not in backticks: tsc's comment text token runs past a `{` there, ScanJSDocCommentTextToken)
+            const char* link_end = ch == '{' && !fenced && !in_backticks ? jsdoc_parse_link(parent, c, end) : nullptr;
+            c = link_end ? link_end : c + 1;
         }
     }
 }

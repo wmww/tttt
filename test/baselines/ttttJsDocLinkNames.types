@@ -1,0 +1,35 @@
+//// [test/cases/ttttJsDocLinkNames.ts] ////
+
+=== a.js ===
+/** Removes it, like {@link Map#delete}. See {@link Promise#catch} and {@link Map#get}. */
+export const q1 = 2;
+>q1 : 2
+>2 : 2
+
+/** {@link Map.} */
+export const q2 = 2;
+>q2 : 2
+>2 : 2
+
+/** {@link Map#} */
+export const q3 = 2;
+>q3 : 2
+>2 : 2
+
+/** @param {number} x {@linkcode Set#delete} {@linkplain Array#with} */
+export function q4(x) { return x; }
+>q4 : (x: number) => number
+>x : number
+>x : number
+
+/** {@link-x Map#delete} {@link Map.prototype.get} `{@link Map#default}` */
+export const q5 = 2;
+>q5 : 2
+>2 : 2
+
+=== b.ts ===
+/** {@link Map#delete} {@link Map.} */
+export const t1 = 2;
+>t1 : 2
+>2 : 2
+
