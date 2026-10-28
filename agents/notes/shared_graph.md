@@ -58,6 +58,9 @@ with and without the shared graph".
 - With the flag at K12: 20/20 run tables on drizzle, zod, effect, excalidraw, nest; 300 loaded drizzle runs identical;
   effect ~1% of loaded runs differ; TSan clean on 14 corpora; kdiff 8 / 3814 against plain's 3; K1 cost +4%
   instructions; work K12/K1 drizzle 1.305, zod 1.285, effect 1.134.
+- **Residues today: agents/bugs/shared_graph.md** (2026-10-29: auth-api's private-name race, the missing one-checker
+  rerun and the TSan groups fixed; drizzle's C is the first-touch stamps, effect and folo's renderer open), gated by
+  `scripts/sgcheck.py`. The rest of this bullet is the 2026-10-22 state.
 - **Open residues** (the release criterion wanted them closed and plain/flagged oracles identical): **C**, conditional
   and alias instances published as identities whatever their taint while carrying resolved state (mikro-orm x3, the
   drizzle seeds' TS2322 at singlestore-core/query-builders/query.ts(139,3)); proposed fix: the instance object an
@@ -177,5 +180,6 @@ time (vscode 43 CPU s vs 14 single): sharing costs it too, it just has more core
 ## Tools left behind
 `TTTT_GRAPH_STATS=1`, `TTTT_GRAPH_WORK=1` (cycles per word computation by outcome), `TTTT_GRAPH_LEAD=1` /
 `TTTT_GRAPH_NO_LEAD=1`, `TTTT_GRAPH_SHARE_RELATIONS=0`, `TTTT_GRAPH_BUDGET_MB` (graph-wide recycle, default 800),
-`TTTT_DEBUG_PUBLISH` (debug build: a publication referencing a private range aborts), `scripts/sharedgraph/` (20-run
+`TTTT_DEBUG_PUBLISH` (debug build: a publication referencing a private range aborts), `scripts/sgcheck.py` (the gate:
+flagged against plain K1 at K 1/4/8/16 with two deals), `scripts/sharedgraph/` (20-run
 tables, seeds, fingerprint-at-publish, TSan, the recheck), `scripts/taintstats.sh`, `scripts/kdiff.py` with the flag.

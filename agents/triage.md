@@ -116,8 +116,6 @@ intersection's property symbol to bugs/type_core.md.
   (ConfigurationNumericConstraints, NonNullable) before re-landing; the probe where it changed 0 -> 2 errors is in
   cor4's notes and commit d8a78552b's message. [note]
 
-- **--shared-graph: a TSan group in ty_reduced_slow()** (sg2, 2026-10-22): `*intern_slot(me, &my links, {KEY_REDUCED_UNION, ret->id}) = ret` (checker.c) races with another worker's intern_get() of that key (excalidraw T4, flag + content order). A write of a slot that may be another worker's published block; flag-only, uninvestigated. [open]
-- **--shared-graph's drizzle residue C is back at ~35% of loaded K12 runs** (sg2): 5f2cd6996 20/20, first exposed by d42a3c0e0 (a parser inlining change: timing only); gone under TTTT_NESTING_ORDER=content (40/40). agents/notes/sharing_design.md §4. [open]
 
 - Laptop item: nest's libs-phase sys time with the 4 KB-page AST slab (wt-fe6's f4c2d3d25, `TTTT_AST_SMALL_KB`). The
   worker measured `--time`'s load+parse libs sys *down* (13.5 -> 8.7 ms, huge pages forced on); the merger measured it
