@@ -5683,10 +5683,17 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
             // An instantiated property asked again while instantiated is instantiated again (tsc's
             // getTypeOfInstantiatedSymbol has no guard): `{ "true": Foo<T, Foo<T, B>> }[T]` recurses until the
             // instantiation depth (TS2589), not a circularity
+            // (Remembered for the rest of the outer one: tsc's nested call set links.resolvedType, which the requests
+            // after it read until the outer one overwrites it. `a = [o.b, o.c]; b = o.a; c = o.a` reached through
+            // `D["a"]` is circular once, through b, not again through c)
             if (prop->target && !prop->mapped && prop_reentry_depth < 200) {
+                u64 key[2] = { KEY_PROP_REENTERED_TYPE, (u64)(uintptr_t)prop };
+                Ty const* known = intern_get(&my links, key, 2);
+                if (known) return known;
                 prop_reentry_depth++;
                 Ty const* again = instantiated_prop_type(me, prop);
                 prop_reentry_depth--;
+                *intern_slot(me, &my links, key, 2) = again;
                 return again;
             }
             // A symbol's property in flight only below a call's barrier is its symbol's type again (tsc's property is

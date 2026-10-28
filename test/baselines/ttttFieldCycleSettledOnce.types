@@ -1,0 +1,73 @@
+//// [test/cases/ttttFieldCycleSettledOnce.ts] ////
+
+=== ttttFieldCycleSettledOnce.ts ===
+// A class field's own type is asked before its initializer is checked (tsc's checkVariableLikeDeclaration), and an
+// instantiated property re-entered while its instantiation is in flight keeps the nested result for the rest of it
+// (getTypeOfInstantiatedSymbol caches it): `a = [o.b, o.c]` with `b = o.a` and `c = o.a` is circular once, through b,
+// so TS7022 on a and b, not c (bun 99-V4 checkClassLikeDeclaration__01/03/04)
+declare const other: C;
+>other : C
+
+class C {
+>C : C
+
+  a = [other.b, other.c];
+>a : any
+>[other.b, other.c] : any[]
+>other.b : any
+>other : C
+>b : any
+>other.c : any
+>other : C
+>c : any
+
+  b = other.a;
+>b : any
+>other.a : any
+>other : C
+>a : any
+
+  c = other.a;
+>c : any
+>other.a : any
+>other : C
+>a : any
+}
+interface Holder<T> {}
+class Base {
+>Base : Base
+
+  b: unknown = 0;
+>b : unknown
+>0 : 0
+}
+declare const another: D;
+>another : D
+
+class D extends Base implements Holder<D["a"]> {
+>D : D
+>Base : Base
+
+  a = [another.b, another.c];
+>a : any
+>[another.b, another.c] : any[]
+>another.b : any
+>another : D
+>b : any
+>another.c : any
+>another : D
+>c : any
+
+  b = another.a;
+>b : any
+>another.a : any
+>another : D
+>a : any
+
+  c = another.a;
+>c : any
+>another.a : any
+>another : D
+>a : any
+}
+

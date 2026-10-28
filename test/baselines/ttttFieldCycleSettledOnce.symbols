@@ -1,0 +1,77 @@
+//// [test/cases/ttttFieldCycleSettledOnce.ts] ////
+
+=== ttttFieldCycleSettledOnce.ts ===
+// A class field's own type is asked before its initializer is checked (tsc's checkVariableLikeDeclaration), and an
+// instantiated property re-entered while its instantiation is in flight keeps the nested result for the rest of it
+// (getTypeOfInstantiatedSymbol caches it): `a = [o.b, o.c]` with `b = o.a` and `c = o.a` is circular once, through b,
+// so TS7022 on a and b, not c (bun 99-V4 checkClassLikeDeclaration__01/03/04)
+declare const other: C;
+>other : Symbol(other, Decl(ttttFieldCycleSettledOnce.ts, 4, 13))
+>C : Symbol(C, Decl(ttttFieldCycleSettledOnce.ts, 4, 23))
+
+class C {
+>C : Symbol(C, Decl(ttttFieldCycleSettledOnce.ts, 4, 23))
+
+  a = [other.b, other.c];
+>a : Symbol(C.a, Decl(ttttFieldCycleSettledOnce.ts, 5, 9))
+>other.b : Symbol(C.b, Decl(ttttFieldCycleSettledOnce.ts, 6, 25))
+>other : Symbol(other, Decl(ttttFieldCycleSettledOnce.ts, 4, 13))
+>b : Symbol(C.b, Decl(ttttFieldCycleSettledOnce.ts, 6, 25))
+>other.c : Symbol(C.c, Decl(ttttFieldCycleSettledOnce.ts, 7, 14))
+>other : Symbol(other, Decl(ttttFieldCycleSettledOnce.ts, 4, 13))
+>c : Symbol(C.c, Decl(ttttFieldCycleSettledOnce.ts, 7, 14))
+
+  b = other.a;
+>b : Symbol(C.b, Decl(ttttFieldCycleSettledOnce.ts, 6, 25))
+>other.a : Symbol(C.a, Decl(ttttFieldCycleSettledOnce.ts, 5, 9))
+>other : Symbol(other, Decl(ttttFieldCycleSettledOnce.ts, 4, 13))
+>a : Symbol(C.a, Decl(ttttFieldCycleSettledOnce.ts, 5, 9))
+
+  c = other.a;
+>c : Symbol(C.c, Decl(ttttFieldCycleSettledOnce.ts, 7, 14))
+>other.a : Symbol(C.a, Decl(ttttFieldCycleSettledOnce.ts, 5, 9))
+>other : Symbol(other, Decl(ttttFieldCycleSettledOnce.ts, 4, 13))
+>a : Symbol(C.a, Decl(ttttFieldCycleSettledOnce.ts, 5, 9))
+}
+interface Holder<T> {}
+>Holder : Symbol(Holder, Decl(ttttFieldCycleSettledOnce.ts, 9, 1))
+>T : Symbol(T, Decl(ttttFieldCycleSettledOnce.ts, 10, 17))
+
+class Base {
+>Base : Symbol(Base, Decl(ttttFieldCycleSettledOnce.ts, 10, 22))
+
+  b: unknown = 0;
+>b : Symbol(Base.b, Decl(ttttFieldCycleSettledOnce.ts, 11, 12))
+}
+declare const another: D;
+>another : Symbol(another, Decl(ttttFieldCycleSettledOnce.ts, 14, 13))
+>D : Symbol(D, Decl(ttttFieldCycleSettledOnce.ts, 14, 25))
+
+class D extends Base implements Holder<D["a"]> {
+>D : Symbol(D, Decl(ttttFieldCycleSettledOnce.ts, 14, 25))
+>Base : Symbol(Base, Decl(ttttFieldCycleSettledOnce.ts, 10, 22))
+>Holder : Symbol(Holder, Decl(ttttFieldCycleSettledOnce.ts, 9, 1))
+>D : Symbol(D, Decl(ttttFieldCycleSettledOnce.ts, 14, 25))
+
+  a = [another.b, another.c];
+>a : Symbol(D.a, Decl(ttttFieldCycleSettledOnce.ts, 15, 48))
+>another.b : Symbol(D.b, Decl(ttttFieldCycleSettledOnce.ts, 16, 29))
+>another : Symbol(another, Decl(ttttFieldCycleSettledOnce.ts, 14, 13))
+>b : Symbol(D.b, Decl(ttttFieldCycleSettledOnce.ts, 16, 29))
+>another.c : Symbol(D.c, Decl(ttttFieldCycleSettledOnce.ts, 17, 16))
+>another : Symbol(another, Decl(ttttFieldCycleSettledOnce.ts, 14, 13))
+>c : Symbol(D.c, Decl(ttttFieldCycleSettledOnce.ts, 17, 16))
+
+  b = another.a;
+>b : Symbol(D.b, Decl(ttttFieldCycleSettledOnce.ts, 16, 29))
+>another.a : Symbol(D.a, Decl(ttttFieldCycleSettledOnce.ts, 15, 48))
+>another : Symbol(another, Decl(ttttFieldCycleSettledOnce.ts, 14, 13))
+>a : Symbol(D.a, Decl(ttttFieldCycleSettledOnce.ts, 15, 48))
+
+  c = another.a;
+>c : Symbol(D.c, Decl(ttttFieldCycleSettledOnce.ts, 17, 16))
+>another.a : Symbol(D.a, Decl(ttttFieldCycleSettledOnce.ts, 15, 48))
+>another : Symbol(another, Decl(ttttFieldCycleSettledOnce.ts, 14, 13))
+>a : Symbol(D.a, Decl(ttttFieldCycleSettledOnce.ts, 15, 48))
+}
+

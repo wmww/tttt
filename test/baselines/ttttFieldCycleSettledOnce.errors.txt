@@ -1,0 +1,52 @@
+ttttFieldCycleSettledOnce.ts(7,3): error TS7022: 'a' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+ttttFieldCycleSettledOnce.ts(7,14): error TS2729: Property 'b' is used before its initialization.
+ttttFieldCycleSettledOnce.ts(7,23): error TS2729: Property 'c' is used before its initialization.
+ttttFieldCycleSettledOnce.ts(8,3): error TS7022: 'b' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+ttttFieldCycleSettledOnce.ts(17,3): error TS7022: 'a' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+ttttFieldCycleSettledOnce.ts(17,16): error TS2729: Property 'b' is used before its initialization.
+ttttFieldCycleSettledOnce.ts(17,27): error TS2729: Property 'c' is used before its initialization.
+ttttFieldCycleSettledOnce.ts(18,3): error TS7022: 'b' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+
+
+==== ttttFieldCycleSettledOnce.ts (8 errors) ====
+    // A class field's own type is asked before its initializer is checked (tsc's checkVariableLikeDeclaration), and an
+    // instantiated property re-entered while its instantiation is in flight keeps the nested result for the rest of it
+    // (getTypeOfInstantiatedSymbol caches it): `a = [o.b, o.c]` with `b = o.a` and `c = o.a` is circular once, through b,
+    // so TS7022 on a and b, not c (bun 99-V4 checkClassLikeDeclaration__01/03/04)
+    declare const other: C;
+    class C {
+      a = [other.b, other.c];
+      ~
+!!! error TS7022: 'a' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                 ~
+!!! error TS2729: Property 'b' is used before its initialization.
+!!! related TS2728 ttttFieldCycleSettledOnce.ts:8:3: 'b' is declared here.
+                          ~
+!!! error TS2729: Property 'c' is used before its initialization.
+!!! related TS2728 ttttFieldCycleSettledOnce.ts:9:3: 'c' is declared here.
+      b = other.a;
+      ~
+!!! error TS7022: 'b' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+      c = other.a;
+    }
+    interface Holder<T> {}
+    class Base {
+      b: unknown = 0;
+    }
+    declare const another: D;
+    class D extends Base implements Holder<D["a"]> {
+      a = [another.b, another.c];
+      ~
+!!! error TS7022: 'a' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                   ~
+!!! error TS2729: Property 'b' is used before its initialization.
+!!! related TS2728 ttttFieldCycleSettledOnce.ts:18:3: 'b' is declared here.
+                              ~
+!!! error TS2729: Property 'c' is used before its initialization.
+!!! related TS2728 ttttFieldCycleSettledOnce.ts:19:3: 'c' is declared here.
+      b = another.a;
+      ~
+!!! error TS7022: 'b' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+      c = another.a;
+    }
+    

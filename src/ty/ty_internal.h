@@ -55,6 +55,9 @@ enum {
     KEY_MAPPED_FILTERING, // declared mapped type's key parameter -> 1 remapping, 2 filtering, by relation (members.c)
     KEY_PROP_MAPPED_TYPE, // Prop with .mapped -> the mapped type it's a property of (members.c)
     KEY_PROP_WRITE_TYPE, // Prop -> prop_write_type() of it, null for none; present once known (members.c)
+    // Instantiated Prop -> its type as instantiated again while its own instantiation was in flight (prop_type_slow():
+    // tsc's getTypeOfInstantiatedSymbol caches that nested result, which later requests during the outer one see)
+    KEY_PROP_REENTERED_TYPE,
     KEY_UNION_ACCESS, // (union type id, index type id, flags) -> access() of it at depth 0, a sentinel for none (access.c)
     KEY_CONSTRAINT_ACCESS, // (object id, union index id, include_undefined) -> indexed_or_null_flagged()'s access (relate.c)
     KEY_BASE_CONSTRAINT, // type (node_links) -> base_constraint() of it, the type itself for none, sentinels while computed and for circular (relate.c)

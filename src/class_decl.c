@@ -2609,6 +2609,10 @@ void class_decl_typecheck_members(ClassDecl* me, ErrorCtx* errs) {
                     error_ctx_grammar_error_d(errs, i->field.name_span, 1331,
                         "A property of a class whose type is a 'unique symbol' type must be both 'static' and 'readonly'.");
                 }
+                // Its symbol's type before its initializer is checked (tsc's checkVariableLikeDeclaration): a cycle
+                // through the initializer starts at the field, whose instantiations are then settled before its
+                // siblings ask again (`a = [o.b, o.c]; b = o.a; c = o.a`: TS7022 on a and b, not c)
+                if (!i->field.has_explicit_type && !i->field.computed_key) class_item_get_type(i);
                 if (i->field.has_explicit_type && i->field.value.tag != EXPR_IMPLICIT_ANY) {
                     // The initializer has the annotation as its contextual type (like a variable's)
                     // (An optional field's declared type has undefined: tsc's getTypeOfSymbol, addOptionality)
