@@ -17031,7 +17031,17 @@ const baselines = {
         types: true,
     },
     'ttttUnusedUnderParseError': {
-        errors: false,
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUnusedUnderParseErrorImports': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUnusedUnderParseErrorShapes': {
+        errors: true,
         symbols: true,
         types: true,
     },
