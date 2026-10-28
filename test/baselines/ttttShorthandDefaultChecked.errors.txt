@@ -1,0 +1,41 @@
+ttttShorthandDefaultChecked.ts(6,1): error TS2353: Object literal may only specify known properties, and 'type' does not exist in type 'Query'.
+ttttShorthandDefaultChecked.ts(6,1): error TS18004: No value exists in scope for the shorthand property 'type'. Either declare one or provide an initializer.
+ttttShorthandDefaultChecked.ts(7,5): error TS1005: ',' expected.
+ttttShorthandDefaultChecked.ts(7,20): error TS2304: Cannot find name 'BaseItem'.
+ttttShorthandDefaultChecked.ts(7,31): error TS2363: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+ttttShorthandDefaultChecked.ts(8,22): error TS2693: 'string' only refers to a type, but is being used as a value here.
+ttttShorthandDefaultChecked.ts(8,31): error TS18050: The value 'null' cannot be used here.
+ttttShorthandDefaultChecked.ts(11,21): error TS2363: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+
+
+==== ttttShorthandDefaultChecked.ts (8 errors) ====
+    // A shorthand property's initializer outside a destructuring target (TS1312) is checked like any expression: tsc's
+    // checkShorthandPropertyAssignment. Here recovery makes `ExtendedItem = BaseItem & {...}` one: TS2363 and TS18050
+    type Query = { primary: { x: number } };
+    const response: Query = {
+        primary: { x: 1 },
+    type
+    ~~~~
+!!! error TS2353: Object literal may only specify known properties, and 'type' does not exist in type 'Query'.
+    ~~~~
+!!! error TS18004: No value exists in scope for the shorthand property 'type'. Either declare one or provide an initializer.
+        ExtendedItem = BaseItem & {
+        ~~~~~~~~~~~~
+!!! error TS1005: ',' expected.
+                       ~~~~~~~~
+!!! error TS2304: Cannot find name 'BaseItem'.
+                                  ~
+            description: string | null
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                         ~~~~~~
+!!! error TS2693: 'string' only refers to a type, but is being used as a value here.
+                                  ~~~~
+!!! error TS18050: The value 'null' cannot be used here.
+        },
+    ~~~~~
+!!! error TS2363: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+    };
+    const o = { n = 1 - "s" };
+                        ~~~
+!!! error TS2363: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+    

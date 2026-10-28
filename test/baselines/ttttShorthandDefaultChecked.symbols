@@ -1,0 +1,33 @@
+//// [test/cases/ttttShorthandDefaultChecked.ts] ////
+
+=== ttttShorthandDefaultChecked.ts ===
+// A shorthand property's initializer outside a destructuring target (TS1312) is checked like any expression: tsc's
+// checkShorthandPropertyAssignment. Here recovery makes `ExtendedItem = BaseItem & {...}` one: TS2363 and TS18050
+type Query = { primary: { x: number } };
+>Query : Symbol(Query, Decl(ttttShorthandDefaultChecked.ts, 0, 0))
+>primary : Symbol(primary, Decl(ttttShorthandDefaultChecked.ts, 2, 14))
+>x : Symbol(x, Decl(ttttShorthandDefaultChecked.ts, 2, 25))
+
+const response: Query = {
+>response : Symbol(response, Decl(ttttShorthandDefaultChecked.ts, 3, 5))
+>Query : Symbol(Query, Decl(ttttShorthandDefaultChecked.ts, 0, 0))
+
+    primary: { x: 1 },
+>primary : Symbol(primary, Decl(ttttShorthandDefaultChecked.ts, 3, 25))
+>x : Symbol(x, Decl(ttttShorthandDefaultChecked.ts, 4, 14))
+
+type
+>type : Symbol(type, Decl(ttttShorthandDefaultChecked.ts, 4, 22))
+
+    ExtendedItem = BaseItem & {
+>ExtendedItem : Symbol(ExtendedItem, Decl(ttttShorthandDefaultChecked.ts, 5, 4))
+
+        description: string | null
+>description : Symbol(description, Decl(ttttShorthandDefaultChecked.ts, 6, 31))
+
+    },
+};
+const o = { n = 1 - "s" };
+>o : Symbol(o, Decl(ttttShorthandDefaultChecked.ts, 10, 5))
+>n : Symbol(n, Decl(ttttShorthandDefaultChecked.ts, 10, 11))
+

@@ -4964,6 +4964,9 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 if (object_item_rare(i)->shorthand_default && !(i->value.tag == EXPR_IDENTIFIER && i->value.identifier.assignment_target)) {
                     error_ctx_grammar_error_d(errs, object_item_rare(i)->shorthand_equals, 1312,
                         "Did you mean to use a ':'? An '=' can only follow a property name when the containing object literal is part of a destructuring pattern.");
+                    // (The initializer is checked like any expression: tsc's checkShorthandPropertyAssignment,
+                    // `{ x = a & {} }` is TS2363)
+                    expr_typecheck(object_item_rare(i)->shorthand_default, errs);
                 }
                 if (object_item_is_private_name(i) && my assignment_pattern && i->tag == OBJECT_ITEM_PROPERTY) {
                     // (tsgo's checkObjectLiteralDestructuringPropertyAssignment; checkGrammarObjectLiteralExpression
