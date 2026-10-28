@@ -3912,10 +3912,19 @@ typedef struct ChunkedWalk {
 
 // A top-level (or ambient namespace) statement of a declaration file that is a chunk's: a declaration that makes no
 // flow node of its container and declares nothing outside the file's own tables
+static char const* walk_refusal; // (TTTT_WALK_CENSUS)
+static char const* statement_tag_name(int tag) {
+    static char const* const names[] = { "noop", "directive", "block", "if", "for", "for-each", "switch", "try", "labeled",
+        "with", "break", "continue", "expr", "export-default-expr", "return", "throw", "import-export", "variable",
+        "function", "enum", "class", "type", "interface", "namespace" };
+    return tag >= 0 && tag < (int)c_arraylen(names) ? names[tag] : "?";
+}
 static bool statement_walks_alone(Statement const* statement) {
+    walk_refusal = statement_tag_name(statement->tag);
     if (statement_declares_name(statement->tag) &&
         (statement->decl.props.invalid_decorators || statement->decl.props.exported == DECL_EXPORTED_YES_DEFAULT)
     ) {
+        walk_refusal = "export default / decorators";
         return false;
     }
     switch (statement->tag) {
@@ -3926,7 +3935,7 @@ static bool statement_walks_alone(Statement const* statement) {
             return true;
         case STATEMENT_DECL_VARIABLE:
             for_each (i, vec_initialized_binding, &statement->decl.variable.initializers) {
-                if (i->value) return false;
+                if (i->value) { walk_refusal = "variable with initializer"; return false; }
             }
             return true;
         case STATEMENT_DECL_FUNCTION:
@@ -3939,6 +3948,7 @@ static bool statement_walks_alone(Statement const* statement) {
             // `export type { X }`s (@scalar/workspace-store's openapi-document.d.ts: 6.2 MB, a 56 ms walk on one
             // thread, the walk's critical path on nitro)
             PortStatement const* port = statement->import_export;
+            walk_refusal = port->rare ? "import-export rare" : port->attributes ? "import-export attributes" : port->in_namespace ? "import-export in namespace" : "import-export other";
             return !port->rare && !port->attributes && !port->wrong_context && !port->jsdoc && !port->in_namespace;
         }
         case STATEMENT_DECL_NAMESPACE: {
@@ -3947,6 +3957,8 @@ static bool statement_walks_alone(Statement const* statement) {
                 namespace->is_shorthand || namespace->is_augmentation || namespace->labeled || namespace->misplaced ||
                 namespace->jsdoc || namespace->attributes
             ) {
+                walk_refusal = namespace->is_global ? "namespace global" : namespace->is_ambient_module ? "namespace ambient module" :
+                    namespace->is_augmentation ? "namespace augmentation" : namespace->is_shorthand ? "namespace shorthand" : "namespace other";
                 return false;
             }
             for_each (i, vec_statement, &namespace->contents.statements) {
@@ -3974,10 +3986,38 @@ static ChunkedWalk* chunked_walk_new(SourceFile* source) {
     u32 count = (u32)vec_statement_size(statements);
     isize size = cstr_size(&source->contents);
     u32 chunk_bytes = debug_env.walk_chunk_bytes ? debug_env.walk_chunk_bytes : 128 * 1024;
-    if (debug_env.walk_chunk_bytes ? count < 2 : size < 256 * 1024 || count < 64) return nullptr;
-    for_each (i, vec_statement, statements) {
-        if (!statement_walks_alone(i)) return nullptr;
+    if (debug_env.walk_chunk_bytes ? count < 2 : size < 256 * 1024 || count < 64) {
+        if (getenv("TTTT_WALK_CENSUS") && size >= 256 * 1024) {
+            // (What the statements are: one big namespace?)
+            isize biggest = 0;
+            Statement const* big = nullptr;
+            for_each (i, vec_statement, statements) {
+                isize start = statement_offset(source, i->span, false), end = statement_offset(source, i->span, true);
+                if (start >= 0 && end - start > biggest) { biggest = end - start; big = i; }
+            }
+            eprintln("walk census: ", (i64)size, " refused few-statements:", (i64)count, ":biggest-", big ? statement_tag_name(big->tag) : "?", ":",
+                (i64)(biggest * 100 / (size ? size : 1)), "% ", source->canonical_path);
+        }
+        return nullptr;
     }
+    for_each (i, vec_statement, statements) {
+        if (!statement_walks_alone(i)) {
+            if (getenv("TTTT_WALK_CENSUS")) {
+                cstr reasons = cstr_null;
+                for_each (j, vec_statement, statements) {
+                    if (!statement_walks_alone(j) && !csview_contains(cstr_sv(&reasons), walk_refusal)) {
+                        if (cstr_size(&reasons)) cstr_append(&reasons, ",");
+                        cstr_append(&reasons, walk_refusal);
+                    }
+                }
+                for (char* c = (char*)cstr_str(&reasons); *c; c++) if (*c == ' ') *c = '_';
+                eprintln("walk census: ", (i64)size, " refused ", reasons, " ", source->canonical_path);
+                cstr_drop(&reasons);
+            }
+            return nullptr;
+        }
+    }
+    if (getenv("TTTT_WALK_CENSUS")) eprintln("walk census: ", (i64)size, " chunked - ", source->canonical_path);
     ChunkedWalk* ret = c_new(ChunkedWalk, { .file = source });
     ret->chunks = c_new_n(WalkChunk, count);
     // (Chunks of at least chunk_bytes from the start of their first statement to the end of their last, where the
