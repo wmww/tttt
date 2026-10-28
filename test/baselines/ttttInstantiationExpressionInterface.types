@@ -1,0 +1,48 @@
+//// [test/cases/ttttInstantiationExpressionInterface.ts] ////
+
+=== ttttInstantiationExpressionInterface.ts ===
+// An instantiation expression is an ExpressionWithTypeArguments to tsc: a value use of an interface there is TS2689
+// (getEntityNameForExtendingInterface), not TS2693 (mutation testing: reverseMappedUnionInference, awaitedTypeJQuery)
+interface I<T> { a: T }
+>a : T
+
+const x = I<string>;
+>x : any
+>I<string> : any
+>I : any
+
+namespace N { export interface J<T> { a: T } }
+>a : T
+
+const y = N.J<string>;
+>y : any
+>N.J<string> : any
+>N.J : any
+>N : any
+>J : any
+
+const z = I;
+>z : any
+>I : any
+
+const w = I<string>();
+>w : any
+>I<string>() : any
+>I : any
+
+const v = new I<string>();
+>v : any
+>new I<string>() : any
+>I : any
+
+declare const o: { I: number };
+>o : { I: number; }
+>I : number
+
+const u = o.I<string>;
+>u : number
+>o.I<string> : number
+>o.I : number
+>o : { I: number; }
+>I : number
+

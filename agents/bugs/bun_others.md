@@ -488,11 +488,20 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   not found, it is TS18004 (tsc's getCannotFindNameDiagnosticForName); and an any or unknown default removes
   undefined from the property's type like any other (tsgo's getTypeFacts gives them UnknownFacts, no IsUndefined: no
   TS2322 for `x: number`). Mutation testing seed 20261031, noUnusedLocals_writeOnly; ttttShorthandDefaultNotFound.
-  [fixed bun8-5] Seed 20261031's `--syntax` leftovers, unlooked at: inferFromAnnotatedReturn1 (missing TS2365 on a
+  [fixed fba66e41d] Seed 20261031's `--syntax` leftovers, unlooked at: inferFromAnnotatedReturn1 (missing TS2365 on a
   broken `{...} > class {...}`), noImplicitSymbolToString (missing TS2469 `+=` on symbol after `let str =
-  undefined`), awaitedTypeJQuery (TS2689 'Cannot extend an interface' where tttt says TS2693 in a parse-broken
-  heritage clause), contextualTypesNegatedTypeLikeConstraintInGenericMappedType2 (missing TS2842/TS7031 for a
+  undefined`), contextualTypesNegatedTypeLikeConstraintInGenericMappedType2 (missing TS2842/TS7031 for a
   `(Missing)` binding element). [open]
+- An instantiation expression is an ExpressionWithTypeArguments to tsc: a value use of an interface (or `N.J`) there
+  is TS2689 'Cannot extend an interface' (getEntityNameForExtendingInterface), not TS2693/TS2708: `const x = I<string>`
+  (mutation testing seeds 20261031 and 20261101: awaitedTypeJQuery, reverseMappedUnionInference, through a
+  parse-broken type parameter list; ttttInstantiationExpressionInterface). [fixed bun8-6]
+- Mutation testing seed 20261101 (2000 mutants, 3 errors-component differences; `--syntax` 14, 3 render) leaves:
+  infiniteConstraints2 (missing TS2589), noInferCommonPropertyCheck1 (TS2345 text), arrayFrom again (above), and on
+  `--syntax` es6ModuleInternalNamedImports2 (+TS2303), contextualParamTypeVsNestedReturnTypeInference4 (TS1359 ->
+  TS1003), declarationEmitOptionalMethod (+TS1200), conditionalPromptInference (-TS2300),
+  contextualParamTypeVsNestedReturnTypeInference1 (-TS1390), destructuringObjectBindingPatternAndAssignment4 (TS1005
+  text x2). Unlooked at. [open]
 - Class member TS1171/TS1166/TS1168 after the member's own modifier or signature grammar errors (tsgo's
   checkGrammarModifiers || checkGrammarProperty/Method/Accessor chains: TS1028, TS1029, TS1030, TS1031, TS1244...,
   then a method's or accessor's parameter list, `use strict` parameters, accessor and generator checks): the parser

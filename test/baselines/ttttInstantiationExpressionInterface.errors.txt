@@ -1,0 +1,33 @@
+ttttInstantiationExpressionInterface.ts(4,11): error TS2689: Cannot extend an interface 'I'. Did you mean 'implements'?
+ttttInstantiationExpressionInterface.ts(6,11): error TS2689: Cannot extend an interface 'N.J'. Did you mean 'implements'?
+ttttInstantiationExpressionInterface.ts(7,11): error TS2693: 'I' only refers to a type, but is being used as a value here.
+ttttInstantiationExpressionInterface.ts(8,11): error TS2693: 'I' only refers to a type, but is being used as a value here.
+ttttInstantiationExpressionInterface.ts(9,15): error TS2693: 'I' only refers to a type, but is being used as a value here.
+ttttInstantiationExpressionInterface.ts(11,15): error TS2635: Type 'number' has no signatures for which the type argument list is applicable.
+
+
+==== ttttInstantiationExpressionInterface.ts (6 errors) ====
+    // An instantiation expression is an ExpressionWithTypeArguments to tsc: a value use of an interface there is TS2689
+    // (getEntityNameForExtendingInterface), not TS2693 (mutation testing: reverseMappedUnionInference, awaitedTypeJQuery)
+    interface I<T> { a: T }
+    const x = I<string>;
+              ~
+!!! error TS2689: Cannot extend an interface 'I'. Did you mean 'implements'?
+    namespace N { export interface J<T> { a: T } }
+    const y = N.J<string>;
+              ~
+!!! error TS2689: Cannot extend an interface 'N.J'. Did you mean 'implements'?
+    const z = I;
+              ~
+!!! error TS2693: 'I' only refers to a type, but is being used as a value here.
+    const w = I<string>();
+              ~
+!!! error TS2693: 'I' only refers to a type, but is being used as a value here.
+    const v = new I<string>();
+                  ~
+!!! error TS2693: 'I' only refers to a type, but is being used as a value here.
+    declare const o: { I: number };
+    const u = o.I<string>;
+                  ~~~~~~
+!!! error TS2635: Type 'number' has no signatures for which the type argument list is applicable.
+    

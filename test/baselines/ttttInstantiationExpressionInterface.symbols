@@ -1,0 +1,44 @@
+//// [test/cases/ttttInstantiationExpressionInterface.ts] ////
+
+=== ttttInstantiationExpressionInterface.ts ===
+// An instantiation expression is an ExpressionWithTypeArguments to tsc: a value use of an interface there is TS2689
+// (getEntityNameForExtendingInterface), not TS2693 (mutation testing: reverseMappedUnionInference, awaitedTypeJQuery)
+interface I<T> { a: T }
+>I : Symbol(I, Decl(ttttInstantiationExpressionInterface.ts, 0, 0))
+>T : Symbol(T, Decl(ttttInstantiationExpressionInterface.ts, 2, 12))
+>a : Symbol(I.a, Decl(ttttInstantiationExpressionInterface.ts, 2, 16))
+>T : Symbol(T, Decl(ttttInstantiationExpressionInterface.ts, 2, 12))
+
+const x = I<string>;
+>x : Symbol(x, Decl(ttttInstantiationExpressionInterface.ts, 3, 5))
+
+namespace N { export interface J<T> { a: T } }
+>N : Symbol(N, Decl(ttttInstantiationExpressionInterface.ts, 3, 20))
+>J : Symbol(J, Decl(ttttInstantiationExpressionInterface.ts, 4, 13))
+>T : Symbol(T, Decl(ttttInstantiationExpressionInterface.ts, 4, 33))
+>a : Symbol(J.a, Decl(ttttInstantiationExpressionInterface.ts, 4, 37))
+>T : Symbol(T, Decl(ttttInstantiationExpressionInterface.ts, 4, 33))
+
+const y = N.J<string>;
+>y : Symbol(y, Decl(ttttInstantiationExpressionInterface.ts, 5, 5))
+>N : Symbol(N, Decl(ttttInstantiationExpressionInterface.ts, 3, 20))
+
+const z = I;
+>z : Symbol(z, Decl(ttttInstantiationExpressionInterface.ts, 6, 5))
+
+const w = I<string>();
+>w : Symbol(w, Decl(ttttInstantiationExpressionInterface.ts, 7, 5))
+
+const v = new I<string>();
+>v : Symbol(v, Decl(ttttInstantiationExpressionInterface.ts, 8, 5))
+
+declare const o: { I: number };
+>o : Symbol(o, Decl(ttttInstantiationExpressionInterface.ts, 9, 13))
+>I : Symbol(I, Decl(ttttInstantiationExpressionInterface.ts, 9, 18))
+
+const u = o.I<string>;
+>u : Symbol(u, Decl(ttttInstantiationExpressionInterface.ts, 10, 5))
+>o.I : Symbol(I, Decl(ttttInstantiationExpressionInterface.ts, 9, 18))
+>o : Symbol(o, Decl(ttttInstantiationExpressionInterface.ts, 9, 13))
+>I : Symbol(I, Decl(ttttInstantiationExpressionInterface.ts, 9, 18))
+

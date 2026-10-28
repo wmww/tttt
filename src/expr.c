@@ -2216,6 +2216,19 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             // (An instantiation expression is a type node to tsc, ExpressionWithTypeArguments, unlike a call's callee)
             if (!callee_of_call) flow->unmarked_assignments++;
             flow->callee_of_call = callee_of_call;
+            if (!callee_of_call && !my generic_params->heritage) {
+                // An entity name's first identifier: a value use of an interface is TS2689 there, like in a heritage
+                // clause (tsc's getEntityNameForExtendingInterface finds the ExpressionWithTypeArguments)
+                Expr* head = &my generic_params->expr;
+                while (head->tag == EXPR_PROPERTY && head->property->form == PROPERTY_EXPR_DOT && !expr_is_perenthisized(head)) {
+                    head = &head->property->expr;
+                }
+                if (head->tag == EXPR_IDENTIFIER && !head->identifier.keyword && !expr_is_perenthisized(head) &&
+                    !head->identifier.require_call && !expr_is_perenthisized(&my generic_params->expr)
+                ) {
+                    head->identifier.extends_entity_ = &my generic_params->expr;
+                }
+            }
             expr_lookup_names(&my generic_params->expr, names, errs);
             if (!callee_of_call) flow->unmarked_assignments--;
             // (`super<T>` is TS2754, its type arguments never checked: tsc says nothing about what they name)
