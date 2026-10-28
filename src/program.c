@@ -3944,6 +3944,61 @@ typedef struct ChunkedWalk {
 
 // A top-level (or ambient namespace) statement of a declaration file that is a chunk's: a declaration that makes no
 // flow node of its container and declares nothing outside the file's own tables
+// An expression of a declaration file's class or enum whose walk makes no flow node (an entity name, a literal,
+// arithmetic on them: no condition, assignment, call or function): it reads the builder and marks the start node only
+static bool expr_walks_alone(Expr const* expr) {
+    switch (expr->tag) {
+        case EXPR_IMPLICIT_ANY:
+        case EXPR_LITERAL:
+        case EXPR_IDENTIFIER:
+            return true;
+        case EXPR_PROPERTY:
+            return expr->property->form == PROPERTY_EXPR_DOT && !expr->property->optional_chain && expr_walks_alone(&expr->property->expr);
+        case EXPR_GENERIC_PARAMS:
+            return expr_walks_alone(&expr->generic_params->expr);
+        case EXPR_UNARY_OP:
+            return (expr->unary_op->op == UNARY_OP_PLUS || expr->unary_op->op == UNARY_OP_MINUS ||
+                expr->unary_op->op == UNARY_OP_TILDE) && expr_walks_alone(&expr->unary_op->expr);
+        case EXPR_BINARY_OP: {
+            BinaryOp op = expr->binary_op->op;
+            return op < BINARY_OP_AND_AND && op != BINARY_OP_IN && op != BINARY_OP_INSTANCEOF &&
+                expr_walks_alone(&expr->binary_op->left) && expr_walks_alone(&expr->binary_op->right);
+        }
+        default:
+            return false;
+    }
+}
+
+// A declaration file's class: ambient, so no bodies, static blocks or decorators; its base, keys and field values
+// expressions that walk alone (a field's value is a container of its own anyway)
+static bool class_walks_alone(ClassDecl const* class_decl) {
+    if (vec_expr_size(&class_decl->decorators) || class_decl->jsdoc_augments_count ||
+        vec_expr_size(&class_decl->unchecked_extends) || vec_expr_size(&class_decl->invalid_implements) ||
+        !expr_walks_alone(&class_decl->extends)
+    ) {
+        return false;
+    }
+    for_each (i, vec_class_item, &class_decl->items) {
+        if (vec_expr_size(&i->decorators)) return false;
+        switch (i->tag) {
+            case CLASS_ITEM_CONSTRUCTOR:
+                if (i->constructor.func.has_body) return false;
+                break;
+            case CLASS_ITEM_METHOD:
+                if (i->method.func.has_body || (i->method.computed_key && !expr_walks_alone(i->method.computed_key))) return false;
+                break;
+            case CLASS_ITEM_FIELD:
+                if ((i->field.computed_key && !expr_walks_alone(i->field.computed_key)) || !expr_walks_alone(&i->field.value)) return false;
+                break;
+            case CLASS_ITEM_INTERFACE_MEMBER:
+                break;
+            case CLASS_ITEM_STATIC_BLOCK:
+                return false;
+        }
+    }
+    return true;
+}
+
 static char const* walk_refusal; // (TTTT_WALK_CENSUS)
 static char const* statement_tag_name(int tag) {
     static char const* const names[] = { "noop", "directive", "block", "if", "for", "for-each", "switch", "try", "labeled",
@@ -3972,6 +4027,16 @@ static bool statement_walks_alone(Statement const* statement) {
             return true;
         case STATEMENT_DECL_FUNCTION:
             return !statement->decl.function.impl->has_body;
+        case STATEMENT_DECL_CLASS:
+            // (Its walk declares into its own scopes: the generic ones of a merged class wait like an interface's,
+            // chunked_walk_pair())
+            return class_walks_alone(statement->decl.class);
+        case STATEMENT_DECL_ENUM:
+            // (Its members' initializers are walked in its own namespace scope, the enum declaration's)
+            for_each (i, vec_enum_case, &statement->decl.enum_->cases) {
+                if ((i->computed_key && !expr_walks_alone(i->computed_key)) || !expr_walks_alone(&i->value)) return false;
+            }
+            return true;
         case STATEMENT_IMPORT_EXPORT: {
             // An import or export with nothing unusual about it (no decorators, attributes or phase): its walk reports
             // on its module_ref into the chunk's errors, and an `export { x }` of a local variable marks it assigned
@@ -4018,7 +4083,7 @@ static ChunkedWalk* chunked_walk_new(SourceFile* source) {
     u32 count = (u32)vec_statement_size(statements);
     isize size = cstr_size(&source->contents);
     u32 chunk_bytes = debug_env.walk_chunk_bytes ? debug_env.walk_chunk_bytes : 128 * 1024;
-    if (debug_env.walk_chunk_bytes ? count < 2 : size < 256 * 1024 || count < 64) {
+    if (count < 2 || (!debug_env.walk_chunk_bytes && size < 256 * 1024)) {
         if (getenv("TTTT_WALK_CENSUS") && size >= 256 * 1024) {
             // (What the statements are: one big namespace?)
             isize biggest = 0;
