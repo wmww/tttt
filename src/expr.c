@@ -4950,10 +4950,10 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                     // doesn't look at a destructuring target)
                     error_ctx_grammar_error_d(errs, i->name_span, 18064, "Private identifiers cannot be used in destructuring patterns.");
                 } else if (object_item_is_private_name(i)) {
-                    // tsc's checkGrammarObjectLiteralExpression; a method's is checkMethodDeclaration's (at its name, no
-                    // grammar error), an accessor's TS18028 checkGrammarAccessor's
+                    // tsc's checkGrammarObjectLiteralExpression, a method's too (checkMethodDeclaration only sees a
+                    // class's: `{ #foo() {}` missing its `}` says nothing), an accessor's TS18028 checkGrammarAccessor's
                     char const* message = "Private identifiers are not allowed outside class bodies.";
-                    if (i->tag == OBJECT_ITEM_PROPERTY || i->tag == OBJECT_ITEM_SHORTHAND) {
+                    if (i->tag == OBJECT_ITEM_PROPERTY || i->tag == OBJECT_ITEM_SHORTHAND || i->tag == OBJECT_ITEM_METHOD) {
                         error_ctx_grammar_error_d(errs, i->name_span, 18016, message);
                     } else {
                         error_ctx_error_d(errs, i->name_span, 18016, message);
