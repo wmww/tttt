@@ -329,7 +329,7 @@ tsc keeps one local symbol per block for a name's exported and local declaration
   reports TS2383 (overloads must all be exported or non-exported) at the exported one, tttt nothing: an export context
   exports an ambient declaration only without its own `declare` (getEffectiveDeclarationFlags), tttt's
   function_local_symbol_decls() counted every one as exported (FunctionImpl.declared_unexported). Test
-  ttttDeclaredOverloadNotExported [fixed COMMIT-next].
+  ttttDeclaredOverloadNotExported [fixed e7e95d5e7].
 
 ## Flagflip after the distributed type parameters (2026-10-09, every cell but vscode: 453 -> 141 missing)
 The 141 are almost all the corpora's own default-flag misses repeated in every cell:

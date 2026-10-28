@@ -1,0 +1,65 @@
+ttttDeclareFieldBaseType.ts(4,51): error TS2416: Property 'z' in type 'D' is not assignable to the same property in base type 'B'.
+  Type 'number | undefined' is not assignable to type 'number'.
+    Type 'undefined' is not assignable to type 'number'.
+ttttDeclareFieldBaseType.ts(4,63): error TS7008: Member 'w' implicitly has an 'any' type.
+ttttDeclareFieldBaseType.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+ttttDeclareFieldBaseType.ts(6,7): error TS2322: Type 'number | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+ttttDeclareFieldBaseType.ts(7,7): error TS2322: Type 'number | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+ttttDeclareFieldBaseType.ts(9,7): error TS2322: Type 'string' is not assignable to type 'number'.
+ttttDeclareFieldBaseType.ts(10,36): error TS7008: Member 's' implicitly has an 'any' type.
+ttttDeclareFieldBaseType.ts(12,7): error TS2322: Type 'string' is not assignable to type 'number'.
+ttttDeclareFieldBaseType.ts(16,7): error TS2322: Type 'string[]' is not assignable to type 'number'.
+ttttDeclareFieldBaseType.ts(18,7): error TS2322: Type 'number' is not assignable to type 'string'.
+ttttDeclareFieldBaseType.ts(20,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== ttttDeclareFieldBaseType.ts (11 errors) ====
+    // A `declare` field without a type or initializer takes the base class property's type when there is no constructor
+    // (a static one: no static blocks), tsc's getTypeOfPropertyInBaseClass, instead of being TS7008 any (type_core.md)
+    class B { x: string = ""; y?: number; static s: boolean = true; z: number = 1 }
+    class D extends B { declare x; declare y; declare z?; declare w; }
+                                                      ~
+!!! error TS2416: Property 'z' in type 'D' is not assignable to the same property in base type 'B'.
+!!! error TS2416:   Type 'number | undefined' is not assignable to type 'number'.
+!!! error TS2416:     Type 'undefined' is not assignable to type 'number'.
+                                                                  ~
+!!! error TS7008: Member 'w' implicitly has an 'any' type.
+    const s: number = new D().x;
+          ~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    const t: string = new D().y;
+          ~
+!!! error TS2322: Type 'number | undefined' is not assignable to type 'string'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'string'.
+    const u: string = new D().z;
+          ~
+!!! error TS2322: Type 'number | undefined' is not assignable to type 'string'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'string'.
+    class E extends B { declare x; constructor() { super(); } }
+    const v: number = new E().x;
+          ~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    class F extends B { declare static s; declare static x; }
+                                       ~
+!!! error TS7008: Member 's' implicitly has an 'any' type.
+    const w: number = F.s;
+    const k: number = F.x;
+          ~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    class G extends B { declare static x; static { } }
+    class H<T> { a!: T }
+    class I extends H<string[]> { declare a; }
+    const l: number = new I().a;
+          ~
+!!! error TS2322: Type 'string[]' is not assignable to type 'number'.
+    class J extends B { declare z; constructor(c: boolean) { super(); if (c) this.z = 2; } }
+    const m: string = new J(true).z;
+          ~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    class K extends B { declare static x; static { K.x = "a"; } }
+    const n: number = K.x;
+          ~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

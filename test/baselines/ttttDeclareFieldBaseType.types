@@ -1,0 +1,135 @@
+//// [test/cases/ttttDeclareFieldBaseType.ts] ////
+
+=== ttttDeclareFieldBaseType.ts ===
+// A `declare` field without a type or initializer takes the base class property's type when there is no constructor
+// (a static one: no static blocks), tsc's getTypeOfPropertyInBaseClass, instead of being TS7008 any (type_core.md)
+class B { x: string = ""; y?: number; static s: boolean = true; z: number = 1 }
+>B : B
+>x : string
+>"" : ""
+>y : number | undefined
+>s : boolean
+>true : true
+>z : number
+>1 : 1
+
+class D extends B { declare x; declare y; declare z?; declare w; }
+>D : D
+>B : B
+>x : string
+>y : number | undefined
+>z : number | undefined
+>w : any
+
+const s: number = new D().x;
+>s : number
+>new D().x : string
+>new D() : D
+>D : typeof D
+>x : string
+
+const t: string = new D().y;
+>t : string
+>new D().y : number | undefined
+>new D() : D
+>D : typeof D
+>y : number | undefined
+
+const u: string = new D().z;
+>u : string
+>new D().z : number | undefined
+>new D() : D
+>D : typeof D
+>z : number | undefined
+
+class E extends B { declare x; constructor() { super(); } }
+>E : E
+>B : B
+>x : string
+>super() : void
+>super : typeof B
+
+const v: number = new E().x;
+>v : number
+>new E().x : string
+>new E() : E
+>E : typeof E
+>x : string
+
+class F extends B { declare static s; declare static x; }
+>F : F
+>B : B
+>s : any
+>x : string
+
+const w: number = F.s;
+>w : number
+>F.s : any
+>F : typeof F
+>s : any
+
+const k: number = F.x;
+>k : number
+>F.x : string
+>F : typeof F
+>x : string
+
+class G extends B { declare static x; static { } }
+>G : G
+>B : B
+>x : string
+
+class H<T> { a!: T }
+>H : H<T>
+>a : T
+
+class I extends H<string[]> { declare a; }
+>I : I
+>H : H<string[]>
+>a : string[]
+
+const l: number = new I().a;
+>l : number
+>new I().a : string[]
+>new I() : I
+>I : typeof I
+>a : string[]
+
+class J extends B { declare z; constructor(c: boolean) { super(); if (c) this.z = 2; } }
+>J : J
+>B : B
+>z : number
+>c : boolean
+>super() : void
+>super : typeof B
+>c : boolean
+>this.z = 2 : 2
+>this.z : number
+>this : this
+>z : number
+>2 : 2
+
+const m: string = new J(true).z;
+>m : string
+>new J(true).z : number
+>new J(true) : J
+>J : typeof J
+>true : true
+>z : number
+
+class K extends B { declare static x; static { K.x = "a"; } }
+>K : K
+>B : B
+>x : string
+>K.x = "a" : "a"
+>K.x : string
+>K : typeof K
+>x : string
+>"a" : "a"
+
+const n: number = K.x;
+>n : number
+>K.x : string
+>K : typeof K
+>x : string
+

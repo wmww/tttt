@@ -1,0 +1,121 @@
+//// [test/cases/ttttDeclareFieldBaseType.ts] ////
+
+=== ttttDeclareFieldBaseType.ts ===
+// A `declare` field without a type or initializer takes the base class property's type when there is no constructor
+// (a static one: no static blocks), tsc's getTypeOfPropertyInBaseClass, instead of being TS7008 any (type_core.md)
+class B { x: string = ""; y?: number; static s: boolean = true; z: number = 1 }
+>B : Symbol(B, Decl(ttttDeclareFieldBaseType.ts, 0, 0))
+>x : Symbol(B.x, Decl(ttttDeclareFieldBaseType.ts, 2, 9))
+>y : Symbol(B.y, Decl(ttttDeclareFieldBaseType.ts, 2, 25))
+>s : Symbol(B.s, Decl(ttttDeclareFieldBaseType.ts, 2, 37))
+>z : Symbol(B.z, Decl(ttttDeclareFieldBaseType.ts, 2, 63))
+
+class D extends B { declare x; declare y; declare z?; declare w; }
+>D : Symbol(D, Decl(ttttDeclareFieldBaseType.ts, 2, 79))
+>B : Symbol(B, Decl(ttttDeclareFieldBaseType.ts, 0, 0))
+>x : Symbol(D.x, Decl(ttttDeclareFieldBaseType.ts, 3, 19))
+>y : Symbol(D.y, Decl(ttttDeclareFieldBaseType.ts, 3, 30))
+>z : Symbol(D.z, Decl(ttttDeclareFieldBaseType.ts, 3, 41))
+>w : Symbol(D.w, Decl(ttttDeclareFieldBaseType.ts, 3, 53))
+
+const s: number = new D().x;
+>s : Symbol(s, Decl(ttttDeclareFieldBaseType.ts, 4, 5))
+>new D().x : Symbol(D.x, Decl(ttttDeclareFieldBaseType.ts, 3, 19))
+>D : Symbol(D, Decl(ttttDeclareFieldBaseType.ts, 2, 79))
+>x : Symbol(D.x, Decl(ttttDeclareFieldBaseType.ts, 3, 19))
+
+const t: string = new D().y;
+>t : Symbol(t, Decl(ttttDeclareFieldBaseType.ts, 5, 5))
+>new D().y : Symbol(D.y, Decl(ttttDeclareFieldBaseType.ts, 3, 30))
+>D : Symbol(D, Decl(ttttDeclareFieldBaseType.ts, 2, 79))
+>y : Symbol(D.y, Decl(ttttDeclareFieldBaseType.ts, 3, 30))
+
+const u: string = new D().z;
+>u : Symbol(u, Decl(ttttDeclareFieldBaseType.ts, 6, 5))
+>new D().z : Symbol(D.z, Decl(ttttDeclareFieldBaseType.ts, 3, 41))
+>D : Symbol(D, Decl(ttttDeclareFieldBaseType.ts, 2, 79))
+>z : Symbol(D.z, Decl(ttttDeclareFieldBaseType.ts, 3, 41))
+
+class E extends B { declare x; constructor() { super(); } }
+>E : Symbol(E, Decl(ttttDeclareFieldBaseType.ts, 6, 28))
+>B : Symbol(B, Decl(ttttDeclareFieldBaseType.ts, 0, 0))
+>x : Symbol(E.x, Decl(ttttDeclareFieldBaseType.ts, 7, 19))
+>super : Symbol(B, Decl(ttttDeclareFieldBaseType.ts, 0, 0))
+
+const v: number = new E().x;
+>v : Symbol(v, Decl(ttttDeclareFieldBaseType.ts, 8, 5))
+>new E().x : Symbol(E.x, Decl(ttttDeclareFieldBaseType.ts, 7, 19))
+>E : Symbol(E, Decl(ttttDeclareFieldBaseType.ts, 6, 28))
+>x : Symbol(E.x, Decl(ttttDeclareFieldBaseType.ts, 7, 19))
+
+class F extends B { declare static s; declare static x; }
+>F : Symbol(F, Decl(ttttDeclareFieldBaseType.ts, 8, 28))
+>B : Symbol(B, Decl(ttttDeclareFieldBaseType.ts, 0, 0))
+>s : Symbol(F.s, Decl(ttttDeclareFieldBaseType.ts, 9, 19))
+>x : Symbol(F.x, Decl(ttttDeclareFieldBaseType.ts, 9, 37))
+
+const w: number = F.s;
+>w : Symbol(w, Decl(ttttDeclareFieldBaseType.ts, 10, 5))
+>F.s : Symbol(F.s, Decl(ttttDeclareFieldBaseType.ts, 9, 19))
+>F : Symbol(F, Decl(ttttDeclareFieldBaseType.ts, 8, 28))
+>s : Symbol(F.s, Decl(ttttDeclareFieldBaseType.ts, 9, 19))
+
+const k: number = F.x;
+>k : Symbol(k, Decl(ttttDeclareFieldBaseType.ts, 11, 5))
+>F.x : Symbol(F.x, Decl(ttttDeclareFieldBaseType.ts, 9, 37))
+>F : Symbol(F, Decl(ttttDeclareFieldBaseType.ts, 8, 28))
+>x : Symbol(F.x, Decl(ttttDeclareFieldBaseType.ts, 9, 37))
+
+class G extends B { declare static x; static { } }
+>G : Symbol(G, Decl(ttttDeclareFieldBaseType.ts, 11, 22))
+>B : Symbol(B, Decl(ttttDeclareFieldBaseType.ts, 0, 0))
+>x : Symbol(G.x, Decl(ttttDeclareFieldBaseType.ts, 12, 19))
+
+class H<T> { a!: T }
+>H : Symbol(H, Decl(ttttDeclareFieldBaseType.ts, 12, 50))
+>T : Symbol(T, Decl(ttttDeclareFieldBaseType.ts, 13, 8))
+>a : Symbol(H.a, Decl(ttttDeclareFieldBaseType.ts, 13, 12))
+>T : Symbol(T, Decl(ttttDeclareFieldBaseType.ts, 13, 8))
+
+class I extends H<string[]> { declare a; }
+>I : Symbol(I, Decl(ttttDeclareFieldBaseType.ts, 13, 20))
+>H : Symbol(H, Decl(ttttDeclareFieldBaseType.ts, 12, 50))
+>a : Symbol(I.a, Decl(ttttDeclareFieldBaseType.ts, 14, 29))
+
+const l: number = new I().a;
+>l : Symbol(l, Decl(ttttDeclareFieldBaseType.ts, 15, 5))
+>new I().a : Symbol(I.a, Decl(ttttDeclareFieldBaseType.ts, 14, 29))
+>I : Symbol(I, Decl(ttttDeclareFieldBaseType.ts, 13, 20))
+>a : Symbol(I.a, Decl(ttttDeclareFieldBaseType.ts, 14, 29))
+
+class J extends B { declare z; constructor(c: boolean) { super(); if (c) this.z = 2; } }
+>J : Symbol(J, Decl(ttttDeclareFieldBaseType.ts, 15, 28))
+>B : Symbol(B, Decl(ttttDeclareFieldBaseType.ts, 0, 0))
+>z : Symbol(J.z, Decl(ttttDeclareFieldBaseType.ts, 16, 19))
+>c : Symbol(c, Decl(ttttDeclareFieldBaseType.ts, 16, 43))
+>super : Symbol(B, Decl(ttttDeclareFieldBaseType.ts, 0, 0))
+>c : Symbol(c, Decl(ttttDeclareFieldBaseType.ts, 16, 43))
+>this.z : Symbol(J.z, Decl(ttttDeclareFieldBaseType.ts, 16, 19))
+>this : Symbol(J, Decl(ttttDeclareFieldBaseType.ts, 15, 28))
+>z : Symbol(J.z, Decl(ttttDeclareFieldBaseType.ts, 16, 19))
+
+const m: string = new J(true).z;
+>m : Symbol(m, Decl(ttttDeclareFieldBaseType.ts, 17, 5))
+>new J(true).z : Symbol(J.z, Decl(ttttDeclareFieldBaseType.ts, 16, 19))
+>J : Symbol(J, Decl(ttttDeclareFieldBaseType.ts, 15, 28))
+>z : Symbol(J.z, Decl(ttttDeclareFieldBaseType.ts, 16, 19))
+
+class K extends B { declare static x; static { K.x = "a"; } }
+>K : Symbol(K, Decl(ttttDeclareFieldBaseType.ts, 17, 32))
+>B : Symbol(B, Decl(ttttDeclareFieldBaseType.ts, 0, 0))
+>x : Symbol(K.x, Decl(ttttDeclareFieldBaseType.ts, 18, 19))
+>K.x : Symbol(K.x, Decl(ttttDeclareFieldBaseType.ts, 18, 19))
+>K : Symbol(K, Decl(ttttDeclareFieldBaseType.ts, 17, 32))
+>x : Symbol(K.x, Decl(ttttDeclareFieldBaseType.ts, 18, 19))
+
+const n: number = K.x;
+>n : Symbol(n, Decl(ttttDeclareFieldBaseType.ts, 19, 5))
+>K.x : Symbol(K.x, Decl(ttttDeclareFieldBaseType.ts, 18, 19))
+>K : Symbol(K, Decl(ttttDeclareFieldBaseType.ts, 17, 32))
+>x : Symbol(K.x, Decl(ttttDeclareFieldBaseType.ts, 18, 19))
+
