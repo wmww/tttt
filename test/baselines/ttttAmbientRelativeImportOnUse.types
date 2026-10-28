@@ -1,0 +1,55 @@
+//// [test/cases/ttttAmbientRelativeImportOnUse.ts] ////
+
+=== ttttAmbientRelativeImportOnUse.ts ===
+// An import of a relative name in an ambient module is TS2439, and its bindings aren't checked: its module is resolved
+// (TS2307) only by a use of the alias, as a type, a value, a qualified name or an export specifier
+declare module "OuterModule" {
+>"OuterModule" : typeof import("OuterModule")
+
+    import unused = require("./Unused");
+>unused : any
+
+    import { unusedNamed } from "./UnusedNamed";
+>unusedNamed : any
+
+    import m2 = require("./SubModule");
+>m2 : any
+
+    import { a } from "./Other";
+>a : any
+
+    import d from "./Def";
+>d : any
+
+    import { e } from "./Eee";
+>e : any
+
+    import "./Side";
+    export const x: a;
+>x : a
+
+    export const y: typeof m2;
+>y : any
+>m2 : any
+
+    export const z: typeof d;
+>z : any
+>d : any
+
+    export const w: e.f;
+>w : e.f
+>e : any
+}
+declare module "Other2" {
+>"Other2" : typeof import("Other2")
+
+    import { a } from "./Other";
+>a : any
+
+    import { b } from "./Other";
+>b : any
+
+    export { a };
+>a : any
+}
+

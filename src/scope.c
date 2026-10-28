@@ -4045,6 +4045,8 @@ static Symbol* resolve_alias_target_in(Symbol* me, ErrorCtx* errs) {
             // never reach markAliasReferenced; only the symbol walk resolves them. Its local stays unused whether the
             // body was walked up front or deferred, bun03-SC8)
             if (!item->wrong_context) unused_mark_referenced(my alias->scope, found, SYMBOL_ANY_MEANING);
+            // (tsc's checkExportSpecifier resolves the alias it exports: an import that resolved nothing says so now)
+            if (!item->wrong_context) port_item_check_resolve_on_use(found, my alias->scope);
             item->source_symbol = found;
             Symbol* target = resolve_if_pure_alias(found);
             // An `import x = A.B` that resolves to nothing is exported as a value (tsc's checkExportSpecifier checks the

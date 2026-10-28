@@ -54,8 +54,9 @@ typedef struct PortItem {
     // PORT_IMPORT_ALIAS: an unresolved `import x = A.B` was used as a value, which checked `A` as a value (tsc's
     // markAliasSymbolAsReferenced: checkExpressionCached of the module reference)
     bool value_use_checked; // (A whole byte: written by checkers, the bit fields only before checking)
-    // Of a statement in a namespace (TS1147), which resolves nothing: a use of the alias does (tsc's resolveAlias)
-    bool in_namespace : 1;
+    // Of a statement in a namespace (TS1147), or of an import of a relative name in an ambient module (TS2439), which
+    // resolves nothing: a use of the alias does (tsc's resolveAlias), its TS2307 then once, in its own file
+    bool resolve_on_use : 1;
     // Of a statement in a function or block (TS1232/TS1233): declared there, but tsc's checker never resolves it
     // (checkGrammarModuleElementContext): what resolving it says is said by no one
     bool wrong_context : 1;
@@ -114,9 +115,10 @@ static inline PortItemAlias const* port_item_alias(PortItem const* me) {
 }
 
 void port_item_drop(PortItem* me);
-// A use of an alias of an import of a module in a namespace (TS1147, whose statement resolves nothing): what resolves
-// it, TS2307 if its module isn't found (once, in the import's own file). Returns whether the alias is one
-bool port_item_check_namespace_import_use(struct Symbol const* alias, struct Scope const* names);
+// A use of an alias of an import whose statement resolves nothing (PortItem.resolve_on_use: in a namespace, TS1147, or
+// of a relative name in an ambient module, TS2439): what resolves it, TS2307 if its module isn't found (once, in the
+// import's own file). Returns whether the alias is one
+bool port_item_check_resolve_on_use(struct Symbol const* alias, struct Scope const* names);
 void port_item_report_alias_root_value(struct Scope const* scope, Span first, struct ErrorCtx* errs);
 
 // The name an import/export specifier stands for: `a`, or the contents of `"a"` (ES2022's arbitrary module namespace
@@ -150,6 +152,7 @@ typedef struct PortStatement {
     // Directly in `declare module "m"` of a script (an ambient external module, not an augmentation): it can't name a
     // relative module (TS2439)
     bool in_ambient_module;
+    bool import_on_use; // An import of a relative name in an ambient module (TS2439): resolved by its uses (PortItem.resolve_on_use)
     bool wrong_context; // In a block or function (TS1232/TS1233): not declared, nothing resolved
     // `{}` named bindings with nothing in them: just past the `}`, else null
     char const* empty_braces_end;

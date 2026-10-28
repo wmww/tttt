@@ -27,11 +27,11 @@ void port_item_report_alias_root_value(Scope const* scope, Span first, ErrorCtx*
     }
 }
 
-bool port_item_check_namespace_import_use(Symbol const* alias, Scope const* names) {
+bool port_item_check_resolve_on_use(Symbol const* alias, Scope const* names) {
     if (!alias || !(alias->flags & SYMBOL_ALIAS) || !alias->alias || !alias->alias->item) return false;
     PortItem* item = alias->alias->item;
     Scope const* scope = alias->alias->scope;
-    if (!item->in_namespace || !item->module_ref) return false;
+    if (!item->resolve_on_use || !item->module_ref) return false;
     if (item->value_use_checked || !scope || scope->file != names->file) return true;
     item->value_use_checked = true;
     if (!item->module_ref->file && !binder_module_of_ref(names->binder, item->module_ref)) {
@@ -178,10 +178,17 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
         (scope->container && (scope->container->is_module || scope->container->is_augmentation));
     my in_namespace = !top && scope->kind == SCOPE_NAMESPACE;
     my in_ambient_namespace = my in_namespace && scope->ambient;
-    my main.in_namespace = my in_namespace;
-    for_each (i, vec_port_item, &my items) i->in_namespace = my in_namespace;
     my in_ambient_module = scope->kind == SCOPE_NAMESPACE && scope->container && scope->container->is_module &&
         scope->parent && scope->parent->kind != SCOPE_MODULE;
+    // (An import of a relative name in an ambient module is TS2439, after which tsc's checkImportDeclaration and
+    // checkImportEqualsDeclaration don't check the bindings: its module is resolved only by a use. A re-export's TS2307
+    // stays eager: tsc says it only when something resolves the module's exports, an `export =`'s TS2309 check or an
+    // importer, missing_checks.md)
+    bool resolve_on_use = my in_namespace || (my in_ambient_module && my module_ref && !my jsdoc &&
+        module_name_is_relative(port_statement_target_path(me)) && !port_statement_is_export_declaration(me));
+    my import_on_use = resolve_on_use && !my in_namespace;
+    my main.resolve_on_use = resolve_on_use;
+    for_each (i, vec_port_item, &my items) i->resolve_on_use = resolve_on_use;
     bool is_import_alias = my main.tag == PORT_IMPORT_ALIAS && csview_equals(span_sv(my keyword_span), "import");
     if (my jsdoc && !top && !my in_namespace && my module_ref) {
         // A JSDoc `@import` in a block or function: tsgo's reparsed import declaration is misplaced (TS1473), but the
@@ -307,7 +314,7 @@ void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs
     }
     // Ambient modules of every file are known by now. tsc doesn't mind unresolved side effect imports (`import "./a"`)
     // (In a namespace it is TS1147/TS1194 instead, and nothing is resolved: tsc's checkExternalImportOrExportDeclaration)
-    bool unchecked = (my side_effect_only && !compiler_options()->no_unchecked_side_effect_imports) || my in_namespace;
+    bool unchecked = (my side_effect_only && !compiler_options()->no_unchecked_side_effect_imports) || my in_namespace || my import_on_use;
     // (An import clause with a grammar error resolves nothing either: tsc's checkImportDeclaration skips its bindings
     // when checkGrammarImportClause reports, TS1363 or a deferred import's TS18058-TS18060)
     if (!my jsdoc && my main.tag == PORT_IMPORT_DEFAULT && my main.type_only && (vec_port_item_size(&my items) || my empty_braces_end)) {

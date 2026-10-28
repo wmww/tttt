@@ -1,0 +1,57 @@
+//// [test/cases/ttttAmbientRelativeImportOnUse.ts] ////
+
+=== ttttAmbientRelativeImportOnUse.ts ===
+// An import of a relative name in an ambient module is TS2439, and its bindings aren't checked: its module is resolved
+// (TS2307) only by a use of the alias, as a type, a value, a qualified name or an export specifier
+declare module "OuterModule" {
+>"OuterModule" : Symbol("OuterModule", Decl(ttttAmbientRelativeImportOnUse.ts, 0, 0))
+
+    import unused = require("./Unused");
+>unused : Symbol(unused, Decl(ttttAmbientRelativeImportOnUse.ts, 2, 30))
+
+    import { unusedNamed } from "./UnusedNamed";
+>unusedNamed : Symbol(unusedNamed, Decl(ttttAmbientRelativeImportOnUse.ts, 4, 12))
+
+    import m2 = require("./SubModule");
+>m2 : Symbol(m2, Decl(ttttAmbientRelativeImportOnUse.ts, 4, 48))
+
+    import { a } from "./Other";
+>a : Symbol(a, Decl(ttttAmbientRelativeImportOnUse.ts, 6, 12))
+
+    import d from "./Def";
+>d : Symbol(d, Decl(ttttAmbientRelativeImportOnUse.ts, 7, 10))
+
+    import { e } from "./Eee";
+>e : Symbol(e, Decl(ttttAmbientRelativeImportOnUse.ts, 8, 12))
+
+    import "./Side";
+    export const x: a;
+>x : Symbol(x, Decl(ttttAmbientRelativeImportOnUse.ts, 10, 16))
+>a : Symbol(a, Decl(ttttAmbientRelativeImportOnUse.ts, 6, 12))
+
+    export const y: typeof m2;
+>y : Symbol(y, Decl(ttttAmbientRelativeImportOnUse.ts, 11, 16))
+>m2 : Symbol(m2, Decl(ttttAmbientRelativeImportOnUse.ts, 4, 48))
+
+    export const z: typeof d;
+>z : Symbol(z, Decl(ttttAmbientRelativeImportOnUse.ts, 12, 16))
+>d : Symbol(d, Decl(ttttAmbientRelativeImportOnUse.ts, 7, 10))
+
+    export const w: e.f;
+>w : Symbol(w, Decl(ttttAmbientRelativeImportOnUse.ts, 13, 16))
+>e : Symbol(e, Decl(ttttAmbientRelativeImportOnUse.ts, 8, 12))
+>f : Symbol(e.f)
+}
+declare module "Other2" {
+>"Other2" : Symbol("Other2", Decl(ttttAmbientRelativeImportOnUse.ts, 14, 1))
+
+    import { a } from "./Other";
+>a : Symbol(a, Decl(ttttAmbientRelativeImportOnUse.ts, 16, 12))
+
+    import { b } from "./Other";
+>b : Symbol(b, Decl(ttttAmbientRelativeImportOnUse.ts, 17, 12))
+
+    export { a };
+>a : Symbol(a, Decl(ttttAmbientRelativeImportOnUse.ts, 18, 12))
+}
+

@@ -1,0 +1,66 @@
+ttttAmbientRelativeImportOnUse.ts(4,5): error TS2439: Import or export declaration in an ambient module declaration cannot reference module through relative module name.
+ttttAmbientRelativeImportOnUse.ts(5,5): error TS2439: Import or export declaration in an ambient module declaration cannot reference module through relative module name.
+ttttAmbientRelativeImportOnUse.ts(6,5): error TS2439: Import or export declaration in an ambient module declaration cannot reference module through relative module name.
+ttttAmbientRelativeImportOnUse.ts(6,25): error TS2307: Cannot find module './SubModule' or its corresponding type declarations.
+ttttAmbientRelativeImportOnUse.ts(7,5): error TS2439: Import or export declaration in an ambient module declaration cannot reference module through relative module name.
+ttttAmbientRelativeImportOnUse.ts(7,23): error TS2307: Cannot find module './Other' or its corresponding type declarations.
+ttttAmbientRelativeImportOnUse.ts(8,5): error TS2439: Import or export declaration in an ambient module declaration cannot reference module through relative module name.
+ttttAmbientRelativeImportOnUse.ts(8,19): error TS2307: Cannot find module './Def' or its corresponding type declarations.
+ttttAmbientRelativeImportOnUse.ts(9,5): error TS2439: Import or export declaration in an ambient module declaration cannot reference module through relative module name.
+ttttAmbientRelativeImportOnUse.ts(9,23): error TS2307: Cannot find module './Eee' or its corresponding type declarations.
+ttttAmbientRelativeImportOnUse.ts(10,5): error TS2439: Import or export declaration in an ambient module declaration cannot reference module through relative module name.
+ttttAmbientRelativeImportOnUse.ts(17,5): error TS2439: Import or export declaration in an ambient module declaration cannot reference module through relative module name.
+ttttAmbientRelativeImportOnUse.ts(17,23): error TS2307: Cannot find module './Other' or its corresponding type declarations.
+ttttAmbientRelativeImportOnUse.ts(18,5): error TS2439: Import or export declaration in an ambient module declaration cannot reference module through relative module name.
+
+
+==== ttttAmbientRelativeImportOnUse.ts (14 errors) ====
+    // An import of a relative name in an ambient module is TS2439, and its bindings aren't checked: its module is resolved
+    // (TS2307) only by a use of the alias, as a type, a value, a qualified name or an export specifier
+    declare module "OuterModule" {
+        import unused = require("./Unused");
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2439: Import or export declaration in an ambient module declaration cannot reference module through relative module name.
+        import { unusedNamed } from "./UnusedNamed";
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2439: Import or export declaration in an ambient module declaration cannot reference module through relative module name.
+        import m2 = require("./SubModule");
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2439: Import or export declaration in an ambient module declaration cannot reference module through relative module name.
+                            ~~~~~~~~~~~~~
+!!! error TS2307: Cannot find module './SubModule' or its corresponding type declarations.
+        import { a } from "./Other";
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2439: Import or export declaration in an ambient module declaration cannot reference module through relative module name.
+                          ~~~~~~~~~
+!!! error TS2307: Cannot find module './Other' or its corresponding type declarations.
+        import d from "./Def";
+        ~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2439: Import or export declaration in an ambient module declaration cannot reference module through relative module name.
+                      ~~~~~~~
+!!! error TS2307: Cannot find module './Def' or its corresponding type declarations.
+        import { e } from "./Eee";
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2439: Import or export declaration in an ambient module declaration cannot reference module through relative module name.
+                          ~~~~~~~
+!!! error TS2307: Cannot find module './Eee' or its corresponding type declarations.
+        import "./Side";
+        ~~~~~~~~~~~~~~~~
+!!! error TS2439: Import or export declaration in an ambient module declaration cannot reference module through relative module name.
+        export const x: a;
+        export const y: typeof m2;
+        export const z: typeof d;
+        export const w: e.f;
+    }
+    declare module "Other2" {
+        import { a } from "./Other";
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2439: Import or export declaration in an ambient module declaration cannot reference module through relative module name.
+                          ~~~~~~~~~
+!!! error TS2307: Cannot find module './Other' or its corresponding type declarations.
+        import { b } from "./Other";
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2439: Import or export declaration in an ambient module declaration cannot reference module through relative module name.
+        export { a };
+    }
+    

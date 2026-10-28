@@ -334,7 +334,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
                 decl = i->size ? scope_get_namespace(names, span_sv(*i), &found) : nullptr; // (Missing: nothing)
                 if (namespace_from_expandos_only(decl)) decl = nullptr;
                 unused_mark_referenced(names, (Symbol*)found, SYMBOL_NAMESPACE);
-                if (decl && decl->is_placeholder) port_item_check_namespace_import_use(found, names);
+                if (decl && decl->is_placeholder) port_item_check_resolve_on_use(found, names);
                 if (!decl) {
                     Symbol const* type_symbol = nullptr;
                     Symbol const* type = scope_get_type(names, span_sv(*i), &type_symbol);
@@ -431,6 +431,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
         // (A value found instead, TS2749 below, isn't a use: tsc's resolveName for the type failed, the lookup for the
         // message doesn't mark it referenced)
         if (my target) unused_mark_referenced(names, (Symbol*)my symbol, SYMBOL_TYPE);
+        if (my target && my target->is_placeholder) port_item_check_resolve_on_use(my symbol, names);
         if (my target && (my target->flags & SYMBOL_TYPE_ALIAS) && vec_spanned_type_size(&my generic_params) && unused_enabled()) {
             Symbol* alias = scope_resolve(names, span_sv(my name), SYMBOL_ALIAS);
             if (alias && alias != my symbol && (alias->flags & SYMBOL_ALIAS)) {
