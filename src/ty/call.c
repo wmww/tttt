@@ -4202,6 +4202,12 @@ static void check_await_operand(Checker* me, Ty const* ty, Span at, u32 depth, E
 
 void ty_check_await_operand(Checker* me, Ty const* ty, Span at, ErrorCtx* errs) { check_await_operand(me, ty, at, 0, errs); }
 
+// The awaited type of a union or promise computed with no error node first (tsc's getContextualTypeForAwaitOperand,
+// getAwaitedTypeNoAlias of the contextual type): its cachedTypes entry silences a later `await` of that type
+void ty_await_context_awaited(Checker* me, Ty const* ty) {
+    if ((ty->kind == TY_UNION && !ty_is_generic_type(me, ty)) || ty_is_promise(me, ty)) ignore(await_checked_before(me, ty));
+}
+
 // tsc's getSignaturesOfType(ty, SignatureKind.Call).length
 u32 ty_call_signature_count(Checker* me, Ty const* ty) {
     u32 count = 0;

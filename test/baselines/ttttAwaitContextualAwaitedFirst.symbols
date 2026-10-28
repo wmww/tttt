@@ -1,0 +1,52 @@
+//// [test/cases/ttttAwaitContextualAwaitedFirst.ts] ////
+
+=== ttttAwaitContextualAwaitedFirst.ts ===
+interface Bad { then(): void }
+>Bad : Symbol(Bad, Decl(ttttAwaitContextualAwaitedFirst.ts, 0, 0))
+>then : Symbol(Bad.then, Decl(ttttAwaitContextualAwaitedFirst.ts, 0, 15))
+
+type U = number[] | Bad;
+>U : Symbol(U, Decl(ttttAwaitContextualAwaitedFirst.ts, 0, 30))
+>Bad : Symbol(Bad, Decl(ttttAwaitContextualAwaitedFirst.ts, 0, 0))
+
+declare const u: U;
+>u : Symbol(u, Decl(ttttAwaitContextualAwaitedFirst.ts, 2, 13))
+>U : Symbol(U, Decl(ttttAwaitContextualAwaitedFirst.ts, 0, 30))
+
+async function f() {
+>f : Symbol(f, Decl(ttttAwaitContextualAwaitedFirst.ts, 2, 19))
+
+  const x: U = await [];
+>x : Symbol(x, Decl(ttttAwaitContextualAwaitedFirst.ts, 4, 7))
+>U : Symbol(U, Decl(ttttAwaitContextualAwaitedFirst.ts, 0, 30))
+
+  await u;
+>u : Symbol(u, Decl(ttttAwaitContextualAwaitedFirst.ts, 2, 13))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(ttttAwaitContextualAwaitedFirst.ts, 7, 5))
+
+interface Bad2 { then(): void }
+>Bad2 : Symbol(Bad2, Decl(ttttAwaitContextualAwaitedFirst.ts, 7, 28))
+>then : Symbol(Bad2.then, Decl(ttttAwaitContextualAwaitedFirst.ts, 9, 16))
+
+type U2 = number[] | Bad2;
+>U2 : Symbol(U2, Decl(ttttAwaitContextualAwaitedFirst.ts, 9, 31))
+>Bad2 : Symbol(Bad2, Decl(ttttAwaitContextualAwaitedFirst.ts, 7, 28))
+
+declare const u2: U2;
+>u2 : Symbol(u2, Decl(ttttAwaitContextualAwaitedFirst.ts, 11, 13))
+>U2 : Symbol(U2, Decl(ttttAwaitContextualAwaitedFirst.ts, 9, 31))
+
+async function g() {
+>g : Symbol(g, Decl(ttttAwaitContextualAwaitedFirst.ts, 11, 21))
+
+  const x: U2 = await u2;
+>x : Symbol(x, Decl(ttttAwaitContextualAwaitedFirst.ts, 13, 7))
+>U2 : Symbol(U2, Decl(ttttAwaitContextualAwaitedFirst.ts, 9, 31))
+>u2 : Symbol(u2, Decl(ttttAwaitContextualAwaitedFirst.ts, 11, 13))
+
+  await u2;
+>u2 : Symbol(u2, Decl(ttttAwaitContextualAwaitedFirst.ts, 11, 13))
+}
+

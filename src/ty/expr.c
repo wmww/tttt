@@ -6631,6 +6631,15 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             }
             // tsc's getContextualTypeForAwaitOperand: what the context awaits to, or a promise of it
             if (expr->unary_op->op == UNARY_OP_AWAIT && ctx.contextual) {
+                // (An operand that asks for its contextual type, a literal or a function, makes tsc compute the context's
+                // awaited type silently before the `await` is checked: `const x: U = await []; await u` is no TS1320)
+                Expr const* operand_expr = &expr->unary_op->expr;
+                __auto_type operand = operand_expr->tag;
+                if (operand == EXPR_ARRAY || operand == EXPR_OBJECT || operand == EXPR_FUNCTION || operand == EXPR_LITERAL ||
+                    operand == EXPR_TEMPLATE
+                ) {
+                    ty_await_context_awaited(me, ctx.contextual);
+                }
                 Ty const* awaited = ty_awaited_no_alias(me, ctx.contextual);
                 Ty const* parts[2] = { awaited, ty_promise_like_of(me, awaited) };
                 Ty const* context = ty_union(me, parts, 2, nullptr, (TyList){0});

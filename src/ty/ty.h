@@ -3357,6 +3357,8 @@ u32 ty_call_signature_count(Checker* me, Ty const* ty); // call.c
 bool ty_is_promise(Checker* me, Ty const* ty); // A thenable (tsc's getAwaitedTypeOfPromise), call.c
 Ty const* ty_awaited_of_promise(Checker* me, Ty const* ty); // What a thenable awaits to, else null (call.c)
 void ty_check_await_operand(Checker* me, Ty const* ty, Span at, ErrorCtx* errs);
+// Marks a union or promise whose awaited type a contextual `await` operand computed first (no TS1320 for it later)
+void ty_await_context_awaited(Checker* me, Ty const* ty);
 Ty const* ty_promised_type(Checker* me, Ty const* ty); // What a thenable resolves to, else null (tsc's getPromisedTypeOfPromise)
 Ty const* ty_awaited_no_alias(Checker* me, Ty const* ty);
 Ty const* ty_async_contextual_awaited(Checker* me, Ty const* contextual); // function.c

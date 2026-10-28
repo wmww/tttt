@@ -1,0 +1,50 @@
+//// [test/cases/ttttAwaitContextualAwaitedFirst.ts] ////
+
+=== ttttAwaitContextualAwaitedFirst.ts ===
+interface Bad { then(): void }
+>then : () => void
+
+type U = number[] | Bad;
+>U : U
+
+declare const u: U;
+>u : U
+
+async function f() {
+>f : () => Promise<void>
+
+  const x: U = await [];
+>x : U
+>await [] : never[]
+>[] : never[]
+
+  await u;
+>await u : number[]
+>u : U
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+interface Bad2 { then(): void }
+>then : () => void
+
+type U2 = number[] | Bad2;
+>U2 : U2
+
+declare const u2: U2;
+>u2 : U2
+
+async function g() {
+>g : () => Promise<void>
+
+  const x: U2 = await u2;
+>x : U2
+>await u2 : number[]
+>u2 : U2
+
+  await u2;
+>await u2 : number[]
+>u2 : U2
+}
+

@@ -1,0 +1,26 @@
+ttttAwaitContextualAwaitedFirst.ts(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+ttttAwaitContextualAwaitedFirst.ts(14,17): error TS1320: Type of 'await' operand must either be a valid promise or must not contain a callable 'then' member.
+
+
+==== ttttAwaitContextualAwaitedFirst.ts (2 errors) ====
+    interface Bad { then(): void }
+    type U = number[] | Bad;
+    declare const u: U;
+    async function f() {
+      const x: U = await [];
+      await u;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    
+    interface Bad2 { then(): void }
+    type U2 = number[] | Bad2;
+    declare const u2: U2;
+    async function g() {
+      const x: U2 = await u2;
+                    ~~~~~~~~
+!!! error TS1320: Type of 'await' operand must either be a valid promise or must not contain a callable 'then' member.
+      await u2;
+    }
+    
