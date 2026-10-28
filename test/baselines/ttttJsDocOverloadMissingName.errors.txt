@@ -1,0 +1,29 @@
+a.js(2,8): error TS1003: Identifier expected.
+a.js(2,10): error TS1003: Identifier expected.
+b.js(7,9): error TS1003: Identifier expected.
+b.js(7,17): error TS1003: Identifier expected.
+
+
+==== a.js (2 errors) ====
+    /** @overload */
+    function () {}
+           ~
+!!! error TS1003: Identifier expected.
+             ~
+!!! error TS1003: Identifier expected.
+==== b.js (2 errors) ====
+    /**
+     * @overload
+     * @param {string} a
+     * @overload
+     * @param {number} a
+     */
+    function* /*c*/ () {}
+            ~
+!!! error TS1003: Identifier expected.
+                    ~
+!!! error TS1003: Identifier expected.
+==== c.js (0 errors) ====
+    /** @overload */
+    export default function () {}
+    

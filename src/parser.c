@@ -15931,6 +15931,17 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
         }   break;
         case STATEMENT_DECL_FUNCTION: {
             p->shared->jsdoc_declaration = true;
+            FunctionImpl const* impl = statement->decl.function.impl;
+            // An `@overload` signature of a function missing its name (TS1003 already): tsgo's reparser reports the
+            // missing name again, on the character before it (checkNonIdentifierName in reparseJSDocSignature)
+            if (span_valid(impl->name) && !impl->name.size && p->shared->source->is_js) {
+                bool overload = false;
+                for_each (i, vec_jsdoc_tag, &tags) overload |= i->kind == JSDOC_TAG_OVERLOAD;
+                char const* at = span_start_ptr(impl->name);
+                if (overload && at > source_file_start(p->shared->source)) {
+                    parse_error(p, span_make(p->shared->source, at - 1, at), 1003, "Identifier expected.");
+                }
+            }
             jsdoc_apply_function(p, &tags, statement->decl.function.impl);
         }   break;
         case STATEMENT_DECL_CLASS:

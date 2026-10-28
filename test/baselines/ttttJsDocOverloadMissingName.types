@@ -1,0 +1,22 @@
+//// [test/cases/ttttJsDocOverloadMissingName.ts] ////
+
+=== a.js ===
+/** @overload */
+function () {}
+> : { (): any; (a: string): any; (a: number): any; }
+
+=== b.js ===
+/**
+ * @overload
+ * @param {string} a
+ * @overload
+ * @param {number} a
+ */
+function* /*c*/ () {}
+> : { (): any; (a: string): any; (a: number): any; }
+
+=== c.js ===
+
+/** @overload */
+export default function () {}
+

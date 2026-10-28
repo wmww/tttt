@@ -1,0 +1,22 @@
+//// [test/cases/ttttJsDocOverloadMissingName.ts] ////
+
+=== a.js ===
+/** @overload */
+function () {}
+> : Symbol((Missing), Decl(a.js, 0, 5), Decl(a.js, 0, 0), Decl(b.js, 1, 4), Decl(b.js, 3, 4), Decl(b.js, 0, 0))
+
+=== b.js ===
+/**
+ * @overload
+ * @param {string} a
+ * @overload
+ * @param {number} a
+ */
+function* /*c*/ () {}
+> : Symbol((Missing), Decl(a.js, 0, 5), Decl(a.js, 0, 0), Decl(b.js, 1, 4), Decl(b.js, 3, 4), Decl(b.js, 0, 0))
+
+=== c.js ===
+
+/** @overload */
+export default function () {}
+
