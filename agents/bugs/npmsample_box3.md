@@ -348,7 +348,7 @@ for flips); a separate file so the three boxes never conflict.
   missing TS2322 at lib/src/StaggeredGridItem.tsx:89 "Type '{ component: "div" | T; } & IntrinsicElements[T] & {
   children: Element; }' is not assignable to type 'IntrinsicAttributes & DynamicProps<"div" | T, ...>'" (solid-js's
   `<Dynamic component={...}>` with a generic element type T). tsgo 13, tttt 12, not a flip. Not K-dependent. No
-  repro. [open]
+  repro. Re-checked 2026-10-28 (cor, clone at 4bf293019, projdiff on main 7b69297d8's parent): byte-identical to tsgo (2 diagnostics), fixed by an earlier commit. [fixed oracle 2026-10-28]
 - Large seed 20261404, cloudflare/cloudflare-os@main (commit 835de9e87), packages/workshop-backend (tsconfig.json):
   VARIES. At the defaults (both runs) tttt reports TS5114 "Instantiations of type 'MaybeCallableProvider' appear
   infinitely circular" at src/overseer.ts:4779. At --threads 1 it doesn't, and tsgo never does (tsgo 9, tttt 10
