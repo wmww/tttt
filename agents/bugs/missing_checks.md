@@ -583,7 +583,15 @@ umd7, typeTagNoErasure, importHelpersES6: the seeds 2311/2312 entries).
 - jsdocTypeTagFunctionTypePredicate delete-stmt: TS2355 for a JSDoc `@type {(e) => e is X}` function expression
   without a return is at the `@type` tag's type (8,27) in tsgo, at its return type (8,43) in tttt: tsgo's errorNode is
   the FullSignature the reparser set; function_impl_check_end now takes jsdoc_signature_span when the return type
-  came from it. Test ttttJsdocSignatureMissingReturn. [fixed HASH]
+  came from it. Test ttttJsdocSignatureMissingReturn. [fixed 6b52bc19d]
+- bigintArbirtraryIdentifier drop-as: TS2460's "exported as" name is symbolToString's, quoted when it isn't an
+  identifier (`'"0n"'`). Test ttttExportedAsStringName. [fixed HASH]
+- Text leftovers of the seed, not looked into further: checkJsdocTypeTag6 never-const (a JS `: never` annotation next
+  to `@type {() => void}`: tsgo gives the function expression the tag's signature then, `() => void`);
+  declarationsForIndirectTypeAliasReference ann-string-number (TS2353 names `Hash<string>` for an empty interface
+  `StringHash2 extends Hash<string>` with a number index); nodeNextCjsNamespaceImportDefault1 member-typo (`typeof
+  import("src/a")` against tttt's `typeof ns`); declarationEmitWithInvalidPackageJsonTypings never-const (`typeof
+  import("csv-parse")` against a path); importTypeLocal (a TS6500's position and `typeof import("/.src/foo2")`). [text]
 
 ## Mutation seeds 2311/2312 leftovers (2026-10-23, `MUTATE_DIR=/tmp/X scripts/mutate.py -n 8000 --seed 2311|2312 --tests multi,js`)
 The multi-file and JS mix finds far more than the single-file one (51 and 37 against 10). Seed 2311: 51 -> 37 -> 30

@@ -3576,9 +3576,11 @@ void scope_report_non_exported_member(PortItem const* item, Symbol const* module
                 exported_as = symbol_entry_name(&exports->entries[i]);
             }
         }
+        // (Named like tsc's symbolToString: a name that isn't an identifier, `export { foo as "0n" }`, in quotes)
+        bool quoted = exported_as.size && !ty_is_identifier_name(exported_as);
         Error* error = exported_as.size ?
             error_ctx_error_d(errs, name, 2460, "Module '", module_name, "' declares '", name,
-                "' locally, but it is exported as '", exported_as, "'.") :
+                "' locally, but it is exported as '", quoted ? "\"" : "", exported_as, quoted ? "\"" : "", "'.") :
             error_ctx_error_d(errs, name, 2459, "Module '", module_name, "' declares '", name, "' locally, but it is not exported.");
         for (u32 i = 0; i < local->decl_count; i++) {
             if (i == 0) error_add_related_d(error, local->decls[i].name, 2728, "'", name, "' is declared here.");
