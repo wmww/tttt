@@ -41,8 +41,11 @@ threads busy at 2.2 GB on vscode: the existence proof that sharing can pay.
   have had (the class recycling, stealing and K already produce).
 - **Shadowed words**: a worker whose tainted value lost to another's clean one keeps reading its own (Overlay first)
   until its file ends, then hands over to a fresh checker on the same graph (`graph_fresh_worker()`).
-- **Variances**: a group (the subjects of one outermost measurement) is one computation; reads of its own claims are
-  internal; equal results adopt, differing ones shadow; a tainted group publishes POISON.
+- **Variances** (per frame since 2026-10-29, "Variance frames" below): each measurement is a frame, clean when every
+  taint event in it read state made inside its own span (a claim of a frame at or inside it, values measured inside it
+  or clean ones, a CACHE_DEEP pair concluded inside it); a clean frame publishes its slot (a nested one at its own end),
+  over an empty or a poisoned slot; equal results adopt, differing ones shadow; a tainted frame poisons an empty slot.
+  (Before: a group, the subjects of one outermost measurement, published all or nothing.)
 - **Rejected**: (A) claimed-and-waited fields with tainted values reset: waiting creates the wait cycles a redo must
   break, and a breaker's history is no sequential checker's; this was built (4d/4e: owner-tagged states, a wait-for
   graph, a per-file redo, a global variance lock costing drizzle +54% wall) and deleted. (B) immutable types with
@@ -225,6 +228,45 @@ cost (expected x1.1-1.2 here); its T4/T1 growth over plain's is (b) plus races; 
 growing with T only under the flag are the cross-core traffic; dTLB misses in shared_table_find say whether the 2 MB
 pages would pay there.
 
+## Variance frames (2026-10-29, worker vargroup, f10fa5e30, e0c8b01e6)
+The census (`scripts/variancecensus.py --flag`, a `-DTTTT_TAINT_SITES` build: VC lines with every event's site, `:i`
+when internal to the outermost frame, `:kN` a tainted memo hit's KEY_ kind; `TTTT_TAINT_LOG=1` prints every event)
+at K8 T8 on main a55802b5f: measurements K1 -> flag K8 zod 287 -> 1070, xstate 165 -> 862, drizzle 666 -> 1366,
+effect 541 -> 904, dokploy/apps/dokploy 458 -> 2901, openbot i18n 13 -> 23. The first non-internal event of a tainted
+outermost group was mostly propagation: CACHE_DEEP hits 41-54%, tainted memo hits (KEY_VARIANCES / KEY_ALIAS_VARIANCES:
+earlier tainted groups' private values) 20-53%, poisoned slots 7-27%; origins were deep cuts 3-8% and enclosing-claim
+reads 1-3% (18-50% of the types on drizzle and xstate: the restart's set-aside claims). A group was all or nothing, so
+one tainted nested measurement or one enclosing read poisoned every subject it measured.
+
+Built: per-frame cleanliness (commit f10fa5e30 has the uniqueness argument in full: a clean frame read nothing outside
+its own span but published clean values, hash-consed identities and event-free relation entries, so it is a function
+of its subject and the published state), DEEP pairs stamped with the frame clock (`DeepStamps`), poisoned slots
+re-claimed and replaced by a clean frame, restarts keeping the frames they set aside on the stack (a base index), nested
+clean frames published at their own end. Measurements K8 (median of 3, T8): zod 1126 -> 452, xstate 794 -> 527,
+drizzle 1394 -> 1033, effect 939 -> 576, dokploy 2618 -> 1244, i18n 23 -> 14; with ckey's `TTTT_NESTING_ORDER=walk`
+merged on top: 433, 511, 897, 567, 1171, 13.
+
+**The work barely moves**: the measurements removed were cheap (clean nested subjects every worker re-measured
+inside its own tainted outer group). Callgrind, check phase, flag K8 (T8 serialised), claim_and_measure inclusive at the
+outermost level, main -> this: zod 0.735 -> 0.730 G (14% of 5.2 G; plain K1 0.289), xstate 0.550 -> 0.545 (plain K1
+0.132), drizzle 2.557 -> 2.534 (plain K1 1.618), effect 0.119 -> 0.097, i18n 0.006 -> 0.005, dokploy 1.08 -> 1.36 (a
+racy run, total 20.5 -> 24.5 G, noise of the serialised schedule). With walk: ckey alone -> ckey + this: drizzle
+2.67 -> 2.30 G (total 6.50 -> 6.19), zod 0.727 -> 0.695, xstate 0.530 -> 0.517, effect 0.121 -> 0.100. Check CPU at
+K8 T8 best of 5 interleaved (load 12-25): within +-3%. What costs is the tainted outermost groups (80-98% of the types
+made in outermost measurements), and what taints them now is the flag's private-value cascade, not anything
+variance-specific: xstate at K8 reads 54k private Overlay values and 17k CACHE_DEEP pairs concluded outside any frame;
+ActionFunction/StateNode first read a tainted KEY_SIMPLIFIED or KEY_VARIANCES. Sharing them needs fewer POISONed words
+upstream (or bun's rollback), not a variance rule.
+
+**What it did buy: determinism.** Fewer poisoned variances, fewer private histories: sgcheck at K8/K16, 8 runs per
+(K, deal): drizzle's residue C 12/16 differing runs with the scheduler's deal on main -> 1/16; mikro-orm seeder at K16
+rr 8/8 -> 2/8.
+Gates: quickgate --vs-main -k (plain unchanged, +0.03% instructions), sgcheck default list K4/8/16 both deals x2
+(3 of 696 differ: drizzle C 1 at K16 def, mikro-orm seeder 2 at K16 rr, the known residues),
+fingerprint oracle at K8 (0 variance differences on drizzle, zod, effect, xstate, excalidraw; the oracle's mirror of
+the Variances layout was off by a byte before, now ty_variances_data()), TSan clean at T4/T8 on the five,
+-DTTTT_GRAPH_CHECKS main's one site.
+
 ## The ceiling, measured (2026-10-22)
 The most a shared graph could take off a checker: the share of its check instructions that only repeat what one
 checker would do once, (W(K) - W(1)) / W(K), with W the instructions inside check_share (callgrind per thread,
@@ -288,7 +330,8 @@ are). Checkers are recycled after 1/128 of the total cost. Its CPU at default th
 time (vscode 43 CPU s vs 14 single): sharing costs it too, it just has more cores busy.
 
 ## Tools left behind
-`TTTT_GRAPH_STATS=1` (per kind: shared hits, shared misses, published...), `TTTT_GRAPH_NO_CACHE=1` (shared hits not
+`TTTT_GRAPH_STATS=1` (per kind: shared hits, shared misses, published...; variance slots published, adopted,
+unpoisoned...), `TTTT_TAINT_LOG=1` in a `-DTTTT_TAINT_SITES` build (every taint event's site as it happens), `TTTT_GRAPH_NO_CACHE=1` (shared hits not
 kept in the checker's own tables: the A/B of 75f79d714), `TTTT_GRAPH_WORK=1` (cycles per word computation by outcome), `TTTT_GRAPH_LEAD=1` /
 `TTTT_GRAPH_NO_LEAD=1`, `TTTT_GRAPH_SHARE_RELATIONS=0`, `TTTT_GRAPH_BUDGET_MB` (graph-wide recycle, default 800),
 `TTTT_DEBUG_PUBLISH` (debug build: a publication referencing a private range aborts), `scripts/sgcheck.py` (the gate:

@@ -85,6 +85,8 @@ scripts/sharedgraph/sgcheck_projects.txt, load 8-15): main at ab39dce20 12 of 34
   against 2/4 without (2026-10-29), and 2/4 still after 720b23760: residue C's family (the stamps), with drizzle's.
   Repro: `scripts/sgcheck.py -f 'mikro-orm/packages/seeder' -k 16 --deals rr -n 4`. The stamps: 0/10 at K24 and 0/20 at
   K4-K16 with the walk order. [fixed b2b3cdcd2]
+  (Per-frame variance publication alone, before the walk order (f10fa5e30, 8 runs per (K, deal), against a55802b5f):
+  drizzle C at K8+K16 def 12/16 -> 1/16, mikro-orm seeder K16 rr 8/8 -> 2/8; the default list 3/696, these residues.)
 
 After 720b23760 (2026-10-29, the default list at K 4/8/16, both deals, 2 runs, 696 runs): 3 differ, all drizzle's C
 (K8 and K16 with the scheduler's deal); mikro-orm seeder's shows at a lower rate (0/4 there, 2/4 in a targeted run).
