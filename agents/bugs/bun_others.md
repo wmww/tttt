@@ -381,6 +381,16 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
 - An anonymous function expression's error span is its assigned name (GetErrorRangeForNode: a `declare let a =
   function () {}`'s TS1039 is at `a`). [fixed cd50dd6ad]
 - `await` in a non-async function's parameter initializer is TS1308 too (found on 78-R07). [fixed aaa73d574]
+- A `yield` outside a generator body inside a generator (a type literal's computed name) is checked against it (TS7057,
+  33-P6a); one in a type isn't among the generator's yields. [fixed 6c5f1ef66]
+- A referenced project's output .d.ts imports by its own project's default resolution mode: no TS1479 under a node16
+  root for a bundler reference (40-C9a, `-b`: no test/cases repro, the harness has no build mode). [fixed 53abbb90f]
+- A JSX attribute's quote after a comment starts an ordinary string literal, escapes and all (43-C5a, 43-C5b,
+  43-C5c). [fixed fb1ed03cb]
+- An invalid character in a parenthesized arrow function's parameter initializer, `(x = €) => x`: tsc's
+  parseParenthesizedArrowFunctionExpression keeps the arrow (the missing expression's and the list's errors land on
+  the TS1127 and are deduplicated), tttt's parse_function_args() fails and reparses a parenthesized expression
+  (TS1134, TS1005: 43-C14a). [open]
 - A signature without a body (overload, `declare function`) checks a parameter's initializer only through
   getTypeOfParameter, which takes getQuickTypeOfExpression first (an `await` of a literal, an assertion, a call of a
   single non-generic signature): 78-R07 (`function q(a = await 1): void;` has no TS2524/TS1308, tttt's parser says
