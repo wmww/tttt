@@ -3376,6 +3376,17 @@ static Atom const* object_item_effective_name(ObjectExprItem const* item) {
     ) {
         key = &key->unary_op->expr;
     }
+    if (key->tag == EXPR_UNARY_OP && key->unary_op->op == UNARY_OP_MINUS && key->unary_op->expr.tag == EXPR_LITERAL &&
+        key->unary_op->expr.literal.tag == VALUE_NUMBER && !expr_is_perenthisized(&key->unary_op->expr)
+    ) {
+        // (`[-0]` is "-0" as written, the operand's text after a `-`: tsgo's GetPropertyNameForPropertyNameNode, not the
+        // value's name "0")
+        cstr name = cstr_lit("-");
+        cstr_append_value_js(&name, &key->unary_op->expr.literal);
+        Atom const* ret = checker_atom(current_checker, cstr_sv(&name));
+        cstr_drop(&name);
+        return ret;
+    }
     bool is_number = false;
     return ty_property_name_of_key(current_checker, ty_expr_type(current_checker, key), &is_number);
 }
