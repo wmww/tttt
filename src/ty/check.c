@@ -1734,6 +1734,13 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
         return;
     }
     cstr name = index_name(me, index);
+    // (A dot access's name as written, escapes and all: tsc's reportNonexistentProperty prints declarationNameToString)
+    if (!destructured && span_valid(span) && memchr(span.buf, '\\', span.size) &&
+        (isalnum((unsigned char)span.buf[0]) || span.buf[0] == '_' || span.buf[0] == '$' || span.buf[0] == '\\' || (uint8_t)span.buf[0] >= 0x80)
+    ) {
+        cstr_drop(&name);
+        name = cstr_from_sv(span_sv(span));
+    }
     // (A binding element's is about the apparent type: tsc's getIndexedAccessType reports on getReducedApparentType,
     // `{}` for `object`, the constraint's for a type parameter)
     u32 primitive = TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT | TYF_BIGINT_LITERAL | TYF_BOOLEAN |

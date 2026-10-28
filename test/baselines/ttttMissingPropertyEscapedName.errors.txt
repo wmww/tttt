@@ -1,0 +1,23 @@
+ttttMissingPropertyEscapedName.ts(5,3): error TS2551: Property 'argX\u0033' does not exist on type 'C'. Did you mean 'arg3'?
+ttttMissingPropertyEscapedName.ts(6,3): error TS2339: Property 'b\u0061r' does not exist on type 'C'.
+ttttMissingPropertyEscapedName.ts(7,1): error TS7053: Element implicitly has an 'any' type because expression of type '"baz"' can't be used to index type 'C'.
+  Property 'baz' does not exist on type 'C'.
+
+
+==== ttttMissingPropertyEscapedName.ts (3 errors) ====
+    // A missing property named with escapes is printed as written (tsc's declarationNameToString), TS2551 and TS2339;
+    // an element access's key by its value
+    class C { arg3 = 1; }
+    declare const c: C;
+    c.argX\u0033;
+      ~~~~~~~~~~
+!!! error TS2551: Property 'argX\u0033' does not exist on type 'C'. Did you mean 'arg3'?
+!!! related TS2728 ttttMissingPropertyEscapedName.ts:3:11: 'arg3' is declared here.
+    c.b\u0061r = 1;
+      ~~~~~~~~
+!!! error TS2339: Property 'b\u0061r' does not exist on type 'C'.
+    c["b\u0061z"];
+    ~~~~~~~~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '"baz"' can't be used to index type 'C'.
+!!! error TS7053:   Property 'baz' does not exist on type 'C'.
+    

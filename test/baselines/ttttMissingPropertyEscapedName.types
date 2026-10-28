@@ -1,0 +1,30 @@
+//// [test/cases/ttttMissingPropertyEscapedName.ts] ////
+
+=== ttttMissingPropertyEscapedName.ts ===
+// A missing property named with escapes is printed as written (tsc's declarationNameToString), TS2551 and TS2339;
+// an element access's key by its value
+class C { arg3 = 1; }
+>C : C
+>arg3 : number
+>1 : 1
+
+declare const c: C;
+>c : C
+
+c.argX\u0033;
+>c.argX\u0033 : any
+>c : C
+>argX\u0033 : any
+
+c.b\u0061r = 1;
+>c.b\u0061r = 1 : 1
+>c.b\u0061r : any
+>c : C
+>b\u0061r : any
+>1 : 1
+
+c["b\u0061z"];
+>c["b\u0061z"] : any
+>c : C
+>"b\u0061z" : "baz"
+

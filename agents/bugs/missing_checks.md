@@ -431,7 +431,7 @@ Seed 61: 11 -> 5 differing, seed 62: 11 -> 8 (both before the last fixes' rechec
   `{ p: null, s: null, ...f() }` (strictNullChecks off) with f's object replacing both properties is TS7005 with the
   whole type in tsgo (checkObjectLiteral passes the written members' ContainsWideningType to getSpreadType; nothing in
   the result reports TS7018). tttt took the flags of the final properties only. SpreadAcc.own_widening ->
-  OBJECT_CONTAINS_WIDENING -> TyAnonymous.spread_widening. Test ttttSpreadOverwrittenWidening. [fixed HASH] The
+  OBJECT_CONTAINS_WIDENING -> TyAnonymous.spread_widening. Test ttttSpreadOverwrittenWidening. [fixed b8c82aa73] The
   other three: unicodeLineSeparatorInMultilineComment never-const (the errors.txt rendering of a U+2028 line, harness
   text), restElementWithInitializer2 (the lazy name resolution entry below), classVarianceResolveCircularity2
   swap-stmts (missing TS7022, the circularity family). [text]
@@ -458,6 +458,10 @@ Seed 61: 11 -> 5 differing, seed 62: 11 -> 8 (both before the last fixes' rechec
 
 ## Mutation seeds 41/42 leftovers (2026-10-12: `MUTATE_DIR=/tmp/X scripts/mutate.py -n 4000 --seed 41|42`)
 Seed 41: 10 -> 7 differing, seed 42: 13 -> 5. Left, each looked at:
+- (cor8 2026-10-28, seed 42 rerun: 4 differ) escapedIdentifiers member-typo: a missing property written with escapes
+  (`o.argX\u0033`) is printed as written in TS2551/TS2339 (reportNonexistentProperty's declarationNameToString),
+  tttt printed the cooked name (report_no_property). Test ttttMissingPropertyEscapedName. [fixed HASH] The other
+  three are the entries below (TS2310 design, lazy name resolution, TS7022 circularity). [note]
 - **TS7034/TS7005 for an auto-typed `let x = undefined` read through `typeof x` in type parameter positions**:
   fixed for a function's (signature's) type parameters by seed 81 (they're in its flow container); a type alias's
   `<X extends typeof a>` and `<X = typeof a>` say nothing in tsgo nor tttt (2026-10-16 probe). [fixed 2026-10-16]
