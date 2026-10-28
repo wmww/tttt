@@ -4292,6 +4292,7 @@ static void resolve_lane_threads(Program* me, ResolveLane* lane, u32 threads) {
 // A file's declarations (program_resolve_names()'s declare step)
 static void declare_file(SourceFile* source, ErrorCtx* errs) {
     ignore errs; // (binder_errs(): the shard's on a declare thread)
+    statement_names_build(source);
     block_add_names(&source->ast, source->scope);
     scope_add_commonjs_module(source->scope);
     scope_check_export_merges(source->scope, block_span(&source->ast));

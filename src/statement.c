@@ -376,6 +376,108 @@ static InstanceState statement_instance_state_of(Statement const* me, csview nam
     }
 }
 
+// A file's top-level statements by the names statement_instance_state_of() can find in them (SourceFile.statement_names):
+// a superset, each candidate still asked. lucide-react's dynamic.d.ts has ~1900 namespaces each `export { a as b, ... }`
+// of three names declared in the file's ~7500 statements: scanning them per name was 64 ms of its declare, on one
+// thread (tsgo's getModuleInstanceStateForAliasTarget scans them too)
+typedef struct StatementNames {
+    u32 mask; // heads' size - 1
+    u32* heads; // By hash of a name: the first entry + 1 of the chain, 0 if none
+    struct { u32 statement, next; }* entries; // next: the chain's next entry + 1, 0 at its end
+    u32 count, cap;
+} StatementNames;
+
+// Below this many statements a scan is as quick
+#define STATEMENT_NAMES_MIN 256
+
+static u32 statement_name_hash(csview name) {
+    u32 h = 2166136261u;
+    for (isize i = 0; i < name.size; i++) h = (h ^ (unsigned char)name.buf[i]) * 16777619u;
+    return h;
+}
+
+static void statement_names_add(StatementNames* me, csview name, u32 statement) {
+    if (my count == my cap) {
+        my cap = my cap ? 2 * my cap : 256;
+        my entries = realloc(my entries, sizeof *my entries * my cap);
+    }
+    u32 slot = statement_name_hash(name) & my mask;
+    my entries[my count].statement = statement;
+    my entries[my count].next = my heads[slot];
+    my heads[slot] = ++my count;
+}
+
+// Every name statement_instance_state_of() may find a statement declaring (the same spans it compares)
+static void statement_names_of(StatementNames* names, Statement const* me, u32 index) {
+    switch (my tag) {
+        case STATEMENT_DECL_TYPE: statement_names_add(names, span_sv(my decl.type->name), index); break;
+        case STATEMENT_DECL_INTERFACE: statement_names_add(names, span_sv(my decl.interface->name), index); break;
+        case STATEMENT_DECL_ENUM: statement_names_add(names, span_sv(my decl.enum_->name), index); break;
+        case STATEMENT_DECL_FUNCTION: statement_names_add(names, span_sv(my decl.function.impl->name), index); break;
+        case STATEMENT_DECL_CLASS: statement_names_add(names, span_sv(my decl.class->name), index); break;
+        case STATEMENT_DECL_VARIABLE:
+            for_each (i, vec_initialized_binding, &my decl.variable.initializers) {
+                if (i->binding.tag == BINDING_IDENTIFIER) statement_names_add(names, span_sv(i->binding.content_span), index);
+            }
+            break;
+        case STATEMENT_DECL_NAMESPACE:
+            if (!my decl.namespace->is_ambient_module) statement_names_add(names, span_sv(my decl.namespace->name), index);
+            break;
+        case STATEMENT_IMPORT_EXPORT:
+            statement_names_add(names, port_item_name(my import_export->main.decl_name), index);
+            break;
+        default:
+            break;
+    }
+}
+
+// Only for a file with a namespace among many statements: the namespaces' export lists are what asks
+void statement_names_build(SourceFile* me) {
+    VecStatement const* statements = &my ast.statements;
+    isize count = vec_statement_size(statements);
+    if (my statement_names || count < STATEMENT_NAMES_MIN) return;
+    bool namespaces = false;
+    for_each (i, vec_statement, statements) namespaces |= i->tag == STATEMENT_DECL_NAMESPACE;
+    if (!namespaces) return;
+    StatementNames* names = calloc(1, sizeof *names);
+    u32 size = 1;
+    while (size < 2 * (u32)count) size *= 2;
+    names->mask = size - 1;
+    names->heads = calloc(size, sizeof(u32));
+    for (isize i = 0; i < count; i++) statement_names_of(names, vec_statement_at(statements, i), (u32)i);
+    my statement_names = names;
+}
+
+void statement_names_drop(StatementNames* names) {
+    if (!names) return;
+    free(names->heads);
+    free(names->entries);
+    free(names);
+}
+
+// The statements of `block` that may declare `name`, through its file's StatementNames when `block` is a file's
+// statements and the file has one: the entries' statement indices, by `*entry` (start it at 0), false at the end. The
+// order isn't the statements' (alias_target_state() takes the maximum of their states)
+static bool block_statement_candidate(Block const* block, csview name, StatementNames const* names, u32* entry, u32* index) {
+    if (!names) {
+        if (*entry >= (u32)vec_statement_size(&block->statements)) return false;
+        *index = (*entry)++;
+        return true;
+    }
+    u32 at = *entry ? names->entries[*entry - 1].next : names->heads[statement_name_hash(name) & names->mask];
+    if (!at) return false;
+    *entry = at;
+    *index = names->entries[at - 1].statement;
+    return true;
+}
+
+// The file's StatementNames when `block` is its top-level statements, else null
+static StatementNames const* block_statement_names(Block const* block) {
+    if (vec_statement_size(&block->statements) < STATEMENT_NAMES_MIN) return nullptr;
+    SourceFile const* source = span_source(vec_statement_at(&block->statements, 0)->span);
+    return source && &source->ast == block ? source->statement_names : nullptr;
+}
+
 // tsc's getModuleInstanceStateForAliasTarget: `export { a }` is as instantiated as the declarations of `a` in the
 // nearest block that has any (`me`, then the blocks of the scopes around it). Instantiated if there are none
 static InstanceState alias_target_state(Block const* me, csview name, Scope const* outer, BlockChain const* enclosing, u32 depth) {
@@ -385,9 +487,10 @@ static InstanceState alias_target_state(Block const* me, csview name, Scope cons
     while (block) {
         bool any = false;
         InstanceState state = NON_INSTANTIATED;
-        for_each (i, vec_statement, &block->statements) {
+        StatementNames const* names = block_statement_names(block);
+        for (u32 entry = 0, index; block_statement_candidate(block, name, names, &entry, &index);) {
             bool found;
-            InstanceState s = statement_instance_state_of(i, name, scope, depth, &found);
+            InstanceState s = statement_instance_state_of(vec_statement_at(&block->statements, index), name, scope, depth, &found);
             if (!found) continue;
             any = true;
             if (s > state) state = s;

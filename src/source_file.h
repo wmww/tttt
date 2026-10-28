@@ -314,6 +314,9 @@ typedef struct SourceFile {
     // doesn't import one. One of module_refs (after helpers_ref), resolved like an import in a module or a JavaScript
     // file (tsc's collectExternalModuleReferences), `ambient_only` in a script
     ModuleRef* jsx_runtime_ref;
+    // The file's top-level statements by the name each declares (alias_target_state(), built by
+    // statement_names_build() when the file is declared, before any reader), null if it isn't worth one. Owned
+    struct StatementNames* statement_names;
     CommentDirective* comment_directives; // Owned, sorted by position (and so by line), recorded by the parser
     u32 comment_directive_count;
     u32 comment_directive_cap;
@@ -477,6 +480,10 @@ cstr source_file_jsx_runtime_import(SourceFile const* me);
 
 // Records a directive comment the parser came across (again, possibly: backtracking parses hop comments repeatedly)
 void source_file_add_comment_directive(SourceFile* me, const char* start, const char* end, bool expect_error);
+// SourceFile.statement_names (statement.c): built when the file is declared (program.c's declare_file(), one thread per
+// file), read by the namespace instance-state walk (alias_target_state()) from any thread afterwards
+void statement_names_build(SourceFile* me);
+void statement_names_drop(struct StatementNames* names);
 // The directive that the comment ending on `line` is, if any. Two on one line: the last one, like tsc's map by line
 CommentDirective* source_file_comment_directive_at_line(SourceFile* me, u32 line);
 // A JSDoc comment with a `@deprecated` tag the parser came across (again, possibly), and whether one ends at `end`

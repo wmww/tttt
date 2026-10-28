@@ -189,6 +189,7 @@ void source_file_drop(SourceFile* me) {
     }
     free(my module_refs);
     free(my comment_directives);
+    statement_names_drop(my statement_names);
     free(my deprecated_jsdoc_ends);
     free(my comments);
     free(my expando_containers);
