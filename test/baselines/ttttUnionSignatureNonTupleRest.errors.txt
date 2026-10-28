@@ -1,0 +1,39 @@
+ttttUnionSignatureNonTupleRest.ts(5,50): error TS2370: A rest parameter must be of an array type.
+ttttUnionSignatureNonTupleRest.ts(7,21): error TS2370: A rest parameter must be of an array type.
+ttttUnionSignatureNonTupleRest.ts(9,56): error TS2370: A rest parameter must be of an array type.
+ttttUnionSignatureNonTupleRest.ts(10,4): error TS2556: A spread argument must either have a tuple type or be passed to a rest parameter.
+ttttUnionSignatureNonTupleRest.ts(11,1): error TS2554: Expected 1 arguments, but got 0.
+ttttUnionSignatureNonTupleRest.ts(12,7): error TS2554: Expected 1 arguments, but got 3.
+ttttUnionSignatureNonTupleRest.ts(13,4): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+
+
+==== ttttUnionSignatureNonTupleRest.ts (7 errors) ====
+    // A union's signatures where one's rest parameter is a union with a non-tuple (`[string] | undefined`, TS2370): its
+    // parameter types are the rest indexed like tsc's getIndexedAccessType (no property in undefined: no type), so it
+    // matches `(...args: [number])` and the union's signature is that one's (TS2556 for a spread, TS2554, number)
+    declare const args: any;
+    declare const f1: ((...args: []) => unknown) | ((...args: [string] | undefined) => unknown);
+                                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2370: A rest parameter must be of an array type.
+    f1(...args);
+    declare const f2: ((...args: [string] | undefined) => unknown);
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2370: A rest parameter must be of an array type.
+    f2(...args);
+    declare const f3: ((...args: [number]) => unknown) | ((...args: [string] | undefined) => unknown);
+                                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2370: A rest parameter must be of an array type.
+    f3(...args);
+       ~~~~~~~
+!!! error TS2556: A spread argument must either have a tuple type or be passed to a rest parameter.
+    f3();
+    ~~
+!!! error TS2554: Expected 1 arguments, but got 0.
+!!! related TS6236 ttttUnionSignatureNonTupleRest.ts:9:21: Arguments for the rest parameter 'args' were not provided.
+    f3(1, 2, 3);
+          ~~~~
+!!! error TS2554: Expected 1 arguments, but got 3.
+    f3("a");
+       ~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    

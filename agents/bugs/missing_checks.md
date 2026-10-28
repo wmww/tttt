@@ -39,7 +39,7 @@ Each one mutant:
 - interfaceExtendingOptionalChain extends-object: `interface C1 extends Object?.Bar {}` is TS2499 *and* the name
   resolved as a type reference (TS2702; TS2503/TS2694 for others; the interface extends it): the parser makes a heritage
   `A?.B` the type reference it would be, flagged `heritage_optional_chain` (TS2499/TS2500 in the checker, value types for
-  its qualifiers in the types baseline, `(A?.B)<T>` in declaration emit). [fixed HASH]
+  its qualifiers in the types baseline, `(A?.B)<T>` in declaration emit). [fixed c6a331993]
 - twiceNestedKeyofIndexInference add-optional: an overload's signature in TS2769 prints
   `Required<Pick<State, "d">>` in full in tsc, `Required<...>` in tttt (the elision budget of a signature in an
   overload list). [text]
@@ -471,12 +471,14 @@ Seed 41: 10 -> 7 differing, seed 42: 13 -> 5. Left, each looked at:
   was fine), and the rest of null or undefined alone is `{}` (lower.c object_rest_type(), tsc's getRestType filter):
   TS2739 at the assignment. Tests ttttObjectRestNotLastNonObject, ttttObjectRestOfUndefined. [fixed ebd4af3a4]
 - seed 42 signatureCombiningRestParameters1 add-optional: a union of signatures one of which has a rest parameter of
-  type `[string] | undefined` (TS2370): tsgo's combined signature reports a spread argument as TS2556, tttt combines
-  the rest parameter to never and says TS2345. (cor7 2026-10-28: tsgo's TS2556 is getArgumentArityError, the combined
-  signature failing hasCorrectArity's spread rule (spread index >= getMinArgumentCount and an effective rest parameter
-  or index < getParameterCount); with the rest param `[string] | undefined` (TS2370, not a tuple) its combination
-  leaves tttt an effective `never[]` rest. Which of the three differs wasn't traced: an instrumented
-  combineUnionOrIntersectionParameters/hasCorrectArity print is the next step. Only behind TS2370.) [open]
+  type `[string] | undefined` (TS2370): tsgo reports a spread argument as TS2556, tttt said TS2345 to never. Not the
+  combination: tsgo's findMatchingSignatures matches `(...args: [number])` with it (tryGetTypeAtPosition indexes the
+  rest with getIndexedAccessType, no property in undefined: unknown, of which number is a subtype), so the union's
+  signature is the `[number]` one's (TS2556 by hasCorrectArity, TS2554, `number`); tttt's param_type_at indexed the
+  union with ty_access (string). Now ty_indexed_or_null. Test ttttUnionSignatureNonTupleRest. Left: `f2(1, 2)` on the
+  `[string] | undefined` rest alone prints `[1, number]` where tsc has `[1, 2]` (getSpreadArgumentType's contextual
+  type of each argument, getIndexedAccessType(rest, i, Contextual), keeps the literals: what tsc's contextual type is
+  there wasn't traced). [fixed HASH]
 
 ## Mutation seed 2026102001 (2026-10-20, -n 3000: 5 / 1552 differ)
 Fixed: a computed key naming no property against a generic mapped contextual type, recursive-return skip with type

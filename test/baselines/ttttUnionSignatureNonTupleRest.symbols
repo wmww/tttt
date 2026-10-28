@@ -1,0 +1,44 @@
+//// [test/cases/ttttUnionSignatureNonTupleRest.ts] ////
+
+=== ttttUnionSignatureNonTupleRest.ts ===
+// A union's signatures where one's rest parameter is a union with a non-tuple (`[string] | undefined`, TS2370): its
+// parameter types are the rest indexed like tsc's getIndexedAccessType (no property in undefined: no type), so it
+// matches `(...args: [number])` and the union's signature is that one's (TS2556 for a spread, TS2554, number)
+declare const args: any;
+>args : Symbol(args, Decl(ttttUnionSignatureNonTupleRest.ts, 3, 13))
+
+declare const f1: ((...args: []) => unknown) | ((...args: [string] | undefined) => unknown);
+>f1 : Symbol(f1, Decl(ttttUnionSignatureNonTupleRest.ts, 4, 13))
+>args : Symbol(args, Decl(ttttUnionSignatureNonTupleRest.ts, 4, 20))
+>args : Symbol(args, Decl(ttttUnionSignatureNonTupleRest.ts, 4, 49))
+
+f1(...args);
+>f1 : Symbol(f1, Decl(ttttUnionSignatureNonTupleRest.ts, 4, 13))
+>args : Symbol(args, Decl(ttttUnionSignatureNonTupleRest.ts, 3, 13))
+
+declare const f2: ((...args: [string] | undefined) => unknown);
+>f2 : Symbol(f2, Decl(ttttUnionSignatureNonTupleRest.ts, 6, 13))
+>args : Symbol(args, Decl(ttttUnionSignatureNonTupleRest.ts, 6, 20))
+
+f2(...args);
+>f2 : Symbol(f2, Decl(ttttUnionSignatureNonTupleRest.ts, 6, 13))
+>args : Symbol(args, Decl(ttttUnionSignatureNonTupleRest.ts, 3, 13))
+
+declare const f3: ((...args: [number]) => unknown) | ((...args: [string] | undefined) => unknown);
+>f3 : Symbol(f3, Decl(ttttUnionSignatureNonTupleRest.ts, 8, 13))
+>args : Symbol(args, Decl(ttttUnionSignatureNonTupleRest.ts, 8, 20))
+>args : Symbol(args, Decl(ttttUnionSignatureNonTupleRest.ts, 8, 55))
+
+f3(...args);
+>f3 : Symbol(f3, Decl(ttttUnionSignatureNonTupleRest.ts, 8, 13))
+>args : Symbol(args, Decl(ttttUnionSignatureNonTupleRest.ts, 3, 13))
+
+f3();
+>f3 : Symbol(f3, Decl(ttttUnionSignatureNonTupleRest.ts, 8, 13))
+
+f3(1, 2, 3);
+>f3 : Symbol(f3, Decl(ttttUnionSignatureNonTupleRest.ts, 8, 13))
+
+f3("a");
+>f3 : Symbol(f3, Decl(ttttUnionSignatureNonTupleRest.ts, 8, 13))
+

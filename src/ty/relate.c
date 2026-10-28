@@ -1915,7 +1915,7 @@ static Ty const* param_type_at(Checker* me, Signature const* sig, u32 i) {
         // (A union of tuples, `...[value]: [] | [V]` of Generator's next, is indexed at the position: tsc's
         // tryGetTypeAtPosition's getIndexedAccessType, not any)
         if (rest->kind == TY_UNION) {
-            Ty const* element = ty_access(me, rest, ty_literal(me, &(Value){ .tag = VALUE_NUMBER, .number = i + 1 - sig_r->param_count }));
+            Ty const* element = ty_indexed_or_null(me, rest, ty_literal(me, &(Value){ .tag = VALUE_NUMBER, .number = i + 1 - sig_r->param_count }), false);
             if (element) return element;
         }
         return rest_element_type(me, rest);

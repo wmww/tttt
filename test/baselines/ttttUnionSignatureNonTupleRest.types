@@ -1,0 +1,57 @@
+//// [test/cases/ttttUnionSignatureNonTupleRest.ts] ////
+
+=== ttttUnionSignatureNonTupleRest.ts ===
+// A union's signatures where one's rest parameter is a union with a non-tuple (`[string] | undefined`, TS2370): its
+// parameter types are the rest indexed like tsc's getIndexedAccessType (no property in undefined: no type), so it
+// matches `(...args: [number])` and the union's signature is that one's (TS2556 for a spread, TS2554, number)
+declare const args: any;
+>args : any
+
+declare const f1: ((...args: []) => unknown) | ((...args: [string] | undefined) => unknown);
+>f1 : (() => unknown) | ((...args: [string] | undefined) => unknown)
+>args : []
+>args : [string] | undefined
+
+f1(...args);
+>f1(...args) : unknown
+>f1 : (() => unknown) | ((...args: [string] | undefined) => unknown)
+>...args : any
+>args : any
+
+declare const f2: ((...args: [string] | undefined) => unknown);
+>f2 : (...args: [string] | undefined) => unknown
+>args : [string] | undefined
+
+f2(...args);
+>f2(...args) : unknown
+>f2 : (...args: [string] | undefined) => unknown
+>...args : any
+>args : any
+
+declare const f3: ((...args: [number]) => unknown) | ((...args: [string] | undefined) => unknown);
+>f3 : ((args_0: number) => unknown) | ((...args: [string] | undefined) => unknown)
+>args : [number]
+>args : [string] | undefined
+
+f3(...args);
+>f3(...args) : unknown
+>f3 : ((args_0: number) => unknown) | ((...args: [string] | undefined) => unknown)
+>...args : any
+>args : any
+
+f3();
+>f3() : unknown
+>f3 : ((args_0: number) => unknown) | ((...args: [string] | undefined) => unknown)
+
+f3(1, 2, 3);
+>f3(1, 2, 3) : unknown
+>f3 : ((args_0: number) => unknown) | ((...args: [string] | undefined) => unknown)
+>1 : 1
+>2 : 2
+>3 : 3
+
+f3("a");
+>f3("a") : unknown
+>f3 : ((args_0: number) => unknown) | ((...args: [string] | undefined) => unknown)
+>"a" : "a"
+
