@@ -43,7 +43,7 @@ typedef struct PortItem {
     bool type_only : 1; // Has the "type" keyword for the main import
     bool type_modifier : 1; // A specifier with its own `type` (`{ type a }`)
     bool export_import : 1; // `export import foo = ...`
-    bool declared : 1; // `declare import foo = ...` (TS1029 or so, but ambient)
+    bool declared : 1; // `declare import foo = ...` (TS1029 or so, but ambient), `declare export { }` (TS1193)
     bool not_top_level : 1; // PORT_EXPORT_AS_NAMESPACE: not directly in the file (TS1316)
     bool is_require : 1; // `import foo = require("./abc")` (a PORT_IMPORT_GATHER that isn't a namespace import)
     bool require_binding : 1; // JavaScript's `const x = require("m")` or `const { x } = require("m")` (InitializedBinding.require_ports)

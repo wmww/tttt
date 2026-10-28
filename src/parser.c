@@ -15910,6 +15910,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 main->modifiers = main->full_span;
             } else {
                 modified.kind = MODIFIED_EXPORT_DECLARATION;
+                main->declared |= modifiers.includes[MODIFIER_DECLARE];
                 code = 1193;
             }
         }

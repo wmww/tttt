@@ -1,0 +1,6 @@
+// @strict: true
+// @target: es2022
+// `declare export { }` in a namespace is TS1193 alone: the `declare` makes the declaration ambient (tsgo's parser's
+// NodeFlagsAmbient), and checkExportDeclaration's TS1194 skips an ambient one (bun 28-C33f)
+namespace W { declare export { }; }
+namespace V { export { }; }

@@ -492,10 +492,11 @@ void port_item_check_export_equals_property(PortItem const* item, ErrorCtx* errs
 void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, ErrorCtx* errs) {
     if (my in_namespace && !my jsdoc) {
         if (port_statement_is_export_declaration(me)) {
-            // (tsc's checkExportDeclaration: at the module name with one, else at the declaration unless ambient)
+            // (tsc's checkExportDeclaration: at the module name with one, else at the declaration unless ambient, which
+            // a `declare export { }` is too: its parser's NodeFlagsAmbient)
             if (my module_ref) {
                 error_ctx_error_d(errs, my module_ref->span, 1194, "Export declarations are not permitted in a namespace.");
-            } else if (!my in_ambient_namespace && my main.tag != PORT_REEXPORT_SPLAT && my main.tag != PORT_REEXPORT_GATHER) {
+            } else if (!my in_ambient_namespace && !my main.declared && my main.tag != PORT_REEXPORT_SPLAT && my main.tag != PORT_REEXPORT_GATHER) {
                 error_ctx_error_d(errs, span_with_semicolon(span), 1194, "Export declarations are not permitted in a namespace.");
             }
         } else if (my module_ref) {

@@ -1,0 +1,14 @@
+ttttDeclareExportInNamespace.ts(3,15): error TS1193: An export declaration cannot have modifiers.
+ttttDeclareExportInNamespace.ts(4,15): error TS1194: Export declarations are not permitted in a namespace.
+
+
+==== ttttDeclareExportInNamespace.ts (2 errors) ====
+    // `declare export { }` in a namespace is TS1193 alone: the `declare` makes the declaration ambient (tsgo's parser's
+    // NodeFlagsAmbient), and checkExportDeclaration's TS1194 skips an ambient one (bun 28-C33f)
+    namespace W { declare export { }; }
+                  ~~~~~~~
+!!! error TS1193: An export declaration cannot have modifiers.
+    namespace V { export { }; }
+                  ~~~~~~~~~~~
+!!! error TS1194: Export declarations are not permitted in a namespace.
+    
