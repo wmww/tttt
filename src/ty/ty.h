@@ -650,6 +650,9 @@ typedef struct PropDeclRare {
     // Types baseline only: a mapped type's property is declared where the property it maps is (tsc's mapped symbol's
     // declarations), whose annotation is reused when it says the same
     struct Prop const* mapped_from;
+    // An `as` clause's remapped property: the property its key names, which isn't its declaration (tsc's syntheticOrigin
+    // without the declarations, shouldLinkPropDeclarations): whether it has an explicit type (prop_has_explicit_type())
+    struct Prop const* remapped_from;
     // Symbols baseline only: the mapped type's modifiers type when it is an intersection, whose members' properties of
     // this name declare it too (tsc's intersection property symbol; a union's are added when the property is made)
     Ty const* mapped_intersection;
@@ -711,7 +714,7 @@ typedef struct PropDecl {
 } PropDecl;
 
 static_assert(sizeof(PropDecl) == 96);
-static_assert(sizeof(PropDeclRare) == 160);
+static_assert(sizeof(PropDeclRare) == 168);
 
 static inline PropDeclRare const* prop_decl_rare(PropDecl const* decl) {
     static const PropDeclRare none = {0};

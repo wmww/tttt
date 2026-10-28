@@ -1535,12 +1535,18 @@ static bool symbol_has_explicit_type(Symbol const* symbol) {
     return binding->has_explicit_type;
 }
 
-static bool prop_has_explicit_type(Prop const* prop) {
-    // A mapped type's property asks the property it was mapped from (tsc's syntheticOrigin), none: not explicit
+static bool intersection_prop_non_uniform(Checker* me, Ty const* intersection, Atom const* name);
+
+static bool prop_has_explicit_type(Checker* me, Prop const* prop) {
+    // A mapped type's property asks the property it was mapped from (tsc's syntheticOrigin), none: not explicit. Over an
+    // intersection whose members declare it separately, that is the intersection's property, which has no value
+    // declaration: not explicit either (`Id<{ a: A } & { a: A }>`)
     for (Prop const* p = prop; p; p = p->target) {
         if (!p->mapped) continue;
-        Prop const* origin = prop_decl_rare(p->decl)->mapped_from;
-        return origin && prop_has_explicit_type(origin);
+        PropDeclRare const* rare = prop_decl_rare(p->decl);
+        Prop const* origin = rare->mapped_from ? rare->mapped_from : rare->remapped_from;
+        if (origin && rare->mapped_intersection && intersection_prop_non_uniform(me, rare->mapped_intersection, origin->name)) return false;
+        return origin && prop_has_explicit_type(me, origin);
     }
     while (prop->target) prop = prop->target;
     if (!prop->name) return false;
@@ -1631,7 +1637,7 @@ static Ty const* type_of_dotted_name_resolving(Checker* me, Expr const* expr, Re
             if (!(assigned->flags & TYF_OBJECT) && assigned->kind != TY_INTERSECTION) return nullptr;
             Atom const* name = checker_atom(me, symbol->name);
             Prop const* prop = assigned->kind == TY_INTERSECTION ? ty_property_of_type(me, assigned, name) : ty_get_prop(me, assigned, name);
-            if (!prop || !prop_has_explicit_type(prop)) return nullptr;
+            if (!prop || !prop_has_explicit_type(me, prop)) return nullptr;
             return ty_identifier_reference_type(me, &expr->identifier);
         }
         if (!symbol_has_explicit_type(symbol)) {
@@ -1667,7 +1673,7 @@ static Ty const* type_of_dotted_name_resolving(Checker* me, Expr const* expr, Re
     // (tsc's getPropertyOfType: of an intersection too, `assert.strict.equal` with `strict: Omit<...> & { equal }`)
     if (!(object->flags & TYF_OBJECT) && object->kind != TY_INTERSECTION) return nullptr;
     Prop const* prop = object->kind == TY_INTERSECTION ? ty_property_of_type(me, object, name) : ty_get_prop(me, object, name);
-    if (!prop || !prop_has_explicit_type(prop)) return nullptr;
+    if (!prop || !prop_has_explicit_type(me, prop)) return nullptr;
     if (object->kind == TY_INTERSECTION && intersection_prop_non_uniform(me, object, name)) return nullptr;
     // (An optional one has undefined in its type, an optional method's too: tsc's getTypeOfSymbol. Not callable then)
     if (!explicit_resolving_enter(prop)) return nullptr;
@@ -1691,7 +1697,9 @@ static Expr const* dotted_name_without_type(Checker* me, Expr const* expr) {
     return type_of_dotted_name(me, expr) ? nullptr : expr;
 }
 
-static Span dotted_name_declaration(Checker* me, Expr const* expr) {
+// `origin`: the name of the property a mapped one was mapped from, which the related information names (tsc's
+// symbolToString of the syntheticOrigin), else unchanged
+static Span dotted_name_declaration(Checker* me, Expr const* expr, Atom const** origin_name) {
     if (expr->tag == EXPR_IDENTIFIER) {
         Symbol const* symbol = expr->identifier.target;
         Binding const* binding = symbol && (symbol->flags & SYMBOL_VARIABLE) ? symbol_find_node(symbol, SYMBOL_DECL_VARIABLE) : nullptr;
@@ -1703,10 +1711,22 @@ static Span dotted_name_declaration(Checker* me, Expr const* expr) {
     object = ty_apparent_type(me, object);
     if (!(object->flags & TYF_OBJECT) && object->kind != TY_INTERSECTION) return span_null;
     Prop const* prop = object->kind == TY_INTERSECTION ? ty_property_of_type(me, object, name) : ty_get_prop(me, object, name);
-    // (A mapped type's property has no value declaration in tsc: no related span. Nor an intersection's that members
-    // declare separately, see intersection_prop_non_uniform())
-    for (Prop const* p = prop; p; p = p->target) if (p->mapped) return span_null;
+    // (A mapped type's property has no value declaration in tsc: the property it was mapped from says where, tsc's
+    // getExplicitTypeOfSymbol of the syntheticOrigin. Nor an intersection's that members declare separately, see
+    // intersection_prop_non_uniform())
     if (object->kind == TY_INTERSECTION && intersection_prop_non_uniform(me, object, name)) return span_null;
+    for (u32 depth = 0; prop && depth < 16; depth++) {
+        Prop const* p = prop;
+        while (p && !p->mapped) p = p->target;
+        if (!p) break;
+        PropDeclRare const* rare = prop_decl_rare(p->decl);
+        Prop const* origin = rare->mapped_from ? rare->mapped_from : rare->remapped_from;
+        if (!origin || (rare->mapped_intersection && intersection_prop_non_uniform(me, rare->mapped_intersection, origin->name))) {
+            return span_null;
+        }
+        prop = origin;
+        *origin_name = origin->name;
+    }
     while (prop && prop->target && !span_valid(prop->decl->name_span)) prop = prop->target;
     return prop ? prop->decl->name_span : span_null;
 }
@@ -1731,10 +1751,12 @@ void ty_check_assertion_call_statement(Checker* me, Expr const* expr, ErrorCtx* 
     Error* error = error_ctx_error_d(errs, span, 2775,
         "Assertions require every name in the call target to be declared with an explicit type annotation.");
     Expr const* missing = dotted_name_without_type(me, callee);
-    Span declaration = missing ? dotted_name_declaration(me, missing) : span_null;
+    Atom const* origin_name = nullptr;
+    Span declaration = missing ? dotted_name_declaration(me, missing, &origin_name) : span_null;
     if (error && span_valid(declaration)) {
         Span name = missing->tag == EXPR_PROPERTY ? property_key_inner_span(missing->property) : missing->inner_span;
-        error_add_related_d(error, declaration, 2782, "'", span_sv(name), "' needs an explicit type annotation.");
+        csview shown = origin_name ? atom_sv(origin_name) : span_sv(name);
+        error_add_related_d(error, declaration, 2782, "'", shown, "' needs an explicit type annotation.");
     }
 }
 

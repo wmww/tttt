@@ -1,0 +1,262 @@
+//// [test/cases/ttttAssertionThroughMappedOrigin.ts] ////
+
+=== ttttAssertionThroughMappedOrigin.ts ===
+// A mapped property's explicit type is its syntheticOrigin's (tsc's getExplicitTypeOfSymbol): an `as` clause that remaps
+// keeps the origin (no declarations), an intersection whose members declare the property separately has none
+// (bun 60-L16a, 60-L16b): TS2775 on the assertion calls through them, the related information at the origin
+interface Asserts { str(x: unknown): asserts x is string; num: (x: unknown) => asserts x is number }
+>Asserts : Symbol(Asserts, Decl(ttttAssertionThroughMappedOrigin.ts, 0, 0))
+>str : Symbol(Asserts.str, Decl(ttttAssertionThroughMappedOrigin.ts, 3, 19))
+>x : Symbol(x, Decl(ttttAssertionThroughMappedOrigin.ts, 3, 24))
+>x : Symbol(x, Decl(ttttAssertionThroughMappedOrigin.ts, 3, 24))
+>num : Symbol(Asserts.num, Decl(ttttAssertionThroughMappedOrigin.ts, 3, 57))
+>x : Symbol(x, Decl(ttttAssertionThroughMappedOrigin.ts, 3, 64))
+>x : Symbol(x, Decl(ttttAssertionThroughMappedOrigin.ts, 3, 64))
+
+type Prefixed<T> = { [K in keyof T as `assert${Capitalize<K & string>}`]: T[K] };
+>Prefixed : Symbol(Prefixed, Decl(ttttAssertionThroughMappedOrigin.ts, 3, 100))
+>T : Symbol(T, Decl(ttttAssertionThroughMappedOrigin.ts, 4, 14))
+>K : Symbol(K, Decl(ttttAssertionThroughMappedOrigin.ts, 4, 22))
+>T : Symbol(T, Decl(ttttAssertionThroughMappedOrigin.ts, 4, 14))
+>Capitalize : Symbol(Capitalize, Decl(lib.es5.d.ts, --, --))
+>K : Symbol(K, Decl(ttttAssertionThroughMappedOrigin.ts, 4, 22))
+>T : Symbol(T, Decl(ttttAssertionThroughMappedOrigin.ts, 4, 14))
+>K : Symbol(K, Decl(ttttAssertionThroughMappedOrigin.ts, 4, 22))
+
+declare const pa: Prefixed<Asserts>;
+>pa : Symbol(pa, Decl(ttttAssertionThroughMappedOrigin.ts, 5, 13))
+>Prefixed : Symbol(Prefixed, Decl(ttttAssertionThroughMappedOrigin.ts, 3, 100))
+>Asserts : Symbol(Asserts, Decl(ttttAssertionThroughMappedOrigin.ts, 0, 0))
+
+function fa(v: unknown, w: unknown) {
+>fa : Symbol(fa, Decl(ttttAssertionThroughMappedOrigin.ts, 5, 36))
+>v : Symbol(v, Decl(ttttAssertionThroughMappedOrigin.ts, 6, 12))
+>w : Symbol(w, Decl(ttttAssertionThroughMappedOrigin.ts, 6, 23))
+
+  pa.assertStr(v);
+>pa.assertStr : Symbol(assertStr)
+>pa : Symbol(pa, Decl(ttttAssertionThroughMappedOrigin.ts, 5, 13))
+>assertStr : Symbol(assertStr)
+>v : Symbol(v, Decl(ttttAssertionThroughMappedOrigin.ts, 6, 12))
+
+  v.length;
+>v.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>v : Symbol(v, Decl(ttttAssertionThroughMappedOrigin.ts, 6, 12))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+  pa.assertNum(w);
+>pa.assertNum : Symbol(assertNum)
+>pa : Symbol(pa, Decl(ttttAssertionThroughMappedOrigin.ts, 5, 13))
+>assertNum : Symbol(assertNum)
+>w : Symbol(w, Decl(ttttAssertionThroughMappedOrigin.ts, 6, 23))
+
+  w.toFixed();
+>w.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>w : Symbol(w, Decl(ttttAssertionThroughMappedOrigin.ts, 6, 23))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+}
+const inferredA = { bad: (x: unknown): asserts x is string => {} };
+>inferredA : Symbol(inferredA, Decl(ttttAssertionThroughMappedOrigin.ts, 12, 5))
+>bad : Symbol(bad, Decl(ttttAssertionThroughMappedOrigin.ts, 12, 19))
+>x : Symbol(x, Decl(ttttAssertionThroughMappedOrigin.ts, 12, 26))
+>x : Symbol(x, Decl(ttttAssertionThroughMappedOrigin.ts, 12, 26))
+
+declare const qa: Prefixed<typeof inferredA>;
+>qa : Symbol(qa, Decl(ttttAssertionThroughMappedOrigin.ts, 13, 13))
+>Prefixed : Symbol(Prefixed, Decl(ttttAssertionThroughMappedOrigin.ts, 3, 100))
+>inferredA : Symbol(inferredA, Decl(ttttAssertionThroughMappedOrigin.ts, 12, 5))
+
+function ga(v: unknown) { qa.assertBad(v); }
+>ga : Symbol(ga, Decl(ttttAssertionThroughMappedOrigin.ts, 13, 45))
+>v : Symbol(v, Decl(ttttAssertionThroughMappedOrigin.ts, 14, 12))
+>qa.assertBad : Symbol(assertBad)
+>qa : Symbol(qa, Decl(ttttAssertionThroughMappedOrigin.ts, 13, 13))
+>assertBad : Symbol(assertBad)
+>v : Symbol(v, Decl(ttttAssertionThroughMappedOrigin.ts, 14, 12))
+
+type A = (x: unknown) => asserts x is string;
+>A : Symbol(A, Decl(ttttAssertionThroughMappedOrigin.ts, 14, 44))
+>x : Symbol(x, Decl(ttttAssertionThroughMappedOrigin.ts, 16, 10))
+>x : Symbol(x, Decl(ttttAssertionThroughMappedOrigin.ts, 16, 10))
+
+const inferred = (x: unknown): asserts x is string => {};
+>inferred : Symbol(inferred, Decl(ttttAssertionThroughMappedOrigin.ts, 17, 5))
+>x : Symbol(x, Decl(ttttAssertionThroughMappedOrigin.ts, 17, 18))
+>x : Symbol(x, Decl(ttttAssertionThroughMappedOrigin.ts, 17, 18))
+
+const obj = { a: inferred, m(x: unknown): asserts x is string {} };
+>obj : Symbol(obj, Decl(ttttAssertionThroughMappedOrigin.ts, 18, 5))
+>a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 18, 13))
+>inferred : Symbol(inferred, Decl(ttttAssertionThroughMappedOrigin.ts, 17, 5))
+>m : Symbol(m, Decl(ttttAssertionThroughMappedOrigin.ts, 18, 26))
+>x : Symbol(x, Decl(ttttAssertionThroughMappedOrigin.ts, 18, 29))
+>x : Symbol(x, Decl(ttttAssertionThroughMappedOrigin.ts, 18, 29))
+
+declare const v: unknown;
+>v : Symbol(v, Decl(ttttAssertionThroughMappedOrigin.ts, 19, 13))
+
+interface I { a: A; m(x: unknown): asserts x is string }
+>I : Symbol(I, Decl(ttttAssertionThroughMappedOrigin.ts, 19, 25))
+>a : Symbol(I.a, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 13))
+>A : Symbol(A, Decl(ttttAssertionThroughMappedOrigin.ts, 14, 44))
+>m : Symbol(I.m, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 19))
+>x : Symbol(x, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 22))
+>x : Symbol(x, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 22))
+
+type Id<T> = { [K in keyof T]: T[K] };
+>Id : Symbol(Id, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 56))
+>T : Symbol(T, Decl(ttttAssertionThroughMappedOrigin.ts, 21, 8))
+>K : Symbol(K, Decl(ttttAssertionThroughMappedOrigin.ts, 21, 16))
+>T : Symbol(T, Decl(ttttAssertionThroughMappedOrigin.ts, 21, 8))
+>T : Symbol(T, Decl(ttttAssertionThroughMappedOrigin.ts, 21, 8))
+>K : Symbol(K, Decl(ttttAssertionThroughMappedOrigin.ts, 21, 16))
+
+declare const x1: Id<{ a: A } & typeof obj>; x1.a(v);
+>x1 : Symbol(x1, Decl(ttttAssertionThroughMappedOrigin.ts, 22, 13))
+>Id : Symbol(Id, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 56))
+>a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 22, 22))
+>A : Symbol(A, Decl(ttttAssertionThroughMappedOrigin.ts, 14, 44))
+>obj : Symbol(obj, Decl(ttttAssertionThroughMappedOrigin.ts, 18, 5))
+>x1.a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 22, 22), Decl(ttttAssertionThroughMappedOrigin.ts, 18, 13))
+>x1 : Symbol(x1, Decl(ttttAssertionThroughMappedOrigin.ts, 22, 13))
+>a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 22, 22), Decl(ttttAssertionThroughMappedOrigin.ts, 18, 13))
+>v : Symbol(v, Decl(ttttAssertionThroughMappedOrigin.ts, 19, 13))
+
+declare const x2: Id<typeof obj & { a: A }>; x2.a(v);
+>x2 : Symbol(x2, Decl(ttttAssertionThroughMappedOrigin.ts, 23, 13))
+>Id : Symbol(Id, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 56))
+>obj : Symbol(obj, Decl(ttttAssertionThroughMappedOrigin.ts, 18, 5))
+>a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 23, 35))
+>A : Symbol(A, Decl(ttttAssertionThroughMappedOrigin.ts, 14, 44))
+>x2.a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 18, 13), Decl(ttttAssertionThroughMappedOrigin.ts, 23, 35))
+>x2 : Symbol(x2, Decl(ttttAssertionThroughMappedOrigin.ts, 23, 13))
+>a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 18, 13), Decl(ttttAssertionThroughMappedOrigin.ts, 23, 35))
+>v : Symbol(v, Decl(ttttAssertionThroughMappedOrigin.ts, 19, 13))
+
+declare const x3: Id<{ a: A } & { a: A }>; x3.a(v);
+>x3 : Symbol(x3, Decl(ttttAssertionThroughMappedOrigin.ts, 24, 13))
+>Id : Symbol(Id, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 56))
+>a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 24, 22))
+>A : Symbol(A, Decl(ttttAssertionThroughMappedOrigin.ts, 14, 44))
+>a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 24, 33))
+>A : Symbol(A, Decl(ttttAssertionThroughMappedOrigin.ts, 14, 44))
+>x3.a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 24, 22), Decl(ttttAssertionThroughMappedOrigin.ts, 24, 33))
+>x3 : Symbol(x3, Decl(ttttAssertionThroughMappedOrigin.ts, 24, 13))
+>a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 24, 22), Decl(ttttAssertionThroughMappedOrigin.ts, 24, 33))
+>v : Symbol(v, Decl(ttttAssertionThroughMappedOrigin.ts, 19, 13))
+
+declare const x4: Id<I & { z: 1 }>; x4.a(v); x4.m(v);
+>x4 : Symbol(x4, Decl(ttttAssertionThroughMappedOrigin.ts, 25, 13))
+>Id : Symbol(Id, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 56))
+>I : Symbol(I, Decl(ttttAssertionThroughMappedOrigin.ts, 19, 25))
+>z : Symbol(z, Decl(ttttAssertionThroughMappedOrigin.ts, 25, 26))
+>x4.a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 13))
+>x4 : Symbol(x4, Decl(ttttAssertionThroughMappedOrigin.ts, 25, 13))
+>a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 13))
+>v : Symbol(v, Decl(ttttAssertionThroughMappedOrigin.ts, 19, 13))
+>x4.m : Symbol(m, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 19))
+>x4 : Symbol(x4, Decl(ttttAssertionThroughMappedOrigin.ts, 25, 13))
+>m : Symbol(m, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 19))
+>v : Symbol(v, Decl(ttttAssertionThroughMappedOrigin.ts, 19, 13))
+
+declare const x5: Id<I & I>; x5.a(v);
+>x5 : Symbol(x5, Decl(ttttAssertionThroughMappedOrigin.ts, 26, 13))
+>Id : Symbol(Id, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 56))
+>I : Symbol(I, Decl(ttttAssertionThroughMappedOrigin.ts, 19, 25))
+>I : Symbol(I, Decl(ttttAssertionThroughMappedOrigin.ts, 19, 25))
+>x5.a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 13))
+>x5 : Symbol(x5, Decl(ttttAssertionThroughMappedOrigin.ts, 26, 13))
+>a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 13))
+>v : Symbol(v, Decl(ttttAssertionThroughMappedOrigin.ts, 19, 13))
+
+declare const x6: Id<{ a: A } | { a: A }>; x6.a(v);
+>x6 : Symbol(x6, Decl(ttttAssertionThroughMappedOrigin.ts, 27, 13))
+>Id : Symbol(Id, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 56))
+>a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 27, 22))
+>A : Symbol(A, Decl(ttttAssertionThroughMappedOrigin.ts, 14, 44))
+>a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 27, 33))
+>A : Symbol(A, Decl(ttttAssertionThroughMappedOrigin.ts, 14, 44))
+>x6.a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 27, 22), Decl(ttttAssertionThroughMappedOrigin.ts, 27, 33))
+>x6 : Symbol(x6, Decl(ttttAssertionThroughMappedOrigin.ts, 27, 13))
+>a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 27, 22), Decl(ttttAssertionThroughMappedOrigin.ts, 27, 33))
+>v : Symbol(v, Decl(ttttAssertionThroughMappedOrigin.ts, 19, 13))
+
+declare const x7: Id<Id<I>>; x7.a(v); x7.m(v);
+>x7 : Symbol(x7, Decl(ttttAssertionThroughMappedOrigin.ts, 28, 13))
+>Id : Symbol(Id, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 56))
+>Id : Symbol(Id, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 56))
+>I : Symbol(I, Decl(ttttAssertionThroughMappedOrigin.ts, 19, 25))
+>x7.a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 13))
+>x7 : Symbol(x7, Decl(ttttAssertionThroughMappedOrigin.ts, 28, 13))
+>a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 13))
+>v : Symbol(v, Decl(ttttAssertionThroughMappedOrigin.ts, 19, 13))
+>x7.m : Symbol(m, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 19))
+>x7 : Symbol(x7, Decl(ttttAssertionThroughMappedOrigin.ts, 28, 13))
+>m : Symbol(m, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 19))
+>v : Symbol(v, Decl(ttttAssertionThroughMappedOrigin.ts, 19, 13))
+
+declare const x8: Id<Id<typeof obj>>; x8.a(v); x8.m(v);
+>x8 : Symbol(x8, Decl(ttttAssertionThroughMappedOrigin.ts, 29, 13))
+>Id : Symbol(Id, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 56))
+>Id : Symbol(Id, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 56))
+>obj : Symbol(obj, Decl(ttttAssertionThroughMappedOrigin.ts, 18, 5))
+>x8.a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 18, 13))
+>x8 : Symbol(x8, Decl(ttttAssertionThroughMappedOrigin.ts, 29, 13))
+>a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 18, 13))
+>v : Symbol(v, Decl(ttttAssertionThroughMappedOrigin.ts, 19, 13))
+>x8.m : Symbol(m, Decl(ttttAssertionThroughMappedOrigin.ts, 18, 26))
+>x8 : Symbol(x8, Decl(ttttAssertionThroughMappedOrigin.ts, 29, 13))
+>m : Symbol(m, Decl(ttttAssertionThroughMappedOrigin.ts, 18, 26))
+>v : Symbol(v, Decl(ttttAssertionThroughMappedOrigin.ts, 19, 13))
+
+declare const x9: Id<{ m(x: unknown): asserts x is string } & { m: A }>; x9.m(v);
+>x9 : Symbol(x9, Decl(ttttAssertionThroughMappedOrigin.ts, 30, 13))
+>Id : Symbol(Id, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 56))
+>m : Symbol(m, Decl(ttttAssertionThroughMappedOrigin.ts, 30, 22))
+>x : Symbol(x, Decl(ttttAssertionThroughMappedOrigin.ts, 30, 25))
+>x : Symbol(x, Decl(ttttAssertionThroughMappedOrigin.ts, 30, 25))
+>m : Symbol(m, Decl(ttttAssertionThroughMappedOrigin.ts, 30, 63))
+>A : Symbol(A, Decl(ttttAssertionThroughMappedOrigin.ts, 14, 44))
+>x9.m : Symbol(m, Decl(ttttAssertionThroughMappedOrigin.ts, 30, 22), Decl(ttttAssertionThroughMappedOrigin.ts, 30, 63))
+>x9 : Symbol(x9, Decl(ttttAssertionThroughMappedOrigin.ts, 30, 13))
+>m : Symbol(m, Decl(ttttAssertionThroughMappedOrigin.ts, 30, 22), Decl(ttttAssertionThroughMappedOrigin.ts, 30, 63))
+>v : Symbol(v, Decl(ttttAssertionThroughMappedOrigin.ts, 19, 13))
+
+declare const y1: Id<{ m: A } & { m(x: unknown): asserts x is string }>; y1.m(v);
+>y1 : Symbol(y1, Decl(ttttAssertionThroughMappedOrigin.ts, 31, 13))
+>Id : Symbol(Id, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 56))
+>m : Symbol(m, Decl(ttttAssertionThroughMappedOrigin.ts, 31, 22))
+>A : Symbol(A, Decl(ttttAssertionThroughMappedOrigin.ts, 14, 44))
+>m : Symbol(m, Decl(ttttAssertionThroughMappedOrigin.ts, 31, 33))
+>x : Symbol(x, Decl(ttttAssertionThroughMappedOrigin.ts, 31, 36))
+>x : Symbol(x, Decl(ttttAssertionThroughMappedOrigin.ts, 31, 36))
+>y1.m : Symbol(m, Decl(ttttAssertionThroughMappedOrigin.ts, 31, 22), Decl(ttttAssertionThroughMappedOrigin.ts, 31, 33))
+>y1 : Symbol(y1, Decl(ttttAssertionThroughMappedOrigin.ts, 31, 13))
+>m : Symbol(m, Decl(ttttAssertionThroughMappedOrigin.ts, 31, 22), Decl(ttttAssertionThroughMappedOrigin.ts, 31, 33))
+>v : Symbol(v, Decl(ttttAssertionThroughMappedOrigin.ts, 19, 13))
+
+declare const y2: Id<{ a: A } & { a: (x: unknown) => asserts x is string }>; y2.a(v);
+>y2 : Symbol(y2, Decl(ttttAssertionThroughMappedOrigin.ts, 32, 13))
+>Id : Symbol(Id, Decl(ttttAssertionThroughMappedOrigin.ts, 20, 56))
+>a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 32, 22))
+>A : Symbol(A, Decl(ttttAssertionThroughMappedOrigin.ts, 14, 44))
+>a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 32, 33))
+>x : Symbol(x, Decl(ttttAssertionThroughMappedOrigin.ts, 32, 38))
+>x : Symbol(x, Decl(ttttAssertionThroughMappedOrigin.ts, 32, 38))
+>y2.a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 32, 22), Decl(ttttAssertionThroughMappedOrigin.ts, 32, 33))
+>y2 : Symbol(y2, Decl(ttttAssertionThroughMappedOrigin.ts, 32, 13))
+>a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 32, 22), Decl(ttttAssertionThroughMappedOrigin.ts, 32, 33))
+>v : Symbol(v, Decl(ttttAssertionThroughMappedOrigin.ts, 19, 13))
+
+declare const y3: { a: A } & { a: (x: unknown) => asserts x is string }; y3.a(v);
+>y3 : Symbol(y3, Decl(ttttAssertionThroughMappedOrigin.ts, 33, 13))
+>a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 33, 19))
+>A : Symbol(A, Decl(ttttAssertionThroughMappedOrigin.ts, 14, 44))
+>a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 33, 30))
+>x : Symbol(x, Decl(ttttAssertionThroughMappedOrigin.ts, 33, 35))
+>x : Symbol(x, Decl(ttttAssertionThroughMappedOrigin.ts, 33, 35))
+>y3.a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 33, 19), Decl(ttttAssertionThroughMappedOrigin.ts, 33, 30))
+>y3 : Symbol(y3, Decl(ttttAssertionThroughMappedOrigin.ts, 33, 13))
+>a : Symbol(a, Decl(ttttAssertionThroughMappedOrigin.ts, 33, 19), Decl(ttttAssertionThroughMappedOrigin.ts, 33, 30))
+>v : Symbol(v, Decl(ttttAssertionThroughMappedOrigin.ts, 19, 13))
+

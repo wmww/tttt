@@ -9,10 +9,12 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
 ## Looked at, by root cause
 - TS2775 through an intersection's property two members declare (99-V4 isReachableFlowNode_getExplicitTypeOfSymbol__08,
   `both.check(x)` with `both: P & Q`): tsc's synthetic property has no value declaration, so no explicit type and no
-  related TS2782. flow.c's intersection_prop_non_uniform(). Left: the same through a mapped type over the
-  intersection (60-L16b's `Id<{ a: A } & { a: A }>`: the mapped property's syntheticOrigin is the non-uniform one) and
-  60-L16a's key-remapped mapped type (`as` clause: tsc's property has no syntheticOrigin, spurious TS2775 in tttt).
-  Test ttttAssertionThroughIntersectionProperty [fixed COMMIT-next].
+  related TS2782. flow.c's intersection_prop_non_uniform(). The same through a mapped type over the intersection
+  (60-L16b's `Id<{ a: A } & { a: A }>`: the mapped property's syntheticOrigin is the non-uniform one) and 60-L16a's
+  key-remapped mapped type (`as` clause: tsc keeps the syntheticOrigin without the declarations, PropDeclRare.
+  remapped_from), the related TS2782 at the origin under its name: test ttttAssertionThroughMappedOrigin [fixed
+  COMMIT-next]. Left: a remapping `as` clause over such an intersection (remapped_from has no intersection).
+  Test ttttAssertionThroughIntersectionProperty [fixed cdf52a5aa].
 - Missing TS2367 on a loop's partial types (99-V4 getTypeOfExpression__01/02, getAssignedType__05/06,
   checks-of-a-value-assigned-on-a-loop-back-edge a2/a3): tsc reports an equality's TS2367 while control flow evaluates
   an assigned value on a loop's first-iteration types, unless CheckModeTypeOnly (getTypeOfExpression) reaches it
@@ -23,7 +25,7 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
 - Missing TS18048 at an optional call's callee (99-V4 resolveCallExpression__03, `a?.o()` with `o?: () => T`): tsc's
   getEffectsSignature, reached by a later reference's narrowing through the chain's condition, checks the callee not
   to be nullish after getOptionalExpressionType (the chain's marker off, or the callee's own `?.`'s nullishness).
-  flow.c's call_effects() skipped optional chains. Test ttttOptionalChainEffectsCallee [fixed COMMIT-next].
+  flow.c's call_effects() skipped optional chains. Test ttttOptionalChainEffectsCallee [fixed cb44d53a5].
 - TS2490/TS2767 both ways (04-C9b, 04-C2a, 93-R19a, 99-V4 checkIteratedTypeOrElementType__01/02/06, 99-V7): tsc reports
   an iterator's method problems only from the first getIterationTypesOfIterable of a (type, cache-use) key, if it had
   an error node; flow's for-of variables and destructured elements, a destructuring assignment's rest target, a

@@ -4987,6 +4987,10 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                     // (Of a union, declared where each member's property is, intersections' too: tsc's union property
                     // symbol)
                     if (modifiers->kind == TY_UNION) add_member_decl_spans(me, prop, modifiers, name, 0);
+                } else if (remapping && from) {
+                    PropDecl* decl = arena_new(&my arena, PropDecl);
+                    prop_decl_rare_mut(me, decl)->remapped_from = from;
+                    prop->decl = decl;
                 }
                 // A number key is a number to keyof (tsc's mapped symbol's nameType, getLiteralTypeFromProperty), which
                 // the name, a string, doesn't say; an enum member is that member (and prints as one, `[E.A]`)

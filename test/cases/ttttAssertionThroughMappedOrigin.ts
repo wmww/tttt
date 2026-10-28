@@ -1,0 +1,36 @@
+// @strict: true
+// @lib: es2022
+// A mapped property's explicit type is its syntheticOrigin's (tsc's getExplicitTypeOfSymbol): an `as` clause that remaps
+// keeps the origin (no declarations), an intersection whose members declare the property separately has none
+// (bun 60-L16a, 60-L16b): TS2775 on the assertion calls through them, the related information at the origin
+interface Asserts { str(x: unknown): asserts x is string; num: (x: unknown) => asserts x is number }
+type Prefixed<T> = { [K in keyof T as `assert${Capitalize<K & string>}`]: T[K] };
+declare const pa: Prefixed<Asserts>;
+function fa(v: unknown, w: unknown) {
+  pa.assertStr(v);
+  v.length;
+  pa.assertNum(w);
+  w.toFixed();
+}
+const inferredA = { bad: (x: unknown): asserts x is string => {} };
+declare const qa: Prefixed<typeof inferredA>;
+function ga(v: unknown) { qa.assertBad(v); }
+
+type A = (x: unknown) => asserts x is string;
+const inferred = (x: unknown): asserts x is string => {};
+const obj = { a: inferred, m(x: unknown): asserts x is string {} };
+declare const v: unknown;
+interface I { a: A; m(x: unknown): asserts x is string }
+type Id<T> = { [K in keyof T]: T[K] };
+declare const x1: Id<{ a: A } & typeof obj>; x1.a(v);
+declare const x2: Id<typeof obj & { a: A }>; x2.a(v);
+declare const x3: Id<{ a: A } & { a: A }>; x3.a(v);
+declare const x4: Id<I & { z: 1 }>; x4.a(v); x4.m(v);
+declare const x5: Id<I & I>; x5.a(v);
+declare const x6: Id<{ a: A } | { a: A }>; x6.a(v);
+declare const x7: Id<Id<I>>; x7.a(v); x7.m(v);
+declare const x8: Id<Id<typeof obj>>; x8.a(v); x8.m(v);
+declare const x9: Id<{ m(x: unknown): asserts x is string } & { m: A }>; x9.m(v);
+declare const y1: Id<{ m: A } & { m(x: unknown): asserts x is string }>; y1.m(v);
+declare const y2: Id<{ a: A } & { a: (x: unknown) => asserts x is string }>; y2.a(v);
+declare const y3: { a: A } & { a: (x: unknown) => asserts x is string }; y3.a(v);
