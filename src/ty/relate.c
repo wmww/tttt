@@ -3555,6 +3555,11 @@ typedef struct VarianceClaim {
     struct VarianceSlot* slot; // --shared-graph on threads: its slot if in_group
 } VarianceClaim;
 
+unsigned char const* ty_variances_data(void const* variances, u32* len) {
+    *len = ((Variances const*)variances)->len;
+    return ((Variances const*)variances)->data;
+}
+
 // (How deep tsgo's varianceStack goes in a measurement and in each restart: Checker.variance_stack)
 #define VARIANCE_STACK_SEGMENT 64
 
@@ -3872,10 +3877,9 @@ static void publish_frame_early(Checker* me, VarianceClaim* claim) {
     u64 key[2] = { claim->declared ? KEY_VARIANCES : KEY_ALIAS_VARIANCES,
         claim->declared ? claim->declared->id : (u64)(uintptr_t)claim->alias };
     void const** block = intern_slot(me, &my links, key, 2);
-    if (graph_variance_publish_early(me, claim->slot, block, variances_equal)) {
-        ((Variances*)block[0])->pending = false;
-        claim->done = block[0];
-    }
+    // (Not pending from now on, before it can be another worker's: published, adopted, or private and tainted)
+    ((Variances*)block[0])->pending = false;
+    if (graph_variance_publish_early(me, claim->slot, block, variances_equal)) claim->done = block[0];
 }
 
 static bool variances_clean(void const* values) {

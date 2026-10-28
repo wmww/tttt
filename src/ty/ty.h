@@ -2506,6 +2506,7 @@ Ty const* ty_single_base_for_non_augmenting_subtype(Checker* me, Ty const* ty);
 void ty_display_pair_cstr(Checker* me, Ty const* a, Ty const* b, cstr* a_out, cstr* b_out);
 void relation_cache_drop(RelationCache* me);
 void ty_deep_stamps_drop(Checker* me); // (relate.c)
+unsigned char const* ty_variances_data(void const* variances, u32* len); // A KEY_VARIANCES value's (relate.c)
 // conditional.c
 // Null while the conditional type has to stay deferred. `mapper`: what instantiated the conditional type (the constraints
 // of its `infer X extends C` are the root's)

@@ -509,13 +509,13 @@ static bool variance_publish_slot(
         // (Two clean groups that disagree: something either read escaped the rule)
         if (getenv("TTTT_GRAPH_STATS")) {
             cstr name = slot->alias ? cstr_from("(an alias)") : ty_to_cstr(checker, slot->subject);
-            unsigned char const* x = (unsigned char const*)mine;
-            unsigned char const* y = (unsigned char const*)seen;
-            // (Variances: u32 len, bool pending, bool clean, u64 serial, the data from byte 16)
+            u32 len;
+            unsigned char const* x = ty_variances_data(mine, &len);
+            unsigned char const* y = ty_variances_data((void const*)seen, &len);
             cstr xs = cstr_init(), ys = cstr_init();
-            for (u32 j = 0; j < *(u32 const*)x && j < 16; j++) {
-                cstr_append_fmt(&xs, " %u", x[16 + j]);
-                cstr_append_fmt(&ys, " %u", y[16 + j]);
+            for (u32 j = 0; j < len && j < 16; j++) {
+                cstr_append_fmt(&xs, " %u", x[j]);
+                cstr_append_fmt(&ys, " %u", y[j]);
             }
             eprintln("graph: variances of ", name, " differ from the published ones (worker ", (u32)checker->graph_worker, "):", xs, " vs", ys);
             c_drop(cstr, &xs, &ys);

@@ -153,13 +153,14 @@ static u64 value_of(unsigned kind, void const* result) {
         case TK_DECLARED_RAW:
             return fp_members(result);
         case TK_VARIANCES: {
-            struct { u32 len; unsigned char data[]; } const* v = result;
+            u32 len;
+            unsigned char const* data = ty_variances_data(result, &len);
             unsigned char masked[256];
-            u32 len = v->len < sizeof masked ? v->len : sizeof masked;
-            for (u32 i = 0; i < len; i++) masked[i] = v->data[i] & ~8u;
+            if (len > sizeof masked) len = sizeof masked;
+            for (u32 i = 0; i < len; i++) masked[i] = data[i] & ~8u;
             if (trace) {
                 cstr_append_fmt(trace, " variances=[");
-                for (u32 i = 0; i < len; i++) cstr_append_fmt(trace, "%s%u", i ? " " : "", (unsigned)v->data[i]);
+                for (u32 i = 0; i < len; i++) cstr_append_fmt(trace, "%s%u", i ? " " : "", (unsigned)data[i]);
                 cstr_append_fmt(trace, "]");
             }
             return fp_bytes(masked, len);
