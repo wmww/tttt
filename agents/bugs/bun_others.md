@@ -520,7 +520,7 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   [open]
 - After a parameter's modifiers a reserved word is TS1359 (parseBindingIdentifier), not TS1003: `declare function`
   where a parameter was expected (seed 20261101, contextualParamTypeVsNestedReturnTypeInference4;
-  ttttParameterModifierReservedName). [fixed bun8-8]
+  ttttParameterModifierReservedName). [fixed 56abcd061]
 - Class member TS1171/TS1166/TS1168 after the member's own modifier or signature grammar errors (tsgo's
   checkGrammarModifiers || checkGrammarProperty/Method/Accessor chains: TS1028, TS1029, TS1030, TS1031, TS1244...,
   then a method's or accessor's parameter list, `use strict` parameters, accessor and generator checks): the parser

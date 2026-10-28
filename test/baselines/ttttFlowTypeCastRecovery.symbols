@@ -1,9 +1,9 @@
 //// [test/cases/ttttFlowTypeCastRecovery.ts] ////
 
 === ttttFlowTypeCastRecovery.ts ===
-// Flow's type cast `(a.b: any)(...args)`: both parsers recover through an arrow function missing its `=>`, but tttt
-// also reports TS1200 (line terminator before an arrow) at the end of the file, which tsgo doesn't. Known failing (agents/bugs/missing_checks.md, Parser recovery). Babel's
-// transform-spread call-context/flow-type-cast fixture
+// Flow's type cast `(a.b: any)(...args)`: both parsers recover through an arrow function missing its `=>`, which is
+// a zero-width missing token: no TS1200 (line terminator before an arrow) at the end of the file (agents/bugs/
+// missing_checks.md, Parser recovery). Babel's transform-spread call-context/flow-type-cast fixture
 declare const a: { b: Function }, args: any[];
 >a : Symbol(a, Decl(ttttFlowTypeCastRecovery.ts, 3, 13))
 >b : Symbol(b, Decl(ttttFlowTypeCastRecovery.ts, 3, 18))
