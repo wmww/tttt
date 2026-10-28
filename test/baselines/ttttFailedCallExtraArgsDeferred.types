@@ -1,0 +1,74 @@
+//// [test/cases/ttttFailedCallExtraArgsDeferred.ts] ////
+
+=== ttttFailedCallExtraArgsDeferred.ts ===
+// The arguments past a failed call's parameters aren't typed while the call is resolved: tsc checks them in the
+// failed call's deferred resolveUntypedCall, after the declaration the call initializes has its type, so a reference
+// to it there is no circularity (TS7022), only a use before declaration
+declare function f(a: number): number;
+>f : (a: number) => number
+>a : number
+
+const w = f(1, (() => w)());
+>w : number
+>f(1, (() => w)()) : number
+>f : (a: number) => number
+>1 : 1
+>(() => w)() : number
+>(() => w) : () => number
+>() => w : () => number
+>w : number
+
+declare function g<T>(a: T): T;
+>g : <T>(a: T) => T
+>a : T
+
+const v = g(1, (() => v)());
+>v : 1
+>g(1, (() => v)()) : 1
+>g : <T>(a: T) => T
+>1 : 1
+>(() => v)() : number
+>(() => v) : () => number
+>() => v : () => number
+>v : 1
+
+declare function h(a: number): number;
+>h : { (a: number): number; (a: string): string; }
+>a : number
+
+declare function h(a: string): string;
+>h : { (a: number): number; (a: string): string; }
+>a : string
+
+const u = h(1, (() => u)());
+>u : never
+>h(1, (() => u)()) : never
+>h : { (a: number): number; (a: string): string; }
+>1 : 1
+>(() => u)() : never
+>(() => u) : () => never
+>() => u : () => never
+>u : never
+
+type ComponentProps<T> = T extends (props: infer P) => unknown ? P : never;
+>ComponentProps : ComponentProps<T>
+>props : P
+
+declare function wrap<P>(component: (props: P) => unknown): (props: P) => unknown;
+>wrap : <P>(component: (props: P) => unknown) => (props: P) => unknown
+>component : (props: P) => unknown
+>props : P
+>props : P
+
+const Wrapped = wrap((props: { a?: string }) => null, 1, ComponentProps<typeof Wrapped>);
+>Wrapped : (props: { a?: string; }) => unknown
+>wrap((props: { a?: string }) => null, 1, ComponentProps<typeof Wrapped>) : (props: { a?: string; }) => unknown
+>wrap : <P>(component: (props: P) => unknown) => (props: P) => unknown
+>(props: { a?: string }) => null : (props: { a?: string; }) => null
+>props : { a?: string; }
+>a : string | undefined
+>1 : 1
+>ComponentProps<typeof Wrapped> : any
+>ComponentProps : any
+>Wrapped : (props: { a?: string; }) => unknown
+

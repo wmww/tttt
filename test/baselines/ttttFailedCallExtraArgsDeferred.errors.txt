@@ -1,0 +1,53 @@
+ttttFailedCallExtraArgsDeferred.ts(5,16): error TS2554: Expected 1 arguments, but got 2.
+ttttFailedCallExtraArgsDeferred.ts(5,23): error TS2448: Block-scoped variable 'w' used before its declaration.
+ttttFailedCallExtraArgsDeferred.ts(5,23): error TS2454: Variable 'w' is used before being assigned.
+ttttFailedCallExtraArgsDeferred.ts(7,16): error TS2554: Expected 1 arguments, but got 2.
+ttttFailedCallExtraArgsDeferred.ts(7,23): error TS2448: Block-scoped variable 'v' used before its declaration.
+ttttFailedCallExtraArgsDeferred.ts(7,23): error TS2454: Variable 'v' is used before being assigned.
+ttttFailedCallExtraArgsDeferred.ts(10,16): error TS2554: Expected 1 arguments, but got 2.
+ttttFailedCallExtraArgsDeferred.ts(10,23): error TS2448: Block-scoped variable 'u' used before its declaration.
+ttttFailedCallExtraArgsDeferred.ts(10,23): error TS2454: Variable 'u' is used before being assigned.
+ttttFailedCallExtraArgsDeferred.ts(13,55): error TS2554: Expected 1 arguments, but got 3.
+ttttFailedCallExtraArgsDeferred.ts(13,58): error TS2693: 'ComponentProps' only refers to a type, but is being used as a value here.
+
+
+==== ttttFailedCallExtraArgsDeferred.ts (11 errors) ====
+    // The arguments past a failed call's parameters aren't typed while the call is resolved: tsc checks them in the
+    // failed call's deferred resolveUntypedCall, after the declaration the call initializes has its type, so a reference
+    // to it there is no circularity (TS7022), only a use before declaration
+    declare function f(a: number): number;
+    const w = f(1, (() => w)());
+                   ~~~~~~~~~~~
+!!! error TS2554: Expected 1 arguments, but got 2.
+                          ~
+!!! error TS2448: Block-scoped variable 'w' used before its declaration.
+!!! related TS2728 ttttFailedCallExtraArgsDeferred.ts:5:7: 'w' is declared here.
+                          ~
+!!! error TS2454: Variable 'w' is used before being assigned.
+    declare function g<T>(a: T): T;
+    const v = g(1, (() => v)());
+                   ~~~~~~~~~~~
+!!! error TS2554: Expected 1 arguments, but got 2.
+                          ~
+!!! error TS2448: Block-scoped variable 'v' used before its declaration.
+!!! related TS2728 ttttFailedCallExtraArgsDeferred.ts:7:7: 'v' is declared here.
+                          ~
+!!! error TS2454: Variable 'v' is used before being assigned.
+    declare function h(a: number): number;
+    declare function h(a: string): string;
+    const u = h(1, (() => u)());
+                   ~~~~~~~~~~~
+!!! error TS2554: Expected 1 arguments, but got 2.
+                          ~
+!!! error TS2448: Block-scoped variable 'u' used before its declaration.
+!!! related TS2728 ttttFailedCallExtraArgsDeferred.ts:10:7: 'u' is declared here.
+                          ~
+!!! error TS2454: Variable 'u' is used before being assigned.
+    type ComponentProps<T> = T extends (props: infer P) => unknown ? P : never;
+    declare function wrap<P>(component: (props: P) => unknown): (props: P) => unknown;
+    const Wrapped = wrap((props: { a?: string }) => null, 1, ComponentProps<typeof Wrapped>);
+                                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2554: Expected 1 arguments, but got 3.
+                                                             ~~~~~~~~~~~~~~
+!!! error TS2693: 'ComponentProps' only refers to a type, but is being used as a value here.
+    

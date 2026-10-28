@@ -2825,10 +2825,15 @@ static Resolution resolve_with_signatures_inner(
             // (The arguments are checked against it: a callback's parameters get the union of what each overload
             // gives them, which is no contextual signature unless they agree)
             Signature const* failure = overload_failure_union_signature(me, signatures, count);
+            // (Not those past its parameters: see the arity failure below)
+            u32 all_args = args->len;
+            u32 params = ty_signature_param_count(me, failure);
+            if (args->spread_index < 0 && !args->decorator_arity && !ty_signature_has_rest(me, failure) && all_args > params) args->len = params;
             ParamShape shape;
             call_param_shape(me, info, failure, nullptr, &shape);
             check_args(me, &shape, args, false);
             shape_drop(&shape);
+            args->len = all_args;
             ret.ret = signature_return_type(me, failure);
         } else if (unfit_count) {
             // Inferred again from what doesn't depend on the candidate: context-sensitive and generic function
@@ -2900,6 +2905,12 @@ static Resolution resolve_with_signatures_inner(
                 if (i == 0 || params > most) most = params, best = i;
             }
             Signature const* sig = signatures[best];
+            // (The arguments past its parameters aren't looked at by the inference, their parameter type is any, nor
+            // typed with the call: tsc checks them in the failed call's deferred resolveUntypedCall, after whatever
+            // the call is being resolved for, `const w = f(a, typeof w)` with f taking one parameter is no TS7022)
+            u32 all_args = args->len;
+            u32 params = ty_signature_param_count(me, sig);
+            if (args->spread_index < 0 && !args->decorator_arity && !ty_signature_has_rest(me, sig) && all_args > params) args->len = params;
             Candidate candidate = info->type_arg_nodes ? (Candidate){ .sig = sig, .mapper = failure_type_arguments(me, sig, info) } :
                 sig_res(me, sig)->type_params.len ? make_candidate(me, sig, args, info, true, true) : (Candidate){ .sig = sig };
             // (The arguments are checked against it: an arrow's parameters get its types, tsc's
@@ -2908,6 +2919,7 @@ static Resolution resolve_with_signatures_inner(
             call_param_shape(me, info, candidate.sig, candidate.mapper, &shape);
             check_args(me, &shape, args, false);
             shape_drop(&shape);
+            args->len = all_args;
             ret.ret = info->type_arg_nodes ? candidate_return_type(me, &candidate) :
                 sig_res(me, sig)->type_params.len ? resolved_return_type(me, &candidate) : signature_return_type(me, sig);
             ret.failure = candidate; // (What control flow goes by too: tsc's getEffectsSignature, a type predicate's)

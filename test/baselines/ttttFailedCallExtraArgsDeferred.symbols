@@ -1,0 +1,64 @@
+//// [test/cases/ttttFailedCallExtraArgsDeferred.ts] ////
+
+=== ttttFailedCallExtraArgsDeferred.ts ===
+// The arguments past a failed call's parameters aren't typed while the call is resolved: tsc checks them in the
+// failed call's deferred resolveUntypedCall, after the declaration the call initializes has its type, so a reference
+// to it there is no circularity (TS7022), only a use before declaration
+declare function f(a: number): number;
+>f : Symbol(f, Decl(ttttFailedCallExtraArgsDeferred.ts, 0, 0))
+>a : Symbol(a, Decl(ttttFailedCallExtraArgsDeferred.ts, 3, 19))
+
+const w = f(1, (() => w)());
+>w : Symbol(w, Decl(ttttFailedCallExtraArgsDeferred.ts, 4, 5))
+>f : Symbol(f, Decl(ttttFailedCallExtraArgsDeferred.ts, 0, 0))
+>w : Symbol(w, Decl(ttttFailedCallExtraArgsDeferred.ts, 4, 5))
+
+declare function g<T>(a: T): T;
+>g : Symbol(g, Decl(ttttFailedCallExtraArgsDeferred.ts, 4, 28))
+>T : Symbol(T, Decl(ttttFailedCallExtraArgsDeferred.ts, 5, 19))
+>a : Symbol(a, Decl(ttttFailedCallExtraArgsDeferred.ts, 5, 22))
+>T : Symbol(T, Decl(ttttFailedCallExtraArgsDeferred.ts, 5, 19))
+>T : Symbol(T, Decl(ttttFailedCallExtraArgsDeferred.ts, 5, 19))
+
+const v = g(1, (() => v)());
+>v : Symbol(v, Decl(ttttFailedCallExtraArgsDeferred.ts, 6, 5))
+>g : Symbol(g, Decl(ttttFailedCallExtraArgsDeferred.ts, 4, 28))
+>v : Symbol(v, Decl(ttttFailedCallExtraArgsDeferred.ts, 6, 5))
+
+declare function h(a: number): number;
+>h : Symbol(h, Decl(ttttFailedCallExtraArgsDeferred.ts, 6, 28), Decl(ttttFailedCallExtraArgsDeferred.ts, 7, 38))
+>a : Symbol(a, Decl(ttttFailedCallExtraArgsDeferred.ts, 7, 19))
+
+declare function h(a: string): string;
+>h : Symbol(h, Decl(ttttFailedCallExtraArgsDeferred.ts, 6, 28), Decl(ttttFailedCallExtraArgsDeferred.ts, 7, 38))
+>a : Symbol(a, Decl(ttttFailedCallExtraArgsDeferred.ts, 8, 19))
+
+const u = h(1, (() => u)());
+>u : Symbol(u, Decl(ttttFailedCallExtraArgsDeferred.ts, 9, 5))
+>h : Symbol(h, Decl(ttttFailedCallExtraArgsDeferred.ts, 6, 28), Decl(ttttFailedCallExtraArgsDeferred.ts, 7, 38))
+>u : Symbol(u, Decl(ttttFailedCallExtraArgsDeferred.ts, 9, 5))
+
+type ComponentProps<T> = T extends (props: infer P) => unknown ? P : never;
+>ComponentProps : Symbol(ComponentProps, Decl(ttttFailedCallExtraArgsDeferred.ts, 9, 28))
+>T : Symbol(T, Decl(ttttFailedCallExtraArgsDeferred.ts, 10, 20))
+>T : Symbol(T, Decl(ttttFailedCallExtraArgsDeferred.ts, 10, 20))
+>props : Symbol(props, Decl(ttttFailedCallExtraArgsDeferred.ts, 10, 36))
+>P : Symbol(P, Decl(ttttFailedCallExtraArgsDeferred.ts, 10, 48))
+>P : Symbol(P, Decl(ttttFailedCallExtraArgsDeferred.ts, 10, 48))
+
+declare function wrap<P>(component: (props: P) => unknown): (props: P) => unknown;
+>wrap : Symbol(wrap, Decl(ttttFailedCallExtraArgsDeferred.ts, 10, 75))
+>P : Symbol(P, Decl(ttttFailedCallExtraArgsDeferred.ts, 11, 22))
+>component : Symbol(component, Decl(ttttFailedCallExtraArgsDeferred.ts, 11, 25))
+>props : Symbol(props, Decl(ttttFailedCallExtraArgsDeferred.ts, 11, 37))
+>P : Symbol(P, Decl(ttttFailedCallExtraArgsDeferred.ts, 11, 22))
+>props : Symbol(props, Decl(ttttFailedCallExtraArgsDeferred.ts, 11, 61))
+>P : Symbol(P, Decl(ttttFailedCallExtraArgsDeferred.ts, 11, 22))
+
+const Wrapped = wrap((props: { a?: string }) => null, 1, ComponentProps<typeof Wrapped>);
+>Wrapped : Symbol(Wrapped, Decl(ttttFailedCallExtraArgsDeferred.ts, 12, 5))
+>wrap : Symbol(wrap, Decl(ttttFailedCallExtraArgsDeferred.ts, 10, 75))
+>props : Symbol(props, Decl(ttttFailedCallExtraArgsDeferred.ts, 12, 22))
+>a : Symbol(a, Decl(ttttFailedCallExtraArgsDeferred.ts, 12, 30))
+>Wrapped : Symbol(Wrapped, Decl(ttttFailedCallExtraArgsDeferred.ts, 12, 5))
+
