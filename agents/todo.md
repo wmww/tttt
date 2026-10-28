@@ -40,7 +40,18 @@ than bun canary on real projects, judged on their private set (perf work needs a
 check, not the bench, and no machine-specific tuning: vision.md "Decisions"); memory where cheap; easy, measured
 wins first; land fast and gate in batches.
 
-## Now (2026-10-30): the vscode regression since v1, then correctness
+## Now (2026-10-30 evening): correctness on two workers; the threading plan awaits the human's go
+- **Threading** (notes/threading.md): the human has the four options and the recommendation (share-on-second-touch at
+  declaration granularity, measured first). When they say go: a one-day census worker (no src changes) computing per
+  project the share of each checker's types/instructions rooted at declarations reached by >= 2 checkers and the
+  premium if only those were shared (hub's hubtrace + TTTT_DUP_CENSUS), then a prototype inside graph.c/overlay.c
+  gated by sgcheck/TSan/GRAPH_CHECKS and sgbench on the 58.
+- **Correctness** (cor5: type_core/missing_checks probes, the 99-V4 leftovers; bun7: mutation-testing findings, then
+  flagflip's cells and the own failing tests): continuous. The vscode regression since v1 is recovered except the
+  huge pages, removed for good (vision.md).
+- **Instruction drift**: +0.6..0.8% per day of correctness landings (nest +1.8%, attributed to parser recovery
+  branches and inlining churn: bun7's report); the batch count at every save keeps it visible.
+
 - **vscode since v1** (measurements.md "vscode since v1: the regression attributed", bugs/perf_leads.md): worker rehuge
   brings the arena/AST huge pages back with a kernel-configuration guard (THP enabled/defrag; v1's free-block budget
   as the fallback) and makes a5a0b7100's second inference cheaper; the huge text page needs a THP-`always` box (the

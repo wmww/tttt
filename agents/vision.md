@@ -95,6 +95,13 @@ measured wins first; land fast and gate in batches.
 6. **Re-pin to 7.1.0 stable** when it ships.
 
 ## Decisions (each with its reason; the narrative is in git history of this file)
+- **Threading, the understanding and the plan (2026-10-30, with the human): notes/threading.md.** The lead's erosion
+  with threads is a real trade-off in the per-checker model (private graphs: fast at K=1, duplicated at K>1) against
+  bun's shared store (a first-read tax at every K, no duplication); not a hack. The shared graph is correct and ships
+  as an option; two modes won't be maintained long term. The plan to unify: "share on second touch" at declaration
+  granularity inside the existing graph machinery (measure the hot-declaration share first, one day; build if hubs are
+  high and corpora low), with single-threaded work and the front end/idle tail as the continuous tracks; optimizing
+  sharing alone is dropped. The human's four options and the reasoning are in the note.
 - **No huge-page machinery, final** (2026-10-30, the human, after rehuge brought arena/AST huge pages back behind a
   rule on the kernel's THP and defrag settings: "there is absolutely no way this isn't overfit on whatever devices
   we've tried it on... don't make it more complicated, get rid of it and accept the slight regression"). The two
