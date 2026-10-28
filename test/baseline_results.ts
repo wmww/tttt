@@ -15542,6 +15542,17 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttMissingEnumInitializer': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttMissingFieldInitializer': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttMissingInitializerImplicitAny': {
         errors: true,
         symbols: true,
