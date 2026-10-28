@@ -2896,7 +2896,11 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
     }
     TyDisplay outer = d;
     d = brace_open(d);
+    // (A mapped type is its `[K in T]: X` alone: the members tsgo's parser keeps after it for recovery aren't its nodes)
+    bool mapped = vec_interface_member_size(&interface->members) &&
+        vec_interface_member_at(&interface->members, 0)->key.tag == INTERFACE_KEY_MAPPED;
     for_each (i, vec_interface_member, &interface->members) {
+        if (mapped && i != interface->members.data) break;
         if (!member_printed(me, d, i)) continue;
         // (Declaration emit: a type ending the member, which has no `;`, leaves its trailing comments to it)
         if (d.comments && d.multiline && span_valid(i->declaration)) {
