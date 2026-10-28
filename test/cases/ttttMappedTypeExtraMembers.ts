@@ -1,0 +1,10 @@
+// @strict: true
+// @noEmit: true
+// A mapped type's other members (after a parse error, or TS7061) are recovery only: tsc's checkMappedType never visits
+// them, so no TS7008 for `never;` (mutation testing seed 20261102, classReferencedInContextualParameterWithinItsOwnBaseExpression)
+type OutputFrom<TFields> = {
+  [K in keyof TFields]: "_TOutput" extends Object TFields[K]
+    ? TFields[K]["_TOutput"]
+    : never;
+};
+type M2<T> = { [K in keyof T]: T[K]; extra; };

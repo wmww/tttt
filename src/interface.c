@@ -74,6 +74,8 @@ static void interface_check_overload_optionality(Interface const* me, Symbol con
 void interface_typecheck(Interface const* me, Symbol const* merged, ErrorCtx* errs) {
     for_each (i, vec_interface_member, &my members) {
         interface_member_typecheck(i, false, my type_literal, errs);
+        // (A mapped type's other members, after TS7061, are only recovery: tsc's checkMappedType never visits them)
+        if (my type_literal && i->key.tag == INTERFACE_KEY_MAPPED && i == my members.data) break;
     }
     interface_check_overload_optionality(me, merged, errs);
 }

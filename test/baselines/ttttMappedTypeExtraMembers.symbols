@@ -1,0 +1,33 @@
+//// [test/cases/ttttMappedTypeExtraMembers.ts] ////
+
+=== ttttMappedTypeExtraMembers.ts ===
+// A mapped type's other members (after a parse error, or TS7061) are recovery only: tsc's checkMappedType never visits
+// them, so no TS7008 for `never;` (mutation testing seed 20261102, classReferencedInContextualParameterWithinItsOwnBaseExpression)
+type OutputFrom<TFields> = {
+>OutputFrom : Symbol(OutputFrom, Decl(ttttMappedTypeExtraMembers.ts, 0, 0))
+>TFields : Symbol(TFields, Decl(ttttMappedTypeExtraMembers.ts, 2, 16))
+
+  [K in keyof TFields]: "_TOutput" extends Object TFields[K]
+>K : Symbol(K, Decl(ttttMappedTypeExtraMembers.ts, 3, 3))
+>TFields : Symbol(TFields, Decl(ttttMappedTypeExtraMembers.ts, 2, 16))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>TFields : Symbol(TFields, Decl(ttttMappedTypeExtraMembers.ts, 2, 16))
+>K : Symbol(K, Decl(ttttMappedTypeExtraMembers.ts, 3, 3))
+
+    ? TFields[K]["_TOutput"]
+>TFields : Symbol(TFields, Decl(ttttMappedTypeExtraMembers.ts, 2, 16))
+>K : Symbol(K, Decl(ttttMappedTypeExtraMembers.ts, 3, 3))
+
+    : never;
+>never : Symbol(never, Decl(ttttMappedTypeExtraMembers.ts, 5, 5))
+
+};
+type M2<T> = { [K in keyof T]: T[K]; extra; };
+>M2 : Symbol(M2, Decl(ttttMappedTypeExtraMembers.ts, 6, 2))
+>T : Symbol(T, Decl(ttttMappedTypeExtraMembers.ts, 7, 8))
+>K : Symbol(K, Decl(ttttMappedTypeExtraMembers.ts, 7, 16))
+>T : Symbol(T, Decl(ttttMappedTypeExtraMembers.ts, 7, 8))
+>T : Symbol(T, Decl(ttttMappedTypeExtraMembers.ts, 7, 8))
+>K : Symbol(K, Decl(ttttMappedTypeExtraMembers.ts, 7, 16))
+>extra : Symbol(extra, Decl(ttttMappedTypeExtraMembers.ts, 7, 36))
+

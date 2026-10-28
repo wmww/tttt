@@ -1,0 +1,24 @@
+ttttMappedTypeExtraMembers.ts(4,51): error TS1005: '?' expected.
+ttttMappedTypeExtraMembers.ts(5,5): error TS1005: ':' expected.
+ttttMappedTypeExtraMembers.ts(5,7): error TS2536: Type '"_TOutput"' cannot be used to index type 'TFields[K]'.
+ttttMappedTypeExtraMembers.ts(6,5): error TS1131: Property or signature expected.
+
+
+==== ttttMappedTypeExtraMembers.ts (4 errors) ====
+    // A mapped type's other members (after a parse error, or TS7061) are recovery only: tsc's checkMappedType never visits
+    // them, so no TS7008 for `never;` (mutation testing seed 20261102, classReferencedInContextualParameterWithinItsOwnBaseExpression)
+    type OutputFrom<TFields> = {
+      [K in keyof TFields]: "_TOutput" extends Object TFields[K]
+                                                      ~~~~~~~
+!!! error TS1005: '?' expected.
+        ? TFields[K]["_TOutput"]
+        ~
+!!! error TS1005: ':' expected.
+          ~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2536: Type '"_TOutput"' cannot be used to index type 'TFields[K]'.
+        : never;
+        ~
+!!! error TS1131: Property or signature expected.
+    };
+    type M2<T> = { [K in keyof T]: T[K]; extra; };
+    
