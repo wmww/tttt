@@ -1,0 +1,17 @@
+ttttFunctionInitializerTypedFirst.ts(5,7): error TS7022: 'h' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+ttttFunctionInitializerTypedFirst.ts(6,7): error TS7022: 'k' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+
+
+==== ttttFunctionInitializerTypedFirst.ts (2 errors) ====
+    // A variable initialized by a function expression is typed before its initializer is checked (tsc's
+    // checkVariableLikeDeclaration asks getTypeOfSymbol first): the function's first check (checkSignatureDeclaration's
+    // parameter defaults) then runs while the variable is in flight, and a default reading it is circular, TS7022
+    export {}
+    const h = (a = h) => 1;
+          ~
+!!! error TS7022: 'h' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    const k = function (b = k) { return 1; };
+          ~
+!!! error TS7022: 'k' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    const ok = (c = 1) => ok;
+    

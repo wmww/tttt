@@ -10,7 +10,7 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
 - Missing TS2683 (07-C5, 32-C2, 99-V4): `this` in a parameter default of a function or object literal method isn't
   the function's (tsc's isInParameterInitializerBeforeContainingFunction: any, TS2683; ttttThisInParameterDefault)
   [fixed 352a1d5a9]; `(o.x) = function () { this }` gets no contextual `this` from `o`, the target is parenthesized
-  (ttttThisOfParenthesizedAssignmentTarget) [fixed COMMIT-next].
+  (ttttThisOfParenthesizedAssignmentTarget) [fixed 0183bf18d].
 - Control flow of loops with `finally` and back edges after a never-returning call or a `break` in a narrowing:
   73-R01e and 73-R01f (TS2339 both ways on `x.foo` in `do { try {} finally { x.foo } } while (true)` after `fail()`),
   73-R03a (an evolving `let x = []` narrowed by `Array.isArray` in a for loop's incrementor: tttt says TS2339 on never

@@ -1203,7 +1203,9 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
     CurrentNode saved = ty_enter_node(checker, my binding.content_span);
     // (The annotation is walked first, which makes the types of the literals in it: tsc's checkVariableLikeDeclaration)
     binding_annotation_typecheck(&my binding, errs);
-    if (my binding.tag == BINDING_IDENTIFIER && my binding.symbol && initialized_binding_value(me)->tag == EXPR_CALL) {
+    if (my binding.tag == BINDING_IDENTIFIER && my binding.symbol &&
+        (initialized_binding_value(me)->tag == EXPR_CALL || initialized_binding_value(me)->tag == EXPR_FUNCTION)
+    ) {
         ty_type_of_symbol(checker, my binding.symbol);
     }
     binding_check_computed_names_first(&my binding);

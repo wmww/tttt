@@ -92,6 +92,19 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   `Item` where tsc's is `Item | undefined` (types only, the loop's flow result from inside the cycle is kept), and 99-V4's
   checkObjectLiteralMethod__03 / checkPropertyAssignment__07 report their spurious TS7023 on the first method instead of
   the second (both wrong before and after: tsc has TS2683 there). Test ttttFunctionExpressionDefaultsAtFirstCheck. [fixed ffba37893]
+- (cor4, 2026-10-28, bun 99-V4 checkReturnStatement__01/02) Return statements were checked against the annotation as
+  lowered after a circular signature return (`[any]`), not against tsc's getReturnTypeOfSignature result (any, TS2577):
+  a spurious TS2322. KEY_RETURN_ANNOTATION_CIRCULAR. Test ttttReturnCheckedAgainstCircularAnnotation. [fixed 12c213d21]
+- (cor4, 2026-10-28) A variable initialized by a function expression wasn't typed before its initializer was checked
+  (tsc's checkVariableLikeDeclaration asks getTypeOfSymbol first), so the function's first check ran with the variable
+  settled and `const h = (a = h) => 1` missed TS7022. initialized_binding_typecheck() now asks the type first for
+  EXPR_FUNCTION initializers as it did for calls. Test ttttFunctionInitializerTypedFirst. [fixed COMMIT-next]
+- (cor4, 2026-10-28) The return annotation of a function expression isn't lowered at its first check (tsc's
+  checkSignatureDeclaration checks the return type node there): `const f = (): [ReturnType<typeof f>] => 1` is TS7022
+  on f and TS2322 `number` to `[any]` in tsc, TS2577 alone in tttt. Lowering it in check_function_parameters_first()
+  (expr.c) fixes this but breaks ttttAliasReentersBelowCallBarrier (an arrow's `: Part` return inside a call reaches the
+  alias in flight: tsc resolves it again below the call's barrier, the lowering made it circular for good): it needs
+  the reentrancy of notes/reentrancy.md for a variable's type, not only the alias's. [open]
 - (cor2, 2026-10-28, bun 99-V4) **Accessor write-type circularity**: tsc pushes an accessor's write type
   (getWriteTypeOfAccessors, TypeSystemPropertyNameWriteType) and reports a failing pop as TS2502 at the setter's name,
   and a union or intersection property asks each member's write type when it is made (createUnionOrIntersectionProperty).

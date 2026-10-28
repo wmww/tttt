@@ -1,0 +1,28 @@
+//// [test/cases/ttttFunctionInitializerTypedFirst.ts] ////
+
+=== ttttFunctionInitializerTypedFirst.ts ===
+// A variable initialized by a function expression is typed before its initializer is checked (tsc's
+// checkVariableLikeDeclaration asks getTypeOfSymbol first): the function's first check (checkSignatureDeclaration's
+// parameter defaults) then runs while the variable is in flight, and a default reading it is circular, TS7022
+export {}
+const h = (a = h) => 1;
+>h : any
+>(a = h) => 1 : (a?: any) => number
+>a : any
+>h : any
+>1 : 1
+
+const k = function (b = k) { return 1; };
+>k : any
+>function (b = k) { return 1; } : (b?: any) => number
+>b : any
+>k : any
+>1 : 1
+
+const ok = (c = 1) => ok;
+>ok : (c?: number) => typeof ok
+>(c = 1) => ok : (c?: number) => typeof ok
+>c : number
+>1 : 1
+>ok : (c?: number) => typeof ok
+
