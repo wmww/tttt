@@ -1,0 +1,44 @@
+//// [test/cases/ttttThisParameterOptional.ts] ////
+
+=== ttttThisParameterOptional.ts ===
+type T = (this?: any) => void;
+>T : T
+>this : any
+> : any
+
+type U = (this?: any, x: number) => void;
+>U : U
+>this : any
+> : any
+>x : number
+
+function f(this?: any) {}
+>f : (this: any, ?: any) => void
+>this : any
+> : any
+
+let g = function (this?: any) {};
+>g : (this: any, ?: any) => void
+>function (this?: any) {} : (this: any, ?: any) => void
+>this : any
+> : any
+
+type V = (this = 1) => void;
+>V : V
+>this : any
+> : any
+
+type W = (this?) => void;
+>W : W
+>this : any
+> : any
+
+type X = (this: any, y?: any) => void;
+>X : X
+>this : any
+>y : any
+
+type Y = (this) => void;
+>Y : Y
+>this : any
+

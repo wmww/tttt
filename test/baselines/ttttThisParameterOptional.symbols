@@ -1,0 +1,43 @@
+//// [test/cases/ttttThisParameterOptional.ts] ////
+
+=== ttttThisParameterOptional.ts ===
+type T = (this?: any) => void;
+>T : Symbol(T, Decl(ttttThisParameterOptional.ts, 0, 0))
+>this : Symbol(this, Decl(ttttThisParameterOptional.ts, 0, 10))
+> : Symbol((Missing), Decl(ttttThisParameterOptional.ts, 0, 14))
+
+type U = (this?: any, x: number) => void;
+>U : Symbol(U, Decl(ttttThisParameterOptional.ts, 0, 30))
+>this : Symbol(this, Decl(ttttThisParameterOptional.ts, 1, 10))
+> : Symbol((Missing), Decl(ttttThisParameterOptional.ts, 1, 14))
+>x : Symbol(x, Decl(ttttThisParameterOptional.ts, 1, 21))
+
+function f(this?: any) {}
+>f : Symbol(f, Decl(ttttThisParameterOptional.ts, 1, 41))
+>this : Symbol(this, Decl(ttttThisParameterOptional.ts, 2, 11))
+> : Symbol((Missing), Decl(ttttThisParameterOptional.ts, 2, 15))
+
+let g = function (this?: any) {};
+>g : Symbol(g, Decl(ttttThisParameterOptional.ts, 3, 3))
+>this : Symbol(this, Decl(ttttThisParameterOptional.ts, 3, 18))
+> : Symbol((Missing), Decl(ttttThisParameterOptional.ts, 3, 22))
+
+type V = (this = 1) => void;
+>V : Symbol(V, Decl(ttttThisParameterOptional.ts, 3, 33))
+>this : Symbol(this, Decl(ttttThisParameterOptional.ts, 4, 10))
+> : Symbol((Missing), Decl(ttttThisParameterOptional.ts, 4, 16))
+
+type W = (this?) => void;
+>W : Symbol(W, Decl(ttttThisParameterOptional.ts, 4, 28))
+>this : Symbol(this, Decl(ttttThisParameterOptional.ts, 5, 10))
+> : Symbol((Missing), Decl(ttttThisParameterOptional.ts, 5, 14))
+
+type X = (this: any, y?: any) => void;
+>X : Symbol(X, Decl(ttttThisParameterOptional.ts, 5, 25))
+>this : Symbol(this, Decl(ttttThisParameterOptional.ts, 6, 10))
+>y : Symbol(y, Decl(ttttThisParameterOptional.ts, 6, 20))
+
+type Y = (this) => void;
+>Y : Symbol(Y, Decl(ttttThisParameterOptional.ts, 6, 38))
+>this : Symbol(this, Decl(ttttThisParameterOptional.ts, 7, 10))
+

@@ -1,0 +1,60 @@
+ttttThisParameterOptional.ts(1,11): error TS7006: Parameter 'this' implicitly has an 'any' type.
+ttttThisParameterOptional.ts(1,15): error TS1005: ',' expected.
+ttttThisParameterOptional.ts(2,11): error TS7006: Parameter 'this' implicitly has an 'any' type.
+ttttThisParameterOptional.ts(2,15): error TS1005: ',' expected.
+ttttThisParameterOptional.ts(3,12): error TS7006: Parameter 'this' implicitly has an 'any' type.
+ttttThisParameterOptional.ts(3,16): error TS1005: ',' expected.
+ttttThisParameterOptional.ts(4,19): error TS7006: Parameter 'this' implicitly has an 'any' type.
+ttttThisParameterOptional.ts(4,23): error TS1005: ',' expected.
+ttttThisParameterOptional.ts(5,11): error TS7006: Parameter 'this' implicitly has an 'any' type.
+ttttThisParameterOptional.ts(5,16): error TS1005: ',' expected.
+ttttThisParameterOptional.ts(5,17): error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+ttttThisParameterOptional.ts(5,18): error TS1003: Identifier expected.
+ttttThisParameterOptional.ts(6,11): error TS7006: Parameter 'this' implicitly has an 'any' type.
+ttttThisParameterOptional.ts(6,15): error TS1005: ',' expected.
+ttttThisParameterOptional.ts(6,15): error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+ttttThisParameterOptional.ts(8,11): error TS7006: Parameter 'this' implicitly has an 'any' type.
+
+
+==== ttttThisParameterOptional.ts (16 errors) ====
+    type T = (this?: any) => void;
+              ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+                  ~
+!!! error TS1005: ',' expected.
+    type U = (this?: any, x: number) => void;
+              ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+                  ~
+!!! error TS1005: ',' expected.
+    function f(this?: any) {}
+               ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+                   ~
+!!! error TS1005: ',' expected.
+    let g = function (this?: any) {};
+                      ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+                          ~
+!!! error TS1005: ',' expected.
+    type V = (this = 1) => void;
+              ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+                   ~
+!!! error TS1005: ',' expected.
+                    
+!!! error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+                     ~
+!!! error TS1003: Identifier expected.
+    type W = (this?) => void;
+              ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+                  ~
+!!! error TS1005: ',' expected.
+                  ~
+!!! error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+    type X = (this: any, y?: any) => void;
+    type Y = (this) => void;
+              ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+    

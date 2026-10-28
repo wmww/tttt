@@ -7544,7 +7544,9 @@ static bool parse_function_args_inner(
                 if (vec_function_arg_is_empty(&ret->args) && p.shared->errors_attempted == errors_before_param &&
                     (initializer.binding.has_explicit_type || (parse_type_return_syntax && !rest &&
                         (explicit_optional || initialized_binding_value(&initializer)->tag != EXPR_IMPLICIT_ANY || initialized_binding_value(&initializer)->missing ||
-                            *p.pos == ',')))
+                            *p.pos == ',' ||
+                            // (A `this` parameter takes neither, they are left for the list: `(this?: T) => R`)
+                            (this_param && (*p.pos == '?' || *p.pos == '=')))))
                 ) {
                     is_definitely_function = true;
                 }
@@ -7565,6 +7567,13 @@ static bool parse_function_args_inner(
                 // (A parameter the list's recovery ends at its next token doesn't take the whitespace before it:
                 // `(a {`)
                 while (arg_span.size && strchr(" \t\r\n", arg_span.buf[arg_span.size - 1])) arg_span.size--;
+                // (One of nothing, `(this = 1)`'s `1`, is a missing node: where the token before it ends, no trivia skipped,
+                // TS7006 there)
+                if (!arg_span.size) {
+                    char const* at = arg_span.buf;
+                    while (at > source_file_start(p.shared->source) && is_js_ascii_space(at[-1])) at--;
+                    arg_span = span_make(p.shared->source, at, at);
+                }
                 VecExpr* boxed_decorators = nullptr;
                 if (vec_expr_size(&decorators)) boxed_decorators = ast_new(VecExpr, decorators);
                 else vec_expr_drop(&decorators);
