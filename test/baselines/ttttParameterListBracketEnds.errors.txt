@@ -1,0 +1,87 @@
+ttttParameterListBracketEnds.ts(7,1): error TS2411: Property 'if' of type '(: any, config: any, []: Iterable<any, void, undefined>, : any) => any' is not assignable to 'string' index type 'boolean'.
+ttttParameterListBracketEnds.ts(7,1): error TS7010: 'if', which lacks return-type annotation, implicitly has an 'any' return type.
+ttttParameterListBracketEnds.ts(7,5): error TS2300: Duplicate identifier '(Missing)'.
+ttttParameterListBracketEnds.ts(7,5): error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+ttttParameterListBracketEnds.ts(7,5): error TS1359: Identifier expected. 'typeof' is a reserved word that cannot be used here.
+ttttParameterListBracketEnds.ts(7,12): error TS7006: Parameter 'config' implicitly has an 'any' type.
+ttttParameterListBracketEnds.ts(7,18): error TS1005: ',' expected.
+ttttParameterListBracketEnds.ts(7,19): error TS2300: Duplicate identifier '(Missing)'.
+ttttParameterListBracketEnds.ts(7,19): error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+ttttParameterListBracketEnds.ts(7,19): error TS1181: Array element destructuring pattern expected.
+ttttParameterListBracketEnds.ts(7,26): error TS1005: ')' expected.
+ttttParameterListBracketEnds.ts(7,28): error TS1131: Property or signature expected.
+ttttParameterListBracketEnds.ts(7,33): error TS1005: ';' expected.
+ttttParameterListBracketEnds.ts(9,10): error TS7010: 'f', which lacks return-type annotation, implicitly has an 'any' return type.
+ttttParameterListBracketEnds.ts(9,12): error TS1005: ')' expected.
+ttttParameterListBracketEnds.ts(9,13): error TS1128: Declaration or statement expected.
+ttttParameterListBracketEnds.ts(10,10): error TS7010: 'g', which lacks return-type annotation, implicitly has an 'any' return type.
+ttttParameterListBracketEnds.ts(10,12): error TS7006: Parameter 'a' implicitly has an 'any' type.
+ttttParameterListBracketEnds.ts(10,15): error TS1005: ')' expected.
+ttttParameterListBracketEnds.ts(10,16): error TS1128: Declaration or statement expected.
+ttttParameterListBracketEnds.ts(11,11): error TS2304: Cannot find name 'a'.
+ttttParameterListBracketEnds.ts(11,12): error TS1005: ')' expected.
+ttttParameterListBracketEnds.ts(11,13): error TS1128: Declaration or statement expected.
+ttttParameterListBracketEnds.ts(11,15): error TS1128: Declaration or statement expected.
+
+
+==== ttttParameterListBracketEnds.ts (24 errors) ====
+    // A `]` ends a parameter list (tsc's isListTerminator for Parameters), whose `)` is then missing: TS1005, not TS1138
+    // (mutation seed 20261105, controlFlowElementAccess2: a type literal missing its `}` reads `if (typeof c['k'] ...` as
+    // a method signature whose array binding pattern aborts at the string)
+    declare const config: {
+        [key: string]: boolean;
+    
+    if (typeof config['works'] !== 1) {
+    ~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2411: Property 'if' of type '(: any, config: any, []: Iterable<any, void, undefined>, : any) => any' is not assignable to 'string' index type 'boolean'.
+    ~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7010: 'if', which lacks return-type annotation, implicitly has an 'any' return type.
+        
+!!! error TS2300: Duplicate identifier '(Missing)'.
+        
+!!! error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+        ~~~~~~
+!!! error TS1359: Identifier expected. 'typeof' is a reserved word that cannot be used here.
+               ~~~~~~
+!!! error TS7006: Parameter 'config' implicitly has an 'any' type.
+                     ~
+!!! error TS1005: ',' expected.
+                      
+!!! error TS2300: Duplicate identifier '(Missing)'.
+                      
+!!! error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+                      ~~~~~~~
+!!! error TS1181: Array element destructuring pattern expected.
+                             ~
+!!! error TS1005: ')' expected.
+                               ~~~
+!!! error TS1131: Property or signature expected.
+                                    ~
+!!! error TS1005: ';' expected.
+    }
+    function f(]) {}
+             ~
+!!! error TS7010: 'f', which lacks return-type annotation, implicitly has an 'any' return type.
+               ~
+!!! error TS1005: ')' expected.
+                ~
+!!! error TS1128: Declaration or statement expected.
+    function g(a, ]) {}
+             ~
+!!! error TS7010: 'g', which lacks return-type annotation, implicitly has an 'any' return type.
+               ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                  ~
+!!! error TS1005: ')' expected.
+                   ~
+!!! error TS1128: Declaration or statement expected.
+    type T = (a]) => 1;
+              ~
+!!! error TS2304: Cannot find name 'a'.
+               ~
+!!! error TS1005: ')' expected.
+                ~
+!!! error TS1128: Declaration or statement expected.
+                  ~~
+!!! error TS1128: Declaration or statement expected.
+    

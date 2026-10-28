@@ -7613,7 +7613,8 @@ static bool parse_function_args_inner(
             unambiguous_function_type = true;
         }
 
-        while (!at_eof(&p, p.pos) && *p.pos != ')') {
+        // (A `]` ends the list too, its `)` then missing: tsc's isListTerminator for Parameters)
+        while (!at_eof(&p, p.pos) && *p.pos != ')' && *p.pos != ']') {
             if (hop_char(&p, ',')) {
                 parse_error(&p, span_from_previous_char(&p), 1138, "Parameter declaration expected.");
             } else {

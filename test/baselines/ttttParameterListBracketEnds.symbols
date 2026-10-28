@@ -1,0 +1,29 @@
+//// [test/cases/ttttParameterListBracketEnds.ts] ////
+
+=== ttttParameterListBracketEnds.ts ===
+// A `]` ends a parameter list (tsc's isListTerminator for Parameters), whose `)` is then missing: TS1005, not TS1138
+// (mutation seed 20261105, controlFlowElementAccess2: a type literal missing its `}` reads `if (typeof c['k'] ...` as
+// a method signature whose array binding pattern aborts at the string)
+declare const config: {
+>config : Symbol(config, Decl(ttttParameterListBracketEnds.ts, 3, 13))
+
+    [key: string]: boolean;
+>key : Symbol(key, Decl(ttttParameterListBracketEnds.ts, 4, 5))
+
+if (typeof config['works'] !== 1) {
+>if : Symbol(if, Decl(ttttParameterListBracketEnds.ts, 4, 27))
+> : Symbol((Missing), Decl(ttttParameterListBracketEnds.ts, 6, 4))
+>config : Symbol(config, Decl(ttttParameterListBracketEnds.ts, 6, 10))
+> : Symbol((Missing), Decl(ttttParameterListBracketEnds.ts, 6, 18))
+}
+function f(]) {}
+>f : Symbol(f, Decl(ttttParameterListBracketEnds.ts, 7, 1))
+
+function g(a, ]) {}
+>g : Symbol(g, Decl(ttttParameterListBracketEnds.ts, 8, 16))
+>a : Symbol(a, Decl(ttttParameterListBracketEnds.ts, 9, 11))
+
+type T = (a]) => 1;
+>T : Symbol(T, Decl(ttttParameterListBracketEnds.ts, 9, 19))
+>a : Symbol(a)
+
