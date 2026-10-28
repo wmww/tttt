@@ -1,0 +1,14 @@
+ttttMissingInitializerNoImplicitAny.ts(3,16): error TS1109: Expression expected.
+ttttMissingInitializerNoImplicitAny.ts(4,16): error TS1109: Expression expected.
+
+
+==== ttttMissingInitializerNoImplicitAny.ts (2 errors) ====
+    // A parameter whose initializer is missing (a parse error) has one to tsc, a missing identifier whose type is the
+    // error type: no TS7006
+    var s13 = (x = ) => x;
+                   ~
+!!! error TS1109: Expression expected.
+    function f(y = ) {}
+                   ~
+!!! error TS1109: Expression expected.
+    

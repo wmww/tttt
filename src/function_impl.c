@@ -1337,7 +1337,8 @@ void function_impl_check_implicit_any_parameters(FunctionImpl const* me, ErrorCt
     // (A JSDoc `@type` signature types every parameter, any past its own: tsgo's getParameterTypeOfFullSignature)
     if (function_impl_rare(me)->jsdoc_signature_type && ty_jsdoc_tag_return_type(current_checker, me)) return;
     for_each (i, vec_function_arg, &my args) {
-        if (i->initializer.binding.has_explicit_type || initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY) continue;
+        if (i->initializer.binding.has_explicit_type || initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY ||
+            initialized_binding_value(&i->initializer)->missing) continue;
         if (function_impl_rare(me)->jsdoc_signature_type) ty_function_apply_jsdoc_type(current_checker, me, nullptr);
         if (initialized_binding_getter(&i->initializer) || ty_contextual_parameter_type(current_checker, &i->initializer)) continue;
         if (i->name_is_type && my is_type && !my is_constructor) {
