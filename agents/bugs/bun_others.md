@@ -158,6 +158,19 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   function body (tsc's reference to the implicit `arguments`: 25-C17c, 33-P4g, 51-L01, 51-L05, 77-R12b). [open]
 - 83-R01c (+TS2304 33): the for-initializer DisallowIn leak, missing_checks.md (ttttForInitializerDisallowInLeak). [dup]
 
+- 56-L15, 28-C11b: TS1358 for every tagged template whose tag is in an optional chain, not only right after `?.`.
+  [fixed 4352de83b] (28-C11b keeps a spurious TS1099 for `o?.a<>\`x\``: tsc says nothing about the empty type
+  arguments there. [open])
+- 58-L01 / 63-L03b (accessor `this` parameters), the rule found in tsc: getAccessorThisParameter counts a `this`
+  first parameter only when the accessor has 1 (getter) or 2 (setter) parameters; an accessor without its own takes
+  the other accessor's (getSignatureFromDeclaration, getAnnotatedAccessorThisParameter), so `this` in both bodies is
+  that parameter's type (any); an unannotated setter `this` in a pair takes the getter's this type
+  (getTypeForVariableLikeDeclaration), circular and silently any when the getter has none, hence no TS7006 there.
+  Not implemented. [open]
+- 14-P5, 16-C10 (+TS7006): contextual parameter types from a union of signatures/objects where tsc discards a member
+  (a rest tuple intersected with conflicting discriminants, a template-literal discriminant under `as const`), not
+  analysed further. [open]
+
 ## Not looked at, by code
 - Each paragraph below is a code and direction with the cases it mismatches in, uninvestigated: at least one open
   root cause each, counted here once. [open]
