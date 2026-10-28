@@ -14,7 +14,9 @@ here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in 
   suite's TS-1 pre/post-emit count note), so it shows in baselines, not on the CLI. [tsgo]
 - **Classes**: TS2687 skips statics and method/accessor pairs (hacks.md). [open]
 - **Accessibility**: `this.x = v` in the constructor of a class merged with an interface declaring `readonly x` (tttt
-  exempts any property whose parent is the class). Private names: TS18015. [open]
+  exempted any property whose parent is the class; tsc only one whose value declaration, the first, is in the class:
+  check.c readonly_assignment()). Test ttttReadonlyFromMergedInterface [fixed COMMIT-next]. Private names: TS18015.
+  [open]
 - **Declarations**: `export function g() {}` + `function g() {}` is TS2393 in tsc (one local symbol with two implementations; tttt said nothing). Test ttttExportedAndLocalFunctionDuplicate. [fixed 17d5794b5]
 - **Implicit any**: widening errors past `report_errors_from_widening` (binding.c; the tests the tsc mechanism ports named for them
   pass since, re-check with a probe: TS7008 class fields, TS7018 through a spread) and of generator yield/next types. [open]

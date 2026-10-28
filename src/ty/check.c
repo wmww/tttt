@@ -3024,11 +3024,20 @@ static bool readonly_assignment(Checker* me, PropertyExpr const* access, Ty cons
         }
         if (same) refs->len = 1;
     }
-    // A class's own readonly properties can be assigned through `this` in its constructor (not in functions in there)
+    // A class's own readonly properties can be assigned through `this` in its constructor (not in functions in there),
+    // declared in the class: not by an interface merged with it (tsc's isAssignmentToReadonlyEntity, the value
+    // declaration's parent is the constructor's)
     if (refs->len == 1 && is_keyword(&access->expr, KEYWORD_IDENTIFIER_THIS) && property_context(access)->in_constructor_of &&
         !(refs->props[0]->flags & PROP_ACCESSOR) && refs->props[0]->parent == property_context(access)->in_constructor_of
     ) {
-        return false;
+        Prop const* prop = refs->props[0];
+        while (prop->target && !prop->decl->decl_span_count) prop = prop->target;
+        ClassDecl const* class_decl = symbol_find_node(property_context(access)->in_constructor_of, SYMBOL_DECL_CLASS);
+        if (!class_decl || !prop->decl->decl_span_count) return false;
+        Span declared = prop->decl->decl_spans[0];
+        return !(span_source(declared) == span_source(class_decl->full_span) &&
+            span_start_ptr(declared) >= span_start_ptr(class_decl->full_span) &&
+            span_start_ptr(declared) < span_end_ptr(class_decl->full_span));
     }
     return true;
 }

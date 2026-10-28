@@ -1,0 +1,52 @@
+//// [test/cases/ttttReadonlyFromMergedInterface.ts] ////
+
+=== ttttReadonlyFromMergedInterface.ts ===
+// A readonly property assigned through `this` in a constructor must be declared in that class (tsc's
+// isAssignmentToReadonlyEntity: the value declaration's parent), not by an interface merged with it (missing_checks.md)
+interface C { readonly x: number }
+>C : Symbol(C, Decl(ttttReadonlyFromMergedInterface.ts, 0, 0), Decl(ttttReadonlyFromMergedInterface.ts, 2, 34))
+>x : Symbol(C.x, Decl(ttttReadonlyFromMergedInterface.ts, 2, 13))
+
+class C { constructor() { this.x = 1; } }
+>C : Symbol(C, Decl(ttttReadonlyFromMergedInterface.ts, 0, 0), Decl(ttttReadonlyFromMergedInterface.ts, 2, 34))
+>this.x : Symbol(C.x, Decl(ttttReadonlyFromMergedInterface.ts, 2, 13))
+>this : Symbol(C, Decl(ttttReadonlyFromMergedInterface.ts, 0, 0), Decl(ttttReadonlyFromMergedInterface.ts, 2, 34))
+>x : Symbol(C.x, Decl(ttttReadonlyFromMergedInterface.ts, 2, 13))
+
+class D { readonly y: number; constructor(readonly z: number) { this.y = 1; this.z = 2; } }
+>D : Symbol(D, Decl(ttttReadonlyFromMergedInterface.ts, 3, 41), Decl(ttttReadonlyFromMergedInterface.ts, 4, 91))
+>y : Symbol(D.y, Decl(ttttReadonlyFromMergedInterface.ts, 4, 9))
+>z : Symbol(D.z, Decl(ttttReadonlyFromMergedInterface.ts, 4, 42))
+>this.y : Symbol(D.y, Decl(ttttReadonlyFromMergedInterface.ts, 4, 9))
+>this : Symbol(D, Decl(ttttReadonlyFromMergedInterface.ts, 3, 41), Decl(ttttReadonlyFromMergedInterface.ts, 4, 91))
+>y : Symbol(D.y, Decl(ttttReadonlyFromMergedInterface.ts, 4, 9))
+>this.z : Symbol(D.z, Decl(ttttReadonlyFromMergedInterface.ts, 4, 42))
+>this : Symbol(D, Decl(ttttReadonlyFromMergedInterface.ts, 3, 41), Decl(ttttReadonlyFromMergedInterface.ts, 4, 91))
+>z : Symbol(D.z, Decl(ttttReadonlyFromMergedInterface.ts, 4, 42))
+
+interface D { readonly w: string }
+>D : Symbol(D, Decl(ttttReadonlyFromMergedInterface.ts, 3, 41), Decl(ttttReadonlyFromMergedInterface.ts, 4, 91))
+>w : Symbol(D.w, Decl(ttttReadonlyFromMergedInterface.ts, 5, 13))
+
+class E { readonly v: number; constructor() { this.v = 1; } }
+>E : Symbol(E, Decl(ttttReadonlyFromMergedInterface.ts, 5, 34), Decl(ttttReadonlyFromMergedInterface.ts, 6, 61))
+>v : Symbol(E.v, Decl(ttttReadonlyFromMergedInterface.ts, 6, 9), Decl(ttttReadonlyFromMergedInterface.ts, 7, 13))
+>this.v : Symbol(E.v, Decl(ttttReadonlyFromMergedInterface.ts, 6, 9), Decl(ttttReadonlyFromMergedInterface.ts, 7, 13))
+>this : Symbol(E, Decl(ttttReadonlyFromMergedInterface.ts, 5, 34), Decl(ttttReadonlyFromMergedInterface.ts, 6, 61))
+>v : Symbol(E.v, Decl(ttttReadonlyFromMergedInterface.ts, 6, 9), Decl(ttttReadonlyFromMergedInterface.ts, 7, 13))
+
+interface E { readonly v: number }
+>E : Symbol(E, Decl(ttttReadonlyFromMergedInterface.ts, 5, 34), Decl(ttttReadonlyFromMergedInterface.ts, 6, 61))
+>v : Symbol(E.v, Decl(ttttReadonlyFromMergedInterface.ts, 6, 9), Decl(ttttReadonlyFromMergedInterface.ts, 7, 13))
+
+interface F { readonly u: number }
+>F : Symbol(F, Decl(ttttReadonlyFromMergedInterface.ts, 7, 34), Decl(ttttReadonlyFromMergedInterface.ts, 8, 34))
+>u : Symbol(F.u, Decl(ttttReadonlyFromMergedInterface.ts, 8, 13), Decl(ttttReadonlyFromMergedInterface.ts, 9, 9))
+
+class F { readonly u: number; constructor() { this.u = 1; } }
+>F : Symbol(F, Decl(ttttReadonlyFromMergedInterface.ts, 7, 34), Decl(ttttReadonlyFromMergedInterface.ts, 8, 34))
+>u : Symbol(F.u, Decl(ttttReadonlyFromMergedInterface.ts, 8, 13), Decl(ttttReadonlyFromMergedInterface.ts, 9, 9))
+>this.u : Symbol(F.u, Decl(ttttReadonlyFromMergedInterface.ts, 8, 13), Decl(ttttReadonlyFromMergedInterface.ts, 9, 9))
+>this : Symbol(F, Decl(ttttReadonlyFromMergedInterface.ts, 7, 34), Decl(ttttReadonlyFromMergedInterface.ts, 8, 34))
+>u : Symbol(F.u, Decl(ttttReadonlyFromMergedInterface.ts, 8, 13), Decl(ttttReadonlyFromMergedInterface.ts, 9, 9))
+
