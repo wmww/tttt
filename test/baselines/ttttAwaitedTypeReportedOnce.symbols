@@ -1,0 +1,55 @@
+//// [test/cases/ttttAwaitedTypeReportedOnce.ts] ////
+
+=== ttttAwaitedTypeReportedOnce.ts ===
+// tsc caches the awaited type of a union or a promise (getAwaitedTypeNoAlias' cachedTypes), so what it says while
+// computing one (TS1320 for a thenable member, TS1062 for a cycle, TS1058 for an async function's return) it says
+// the first time only; a bare thenable isn't cached and is reported each time
+interface Bad { then(): void }
+>Bad : Symbol(Bad, Decl(ttttAwaitedTypeReportedOnce.ts, 0, 0))
+>then : Symbol(Bad.then, Decl(ttttAwaitedTypeReportedOnce.ts, 3, 15))
+
+declare const p: Promise<string | Bad>; declare const u: string | Bad; declare const b: Bad;
+>p : Symbol(p, Decl(ttttAwaitedTypeReportedOnce.ts, 4, 13))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>Bad : Symbol(Bad, Decl(ttttAwaitedTypeReportedOnce.ts, 0, 0))
+>u : Symbol(u, Decl(ttttAwaitedTypeReportedOnce.ts, 4, 53))
+>Bad : Symbol(Bad, Decl(ttttAwaitedTypeReportedOnce.ts, 0, 0))
+>b : Symbol(b, Decl(ttttAwaitedTypeReportedOnce.ts, 4, 84))
+>Bad : Symbol(Bad, Decl(ttttAwaitedTypeReportedOnce.ts, 0, 0))
+
+async function f() { await p; await u; await b; await b; }
+>f : Symbol(f, Decl(ttttAwaitedTypeReportedOnce.ts, 4, 92))
+>p : Symbol(p, Decl(ttttAwaitedTypeReportedOnce.ts, 4, 13))
+>u : Symbol(u, Decl(ttttAwaitedTypeReportedOnce.ts, 4, 53))
+>b : Symbol(b, Decl(ttttAwaitedTypeReportedOnce.ts, 4, 84))
+>b : Symbol(b, Decl(ttttAwaitedTypeReportedOnce.ts, 4, 84))
+
+type S = string | Promise<S>;
+>S : Symbol(S, Decl(ttttAwaitedTypeReportedOnce.ts, 5, 58))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>S : Symbol(S, Decl(ttttAwaitedTypeReportedOnce.ts, 5, 58))
+
+declare const s: S; declare const ps: Promise<S>;
+>s : Symbol(s, Decl(ttttAwaitedTypeReportedOnce.ts, 7, 13))
+>S : Symbol(S, Decl(ttttAwaitedTypeReportedOnce.ts, 5, 58))
+>ps : Symbol(ps, Decl(ttttAwaitedTypeReportedOnce.ts, 7, 33))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>S : Symbol(S, Decl(ttttAwaitedTypeReportedOnce.ts, 5, 58))
+
+async function h() { await ps; await s; }
+>h : Symbol(h, Decl(ttttAwaitedTypeReportedOnce.ts, 7, 49))
+>ps : Symbol(ps, Decl(ttttAwaitedTypeReportedOnce.ts, 7, 33))
+>s : Symbol(s, Decl(ttttAwaitedTypeReportedOnce.ts, 7, 13))
+
+declare const v: number | Bad;
+>v : Symbol(v, Decl(ttttAwaitedTypeReportedOnce.ts, 9, 13))
+>Bad : Symbol(Bad, Decl(ttttAwaitedTypeReportedOnce.ts, 0, 0))
+
+async function r1() { return v; }
+>r1 : Symbol(r1, Decl(ttttAwaitedTypeReportedOnce.ts, 9, 30))
+>v : Symbol(v, Decl(ttttAwaitedTypeReportedOnce.ts, 9, 13))
+
+async function r2() { return v; }
+>r2 : Symbol(r2, Decl(ttttAwaitedTypeReportedOnce.ts, 10, 33))
+>v : Symbol(v, Decl(ttttAwaitedTypeReportedOnce.ts, 9, 13))
+

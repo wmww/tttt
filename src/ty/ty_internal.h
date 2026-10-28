@@ -109,6 +109,8 @@ enum {
     KEY_DEFERRED_BODY,  // FunctionImpl -> non-null once its body is in Checker.deferred
     KEY_CHECKED_ONCE,   // AST node -> non-null once ty_first_check() saw it
     KEY_REFERENCED_MEMBER, // Start of a class member's declaration span -> non-null once read (noUnusedLocals)
+    KEY_AWAITED_UNION,  // Union type -> its awaited type, once computed (tsc's CachedTypeKindAwaitedType, call.c)
+    KEY_AWAITED_REPORTED, // Union or promise type -> non-null once an `await` checked it (call.c, check_await_operand())
     KEY_LITERAL_ANCHOR, // Object literal Expr -> ContextAnchor (expr.c)
     KEY_QUICK_CALLEE_CHECKED, // Assignment Expr -> non-null once flow checked its call's callee (flow.c, check_assigned_callee())
     KEY_FLOW_PARTIAL_NO_PROPERTY, // PropertyExpr -> non-null once a partial evaluation reported its property missing (flow.c)

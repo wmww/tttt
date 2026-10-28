@@ -1,20 +1,22 @@
-ttttHeritageImportTypeArguments.ts(5,18): error TS1326: This use of 'import' is invalid. 'import()' calls can be written, but they must have parentheses and cannot have type arguments.
-ttttHeritageImportTypeArguments.ts(6,34): error TS1174: Classes can only extend a single class.
-ttttHeritageImportTypeArguments.ts(7,31): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
-ttttHeritageImportTypeArguments.ts(7,31): error TS1326: This use of 'import' is invalid. 'import()' calls can be written, but they must have parentheses and cannot have type arguments.
-ttttHeritageImportTypeArguments.ts(8,24): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
-ttttHeritageImportTypeArguments.ts(8,24): error TS1326: This use of 'import' is invalid. 'import()' calls can be written, but they must have parentheses and cannot have type arguments.
-ttttHeritageImportTypeArguments.ts(9,22): error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
-ttttHeritageImportTypeArguments.ts(9,22): error TS1326: This use of 'import' is invalid. 'import()' calls can be written, but they must have parentheses and cannot have type arguments.
-ttttHeritageImportTypeArguments.ts(10,25): error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
-ttttHeritageImportTypeArguments.ts(10,25): error TS1326: This use of 'import' is invalid. 'import()' calls can be written, but they must have parentheses and cannot have type arguments.
-ttttHeritageImportTypeArguments.ts(11,18): error TS1326: This use of 'import' is invalid. 'import()' calls can be written, but they must have parentheses and cannot have type arguments.
-ttttHeritageImportTypeArguments.ts(11,46): error TS1175: 'implements' clause already seen.
+ttttHeritageImportTypeArguments.ts(7,18): error TS1326: This use of 'import' is invalid. 'import()' calls can be written, but they must have parentheses and cannot have type arguments.
+ttttHeritageImportTypeArguments.ts(8,34): error TS1174: Classes can only extend a single class.
+ttttHeritageImportTypeArguments.ts(9,31): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+ttttHeritageImportTypeArguments.ts(9,31): error TS1326: This use of 'import' is invalid. 'import()' calls can be written, but they must have parentheses and cannot have type arguments.
+ttttHeritageImportTypeArguments.ts(10,24): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+ttttHeritageImportTypeArguments.ts(10,24): error TS1326: This use of 'import' is invalid. 'import()' calls can be written, but they must have parentheses and cannot have type arguments.
+ttttHeritageImportTypeArguments.ts(11,22): error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+ttttHeritageImportTypeArguments.ts(11,22): error TS1326: This use of 'import' is invalid. 'import()' calls can be written, but they must have parentheses and cannot have type arguments.
+ttttHeritageImportTypeArguments.ts(12,25): error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+ttttHeritageImportTypeArguments.ts(12,25): error TS1326: This use of 'import' is invalid. 'import()' calls can be written, but they must have parentheses and cannot have type arguments.
+ttttHeritageImportTypeArguments.ts(13,18): error TS1326: This use of 'import' is invalid. 'import()' calls can be written, but they must have parentheses and cannot have type arguments.
+ttttHeritageImportTypeArguments.ts(13,46): error TS1175: 'implements' clause already seen.
 
 
 ==== ttttHeritageImportTypeArguments.ts (12 errors) ====
     // `import<T>` in a heritage clause is TS1326 from checkGrammarHeritageClause, clause by clause after the clause's own
-    // complaints (trailing comma, empty list), and never once the class's heritage checks stopped (TS1174 and co)
+    // complaints (trailing comma, empty list), and never once the class's heritage checks stopped (TS1174 and co).
+    // Known failing (types): tsc's types baseline has no line for an implemented or interface-extended `import<string>`
+    // (bun_others.md)
     declare const v: any;
     interface I {}
     class X1 extends import<string> {}

@@ -1,0 +1,50 @@
+//// [test/cases/ttttAwaitedTypeReportedOnce.ts] ////
+
+=== ttttAwaitedTypeReportedOnce.ts ===
+// tsc caches the awaited type of a union or a promise (getAwaitedTypeNoAlias' cachedTypes), so what it says while
+// computing one (TS1320 for a thenable member, TS1062 for a cycle, TS1058 for an async function's return) it says
+// the first time only; a bare thenable isn't cached and is reported each time
+interface Bad { then(): void }
+>then : () => void
+
+declare const p: Promise<string | Bad>; declare const u: string | Bad; declare const b: Bad;
+>p : Promise<string | Bad>
+>u : string | Bad
+>b : Bad
+
+async function f() { await p; await u; await b; await b; }
+>f : () => Promise<void>
+>await p : string
+>p : Promise<string | Bad>
+>await u : string
+>u : string | Bad
+>await b : any
+>b : Bad
+>await b : any
+>b : Bad
+
+type S = string | Promise<S>;
+>S : S
+
+declare const s: S; declare const ps: Promise<S>;
+>s : S
+>ps : Promise<S>
+
+async function h() { await ps; await s; }
+>h : () => Promise<void>
+>await ps : string
+>ps : Promise<S>
+>await s : string
+>s : S
+
+declare const v: number | Bad;
+>v : number | Bad
+
+async function r1() { return v; }
+>r1 : () => Promise<number>
+>v : number | Bad
+
+async function r2() { return v; }
+>r2 : () => Promise<number>
+>v : number | Bad
+

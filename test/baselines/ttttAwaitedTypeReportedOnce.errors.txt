@@ -1,0 +1,31 @@
+ttttAwaitedTypeReportedOnce.ts(6,22): error TS1320: Type of 'await' operand must either be a valid promise or must not contain a callable 'then' member.
+ttttAwaitedTypeReportedOnce.ts(6,40): error TS1320: Type of 'await' operand must either be a valid promise or must not contain a callable 'then' member.
+ttttAwaitedTypeReportedOnce.ts(6,49): error TS1320: Type of 'await' operand must either be a valid promise or must not contain a callable 'then' member.
+ttttAwaitedTypeReportedOnce.ts(9,22): error TS1062: Type is referenced directly or indirectly in the fulfillment callback of its own 'then' method.
+ttttAwaitedTypeReportedOnce.ts(11,16): error TS1058: The return type of an async function must either be a valid promise or must not contain a callable 'then' member.
+
+
+==== ttttAwaitedTypeReportedOnce.ts (5 errors) ====
+    // tsc caches the awaited type of a union or a promise (getAwaitedTypeNoAlias' cachedTypes), so what it says while
+    // computing one (TS1320 for a thenable member, TS1062 for a cycle, TS1058 for an async function's return) it says
+    // the first time only; a bare thenable isn't cached and is reported each time
+    interface Bad { then(): void }
+    declare const p: Promise<string | Bad>; declare const u: string | Bad; declare const b: Bad;
+    async function f() { await p; await u; await b; await b; }
+                         ~~~~~~~
+!!! error TS1320: Type of 'await' operand must either be a valid promise or must not contain a callable 'then' member.
+                                           ~~~~~~~
+!!! error TS1320: Type of 'await' operand must either be a valid promise or must not contain a callable 'then' member.
+                                                    ~~~~~~~
+!!! error TS1320: Type of 'await' operand must either be a valid promise or must not contain a callable 'then' member.
+    type S = string | Promise<S>;
+    declare const s: S; declare const ps: Promise<S>;
+    async function h() { await ps; await s; }
+                         ~~~~~~~~
+!!! error TS1062: Type is referenced directly or indirectly in the fulfillment callback of its own 'then' method.
+    declare const v: number | Bad;
+    async function r1() { return v; }
+                   ~~
+!!! error TS1058: The return type of an async function must either be a valid promise or must not contain a callable 'then' member.
+    async function r2() { return v; }
+    

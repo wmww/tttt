@@ -1265,3 +1265,10 @@ block.".
 - -TS1102 `delete x` in what tsc's checker never checks (30-C6a 30-C6f 30-C6g 30-P7b: a function declaration's
   decorator, heritage elements past TS1174 or not names): tsc's binder still says it; expr_lookup_names_unchecked()
   keeps the binder's strict mode errors of those walks. [fixed]
+- The types baseline of an implemented or interface-extended `import<string>` (TS2500/TS2499 elements): tsc's has no
+  line for it, tttt's types it `any` (ttttHeritageImportTypeArguments, known failing types). [open]
+- Awaited types (16-C13a 16-C13b 16-C13c 93-R18a): tsc caches a union's or promise's awaited type, so TS1320, TS1062
+  and TS1058 come the first time only (await_checked_before(), KEY_AWAITED_UNION; history-dependent codes now), and
+  a union's thenable member is dropped (`string | Bad` awaits as string). Still open: 16-C13d, where a contextual type
+  `U` computed the awaited type of `U` first (no error) and a later `await u` says nothing in tsc: tttt's await
+  expression computes its type before checking, so its own computation can't count. [open]

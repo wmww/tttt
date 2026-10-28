@@ -1,5 +1,7 @@
 // `import<T>` in a heritage clause is TS1326 from checkGrammarHeritageClause, clause by clause after the clause's own
-// complaints (trailing comma, empty list), and never once the class's heritage checks stopped (TS1174 and co)
+// complaints (trailing comma, empty list), and never once the class's heritage checks stopped (TS1174 and co).
+// Known failing (types): tsc's types baseline has no line for an implemented or interface-extended `import<string>`
+// (bun_others.md)
 declare const v: any;
 interface I {}
 class X1 extends import<string> {}

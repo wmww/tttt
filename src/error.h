@@ -153,6 +153,7 @@ static inline bool error_is_history_dependent(unsigned ts_code) {
     switch (ts_code) {
         case 2589: case 5114: case 5115: case 2590: case 2321: case 2859:
         case 2615: case 7022: case 7023: case 7024: case 2456: case 2502:
+        case 1320: case 1062: case 1058: // (Once per awaited union or promise in a checker, tsc's cached awaited types)
             return true;
         default:
             return false;

@@ -4151,10 +4151,21 @@ static Ty const* then_this_type_for_error(Checker* me, Ty const* ty) {
 
 // tsc's getAwaitedType with an error node, for `await x`: a thenable that isn't a proper promise is TS1320 (with why,
 // when its `then` doesn't take it as `this`)
+// A union or promise type an `await` checked before in this checker: tsc's getAwaitedTypeNoAlias cached its awaited
+// type then, and reports nothing the second time (the first one marks it)
+static bool await_checked_before(Checker* me, Ty const* ty) {
+    u64 key[2] = { KEY_AWAITED_REPORTED, (u64)(uintptr_t)ty };
+    void const** slot = intern_slot(me, &my links, key, 2);
+    if (*slot) return true;
+    intern_set(me, &my links, slot, ty);
+    return false;
+}
+
 static void check_await_operand(Checker* me, Ty const* ty, Span at, u32 depth, ErrorCtx* errs) {
     for (; depth < 16; depth++) {
         // (A generic type is awaited as `Awaited<T>` or itself, never an error: tsc's isAwaitedTypeNeeded)
         if (ty->flags & TYF_ANY || ty_is_generic_type(me, ty)) return;
+        if ((ty->kind == TY_UNION || ty_is_promise(me, ty)) && await_checked_before(me, ty)) return;
         if (ty->kind == TY_UNION) {
             for (u32 i = 0; i < ty->composite.types.len; i++) check_await_operand(me, ty->composite.types.data[i], at, depth + 1, errs);
             return;
@@ -4213,6 +4224,10 @@ static Ty const* awaited_type_in(Checker* me, Ty const* ty, AwaitedFrame const* 
     Symbol const* awaited = awaited_alias(me);
     if (awaited && ty->alias == awaited) return ty;
     if (ty->kind == TY_UNION) {
+        // (Computed once per checker, tsc's cachedTypes: a cycle met the first time isn't met again, TS1062 once)
+        u64 key[2] = { KEY_AWAITED_UNION, (u64)(uintptr_t)ty };
+        Ty const* cached = intern_get(&my links, key, 2);
+        if (cached) return cached;
         // `type T = string | Promise<T>` awaits T again (a deferred reference makes it an infinite structure)
         if (awaited_in_progress(stack, ty)) return awaited_cycle(me);
         AwaitedFrame frame = { ty, stack };
@@ -4227,6 +4242,7 @@ static Ty const* awaited_type_in(Checker* me, Ty const* ty, AwaitedFrame const* 
         // (tsc's mapType: the union itself when no member changed)
         Ty const* ret = changed ? ty_union(me, parts, len, nullptr, (TyList){0}) : ty;
         free(parts);
+        if (ret && len) intern_set(me, &my links, intern_slot(me, &my links, key, 2), ret);
         return ret;
     }
     // A generic type that could be a promise stays itself (getAwaitedType makes it `Awaited<T>`)
@@ -4249,7 +4265,8 @@ static Ty const* awaited_type_in(Checker* me, Ty const* ty, AwaitedFrame const* 
         return awaited_type_in(me, promised, &frame);
     }
     // A `then` that isn't a promise's: no awaited type (the callers say TS1320 and friends, see ty_awaits_thenable())
-    if (ty_is_thenable(me, ty)) return ty_intrinsic(me, TY_ERROR);
+    // (Nothing, which a union's mapType drops: `string | Bad` awaits as string, tsc's getAwaitedTypeNoAlias)
+    if (ty_is_thenable(me, ty)) return nullptr;
     return ty;
 }
 
@@ -4259,6 +4276,8 @@ bool ty_is_thenable(Checker* me, Ty const* ty) { return !(ty->flags & TYF_ANY) &
 // diagnosticMessage): ty, a member of it, or what a promise in there resolves to
 static bool awaits_thenable(Checker* me, Ty const* ty, u32 depth) {
     for (; depth < 16 && !(ty->flags & TYF_ANY) && !ty_is_generic_type(me, ty); depth++) {
+        // (Its callers report: a union or promise checked before says nothing, see await_checked_before())
+        if ((ty->kind == TY_UNION || promised_type_of(me, ty)) && await_checked_before(me, ty)) return false;
         if (ty->kind == TY_UNION) {
             for (u32 i = 0; i < ty->composite.types.len; i++) {
                 if (awaits_thenable(me, ty->composite.types.data[i], depth + 1)) return true;
