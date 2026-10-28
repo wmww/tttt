@@ -566,6 +566,26 @@ never-const (harness writes no errors baseline).
   the excess-property message itself is reported. [open]
 - **elaboration TS2344** (distributiveConditionalBaseConstraint drop-optional): the chain differs. [text]
 
+## Mutation seeds 20261106 and 20261107 (2026-10-28, cor9: `MUTATE_DIR=... scripts/mutate.py -n 8000 --seed S`)
+8 and 9 of 8000 differ (21 and 24 more with a new syntax error, `--syntax`: bun10's). 3 `render` each.
+- constEnumErrors num-to-str: `E2["1"]` on a const enum is a string (the reverse mapping's index signature, const
+  enums too). Test ttttConstEnumNumericIndex. [fixed 37e7d398d]
+- distributiveConditionalBaseConstraint extends-object: spurious TS2344, tail recursion's fresh deferred type
+  (type_core.md). [design]
+- generatorTypeCheck46 member-typo: tsgo reports TS2488 twice at one `yield*`, once from the inference pass (the
+  object literal's method typed `{}` while context-sensitive) and once finally; tttt only the final one. The family of
+  diagnostics made by an inference pass (like c3ffa3e8f's TS2536, rebased 7c3143bad), here with another type text.
+  [open]
+- symbolProperty18 member-typo: `var str = i[Symbol.toStringTagX]()` is TS7022 for str in tsgo because printing the
+  object type for TS7053 runs getSymbolChain's getWithAlternativeContainers, which types every value symbol in scope
+  (looking for a variable of the container's type, `Symbol` for SymbolConstructor) and reaches str in flight. tttt's
+  printer knows only the `XConstructor` pattern (out_unique_symbol_name_impl's HACK, hacks.md) and types nothing.
+  Emulating it means the printer resolving declarations' types. [design]
+- distributiveConditionalTypeConstraints ann-string-number (both seeds): tsgo's elaboration repeats the conditional
+  source's line before `Type 'string' is not assignable to type 'number'`. [text]
+- recursiveClassBaseType delete-stmt: missing TS2310 (the base cycle design). noCircularitySelfReferentialGetter2
+  (TS2345 text), unionTypeWithIndexSignature never-const (TS2322 text): not looked at. [open]
+
 ## Mutation seed 2811 (2026-10-28, cor8: `scripts/mutate.py -n 8000 --seed 2811`, 9 of 8000 differ)
 - classDoesNotDependOnBaseTypes ann-number-string: writing `x[0]` on `string | StringTreeCollection` (a string index
   signature) is TS7053 in tsgo: the union has an index signature only for the key types its first member has and every
