@@ -86,7 +86,7 @@ static void enum_decl_check_declarations(EnumDecl const* me, ErrorCtx* errs) {
         EnumDecl const* decl = symbol->decls[i].node;
         if (vec_enum_case_is_empty(&decl->cases)) continue;
         EnumCase const* first = decl->cases.data;
-        if (first->value.tag != EXPR_IMPLICIT_ANY) continue;
+        if (!expr_absent(&first->value)) continue;
         if (seen_missing_initializer) {
             error_ctx_error_d(errs, first->full_name, 2432, "In an enum with multiple declarations, only one "
                 "declaration can omit an initializer for its first enum element.");
@@ -126,7 +126,7 @@ void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
         // with an initializer set previous_number once their type is known, below)
         bool auto_number = previous_number;
         previous_number = false;
-        if (i->value.tag == EXPR_IMPLICIT_ANY && (!my ambient || my is_const)) {
+        if (expr_absent(&i->value) && (!my ambient || my is_const)) {
             if (!auto_number) {
                 error_ctx_error_d(errs, i->full_name, 1061, "Enum member must have initializer.");
             } else if (previous_other_file && compiler_options()->isolated_modules) {
@@ -136,7 +136,7 @@ void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
             }
             previous_number = auto_number;
         }
-        previous_other_file = i->value.tag != EXPR_IMPLICIT_ANY && references_other_file(&i->value, span_source(my name));
+        previous_other_file = !expr_absent(&i->value) && references_other_file(&i->value, span_source(my name));
         if (i->computed_key) expr_typecheck(i->computed_key, errs);
         current_checker->enum_member_initializer = &i->value;
         expr_typecheck(&i->value, errs);
@@ -151,14 +151,15 @@ void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
         if (numeric) {
             error_ctx_error_d(errs, i->full_name, 2452, "An enum member cannot have a numeric name.");
         }
-        if (i->value.tag == EXPR_IMPLICIT_ANY || !i->symbol) continue;
+        if (expr_absent(&i->value) || !i->symbol) continue;
         ty_check_enum_initializer_references(current_checker, i, &i->value, errs);
         // (Evaluated, not typed: the enum's literal types are made when something asks for them, which decides their
         // order in unions)
         double value = 0;
         int constant = ty_enum_member_constant(current_checker, i, &value);
         previous_number = constant == 1;
-        Span at = expr_outer_span(&i->value);
+        // (A missing initializer at its full start: expr_error_span())
+        Span at = i->value.tag == EXPR_IMPLICIT_ANY ? expr_error_span(&i->value) : expr_outer_span(&i->value);
         if (constant == 1) {
             if (my is_const && isnan(value)) {
                 error_ctx_error_d(errs, at, 2478, "'const' enum member initializer was evaluated to disallowed value 'NaN'.");

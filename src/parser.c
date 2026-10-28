@@ -6878,7 +6878,7 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                         type_move(&item.field.explicit_type)
                     ));
                     vec_interface_member_back_mut(&members)->implicit_any = !item.field.has_explicit_type;
-                    if (item.field.value.tag != EXPR_IMPLICIT_ANY || item.field.value.missing) { // (tsc's checkGrammarProperty)
+                    if (!expr_absent(&item.field.value)) { // (tsc's checkGrammarProperty)
                         Span at = expr_outer_span(&item.field.value);
                         if (item.field.value.missing && span_valid(at)) {
                             // (A missing initializer, `{ q: T = }`, reported only in JSDoc, which has no parse errors that
@@ -10593,7 +10593,7 @@ static inline bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* re
     bool constructor_eager = false;
     for_each (i, vec_class_item, &ret->items) {
         if (i->tag != CLASS_ITEM_FIELD || i->field.is_static) continue;
-        constructor_eager |= !standard_fields || (!i->field.has_explicit_type && i->field.value.tag == EXPR_IMPLICIT_ANY);
+        constructor_eager |= !standard_fields || (!i->field.has_explicit_type && expr_absent(&i->field.value));
     }
     for_each (i, vec_class_item, &ret->items) {
         if (constructor_eager && i->tag == CLASS_ITEM_CONSTRUCTOR) undefer_body(&p, &i->constructor.func);

@@ -386,7 +386,7 @@ Ty const* ty_resolve_enum(Checker* me, Symbol const* decl, u64 taint) {
         bool ambient = enum_decl->ambient && !enum_decl->is_const;
         for_each (i, vec_enum_case, &enum_decl->cases) {
             EnumValue value;
-            if (i->value.tag == EXPR_IMPLICIT_ANY) {
+            if (expr_absent(&i->value)) {
                 bool can_increment = !ambient && previous.known && !previous.is_string;
                 value = can_increment ? enum_value_number(previous.number + 1) : enum_value_unknown;
             } else {

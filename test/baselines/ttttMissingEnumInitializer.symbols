@@ -1,0 +1,47 @@
+//// [test/cases/ttttMissingEnumInitializer.ts] ////
+
+=== ttttMissingEnumInitializer.ts ===
+abstract class A {
+>A : Symbol(A, Decl(ttttMissingEnumInitializer.ts, 0, 0))
+
+    abstract a = ;
+>a : Symbol(A.a, Decl(ttttMissingEnumInitializer.ts, 0, 18))
+
+    declare d = ;
+>d : Symbol(A.d, Decl(ttttMissingEnumInitializer.ts, 1, 18))
+
+    static p = ;
+>p : Symbol(A.p, Decl(ttttMissingEnumInitializer.ts, 2, 17))
+
+    q: string = ;
+>q : Symbol(A.q, Decl(ttttMissingEnumInitializer.ts, 3, 16))
+
+    constructor() { this.q; }
+>this.q : Symbol(A.q, Decl(ttttMissingEnumInitializer.ts, 3, 16))
+>this : Symbol(A, Decl(ttttMissingEnumInitializer.ts, 0, 0))
+>q : Symbol(A.q, Decl(ttttMissingEnumInitializer.ts, 3, 16))
+}
+const enum CE { X = , Y }
+>CE : Symbol(CE, Decl(ttttMissingEnumInitializer.ts, 6, 1))
+>X : Symbol(CE.X, Decl(ttttMissingEnumInitializer.ts, 7, 15))
+>Y : Symbol(CE.Y, Decl(ttttMissingEnumInitializer.ts, 7, 21))
+
+declare enum DE { X = , Y }
+>DE : Symbol(DE, Decl(ttttMissingEnumInitializer.ts, 7, 25))
+>X : Symbol(DE.X, Decl(ttttMissingEnumInitializer.ts, 8, 17))
+>Y : Symbol(DE.Y, Decl(ttttMissingEnumInitializer.ts, 8, 23))
+
+let v = CE.X;
+>v : Symbol(v, Decl(ttttMissingEnumInitializer.ts, 9, 3))
+>CE.X : Symbol(CE.X, Decl(ttttMissingEnumInitializer.ts, 7, 15))
+>CE : Symbol(CE, Decl(ttttMissingEnumInitializer.ts, 6, 1))
+>X : Symbol(CE.X, Decl(ttttMissingEnumInitializer.ts, 7, 15))
+
+class B { r = ; m() { return this.r; } }
+>B : Symbol(B, Decl(ttttMissingEnumInitializer.ts, 9, 13))
+>r : Symbol(B.r, Decl(ttttMissingEnumInitializer.ts, 10, 9))
+>m : Symbol(B.m, Decl(ttttMissingEnumInitializer.ts, 10, 15))
+>this.r : Symbol(B.r, Decl(ttttMissingEnumInitializer.ts, 10, 9))
+>this : Symbol(B, Decl(ttttMissingEnumInitializer.ts, 9, 13))
+>r : Symbol(B.r, Decl(ttttMissingEnumInitializer.ts, 10, 9))
+

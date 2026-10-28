@@ -1,0 +1,44 @@
+ttttMissingFieldInitializer.ts(4,17): error TS1109: Expression expected.
+ttttMissingFieldInitializer.ts(5,12): error TS1109: Expression expected.
+ttttMissingFieldInitializer.ts(6,17): error TS1109: Expression expected.
+ttttMissingFieldInitializer.ts(7,16): error TS1109: Expression expected.
+ttttMissingFieldInitializer.ts(8,5): error TS7008: Member 'w' implicitly has an 'any' type.
+ttttMissingFieldInitializer.ts(10,14): error TS1109: Expression expected.
+ttttMissingFieldInitializer.ts(10,16): error TS1061: Enum member must have initializer.
+ttttMissingFieldInitializer.ts(11,21): error TS1109: Expression expected.
+ttttMissingFieldInitializer.ts(11,23): error TS1061: Enum member must have initializer.
+
+
+==== ttttMissingFieldInitializer.ts (9 errors) ====
+    // A class field's or enum member's missing initializer (`x = ;`) is an initializer (tsc's missing identifier, any):
+    // no TS7008 or TS2564, the next enum member follows a computed one (TS1061), the types show it
+    class C<U> {
+        private x = ;
+                    ~
+!!! error TS1109: Expression expected.
+        y: U = ;
+               ~
+!!! error TS1109: Expression expected.
+        z: number = ;
+                    ~
+!!! error TS1109: Expression expected.
+        static s = ;
+                   ~
+!!! error TS1109: Expression expected.
+        w;
+        ~
+!!! error TS7008: Member 'w' implicitly has an 'any' type.
+    }
+    enum E { A = , B }
+                 ~
+!!! error TS1109: Expression expected.
+                   ~
+!!! error TS1061: Enum member must have initializer.
+    enum F { A = 1, B = , C }
+                        ~
+!!! error TS1109: Expression expected.
+                          ~
+!!! error TS1061: Enum member must have initializer.
+    const c = new C<string>();
+    let n: number = E.B;
+    

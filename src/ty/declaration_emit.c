@@ -1285,7 +1285,7 @@ static Search locate(Walk* me, PseudoError const* target) {
             break;
         }
         case ROOT_FIELD:
-            if (root->field->field.value.tag != EXPR_IMPLICIT_ANY) {
+            if (!expr_absent(&root->field->field.value)) {
                 search_expr(&search, &root->field->field.value, field_near(root->field), true);
             }
             break;
@@ -2914,7 +2914,7 @@ static bool enum_external_references(Walk* me, EnumDecl const* enum_decl, Expr c
 
 static void check_enum(Walk* me, EnumDecl const* decl) {
     for_each (i, vec_enum_case, &decl->cases) {
-        if (i->value.tag == EXPR_IMPLICIT_ANY || i->computed_name) continue;
+        if (expr_absent(&i->value) || i->computed_name) continue;
         if (enum_external_references(me, decl, &i->value, 0)) {
             report(me, i->full_name, 9020, "Enum member initializers must be computable without references to external "
                 "symbols with --isolatedDeclarations.");
@@ -5124,14 +5124,14 @@ static void emit_enum(Walk* me, EnumDecl const* decl, Statement const* statement
         Ty const* type = i->symbol ? ty_type_of_symbol(my checker, i->symbol) : nullptr;
         bool literal = type && type->kind == TY_LITERAL && type->literal.enum_decl;
         double number = 0;
-        int constant = i->value.tag == EXPR_IMPLICIT_ANY ? 0 : ty_enum_member_constant(my checker, i, &number);
+        int constant = expr_absent(&i->value) ? 0 : ty_enum_member_constant(my checker, i, &number);
         Ty const* value = nullptr;
         if (constant == 2 && literal && type->literal.string) {
             value = ty_string_literal(my checker, atom_sv(type->literal.string));
         } else if (constant == 1) {
             Value v = value_number(number);
             value = ty_literal(my checker, &v);
-        } else if (i->value.tag == EXPR_IMPLICIT_ANY && literal && !type->literal.string && type->literal.value.tag == VALUE_NUMBER &&
+        } else if (expr_absent(&i->value) && literal && !type->literal.string && type->literal.value.tag == VALUE_NUMBER &&
             !isnan(type->literal.value.number)
         ) {
             value = ty_literal(my checker, &type->literal.value);
@@ -5141,8 +5141,8 @@ static void emit_enum(Walk* me, EnumDecl const* decl, Statement const* statement
             w_literal_value(me, value); // (A string escaped to ASCII: a string literal node it makes)
         }
         // (The member ends after its initializer)
-        m_span(me, i->value.tag == EXPR_IMPLICIT_ANY ? i->full_name : expr_outer_span(&i->value), true);
-        decl_comments_trailing(&my comments, my out, my indent, span_end_ptr(i->value.tag == EXPR_IMPLICIT_ANY ? i->full_name : expr_outer_span(&i->value)));
+        m_span(me, expr_absent(&i->value) ? i->full_name : expr_outer_span(&i->value), true);
+        decl_comments_trailing(&my comments, my out, my indent, span_end_ptr(expr_absent(&i->value) ? i->full_name : expr_outer_span(&i->value)));
     }
     if (written) w_line(me);
     my indent--;

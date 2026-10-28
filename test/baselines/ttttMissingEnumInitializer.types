@@ -1,0 +1,54 @@
+//// [test/cases/ttttMissingEnumInitializer.ts] ////
+
+=== ttttMissingEnumInitializer.ts ===
+abstract class A {
+>A : A
+
+    abstract a = ;
+>a : any
+> : any
+
+    declare d = ;
+>d : any
+> : any
+
+    static p = ;
+>p : any
+> : any
+
+    q: string = ;
+>q : string
+> : any
+
+    constructor() { this.q; }
+>this.q : string
+>this : this
+>q : string
+}
+const enum CE { X = , Y }
+>CE : CE
+>X : CE.X
+> : any
+>Y : CE.Y
+
+declare enum DE { X = , Y }
+>DE : DE
+>X : DE.X
+> : any
+>Y : DE.Y
+
+let v = CE.X;
+>v : CE
+>CE.X : CE.X
+>CE : typeof CE
+>X : CE.X
+
+class B { r = ; m() { return this.r; } }
+>B : B
+>r : any
+> : any
+>m : () => any
+>this.r : any
+>this : this
+>r : any
+

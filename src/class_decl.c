@@ -170,7 +170,7 @@ Ty const* class_item_field_evaluate_type(ClassItem* me) {
     Checker* checker = current_checker;
     if (my field.has_explicit_type) return ty_of_node(&my field.explicit_type);
     if (my field.js_assigned) return ty_type_of_symbol(checker, my field.js_assigned);
-    if (my field.value.tag == EXPR_IMPLICIT_ANY) {
+    if (expr_absent(&my field.value)) {
         Ty const* assigned = field_type_from_assignments(checker, me, nullptr);
         if (assigned) return assigned;
     }
@@ -387,14 +387,14 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
                 scope_flow(names)->type_only_alias_ok = my field.is_abstract || my field.is_declare;
                 bool quiet = class_item_key_is_quiet(class_decl, me);
                 unused_marking_suppressed += quiet;
-                lookup_names_without_super(my field.computed_key, names, NO_SUPER_COMPUTED_NAME, my field.value.tag != EXPR_IMPLICIT_ANY,
+                lookup_names_without_super(my field.computed_key, names, NO_SUPER_COMPUTED_NAME, !expr_absent(&my field.value),
                     nullptr, quiet ? nullptr : errs);
                 unused_marking_suppressed -= quiet;
                 scope_flow(names)->type_only_alias_ok = false;
             }
             lazy_type_bind(&my field.lazy_type, LAZY_TYPE_CLASS_ITEM_FIELD);
             type_lookup_names(&my field.explicit_type, names, errs);
-            if (my field.value.tag == EXPR_IMPLICIT_ANY) {
+            if (expr_absent(&my field.value)) {
                 expr_lookup_names(&my field.value, names, errs);
             } else {
                 // An initializer is a control flow container of its own
@@ -705,7 +705,7 @@ static void class_decl_lookup_names_in_owner(ClassDecl* me, Scope* names, ErrorC
     // (field_type_from_assignments())
     for_each (i, vec_class_item, &my items) {
         if (i->tag != CLASS_ITEM_FIELD || !i->field.is_declare || i->field.has_explicit_type ||
-            i->field.value.tag != EXPR_IMPLICIT_ANY || i->field.ts_assigned_class_
+            !expr_absent(&i->field.value) || i->field.ts_assigned_class_
         ) {
             continue;
         }
@@ -1055,7 +1055,7 @@ static MemberInfo class_instance_member(Checker* checker, ClassDecl const* me, A
             ret.kind = i->field.is_auto_accessor ? MEMBER_ACCESSOR : MEMBER_PROPERTY;
             ret.is_abstract = i->field.is_abstract;
             ret.is_declare = i->field.is_declare;
-            ret.uninitialized_field = !i->field.is_auto_accessor && i->field.value.tag == EXPR_IMPLICIT_ANY;
+            ret.uninitialized_field = !i->field.is_auto_accessor && expr_absent(&i->field.value);
             ret.definite = i->field.is_definite;
             ret.identifier_name = !i->field.computed_key && !i->field.name_is_value;
             Expr const* key = i->field.computed_key;
@@ -1667,7 +1667,7 @@ static bool class_super_call_should_be_root(ClassDecl const* me, FunctionImpl co
     if (options->use_define_for_class_fields && options->target >= SCRIPT_TARGET_ES2022) return false;
     for_each (i, vec_class_item, &my items) {
         if (span_valid(class_item_private_name(i))) return true;
-        if (i->tag == CLASS_ITEM_FIELD && !i->field.is_static && i->field.value.tag != EXPR_IMPLICIT_ANY) return true;
+        if (i->tag == CLASS_ITEM_FIELD && !i->field.is_static && !expr_absent(&i->field.value)) return true;
     }
     for_each (arg, vec_function_arg, &constructor->args) {
         if (arg->is_parameter_property) return true;
@@ -2108,7 +2108,7 @@ static Span class_transformable_static_element(ClassDecl const* me) {
             if (!class_item_is_static((ClassItem*)i)) continue;
             Span name = i->tag == CLASS_ITEM_METHOD ? i->method.name_span : i->field.name_span;
             if (span_valid(class_item_private_name(i))) return name;
-            if (!standard_fields && i->tag == CLASS_ITEM_FIELD && i->field.value.tag != EXPR_IMPLICIT_ANY) return name;
+            if (!standard_fields && i->tag == CLASS_ITEM_FIELD && !expr_absent(&i->field.value)) return name;
         }
     }
     return span_null;
@@ -2198,7 +2198,7 @@ static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const*
     if (span_valid(name) && !item->field.has_explicit_type && compiler_options()->no_implicit_any &&
         !(span_source(name) && span_source(name)->is_js) &&
         // (Or the constructor's assignments to it without one: its type is theirs, getFlowTypeInConstructor)
-        (item->field.value.tag != EXPR_IMPLICIT_ANY || class_untyped_field_ts_assigned(item)) &&
+        (!expr_absent(&item->field.value) || class_untyped_field_ts_assigned(item)) &&
         class_item_get_type((ClassItem*)item) == ty_intrinsic(current_checker, TY_CIRCULAR)
     ) {
         error_ctx_error_d(errs, name, 7022, "'", name, "' implicitly has type 'any' because it does not have a type "
@@ -2210,7 +2210,7 @@ static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const*
     csview shown = name.size ? span_sv(name) : c_sv("(Missing)");
     // (Typed by the accessors it joined: its own declaration's type is never asked for)
     if (item->field.joined_accessor) return;
-    if (span_source(name) && span_source(name)->is_js && item->field.value.tag != EXPR_IMPLICIT_ANY && !item->field.js_assigned &&
+    if (span_source(name) && span_source(name)->is_js && !expr_absent(&item->field.value) && !item->field.js_assigned &&
         ty_is_empty_array_literal_type(current_checker, ty_expr_type(current_checker, &item->field.value))
     ) {
         error_ctx_error_d(errs, name, 7008, "Member '", shown, "' implicitly has an 'any[]' type.");
@@ -2219,8 +2219,8 @@ static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const*
     // (In JavaScript a field without an initializer nothing assigns is any too; one `this.x = v` assigns has the
     // assignments' type)
     bool js = span_source(name) && span_source(name)->is_js;
-    if ((js && (item->field.value.tag != EXPR_IMPLICIT_ANY || item->field.js_assigned)) || class_item_private_in_ambient(me, item)) return;
-    if (item->field.value.tag != EXPR_IMPLICIT_ANY) {
+    if ((js && (!expr_absent(&item->field.value) || item->field.js_assigned)) || class_item_private_in_ambient(me, item)) return;
+    if (!expr_absent(&item->field.value)) {
         // tsc's reportErrorsFromWidening: inside the type if it can (object literal properties), else at the member
         // with the widened type (`x = null`: any, `x = []`: any[])
         if (compiler_options()->strict_null_checks) return;
@@ -2383,7 +2383,7 @@ static void class_check_property_initialization(ClassDecl const* me, ErrorCtx* e
     for_each (i, vec_class_item, &my items) {
         if (i->tag != CLASS_ITEM_FIELD || i->field.is_static || i->field.is_declare || i->field.is_abstract) continue;
         // (Auto-accessors and JavaScript fields too)
-        if (i->field.value.tag != EXPR_IMPLICIT_ANY || !span_valid(i->field.name_span)) continue;
+        if (!expr_absent(&i->field.value) || !span_valid(i->field.name_span)) continue;
         if (i->field.name_is_value && !i->field.computed_key) continue; // (a string or numeric name)
         if (i->field.is_definite) continue;
         // (Its symbol's type: an optional one has undefined, unless its symbol's first declaration says otherwise)
@@ -2545,7 +2545,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         }
         // tsc's checkAmbientInitializer for a field of an ambient class or a `declare` field (one grammar error per
         // member: not after the decorators')
-        if (!decorator_error && i->tag == CLASS_ITEM_FIELD && (my is_ambient || i->field.is_declare) && i->field.value.tag != EXPR_IMPLICIT_ANY) {
+        if (!decorator_error && i->tag == CLASS_ITEM_FIELD && (my is_ambient || i->field.is_declare) && !expr_absent(&i->field.value)) {
             if (i->field.is_readonly && !i->field.has_explicit_type) {
                 if (!expr_is_ambient_const_initializer(&i->field.value)) {
                     error_ctx_grammar_error_d(errs, expr_outer_span(&i->field.value), 1254,
@@ -2803,7 +2803,7 @@ void class_decl_typecheck_members(ClassDecl* me, ErrorCtx* errs) {
                     error_ctx_error_d(errs, i->field.name_span, 1539, "A 'bigint' literal cannot be used as a property name.");
                 }
                 // (tsc's checkPropertyDeclaration)
-                if (i->field.is_abstract && i->field.value.tag != EXPR_IMPLICIT_ANY && span_valid(i->field.name_span)) {
+                if (i->field.is_abstract && !expr_absent(&i->field.value) && span_valid(i->field.name_span)) {
                     error_ctx_error_d(errs, i->field.name_span, 1267, "Property '", i->field.name_span,
                         "' cannot have an initializer because it is marked abstract.");
                 }
@@ -2818,7 +2818,7 @@ void class_decl_typecheck_members(ClassDecl* me, ErrorCtx* errs) {
                 // through the initializer starts at the field, whose instantiations are then settled before its
                 // siblings ask again (`a = [o.b, o.c]; b = o.a; c = o.a`: TS7022 on a and b, not c)
                 if (!i->field.has_explicit_type && !i->field.computed_key) class_item_get_type(i);
-                if (i->field.has_explicit_type && i->field.value.tag != EXPR_IMPLICIT_ANY) {
+                if (i->field.has_explicit_type && !expr_absent(&i->field.value)) {
                     // The initializer has the annotation as its contextual type (like a variable's)
                     // (An optional field's declared type has undefined: tsc's getTypeOfSymbol, addOptionality)
                     Ty const* contextual = ty_from_node(current_checker, &i->field.explicit_type, (LowerCtx){ .generic = true });
@@ -2832,14 +2832,14 @@ void class_decl_typecheck_members(ClassDecl* me, ErrorCtx* errs) {
                 // against an annotation (tsc's checkVariableLikeDeclaration against getTypeOfSymbol)
                 bool prototype_field = i->field.is_static && !i->field.computed_key && !span_valid(class_item_private_name(i)) &&
                     my symbol && cstr_equals(&i->field.name_string, "prototype");
-                if (prototype_field && i->field.value.tag != EXPR_IMPLICIT_ANY) {
+                if (prototype_field && !expr_absent(&i->field.value)) {
                     Ty const* prototype = ty_class_prototype_type(current_checker, my symbol);
                     if (prototype) {
                         ty_check_assignable_expr(current_checker, expr_get_type(&i->field.value), prototype, i->field.name_span,
                             &i->field.value, errs);
                     }
                 }
-                if (i->field.has_explicit_type && i->field.value.tag != EXPR_IMPLICIT_ANY && !prototype_field) {
+                if (i->field.has_explicit_type && !expr_absent(&i->field.value) && !prototype_field) {
                     // (Joined by accessors, it's their symbol's type: tsc's checkVariableLikeDeclaration of the symbol's
                     // valueDeclaration checks the initializer against getTypeOfSymbol)
                     Ty const* declared = i->field.joined_accessor ? class_item_get_type(i) : ty_of_node(&i->field.explicit_type);

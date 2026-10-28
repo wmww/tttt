@@ -1741,7 +1741,7 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
         }
         // (A computed name's expression is checked: tsgo's checkEnumMember)
         if (i->computed_key) expr_compile_test_info(i->computed_key, ctx);
-        if (i->value.tag != EXPR_IMPLICIT_ANY) {
+        if (!expr_absent(&i->value)) {
             expr_compile_test_info(&i->value, ctx);
         }
     }
@@ -1857,7 +1857,7 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
             if (my field.has_explicit_type) {
                 type_compile_test_info(&my field.explicit_type, ctx);
             }
-            if (my field.value.tag != EXPR_IMPLICIT_ANY) {
+            if (!expr_absent(&my field.value)) {
                 expr_compile_test_info(&my field.value, ctx);
             }
         }   break;

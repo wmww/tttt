@@ -5037,7 +5037,7 @@ static void check_used_before_initialization(Checker* me, PropertyExpr const* ac
     char const* used_at = span_start_ptr(expr_outer_span(&access->expr));
     bool same_class = class_decl && site->enclosing_class == class_decl;
     bool this_access = access->expr.tag == EXPR_IDENTIFIER && access->expr.identifier.keyword == KEYWORD_IDENTIFIER_THIS;
-    bool initialized = is_field && (item->field.value.tag != EXPR_IMPLICIT_ANY || item->field.is_definite);
+    bool initialized = is_field && (!expr_absent(&item->field.value) || item->field.is_definite);
     bool within_declaration = span_contains(declaration, used_at);
     // isUsedInFunctionOrInstanceProperty, from where the reads can be
     bool is_instance_field = is_field && !item->field.is_static;

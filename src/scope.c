@@ -6831,7 +6831,7 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
             }
             // A field the class body declares without a type or initializer has the type the constructor assigns
             if (kind == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR && field && field->tag == CLASS_ITEM_FIELD &&
-                !field->field.has_explicit_type && field->field.value.tag == EXPR_IMPLICIT_ANY
+                !field->field.has_explicit_type && expr_absent(&field->field.value)
             ) {
                 field->field.js_assigned = symbol_table_get(symbol_rare(class_symbol)->members, span_sv(name));
             }

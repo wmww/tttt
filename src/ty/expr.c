@@ -2989,7 +2989,7 @@ void ty_check_property_used_before_assigned(Checker* me, Expr const* expr, Error
     ClassDecl const* class_decl = symbol_find_node(property_context(access)->in_constructor_of, SYMBOL_DECL_CLASS);
     if (!class_decl || class_decl->is_ambient) return;
     ClassItem const* field = class_decl_find_member(class_decl, span_sv(property_name(access)), false);
-    if (!field || field->tag != CLASS_ITEM_FIELD || field->field.value.tag != EXPR_IMPLICIT_ANY || field->field.is_abstract ||
+    if (!field || field->tag != CLASS_ITEM_FIELD || !expr_absent(&field->field.value) || field->field.is_abstract ||
         field->field.is_declare || field->field.is_auto_accessor || field->field.is_definite
     ) {
         return;
@@ -6643,7 +6643,7 @@ Ty const* ty_invalid_generic_element_access(Checker* me, PropertyExpr const* acc
 static void contextually_type_static_fields(Checker* me, ClassDecl const* class_decl, Ty const* contextual) {
     for_each (i, vec_class_item, &class_decl->items) {
         if (i->tag != CLASS_ITEM_FIELD || !i->field.is_static || i->field.has_explicit_type) continue;
-        if (i->field.value.tag == EXPR_IMPLICIT_ANY || span_valid(class_item_private_name(i))) continue;
+        if (expr_absent(&i->field.value) || span_valid(class_item_private_name(i))) continue;
         Ty const* key = i->field.computed_key ? ty_regular(me, ty_expr_type(me, i->field.computed_key)) :
             ty_string_literal(me, cstr_sv(&i->field.name_string));
         if (!(key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL))) continue;

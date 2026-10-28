@@ -616,7 +616,9 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
 - A class field's or enum member's missing initializer (`private x = ;`, `x: U = ;`, `enum E { A = }`): tsgo has an
   initializer (a missing expression: no TS7008, no TS2564, `> : any` in the types baseline); tttt's
   EXPR_IMPLICIT_ANY with `missing` reads as none at ~15 `field.value.tag == EXPR_IMPLICIT_ANY` sites (class_decl.c,
-  scope.c) and the types walk skips it. [open]
+  scope.c) and the types walk skips it. expr_absent() (expr.h) is "no initializer" at every field and enum
+  member site now; a missing const or ambient enum initializer is TS2474/TS1066 at its full start
+  (ttttMissingFieldInitializer, ttttMissingEnumInitializer). [fixed]
 - After a parameter's modifiers a reserved word is TS1359 (parseBindingIdentifier), not TS1003: `declare function`
   where a parameter was expected (seed 20261101, contextualParamTypeVsNestedReturnTypeInference4;
   ttttParameterModifierReservedName). [fixed 56abcd061]

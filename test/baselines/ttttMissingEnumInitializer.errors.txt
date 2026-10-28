@@ -1,0 +1,48 @@
+ttttMissingEnumInitializer.ts(2,14): error TS1267: Property 'a' cannot have an initializer because it is marked abstract.
+ttttMissingEnumInitializer.ts(2,18): error TS1109: Expression expected.
+ttttMissingEnumInitializer.ts(3,17): error TS1109: Expression expected.
+ttttMissingEnumInitializer.ts(4,16): error TS1109: Expression expected.
+ttttMissingEnumInitializer.ts(5,17): error TS1109: Expression expected.
+ttttMissingEnumInitializer.ts(8,20): error TS2474: const enum member initializers must be constant expressions.
+ttttMissingEnumInitializer.ts(8,21): error TS1109: Expression expected.
+ttttMissingEnumInitializer.ts(8,23): error TS1061: Enum member must have initializer.
+ttttMissingEnumInitializer.ts(9,22): error TS1066: In ambient enum declarations member initializer must be constant expression.
+ttttMissingEnumInitializer.ts(9,23): error TS1109: Expression expected.
+ttttMissingEnumInitializer.ts(11,15): error TS1109: Expression expected.
+
+
+==== ttttMissingEnumInitializer.ts (11 errors) ====
+    abstract class A {
+        abstract a = ;
+                 ~
+!!! error TS1267: Property 'a' cannot have an initializer because it is marked abstract.
+                     ~
+!!! error TS1109: Expression expected.
+        declare d = ;
+                    ~
+!!! error TS1109: Expression expected.
+        static p = ;
+                   ~
+!!! error TS1109: Expression expected.
+        q: string = ;
+                    ~
+!!! error TS1109: Expression expected.
+        constructor() { this.q; }
+    }
+    const enum CE { X = , Y }
+                       
+!!! error TS2474: const enum member initializers must be constant expressions.
+                        ~
+!!! error TS1109: Expression expected.
+                          ~
+!!! error TS1061: Enum member must have initializer.
+    declare enum DE { X = , Y }
+                         
+!!! error TS1066: In ambient enum declarations member initializer must be constant expression.
+                          ~
+!!! error TS1109: Expression expected.
+    let v = CE.X;
+    class B { r = ; m() { return this.r; } }
+                  ~
+!!! error TS1109: Expression expected.
+    

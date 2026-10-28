@@ -123,11 +123,11 @@ static inline Expr const* class_field_ts_assigned(ClassItem const* me, ClassItem
 // The same for a TypeScript field without a type or initializer, whose type it is, without the constructor: the parser
 // doesn't defer the constructor of a class with one of those (parse_class())
 static inline Expr const* class_untyped_field_ts_assigned(ClassItem const* me) {
-    check(!me->field.has_explicit_type && me->field.value.tag == EXPR_IMPLICIT_ANY);
+    check(!me->field.has_explicit_type && expr_absent(&me->field.value));
     return me->field.ts_assigned_;
 }
 static inline struct ClassDecl const* class_untyped_field_ts_assigned_class(ClassItem const* me) {
-    check(!me->field.has_explicit_type && me->field.value.tag == EXPR_IMPLICIT_ANY);
+    check(!me->field.has_explicit_type && expr_absent(&me->field.value));
     return me->field.ts_assigned_class_;
 }
 static inline bool class_methods_same_name(ClassItem const* a, ClassItem const* b) {

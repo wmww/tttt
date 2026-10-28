@@ -223,6 +223,12 @@ typedef struct Expr {
     LazyType lazy_type;
 } Expr;
 
+// An optional expression that isn't there (`x;`: no initializer), not a missing one (`x = ;`, a parse error: tsc's
+// missing identifier, an initializer that is there, of type any)
+static inline bool expr_absent(Expr const* me) {
+    return me->tag == EXPR_IMPLICIT_ANY && !me->missing;
+}
+
 #define EXPR_DEFAULT(span) \
     .inner_span = span, \
     .lazy_type.tag = LAZY_TYPE_EXPR

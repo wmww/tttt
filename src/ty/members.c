@@ -2100,7 +2100,7 @@ static void builder_add_class_items(
                     prop->decl->lazy = &i->field.lazy_type;
                 }
                 prop->thisless = binding_is_thisless(i->field.has_explicit_type, &i->field.explicit_type,
-                    i->field.value.tag != EXPR_IMPLICIT_ANY);
+                    !expr_absent(&i->field.value));
                 if (!i->field.is_auto_accessor) prop->flags |= PROP_FIELD;
                 else prop_decl_rare_mut(me, prop->decl)->class_auto_accessor = true;
                 if (i->field.is_optional) prop->flags |= PROP_OPTIONAL;

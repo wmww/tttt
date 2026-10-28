@@ -1,0 +1,52 @@
+//// [test/cases/ttttMissingFieldInitializer.ts] ////
+
+=== ttttMissingFieldInitializer.ts ===
+// A class field's or enum member's missing initializer (`x = ;`) is an initializer (tsc's missing identifier, any):
+// no TS7008 or TS2564, the next enum member follows a computed one (TS1061), the types show it
+class C<U> {
+>C : C<U>
+
+    private x = ;
+>x : any
+> : any
+
+    y: U = ;
+>y : U
+> : any
+
+    z: number = ;
+>z : number
+> : any
+
+    static s = ;
+>s : any
+> : any
+
+    w;
+>w : any
+}
+enum E { A = , B }
+>E : E
+>A : E.A
+> : any
+>B : E.B
+
+enum F { A = 1, B = , C }
+>F : F
+>A : F.A
+>1 : 1
+>B : F.B
+> : any
+>C : F.C
+
+const c = new C<string>();
+>c : C<string>
+>new C<string>() : C<string>
+>C : typeof C
+
+let n: number = E.B;
+>n : number
+>E.B : E.B
+>E : typeof E
+>B : E.B
+

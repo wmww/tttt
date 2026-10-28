@@ -1108,7 +1108,7 @@ static void display_enum_decl(Display d, EnumDecl const* me) {
     for_each (i, vec_enum_case, &my cases) {
         display_newline(d);
         display_colored_span(d, color_name, i->name);
-        if (i->value.tag != EXPR_IMPLICIT_ANY) {
+        if (!expr_absent(&i->value)) {
             display_lit(d, " = ");
             display_expr(d, &i->value);
         }
