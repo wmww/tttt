@@ -4901,7 +4901,7 @@ static void check_alias_ambient_const_enum(Symbol const* alias, Symbol const* ta
 // tsc's checkAliasSymbol under isolatedModules/verbatimModuleSyntax: what a transpiler that sees one file at a time
 // can't elide (an import or re-export of a type, or of something imported as a type only), and ES syntax in a file
 // emitted as CommonJS
-static void check_alias_isolated_modules(Symbol const* alias, Symbol const* target) {
+static void check_alias_isolated_modules(Symbol const* alias, Symbol const* target, bool merged_with_export) {
     CompilerOptions const* options = compiler_options();
     if (!options->isolated_modules && !options->verbatim_module_syntax) return;
     PortItem const* item = alias->alias->item;
@@ -4930,7 +4930,7 @@ static void check_alias_isolated_modules(Symbol const* alias, Symbol const* targ
     } else if (item->tag == PORT_IMPORT_DEFAULT && span_valid(item->clause)) {
         at = item->clause;
     }
-    PortItem const* type_only = symbol_type_only_declaration(alias);
+    PortItem const* type_only = merged_with_export ? nullptr : symbol_type_only_declaration(alias);
     if (is_type || type_only) {
         // (`{ a as b }` names `a`)
         csview name = port_item_name(span_valid(item->source_name) ? item->source_name : item->decl_name);
@@ -5211,12 +5211,12 @@ void binder_link(Binder* me) {
         // (A UMD global, `export as namespace foo`, isn't one tsc's checkAliasSymbol checks)
         if (symbol->alias->item->tag == PORT_EXPORT_AS_NAMESPACE) continue;
         check_alias_ambient_const_enum(symbol, target);
-        check_alias_isolated_modules(symbol, target);
         // In tsc an exported declaration also has a local symbol, which an import of the same name conflicts with
         u32 local_flags = symbol->flags;
+        Symbol* exported = nullptr;
         Symbol const* container = symbol->alias->scope->container;
         if (container && !port_item_declares_export(symbol->alias->item)) {
-            Symbol* exported = symbol_table_get(container->exports, symbol->name);
+            exported = symbol_table_get(container->exports, symbol->name);
             // (Not what the import resolves to: an augmentation merged through `export { A }` of an imported A makes
             // the export its target, see merge_into_exports())
             if (exported == target) exported = nullptr;
@@ -5236,6 +5236,9 @@ void binder_link(Binder* me) {
                 symbol->alias->export_value = exported;
             }
         }
+        // (That local symbol's ExportSymbol is the exported declaration, which tsc's checkAliasSymbol checks in the
+        // alias's place: not an alias, so nothing makes it type-only)
+        check_alias_isolated_modules(symbol, target, exported && exported != symbol && !(exported->flags & SYMBOL_ALIAS));
         if (!(local_flags & SYMBOL_ANY_MEANING)) continue;
         // An alias merged with local declarations: fine as long as they mean different things (tsc: checkAliasSymbol)
         u32 target_flags = symbol_resolved_flags(target);

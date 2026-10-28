@@ -1,0 +1,22 @@
+a.ts(6,10): error TS1485: 'L' resolves to a type-only declaration and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "target": "esnext", "module": "esnext", "moduleResolution": "bundler", "verbatimModuleSyntax": true } }
+==== m.ts (0 errors) ====
+    class K {}
+    export type { K };
+    class L {}
+    export type { L };
+==== a.ts (1 errors) ====
+    // An import merged with an exported declaration of its name: tsc's local symbol's ExportSymbol is the exported
+    // declaration, which checkAliasSymbol checks in the alias's place, so nothing makes the import type-only (no TS1485;
+    // bun 04-C12). Without the export it is
+    import { K } from "./m";
+    export namespace K {}
+    import { L } from "./m";
+             ~
+!!! error TS1485: 'L' resolves to a type-only declaration and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+!!! related TS1377 m.ts:4:15: 'L' was exported here.
+    namespace L {}
+    

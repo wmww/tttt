@@ -1,0 +1,28 @@
+//// [test/cases/ttttImportMergedWithExportTypeOnly.ts] ////
+
+=== m.ts ===
+class K {}
+>K : K
+
+export type { K };
+>K : K
+
+class L {}
+>L : L
+
+export type { L };
+>L : L
+
+=== a.ts ===
+// An import merged with an exported declaration of its name: tsc's local symbol's ExportSymbol is the exported
+// declaration, which checkAliasSymbol checks in the alias's place, so nothing makes the import type-only (no TS1485;
+// bun 04-C12). Without the export it is
+import { K } from "./m";
+>K : typeof K
+
+export namespace K {}
+import { L } from "./m";
+>L : typeof L
+
+namespace L {}
+
