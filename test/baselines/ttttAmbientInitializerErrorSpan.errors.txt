@@ -1,0 +1,41 @@
+ttttAmbientInitializerErrorSpan.ts(3,13): error TS1039: Initializers are not allowed in ambient contexts.
+ttttAmbientInitializerErrorSpan.ts(3,29): error TS1183: An implementation cannot be declared in ambient contexts.
+ttttAmbientInitializerErrorSpan.ts(4,17): error TS1039: Initializers are not allowed in ambient contexts.
+ttttAmbientInitializerErrorSpan.ts(4,29): error TS1183: An implementation cannot be declared in ambient contexts.
+ttttAmbientInitializerErrorSpan.ts(5,17): error TS1039: Initializers are not allowed in ambient contexts.
+ttttAmbientInitializerErrorSpan.ts(5,30): error TS1183: An implementation cannot be declared in ambient contexts.
+ttttAmbientInitializerErrorSpan.ts(6,17): error TS1039: Initializers are not allowed in ambient contexts.
+ttttAmbientInitializerErrorSpan.ts(7,24): error TS1039: Initializers are not allowed in ambient contexts.
+ttttAmbientInitializerErrorSpan.ts(7,36): error TS1183: An implementation cannot be declared in ambient contexts.
+ttttAmbientInitializerErrorSpan.ts(7,52): error TS1039: Initializers are not allowed in ambient contexts.
+
+
+==== ttttAmbientInitializerErrorSpan.ts (10 errors) ====
+    // TS1039 goes where tsgo's GetErrorRangeForNode puts an initializer: an anonymous function expression's assigned name
+    // (GetNameOfDeclaration), a class expression's `class`, a parenthesized expression whole
+    declare let a = function () {};
+                ~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+                                ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+    declare var b = class { m() {} };
+                    ~~~~~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+                                ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+    declare let c = (function () {});
+                    ~~~~~~~~~~~~~~~~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+                                 ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+    declare let d = () => 1;
+                    ~~~~~~~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+    class D3 { declare p = function () {}; declare q = (class {}); }
+                           ~~~~~~~~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+                                       ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+                                                       ~~~~~~~~~~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+    

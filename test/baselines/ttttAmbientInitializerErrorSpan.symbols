@@ -1,0 +1,23 @@
+//// [test/cases/ttttAmbientInitializerErrorSpan.ts] ////
+
+=== ttttAmbientInitializerErrorSpan.ts ===
+// TS1039 goes where tsgo's GetErrorRangeForNode puts an initializer: an anonymous function expression's assigned name
+// (GetNameOfDeclaration), a class expression's `class`, a parenthesized expression whole
+declare let a = function () {};
+>a : Symbol(a, Decl(ttttAmbientInitializerErrorSpan.ts, 2, 11))
+
+declare var b = class { m() {} };
+>b : Symbol(b, Decl(ttttAmbientInitializerErrorSpan.ts, 3, 11))
+>m : Symbol(b.m, Decl(ttttAmbientInitializerErrorSpan.ts, 3, 23))
+
+declare let c = (function () {});
+>c : Symbol(c, Decl(ttttAmbientInitializerErrorSpan.ts, 4, 11))
+
+declare let d = () => 1;
+>d : Symbol(d, Decl(ttttAmbientInitializerErrorSpan.ts, 5, 11))
+
+class D3 { declare p = function () {}; declare q = (class {}); }
+>D3 : Symbol(D3, Decl(ttttAmbientInitializerErrorSpan.ts, 5, 24))
+>p : Symbol(D3.p, Decl(ttttAmbientInitializerErrorSpan.ts, 6, 10))
+>q : Symbol(D3.q, Decl(ttttAmbientInitializerErrorSpan.ts, 6, 38))
+

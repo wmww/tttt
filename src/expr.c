@@ -2928,6 +2928,8 @@ static Span node_error_span(Expr const* me) {
                 return line_end < end ? span_make_in(span, start, line_end) : span;
             }
             if (span_valid(function->name)) return function->name;
+            // (An anonymous one's assigned name: tsgo's GetNameOfDeclaration)
+            if (span_valid(function_impl_rare(function)->assigned_name)) return function_impl_rare(function)->assigned_name;
             break;
         }
         case EXPR_CLASS_DECL:

@@ -186,7 +186,7 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, bool exp
             initialized_binding_value(i)->tag != EXPR_IMPLICIT_ANY
         ) {
             if (i->binding.has_explicit_type || !variable_statement_is_const(me)) {
-                error_ctx_grammar_error_d(errs, expr_outer_span(initialized_binding_value(i)), 1039,
+                error_ctx_grammar_error_d(errs, expr_error_span(initialized_binding_value(i)), 1039,
                     "Initializers are not allowed in ambient contexts.");
             } else {
                 bool valid = expr_is_ambient_const_initializer(initialized_binding_value(i));
