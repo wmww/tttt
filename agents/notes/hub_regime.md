@@ -207,3 +207,100 @@ Verdict per cause:
 (~1 + 0.1 K on the corpora), is what eats the single-thread lead.** Only a shared store removes it (the parked graph
 cuts the hubs' CPU 6-8% at K8 and their RSS 31%, but pays a +15% per-instruction premium elsewhere, above); building the
 hub in parallel (the first half of this note) is the second step and matters only for the 7 true hubs.
+
+## The break-even curve: flag against plain as N grows (2026-10-29, worker premium)
+Does the flag's fixed cost per first read get overtaken by plain's duplication (types made ~1 + 0.25 K on hubs) as N
+grows, so that "shared graph on when K >= a threshold from the core count" wins on every project at 16 and loses on
+none? `--threads N --checkers N`, N = 4, 8, 16, plain against `TTTT_SHARED_GRAPH=1`, release build at 03f86479d (with
+d4411b9f5's cuts), on scripts/sgcheck.py's list (43 hub projects, 15 corpora), five interleaved rounds, best of 5 each
+for check CPU (the typecheck phase's process CPU), check wall and peak RSS. Load median 5.7 (p90 7.5: other workers).
+This box has 8 cores, so N16 runs on SMT siblings.
+
+| set | N | median check CPU flag/plain | median wall | median peak RSS | CPU below 1.0 | wall below 1.0 | wall above 1.05 |
+|---|---|---|---|---|---|---|---|
+| 43 hubs | 4 | 1.08 | 1.11 | 0.86 | 10 | 10 | 28 |
+| | 8 | 1.00 | 1.05 | 0.74 | 21 | 17 | 22 |
+| | 16 | 0.87 | 0.90 | 0.70 | 34 | 30 | 10 |
+| 15 corpora | 4 | 1.25 | 1.26 | 0.99 | 0 | 0 | 14 |
+| | 8 | 1.12 | 1.15 | 0.92 | 3 | 2 | 11 |
+| | 16 | 1.05 | 1.10 | 0.94 | 4 | 2 | 11 |
+
+**Verdict: the threshold policy doesn't hold.** The curve bends the right way on nearly every project (flag/plain
+falls with N: duplication grows, the per-read cost doesn't), and on the hubs the flag is ahead at 16 (median wall
+0.90, RSS 0.70). But at N16, 9 of 43 hubs and 11 of 15 corpora still have check CPU at or above plain, and 10 hubs and
+11 corpora have wall more than 5% worse. The corpora lose 5-10% per doubling of N (zod 1.27 / 1.16 / 1.05, effect
+1.25 / 1.18 / 1.10, vscode 1.16 / 1.13 / 1.07, type-fest 1.29 / 1.24 / 1.15). By that trend most would cross between
+32 and 64 threads, which no default derived from a 12-24 thread laptop reaches, and this box can't measure it. The
+projects that never cross by 16 are the ones with little duplication to remove: the corpora, karakeep/trpc,
+seed-snapshot and benchmarks, vite's __tests_dts__, mikro-orm/seeder and inbox-zero. So the flag needs its per-read
+premium bought down (notes/shared_graph.md "The premium, attributed"), not a switch.
+
+Two outliers aren't the premium:
+- better-drizzle (x4.2 CPU, x3.1 wall) and vue (x1.4) are one-checker reruns. Plain stops its parallel pass early when
+  the rerun's trigger shows (better-drizzle: 197 ms at 16 checkers, "stopped early"); the flag runs its whole parallel
+  pass first (1557 ms) and then reruns. The flag's rerun (c76f0abbe) doesn't stop early: fixing that is the sg track's.
+- webpack also reruns on both sides and ends at 1.00 CPU.
+
+Per project, flag/plain ("crosses" is the interval of N where the ratio falls below 1.0: `<=4` already at 4, `none`
+not by 16):
+
+| project | check CPU flag/plain N4 / N8 / N16 | wall N4 / N8 / N16 | RSS N16 | CPU crosses 1.0 | wall crosses 1.0 |
+|---|---|---|---|---|---|
+| openbot/packages/i18n | 0.72 / 0.60 / 0.49 | 0.68 / 0.55 / 0.38 | 0.42 | <=4 | <=4 |
+| dokploy/packages/server | 1.40 / 0.93 / 0.67 | 1.41 / 1.01 / 0.82 | 0.51 | 4-8 | 8-16 |
+| dokploy/apps/schedules | 1.38 / 1.18 / 0.65 | 1.47 / 1.35 / 0.80 | 0.51 | 8-16 | 8-16 |
+| dokploy/apps/api | 1.38 / 1.18 / 0.63 | 1.48 / 1.37 / 0.78 | 0.50 | 8-16 | 8-16 |
+| dokploy/apps/dokploy | 1.23 / 1.11 / 0.84 | 1.27 / 1.17 / 0.93 | 0.54 | 8-16 | 8-16 |
+| monkeytype/backend/scripts | 1.00 / 1.00 / 1.00 | 0.89 / 0.84 / 0.76 | 0.72 | 4-8 | <=4 |
+| karakeep/packages/api | 1.16 / 0.98 / 0.85 | 1.22 / 1.27 / 1.14 | 0.61 | 4-8 | none |
+| openbot/packages/team-client | 0.77 / 0.71 / 0.51 | 0.75 / 0.67 / 0.45 | 0.47 | <=4 | <=4 |
+| karakeep/packages/e2e_tests | 1.18 / 1.05 / 0.90 | 1.36 / 1.05 / 0.95 | 0.65 | 8-16 | 8-16 |
+| karakeep/packages/trpc | 1.28 / 1.16 / 1.03 | 1.37 / 1.32 / 1.19 | 0.70 | none | none |
+| lexical/dev-examples/mdast-editor | 1.00 / 0.90 / 0.82 | 1.01 / 0.90 / 0.85 | 0.70 | 4-8 | 4-8 |
+| openbot/apps/auth-api | 0.91 / 0.77 / 0.49 | 0.94 / 0.82 / 0.57 | 0.46 | <=4 | <=4 |
+| karakeep/apps/browser-extension | 1.03 / 0.97 / 0.84 | 1.21 / 1.31 / 0.84 | 0.64 | 4-8 | 8-16 |
+| openbio | 1.15 / 1.18 / 0.96 | 1.18 / 1.16 / 0.97 | 0.69 | 8-16 | 8-16 |
+| karakeep/tools/seed-snapshot | 1.23 / 1.21 / 1.13 | 1.45 / 1.32 / 1.33 | 0.76 | none | none |
+| portabase | 1.00 / 1.02 / 0.75 | 1.00 / 1.05 / 0.77 | 0.71 | <=4 | 8-16 |
+| monkeytype/frontend/__tests__ | 1.10 / 0.97 / 0.81 | 1.11 / 1.01 / 0.89 | 0.50 | 4-8 | 8-16 |
+| immutable-js/__tests__ | 1.03 / 0.89 / 0.70 | 1.11 / 1.08 / 0.95 | 0.40 | 4-8 | 8-16 |
+| monkeytype/frontend | 1.04 / 0.86 / 0.71 | 1.04 / 0.83 / 0.79 | 0.47 | 4-8 | 4-8 |
+| tanstack-table/examples/react/material-react-table | 0.97 / 0.82 / 0.65 | 1.03 / 0.92 / 0.79 | 0.69 | <=4 | 4-8 |
+| monkeytype/backend/__tests__ | 1.08 / 1.00 / 0.88 | 1.06 / 0.95 / 0.91 | 0.66 | 4-8 | 4-8 |
+| karakeep/packages/benchmarks | 1.21 / 1.15 / 1.08 | 1.44 / 1.41 / 1.33 | 0.72 | none | none |
+| react-select/packages/react-select/src/__tests__ | 0.88 / 0.95 / 1.02 | 0.85 / 0.75 / 0.97 | 0.93 | <=4 | <=4 |
+| folo/apps/desktop/layer/renderer | 0.90 / 0.80 / 0.74 | 0.91 / 0.92 / 0.85 | 0.65 | <=4 | <=4 |
+| folo/apps/mobile | 0.94 / 0.75 / 0.74 | 0.95 / 0.78 / 0.86 | 0.68 | <=4 | <=4 |
+| photography-website | 1.12 / 1.01 / 0.97 | 1.14 / 1.04 / 1.02 | 0.76 | 8-16 | none |
+| monkeytype/backend | 1.03 / 1.05 / 0.86 | 0.99 / 0.97 / 0.87 | 0.66 | 8-16 | <=4 |
+| afilmory/be/apps/core | 0.96 / 0.89 / 0.80 | 0.95 / 0.94 / 0.93 | 0.70 | <=4 | <=4 |
+| mcp-sdk/examples/client-quickstart | 1.10 / 1.09 / 0.95 | 1.18 / 1.18 / 1.06 | 0.81 | 8-16 | none |
+| lexical/packages/lexical-website | 1.04 / 0.83 / 0.87 | 1.06 / 0.87 / 0.82 | 0.87 | 4-8 | 4-8 |
+| mcp-sdk/test/helpers | 1.26 / 1.21 / 0.97 | 1.25 / 1.20 / 1.16 | 0.84 | 8-16 | none |
+| mcp-sdk/packages/middleware/express | 1.07 / 1.00 / 0.94 | 1.15 / 1.08 / 1.12 | 0.83 | 8-16 | none |
+| lexical/dev-examples/dom-import | 1.00 / 0.95 / 0.89 | 0.96 / 0.88 / 0.88 | 0.81 | <=4 | <=4 |
+| mcp-sdk/examples/shared | 1.08 / 1.03 / 0.93 | 1.16 / 1.15 / 1.02 | 0.84 | 8-16 | none |
+| mcp-sdk/packages/core-internal | 1.08 / 1.00 / 0.85 | 1.09 / 1.06 / 0.90 | 0.74 | 8-16 | 8-16 |
+| afilmory/packages/ui | 1.00 / 0.98 / 0.91 | 1.04 / 0.97 / 0.98 | 0.97 | 4-8 | 4-8 |
+| vite/packages/vite/src/node/__tests_dts__ | 1.27 / 1.26 / 1.16 | 1.36 / 1.36 / 1.34 | 1.16 | none | none |
+| nest/packages/platform-fastify/test | 1.21 / 1.15 / 0.96 | 1.22 / 1.33 / 0.85 | 0.75 | 8-16 | 8-16 |
+| mikro-orm/packages/seeder | 1.35 / 1.22 / 1.19 | 1.32 / 1.40 / 1.39 | 1.16 | none | none |
+| inbox-zero/apps/web | 1.12 / 1.08 / 1.04 | 1.11 / 1.08 / 1.03 | 0.99 | none | none |
+| openscience/backend/cli | 1.04 / 0.92 / 0.79 | 1.05 / 0.95 / 0.75 | 0.66 | 4-8 | 4-8 |
+| nest/packages/microservices/test | 1.20 / 1.15 / 0.93 | 1.20 / 1.16 / 0.88 | 0.74 | 8-16 | 8-16 |
+| better-drizzle (both rerun at K1) | 4.42 / 4.92 / 4.15 | 2.97 / 2.89 / 3.09 | 1.82 | none | none |
+| tsc | 1.10 / 1.05 / 0.99 | 1.08 / 1.05 / 1.02 | 0.95 | 8-16 | none |
+| type-fest | 1.29 / 1.24 / 1.15 | 1.31 / 1.22 / 1.26 | 0.85 | none | none |
+| valibot | 1.26 / 1.11 / 1.13 | 1.28 / 1.13 / 1.08 | 1.01 | none | none |
+| react | 1.08 / 0.98 / 0.88 | 1.40 / 1.39 / 1.31 | 0.90 | 4-8 | none |
+| nest | 1.05 / 1.02 / 1.02 | 1.08 / 1.13 / 1.27 | 1.23 | none | none |
+| webpack (both rerun at K1) | 1.18 / 1.07 / 1.00 | 1.09 / 1.04 / 1.03 | 0.93 | none | none |
+| zod | 1.27 / 1.16 / 1.05 | 1.29 / 1.22 / 1.16 | 0.84 | none | none |
+| zod-root | 1.25 / 1.12 / 1.03 | 1.27 / 1.17 / 1.06 | 0.82 | none | none |
+| xstate | 1.25 / 1.33 / 1.12 | 1.31 / 1.29 / 1.22 | 0.94 | none | none |
+| drizzle | 1.20 / 0.98 / 0.82 | 1.21 / 0.95 / 0.84 | 0.65 | 4-8 | 4-8 |
+| vue (both rerun at K1) | 1.42 / 1.28 / 1.44 | 1.19 / 1.11 / 1.15 | 1.36 | none | none |
+| effect | 1.25 / 1.18 / 1.10 | 1.26 / 1.19 / 1.10 | 0.98 | none | none |
+| vscode | 1.16 / 1.13 / 1.07 | 1.16 / 1.15 / 1.11 | 0.94 | none | none |
+| excalidraw | 1.02 / 0.92 / 0.84 | 1.03 / 0.94 / 0.83 | 0.83 | 4-8 | 4-8 |
+| tanstack-router | 1.36 / 1.20 / 1.11 | 1.32 / 1.19 / 1.08 | 0.97 | none | none |
