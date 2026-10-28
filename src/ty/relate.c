@@ -7087,6 +7087,13 @@ static bool made_before_step(Checker* me, Ty const* parent, Ty const* child) {
         static int nesting_log = -1;
         bool ret = false;
         u32 last_i = 0;
+        // (Fewer than `max` entries with the identity, counting `ty`: no order can cut. Most decisions end here)
+        u32 matches = 1;
+        for (u32 i = 0; i < depth && matches < max; i++) {
+            uintptr_t entry = entries ? entries[i] : ty_recursion_entry(me, stack[i]);
+            if (entry == (uintptr_t)identity || ((entry & 1) && intersection_has_identity(me, (Ty const*)(entry & ~(uintptr_t)1), identity))) matches++;
+        }
+        if (matches < max) return false;
         // The sub-term key: a type is newer than the one before it on the stack unless it is a proper sub-term of it
         // (built before it in every history: an unwrapping descent into explicitly nested arguments). A lower type
         // that isn't inside (webpack's Iterator<T> after Iterator<Iterable<T>>) counts, as its later creation does

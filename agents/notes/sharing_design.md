@@ -237,3 +237,112 @@ LLC-load-misses` plus the L3/other-L2 fill events used in measurements.md's driz
 Also `perf c2c record` on drizzle for 2 and 4 (the top contended lines with their symbols), and wall best-of-7 for
 each. Report per corpus: instructions, cycles, IPC, fills, wall, against 1. The decision numbers are the IPC gap
 between 1 and 4, and vue's wall in 2 vs 4.
+
+## 6. A content key for deep nesting's "newer" test (worker ckey, 2026-10-29)
+The question: under `--shared-graph` there is no global creation order, so the "newer" test of tsc's deep-nesting cut
+used first-touch stamps (schedule-dependent: drizzle's residue C, mikro-orm seeder's Reference.ts(131,44), the
+laptop's K24 drizzle runs: 4 outputs in 5, TS2430 at mysql-core/query-builders/select.ts(1076,18) and the
+mysql2/session.ts(281,17) TS2416), or the content order (K-stable, but not tsc-exact: §1, bugs/shared_graph.md). Is
+there a key that is both?
+
+### What tsc's rule is
+tsgo's isDeeplyNestedType(t, stack, maxDepth) (relater.go; `stack` already holds `t`): among the stack's entries with
+t's recursion identity (getRecursionIdentity: a reference's target or deferred node, an object type's symbol, a
+conditional's root, an indexed access's object, a homomorphic mapped instance's modifiers type...), walked from the
+bottom, the first always counts and each later one counts when its id is >= the previous matching entry's
+(`lastTypeId` moves on every match, counted or not); deep when the count reaches maxDepth (3 for a relation's source
+and target stacks, 2 for inference's expanding test). So the only order ever consulted is between **adjacent matching
+entries a (above) and b (below)**: does b's creation come after a's?
+- What the cut relies on: generative recursion (`Deep<T> = { next: Deep<Deep<T>> }`, Iterable -> Iterator -> next ->
+  IteratorResult -> value -> Iterable...) makes each level by resolving the members of the level above, so each is
+  created after it and counts; a descent into nesting that already exists (written out, `Box<Box<Box<string>>>`, or
+  an object literal's values) reaches types made before their containers and doesn't count, so finite structures are
+  never cut.
+- What creation order encodes, case by case, for a above b:
+  1. b is a key part of a (a type argument, a mapper target, an alias argument, a union member, transitively): made
+     before a in every history. **Older**, history-free.
+  2. b was reached from a through parts made before their containers: a's key parts, and the values of a type made
+     from an expression (an object literal's property types, a function expression's inferred return type: the
+     literal or function type is made after them). **Older**, history-free in practice (openscience's
+     `Promise<{..., execute(): Promise<B>}>` -> `Promise<B>`).
+  3. b was already on the other stack (a relation's target stack when b is a source, or the reverse, after a variance
+     or contravariance swap; inference's lockstep twin) before a was pushed: the walk reached it first, so it exists
+     before a does whenever a is made by the walk. **Older**, a function of the walk
+     (invariantGenericErrorElaboration's `Constraint<Runtype<any>>` below `Constraint<Constraint<Num>>`).
+  4. b was made by resolving something below a (instantiated members are made lazily, after their owner):
+     **newer**, history-free (webpack's `Iterator<T>` below `Iterator<Iterable<T>>`: lower by height, but not inside).
+  5. a and b both pre-existed the walk, unrelated, made by earlier code: their order is the earlier code's, i.e. the
+     checker's history. tsc itself is history-dependent here (tsgo's K-independence is "nearly"), and so is plain K1.
+- What a shared-store worker can know at the decision: its own walk (both stacks, in push order), the types'
+  structure (identities are canonical in the graph: the same key gives the same object in every worker), its own
+  walk start and creation counter, and (by a timestamp) when a type was published. The last two are the schedule's:
+  a published type was created by whichever worker came first, and a composite brings its parts at once (why the
+  stamps fail). Only structure and the walk are K-stable.
+
+**Proof sketch that no key is K-stable and exact in all programs**: case 5. Take two files whose checks each create
+the same pair (a, b) of unrelated instantiations, f1 in the order a, b and f2 in the order b, a, and a third that
+walks a then b. Plain K1's answer at the third file is f1's order (program order), a K2 deal that checks f2 first in
+the third file's checker gives the other, and tsgo at K2 has that history too. A K-stable key gives one answer, so it
+is inexact against one deal of tsgo itself. The achievable target is therefore cases 1-4, which every history agrees
+on, and the measurement below says that on real code that is all there is.
+
+### The candidates
+| key | rule for "b older than a" | K-stable | webpack | drizzle C (K1 chain text) | openscience | suite (lost) |
+|---|---|---|---|---|---|---|
+| ids (plain) | created before | no (history, the flag's schedule) | reference | reference | reference | 0 |
+| first-touch stamps (today's flag) | touched first by this worker | no: residue C | ok at K1 | flaky at K8+ | | 0 |
+| content (bun: height, then push order) | lower, or equal and pushed first | yes | TS2345 | 12 lines | TS7006 | 2 |
+| (a) per-walk epoch | created by this worker before the walk, or by another worker | no: whether this worker or another made a type is the schedule | | | | |
+| (c) per-worker order, adopted at publication | | no: the merge of two orders is the schedule's | | | | |
+| sub: case 1 | proper key sub-term (ty_is_subterm(), pruned by height) | yes | ok | ok | TS7006 | 2 |
+| chain: cases 1-2 | sub-term, or every step down went into a made-before part | yes (peeks, below) | ok | ok | ok | 1 |
+| **walk: cases 1-3** | chain, or on the other stack before a was pushed | yes | ok | ok | ok | **0** |
+
+(a) and (c) were not built: their inputs are the schedule's by definition. (d) bun is the content row.
+`TTTT_NESTING_ORDER=sub|chain|walk` (relate.c is_deeply_nested_audit(), order.c ty_is_subterm(); `TTTT_NESTING_LOG=1`
+prints every decision where the key and the ids disagree, with the stack). Under each a deep cut is no taint event.
+
+**Measured at K1 (plain, `--threads 1 --checkers 1`, each order against the ids, sgcheck's 58 projects)**: content 55
+identical (webpack, drizzle, openscience differ), sub 57, chain 58, walk 58. The suite (14k configurations' saved
+results): content and sub lose 2 (inferFromNestedSameShapeTuple, and ttttDeferredReferenceNormalizedInRelation or
+invariantGenericErrorElaboration), chain 1, walk 0 lost, 0 gained.
+
+Caveats of walk: made_before_step() peeks an object literal's property types and a function type's return types (what
+this worker knows: the walk that descended through them resolved them, but a peek is history in principle when the
+walk reached the same type another way); the sub-term search stops at 256 nodes and then decides by height (structural,
+so still K-stable). Case 5 remains tsc's own history dependence.
+
+### Measured under the flag (2026-10-29, wt-ckey 4edfe72b4 + the match-count pruning; load 16-32)
+`TTTT_SHARED_GRAPH=1 TTTT_FIRST_TOUCH_STAMPS=0 TTTT_NESTING_ORDER=walk scripts/sgcheck.py ...` (the reference K1 run
+with the same order, which is byte-identical to the id order's on all 58 projects):
+
+| run | flagged runs differing from plain K1 |
+|---|---|
+| drizzle, mikro-orm seeder, webpack, openscience; K 4/8/16/24, both deals, 5 runs | **0 / 160** |
+| control, today's stamps: drizzle and mikro-orm seeder, K 8/16/24, both deals, 5 runs | 18 / 60: drizzle 10/30 (def; +TS2430 select.ts(1076,18) in all 10, -TS2416 mysql2/session.ts(281,17) in 4, +TS2322 query.ts(155,3) in 3), mikro-orm 8/30 (rr at K16/K24, +TS2322 Reference.ts(131,44)) |
+| the default list (58 projects), K 4/8/16, both deals, 2 runs | **0 / 696** |
+
+Diagnostics moved at K1 against ids: none (58/58 byte-identical, so no chain text either); suite 0 lost, 0 gained;
+`$ExpectType` 68,640/68,640 under both.
+
+**Cost** (callgrind, release build, check and the rest, `--checker-memory off`):
+
+| | drizzle | zod |
+|---|---|---|
+| plain K1, ids -> walk | 5,571 M -> 5,505 M (-1.2%, before the pruning) | 4,420 M -> 4,476 M (+1.3%) |
+| flag `--threads 1 --checkers 8`, stamps -> walk | 7,120 M -> 6,992 M (**-1.8%**) | 5,708 M -> 5,723 M (+0.3%, before the pruning) |
+| deep-nesting functions, flag K8 | stamps: is_deeply_nested_stamped 48 M + ty_stamp 20 M; walk: is_deeply_nested_audit 52 M + heights 13 M + ty_is_subterm/subterm_in 10 M | |
+
+The walk test is roughly what the stamps cost per decision, and the run is cheaper overall (no stamp table, no taint
+event at a deep cut). The prototype lives in the audit function (a getenv'd mode, a second loop for the log); made the
+default it would replace the stamps' function.
+
+### Verdict
+**walk is K-stable by construction and exact against the id order on everything measured** (the suite, 58 projects at
+K1, 856 flagged runs). It removes residue C (drizzle's execute chains, the laptop's K24 TS2430/TS2416 pair) and
+mikro-orm seeder's TS2322, which were the first-touch stamps. What remains inexact is case 5 (two unrelated
+pre-existing types whose order is the history's), where tsc itself depends on its history; no instance seen.
+Landing it (the coordinator's decision): make walk the flag's order in place of the stamps (delete ty_stamp, Checker
+.stamps, `--first-touch-stamps`), keep the id order for the plain path (or make walk the default too: identical
+output measured, and a precondition for sharing relation results whatever their deep cuts), run the full sweep and
+source sweep plain with walk before that.
