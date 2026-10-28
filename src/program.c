@@ -4034,12 +4034,17 @@ static u32 chunked_walk_chunk_at(ChunkedWalk const* me, char const* at) {
 typedef struct ChunkedWalks {
     ChunkedWalk** walks;
     u32 count;
+    // The indexes in walks of the files walked in chunks (a few of thousands: binder_generic_merge_pairs() asks about
+    // every pair of the program's merged generic declarations, 22k on faker)
+    u32* chunked;
+    u32 chunked_count;
 } ChunkedWalks;
 
 // binder_generic_merge_pairs()'s: the later declaration's chunk waits for the earlier one's
 static void chunked_walk_pair(void* ctx, SourceFile* file, Span later, Span earlier) {
     ChunkedWalks* walks = ctx;
-    for (u32 w = 0; w < walks->count; w++) {
+    for (u32 k = 0; k < walks->chunked_count; k++) {
+        u32 w = walks->chunked[k];
         ChunkedWalk* walk = walks->walks[w];
         if (!walk || walk->file != file) continue;
         u32 to = chunked_walk_chunk_at(walk, span_start_ptr(later));
@@ -4453,7 +4458,16 @@ static void program_resolve_walk(Program* me) {
         any_chunked |= chunked.walks[i] != nullptr;
         item_count += chunked.walks[i] ? chunked.walks[i]->chunk_count : 1;
     }
-    if (any_chunked) binder_generic_merge_pairs(my binder, chunked_walk_pair, &chunked);
+    if (any_chunked) {
+        chunked.chunked = c_new_n(u32, file_count);
+        for (u32 i = 0; i < file_count; i++) {
+            if (chunked.walks[i]) chunked.chunked[chunked.chunked_count++] = i;
+        }
+        binder_generic_merge_pairs(my binder, chunked_walk_pair, &chunked);
+        free(chunked.chunked);
+        chunked.chunked = nullptr;
+        chunked.chunked_count = 0;
+    }
     if (any_chunked && debug_env.resolve_times) {
         u32 files = 0, chunks = 0, waits = 0;
         for (u32 i = 0; i < file_count; i++) {
