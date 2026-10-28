@@ -1,0 +1,96 @@
+//// [test/cases/ttttEmptyMappedInstanceNotEmptyAnonymous.ts] ////
+
+=== ttttEmptyMappedInstanceNotEmptyAnonymous.ts ===
+// tsc's one isEmptyAnonymousObjectType: an instance of a mapped type with no members, Record<never, never>, isn't one
+// (ObjectFlags.Mapped isn't Anonymous): typeof narrowing keeps it, union reduction and relations treat it like tsc
+type E = Record<never, never>;
+>E : Symbol(E, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 0, 0))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+declare const a: E | string;
+>a : Symbol(a, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 3, 13))
+>E : Symbol(E, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 0, 0))
+
+declare const b: {} | E;
+>b : Symbol(b, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 4, 13))
+>E : Symbol(E, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 0, 0))
+
+export const u1 = [a, b];
+>u1 : Symbol(u1, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 5, 12))
+>a : Symbol(a, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 3, 13))
+>b : Symbol(b, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 4, 13))
+
+declare let x: unknown;
+>x : Symbol(x, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 6, 11))
+
+if (typeof x === "object" && x) { const y: E = x; }
+>x : Symbol(x, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 6, 11))
+>x : Symbol(x, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 6, 11))
+>y : Symbol(y, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 7, 39))
+>E : Symbol(E, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 0, 0))
+>x : Symbol(x, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 6, 11))
+
+function f1(v: E | number) { if (typeof v === "object") { v; } else { v; } }
+>f1 : Symbol(f1, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 7, 51))
+>v : Symbol(v, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 8, 12))
+>E : Symbol(E, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 0, 0))
+>v : Symbol(v, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 8, 12))
+>v : Symbol(v, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 8, 12))
+>v : Symbol(v, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 8, 12))
+
+function f2(v: E) { const o: object = v; return o; }
+>f2 : Symbol(f2, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 8, 76))
+>v : Symbol(v, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 9, 12))
+>E : Symbol(E, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 0, 0))
+>o : Symbol(o, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 9, 25))
+>v : Symbol(v, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 9, 12))
+>o : Symbol(o, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 9, 25))
+
+function f3<T>(v: T & E) { const o: object = v; return o; }
+>f3 : Symbol(f3, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 9, 52))
+>T : Symbol(T, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 10, 12))
+>v : Symbol(v, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 10, 15))
+>T : Symbol(T, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 10, 12))
+>E : Symbol(E, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 0, 0))
+>o : Symbol(o, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 10, 32))
+>v : Symbol(v, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 10, 15))
+>o : Symbol(o, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 10, 32))
+
+type U = E | { a: 1 };
+>U : Symbol(U, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 10, 59))
+>E : Symbol(E, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 0, 0))
+>a : Symbol(a, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 11, 14))
+
+declare const w: U;
+>w : Symbol(w, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 12, 13))
+>U : Symbol(U, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 10, 59))
+
+if ("a" in w) { w; } else { w; }
+>w : Symbol(w, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 12, 13))
+>w : Symbol(w, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 12, 13))
+>w : Symbol(w, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 12, 13))
+
+declare const z: E & string;
+>z : Symbol(z, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 14, 13))
+>E : Symbol(E, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 0, 0))
+
+export const q = z;
+>q : Symbol(q, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 15, 12))
+>z : Symbol(z, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 14, 13))
+
+const emp: {} = {};
+>emp : Symbol(emp, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 16, 5))
+
+const m1: E = emp;
+>m1 : Symbol(m1, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 17, 5))
+>E : Symbol(E, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 0, 0))
+>emp : Symbol(emp, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 16, 5))
+
+function g(v: string | E) { if (v instanceof Object) { v; } }
+>g : Symbol(g, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 17, 18))
+>v : Symbol(v, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 18, 11))
+>E : Symbol(E, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 0, 0))
+>v : Symbol(v, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 18, 11))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>v : Symbol(v, Decl(ttttEmptyMappedInstanceNotEmptyAnonymous.ts, 18, 11))
+

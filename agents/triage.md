@@ -241,4 +241,4 @@ intersection's property symbol to bugs/type_core.md.
   symbol, a type literal by its syntax, else members), ty/check.c's `is_empty_anonymous_object()` (not a function's
   type, members only) and ty/flow.c's (also not a mapped instance). tsc has one rule; whether the differences are
   deliberate (each caller's tsc site) or drift is unknown; one rule with a probe per caller would settle it (ref's
-  duplicate scan, 2026-10-28). [open]
+  duplicate scan, 2026-10-28). Settled (cor, 2026-10-28): drift. tsgo's rule (Anonymous, so not a mapped instance; members resolved and empty, or a type literal symbol without members) is now ty_is_empty_anonymous_object() alone; check.c, flow.c and relate.c's inline strict-subtype test call it. One divergence showed: `typeof v === "object"` on `Record<never, never> | number` narrowed to `object` (relate.c's variant counted the mapped instance as empty); test ttttEmptyMappedInstanceNotEmptyAnonymous. DT sweep 8595/8595, corpora unchanged. [fixed COMMIT]

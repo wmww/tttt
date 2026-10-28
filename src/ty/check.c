@@ -5170,12 +5170,8 @@ Ty const* ty_private_name_owner(Checker* me, Expr const* private_name, Atom cons
 }
 
 // tsc's isEmptyAnonymousObjectType
-static bool is_empty_anonymous_object(Checker* me, Ty const* ty) {
-    if (ty->kind != TY_ANONYMOUS || ty->anonymous.function) return false;
-    Members const* members = ty_members(me, ty);
-    return !members->prop_count && !members->call_count && !members->construct_count && !members->index_count &&
-        !members->mapped;
-}
+// tsc's isEmptyAnonymousObjectType (ty_is_empty_anonymous_object())
+static bool is_empty_anonymous_object(Checker* me, Ty const* ty) { return ty_is_empty_anonymous_object(me, ty); }
 
 // tsc's hasEmptyObjectIntersection: `{}` from narrowing `unknown`, or an intersection whose constraint is `{}` (`T & {}`),
 // which are assignable to `object` but may be primitives

@@ -768,13 +768,10 @@ static bool is_simple_related(Checker* me, RelationState const* st, Ty const* s,
     }
     if ((sf & TYF_OBJECT) && (tf & TYF_NON_PRIMITIVE)) {
         // `{}` may be a primitive, so it isn't a strict subtype of `object` (unless it's a fresh `{}` literal)
-        if (st->relation != TY_RELATION_STRICT_SUBTYPE || s->kind != TY_ANONYMOUS || s->anonymous.function ||
-            ty_is_fresh_object(s)
-        ) {
-            return true;
-        }
-        Members const* members = ty_members(me, s);
-        return members->prop_count || members->call_count || members->construct_count || members->index_count || members->mapped;
+        // (tsc's isEmptyAnonymousObjectType: not a mapped type's instance, `Record<never, never>` stays itself when
+        // `typeof x === "object"` narrows it)
+        if (st->relation != TY_RELATION_STRICT_SUBTYPE || ty_is_fresh_object(s)) return true;
+        return !ty_is_empty_anonymous_object(me, s);
     }
     // Enum literals and computed members carry an enum flag; enum types themselves are aliased unions
     if ((((sf | tf) & (TYF_ENUM | TYF_ENUM_LITERAL)) || (s->kind == TY_UNION && t->kind == TY_UNION && s->alias && t->alias)) &&

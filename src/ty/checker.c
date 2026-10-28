@@ -2314,7 +2314,9 @@ static bool extract_redundant_templates(Checker* me, Ty const** types, u32* len,
 
 // tsc's isEmptyAnonymousObjectType: `{}` (a type literal or anonymous object without members)
 bool ty_is_empty_anonymous_object(Checker* me, Ty const* ty) {
-    if (ty->kind != TY_ANONYMOUS) return false;
+    // (Not an instantiation of a mapped type, even one with no members, `Record<never, never>`: tsc's ObjectFlags.Mapped
+    // isn't Anonymous. A function's type has its signature: not resolved for that, which could be circular)
+    if (ty->kind != TY_ANONYMOUS || ty->anonymous.mapped || ty->anonymous.function) return false;
     if (ty->anonymous.empty_symbol) return true;
     // A type literal goes by its syntax (tsc's isEmptyTypeLiteralSymbol): its members may not be resolvable yet, `type
     // Foo = { x: string } & { [x: number]: Foo }` (the same for its instantiations)
