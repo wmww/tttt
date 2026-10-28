@@ -116,6 +116,7 @@ enum {
     KEY_RETURN_WIDENED_ANY, // FunctionImpl -> its return type before widening, when that widens null/undefined to any
     KEY_FUNCTION_RETURN, // FunctionImpl -> its inferred return type (FunctionReturn in function.c)
     KEY_ALIAS_TYPE_CIRCULAR, // import alias Symbol -> itself once its TS2303 (a cycle through `export =`'s type) is reported
+    KEY_SIGNATURE_DECL_CHECKED, // FunctionImpl -> non-null once its parameters were resolved at its first check (expr.c)
     KEY_CONTEXT_CHECKED, // FunctionImpl -> its contextual signature, decided by its first check (tsc's ContextChecked; expr.c's context_checked_none: it has none)
     KEY_IMPLEMENTATION_SIGNATURE, // Signature -> its clone with fresh type parameters (implementation_signature())
     KEY_RETURN_REPORTABLE, // FunctionImpl -> widening reportability bits decided with its return type (ty_function_decide_widening_reportable())

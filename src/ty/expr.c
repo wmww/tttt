@@ -6178,6 +6178,13 @@ void ty_seed_iife_return_context(Checker* me, CallExpr const* call, Ty const* co
     }
 }
 
+static void check_function_parameters_first(Checker* me, FunctionImpl const* function) {
+    (void)me;
+    for_each (i, vec_function_arg, &((FunctionImpl*)function)->args) {
+        if (initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY) initialized_binding_settle_value(&i->initializer);
+    }
+}
+
 static Ty const* check_call(Checker* me, CallExpr const* call, Span call_span, ExprCtx ctx) {
     Expr const* callee = &call->callable;
     if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr; // call.c applies the type arguments
@@ -6852,6 +6859,13 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
                     if (my outer_inference) ty_argument_return_type(me, expr->function);
                     else ty_contextual_check_return_type(me, expr->function);
                 }
+            }
+            // Then its parameters, each one's type and default (tsc's checkSignatureDeclaration at the end of its
+            // first contextual check): a default that reads a variable in flight is circular there, `const pick =
+            // (from: Item[] = children) => ...` in the loop that assigns `current = pick()` with `{ children } = current`
+            if (!ty_link_get(me, KEY_SIGNATURE_DECL_CHECKED, expr->function)) {
+                ty_link_set(me, KEY_SIGNATURE_DECL_CHECKED, expr->function, expr->function);
+                check_function_parameters_first(me, expr->function);
             }
             return ty_function_type(me, expr->function);
         }

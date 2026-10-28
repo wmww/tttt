@@ -83,6 +83,15 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   (initialized_binding_typecheck()), and a function with a contextual signature infers its return type at its first
   contextual check outside calls too (ty_check_expr's EXPR_FUNCTION); a variable's pattern root asked again with a
   name since is evaluated again (lazy_type.c: tsc has no entry for it). Test ttttTuplePatternCircularElement. [fixed e77cf389d]
+- (cor2, 2026-10-28) A function expression's parameter defaults weren't resolved at its first check (tsc's
+  checkSignatureDeclaration at the end of contextuallyCheckFunctionExpressionOrObjectLiteralMethod), so cycles through
+  them went unseen: `const pick = (from: Item[] = children) => from[0]; current = pick()` in a loop over `{ children } =
+  current` (TS7022 on children and pick), `done((p = f()) => {})` inside f (TS7022 on p). Now check_function_parameters_first()
+  (expr.c) settles each default with its parameter's context. With the parameterInitializerContainsUndefined entry
+  (9d2091d15), bun 99-V4 has 17 fewer missing diagnostics. Left: in the loop case the while condition's `current` prints
+  `Item` where tsc's is `Item | undefined` (types only, the loop's flow result from inside the cycle is kept), and 99-V4's
+  checkObjectLiteralMethod__03 / checkPropertyAssignment__07 report their spurious TS7023 on the first method instead of
+  the second (both wrong before and after: tsc has TS2683 there). Test ttttFunctionExpressionDefaultsAtFirstCheck. [fixed]
 - **Base constraint circularity and base types resolved through constraints** (re-checked 2026-10-07, errors only).
   Port, plan-sized: a resolution-identity stack for base constraints (tsc's pushTypeResolution with
   ImmediateBaseConstraint plus getImmediateBaseConstraint's 5-deep identity check), TS2313 at the type node being
@@ -94,7 +103,7 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   entry of its own (RESOLVING_INITIALIZER_UNDEFINED), the quick type first, memoized when not circular; the cycle
   marks the arrow's nested return inference (TS7024). Left: the arrow's `n` prints `number | undefined` where tsc's
   later body check asks afresh and prints `number` (types only; test ttttParameterDefaultCycleThroughCall fails its
-  types component). [fixed]
+  types component). [fixed 9d2091d15]
 - recursiveMappedTypes against tsgo's CLI (the suite baseline is JS-emit order: tsgo_divergences.md): (1) no TS2502
   on ListWidget's `"each": Child<ListWidget>` (and its type stays `Child<ListWidget>`, tsc's `any`): tsgo's
   instantiateMappedType instantiates the non-homomorphic Child's constraint `NonOptionalKeys<ListWidget>` eagerly while

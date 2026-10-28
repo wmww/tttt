@@ -1,0 +1,31 @@
+ttttFunctionExpressionDefaultsAtFirstCheck.ts(6,7): error TS7022: 'x' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+ttttFunctionExpressionDefaultsAtFirstCheck.ts(7,10): error TS7023: 'f' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+ttttFunctionExpressionDefaultsAtFirstCheck.ts(9,16): error TS7022: 'p' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+ttttFunctionExpressionDefaultsAtFirstCheck.ts(11,7): error TS2322: Type 'any' is not assignable to type 'never'.
+ttttFunctionExpressionDefaultsAtFirstCheck.ts(12,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== ttttFunctionExpressionDefaultsAtFirstCheck.ts (5 errors) ====
+    // A function expression's first check resolves its parameters' defaults (tsc's checkSignatureDeclaration at the end of
+    // contextuallyCheckFunctionExpressionOrObjectLiteralMethod): `(p = f()) => {}` checked while f's return type is being
+    // inferred is circular there, TS7022 on p (bun 99-V4 getReturnTypeOfSignature__08)
+    declare function done(cb: () => void): string;
+    declare const cond: boolean;
+    const x = f();
+          ~
+!!! error TS7022: 'x' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    function f() {
+             ~
+!!! error TS7023: 'f' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+      if (cond) return String(x);
+      return done((p = f()) => {});
+                   ~~~~~~~
+!!! error TS7022: 'p' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    }
+    const probe: never = f();
+          ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

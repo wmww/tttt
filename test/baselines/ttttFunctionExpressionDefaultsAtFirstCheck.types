@@ -1,0 +1,44 @@
+//// [test/cases/ttttFunctionExpressionDefaultsAtFirstCheck.ts] ////
+
+=== ttttFunctionExpressionDefaultsAtFirstCheck.ts ===
+// A function expression's first check resolves its parameters' defaults (tsc's checkSignatureDeclaration at the end of
+// contextuallyCheckFunctionExpressionOrObjectLiteralMethod): `(p = f()) => {}` checked while f's return type is being
+// inferred is circular there, TS7022 on p (bun 99-V4 getReturnTypeOfSignature__08)
+declare function done(cb: () => void): string;
+>done : (cb: () => void) => string
+>cb : () => void
+
+declare const cond: boolean;
+>cond : boolean
+
+const x = f();
+>x : any
+>f() : any
+>f : () => any
+
+function f() {
+>f : () => any
+
+  if (cond) return String(x);
+>cond : boolean
+>String(x) : string
+>String : StringConstructor
+>x : any
+
+  return done((p = f()) => {});
+>done((p = f()) => {}) : string
+>done : (cb: () => void) => string
+>(p = f()) => {} : (p?: any) => void
+>p : any
+>f() : any
+>f : () => any
+}
+const probe: never = f();
+>probe : never
+>f() : any
+>f : () => any
+
+export const sentinel: number = ""
+>sentinel : number
+>"" : ""
+

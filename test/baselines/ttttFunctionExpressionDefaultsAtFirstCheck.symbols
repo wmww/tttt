@@ -1,0 +1,37 @@
+//// [test/cases/ttttFunctionExpressionDefaultsAtFirstCheck.ts] ////
+
+=== ttttFunctionExpressionDefaultsAtFirstCheck.ts ===
+// A function expression's first check resolves its parameters' defaults (tsc's checkSignatureDeclaration at the end of
+// contextuallyCheckFunctionExpressionOrObjectLiteralMethod): `(p = f()) => {}` checked while f's return type is being
+// inferred is circular there, TS7022 on p (bun 99-V4 getReturnTypeOfSignature__08)
+declare function done(cb: () => void): string;
+>done : Symbol(done, Decl(ttttFunctionExpressionDefaultsAtFirstCheck.ts, 0, 0))
+>cb : Symbol(cb, Decl(ttttFunctionExpressionDefaultsAtFirstCheck.ts, 3, 22))
+
+declare const cond: boolean;
+>cond : Symbol(cond, Decl(ttttFunctionExpressionDefaultsAtFirstCheck.ts, 4, 13))
+
+const x = f();
+>x : Symbol(x, Decl(ttttFunctionExpressionDefaultsAtFirstCheck.ts, 5, 5))
+>f : Symbol(f, Decl(ttttFunctionExpressionDefaultsAtFirstCheck.ts, 5, 14))
+
+function f() {
+>f : Symbol(f, Decl(ttttFunctionExpressionDefaultsAtFirstCheck.ts, 5, 14))
+
+  if (cond) return String(x);
+>cond : Symbol(cond, Decl(ttttFunctionExpressionDefaultsAtFirstCheck.ts, 4, 13))
+>String : Symbol(String, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --) ... and 7 more)
+>x : Symbol(x, Decl(ttttFunctionExpressionDefaultsAtFirstCheck.ts, 5, 5))
+
+  return done((p = f()) => {});
+>done : Symbol(done, Decl(ttttFunctionExpressionDefaultsAtFirstCheck.ts, 0, 0))
+>p : Symbol(p, Decl(ttttFunctionExpressionDefaultsAtFirstCheck.ts, 8, 15))
+>f : Symbol(f, Decl(ttttFunctionExpressionDefaultsAtFirstCheck.ts, 5, 14))
+}
+const probe: never = f();
+>probe : Symbol(probe, Decl(ttttFunctionExpressionDefaultsAtFirstCheck.ts, 10, 5))
+>f : Symbol(f, Decl(ttttFunctionExpressionDefaultsAtFirstCheck.ts, 5, 14))
+
+export const sentinel: number = ""
+>sentinel : Symbol(sentinel, Decl(ttttFunctionExpressionDefaultsAtFirstCheck.ts, 11, 12))
+
