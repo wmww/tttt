@@ -1073,7 +1073,8 @@ void statement_drop(Statement* me) {
     }
 }
 
-// The variables of `for (var/let x of y)`: their type comes from the iterable
+// The variables of `for (var/let x of y)`: their type comes from the iterable. Its errors are tsc's
+// checkGrammarForInOrForOfStatement's grammarErrorOnNode/OnFirstToken: none in a file with parse errors
 static void for_each_loop_add_names(ForEachLoopStatement* me, Scope* scope) {
     if (my variable.tag != FOR_EACH_LOOP_STATEMENT) return;
     VecInitializedBinding* initializers = &my variable.statement.initializers;
@@ -1085,7 +1086,7 @@ static void for_each_loop_add_names(ForEachLoopStatement* me, Scope* scope) {
         if (second->tag == BINDING_ARRAY || second->tag == BINDING_OBJECT) {
             span = span_make_in(span, span_start_ptr(span), span_start_ptr(span) + 1);
         }
-        error_ctx_error_d(
+        error_ctx_grammar_error_d(
             binder_errs(scope->binder),
             span,
             my keyword == FOR_EACH_LOOP_OF ? 1188 : 1091,
@@ -1097,7 +1098,7 @@ static void for_each_loop_add_names(ForEachLoopStatement* me, Scope* scope) {
     } else {
         InitializedBinding* initializer = initializers->data;
         if (initialized_binding_value(initializer)->tag != EXPR_IMPLICIT_ANY) {
-            error_ctx_error_d(
+            error_ctx_grammar_error_d(
                 binder_errs(scope->binder),
                 initializer->binding.content_span,
                 my keyword == FOR_EACH_LOOP_OF ? 1190 : 1189,
@@ -1106,7 +1107,7 @@ static void for_each_loop_add_names(ForEachLoopStatement* me, Scope* scope) {
                 "' statement cannot have an initializer."
             );
         } else if (initializer->binding.has_explicit_type) {
-            error_ctx_error_d(
+            error_ctx_grammar_error_d(
                 binder_errs(scope->binder),
                 initializer->binding.content_span,
                 my keyword == FOR_EACH_LOOP_OF ? 2483 : 2404,

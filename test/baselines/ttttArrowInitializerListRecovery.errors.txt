@@ -1,0 +1,23 @@
+ttttArrowInitializerListRecovery.ts(3,16): error TS1005: ',' expected.
+ttttArrowInitializerListRecovery.ts(3,16): error TS2369: A parameter property is only allowed in a constructor implementation.
+ttttArrowInitializerListRecovery.ts(3,16): error TS7006: Parameter 'g' implicitly has an 'any' type.
+ttttArrowInitializerListRecovery.ts(4,16): error TS1005: ',' expected.
+ttttArrowInitializerListRecovery.ts(4,16): error TS7006: Parameter 'b' implicitly has an 'any' type.
+
+
+==== ttttArrowInitializerListRecovery.ts (5 errors) ====
+    // `(a =` is tsc's Tristate.Unknown: the arrow function is parsed speculatively, its parameter list recovers from what
+    // follows the initializer, and it stands because `=>` follows
+    let h = (a = 1 public g) => 1;
+                   ~~~~~~
+!!! error TS1005: ',' expected.
+                   ~~~~~~~~
+!!! error TS2369: A parameter property is only allowed in a constructor implementation.
+                   ~~~~~~~~
+!!! error TS7006: Parameter 'g' implicitly has an 'any' type.
+    let k = (a = 1 b) => a;
+                   ~
+!!! error TS1005: ',' expected.
+                   ~
+!!! error TS7006: Parameter 'b' implicitly has an 'any' type.
+    

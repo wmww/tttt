@@ -1,0 +1,21 @@
+//// [test/cases/ttttArrowInitializerListRecovery.ts] ////
+
+=== ttttArrowInitializerListRecovery.ts ===
+// `(a =` is tsc's Tristate.Unknown: the arrow function is parsed speculatively, its parameter list recovers from what
+// follows the initializer, and it stands because `=>` follows
+let h = (a = 1 public g) => 1;
+>h : (a: number | undefined, g: any) => number
+>(a = 1 public g) => 1 : (a: number | undefined, g: any) => number
+>a : number
+>1 : 1
+>g : any
+>1 : 1
+
+let k = (a = 1 b) => a;
+>k : (a: number | undefined, b: any) => number
+>(a = 1 b) => a : (a: number | undefined, b: any) => number
+>a : number
+>1 : 1
+>b : any
+>a : number
+

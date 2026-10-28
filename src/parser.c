@@ -65,6 +65,10 @@ typedef struct ParserShared {
     isize scanner_error_index;
     isize scanner_error_first; // The errors before the token was read
     const char* scanner_error_token;
+    // tsgo's DisallowIn context: set for a `for (` statement's initializer and cleared (saved and restored: allow_in_enter()) only where
+    // tsgo clears it, so it reaches into arrow parameters, array literals and nested function and class bodies there
+    // (`for (var f = function () { x in b };;)` is a syntax error in tsgo)
+    bool disallow_in;
     bool using_forced; // The next variable statement starts with `using` whatever follows it (see parse_decl_statement())
     // After modifiers `let` is a variable statement whatever follows (tsc's parseDeclarationWorker, reached without
     // isLetDeclaration's lookahead: `declare let` then a line break and `=` is an empty list)
@@ -249,7 +253,6 @@ void parser_shared_drop(ParserShared* me) {
 }
 
 typedef struct ExprCtx {
-    bool reject_in_operator;
     bool reject_operators;
     bool left_hand_side; // tsc's parseLeftHandSideExpressionOrHigher: no unary operators either (a heritage element)
     bool entity_name; // The operand of a `typeof` type: `a.b.c<T>`, no calls and no `[i]` (that is an indexed access type)
@@ -679,6 +682,18 @@ static inline Parser parser(Parser* parent) {
         .whitespace_end = parent->whitespace_end,
         .error_count = 0,
     };
+}
+
+// tsgo's doInContext(DisallowIn, false, ...) (parseExpressionAllowIn): `bool saved = allow_in_enter(p); ...;
+// allow_in_leave(p, saved);` around what tsgo parses with `in` allowed again (ParserShared.disallow_in)
+static inline bool allow_in_enter(Parser* me) {
+    bool saved = my shared->disallow_in;
+    my shared->disallow_in = false;
+    return saved;
+}
+
+static inline void allow_in_leave(Parser* me, bool saved) {
+    my shared->disallow_in = saved;
 }
 
 /// Must not be used on the root parser, always returns true, drops parser
@@ -2051,6 +2066,11 @@ static bool tok_is_binary_operator(Tok t) {
     return tok_is_word(t) ? tok_is_one_of(t, words) : tok_is_one_of(t, ops);
 }
 
+// tsc's isBinaryOperator: not `in` in a DisallowIn context (ParserShared.disallow_in)
+static bool tok_is_binary_operator_here(Parser* p, Tok t) {
+    return tok_is_binary_operator(t) && !(p->shared->disallow_in && tok_is(t, "in"));
+}
+
 // tsc's isAssignmentOperator
 static bool tok_is_assignment_operator(Tok t) {
     static const char* const ops[] = {
@@ -2087,7 +2107,7 @@ static bool tok_is_start_of_expression(Parser* p, Tok t) {
     static const char* const words[] = { "delete", "typeof", "void", "await", "yield", nullptr };
     if (tok_is_start_of_left_hand_side_expression(p, t)) return true;
     if (*t.start == '#' && t.start[1] != '!') return true; // (`#!` is tsc's Unknown token)
-    return tok_is_one_of(t, ops) || tok_is_one_of(t, words) || tok_is_binary_operator(t) || tok_is_identifier(t);
+    return tok_is_one_of(t, ops) || tok_is_one_of(t, words) || tok_is_binary_operator_here(p, t) || tok_is_identifier(t);
 }
 
 // tsc's isDeclaration (a lookahead from t)
@@ -7270,7 +7290,10 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
             Expr key;
             bool literal = false;
             Expr* kept_key = nullptr;
-            if (expect_expr(&p, expr_ctx_null, &key)) {
+            bool saved_in = allow_in_enter(&p);
+            bool has_key = expect_expr(&p, expr_ctx_null, &key);
+            allow_in_leave(&p, saved_in);
+            if (has_key) {
                 if (key.tag == EXPR_LITERAL && (key.literal.tag == VALUE_STRING || key.literal.tag == VALUE_NUMBER)) literal = true;
                 if (literal) cstr_append_value_js(&enum_case.canonical_name, &key.literal);
                 if (literal) expr_drop(&key);
@@ -7307,7 +7330,9 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
         hop_whitespace(&p);
         if (hop_char(&p, '=')) {
             hop_whitespace(&p);
+            bool saved_in = allow_in_enter(&p);
             expect_expr(&p, expr_ctx_null, &enum_case.value);
+            allow_in_leave(&p, saved_in);
             hop_whitespace(&p);
         } else {
             enum_case.value = expr_implicit_any_no_span;
@@ -7674,8 +7699,11 @@ static bool parse_function_args_inner(
                 bool pattern_first = !parse_type_return_syntax && (*before_param == '{' || *before_param == '[');
                 // (Nor an invalid character, which no list takes: tsc's parseDelimitedList skips it and the arrow
                 // stands, its errors all on the TS1127, `(x = €) => x`)
+                // (Nor after an initializer, `(a =` being Unknown too: `(a = 1 public b) => 1`, and `(a = x in b) => 1` in a
+                // for statement's initializer, where the `in` ends the initializer, are arrow functions with errors)
                 if (vec_function_arg_is_empty(&ret->args) && !is_definitely_function && *p.pos != ',' && *p.pos != ')' &&
                     (parse_type_return_syntax || first_modifier_end == nullptr) && !pattern_first &&
+                    (parse_type_return_syntax || !initializer.value) &&
                     (parse_type_return_syntax || !invalid_char_size(&p, p.pos))
                 ) {
                     vec_expr_drop(&decorators);
@@ -8533,7 +8561,7 @@ static bool body_starts_with_string(char const* open) {
 // The body at `{` isn't parsed when that's safe (its end is certain: skip_balanced_braces()), the function keeps an
 // empty body. Plan 78: an outermost function's body in a file that defers them (SourceFile.defer_bodies) is a
 // DeferredBody, parsed and walked when a checker first needs it. Not where the walk of the function's parameters would see the body's
-//   names (an expression in a parameter), not in a `with` statement or an ambient context (errors), not an IIFE's (part
+//   names (an expression in a parameter), not in a `with` statement, an ambient context or a DisallowIn one (errors), not an IIFE's (part
 //   of the flow around it: undefer_body() when the call shows) nor a constructor's the class's walk looks into
 //   (parse_class_decl()). Nor an expression's (`expression`) with a function in its signature (a parenthesis after
 //   the parameter list's own): the walk of that function asks whether this one is context sensitive
@@ -8543,7 +8571,8 @@ static bool skip_body(Parser* parent, FunctionImpl* func, bool expression) {
     SourceFile const* source = shared->source;
     if (*parent->pos != '{') return false;
     bool defer = source->defer_bodies && !shared->materializing && shared->function_depth == 1 &&
-        !shared->in_ambient && !shared->with_body_depth;
+        !shared->in_ambient && !shared->with_body_depth &&
+        !shared->disallow_in; // (a for statement's initializer: the body's own `in`s are syntax errors, ParserShared.disallow_in)
     for (isize i = 0; defer && i < vec_function_arg_size(&func->args); i++) {
         FunctionArg const* arg = vec_function_arg_at(&func->args, i);
         defer = !arg->initializer.value && !binding_has_expressions(&arg->initializer.binding);
@@ -8593,7 +8622,9 @@ static void undefer_body(Parser* parent, FunctionImpl* func) {
     p.whitespace_end = nullptr;
     func->deferred = false;
     func->body_ = (Block){0};
+    bool saved_in = allow_in_enter(&p); // (never deferred in a DisallowIn context)
     parse_block(&p, false, &func->body_);
+    allow_in_leave(&p, saved_in);
     parse_success(&p);
     function_ctx_leave(parent, ctx);
     parent->pos = saved.pos;
@@ -8819,8 +8850,10 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         hop_whitespace(&p);
         Expr key;
         p.shared->in_property_name++;
+        bool saved_in = allow_in_enter(&p);
         bool has_key = parse_expr(&p, expr_ctx_null, &key);
         if (has_key) parse_computed_key_comma(&p, &key);
+        allow_in_leave(&p, saved_in);
         p.shared->in_property_name--;
         if (!has_key) {
             modifier_list_drop(&modifiers);
@@ -8937,7 +8970,9 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         return parse_fail(&p);
     } else if (hop_char(&p, ':')) {
         hop_whitespace(&p);
+        bool saved_in = allow_in_enter(&p);
         expect_expr(&p, expr_ctx_null, &item.value);
+        allow_in_leave(&p, saved_in);
         // Not `__proto__: class {}`, which sets the prototype
         if (item.computed_key || !csview_equals(cstr_sv(&item.name_string), "__proto__")) {
             mark_named_evaluation(&item.value, item.computed_key);
@@ -8958,7 +8993,10 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
             object_item_rare_mut(&item)->shorthand_equals = span_from(equals);
             hop_whitespace(&p);
             Expr default_value;
-            if (expect_expr(&p, expr_ctx_null, &default_value)) {
+            bool saved_in = allow_in_enter(&p);
+            bool has_default = expect_expr(&p, expr_ctx_null, &default_value);
+            allow_in_leave(&p, saved_in);
+            if (has_default) {
                 mark_named_evaluation(&default_value, false);
                 // (A name right there is the shorthand property's child too: tsc's TS18004 when it isn't found)
                 if (default_value.tag == EXPR_IDENTIFIER && !expr_is_perenthisized(&default_value)) {
@@ -9445,10 +9483,12 @@ static bool parse_expr_interface_member(Parser* parent, bool is_type, FunctionFl
 
     Expr expr;
     p.shared->in_property_name++;
+    bool saved_in = allow_in_enter(&p);
     // (A missing expression is TS1109 and the member goes on, tsc's parseComputedPropertyName: `{ a: 1; [ }`)
     bool has_key = expect_expr(&p, expr_ctx_null, &expr) || (expr.tag == EXPR_IMPLICIT_ANY && expr.missing);
     // (TS1171 is the checker's: after TS1166-TS1170, interface_member_typecheck())
     if (has_key && !(expr.tag == EXPR_IMPLICIT_ANY && expr.missing)) parse_computed_key_comma(&p, &expr);
+    allow_in_leave(&p, saved_in);
     p.shared->in_property_name--;
     if (!has_key) {
         return parse_fail(&p);
@@ -9534,8 +9574,10 @@ static bool parse_class_computed_key(Parser* parent, Expr** ret) {
     hop_whitespace(&p);
     Expr key;
     p.shared->in_property_name++;
+    bool saved_in = allow_in_enter(&p);
     bool has_key = parse_expr(&p, expr_ctx_null, &key);
     if (has_key) parse_computed_key_comma(&p, &key);
+    allow_in_leave(&p, saved_in);
     p.shared->in_property_name--;
     if (!has_key) return parse_fail(&p);
     hop_whitespace(&p);
@@ -9925,7 +9967,9 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             // is TS1040)
             bool outer_ambient = p.shared->in_ambient;
             p.shared->in_ambient |= ret->field.is_declare;
+            bool saved_in = allow_in_enter(&p);
             bool initialized = parse_initialization_or_set_to_default(&p, expr_ctx_null, &ret->field.value);
+            allow_in_leave(&p, saved_in);
             p.shared->in_ambient = outer_ambient;
             p.shared->in_async = outer.in_async;
             p.shared->in_generator = outer.in_generator;
@@ -10344,6 +10388,7 @@ static inline bool parse_call_args(Parser* parent, VecExpr* args) {
     // tsc's parseDelimitedList(ArgumentExpressions)
     ScratchList list = scratch_list_begin();
     u32 saved_context = list_enter(&p, PARSING_ARGUMENT_EXPRESSIONS);
+    bool saved_in = allow_in_enter(&p); // (tsgo's parseArgumentExpression)
     while (!at_eof(&p, p.pos) && *p.pos != ')' && *p.pos != ';') {
         const char* start = p.pos;
         Expr arg = {0};
@@ -10368,6 +10413,7 @@ static inline bool parse_call_args(Parser* parent, VecExpr* args) {
         if (p.pos == start) hop_token(&p);
         hop_whitespace(&p);
     }
+    allow_in_leave(&p, saved_in);
     list_leave(&p, saved_context);
     if (!expect_char(&p, ')')) {
         // The call ends with its last token, not the whitespace after it
@@ -10461,8 +10507,11 @@ static bool parse_ternary_expr(Parser* parent, ExprCtx ctx, Expr* ret_yes, Expr*
     }
     hop_whitespace(&p);
 
-    // (tsc's parseConditionalExpressionRest goes on after a missing branch or colon: a missing expression each)
+    // (tsc's parseConditionalExpressionRest goes on after a missing branch or colon: a missing expression each; `in`
+    // is allowed in the true branch, not in the false one)
+    bool saved_in = allow_in_enter(&p);
     expect_expr(&p, ctx, ret_yes);
+    allow_in_leave(&p, saved_in);
     hop_whitespace(&p);
 
     if (!expect_char(&p, ':')) {
@@ -10501,10 +10550,13 @@ static bool parse_bracket_prop(Parser* parent, Expr* ret) {
         p.pos++;
         return parse_success(&p);
     }
-    if (!expect_expr(&p, expr_ctx_null, ret)) {
+    bool saved_in = allow_in_enter(&p);
+    bool has_expr = expect_expr(&p, expr_ctx_null, ret);
+    if (has_expr) parse_comma_ops_right_side(&p, ret); // (tsc's parseElementAccessExpressionRest: an Expression, commas too)
+    allow_in_leave(&p, saved_in);
+    if (!has_expr) {
         return parse_success(&p);
     }
-    parse_comma_ops_right_side(&p, ret); // (tsc's parseElementAccessExpressionRest: an Expression, commas too)
     hop_whitespace(&p);
 
     if (!expect_char(&p, ']')) {
@@ -10642,7 +10694,7 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
         return parse_fail(&p);
     }
     int precedence = binary_op_get_precedence(op);
-    if (precedence <= ctx.min_precedence || (ctx.reject_in_operator && op == BINARY_OP_IN)) {
+    if (precedence <= ctx.min_precedence || (op == BINARY_OP_IN && p.shared->disallow_in)) {
         return parse_fail(&p);
     }
     // `a ## b as T $$ c`: ends before a $$ that would bind before ## once `as T` is erased (tsgo 7.1's
@@ -11473,7 +11525,7 @@ static inline bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left
             Tok next = tok_peek(&q);
             bool can_follow = *q.pos == '(' || *q.pos == '`' || (!tok_is(next, "<") && !tok_is(next, ">") &&
                 !tok_is(next, "+") && !tok_is(next, "-") && (q.whitespace == WHITESPACE_NEWLINE ||
-                tok_is_binary_operator(next) || !tok_is_start_of_expression(&q, next)));
+                tok_is_binary_operator_here(&q, next) || !tok_is_start_of_expression(&q, next)));
             if (can_follow) {
                 *left_and_ret = expr_generic_params(span_from(args_a), ast_new(GenericParamsExpr, {
                     .expr = *left_and_ret,
@@ -11907,7 +11959,9 @@ static bool parse_template(Parser* parent, VecExpr* ret, AstCStrs* texts) {
             hop_whitespace(&p);
             // Committed from the `${` on: a missing expression is one
             Expr expr;
+            bool saved_in = allow_in_enter(&p);
             if (expect_expr(&p, expr_ctx_null, &expr)) parse_comma_ops_right_side(&p, &expr);
+            allow_in_leave(&p, saved_in);
             list_push(vec_expr, &substitutions, expr);
             hop_whitespace(&p);
             if (!expect_char(&p, '}')) {
@@ -13028,8 +13082,10 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     } else if (hop_char(&p, '(')) {
         // Committed like tsc's parseParenthesizedExpression: `()` is missing its expression
         hop_whitespace(&p);
+        bool saved_in = allow_in_enter(&p);
         expect_expr(&p, expr_ctx_null, ret);
         parse_comma_ops_right_side(&p, ret);
+        allow_in_leave(&p, saved_in);
         hop_whitespace(&p);
         if (!expect_char(&p, ')')) {
             // Without its `)` it ends with its last token, not the whitespace after it (tsc's finishNode)
@@ -13158,7 +13214,7 @@ static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     // left-hand side, so an assignment goes on too (`if (x ^= {})` missing its `)`: `<missing> ^= {}`)
     Tok t = tok_peek(parent);
     // (In a JSX file a `<` that starts no element is that binary operator too: `<:a` is `<missing> < <missing>`)
-    if ((tok_is_binary_operator(t) && !tok_is(t, "/") && (!tok_is(t, "<") || (parent->shared->source->is_jsx && t.start[1] != '/'))) ||
+    if ((tok_is_binary_operator_here(parent, t) && !tok_is(t, "/") && (!tok_is(t, "<") || (parent->shared->source->is_jsx && t.start[1] != '/'))) ||
         tok_is_assignment_operator(t) || tok_is(t, ".")
     ) {
         while (parse_expr_right_side(parent, ctx, ret)) {}
@@ -14057,7 +14113,17 @@ static bool parse_binding_identifier(Parser* parent) {
     return true;
 }
 
+static bool parse_binding_content_inner(Parser* parent, Binding* ret);
+
+// (tsgo's array and object binding patterns allow `in` in their elements: an identifier has none)
 static bool parse_binding_content(Parser* parent, Binding* ret) {
+    bool saved_in = allow_in_enter(parent);
+    bool parsed = parse_binding_content_inner(parent, ret);
+    allow_in_leave(parent, saved_in);
+    return parsed;
+}
+
+static bool parse_binding_content_inner(Parser* parent, Binding* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
     Binding binding;
@@ -14546,8 +14612,11 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
         parse_fail(&ahead);
     }
 
-    // tsc's parseDelimitedList for the declarators, but with the terminators checked after each (below)
+    // tsc's parseDelimitedList for the declarators, but with the terminators checked after each (below), `in`
+    // disallowed in a for statement's and allowed in any other (tsgo's parseVariableDeclarationList)
     u32 saved_context = list_enter(&p, PARSING_VARIABLE_DECLARATIONS);
+    bool saved_in = p.shared->disallow_in;
+    p.shared->disallow_in = in_for;
     while (true) {
         const char* declaration_start = p.pos;
         if (empty_for_of || !parse_binding_content_or_private_name(&p, &initializer.binding, 18029,
@@ -14566,7 +14635,9 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
                 if (ret->keyword == VAR_INIT_LET && !empty_for_of && !in_for && !let_forced) {
                     // let can also be a variable name, fail so we then attempt to parse it as such (not in a `for`,
                     // where tsc's parseForOrForInOrForOfStatement always takes `let` for a declaration list)
-                    list_leave(&p, saved_context);
+                    allow_in_leave(&p, saved_in);
+                    allow_in_leave(&p, saved_in);
+    list_leave(&p, saved_context);
                     variable_statement_drop(ret);
                     return parse_fail(&p);
                 } else if (!list_is_terminator(PARSING_VARIABLE_DECLARATIONS, tok_peek(&p))) {
@@ -14708,9 +14779,11 @@ static bool parse_if_arm(Parser* parent, Expr* condition, Statement* statement) 
     }
     hop_whitespace(&p);
 
+    bool saved_in = allow_in_enter(&p);
     if (expect_expr(&p, expr_ctx_null, condition)) {
         parse_comma_ops_right_side(&p, condition);
     }
+    allow_in_leave(&p, saved_in);
     hop_whitespace(&p);
 
     if (!hop_char(&p, ')')) {
@@ -14786,10 +14859,13 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
     Statement body;
     bool keyword_is_in = false;
 
-    if (parse_variable_statement(&p, (ExprCtx){.reject_in_operator = true}, true, &statement.decl.variable)) {
+    // (The initializer in tsgo's DisallowIn context: ParserShared.disallow_in)
+    bool saved_in = p.shared->disallow_in;
+    p.shared->disallow_in = true;
+    if (parse_variable_statement(&p, expr_ctx_null, true, &statement.decl.variable)) {
         statement.decl.props.exported = DECL_EXPORTED_NO;
         statement.tag = STATEMENT_DECL_VARIABLE;
-    } else if (parse_expr(&p, (ExprCtx){.reject_in_operator = true}, &statement.expr)) {
+    } else if (parse_expr(&p, expr_ctx_null, &statement.expr)) {
         parse_comma_ops_right_side(&p, &statement.expr);
         statement.tag = STATEMENT_EXPR;
         statement.expr_jsdoc_type = nullptr;
@@ -14804,6 +14880,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
         statement.expr_jsdoc_type = nullptr;
         parse_comma_ops_right_side(&p, &statement.expr); // (`for , a`: a comma expression of it)
     }
+    p.shared->disallow_in = false; // (the condition, the incrementor and the iterated expression allow it)
     hop_whitespace(&p);
 
     if ((statement.tag == STATEMENT_EXPR || statement.tag == STATEMENT_DECL_VARIABLE) && (
@@ -14854,6 +14931,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
 
     expect_char(&p, ')');
     hop_whitespace(&p);
+    allow_in_leave(&p, saved_in); // (the body is in the context around the statement)
     expect_statement(&p, false, &body);
 
     if (is_for_each) {
@@ -14912,9 +14990,11 @@ static bool parse_while_loop_statement(Parser* parent, Statement* ret) {
     Expr condition = expr_literal(span_from_pos(&p), value_boolean(false));
     Statement body = statement_noop;
     // (A missing operand goes on into a comma expression too: tsc's parseExpression)
+    bool saved_in = allow_in_enter(&p);
     if (expect_expr(&p, expr_ctx_null, &condition) || (condition.tag == EXPR_IMPLICIT_ANY && condition.missing)) {
         parse_comma_ops_right_side(&p, &condition);
     }
+    allow_in_leave(&p, saved_in);
     hop_whitespace(&p);
 
     if (opened) expect_closing(&p, ')', open);
@@ -14951,9 +15031,11 @@ static bool parse_with_statement(Parser* parent, Statement* ret) {
     hop_whitespace(&p);
 
     Expr object = expr_implicit_any(span_from_pos(&p));
+    bool saved_in = allow_in_enter(&p);
     if (expect_expr(&p, expr_ctx_null, &object)) {
         parse_comma_ops_right_side(&p, &object);
     }
+    allow_in_leave(&p, saved_in);
     hop_whitespace(&p);
 
     if (opened) expect_closing(&p, ')', open);
@@ -15002,6 +15084,7 @@ static bool parse_do_while_loop_statement(Parser* parent, Statement* ret) {
     bool opened = expect_char(&p, '(');
     hop_whitespace(&p);
     Expr parsed;
+    bool saved_in = allow_in_enter(&p);
     if (expect_expr(&p, expr_ctx_null, &parsed)) {
         expr_drop(&condition);
         condition = parsed;
@@ -15011,6 +15094,7 @@ static bool parse_do_while_loop_statement(Parser* parent, Statement* ret) {
         expr_drop(&condition);
         condition = parsed;
     }
+    allow_in_leave(&p, saved_in);
     hop_whitespace(&p);
     if (opened) expect_closing(&p, ')', open);
     else expect_char(&p, ')');
@@ -15378,9 +15462,11 @@ static bool parse_switch_case(Parser* parent, SwitchCase* ret) {
             .statements = {0},
         };
 
+        bool saved_in = allow_in_enter(&p);
         if (expect_expr(&p, expr_ctx_null, &ret->pattern)) {
             parse_comma_ops_right_side(&p, &ret->pattern);
         }
+        allow_in_leave(&p, saved_in);
         hop_whitespace(&p);
 
         expect_char(&p, ':');
@@ -15422,9 +15508,11 @@ static bool parse_switch_statement(Parser* parent, Statement* ret) {
     expect_char(&p, '(');
     hop_whitespace(&p);
 
+    bool saved_in = allow_in_enter(&p);
     if (expect_expr(&p, expr_ctx_null, &switch_.needle)) {
         parse_comma_ops_right_side(&p, &switch_.needle);
     }
+    allow_in_leave(&p, saved_in);
     hop_whitespace(&p);
 
     expect_char(&p, ')');
@@ -15567,11 +15655,13 @@ static bool parse_return(Parser* parent, Expr* ret) {
 
     // tsc's parseReturnStatement: no expression where a semicolon could go (`return` then a line break ends it, even
     // before `let x`)
+    bool saved_in = allow_in_enter(&p);
     if (!tok_can_parse_semicolon(tok_peek(&p)) && parse_expr(&p, expr_ctx_null, ret)) {
         parse_comma_ops_right_side(&p, ret);
     } else {
         *ret = expr_undefined(span_from(a));
     }
+    allow_in_leave(&p, saved_in);
 
     return parse_success(&p);
 }
@@ -15590,8 +15680,10 @@ static bool parse_throw(Parser* parent, Expr* ret) {
         // token starts: the checker's TS1142 goes after the keyword)
         *ret = expr_implicit_any(span_make(p.shared->source, p.pos, p.pos));
         p.pos = keyword_end;
-    } else if (expect_expr(&p, expr_ctx_null, ret)) {
-        parse_comma_ops_right_side(&p, ret);
+    } else {
+        bool saved_in = allow_in_enter(&p);
+        if (expect_expr(&p, expr_ctx_null, ret)) parse_comma_ops_right_side(&p, ret);
+        allow_in_leave(&p, saved_in);
     }
 
     return parse_success(&p);
@@ -16675,7 +16767,7 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
             }
         }
     } else if (((strchr("|&^=!>*%?i", c) && c) || (c == '<' && p.shared->source->is_jsx && p.pos[1] != '/')) &&
-        tok_is_binary_operator(tok_peek(&p))
+        tok_is_binary_operator_here(&p, tok_peek(&p))
     ) {
         // (In a JSX file a `<` that starts no element too, tsc's parseUpdateExpression: `<:a />`)
         // A binary operator starts an expression with a missing left operand (tsc's isStartOfExpression): `|| a;`
@@ -16738,7 +16830,9 @@ static inline bool parse_block(Parser* parent, bool toplevel, Block* ret) {
     p.shared->block_open = outer_block;
     hop_whitespace(&p);
 
-    expect_closing(&p, '}', open);
+    // (Without its `}` it ends with its last token, tsc's finishNode at the next token's full start: `{ x in b` in a
+    // for statement's initializer, the list aborted at the `in`)
+    if (!expect_closing(&p, '}', open)) unhop_trivia(&p);
     // tsc's parseBlock: `{ a } = b` is a destructuring assignment missing its parentheses, the `=` is skipped
     Parser eq = parser(&p);
     hop_whitespace(&eq);

@@ -1,20 +1,32 @@
-ttttForInitializerDisallowInLeak.ts(6,21): error TS1005: ',' expected.
-ttttForInitializerDisallowInLeak.ts(6,21): error TS7006: Parameter 'b' implicitly has an 'any' type.
-ttttForInitializerDisallowInLeak.ts(7,17): error TS1005: ',' expected.
-ttttForInitializerDisallowInLeak.ts(7,21): error TS1005: ')' expected.
-ttttForInitializerDisallowInLeak.ts(7,24): error TS1128: Declaration or statement expected.
-ttttForInitializerDisallowInLeak.ts(8,28): error TS1434: Unexpected keyword or identifier.
-ttttForInitializerDisallowInLeak.ts(8,30): error TS1128: Declaration or statement expected.
-ttttForInitializerDisallowInLeak.ts(8,35): error TS1005: ')' expected.
-ttttForInitializerDisallowInLeak.ts(8,38): error TS1128: Declaration or statement expected.
+ttttForInitializerDisallowInLeak.ts(7,21): error TS1005: ',' expected.
+ttttForInitializerDisallowInLeak.ts(7,21): error TS7006: Parameter 'b' implicitly has an 'any' type.
+ttttForInitializerDisallowInLeak.ts(8,17): error TS1005: ',' expected.
+ttttForInitializerDisallowInLeak.ts(8,21): error TS1005: ')' expected.
+ttttForInitializerDisallowInLeak.ts(8,24): error TS1128: Declaration or statement expected.
+ttttForInitializerDisallowInLeak.ts(9,28): error TS1434: Unexpected keyword or identifier.
+ttttForInitializerDisallowInLeak.ts(9,30): error TS1128: Declaration or statement expected.
+ttttForInitializerDisallowInLeak.ts(9,35): error TS1005: ')' expected.
+ttttForInitializerDisallowInLeak.ts(9,38): error TS1128: Declaration or statement expected.
+ttttForInitializerDisallowInLeak.ts(14,54): error TS1434: Unexpected keyword or identifier.
+ttttForInitializerDisallowInLeak.ts(14,56): error TS1128: Declaration or statement expected.
+ttttForInitializerDisallowInLeak.ts(14,59): error TS7008: Member 'b' implicitly has an 'any' type.
+ttttForInitializerDisallowInLeak.ts(14,63): error TS1005: ';' expected.
+ttttForInitializerDisallowInLeak.ts(14,66): error TS1128: Declaration or statement expected.
+ttttForInitializerDisallowInLeak.ts(15,62): error TS1434: Unexpected keyword or identifier.
+ttttForInitializerDisallowInLeak.ts(15,64): error TS1128: Declaration or statement expected.
+ttttForInitializerDisallowInLeak.ts(15,69): error TS1005: ')' expected.
+ttttForInitializerDisallowInLeak.ts(15,71): error TS1128: Declaration or statement expected.
+ttttForInitializerDisallowInLeak.ts(15,74): error TS1128: Declaration or statement expected.
+ttttForInitializerDisallowInLeak.ts(18,41): error TS18033: Type 'boolean' is not assignable to type 'number' as required for computed enum member values.
 
 
-==== ttttForInitializerDisallowInLeak.ts (9 errors) ====
-    // Known failing (agents/bugs/missing_checks.md "for-initializer DisallowIn"): tsgo's DisallowIn context of a for
-    // statement's initializer reaches into arrow parameters, array literals and nested function bodies (only
-    // parenthesized expressions, arguments, element accesses, templates, object literal values, conditional branches,
-    // binding patterns, nested variable statements and statement expressions clear it), so `x in b` there is a syntax error
-    declare let x: any, b: any;
+==== ttttForInitializerDisallowInLeak.ts (20 errors) ====
+    // tsgo's DisallowIn context of a for statement's initializer reaches into arrow parameters, array literals and nested
+    // function and class bodies; only parenthesized expressions, element accesses, template spans, computed names, the
+    // expressions of if/while/for/return/throw/switch/case/with, arguments, object literal values, conditional true
+    // branches, binding patterns, property and enum initializers and nested variable declaration lists clear it, so
+    // `x in b` elsewhere there is a syntax error (agents/bugs/missing_checks.md "for-initializer DisallowIn")
+    declare let x: any, b: any, c: any, d: any;
     for (var i = (a = x in b) => 1;;) {}
                         ~~
 !!! error TS1005: ',' expected.
@@ -36,4 +48,37 @@ ttttForInitializerDisallowInLeak.ts(8,38): error TS1128: Declaration or statemen
 !!! error TS1005: ')' expected.
                                          ~
 !!! error TS1128: Declaration or statement expected.
+    for (var l = c ? x in b : d;;) {}
+    for (var m = f(x in b);;) {}
+    for (var n = { a: x in b };;) {}
+    for (var o = function () { var q = x in b; if (x in b) {} return x in b; };;) {}
+    for (var p = class { y = x in b; [x in b] = 1; m() { x in b } };;) {}
+                                                         ~
+!!! error TS1434: Unexpected keyword or identifier.
+                                                           ~~
+!!! error TS1128: Declaration or statement expected.
+                                                              ~
+!!! error TS7008: Member 'b' implicitly has an 'any' type.
+                                                                  ~
+!!! error TS1005: ';' expected.
+                                                                     ~
+!!! error TS1128: Declaration or statement expected.
+    for (var r = function () { for (var s = 0; x in b; x in b) { x in b } };;) {}
+                                                                 ~
+!!! error TS1434: Unexpected keyword or identifier.
+                                                                   ~~
+!!! error TS1128: Declaration or statement expected.
+                                                                        ~
+!!! error TS1005: ')' expected.
+                                                                          ~
+!!! error TS1128: Declaration or statement expected.
+                                                                             ~
+!!! error TS1128: Declaration or statement expected.
+    for (var t = `${x in b}`;;) {}
+    for (var u = function ({ y = x in b }, [z = x in b]) {};;) {}
+    for (var v = function () { enum E { A = x in b, B = A } };;) {}
+                                            ~~~~~~
+!!! error TS18033: Type 'boolean' is not assignable to type 'number' as required for computed enum member values.
+    for (var w = (x in b);;) {}
+    function f(..._: any[]) {}
     
