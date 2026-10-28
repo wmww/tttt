@@ -1638,6 +1638,7 @@ static FoundProp find_prop(Checker* me, Ty const* ty, Atom const* name, u32 dept
         }
         FoundProp part = find_prop_in(me, apparent_type(me, member), name, depth + 1, own_only);
         if (!part.found) continue;
+        prop_write_type_touch(me, part.prop);
         if (!ret.prop) ret.prop = part.prop;
         if (len == cap) {
             u32 grown = cap * 2;
@@ -1700,6 +1701,7 @@ static FoundProp find_prop(Checker* me, Ty const* ty, Atom const* name, u32 dept
         FoundProp part = find_prop_in(me, apparent_type(me, members.data[i]), name, depth + 1, skip_augment);
         missing = !part.found;
         if (missing) break;
+        prop_write_type_touch(me, part.prop);
         if (!ret.prop) ret.prop = part.prop;
         types[len++] = part.type;
         flags |= part.flags;

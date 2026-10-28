@@ -917,13 +917,17 @@ static void builder_add_interface_member(
                             if (prop_decl_rare(existing->decl)->getter_body) prop_decl_rare_mut(me, existing->decl)->getter_body = nullptr;
                         } else if (typed) {
                             prop_decl_rare_mut(me, existing->decl)->write_node = &i->type;
+                            prop_decl_rare_mut(me, existing->decl)->setter_name = i->key.span;
                         }
                         if (i->accessor) prop_decl_rare_mut(me, existing->decl)->setter_param = i->accessor->setter_param;
                     } else {
                         TypeNode const* setter_type = existing->decl->node;
                         bool setter_typed = setter_type && (setter_type->tag != TYPE_ANY || setter_type->parsed);
                         if (typed) {
-                            if (setter_typed) prop_decl_rare_mut(me, existing->decl)->write_node = setter_type;
+                            if (setter_typed) {
+                                prop_decl_rare_mut(me, existing->decl)->write_node = setter_type;
+                                prop_decl_rare_mut(me, existing->decl)->setter_name = existing->decl->name_span;
+                            }
                             existing->decl->node = &i->type;
                         } else if (!setter_typed) {
                             existing->decl->node = &i->type;
@@ -5593,10 +5597,14 @@ static Span prop_annotation_circularity_span(Prop const* prop) {
     ClassItem const* item = c_container_of(lazy, ClassItem, method.accessor_type);
     ClassItem const* getter = item->method.accessor == CLASS_ACCESSOR_GET ? item : ty_class_accessor_getter(current_checker, item);
     if (getter && getter->method.func.ret_explicit) return getter->method.name_span;
-    if (item->method.accessor == CLASS_ACCESSOR_SET && vec_function_arg_size(&item->method.func.args) &&
-        vec_function_arg_at(&item->method.func.args, 0)->initializer.binding.has_explicit_type
+    // (Else the setter's: tsc's getTypeOfAccessors reads the getter's annotation, then the setter's)
+    ClassItem const* setter = item->method.accessor == CLASS_ACCESSOR_SET ? item : nullptr;
+    FunctionImpl const* class_setter = prop_decl_rare(prop->decl)->class_setter;
+    if (!setter && class_setter) setter = c_container_of(class_setter, ClassItem, method.func);
+    if (setter && vec_function_arg_size(&setter->method.func.args) &&
+        vec_function_arg_at(&setter->method.func.args, 0)->initializer.binding.has_explicit_type
     ) {
-        return item->method.name_span;
+        return setter->method.name_span;
     }
     return span_null;
 }
@@ -5804,24 +5812,57 @@ TypeNode const* prop_decl_asserted_slow(PropDecl const* decl) {
     return v == PROP_ASSERTED_DROPPED ? nullptr : decl->asserted;
 }
 
+void prop_write_type_slow_touch(Checker* me, Prop const* prop) {
+    Prop const* root = prop;
+    while (root->target && !root->mapped) root = root->target;
+    PropDeclRare const* rare = prop_decl_rare(root->decl);
+    if (rare->write_node || (rare->setter && setter_is_annotated(rare->setter))) prop_write_type(me, prop);
+}
+
 Ty const* prop_write_type(Checker* me, Prop const* const_prop) {
     Prop* prop = (Prop*)const_prop; // Resolved lazily like the type
     u64 key[2] = { KEY_PROP_WRITE_TYPE, (u64)(uintptr_t)prop };
     void const* known;
     if (intern_has(&my links, key, 2, &known)) return known;
     Ty const* type = nullptr;
+    PropDeclRare const* rare = prop_decl_rare(prop->decl);
     // (A property declared with accessors of its name, one symbol in tsgo (TS2300), is a SymbolFlags.Property:
     // getWriteTypeOfSymbol gives its read type)
-    if ((prop->decl->member_kinds & 1u) && (prop->decl->member_kinds & 12u)) {
+    bool conflicting = (prop->decl->member_kinds & 1u) && (prop->decl->member_kinds & 12u);
+    // A setter's annotation is resolved under its own entry (tsc's getWriteTypeOfAccessors pushing
+    // TypeSystemPropertyNameWriteType): asked again meanwhile, it is the error type, and the setter reports the cycle
+    bool resolving = !conflicting && (rare->write_node || (rare->setter && setter_is_annotated(rare->setter)));
+    if (resolving) {
+        if (ty_resolving_find(me, RESOLVING_PROP_WRITE, prop)) {
+            ty_resolving_cycle(me, RESOLVING_PROP_WRITE, prop);
+            return ty_intrinsic(me, TY_ERROR);
+        }
+        ty_resolving_push(me, RESOLVING_PROP_WRITE, prop);
+    }
+    if (conflicting) {
         type = nullptr;
-    } else if (prop_decl_rare(prop->decl)->write_node) {
-        type = ty_from_node(me, prop_decl_rare(prop->decl)->write_node, prop->decl->ctx);
-    } else if (prop_decl_rare(prop->decl)->setter && setter_is_annotated(prop_decl_rare(prop->decl)->setter)) {
-        type = ty_object_literal_accessor_type(me, prop_decl_rare(prop->decl)->setter, false);
+    } else if (rare->write_node) {
+        type = ty_from_node(me, rare->write_node, prop->decl->ctx);
+    } else if (rare->setter && setter_is_annotated(rare->setter)) {
+        type = ty_object_literal_accessor_type(me, rare->setter, false);
     } else if (prop->target) {
         type = prop_write_type(me, prop->target);
         if (type) type = ty_instantiate(me, type, prop->mapper);
     }
+    if (resolving && ty_resolving_pop(me)) {
+        // (At the setter's name, tsc's error(setter, ...))
+        Span at = rare->setter ? function_impl_member_name(rare->setter) :
+            rare->class_setter ? c_container_of(rare->class_setter, ClassItem, method.func)->method.name_span : rare->setter_name;
+        if (span_valid(at)) {
+            cstr name = ty_prop_written_name(me, prop);
+            ty_error_at(me, at, 2502, cstr_d("'", name, "' is referenced directly or indirectly in its own type annotation."));
+            cstr_drop(&name);
+        }
+        type = ty_intrinsic(me, TY_ANY);
+    }
+    // (A nested computation below a call's barrier finished first: it is the one remembered, tsc's `if
+    // links.writeType == nil`)
+    if (resolving && intern_has(&my links, key, 2, &known)) return known;
     // (An identity of the property: with --shared-graph another checker's property may be this one, and the entry's
     // presence says it is known, null for none. Who computes it first doesn't matter, it's the same)
     return intern_set(me, &my links, intern_slot(me, &my links, key, 2), type);

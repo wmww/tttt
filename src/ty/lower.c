@@ -4334,6 +4334,9 @@ Ty const* ty_binding_type(Checker* me, Binding const* binding, LowerCtx ctx) {
         *intern_slot(me, &my links, key, 2) = (void*)binding;
         return circular;
     }
+    // (An annotation that lowered to another declaration's circularity, not this one's: an indexed access of a property
+    // whose type was in flight, `set x(v: C["x"])` reached from the getter. tsc's failing push gave that errorType)
+    if (type == circular) return ty_intrinsic(me, TY_ANY);
     // A catch variable annotated with anything but any or unknown is any (TS1196)
     if (binding->has_explicit_type && !binding->parent && !binding->source && !(type->flags & (TYF_ANY | TYF_UNKNOWN))) {
         return ty_intrinsic(me, TY_ANY);

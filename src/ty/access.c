@@ -456,6 +456,13 @@ static Ty const* access_uncached(Checker* me, Ty const* object, Ty const* index,
             // reads 1)
             if (ty_union_member_apparent_is_error(me, member)) continue;
             Ty const* part = access(me, member, index, depth + 1, flags);
+            // (The member's property's write type too, tsc's createUnionOrIntersectionProperty)
+            if (part && (index->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL))) {
+                Ty const* apparent = ty_apparent_type(me, member);
+                Atom const* name = (apparent->flags & TYF_OBJECT) && apparent->kind != TY_UNION && apparent->kind != TY_INTERSECTION ?
+                    ty_literal_name(me, index) : nullptr;
+                if (name) prop_write_type_touch(me, ty_get_object_prop(me, apparent, name));
+            }
             // A tuple too short to have the element has undefined there when others have it (tsc's
             // createUnionOrIntersectionProperty: its index signature applies, and the rest element or undefined is read)
             // (A numeric name too: `T["1"]`)

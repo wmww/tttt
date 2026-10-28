@@ -1,0 +1,140 @@
+//// [test/cases/ttttAccessorWriteTypeCircularity.ts] ////
+
+=== indexed.ts ===
+export {}
+class A {
+>A : A
+
+    get x(): number { return 1; }
+>x : number
+>1 : 1
+
+    set x(v: (A | B)["x"]) {}
+>x : number
+>v : string | number
+}
+class B { x = ""; }
+>B : B
+>x : string
+>"" : ""
+
+declare const a: A;
+>a : A
+
+a.x = true;
+>a.x = true : true
+>a.x : any
+>a : A
+>x : any
+>true : true
+
+=== intersection.ts ===
+export {}
+class C {
+>C : C
+
+    get x(): number { return 1; }
+>x : number
+>1 : 1
+
+    set x(v: (C & D)["x"] | string) {}
+>x : number
+>v : string | number
+}
+interface D { x: number; }
+>x : number
+
+declare const c: C;
+>c : C
+
+c.x = true;
+>c.x = true : true
+>c.x : any
+>c : C
+>x : any
+>true : true
+
+=== own.ts ===
+export {}
+class E {
+>E : E
+
+    get x() { return 1; }
+>x : any
+>1 : 1
+
+    set x(v: E["x"]) {}
+>x : any
+>v : any
+}
+declare const e: E;
+>e : E
+
+e.x = {};
+>e.x = {} : {}
+>e.x : any
+>e : E
+>x : any
+>{} : {}
+
+=== variable.ts ===
+export {}
+class F {
+>F : F
+
+    get x(): number { return 1 }
+>x : number
+>1 : 1
+
+    set x(v: typeof r | number) {}
+>x : number
+>v : any
+>r : any
+}
+class G { x = 1 }
+>G : G
+>x : number
+>1 : 1
+
+declare const u: F | G;
+>u : F | G
+
+const r = u.x;
+>r : any
+>u.x : number
+>u : F | G
+>x : number
+
+const probe: never = r;
+>probe : never
+>r : any
+
+=== query.ts ===
+export {}
+class H {
+>H : H
+
+    get x(): number { return 1 }
+>x : number
+>1 : 1
+
+    set x(v: (typeof w)["x"] | string) {}
+>x : number
+>v : string | number
+>w : H | I
+}
+class I { x = 1 }
+>I : I
+>x : number
+>1 : 1
+
+declare const w: H | I;
+>w : H | I
+
+w.x = "s";
+>w.x = "s" : "s"
+>w.x : any
+>w : H | I
+>x : any
+>"s" : "s"
+

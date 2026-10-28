@@ -1,0 +1,137 @@
+//// [test/cases/ttttAccessorWriteTypeCircularity.ts] ////
+
+=== indexed.ts ===
+export {}
+class A {
+>A : Symbol(A, Decl(indexed.ts, 0, 9))
+
+    get x(): number { return 1; }
+>x : Symbol(A.x, Decl(indexed.ts, 1, 9), Decl(indexed.ts, 2, 33))
+
+    set x(v: (A | B)["x"]) {}
+>x : Symbol(A.x, Decl(indexed.ts, 1, 9), Decl(indexed.ts, 2, 33))
+>v : Symbol(v, Decl(indexed.ts, 3, 10))
+>A : Symbol(A, Decl(indexed.ts, 0, 9))
+>B : Symbol(B, Decl(indexed.ts, 4, 1))
+}
+class B { x = ""; }
+>B : Symbol(B, Decl(indexed.ts, 4, 1))
+>x : Symbol(B.x, Decl(indexed.ts, 5, 9))
+
+declare const a: A;
+>a : Symbol(a, Decl(indexed.ts, 6, 13))
+>A : Symbol(A, Decl(indexed.ts, 0, 9))
+
+a.x = true;
+>a.x : Symbol(A.x, Decl(indexed.ts, 1, 9), Decl(indexed.ts, 2, 33))
+>a : Symbol(a, Decl(indexed.ts, 6, 13))
+>x : Symbol(A.x, Decl(indexed.ts, 1, 9), Decl(indexed.ts, 2, 33))
+
+=== intersection.ts ===
+export {}
+class C {
+>C : Symbol(C, Decl(intersection.ts, 0, 9))
+
+    get x(): number { return 1; }
+>x : Symbol(C.x, Decl(intersection.ts, 1, 9), Decl(intersection.ts, 2, 33))
+
+    set x(v: (C & D)["x"] | string) {}
+>x : Symbol(C.x, Decl(intersection.ts, 1, 9), Decl(intersection.ts, 2, 33))
+>v : Symbol(v, Decl(intersection.ts, 3, 10))
+>C : Symbol(C, Decl(intersection.ts, 0, 9))
+>D : Symbol(D, Decl(intersection.ts, 4, 1))
+}
+interface D { x: number; }
+>D : Symbol(D, Decl(intersection.ts, 4, 1))
+>x : Symbol(D.x, Decl(intersection.ts, 5, 13))
+
+declare const c: C;
+>c : Symbol(c, Decl(intersection.ts, 6, 13))
+>C : Symbol(C, Decl(intersection.ts, 0, 9))
+
+c.x = true;
+>c.x : Symbol(C.x, Decl(intersection.ts, 1, 9), Decl(intersection.ts, 2, 33))
+>c : Symbol(c, Decl(intersection.ts, 6, 13))
+>x : Symbol(C.x, Decl(intersection.ts, 1, 9), Decl(intersection.ts, 2, 33))
+
+=== own.ts ===
+export {}
+class E {
+>E : Symbol(E, Decl(own.ts, 0, 9))
+
+    get x() { return 1; }
+>x : Symbol(E.x, Decl(own.ts, 1, 9), Decl(own.ts, 2, 25))
+
+    set x(v: E["x"]) {}
+>x : Symbol(E.x, Decl(own.ts, 1, 9), Decl(own.ts, 2, 25))
+>v : Symbol(v, Decl(own.ts, 3, 10))
+>E : Symbol(E, Decl(own.ts, 0, 9))
+}
+declare const e: E;
+>e : Symbol(e, Decl(own.ts, 5, 13))
+>E : Symbol(E, Decl(own.ts, 0, 9))
+
+e.x = {};
+>e.x : Symbol(E.x, Decl(own.ts, 1, 9), Decl(own.ts, 2, 25))
+>e : Symbol(e, Decl(own.ts, 5, 13))
+>x : Symbol(E.x, Decl(own.ts, 1, 9), Decl(own.ts, 2, 25))
+
+=== variable.ts ===
+export {}
+class F {
+>F : Symbol(F, Decl(variable.ts, 0, 9))
+
+    get x(): number { return 1 }
+>x : Symbol(F.x, Decl(variable.ts, 1, 9), Decl(variable.ts, 2, 32))
+
+    set x(v: typeof r | number) {}
+>x : Symbol(F.x, Decl(variable.ts, 1, 9), Decl(variable.ts, 2, 32))
+>v : Symbol(v, Decl(variable.ts, 3, 10))
+>r : Symbol(r, Decl(variable.ts, 7, 5))
+}
+class G { x = 1 }
+>G : Symbol(G, Decl(variable.ts, 4, 1))
+>x : Symbol(G.x, Decl(variable.ts, 5, 9))
+
+declare const u: F | G;
+>u : Symbol(u, Decl(variable.ts, 6, 13))
+>F : Symbol(F, Decl(variable.ts, 0, 9))
+>G : Symbol(G, Decl(variable.ts, 4, 1))
+
+const r = u.x;
+>r : Symbol(r, Decl(variable.ts, 7, 5))
+>u.x : Symbol(x, Decl(variable.ts, 1, 9), Decl(variable.ts, 2, 32), Decl(variable.ts, 5, 9))
+>u : Symbol(u, Decl(variable.ts, 6, 13))
+>x : Symbol(x, Decl(variable.ts, 1, 9), Decl(variable.ts, 2, 32), Decl(variable.ts, 5, 9))
+
+const probe: never = r;
+>probe : Symbol(probe, Decl(variable.ts, 8, 5))
+>r : Symbol(r, Decl(variable.ts, 7, 5))
+
+=== query.ts ===
+export {}
+class H {
+>H : Symbol(H, Decl(query.ts, 0, 9))
+
+    get x(): number { return 1 }
+>x : Symbol(H.x, Decl(query.ts, 1, 9), Decl(query.ts, 2, 32))
+
+    set x(v: (typeof w)["x"] | string) {}
+>x : Symbol(H.x, Decl(query.ts, 1, 9), Decl(query.ts, 2, 32))
+>v : Symbol(v, Decl(query.ts, 3, 10))
+>w : Symbol(w, Decl(query.ts, 6, 13))
+}
+class I { x = 1 }
+>I : Symbol(I, Decl(query.ts, 4, 1))
+>x : Symbol(I.x, Decl(query.ts, 5, 9))
+
+declare const w: H | I;
+>w : Symbol(w, Decl(query.ts, 6, 13))
+>H : Symbol(H, Decl(query.ts, 0, 9))
+>I : Symbol(I, Decl(query.ts, 4, 1))
+
+w.x = "s";
+>w.x : Symbol(x, Decl(query.ts, 1, 9), Decl(query.ts, 2, 32), Decl(query.ts, 5, 9))
+>w : Symbol(w, Decl(query.ts, 6, 13))
+>x : Symbol(x, Decl(query.ts, 1, 9), Decl(query.ts, 2, 32), Decl(query.ts, 5, 9))
+

@@ -618,6 +618,7 @@ typedef struct PropDeclRare {
     // write type. See prop_write_type()
     FunctionImpl const* setter;
     Span setter_param; // A type member accessor pair's setter parameter name (to print a divergent pair)
+    Span setter_name; // A type member accessor pair's setter name, when write_node is its annotation (TS2502)
     struct MappedInfo const* template_of; // The template of this mapped type, as a property its properties instantiate
     // Types baseline only: a mapped type's property is declared where the property it maps is (tsc's mapped symbol's
     // declarations), whose annotation is reused when it says the same
@@ -2003,6 +2004,13 @@ bool ty_prop_is_accessor(Prop const* prop); // Its symbol is an accessor (tsc's 
 // What writes to the property are checked against when it differs from what reads get (a `set` accessor whose
 // parameter type isn't the getter's), else null
 Ty const* prop_write_type(Checker* me, Prop const* prop);
+void prop_write_type_slow_touch(Checker* me, Prop const* prop);
+// A union or intersection property is made: tsc's createUnionOrIntersectionProperty asks each member property's write
+// type (getWriteTypeOfSymbol), which resolves a setter's annotation under its own entry, a cycle through it (TS2502)
+// included. Only declared accessors with an annotated setter have one to resolve
+static inline void prop_write_type_touch(Checker* me, Prop const* prop) {
+    if (prop && (prop->target || prop->decl->rare)) prop_write_type_slow_touch(me, prop);
+}
 bool ty_props_identical(Checker* me, Prop const* source, Prop const* target); // tsc's isPropertyIdenticalTo
 // The name of the property's first declaration (instantiations follow their target), invalid if it has none
 Span ty_prop_decl_span(Prop const* prop);
@@ -2718,6 +2726,7 @@ typedef enum ResolvingKind {
     // from going without an entry too (that one is a RESOLVING_FUNCTION_RETURN)
     RESOLVING_ARGUMENT_RETURN,
     RESOLVING_PROP,
+    RESOLVING_PROP_WRITE, // A declared accessor's write type, its setter's annotation (tsc's TypeSystemPropertyNameWriteType)
     RESOLVING_ALIAS,
     RESOLVING_BINDING, // An annotated Binding, or an identifier in a pattern (see ty_binding_type())
     RESOLVING_PATTERN, // A LazyType of a root binding pattern (see lazy_type.c)

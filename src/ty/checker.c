@@ -4781,7 +4781,7 @@ static Span resolving_entry_span(Resolving const* entry) {
             Symbol const* symbol = entry->key;
             if (symbol->decl_count) span = symbol->decls[0].full;
         }   break;
-        case RESOLVING_PROP: span = ((Prop const*)entry->key)->decl->name_span; break;
+        case RESOLVING_PROP: case RESOLVING_PROP_WRITE: span = ((Prop const*)entry->key)->decl->name_span; break;
         case RESOLVING_SIGNATURE_RETURN: {
             Signature const* sig = entry->key;
             span = span_valid(sig->decl_span) ? sig->decl_span : sig->function ? function_error_span(sig->function) : span_null;

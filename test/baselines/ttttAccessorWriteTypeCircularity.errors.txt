@@ -1,0 +1,73 @@
+indexed.ts(4,9): error TS2502: 'x' is referenced directly or indirectly in its own type annotation.
+intersection.ts(4,9): error TS2502: 'x' is referenced directly or indirectly in its own type annotation.
+own.ts(4,9): error TS2502: 'x' is referenced directly or indirectly in its own type annotation.
+query.ts(4,9): error TS2502: 'x' is referenced directly or indirectly in its own type annotation.
+variable.ts(4,9): error TS2502: 'x' is referenced directly or indirectly in its own type annotation.
+variable.ts(8,7): error TS7022: 'r' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+variable.ts(9,7): error TS2322: Type 'any' is not assignable to type 'never'.
+
+
+==== indexed.ts (1 errors) ====
+    export {}
+    class A {
+        get x(): number { return 1; }
+        set x(v: (A | B)["x"]) {}
+            ~
+!!! error TS2502: 'x' is referenced directly or indirectly in its own type annotation.
+    }
+    class B { x = ""; }
+    declare const a: A;
+    a.x = true;
+    
+==== intersection.ts (1 errors) ====
+    export {}
+    class C {
+        get x(): number { return 1; }
+        set x(v: (C & D)["x"] | string) {}
+            ~
+!!! error TS2502: 'x' is referenced directly or indirectly in its own type annotation.
+    }
+    interface D { x: number; }
+    declare const c: C;
+    c.x = true;
+    
+==== own.ts (1 errors) ====
+    export {}
+    class E {
+        get x() { return 1; }
+        set x(v: E["x"]) {}
+            ~
+!!! error TS2502: 'x' is referenced directly or indirectly in its own type annotation.
+    }
+    declare const e: E;
+    e.x = {};
+    
+==== variable.ts (3 errors) ====
+    export {}
+    class F {
+        get x(): number { return 1 }
+        set x(v: typeof r | number) {}
+            ~
+!!! error TS2502: 'x' is referenced directly or indirectly in its own type annotation.
+    }
+    class G { x = 1 }
+    declare const u: F | G;
+    const r = u.x;
+          ~
+!!! error TS7022: 'r' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    const probe: never = r;
+          ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    
+==== query.ts (1 errors) ====
+    export {}
+    class H {
+        get x(): number { return 1 }
+        set x(v: (typeof w)["x"] | string) {}
+            ~
+!!! error TS2502: 'x' is referenced directly or indirectly in its own type annotation.
+    }
+    class I { x = 1 }
+    declare const w: H | I;
+    w.x = "s";
+    
