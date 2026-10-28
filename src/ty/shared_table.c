@@ -30,13 +30,15 @@ typedef struct Shard {
     Slots* _Atomic slots;
     pthread_mutex_t lock;
     u32 len;
-    char pad[40];
+    u32 locked, contended;
+    char pad[4];
 } Shard;
 #else
 typedef struct Shard {
     alignas(64) Slots* _Atomic slots;
     alignas(64) pthread_mutex_t lock;
     u32 len;
+    u32 locked, contended; // TTTT_GRAPH_STATS (wrapping past 4G: statistics)
 } Shard;
 #endif
 
@@ -70,6 +72,23 @@ static void shards_init(Shard* shards, ZeroPages* pages, size_t slot_size) {
 static void shards_drop(Shard* shards) {
     for (u32 i = 0; i < SHARDS; i++) pthread_mutex_destroy(&shards[i].lock);
 }
+
+extern bool graph_stats_on; // (ty/graph.h)
+// (TTTT_GRAPH_STATS: the shard's inserts and those that found its lock taken, counted under the lock, on its line)
+static inline void shard_lock(Shard* shard) {
+    bool contended = pthread_mutex_trylock(&shard->lock) != 0;
+    if (contended) pthread_mutex_lock(&shard->lock);
+    if (graph_stats_on) {
+        shard->locked++;
+        shard->contended += contended;
+    }
+}
+
+static void shards_contention(Shard const* shards, u64* locked, u64* contended) {
+    for (u32 i = 0; i < SHARDS; i++) *locked += shards[i].locked, *contended += shards[i].contended;
+}
+
+void shared_table_contention(SharedTable const* me, u64* locked, u64* contended) { shards_contention(my shards, locked, contended); }
 
 static u64 shards_len(Shard const* shards) {
     u64 ret = 0;
@@ -138,7 +157,7 @@ static u64 const* block_words(void const** block, u32 count) {
 u64 shared_table_insert(SharedTable* me, u64 hash, void const** block, u32 count, void const*** out) {
     Shard* shard = &my shards[shard_of(hash)];
     u64 const* words = block_words(block, count);
-    pthread_mutex_lock(&shard->lock);
+    shard_lock(shard);
     Slots* slots = atomic_load_explicit(&shard->slots, memory_order_relaxed);
     Slot* slot = probe(slots, hash, words, count);
     if (atomic_load_explicit(&slot->hash, memory_order_relaxed)) {
@@ -236,7 +255,7 @@ void const* shared_links_get(SharedLinks const* me, u64 key) {
 void const* shared_links_insert(SharedLinks* me, u64 key, void const* value) {
     u64 hash = link_hash(key);
     Shard* shard = &my shards[shard_of(hash)];
-    pthread_mutex_lock(&shard->lock);
+    shard_lock(shard);
     LinkSlots* slots = (LinkSlots*)atomic_load_explicit(&shard->slots, memory_order_relaxed);
     LinkSlot* slot = link_probe(slots, hash, key);
     if (atomic_load_explicit(&slot->key, memory_order_relaxed)) {
@@ -263,3 +282,5 @@ void const* shared_links_insert(SharedLinks* me, u64 key, void const* value) {
     pthread_mutex_unlock(&shard->lock);
     return value;
 }
+
+void shared_links_contention(SharedLinks const* me, u64* locked, u64* contended) { shards_contention(my shards, locked, contended); }

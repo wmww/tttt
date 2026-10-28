@@ -27,3 +27,6 @@ void const* shared_links_get(SharedLinks const* me, u64 key); // LinkTable's key
 // Inserts unless the key is there: the value there after
 void const* shared_links_insert(SharedLinks* me, u64 key, void const* value);
 u64 shared_links_len(SharedLinks const* me);
+// TTTT_GRAPH_STATS: inserts, and those that found their shard locked (added to)
+void shared_table_contention(SharedTable const* me, u64* locked, u64* contended);
+void shared_links_contention(SharedLinks const* me, u64* locked, u64* contended);

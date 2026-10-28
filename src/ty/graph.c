@@ -1039,6 +1039,17 @@ void graph_print_stats(TyGraph const* me) {
     u64 pairs = 0;
     for (u32 w = 1; w <= my checkers && w < 64; w++) if (my workers[w]) pairs += my workers[w]->relation_pairs;
     eprintln("graph: relation pairs computed ", pairs);
+    {
+        u64 locked[4] = {}, contended[4] = {};
+        shared_table_contention(my types, &locked[0], &contended[0]);
+        shared_table_contention(my links, &locked[0], &contended[0]);
+        shared_table_contention(my intersection_props, &locked[0], &contended[0]);
+        shared_links_contention(my node_links, &locked[1], &contended[1]);
+        shared_links_contention(my variance_slots, &locked[1], &contended[1]);
+        for (u32 i = 0; i < TY_RELATION_COUNT; i++) shared_links_contention(my relations[i], &locked[2], &contended[2]);
+        eprintln("graph: shard locks taken (found taken): tables ", locked[0], " (", contended[0], "), links ", locked[1], " (",
+            contended[1], "), relations ", locked[2], " (", contended[2], ")");
+    }
     u64 deep = 0;
     for (u32 w = 1; w <= my checkers && w < 64; w++) if (my workers[w]) deep += my workers[w]->deep_cuts;
     eprintln("graph: deep-nesting cuts ", deep, " (taint events, plan 86 stage 4f)");
