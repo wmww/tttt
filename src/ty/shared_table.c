@@ -100,10 +100,14 @@ void shared_table_drop(SharedTable* me) {
 u64 shared_table_len(SharedTable const* me) { return shards_len(my shards); }
 u32 shared_table_shard(u64 hash) { return shard_of(hash); }
 
+// (A block keeps the key's count in the top 16 bits of its word 0, InternTable's layout: `words` may be a block's own
+// words or the maker's)
 static bool key_is(void const* const* block, u64 const* words, u32 count) {
     u64 const* key = (u64 const*)(block + 1);
     if (count >= INTERN_LONG && *key++ != count) return false;
-    for (u32 k = 0; k < count; k++) if (key[k] != words[k]) return false;
+    if (!count) return true;
+    if (key[0] != (words[0] | (u64)(count < INTERN_LONG ? count : INTERN_LONG) << 48)) return false;
+    for (u32 k = 1; k < count; k++) if (key[k] != words[k]) return false;
     return true;
 }
 

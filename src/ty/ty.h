@@ -44,19 +44,22 @@ typedef struct Atom {
 static inline csview atom_sv(Atom const* me) { return me ? csview_from_n(my str, my len) : c_sv(""); }
 
 // Intern table: open addressing, keys are arrays of u64 words (a kind tag followed by ids/pointers/bits), values are
-// pointers. Used for every kind of identity in the checker.
-typedef struct InternEntry {
-    // The key's hash (never 0: 0 is an empty slot), its top 16 bits the key's word count (INTERN_LONG_KEY: in the block)
-    u64 hash;
-    // Arena-allocated: the value, then the key's words (after the word count when it's INTERN_LONG_KEY or more). The
-    // atoms table has the Atom here instead
-    void const** block;
-} InternEntry;
-
+// pointers. Used for every kind of identity in the checker (agents/notes/intern_tables.md).
+// A slot is a u64, 0 when empty: its high 32 bits the key's hash's low 32 (the ones table_index() reads, so the slot
+// says where the key goes when the table grows) with bit 0 set (occupied) and bit 1 INTERN_FAR's; its low 32 bits
+// where the key's block is: a signed offset in words from InternTable.base, or with INTERN_FAR an index into
+// InternTable.far.
+// The block (arena-allocated, never moved: callers keep pointers to it) is the value, then a long key's word count (0xffff
+// words or more), then the key's words with min(count, 0xffff) in the top 16 bits of the first (every kind's first word
+// is below 2^48; a key of no words has a 0 placeholder). With --shared-graph the full hash is in the word before it
+#define INTERN_FAR (2ull << 32)
 typedef struct InternTable {
-    InternEntry* entries;
+    u64* slots;
     u32 cap; // power of two or 0
     u32 len;
+    char const* base; // The first block put: near blocks are within 2^31 words of it
+    void const*** far; // Blocks further away (never seen in practice: a process mapping 16 GB between the two)
+    u32 far_len, far_cap;
     // With --shared-graph (ty/graph.h): the graph's table of the same keys, looked up when this one misses. Null otherwise
     struct SharedTable* shared;
     // `shared` once another checker reads it, null while this one is alone on the graph (`--checkers 1`): what a miss
@@ -67,6 +70,24 @@ typedef struct InternTable {
     // hit looks in. Null otherwise
     struct MemoTaint const* taint;
 } InternTable;
+
+// The block of an occupied slot
+static inline void const** intern_slot_block(InternTable const* table, u64 slot) {
+    if (__builtin_expect(slot & INTERN_FAR, 0)) return table->far[(u32)slot];
+    return (void const**)(table->base + (int64_t)(int32_t)(u32)slot * 8);
+}
+// A block's key: its word count, and its words (the first with the count in its top 16 bits: mask it with
+// INTERN_WORD0_MASK for the word the caller gave)
+#define INTERN_WORD0_MASK 0x0000ffffffffffffull
+static inline u32 intern_block_count(void const* const* block) {
+    u64 w = ((u64 const*)block)[1];
+    return w >> 48 ? (u32)(w >> 48) : (u32)w;
+}
+static inline u64 const* intern_block_words(void const* const* block, u32 count) {
+    return (u64 const*)block + 1 + (count >= 0xffffu);
+}
+// The key's hash as intern tables and the shared tables take it (recomputed from the block)
+u64 intern_block_hash(void const* const* block);
 
 // The commonest two-word keys of Checker.links, (kind, AST node or other address) -> value, with the key in the entry
 // itself: no arena block, no hash to keep (vscode: 3.5M of them). See ty_link_get()

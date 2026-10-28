@@ -451,15 +451,15 @@ void graph_fp_memo(u32 kind, void const** block, u64 const* words, u32 count) {
 
 static void record_table(Checker* c, InternTable const* table) {
     for (u32 i = 0; i < table->cap; i++) {
-        InternEntry const* entry = &table->entries[i];
-        if (!entry->hash || !entry->block || !entry->block[0]) continue;
-        u32 count = (u32)(entry->hash >> 48);
-        u64 const* words = (u64 const*)(entry->block + 1);
-        if (count == 0xffffu) count = (u32)*words++;
+        if (!table->slots[i]) continue;
+        void const** block = intern_slot_block(table, table->slots[i]);
+        if (!block[0]) continue;
+        u32 count = intern_block_count(block);
+        u64 const* words = intern_block_words(block, count);
         if (!count) continue;
         u32 kind = (u32)(words[0] & 255);
         if (kind >= 160 || graph_kind_class(kind) != GRAPH_MEMO) continue;
-        memo_entry(c, kind, entry->block, words, count);
+        memo_entry(c, kind, block, words, count);
     }
 }
 

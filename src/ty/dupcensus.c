@@ -149,12 +149,19 @@ static void census_add_locked(Checker* me, u32 share) {
     for (u32 t = 0; t < 2; t++) {
         InternTable* table = tables[t];
         for (u32 i = 0; i < table->cap; i++) {
-            InternEntry const* entry = &table->entries[i];
-            if (!entry->hash || !entry->block) continue;
-            u32 count = (u32)(entry->hash >> 48);
-            u64 const* words = (u64 const*)(entry->block + 1);
-            if (count >= INTERN_LONG_KEY) count = (u32)*words++;
+            if (!table->slots[i]) continue;
+            void const** block = intern_slot_block(table, table->slots[i]);
+            u32 count = intern_block_count(block);
             if (!count) continue;
+            // (Word 0 as the key's maker gave it, without the count the block keeps above it)
+            u64 words_buf[64];
+            u64 const* stored = intern_block_words(block, count);
+            u64 const* words = stored;
+            if (count <= 64) {
+                memcpy(words_buf, stored, sizeof(u64) * count);
+                words_buf[0] &= INTERN_WORD0_MASK;
+                words = words_buf;
+            }
             u32 kind = (u32)(words[0] & 255);
             u64 fp = fp_key(me, kind, words, count);
             if (!fp) {

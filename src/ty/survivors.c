@@ -306,17 +306,15 @@ static bool key_survives(Checker const* me, u64 const* key, u32 len) {
 
 static void table_pend(InternTable const* table, bool atoms, u32 forced_kind) {
     for (u32 i = 0; i < table->cap; i++) {
-        InternEntry const* entry = &table->entries[i];
-        if (!entry->hash) continue;
+        if (!table->slots[i]) continue;
+        void const** entry_block = intern_slot_block(table, table->slots[i]);
         if (atoms) {
-            pend((Pending){ .block = (uintptr_t)entry->block, .value = (uintptr_t)entry->block, .kind = 255 });
+            pend((Pending){ .block = (uintptr_t)entry_block, .value = (uintptr_t)entry_block, .kind = 255 });
             continue;
         }
-        u64 const* block = (u64 const*)entry->block;
-        u32 count = (u32)(entry->hash >> 48);
-        bool long_key = count == 0xffff;
-        if (long_key) count = (u32)block[1];
-        u64 const* key = block + 1 + long_key;
+        u64 const* block = (u64 const*)entry_block;
+        u32 count = intern_block_count(entry_block);
+        u64 const* key = intern_block_words(entry_block, count);
         u32 kind = forced_kind ? forced_kind : count ? (u32)(key[0] & 255) : 0;
         pend((Pending){ .block = (uintptr_t)block, .value = (uintptr_t)block[0], .key = key + 1, .key_len = count ? count - 1 : 0, .kind = kind });
     }

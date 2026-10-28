@@ -265,10 +265,9 @@ static u64 graph_link_key(u32 kind, void const* subject) {
     return (u64)(kind + 1) << 56 | (u64)(uintptr_t)subject;
 }
 
-static u32 block_kind(InternTable const* table, Checker const* checker, InternEntry const* entry, u32* count) {
-    u32 n = (u32)(entry->hash >> 48);
-    u64 const* key = (u64 const*)(entry->block + 1);
-    if (n == 0xffffu) n = (u32)*key++;
+static u32 block_kind(InternTable const* table, Checker const* checker, void const* const* block, u32* count) {
+    u32 n = intern_block_count(block);
+    u64 const* key = intern_block_words(block, n);
     *count = n;
     if (table == &checker->intersection_props) return GRAPH_KIND_INTERSECTION_PROPS;
     return n ? (u32)(key[0] & 255) : 0;
@@ -276,22 +275,23 @@ static u32 block_kind(InternTable const* table, Checker const* checker, InternEn
 
 static void publish_table(TyGraph* me, Checker* checker, InternTable* private_table, SharedTable* shared) {
     for (u32 i = 0; i < private_table->cap; i++) {
-        InternEntry const* entry = &private_table->entries[i];
-        if (!entry->hash) continue;
+        if (!private_table->slots[i]) continue;
+        void const** block = intern_slot_block(private_table, private_table->slots[i]);
         u32 count;
-        u32 kind = block_kind(private_table, checker, entry, &count);
+        u32 kind = block_kind(private_table, checker, block, &count);
         KindStats* stats = &my stats[kind];
         GraphClass class = graph_kind_class(kind);
         if (class == GRAPH_SCRATCH) {
             GRAPH_STAT_ADD(&stats->scratch, 1, __ATOMIC_RELAXED);
             continue;
         }
-        if (!entry->block[0]) {
+        if (!block[0]) {
             GRAPH_STAT_ADD(&stats->unfinished, 1, __ATOMIC_RELAXED);
             continue;
         }
         void const** there;
-        if (shared_table_insert(shared, entry->hash, entry->block, count, &there)) GRAPH_STAT_ADD(&stats->published, 1, __ATOMIC_RELAXED);
+        // (A block put before graph_new() linked the tables has no hash before it)
+        if (shared_table_insert(shared, intern_block_hash(block), block, count, &there)) GRAPH_STAT_ADD(&stats->published, 1, __ATOMIC_RELAXED);
     }
 }
 
@@ -307,12 +307,13 @@ static void publish_identities(TyGraph* me, Checker* checker) {
     SharedTable* shared[2] = { my types, my links };
     for (u32 t = 0; t < 2; t++) {
         for (u32 i = 0; i < tables[t]->cap; i++) {
-            InternEntry const* entry = &tables[t]->entries[i];
-            if (!entry->hash || !entry->block[0]) continue;
+            if (!tables[t]->slots[i]) continue;
+            void const** block = intern_slot_block(tables[t], tables[t]->slots[i]);
+            if (!block[0]) continue;
             u32 count;
-            if (graph_kind_class(block_kind(tables[t], checker, entry, &count)) != GRAPH_IDENTITY) continue;
+            if (graph_kind_class(block_kind(tables[t], checker, block, &count)) != GRAPH_IDENTITY) continue;
             void const** there;
-            shared_table_insert(shared[t], entry->hash, entry->block, count, &there);
+            shared_table_insert(shared[t], intern_block_hash(block), block, count, &there);
         }
     }
     link_table_each(&checker->node_links, publish_identity_link, me);
@@ -326,14 +327,13 @@ void graph_check_unshared(TyGraph* me, Checker* checker) {
     u64 by_kind[256] = {0};
     for (u32 t = 0; t < 2; t++) {
         for (u32 i = 0; i < tables[t]->cap; i++) {
-            InternEntry const* entry = &tables[t]->entries[i];
-            if (!entry->hash || !entry->block[0]) continue;
+            if (!tables[t]->slots[i]) continue;
+            void const** block = intern_slot_block(tables[t], tables[t]->slots[i]);
+            if (!block[0]) continue;
             u32 count;
-            u32 kind = block_kind(tables[t], checker, entry, &count);
+            u32 kind = block_kind(tables[t], checker, block, &count);
             if (graph_kind_class(kind) != GRAPH_IDENTITY) continue;
-            u64 const* key = (u64 const*)(entry->block + 1);
-            if (count >= 0xffffu) key++;
-            if (!shared_table_find(shared[t], entry->hash, key, count)) by_kind[kind & 255]++;
+            if (!shared_table_find(shared[t], intern_block_hash(block), intern_block_words(block, count), count)) by_kind[kind & 255]++;
         }
     }
     for (u32 k = 0; k < 256; k++) {
