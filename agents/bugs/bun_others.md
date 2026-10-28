@@ -171,6 +171,70 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   (a rest tuple intersected with conflicting discriminants, a template-literal discriminant under `as const`), not
   analysed further. [open]
 
+### 2026-10-29 (worker bun2): the parser keys
+The cases whose TS1xxx diagnostics differ, by mechanism (tsgo's parser is `internal/parser/parser.go`; grammar errors
+tttt's parser reports are tsgo's checker's, see `grammar_error()`).
+- Grammar errors tttt's parser reports where tsc's checker stops at an earlier grammar error of the same node (its
+  `||` chains: checkGrammarClassLikeDeclaration's heritage clauses then type parameters, checkGrammarModifiers before
+  the statement's own checks, TS1036 in an ambient block, TS1358 before the tag's type arguments) or never looks
+  (import type arguments, an ExpressionWithTypeArguments past TS1174/TS1172/TS1175, the initializers of a function
+  type's parameters): +TS1009 28-C10a 28-C26d 28-P6a 28-P6b 28-P6c 28-P7b 02-C21a, +TS1099 02-C21a 28-C10b 28-C11b
+  28-P8a 28-P8b 51-L12 56-L20, +TS1098 28-C23 84-R02c 56-L20, +TS1174/TS1172/TS1173 56-L20 62-L12 84-R02c, 56-L09
+  (TS1326 before TS1174). [open]
+- Decorators followed by something other than a class: tsc's parseDeclarationWorker dispatches on the keyword after
+  the decorators and modifiers (`@dec import(...)` an import declaration, TS1141; `@dec interface class {}` an
+  interface, TS1359; `@dec export;` an export declaration, '{' expected; `@dec in class` the `in` modifier, TS1274)
+  and says TS1146 "Declaration expected" only when none matches, at the token there; a class member `@a;`/`@a }` is
+  TS1146 at the token after the decorator (tttt: TS1068 at the decorator). tttt says TS1146 at the decorator's end
+  and recovers from there (+TS1128, +TS1109): 28-P4b 32-C25 32-C25b 32-C25c 34-P5 53-L16b (TS1180 in an object
+  binding) 57-L02b 57-L02c 57-L02f 61-L14 84-R08c 84-R08d. [open]
+- Modifiers on an object literal's methods: tsc's checkGrammarMethod runs the whole checkGrammarModifiers first
+  (TS1244 abstract, TS1024 readonly, TS1028/TS1029/TS1040...) and says TS1184 only when that passes; `readonly` stays
+  a modifier of the property (TS2540 on assignments, 53-L18); a method without a body (`{ abstract e(): void }`) is
+  fine to the parser (tttt: '{' expected, TS1005). +TS1184 02-C13b 28-C18a 32-C10a 32-C10c 32-C10d 53-L18, 02-C13c
+  (TS2676 for abstract accessors). A class expression with modifiers in an expression (`@dec public class {}`,
+  80-R08: tsc parses them, TS1184). [open]
+- Decorators on the parameters of signatures (function and constructor types, interface members, `@await` in an
+  async body): tsc's parseParameter takes them (TS1206 from the checker, TS1109 for `@await`); tttt fails the type
+  and cascades (+TS1005 +TS1109 +TS1128 +TS1131 +TS1146 +TS1434): 56-L14b 83-R20a. JavaScript `function h(export
+  @dec x)`: modifiers before decorators, TS8012 (tttt TS1359): 84-R01. [open]
+- `yield` takes an operand only on the same line and is an AssignmentExpression (no `?:` or binary operator after
+  it): -TS1109/-TS1005 43-X6a 43-X6b 43-X6c 43-X6e. [open]
+- A private name where an identifier is expected outside classes: tsc parses `#a` as the name (TS2304 "Cannot find
+  name '#a'" for a JSX tag or type reference, TS18016 after `asserts`) and takes it as an import attribute key or a
+  JSX attribute name without complaint: 43-P8e 43-X5f 56-L19 80-R01a 80-R01b 43-C13d (+TS1003 +TS1005 +TS1109
+  +TS1110 +TS1144 +TS1478). [open]
+- `await` at the top level of a module in a computed property name or a type parameter list: tsc's
+  parseIdentifier says TS1262 and the name is an identifier (TS2304), tttt TS1109; `<await>(x: await) => x` isn't
+  an arrow to tsc: 56-L11 93-P01b 74-R15d. [open]
+- JSX lexing and recovery: attribute names and values (`b=>x`, `<a << />`, `<a /= />`, a comment before a value,
+  backslashes in attribute strings: 43-C13e 43-C13f 43-C13g 43-C5c), `<<`/`<=` after a tag name (tsc scans one token:
+  43-C4b 93-P04a 93-P04c 93-P04d 93-P04e), a merge conflict marker among the children (tsc ends the element there:
+  43-P7b 43-X5h 74-R16a 74-R16b 74-R16c), TSX generic arrows `<T,>x => x` and `</T>` in type parameter lists
+  (56-L05b 56-L06). ±TS1003 ±TS1005 ±TS1109 ±TS1128 +TS1139 +TS1145. [open]
+- Escaped keywords: `\u0065lse;` is the keyword to tsc's statement parser (TS1128, TS1135 as an argument: 82-R17c
+  82-R17e); an escaped modifier before a line break or a conflict marker isn't one (tttt +TS1260: 83-R03a 93-P05);
+  `keyof n\u0065w () => Z` (83-R03c); `d\u0065fault class: 1` (61-L16). [open]
+- Arrow and type-argument speculation: `async <T extends object>(x: T)` at EOF, `async <T extends U>(x: any);`
+  (57-L18 56-L10), `<T>(x?: number);` (74-R15e), `f((a, ...) => 1)` (83-R13a d16), `f<new>(x)`, `f<import(>(x)`,
+  `f<abstract new>(x)` (83-R01b), `@null! as typeof mk<number>|` (93-P02b), `a?..b` (92-R02b), `a?.<T>\`x\``
+  (92-R02h: type arguments after `?.`, then TS1358). [open]
+- JSDoc parsing: `@import a-b from` (43-C8e), `{@link Map#delete}` reserved words TS1359 and `{@link Map.}` (54-L07b),
+  `@augments {A<=}`/`{A<<=}` and `{<>}`/`Array<<>>` (56-L01 56-L20b), `function () {}` with `@overload` in JS
+  (61-L17, TS1003 twice), `typeof a..b` (84-R04), `@import yield`/`{ A as await }` in generators and async functions
+  (92-R03b 92-R03d), type literal members `static {}` and `[` (92-R07a 92-R07b 92-R07f). [open]
+- Declaration and statement recovery: `default` as a member modifier (61-L15b: TS1070, TS1029), contextual-keyword
+  declarations with a missing name (`type )`, `interface ]`, a class member `interface? )`, `throw type { A }`:
+  96-SOLID1), `export *` and `export type *` at EOF (TS1109 then 'from' expected:
+  export-from-without-a-module-specifier-where-declarations-are-emitted), `export * as`/`super`/`new.` at EOF
+  (43-P9d 43-P9h 43-P9l), `(this?: any) => void` (34-P6a: one ',' expected), `import("m" | "n")` (32-C24a: TS1141),
+  `typeof Array<<T>() => T>` (43-C4d), `(x = €) => x` (43-C14a: TS1127 only), an unterminated template at EOF
+  (93-P03a 93-P03b: no ')' expected), a JS object literal method without a body (80-R09b: TS8017),
+  `@dec get x(): number;` in a class (34-C16: no '{' expected). [open]
+- Ambient contexts: TS1183 for each function body in a `declare` member's initializer and for an accessor body in an
+  ambient type literal (53-L15 61-L09), the initializers of `declare const {} = ...` not checked (52-L05: +TS2304
+  +TS1183 +TS1039), `declare export default (...)` (80-R04: TS1120, tttt TS1029). [open]
+
 ## Not looked at, by code
 - Each paragraph below is a code and direction with the cases it mismatches in, uninvestigated: at least one open
   root cause each, counted here once. [open]
