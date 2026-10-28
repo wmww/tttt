@@ -1,0 +1,147 @@
+//// [test/cases/ttttClassMemberCommaKeyGrammar.ts] ////
+
+=== ttttClassMemberCommaKeyGrammar.ts ===
+// A class member whose modifiers (checkGrammarModifiers, in the parser) or signature (parameter list, accessor,
+// generator checks) fail tsc's grammar checks gets no TS1166/TS1168/TS1171 for its computed name (bun_others.md)
+declare var a: string, b: string;
+>a : Symbol(a, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 11))
+>b : Symbol(b, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 22))
+
+class C {
+>C : Symbol(C, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 33))
+
+    public public [a.length, b]: number;
+>[a.length, b] : Symbol(C[a.length, b], Decl(ttttClassMemberCommaKeyGrammar.ts, 3, 9))
+>a.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 11))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>b : Symbol(b, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 22))
+
+    static public [a.length, b]: number;
+>[a.length, b] : Symbol(C[a.length, b], Decl(ttttClassMemberCommaKeyGrammar.ts, 4, 40))
+>a.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 11))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>b : Symbol(b, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 22))
+
+    public [a.length, b](...x: number[], y: number) {}
+>[a.length, b] : Symbol(C[a.length, b], Decl(ttttClassMemberCommaKeyGrammar.ts, 5, 40))
+>a.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 11))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>b : Symbol(b, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 22))
+>x : Symbol(x, Decl(ttttClassMemberCommaKeyGrammar.ts, 6, 25))
+>y : Symbol(y, Decl(ttttClassMemberCommaKeyGrammar.ts, 6, 40))
+
+    get [a.length, b](x: number) { return 1; }
+>[a.length, b] : Symbol(C[a.length, b], Decl(ttttClassMemberCommaKeyGrammar.ts, 6, 54))
+>a.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 11))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>b : Symbol(b, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 22))
+>x : Symbol(x, Decl(ttttClassMemberCommaKeyGrammar.ts, 7, 22))
+
+    set [a.length, b]() {}
+>[a.length, b] : Symbol(C[a.length, b], Decl(ttttClassMemberCommaKeyGrammar.ts, 7, 46))
+>a.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 11))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>b : Symbol(b, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 22))
+
+    get [a.length, b]<T>() { return 1; }
+>[a.length, b] : Symbol(C[a.length, b], Decl(ttttClassMemberCommaKeyGrammar.ts, 8, 26))
+>a.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 11))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>b : Symbol(b, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 22))
+>T : Symbol(T, Decl(ttttClassMemberCommaKeyGrammar.ts, 9, 22))
+
+    private [a.length, b]?(a?: number = 1) {}
+>[a.length, b] : Symbol(C[a.length, b], Decl(ttttClassMemberCommaKeyGrammar.ts, 9, 40))
+>a.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 11))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>b : Symbol(b, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 22))
+>a : Symbol(a, Decl(ttttClassMemberCommaKeyGrammar.ts, 10, 27))
+
+    async [a.length, b]: number;
+>[a.length, b] : Symbol(C[a.length, b], Decl(ttttClassMemberCommaKeyGrammar.ts, 10, 45))
+>a.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 11))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>b : Symbol(b, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 22))
+
+    [a.length, b](x: number) {}
+>[a.length, b] : Symbol(C[a.length, b], Decl(ttttClassMemberCommaKeyGrammar.ts, 11, 32))
+>a.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 11))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>b : Symbol(b, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 22))
+>x : Symbol(x, Decl(ttttClassMemberCommaKeyGrammar.ts, 12, 18))
+
+    declare [a.length, b](): void;
+>[a.length, b] : Symbol(C[a.length, b], Decl(ttttClassMemberCommaKeyGrammar.ts, 12, 31))
+>a.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 11))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>b : Symbol(b, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 22))
+
+    accessor [a.length, b]() {}
+>[a.length, b] : Symbol(C[a.length, b], Decl(ttttClassMemberCommaKeyGrammar.ts, 13, 34))
+>a.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 11))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>b : Symbol(b, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 22))
+
+    readonly [a.length, b]() {}
+>[a.length, b] : Symbol(C[a.length, b], Decl(ttttClassMemberCommaKeyGrammar.ts, 14, 31))
+>a.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 11))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>b : Symbol(b, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 22))
+
+    export [a.length, b]: number;
+>[a.length, b] : Symbol(C[a.length, b], Decl(ttttClassMemberCommaKeyGrammar.ts, 15, 31))
+>a.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 11))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>b : Symbol(b, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 22))
+}
+class D {
+>D : Symbol(D, Decl(ttttClassMemberCommaKeyGrammar.ts, 17, 1))
+
+    [a.length, b](x: number) {}
+>[a.length, b] : Symbol(D[a.length, b], Decl(ttttClassMemberCommaKeyGrammar.ts, 18, 9))
+>a.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 11))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>b : Symbol(b, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 22))
+>x : Symbol(x, Decl(ttttClassMemberCommaKeyGrammar.ts, 19, 18))
+
+    get [a.length, b]() { return 1; }
+>[a.length, b] : Symbol(D[a.length, b], Decl(ttttClassMemberCommaKeyGrammar.ts, 19, 31))
+>a.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 11))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>b : Symbol(b, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 22))
+
+    m<T>(...x: number[]) {}
+>m : Symbol(D.m, Decl(ttttClassMemberCommaKeyGrammar.ts, 20, 37))
+>T : Symbol(T, Decl(ttttClassMemberCommaKeyGrammar.ts, 21, 6))
+>x : Symbol(x, Decl(ttttClassMemberCommaKeyGrammar.ts, 21, 9))
+
+    *[a.length, b]() {}
+>[a.length, b] : Symbol(D[a.length, b], Decl(ttttClassMemberCommaKeyGrammar.ts, 21, 27))
+>a.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 11))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>b : Symbol(b, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 22))
+
+    [a.length, b](): void;
+>[a.length, b] : Symbol(D[a.length, b], Decl(ttttClassMemberCommaKeyGrammar.ts, 22, 23))
+>a.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 11))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>b : Symbol(b, Decl(ttttClassMemberCommaKeyGrammar.ts, 2, 22))
+}
+

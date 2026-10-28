@@ -1067,6 +1067,19 @@ void function_impl_check_unused_renamings(FunctionImpl const* me, ErrorCtx* errs
     for_each (i, vec_function_arg, &my args) binding_check_unused_renamings(me, &i->initializer.binding, i, errs);
 }
 
+bool function_impl_member_grammar_fails(FunctionImpl const* me, ErrorCtx* errs) {
+    ErrorCtx scratch = error_ctx_scratch(errs);
+    bool fails = function_impl_check_grammar_parameters(me, &scratch);
+    if (!fails) {
+        function_impl_check_use_strict_parameters(me, &scratch);
+        fails = vec_error_size(&scratch.errors);
+    }
+    if (!fails && my accessor && span_valid(function_impl_member_name(me))) fails = function_impl_check_grammar_accessor(me, &scratch);
+    if (!fails && span_valid(function_impl_rare(me)->asterisk)) fails = my ambient || !my has_body;
+    error_ctx_drop(&scratch);
+    return fails;
+}
+
 void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, ErrorCtx* errs) {
     if (!my has_body && span_source(my full_span) && !span_source(my full_span)->is_declaration) {
         for_each (i, vec_function_arg, &my args) binding_check_unused_renamings(me, &i->initializer.binding, i, errs);

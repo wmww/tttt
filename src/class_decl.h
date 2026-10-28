@@ -31,6 +31,9 @@ typedef struct ClassItem {
     // CLASS_ITEM_CONSTRUCTOR: a JavaScript JSDoc `@readonly` (TS1024; tsgo's reparser makes it a modifier, which
     // declaration emit keeps)
     bool jsdoc_readonly;
+    // A method's, accessor's or field's modifiers failed tsc's checkGrammarModifiers (the parser reports that), which
+    // ends the member's grammar checks: no TS1166/TS1168/TS1171 for its computed name
+    bool modifiers_reported;
     // A method, accessor or field with a written name: the first declaration of the member symbol tsc's binder puts it
     // in, itself if it stands alone because it conflicts with what came first (`x: T; get x()`) or is that first one
     // (see bind_member_symbols()). Set when looking up names, null for other items

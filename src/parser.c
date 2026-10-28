@@ -9828,7 +9828,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                 is_setter ? MODIFIED_SET_ACCESSOR :
                 is_type ? MODIFIED_METHOD_SIGNATURE :
                 MODIFIED_METHOD;
-            check_modifiers(&p, &modifiers, modified);
+            bool modifier_reported = check_modifiers(&p, &modifiers, modified);
             if (is_type && func.has_body) {
                 // (The body: from the `{` after the parameters and the return type to the end)
                 char const* at = span_valid(function_impl_ret_span(&func)) && span_end_ptr(function_impl_ret_span(&func)) > span_end_ptr(function_impl_args_span(&func)) ?
@@ -9855,7 +9855,8 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                     .computed_key = computed_key,
                     .func = func,
                     .accessor = is_getter ? CLASS_ACCESSOR_GET : (is_setter ? CLASS_ACCESSOR_SET : CLASS_ACCESSOR_NONE),
-                }
+                },
+                .modifiers_reported = modifier_reported,
             };
         } else {
             bool is_definitely_field = false;
@@ -9886,7 +9887,8 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                     .name_span = name_span,
                     .name_is_value = name_is_value,
                     .computed_key = computed_key,
-                }
+                },
+                .modifiers_reported = modifier_reported,
             };
 
             Binding binding = { .content_span = name_span }; // (Only for the file of the type's span)

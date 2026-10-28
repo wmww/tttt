@@ -387,8 +387,8 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
 Grammar check order (tsgo's `||` chains and early returns), ambient contexts from a `declare` modifier, and CommonJS
 files not being external modules; each with a `test/cases/tttt*.ts` repro.
 - TS1171 (a comma computed key): the checker's, after TS1166/TS1168/TS1169/TS1170, never in a destructuring target;
-  a type member's `[a, b]` parses (28-C12, 02-C10). [fixed 96c163d66, d31d2030d] Still ungated: a class member's
-  parse-time modifier errors and checkGrammarFunctionLikeDeclaration's. [open]
+  a type member's `[a, b]` parses (28-C12, 02-C10). [fixed 96c163d66, d31d2030d] A class member's parse-time
+  modifier errors and checkGrammarFunctionLikeDeclaration's gate it too (next bullet). [fixed bun8-3]
 - `declare` makes the node ambient: `declare export { }` in a namespace (no TS1194, 28-C33f), `declare export = x` and
   `declare export default x` (TS1120, TS2714, no TS1203/TS1294/TS1029, ambient functions: 03-C17a, 03-C17b, 80-R04), a
   `declare` property's initializer (TS1183, TS1040: 53-L15). [fixed d9791e4e7, 42e45e894, 2467363f3, 5aa94c064]
@@ -476,10 +476,13 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   value, only with a parse error. [open] discriminantPropertyInference's TS2842 x2 is the harness's post-emit count
   (tsc's pre-emit diagnostics have them too: the CLI reports them). [tsgo] errorInfoForRelatedIndexTypes...'s TS6053
   is mutate.py's harness (a `/.lib/react16.d.ts` reference it doesn't serve). [text]
-- Class member TS1171 after the member's own modifier/signature grammar errors (TS1028, TS1029, TS1024, TS1031,
-  TS1244, TS1014, TS1015, TS1094, TS1054, TS1049: tsgo's checkGrammarModifiers || checkGrammarProperty/Method/Accessor
-  chain) is still reported by tttt; its TS1166/TS1168 too. Needs the parser to record which of a member's grammar
-  errors belong to that chain (not those inside its parameters' types or initializers). No bun case. [open]
+- Class member TS1171/TS1166/TS1168 after the member's own modifier or signature grammar errors (tsgo's
+  checkGrammarModifiers || checkGrammarProperty/Method/Accessor chains: TS1028, TS1029, TS1030, TS1031, TS1244...,
+  then a method's or accessor's parameter list, `use strict` parameters, accessor and generator checks): the parser
+  records check_modifiers()'s verdict on the member (ClassItem.modifiers_reported), class_computed_key_typecheck()
+  asks function_impl_member_grammar_fails() (the signature checks into scratch) before reporting (no bun case;
+  ttttClassMemberCommaKeyGrammar). An empty type parameter list (TS1098, the parser's) doesn't gate it yet,
+  nor does tttt gate its own `use strict` TS1346 by the earlier checks. [fixed bun8-3]
 
 ## Not looked at, by code
 - Each paragraph below is a code and direction with the cases it mismatches in, uninvestigated: at least one open

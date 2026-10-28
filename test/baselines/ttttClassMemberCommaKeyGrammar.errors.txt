@@ -1,0 +1,92 @@
+ttttClassMemberCommaKeyGrammar.ts(5,12): error TS1028: Accessibility modifier already seen.
+ttttClassMemberCommaKeyGrammar.ts(5,19): error TS2564: Property '[a.length, b]' has no initializer and is not definitely assigned in the constructor.
+ttttClassMemberCommaKeyGrammar.ts(6,12): error TS1029: 'public' modifier must precede 'static' modifier.
+ttttClassMemberCommaKeyGrammar.ts(7,26): error TS1014: A rest parameter must be last in a parameter list.
+ttttClassMemberCommaKeyGrammar.ts(8,9): error TS1054: A 'get' accessor cannot have parameters.
+ttttClassMemberCommaKeyGrammar.ts(9,9): error TS1049: A 'set' accessor must have exactly one parameter.
+ttttClassMemberCommaKeyGrammar.ts(9,9): error TS7032: Property '[a.length, b]' implicitly has type 'any', because its set accessor lacks a parameter type annotation.
+ttttClassMemberCommaKeyGrammar.ts(10,9): error TS1094: An accessor cannot have type parameters.
+ttttClassMemberCommaKeyGrammar.ts(11,28): error TS1015: Parameter cannot have question mark and initializer.
+ttttClassMemberCommaKeyGrammar.ts(12,5): error TS1042: 'async' modifier cannot be used here.
+ttttClassMemberCommaKeyGrammar.ts(12,11): error TS2564: Property '[a.length, b]' has no initializer and is not definitely assigned in the constructor.
+ttttClassMemberCommaKeyGrammar.ts(13,6): error TS1171: A comma expression is not allowed in a computed property name.
+ttttClassMemberCommaKeyGrammar.ts(14,5): error TS1031: 'declare' modifier cannot appear on class elements of this kind.
+ttttClassMemberCommaKeyGrammar.ts(15,5): error TS1275: 'accessor' modifier can only appear on a property declaration.
+ttttClassMemberCommaKeyGrammar.ts(16,5): error TS1024: 'readonly' modifier can only appear on a property declaration or index signature.
+ttttClassMemberCommaKeyGrammar.ts(17,5): error TS1031: 'export' modifier cannot appear on class elements of this kind.
+ttttClassMemberCommaKeyGrammar.ts(17,12): error TS2564: Property '[a.length, b]' has no initializer and is not definitely assigned in the constructor.
+ttttClassMemberCommaKeyGrammar.ts(20,6): error TS1171: A comma expression is not allowed in a computed property name.
+ttttClassMemberCommaKeyGrammar.ts(21,10): error TS1171: A comma expression is not allowed in a computed property name.
+ttttClassMemberCommaKeyGrammar.ts(23,7): error TS1171: A comma expression is not allowed in a computed property name.
+ttttClassMemberCommaKeyGrammar.ts(24,5): error TS1168: A computed property name in a method overload must refer to an expression whose type is a literal type or a 'unique symbol' type.
+
+
+==== ttttClassMemberCommaKeyGrammar.ts (21 errors) ====
+    // A class member whose modifiers (checkGrammarModifiers, in the parser) or signature (parameter list, accessor,
+    // generator checks) fail tsc's grammar checks gets no TS1166/TS1168/TS1171 for its computed name (bun_others.md)
+    declare var a: string, b: string;
+    class C {
+        public public [a.length, b]: number;
+               ~~~~~~
+!!! error TS1028: Accessibility modifier already seen.
+                      ~~~~~~~~~~~~~
+!!! error TS2564: Property '[a.length, b]' has no initializer and is not definitely assigned in the constructor.
+        static public [a.length, b]: number;
+               ~~~~~~
+!!! error TS1029: 'public' modifier must precede 'static' modifier.
+        public [a.length, b](...x: number[], y: number) {}
+                             ~~~
+!!! error TS1014: A rest parameter must be last in a parameter list.
+        get [a.length, b](x: number) { return 1; }
+            ~~~~~~~~~~~~~
+!!! error TS1054: A 'get' accessor cannot have parameters.
+        set [a.length, b]() {}
+            ~~~~~~~~~~~~~
+!!! error TS1049: A 'set' accessor must have exactly one parameter.
+            ~~~~~~~~~~~~~
+!!! error TS7032: Property '[a.length, b]' implicitly has type 'any', because its set accessor lacks a parameter type annotation.
+        get [a.length, b]<T>() { return 1; }
+            ~~~~~~~~~~~~~
+!!! error TS1094: An accessor cannot have type parameters.
+        private [a.length, b]?(a?: number = 1) {}
+                               ~
+!!! error TS1015: Parameter cannot have question mark and initializer.
+        async [a.length, b]: number;
+        ~~~~~
+!!! error TS1042: 'async' modifier cannot be used here.
+              ~~~~~~~~~~~~~
+!!! error TS2564: Property '[a.length, b]' has no initializer and is not definitely assigned in the constructor.
+        [a.length, b](x: number) {}
+         ~~~~~~~~~~~
+!!! error TS1171: A comma expression is not allowed in a computed property name.
+        declare [a.length, b](): void;
+        ~~~~~~~
+!!! error TS1031: 'declare' modifier cannot appear on class elements of this kind.
+        accessor [a.length, b]() {}
+        ~~~~~~~~
+!!! error TS1275: 'accessor' modifier can only appear on a property declaration.
+        readonly [a.length, b]() {}
+        ~~~~~~~~
+!!! error TS1024: 'readonly' modifier can only appear on a property declaration or index signature.
+        export [a.length, b]: number;
+        ~~~~~~
+!!! error TS1031: 'export' modifier cannot appear on class elements of this kind.
+               ~~~~~~~~~~~~~
+!!! error TS2564: Property '[a.length, b]' has no initializer and is not definitely assigned in the constructor.
+    }
+    class D {
+        [a.length, b](x: number) {}
+         ~~~~~~~~~~~
+!!! error TS1171: A comma expression is not allowed in a computed property name.
+        get [a.length, b]() { return 1; }
+             ~~~~~~~~~~~
+!!! error TS1171: A comma expression is not allowed in a computed property name.
+        m<T>(...x: number[]) {}
+        *[a.length, b]() {}
+          ~~~~~~~~~~~
+!!! error TS1171: A comma expression is not allowed in a computed property name.
+        [a.length, b](): void;
+        ~~~~~~~~~~~~~
+!!! error TS1168: A computed property name in a method overload must refer to an expression whose type is a literal type or a 'unique symbol' type.
+    }
+    

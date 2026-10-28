@@ -925,6 +925,13 @@ static void class_computed_key_typecheck(ClassDecl const* me, ClassItem* item, b
     // tsc's checkGrammarComputedPropertyName, unless an earlier grammar check of the member reported (checkGrammarModifiers,
     // checkGrammarProperty, checkGrammarMethod)
     bool comma = key->tag == EXPR_BINARY_OP && key->binary_op->op == BINARY_OP_COMMA && !expr_is_perenthisized(key);
+    // (checkGrammarModifiers, and a method's or accessor's signature checks, end the member's grammar checks)
+    if (item->modifiers_reported) modifier_error = true;
+    if (!modifier_error && !field && (comma || !item->method.func.has_body) &&
+        function_impl_member_grammar_fails(&item->method.func, errs)
+    ) {
+        modifier_error = true;
+    }
     // Only overload signatures are restricted
     bool dynamic_name_error = !modifier_error && (field || !item->method.func.has_body) && expr_is_non_bindable_dynamic_name(key);
     if (comma && !modifier_error && !dynamic_name_error) {

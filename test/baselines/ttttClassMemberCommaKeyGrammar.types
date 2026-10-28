@@ -1,0 +1,166 @@
+//// [test/cases/ttttClassMemberCommaKeyGrammar.ts] ////
+
+=== ttttClassMemberCommaKeyGrammar.ts ===
+// A class member whose modifiers (checkGrammarModifiers, in the parser) or signature (parameter list, accessor,
+// generator checks) fail tsc's grammar checks gets no TS1166/TS1168/TS1171 for its computed name (bun_others.md)
+declare var a: string, b: string;
+>a : string
+>b : string
+
+class C {
+>C : C
+
+    public public [a.length, b]: number;
+>[a.length, b] : number
+>a.length, b : string
+>a.length : number
+>a : string
+>length : number
+>b : string
+
+    static public [a.length, b]: number;
+>[a.length, b] : number
+>a.length, b : string
+>a.length : number
+>a : string
+>length : number
+>b : string
+
+    public [a.length, b](...x: number[], y: number) {}
+>[a.length, b] : (...x: number[], y: number) => void
+>a.length, b : string
+>a.length : number
+>a : string
+>length : number
+>b : string
+>x : number[]
+>y : number
+
+    get [a.length, b](x: number) { return 1; }
+>[a.length, b] : number
+>a.length, b : string
+>a.length : number
+>a : string
+>length : number
+>b : string
+>x : number
+>1 : 1
+
+    set [a.length, b]() {}
+>[a.length, b] : any
+>a.length, b : string
+>a.length : number
+>a : string
+>length : number
+>b : string
+
+    get [a.length, b]<T>() { return 1; }
+>[a.length, b] : number
+>a.length, b : string
+>a.length : number
+>a : string
+>length : number
+>b : string
+>1 : 1
+
+    private [a.length, b]?(a?: number = 1) {}
+>[a.length, b] : ((a?: number) => void) | undefined
+>a.length, b : string
+>a.length : number
+>a : string
+>length : number
+>b : string
+>a : number | undefined
+>1 : 1
+
+    async [a.length, b]: number;
+>[a.length, b] : number
+>a.length, b : string
+>a.length : number
+>a : string
+>length : number
+>b : string
+
+    [a.length, b](x: number) {}
+>[a.length, b] : (x: number) => void
+>a.length, b : string
+>a.length : number
+>a : string
+>length : number
+>b : string
+>x : number
+
+    declare [a.length, b](): void;
+>[a.length, b] : () => void
+>a.length, b : string
+>a.length : number
+>a : string
+>length : number
+>b : string
+
+    accessor [a.length, b]() {}
+>[a.length, b] : () => void
+>a.length, b : string
+>a.length : number
+>a : string
+>length : number
+>b : string
+
+    readonly [a.length, b]() {}
+>[a.length, b] : () => void
+>a.length, b : string
+>a.length : number
+>a : string
+>length : number
+>b : string
+
+    export [a.length, b]: number;
+>[a.length, b] : number
+>a.length, b : string
+>a.length : number
+>a : string
+>length : number
+>b : string
+}
+class D {
+>D : D
+
+    [a.length, b](x: number) {}
+>[a.length, b] : (x: number) => void
+>a.length, b : string
+>a.length : number
+>a : string
+>length : number
+>b : string
+>x : number
+
+    get [a.length, b]() { return 1; }
+>[a.length, b] : number
+>a.length, b : string
+>a.length : number
+>a : string
+>length : number
+>b : string
+>1 : 1
+
+    m<T>(...x: number[]) {}
+>m : <T>(...x: number[]) => void
+>x : number[]
+
+    *[a.length, b]() {}
+>[a.length, b] : () => Generator<never, void, unknown>
+>a.length, b : string
+>a.length : number
+>a : string
+>length : number
+>b : string
+
+    [a.length, b](): void;
+>[a.length, b] : () => void
+>a.length, b : string
+>a.length : number
+>a : string
+>length : number
+>b : string
+}
+
