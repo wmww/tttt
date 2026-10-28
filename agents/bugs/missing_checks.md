@@ -283,7 +283,7 @@ tsc keeps one local symbol per block for a name's exported and local declaration
   element's type arguments want a `<` token (tsgo's tryParseTypeArguments), so tsgo parses `<Component` then recovers
   from `<<T>(v: T) => void> />` as expressions (TS1003, TS1005, TS1434, TS1128 x2, TS1109, TS1161 plus checker errors);
   tttt takes the `<<` as type arguments. The heritage form is fixed (ParserShared.heritage_type_args); the JSX tag's
-  type arguments need the same and then tsgo's recovery of the leftover (ttttJsxShiftTypeArguments). [fixed HASH]
+  type arguments need the same and then tsgo's recovery of the leftover (ttttJsxShiftTypeArguments). [fixed 817676058]
 - `(a.b: any)(...args)` (babel's transform-spread call-context/flow-type-cast, a Flow cast): tttt adds TS1200 "Line
   terminator not permitted before arrow" at the end of the file to tsgo's recovery through an arrow function missing
   its `=>`. Known-failing test ttttFlowTypeCastRecovery. [open]

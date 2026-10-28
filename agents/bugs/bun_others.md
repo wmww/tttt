@@ -458,6 +458,14 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
 - 93-P04c `(<a><c<<T>()=>void> x="1"/></a>)`: tsc reports one TS1003 at the `<<` and nothing after it (its child
   parse isn't understood: see 93-P04b's note above); tttt took `<<` for type arguments before 8981a243d (spurious
   TS7026/TS2558), and recovers in the attribute list since (TS1003 x2, TS1382 x3 spurious). [open]
+- Mutation testing (mutate.py -n 2000 --seed 20261030) left after bun7: `--syntax` 5 (2 render; TS2842 renaming in a
+  parse-broken destructuring, discriminantPropertyInference; a `<A, B extends Object A>` duplicate type parameter
+  that tsc doesn't count for TS2314, genericContextualTypes2; a missing TS1005 in a broken type alias,
+  declarationEmitArrowFunctionNoRenaming). Errors component 0. [open]
+- Class member TS1171 after the member's own modifier/signature grammar errors (TS1028, TS1029, TS1024, TS1031,
+  TS1244, TS1014, TS1015, TS1094, TS1054, TS1049: tsgo's checkGrammarModifiers || checkGrammarProperty/Method/Accessor
+  chain) is still reported by tttt; its TS1166/TS1168 too. Needs the parser to record which of a member's grammar
+  errors belong to that chain (not those inside its parameters' types or initializers). No bun case. [open]
 
 ## Not looked at, by code
 - Each paragraph below is a code and direction with the cases it mismatches in, uninvestigated: at least one open
