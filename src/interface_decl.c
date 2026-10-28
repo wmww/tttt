@@ -56,8 +56,12 @@ void interface_decl_lookup_names(InterfaceDecl* me, Scope* names, ErrorCtx* errs
     for_each (i, vec_spanned_type, &my extends) {
         type_lookup_names(&i->type, names, errs);
     }
+    // (What tsc never checks: a later `extends` clause, expressions that aren't names past TS2499: no uses, nothing
+    // unused)
+    unused_marking_suppressed++;
     for_each (i, vec_type, &my unchecked_extends) type_lookup_names(i, names, nullptr);
     for_each (i, vec_expr, &my invalid_extends) expr_lookup_names(i, names, nullptr);
+    unused_marking_suppressed--;
     // The body's members directly: it isn't a type literal (whose `this` would be invalid). Computed names in there
     // aren't uses of values (tsc's isInAmbientOrTypeNode)
     bool saved_type_query = scope_flow(names)->in_type_query;

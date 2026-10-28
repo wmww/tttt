@@ -42,6 +42,9 @@ void unused_register(Scope const* scope, UnusedKind kind, void const* node) {
     SourceFile* file = scope->file;
     // Ambient declarations are never unused (tsc's unusedIsError)
     if (!file || file->is_declaration || file->is_stdlib || scope->ambient) return;
+    // (Nor in what tsc never checks, where its names aren't uses either: only what checking visits registers, tsc's
+    // registerForUnusedIdentifiersCheck)
+    if (unused_marking_suppressed) return;
     if (file->unused_count == file->unused_cap) {
         // (Not realloc() nor free(): the list was allocated by the thread that walked the file, and freeing it takes that
         // thread's malloc arena lock, which another thread may hold for long (growing its heap, an mprotect under the

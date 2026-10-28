@@ -5456,7 +5456,9 @@ static ResolveShard* program_materialize_locked(Program* me, SourceFile* file, b
     for (DeferredBody* i = list->first; i; i = i->next, index++) {
         if (!materializes(i, only)) continue;
         i->unused_from = file->unused_count;
+        unused_marking_suppressed = i->unused_quiet;
         bool walked = function_impl_lookup_deferred_body(i, &shard->errs);
+        unused_marking_suppressed = 0;
         if (!walked) defer_stat_add(DEFER_STAT_COLLIDED, 1);
         same &= walked;
         i->unused_to = file->unused_count;

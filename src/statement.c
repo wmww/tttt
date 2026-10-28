@@ -569,7 +569,8 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
     }
     my misplaced = misplaced;
     ErrorCtx* errs = misplaced ? nullptr : binder_errs(scope->binder);
-    bool checked = true;
+    // (Not in what tsc never checks: a `with` body, a heritage expression it rejects, see unused_marking_suppressed)
+    bool checked = !unused_marking_suppressed;
     for (Scope const* i = scope; i && checked; i = i->parent) checked = !i->with_body;
     if (misplaced && checked) {
         Span first = my full_span;

@@ -816,9 +816,13 @@ static void class_decl_lookup_names_in_owner(ClassDecl* me, Scope* names, ErrorC
     for (u32 i = 0; i < my jsdoc_augments_count; i++) {
         if (my jsdoc_augments[i].type) type_lookup_names(my jsdoc_augments[i].type, names, errs);
     }
+    // (The heritage elements tsc never checks: the clauses after a grammar error, implemented expressions that aren't
+    // names, TS2500: no uses, nothing unused, no errors)
+    unused_marking_suppressed++;
     for_each (i, vec_expr, &my unchecked_extends) expr_lookup_names(i, names, nullptr);
     for_each (i, vec_type, &my unchecked_implements) type_lookup_names(i, names, nullptr);
     for_each (i, vec_expr, &my invalid_implements) expr_lookup_names(i, names, nullptr);
+    unused_marking_suppressed--;
 
     class_members_lookup_names(me, names, errs, true);
     class_members_lookup_names(me, names, errs, false);

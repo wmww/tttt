@@ -40,7 +40,8 @@ void unused_register(Scope const* scope, UnusedKind kind, void const* node);
 // `found` is what a name looked up from `scope` with `meaning` found, and the use reads it (tsc's resolveName with
 // isUse): it is referenced unless the use is inside its own declaration (tsc's isSelfReferenceLocation: a recursive
 // function, `class C { m() { C } }`, see Scope.self)
-// Names resolved while this is non-zero aren't uses (what tsc never resolves, but tttt does for whoever asks)
+// Names resolved while this is non-zero aren't uses (what tsc never resolves, but tttt does for whoever asks), and
+// declarations walked meanwhile are never unused (tsc doesn't check them)
 extern thread_local u32 unused_marking_suppressed;
 void unused_mark_referenced(Scope const* scope, Symbol* found, u32 meaning);
 // The names of the file's JSDoc `{@link X}` tags are uses. Part of name resolution, before checking

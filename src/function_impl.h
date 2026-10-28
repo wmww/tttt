@@ -314,6 +314,8 @@ typedef struct DeferredBody {
     bool has_flow_effects : 1;
     bool within_unreachable : 1;
     bool ambient : 1;
+    bool unused_quiet : 1; // Walked under unused_marking_suppressed (what tsc never checks): so is its body
+    bool silent : 1; // Walked without an error context (what tsc never checks): so is its body
     // In the file's current materialization (DeferredBodies.memory), set once its walk is done
     _Atomic(bool) ready;
     // Where its walk's unused registrations are in SourceFile.unused (DeferredBodies.out_of_order)

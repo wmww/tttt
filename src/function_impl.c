@@ -481,6 +481,8 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         deferred->has_flow_effects = flow.has_flow_effects;
         deferred->within_unreachable = flow.within_unreachable;
         deferred->ambient = flow.ambient;
+        deferred->unused_quiet = unused_marking_suppressed != 0;
+        deferred->silent = !errs;
         if (flow.yields || flow.yield_count || flow.true_target || flow.false_target || flow.active_labels ||
             flow.break_target || flow.continue_target || flow.exception_target || flow.initializing ||
             flow.parameter_initializing || flow.statement_list || flow.lookup_statements || flow.object_literal_depth ||
@@ -562,6 +564,8 @@ static bool deferred_signature_sees(uint8_t bits, u32 const* meanings, Symbol co
 }
 
 bool function_impl_lookup_deferred_body(DeferredBody* body, ErrorCtx* errs) {
+    // (A body whose function was walked without an error context reports nothing, as it would have walked at once)
+    if (body->silent) errs = nullptr;
     FunctionImpl* me = body->function;
     Scope* function_scope = body->function_scope;
     // What flow_builder_init() and function_impl_lookup_names_as() made of the builder, up to the body
