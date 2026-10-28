@@ -671,7 +671,7 @@ Diagnostics-class leftovers, not fixed:
   checkExpressionCached runs then (TS7006 in an arrow initializer). `var i = ""; for (var i = [] in b) {}` is TS1189 and
   TS2322 there, tttt has only TS1189; `for (var k = (a) => 1 of b) {}` misses TS7006. statement.c's for-each check
   (FOR_EACH_LOOP_STATEMENT) never looks at the initializers. Only reachable after a grammar error (TS1189/TS1190) or a
-  parse error. [open]
+  parse error. for_each_loop_check_initializer(), test ttttForEachInitializerChecked [fixed 5a52516f7]
 
 ## Lib files conflicting with each other (2026-10-23, corF: an old-tsconfig probe, `lib: ["dom", "webworker"]`)
 - **Conflicts between two lib files went unreported on the later lib's side** (tsgo reports 514 diagnostics on a
