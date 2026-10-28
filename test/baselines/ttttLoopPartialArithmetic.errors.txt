@@ -1,0 +1,48 @@
+ttttLoopPartialArithmetic.ts(4,31): error TS18048: 't' is possibly 'undefined'.
+ttttLoopPartialArithmetic.ts(6,35): error TS18048: 'u' is possibly 'undefined'.
+ttttLoopPartialArithmetic.ts(8,23): error TS18048: 'w' is possibly 'undefined'.
+ttttLoopPartialArithmetic.ts(19,13): error TS18048: 'i' is possibly 'undefined'.
+ttttLoopPartialArithmetic.ts(26,13): error TS18048: 'i' is possibly 'undefined'.
+
+
+==== ttttLoopPartialArithmetic.ts (5 errors) ====
+    // A loop's unfinished flow analysis checks an assigned arithmetic's operands on the partial types (tsc's
+    // getTypeOfExpression is a full check): `t = t + n` with `let t;` is TS18048 though t's final type is any
+    let t;
+    for (const n of [1, 2]) { t = t + n; }
+                                  ~
+!!! error TS18048: 't' is possibly 'undefined'.
+    let u;
+    for (const n of [1, 2]) { u = n + u; }
+                                      ~
+!!! error TS18048: 'u' is possibly 'undefined'.
+    let w = undefined;
+    while (w !== 3) { w = w * 2; }
+                          ~
+!!! error TS18048: 'w' is possibly 'undefined'.
+    let s;
+    for (const n of [1, 2]) { s = s ? s + n : n; }
+    declare function cond(): boolean;
+    {
+      let iNext;
+      for (let i = undefined; i < 10; i = iNext) {
+        if (cond()) {
+          iNext = "bad";
+          continue;
+        }
+        iNext = i + 1;
+                ~
+!!! error TS18048: 'i' is possibly 'undefined'.
+        let k = i;
+      }
+    }
+    {
+      let iNext;
+      for (let i = undefined; i < 10; i = iNext) {
+        iNext = i + 1;
+                ~
+!!! error TS18048: 'i' is possibly 'undefined'.
+        let k = i;
+      }
+    }
+    

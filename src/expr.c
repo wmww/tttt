@@ -4336,7 +4336,7 @@ __attribute__((noinline)) static void jsx_typecheck(Expr const* me, ErrorCtx* er
     }
 }
 
-void expr_equality_errors(Expr const* me, Ty const* left, Ty const* right, ErrorCtx* errs) {
+void expr_binary_operator_errors(Expr const* me, Ty const* left, Ty const* right, ErrorCtx* errs) {
     binary_op_typecheck(left, my binary_op->op, right, me, errs);
 }
 

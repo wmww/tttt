@@ -566,8 +566,9 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
 - Mutation seed 20261107 (bun11, `--syntax`, 2000: 8 errors-component differences) and 20261106 without `--syntax`
   (4, all known: distributiveConditionalBaseConstraint, distributiveConditionalTypeConstraints, two render): TS1338
   is a grammar error (0540d6753). Checker, relayed: controlFlowForStatementContinueIntoIncrementor1 undefined-init
-  (`let i = undefined` in a for loop with `continue`: missing TS18048 'i' is possibly 'undefined' at the incrementor)
-  [open]; recursiveTypeInferenceReturnTypeConstraint str-to-num (missing TS7022/TS2615, the known item) [open];
+  (`let i = undefined` in a for loop with `continue`: missing TS18048 'i' is possibly 'undefined' at the incrementor;
+  really `t = t + n` with `let t;` in any loop: tsc's in-flight check of the assigned `+` on the partial types,
+  ttttLoopPartialArithmetic) [fixed]; recursiveTypeInferenceReturnTypeConstraint str-to-num (missing TS7022/TS2615, the known item) [open];
   newTargetNarrowing member-typo (`.targetX`: missing TS2345 boolean to true) [open]; octalIntegerLiteralES6
   num-to-str (TS2551 'Did you mean' on a property named `5.462437423415177e+244` is TS7053 in tttt: a numeric literal
   key's name) [open]; generatorTypeCheck46 member-typo (`[Symbol.iteratorX]`: missing TS2488 on a type with only a
@@ -618,7 +619,7 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   EXPR_IMPLICIT_ANY with `missing` reads as none at ~15 `field.value.tag == EXPR_IMPLICIT_ANY` sites (class_decl.c,
   scope.c) and the types walk skips it. expr_absent() (expr.h) is "no initializer" at every field and enum
   member site now; a missing const or ambient enum initializer is TS2474/TS1066 at its full start
-  (ttttMissingFieldInitializer, ttttMissingEnumInitializer). [fixed]
+  (ttttMissingFieldInitializer, ttttMissingEnumInitializer). [fixed f7af0f131]
 - After a parameter's modifiers a reserved word is TS1359 (parseBindingIdentifier), not TS1003: `declare function`
   where a parameter was expected (seed 20261101, contextualParamTypeVsNestedReturnTypeInference4;
   ttttParameterModifierReservedName). [fixed 56abcd061]

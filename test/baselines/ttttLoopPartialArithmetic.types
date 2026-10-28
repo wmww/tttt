@@ -1,0 +1,130 @@
+//// [test/cases/ttttLoopPartialArithmetic.ts] ////
+
+=== ttttLoopPartialArithmetic.ts ===
+// A loop's unfinished flow analysis checks an assigned arithmetic's operands on the partial types (tsc's
+// getTypeOfExpression is a full check): `t = t + n` with `let t;` is TS18048 though t's final type is any
+let t;
+>t : any
+
+for (const n of [1, 2]) { t = t + n; }
+>n : number
+>[1, 2] : number[]
+>1 : 1
+>2 : 2
+>t = t + n : any
+>t : any
+>t + n : any
+>t : any
+>n : number
+
+let u;
+>u : any
+
+for (const n of [1, 2]) { u = n + u; }
+>n : number
+>[1, 2] : number[]
+>1 : 1
+>2 : 2
+>u = n + u : any
+>u : any
+>n + u : any
+>n : number
+>u : any
+
+let w = undefined;
+>w : any
+>undefined : undefined
+
+while (w !== 3) { w = w * 2; }
+>w !== 3 : boolean
+>w : number | undefined
+>3 : 3
+>w = w * 2 : number
+>w : any
+>w * 2 : number
+>w : number | undefined
+>2 : 2
+
+let s;
+>s : any
+
+for (const n of [1, 2]) { s = s ? s + n : n; }
+>n : number
+>[1, 2] : number[]
+>1 : 1
+>2 : 2
+>s = s ? s + n : n : number
+>s : any
+>s ? s + n : n : number
+>s : number | undefined
+>s + n : number
+>s : number
+>n : number
+>n : number
+
+declare function cond(): boolean;
+>cond : () => boolean
+{
+  let iNext;
+>iNext : any
+
+  for (let i = undefined; i < 10; i = iNext) {
+>i : any
+>undefined : undefined
+>i < 10 : boolean
+>i : any
+>10 : 10
+>i = iNext : any
+>i : any
+>iNext : any
+
+    if (cond()) {
+>cond() : boolean
+>cond : () => boolean
+
+      iNext = "bad";
+>iNext = "bad" : "bad"
+>iNext : any
+>"bad" : "bad"
+
+      continue;
+    }
+    iNext = i + 1;
+>iNext = i + 1 : any
+>iNext : any
+>i + 1 : any
+>i : any
+>1 : 1
+
+    let k = i;
+>k : any
+>i : any
+  }
+}
+{
+  let iNext;
+>iNext : any
+
+  for (let i = undefined; i < 10; i = iNext) {
+>i : any
+>undefined : undefined
+>i < 10 : boolean
+>i : any
+>10 : 10
+>i = iNext : any
+>i : any
+>iNext : any
+
+    iNext = i + 1;
+>iNext = i + 1 : any
+>iNext : any
+>i + 1 : any
+>i : any
+>1 : 1
+
+    let k = i;
+>k : any
+>i : any
+  }
+}
+

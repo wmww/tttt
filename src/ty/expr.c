@@ -3483,6 +3483,21 @@ static bool type_only_reaches(Expr const* root, Expr const* target) {
     return false;
 }
 
+// The operators whose operands a loop's unfinished flow analysis checks on the partial types (binary_op_typecheck()):
+// equalities, arithmetic, `+` and comparisons
+static bool binary_op_checks_operands(BinaryOp op) {
+    switch (op) {
+        case BINARY_OP_DOUBLE_EQUAL: case BINARY_OP_TRIPLE_EQUAL: case BINARY_OP_NOT_EQUAL: case BINARY_OP_TRIPLE_NOT_EQUAL:
+        case BINARY_OP_PLUS: case BINARY_OP_MINUS: case BINARY_OP_STAR: case BINARY_OP_SLASH: case BINARY_OP_MOD:
+        case BINARY_OP_STAR_STAR: case BINARY_OP_LESS_LESS: case BINARY_OP_GREATER_GREATER:
+        case BINARY_OP_GREATER_GREATER_GREATER: case BINARY_OP_AND: case BINARY_OP_XOR: case BINARY_OP_OR:
+        case BINARY_OP_LESS: case BINARY_OP_GREATER: case BINARY_OP_LESS_EQUAL: case BINARY_OP_GREATER_EQUAL:
+            return true;
+        default:
+            return false;
+    }
+}
+
 static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx ctx) {
     check_left_spine(me, binary, ctx);
     Ty const* left;
@@ -6676,15 +6691,18 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
         }
         case EXPR_BINARY_OP: {
             Ty const* ret = check_binary(me, expr->binary_op, ctx);
-            // (An equality a loop's unfinished flow analysis evaluates is checked on the partial types too: tsc's
-            // getTypeOfExpression of an assigned value reports TS2367 for the first iteration's narrowed operands,
-            // `a = pick(a === b)` in a loop, see ty_flow_partial_reports())
+            // (An equality or arithmetic a loop's unfinished flow analysis evaluates is checked on the partial types
+            // too: tsc's getTypeOfExpression of an assigned value reports TS2367 for the first iteration's narrowed
+            // operands, `a = pick(a === b)` in a loop, and TS18048 for `t = t + n` with `let t;`, whose final type is
+            // any, see ty_flow_partial_reports())
             BinaryOp op = expr->binary_op->op;
-            if ((op == BINARY_OP_DOUBLE_EQUAL || op == BINARY_OP_TRIPLE_EQUAL || op == BINARY_OP_NOT_EQUAL ||
-                op == BINARY_OP_TRIPLE_NOT_EQUAL) && ty_flow_partial_reports(me, expr->inner_span) &&
-                !(my type_only_root && type_only_reaches(my type_only_root, expr))
+            // (CheckModeTypeOnly drops an equality's errors alone: checkBinaryLikeExpressionWorker)
+            bool equality = op == BINARY_OP_DOUBLE_EQUAL || op == BINARY_OP_TRIPLE_EQUAL || op == BINARY_OP_NOT_EQUAL ||
+                op == BINARY_OP_TRIPLE_NOT_EQUAL;
+            if (binary_op_checks_operands(op) && ty_flow_partial_reports(me, expr->inner_span) &&
+                !(equality && my type_only_root && type_only_reaches(my type_only_root, expr))
             ) {
-                expr_equality_errors(expr, ty_expr_type(me, &expr->binary_op->left), ty_expr_type(me, &expr->binary_op->right), my errs);
+                expr_binary_operator_errors(expr, ty_expr_type(me, &expr->binary_op->left), ty_expr_type(me, &expr->binary_op->right), my errs);
             }
             return ret;
         }

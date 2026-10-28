@@ -1,0 +1,94 @@
+//// [test/cases/ttttLoopPartialArithmetic.ts] ////
+
+=== ttttLoopPartialArithmetic.ts ===
+// A loop's unfinished flow analysis checks an assigned arithmetic's operands on the partial types (tsc's
+// getTypeOfExpression is a full check): `t = t + n` with `let t;` is TS18048 though t's final type is any
+let t;
+>t : Symbol(t, Decl(ttttLoopPartialArithmetic.ts, 2, 3))
+
+for (const n of [1, 2]) { t = t + n; }
+>n : Symbol(n, Decl(ttttLoopPartialArithmetic.ts, 3, 10))
+>t : Symbol(t, Decl(ttttLoopPartialArithmetic.ts, 2, 3))
+>t : Symbol(t, Decl(ttttLoopPartialArithmetic.ts, 2, 3))
+>n : Symbol(n, Decl(ttttLoopPartialArithmetic.ts, 3, 10))
+
+let u;
+>u : Symbol(u, Decl(ttttLoopPartialArithmetic.ts, 4, 3))
+
+for (const n of [1, 2]) { u = n + u; }
+>n : Symbol(n, Decl(ttttLoopPartialArithmetic.ts, 5, 10))
+>u : Symbol(u, Decl(ttttLoopPartialArithmetic.ts, 4, 3))
+>n : Symbol(n, Decl(ttttLoopPartialArithmetic.ts, 5, 10))
+>u : Symbol(u, Decl(ttttLoopPartialArithmetic.ts, 4, 3))
+
+let w = undefined;
+>w : Symbol(w, Decl(ttttLoopPartialArithmetic.ts, 6, 3))
+>undefined : Symbol(undefined)
+
+while (w !== 3) { w = w * 2; }
+>w : Symbol(w, Decl(ttttLoopPartialArithmetic.ts, 6, 3))
+>w : Symbol(w, Decl(ttttLoopPartialArithmetic.ts, 6, 3))
+>w : Symbol(w, Decl(ttttLoopPartialArithmetic.ts, 6, 3))
+
+let s;
+>s : Symbol(s, Decl(ttttLoopPartialArithmetic.ts, 8, 3))
+
+for (const n of [1, 2]) { s = s ? s + n : n; }
+>n : Symbol(n, Decl(ttttLoopPartialArithmetic.ts, 9, 10))
+>s : Symbol(s, Decl(ttttLoopPartialArithmetic.ts, 8, 3))
+>s : Symbol(s, Decl(ttttLoopPartialArithmetic.ts, 8, 3))
+>s : Symbol(s, Decl(ttttLoopPartialArithmetic.ts, 8, 3))
+>n : Symbol(n, Decl(ttttLoopPartialArithmetic.ts, 9, 10))
+>n : Symbol(n, Decl(ttttLoopPartialArithmetic.ts, 9, 10))
+
+declare function cond(): boolean;
+>cond : Symbol(cond, Decl(ttttLoopPartialArithmetic.ts, 9, 46))
+{
+  let iNext;
+>iNext : Symbol(iNext, Decl(ttttLoopPartialArithmetic.ts, 12, 5))
+
+  for (let i = undefined; i < 10; i = iNext) {
+>i : Symbol(i, Decl(ttttLoopPartialArithmetic.ts, 13, 10))
+>undefined : Symbol(undefined)
+>i : Symbol(i, Decl(ttttLoopPartialArithmetic.ts, 13, 10))
+>i : Symbol(i, Decl(ttttLoopPartialArithmetic.ts, 13, 10))
+>iNext : Symbol(iNext, Decl(ttttLoopPartialArithmetic.ts, 12, 5))
+
+    if (cond()) {
+>cond : Symbol(cond, Decl(ttttLoopPartialArithmetic.ts, 9, 46))
+
+      iNext = "bad";
+>iNext : Symbol(iNext, Decl(ttttLoopPartialArithmetic.ts, 12, 5))
+
+      continue;
+    }
+    iNext = i + 1;
+>iNext : Symbol(iNext, Decl(ttttLoopPartialArithmetic.ts, 12, 5))
+>i : Symbol(i, Decl(ttttLoopPartialArithmetic.ts, 13, 10))
+
+    let k = i;
+>k : Symbol(k, Decl(ttttLoopPartialArithmetic.ts, 19, 7))
+>i : Symbol(i, Decl(ttttLoopPartialArithmetic.ts, 13, 10))
+  }
+}
+{
+  let iNext;
+>iNext : Symbol(iNext, Decl(ttttLoopPartialArithmetic.ts, 23, 5))
+
+  for (let i = undefined; i < 10; i = iNext) {
+>i : Symbol(i, Decl(ttttLoopPartialArithmetic.ts, 24, 10))
+>undefined : Symbol(undefined)
+>i : Symbol(i, Decl(ttttLoopPartialArithmetic.ts, 24, 10))
+>i : Symbol(i, Decl(ttttLoopPartialArithmetic.ts, 24, 10))
+>iNext : Symbol(iNext, Decl(ttttLoopPartialArithmetic.ts, 23, 5))
+
+    iNext = i + 1;
+>iNext : Symbol(iNext, Decl(ttttLoopPartialArithmetic.ts, 23, 5))
+>i : Symbol(i, Decl(ttttLoopPartialArithmetic.ts, 24, 10))
+
+    let k = i;
+>k : Symbol(k, Decl(ttttLoopPartialArithmetic.ts, 26, 7))
+>i : Symbol(i, Decl(ttttLoopPartialArithmetic.ts, 24, 10))
+  }
+}
+

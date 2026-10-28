@@ -423,7 +423,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs);
 void expr_spread_errors(Expr const* me, struct Ty const* operand, ErrorCtx* errs);
 // An equality's errors (TS2367, TS2839...) for these operand types: a loop's unfinished flow analysis's
 // (ty_flow_partial_reports())
-void expr_equality_errors(Expr const* me, struct Ty const* left, struct Ty const* right, ErrorCtx* errs);
+void expr_binary_operator_errors(Expr const* me, struct Ty const* left, struct Ty const* right, ErrorCtx* errs);
 void expr_property_access_errors(Expr const* me, struct Ty const* expr_type, bool partial, ErrorCtx* errs);
 // A JSX element or fragment's tag, attributes and children (deferred for an element: Checker.defer_checks)
 void jsx_element_typecheck(Expr const* me, ErrorCtx* errs);
