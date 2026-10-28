@@ -1,0 +1,69 @@
+//// [test/cases/ttttTailRecursionFreshConditional.ts] ////
+
+=== ttttTailRecursionFreshConditional.ts ===
+// Known failing (agents/bugs/type_core.md "tail recursion's deferred result is a fresh type"): tsgo's getConditionalType
+// returns a new, uncached conditional type when a tail-recursive step ends deferred, so the chain
+// FromSchema<C, C[keyof C]> -> FromSchema<C, C[string | number | symbol]> -> FromSchema<C, C[string]> -> (tail)
+// FromSchema<C, C[keyof C]> reaches a fresh copy, and the base constraint's cycle starts below the outer type, which
+// keeps a constraint. tttt interns the copy as the outer type itself: circular, no constraint, spurious TS2344
+type Type = { values: string };
+>Type : Symbol(Type, Decl(ttttTailRecursionFreshConditional.ts, 0, 0))
+>values : Symbol(values, Decl(ttttTailRecursionFreshConditional.ts, 5, 13))
+
+type Wrapped<T extends Type> = { values: T["values"] };
+>Wrapped : Symbol(Wrapped, Decl(ttttTailRecursionFreshConditional.ts, 5, 31))
+>T : Symbol(T, Decl(ttttTailRecursionFreshConditional.ts, 6, 13))
+>Type : Symbol(Type, Decl(ttttTailRecursionFreshConditional.ts, 0, 0))
+>values : Symbol(values, Decl(ttttTailRecursionFreshConditional.ts, 6, 32))
+>T : Symbol(T, Decl(ttttTailRecursionFreshConditional.ts, 6, 13))
+
+type FromObject<Context extends Record<string, Type>, Props, Shape extends Record<keyof Props, Type> = {
+>FromObject : Symbol(FromObject, Decl(ttttTailRecursionFreshConditional.ts, 6, 55))
+>Context : Symbol(Context, Decl(ttttTailRecursionFreshConditional.ts, 7, 16))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Type : Symbol(Type, Decl(ttttTailRecursionFreshConditional.ts, 0, 0))
+>Props : Symbol(Props, Decl(ttttTailRecursionFreshConditional.ts, 7, 53))
+>Shape : Symbol(Shape, Decl(ttttTailRecursionFreshConditional.ts, 7, 60))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Props : Symbol(Props, Decl(ttttTailRecursionFreshConditional.ts, 7, 53))
+>Type : Symbol(Type, Decl(ttttTailRecursionFreshConditional.ts, 0, 0))
+
+  [Key in keyof Props]: Wrapped<FromSchema<Context, Props[Key]>>;
+>Key : Symbol(Key, Decl(ttttTailRecursionFreshConditional.ts, 8, 3))
+>Props : Symbol(Props, Decl(ttttTailRecursionFreshConditional.ts, 7, 53))
+>Wrapped : Symbol(Wrapped, Decl(ttttTailRecursionFreshConditional.ts, 5, 31))
+>FromSchema : Symbol(FromSchema, Decl(ttttTailRecursionFreshConditional.ts, 9, 11))
+>Context : Symbol(Context, Decl(ttttTailRecursionFreshConditional.ts, 7, 16))
+>Props : Symbol(Props, Decl(ttttTailRecursionFreshConditional.ts, 7, 53))
+>Key : Symbol(Key, Decl(ttttTailRecursionFreshConditional.ts, 8, 3))
+
+}> = Shape;
+>Shape : Symbol(Shape, Decl(ttttTailRecursionFreshConditional.ts, 7, 60))
+
+type FromSchema<Context extends Record<string, Type>, S> =
+>FromSchema : Symbol(FromSchema, Decl(ttttTailRecursionFreshConditional.ts, 9, 11))
+>Context : Symbol(Context, Decl(ttttTailRecursionFreshConditional.ts, 10, 16))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Type : Symbol(Type, Decl(ttttTailRecursionFreshConditional.ts, 0, 0))
+>S : Symbol(S, Decl(ttttTailRecursionFreshConditional.ts, 10, 53))
+
+  S extends Type ? FromSchema<Context, Context[keyof Context]> : never;
+>S : Symbol(S, Decl(ttttTailRecursionFreshConditional.ts, 10, 53))
+>Type : Symbol(Type, Decl(ttttTailRecursionFreshConditional.ts, 0, 0))
+>FromSchema : Symbol(FromSchema, Decl(ttttTailRecursionFreshConditional.ts, 9, 11))
+>Context : Symbol(Context, Decl(ttttTailRecursionFreshConditional.ts, 10, 16))
+>Context : Symbol(Context, Decl(ttttTailRecursionFreshConditional.ts, 10, 16))
+>Context : Symbol(Context, Decl(ttttTailRecursionFreshConditional.ts, 10, 16))
+
+function f<C extends Record<string, Type>>(x: FromSchema<C, C[keyof C]>["values"]): string { return x; }
+>f : Symbol(f, Decl(ttttTailRecursionFreshConditional.ts, 11, 71))
+>C : Symbol(C, Decl(ttttTailRecursionFreshConditional.ts, 12, 11))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Type : Symbol(Type, Decl(ttttTailRecursionFreshConditional.ts, 0, 0))
+>x : Symbol(x, Decl(ttttTailRecursionFreshConditional.ts, 12, 43))
+>FromSchema : Symbol(FromSchema, Decl(ttttTailRecursionFreshConditional.ts, 9, 11))
+>C : Symbol(C, Decl(ttttTailRecursionFreshConditional.ts, 12, 11))
+>C : Symbol(C, Decl(ttttTailRecursionFreshConditional.ts, 12, 11))
+>C : Symbol(C, Decl(ttttTailRecursionFreshConditional.ts, 12, 11))
+>x : Symbol(x, Decl(ttttTailRecursionFreshConditional.ts, 12, 43))
+

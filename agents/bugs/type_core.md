@@ -233,6 +233,21 @@ passing tests).
   sometimes land in different checkers: the file-to-checker assignment (work taking?) isn't deterministic for a
   forced K above the file count. The default K is 1 on projects this small. Worth a look at how files are dealt
   when K exceeds what the sizes call for: tsgo's assignment is static. [open]
+- Tail recursion's deferred result is a fresh type in tsgo (mutation seed 20261106, distributiveConditionalBaseConstraint
+  extends-object: spurious TS2344, and the elaboration of `FromSchema<C, C[keyof C]>["values"]` against string stops a
+  step early). tsgo's getConditionalType, when a tail-recursive step (getTailRecursionRoot) ends deferred, returns
+  `newConditionalType(root, mapper)`, uncached: `FromSchema<C, S> = S extends Type ? FromSchema<C, C[keyof C]> : never`
+  has X = FromSchema<C, C[keyof C]>, whose base constraint goes Y = FromSchema<C, C[string | number | symbol]> (for
+  constraint), Z = FromSchema<C, C[string]> | ..., Z's distributive constraint resolves `Type extends Type` and
+  tail-recurses into a fresh X'. X' reaches Y again (cached): the cycle starts at Y, and X itself gets no constraint
+  (getNextBaseConstraint turns the circular answer into nil) rather than a circular one, so X's constraint is still
+  used by relations. tttt interns deferred conditional types by (root, mapper) and caches tail steps in
+  instantiate_conditional(), so X' is X, the cycle starts at X and has_non_circular_base_constraint(X) is false. A fix:
+  a tail step (conditional.c's branch_type_with() resolution path, not ty_cond_branch_compute()'s lowering of a
+  deferred type's branches, which also instantiates with `tail`) skips instantiate_conditional()'s cache and
+  allocates its deferred result unintern'd in ty_conditional(); risky for type counts and every recursive alias
+  (type-fest, effect): perfsweep and the sweeps. Test ttttTailRecursionFreshConditional (known failing). [design]
+
 ## Classes and declarations
 - Mixin leftovers: a class extending a base that constructs `any` should get tsc's anyBaseTypeIndexInfo
   (`[x: string]: any`) instead of the `ty_has_unresolved_base()` gate; tsc's display of `new Outer<string>().m` clones
