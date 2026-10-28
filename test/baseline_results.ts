@@ -9061,14 +9061,14 @@ const baselines = {
         types: false,
     },
     'bun60-L16a': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun60-L16b': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun60-L17': {
         errors: true,
@@ -10717,7 +10717,7 @@ const baselines = {
     },
     'bun93-P04c': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'bun93-P04d': {
@@ -10727,7 +10727,7 @@ const baselines = {
     },
     'bun93-P04e': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'bun93-P05': {
@@ -12279,10 +12279,20 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'ttttAssertionThroughIntersectionProperty': {
-        errors: false,
+    'ttttAssertionCallArityError': {
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
+    },
+    'ttttAssertionThroughIntersectionProperty': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttAssertionThroughMappedOrigin': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttAssignedThroughNonNullReadType': {
         errors: true,
@@ -13562,6 +13572,11 @@ const baselines = {
         types: true,
     },
     'ttttDeclarePropertyAmbientInitializer': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttDeclaredOverloadNotExported': {
         errors: true,
         symbols: true,
         types: true,
@@ -15602,6 +15617,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttOptionalChainEffectsCallee': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttOptionalChainEndsInNonNull': {
         errors: true,
         symbols: true,
@@ -15958,6 +15978,11 @@ const baselines = {
         types: true,
     },
     'ttttSetterParameterCircularNoReport': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttSetterParamsFromGetter': {
         errors: true,
         symbols: true,
         types: true,
@@ -16377,6 +16402,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttTypeMemberStart': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttTypeOnlyImportEmptyBindings': {
         errors: true,
         symbols: true,
@@ -16483,6 +16513,11 @@ const baselines = {
         types: true,
     },
     'ttttUnannotatedCallNoEffects': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUnaryOperandChecked': {
         errors: true,
         symbols: true,
         types: true,
