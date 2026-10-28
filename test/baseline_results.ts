@@ -15128,6 +15128,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttLateBoundDuplicateTwoNames': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttLateBoundMemberMerge': {
         errors: true,
         symbols: true,
@@ -15638,6 +15643,21 @@ const baselines = {
         types: true,
     },
     'ttttObjectLiteralOuterInstantiableNotGeneric': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttObjectRestNotLastNonObject': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttObjectRestOfUndefined(strictnullchecks=false)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttObjectRestOfUndefined(strictnullchecks=true)': {
         errors: true,
         symbols: true,
         types: true,
