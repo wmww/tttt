@@ -26,7 +26,7 @@ here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in 
   infers more eagerly than tsc, so the two can disagree. [open]
 - **Variance annotations**: `type B<in T, in T> = { a: T }` misses tsgo's TS2636 at the second `in T` (the two are
   one type parameter symbol, the first's type parameter, which each declaration checks again: tttt checked the second,
-  unused, type parameter). ty_check_variance_annotations(). Test ttttVarianceRepeatedTypeParameter [fixed COMMIT-next].
+  unused, type parameter). ty_check_variance_annotations(). Test ttttVarianceRepeatedTypeParameter [fixed e814fb8b6].
 - The jsxImportSource runtime import (`jsx_runtime_module()`) reports TS2875/TS2792 and TS1479/TS1471, not the other
   resolveExternalModule diagnostics (TS7016 for a JavaScript runtime). [open]
 - `while (a) const x = 1;` still scopes x to the loop (tsc: the enclosing block; a do statement too, a for statement is a block scope container). Test ttttWhileBodyDeclarationScope. [fixed 2a4819ab1]
@@ -543,7 +543,7 @@ Diagnostics-class leftovers, not fixed:
   (commonJSAliasedExport never-const; moduleExportAlias5 likewise). [open]
 - missing TS2775 only when the asserting call also has an arity error (assertionTypePredicates2 add-arg): the
   assertion check read only a fitting resolution, tsc's resolvedSignature is the failure candidate then
-  (ty_call_failure_signature()). Test ttttAssertionCallArityError [fixed COMMIT-next]. Left: several overloads, whose
+  (ty_call_failure_signature()). Test ttttAssertionCallArityError [fixed 7e073fa17]. Left: several overloads, whose
   failure candidate is createUnionOfSignaturesForOverloadFailure's (the first overload's declaration, so its
   predicate, and the intersection of the returns), which tttt doesn't keep as the call's failure_sig. [open]
 - TS2303 around an unresolved UMD `export = Thing` + `export as namespace Foo` (umd7): whether tsc sees the cycle
