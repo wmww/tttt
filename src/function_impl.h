@@ -223,9 +223,6 @@ typedef struct FunctionImpl {
     bool is_type : 1; // Written as a type (function_impl_into_type()): owned by a CallableType, no body to infer from
     bool jsdoc_type : 1; // A JSDoc `function(...)` type: its parameters are unnamed (`argN`)
     bool jsdoc_unchecked : 1; // In a tag tsgo's checker doesn't visit (`@throws`): no TS7014
-    // A getter whose return type is its JSDoc `@type` (the property's): not a return type node to report at (tsc's
-    // getEffectiveReturnTypeNode only looks at `@returns` and a `@type` signature's)
-    bool jsdoc_getter_type : 1;
     // A JSDoc `@callback`'s signature: tsc's isTypeParameterPossiblyReferenced finds no container on the way up from it
     // (the template tags are its siblings), so it may reference every type parameter in scope
     bool jsdoc_callback : 1;

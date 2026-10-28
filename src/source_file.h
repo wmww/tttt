@@ -314,7 +314,6 @@ typedef struct SourceFile {
     // doesn't import one. One of module_refs (after helpers_ref), resolved like an import in a module or a JavaScript
     // file (tsc's collectExternalModuleReferences), `ambient_only` in a script
     ModuleRef* jsx_runtime_ref;
-    SourceFile* index_file; // The index(.d).ts file in the same directory as this file
     CommentDirective* comment_directives; // Owned, sorted by position (and so by line), recorded by the parser
     u32 comment_directive_count;
     u32 comment_directive_cap;

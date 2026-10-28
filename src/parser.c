@@ -5697,7 +5697,6 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
         function->ret = jsdoc_take_type(type_tag, &ret_span);
         function_impl_set_ret_span(function, ret_span);
         function->ret_explicit = true;
-        function->jsdoc_getter_type = true;
         type_tag = nullptr;
     }
     // (A `@this` made a typed `this` parameter: tsgo's reparser applies `@type` only to a function without typed
@@ -11807,7 +11806,6 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
             // tsc's parseBracketedList(TypeArguments): types separated by commas, anything else ends the list
             Anchor type_args_a = anchor(&p);
             p.pos++;
-            el->has_type_args = true;
             el->type_args = vec_spanned_type_init();
             hop_whitespace(&p);
             if (*p.pos == '>') {

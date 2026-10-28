@@ -26,7 +26,6 @@ typedef struct BlockTypecheckCtx {
     bool in_setter; // Returned values are TS2408
     bool break_allowed;
     bool continue_allowed;
-    bool inside_label; // Labeled breaks are allowed
     bool ambient; // Inside a `declare namespace`/`declare module`, where every statement is implicitly declared
     bool ambient_reported; // The block's statements can't be in an ambient context, and that's been said for them
     void const* ambient_error_statement; // The statement TS1036 was reported on, which gets no other grammar error

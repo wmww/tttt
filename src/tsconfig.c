@@ -26,7 +26,6 @@ typedef struct ConfigLoad {
     JsonValue const* include;
     JsonValue const* exclude;
     cstr files_dir, include_dir, exclude_dir;
-    bool has_files_or_include;
     int depth;
     // Every config stays alive until the end: files/include/exclude point into them
     JsonValue* documents[32];

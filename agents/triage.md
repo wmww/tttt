@@ -237,3 +237,7 @@ intersection's property symbol to bugs/type_core.md.
 - `const [...r] = c` with `c: C`, `type C = ["a", 1, string] | ["b", 2, number]`: tsgo prints `r` as `["a", 1, string] | ["b", 2, number]`, tttt as `C` (the rest of a tuple union keeps the alias). Found by corF 2026-10-24. [open]
 - TS5115's column on postcss-selector-parser@6.0.13's `postcss-selector-parser.d.ts:323` (vuejs/vue at 9e887079,
   bench config): tsgo column 15, tttt 28 (the same `Container`/`Diff` limit vue 3's corpus has; text only). [text]
+- `IdentifierTypeRare.this_in_signature` (several_types.c, a JavaScript `this` type in a function's parameters or
+  return type) is computed and never read: its comment's rule (tsc's getThisType takes only a prototype method then,
+  not a constructor function: isNodeDescendantOf(node, container.body)) isn't applied anywhere. Either a missing check
+  or a leftover; found by ref's dead-field scan 2026-10-28. [open]

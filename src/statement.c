@@ -2645,7 +2645,6 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                 .outer = ctx.labels,
             };
             ctx.labels = &label;
-            ctx.inside_label = true;
             ctx.body = body;
             statement_typecheck(my labeled.body, ctx, errs);
         }   break;

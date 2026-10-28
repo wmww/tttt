@@ -1387,7 +1387,6 @@ struct Checker {
     // contextualBindingPatterns): a reference inside one to its own elements is `any` (`const [a, b = a] = [1]`)
     struct Binding const* contextual_patterns[16];
     u32 contextual_pattern_count;
-    u32 flow_incomplete_seen; // Counts incomplete loop types handed out
     u32 flow_key_count; // Reference keys made
     u32 flow_expr_generation; // Which cache ty_flow_expr_type() uses while a loop is in progress: one per back edge walk
     u32 flow_expr_generations;

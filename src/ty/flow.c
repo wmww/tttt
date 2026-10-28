@@ -3628,7 +3628,6 @@ static FlowType type_at_loop_label(FlowQuery* q, FlowNode const* flow, FlowList 
     for (u32 i = my flow_loop_start; i < my flow_loop_count; i++) {
         FlowLoopEntry const* entry = &my flow_loops[i];
         if (entry->flow == flow && entry->key == key && entry->types->len) {
-            my flow_incomplete_seen++;
             Ty const* so_far = is_auto(me, q->declared) ? union_or_evolving(me, entry->types->data, entry->types->len, false) :
                 recombine_unknown(me, ty_union(me, entry->types->data, entry->types->len, nullptr, (TyList){0}));
             return new_flow_type(q, so_far, true);

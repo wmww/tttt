@@ -639,9 +639,6 @@ typedef struct PropertyExpr {
     bool qualified_name : 1;
     bool compound_like_target : 1; // Like IdentifierExpr.compound_like_target
     bool method_call : 1; // The callee of a call or new (tsc's isMethodAccessForCall): the object widens
-    // `M.x = v` declaring an export of a CommonJS module through an alias of it (`const M = module.exports`), set by the
-    // declare step: a declaration, not an assignment to what x may alias (like `exports.x = v`)
-    bool commonjs_export_alias : 1;
     bool non_null_operand : 1; // The operand of `a.b!` (unparenthesized), like IdentifierExpr.non_null_operand
     // A target that is read too (`a.b ??= v`, `[...a.b] = v`, `a.b! = v`): a private member it names is referenced
     bool read_target : 1;
@@ -953,7 +950,6 @@ typedef struct JsxElement {
     bool fragment; // `<>...</>`
     bool tag_name_broken; // `<a.#b>`, `<a.>`: the name is missing after a dot (untyped)
     bool self_closing;
-    bool has_type_args;
     VecSpannedType type_args; // `<C<string> />`
     Span type_args_trailing_comma; // `<C<string,> />`: TS1009, a grammar error
     Span type_args_empty; // `<C<> />`: TS1099, a grammar error
