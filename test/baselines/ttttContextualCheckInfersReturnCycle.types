@@ -1,0 +1,57 @@
+//// [test/cases/ttttContextualCheckInfersReturnCycle.ts] ////
+
+=== ttttContextualCheckInfersReturnCycle.ts ===
+// A function expression with a contextual signature infers its return type at its first check (tsc's
+// contextuallyCheckFunctionExpressionOrObjectLiteralMethod): the thunk below reads ShowType while it is in flight (TS7022, TS7023)
+type Thunk<T> = (() => T) | T;
+>Thunk : Thunk<T>
+
+interface FieldConfig<S, C> { type: Obj<any, any>; resolve?: (source: S, args: any, ctx: C) => any }
+>type : Obj<any, any>
+>resolve : ((source: S, args: any, ctx: C) => any) | undefined
+>source : S
+>args : any
+>ctx : C
+
+interface Config<S, C> { name: string; fields: Thunk<{ [k: string]: FieldConfig<S, C> }> }
+>name : string
+>fields : Thunk<{ [k: string]: FieldConfig<S, C>; }>
+>k : string
+
+declare class Obj<S, C> { name: string; constructor(config: Config<S, C>); }
+>Obj : Obj<S, C>
+>name : string
+>config : Config<S, C>
+
+interface Ctx { a: number }
+>a : number
+
+export const ShowType = new Obj<any, Ctx>({
+>ShowType : any
+>new Obj<any, Ctx>({  name: "Show",  fields: () => ({    self: { type: ShowType },  }),}) : Obj<any, Ctx>
+>Obj : typeof Obj
+>{  name: "Show",  fields: () => ({    self: { type: ShowType },  }),} : { name: string; fields: () => any; }
+
+  name: "Show",
+>name : string
+>"Show" : "Show"
+
+  fields: () => ({
+>fields : () => any
+>() => ({    self: { type: ShowType },  }) : () => any
+>({    self: { type: ShowType },  }) : { self: { type: any; }; }
+>{    self: { type: ShowType },  } : { self: { type: any; }; }
+
+    self: { type: ShowType },
+>self : { type: any; }
+>{ type: ShowType } : { type: any; }
+>type : any
+>ShowType : any
+
+  }),
+});
+export const probe: { __x: 1 } = ShowType;
+>probe : { __x: 1; }
+>__x : 1
+>ShowType : any
+

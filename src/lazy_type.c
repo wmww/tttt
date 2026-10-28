@@ -293,10 +293,18 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
         // remembered (tsc's getTypeOfVariableOrParameterOrProperty). The nested evaluation is above the barrier, where
         // a third request is a cycle; it is evaluated yet again only from below another call's first resolution, and
         // calls are finitely many (plan 88 stage B: no "once" flag)
-        bool below_barrier = my tag != LAZY_TYPE_EXPR && !lazy_type_pattern_root(me) &&
-            ty_resolving_reenters(current_checker, RESOLVING_DECLARATION, me);
+        // A destructuring variable's pattern has no entry in tsc, which computes its type again whenever one of its
+        // names asks (getTypeForBindingElementParent): evaluated again, nested, when a name asked since; a name asked
+        // again is the cycle (ty_binding_type()). A function in its initializer is contextually checked once, so asking
+        // again doesn't always reach that name: `const { c, f }: U = { c: 0, f: () => f }` isn't circular. (A
+        // parameter's pattern has a symbol in tsc, `__0`, which is pushed: ty_resolving_pattern_cycle())
+        Binding const* pattern_root = lazy_type_pattern_root(me);
+        bool variable_pattern = pattern_root && !binding_is_parameter(pattern_root);
+        bool below_barrier = my tag != LAZY_TYPE_EXPR && (pattern_root ?
+            variable_pattern && ty_pattern_name_in_flight_since(current_checker, me, pattern_root) :
+            ty_resolving_reenters(current_checker, RESOLVING_DECLARATION, me));
         if (below_barrier) {
-            if (debug_env.debug_reentry) ty_debug_reentry(current_checker, "REENTER 0 call", span_null);
+            if (debug_env.debug_reentry && !pattern_root) ty_debug_reentry(current_checker, "REENTER 0 call", span_null);
             goto evaluate;
         }
         if (my tag != LAZY_TYPE_EXPR) {

@@ -1,0 +1,73 @@
+//// [test/cases/ttttContextualCheckInfersReturnCycle.ts] ////
+
+=== ttttContextualCheckInfersReturnCycle.ts ===
+// A function expression with a contextual signature infers its return type at its first check (tsc's
+// contextuallyCheckFunctionExpressionOrObjectLiteralMethod): the thunk below reads ShowType while it is in flight (TS7022, TS7023)
+type Thunk<T> = (() => T) | T;
+>Thunk : Symbol(Thunk, Decl(ttttContextualCheckInfersReturnCycle.ts, 0, 0))
+>T : Symbol(T, Decl(ttttContextualCheckInfersReturnCycle.ts, 2, 11))
+>T : Symbol(T, Decl(ttttContextualCheckInfersReturnCycle.ts, 2, 11))
+>T : Symbol(T, Decl(ttttContextualCheckInfersReturnCycle.ts, 2, 11))
+
+interface FieldConfig<S, C> { type: Obj<any, any>; resolve?: (source: S, args: any, ctx: C) => any }
+>FieldConfig : Symbol(FieldConfig, Decl(ttttContextualCheckInfersReturnCycle.ts, 2, 30))
+>S : Symbol(S, Decl(ttttContextualCheckInfersReturnCycle.ts, 3, 22))
+>C : Symbol(C, Decl(ttttContextualCheckInfersReturnCycle.ts, 3, 24))
+>type : Symbol(FieldConfig.type, Decl(ttttContextualCheckInfersReturnCycle.ts, 3, 29))
+>Obj : Symbol(Obj, Decl(ttttContextualCheckInfersReturnCycle.ts, 4, 90))
+>resolve : Symbol(FieldConfig.resolve, Decl(ttttContextualCheckInfersReturnCycle.ts, 3, 50))
+>source : Symbol(source, Decl(ttttContextualCheckInfersReturnCycle.ts, 3, 62))
+>S : Symbol(S, Decl(ttttContextualCheckInfersReturnCycle.ts, 3, 22))
+>args : Symbol(args, Decl(ttttContextualCheckInfersReturnCycle.ts, 3, 72))
+>ctx : Symbol(ctx, Decl(ttttContextualCheckInfersReturnCycle.ts, 3, 83))
+>C : Symbol(C, Decl(ttttContextualCheckInfersReturnCycle.ts, 3, 24))
+
+interface Config<S, C> { name: string; fields: Thunk<{ [k: string]: FieldConfig<S, C> }> }
+>Config : Symbol(Config, Decl(ttttContextualCheckInfersReturnCycle.ts, 3, 100))
+>S : Symbol(S, Decl(ttttContextualCheckInfersReturnCycle.ts, 4, 17))
+>C : Symbol(C, Decl(ttttContextualCheckInfersReturnCycle.ts, 4, 19))
+>name : Symbol(Config.name, Decl(ttttContextualCheckInfersReturnCycle.ts, 4, 24))
+>fields : Symbol(Config.fields, Decl(ttttContextualCheckInfersReturnCycle.ts, 4, 38))
+>Thunk : Symbol(Thunk, Decl(ttttContextualCheckInfersReturnCycle.ts, 0, 0))
+>k : Symbol(k, Decl(ttttContextualCheckInfersReturnCycle.ts, 4, 56))
+>FieldConfig : Symbol(FieldConfig, Decl(ttttContextualCheckInfersReturnCycle.ts, 2, 30))
+>S : Symbol(S, Decl(ttttContextualCheckInfersReturnCycle.ts, 4, 17))
+>C : Symbol(C, Decl(ttttContextualCheckInfersReturnCycle.ts, 4, 19))
+
+declare class Obj<S, C> { name: string; constructor(config: Config<S, C>); }
+>Obj : Symbol(Obj, Decl(ttttContextualCheckInfersReturnCycle.ts, 4, 90))
+>S : Symbol(S, Decl(ttttContextualCheckInfersReturnCycle.ts, 5, 18))
+>C : Symbol(C, Decl(ttttContextualCheckInfersReturnCycle.ts, 5, 20))
+>name : Symbol(Obj.name, Decl(ttttContextualCheckInfersReturnCycle.ts, 5, 25))
+>config : Symbol(config, Decl(ttttContextualCheckInfersReturnCycle.ts, 5, 52))
+>Config : Symbol(Config, Decl(ttttContextualCheckInfersReturnCycle.ts, 3, 100))
+>S : Symbol(S, Decl(ttttContextualCheckInfersReturnCycle.ts, 5, 18))
+>C : Symbol(C, Decl(ttttContextualCheckInfersReturnCycle.ts, 5, 20))
+
+interface Ctx { a: number }
+>Ctx : Symbol(Ctx, Decl(ttttContextualCheckInfersReturnCycle.ts, 5, 76))
+>a : Symbol(Ctx.a, Decl(ttttContextualCheckInfersReturnCycle.ts, 6, 15))
+
+export const ShowType = new Obj<any, Ctx>({
+>ShowType : Symbol(ShowType, Decl(ttttContextualCheckInfersReturnCycle.ts, 7, 12))
+>Obj : Symbol(Obj, Decl(ttttContextualCheckInfersReturnCycle.ts, 4, 90))
+>Ctx : Symbol(Ctx, Decl(ttttContextualCheckInfersReturnCycle.ts, 5, 76))
+
+  name: "Show",
+>name : Symbol(name, Decl(ttttContextualCheckInfersReturnCycle.ts, 7, 43))
+
+  fields: () => ({
+>fields : Symbol(fields, Decl(ttttContextualCheckInfersReturnCycle.ts, 8, 15))
+
+    self: { type: ShowType },
+>self : Symbol(self, Decl(ttttContextualCheckInfersReturnCycle.ts, 9, 18))
+>type : Symbol(type, Decl(ttttContextualCheckInfersReturnCycle.ts, 10, 11))
+>ShowType : Symbol(ShowType, Decl(ttttContextualCheckInfersReturnCycle.ts, 7, 12))
+
+  }),
+});
+export const probe: { __x: 1 } = ShowType;
+>probe : Symbol(probe, Decl(ttttContextualCheckInfersReturnCycle.ts, 13, 12))
+>__x : Symbol(__x, Decl(ttttContextualCheckInfersReturnCycle.ts, 13, 21))
+>ShowType : Symbol(ShowType, Decl(ttttContextualCheckInfersReturnCycle.ts, 7, 12))
+

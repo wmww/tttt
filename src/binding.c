@@ -1138,6 +1138,23 @@ static void binding_check_computed_names_first(Binding const* me) {
     }
 }
 
+// The first name of a pattern, depth first: the first element whose type tsc's checkVariableLikeDeclaration asks for
+static Binding const* binding_first_name(Binding const* me) {
+    if (my tag == BINDING_IDENTIFIER) return my symbol ? me : nullptr;
+    if (my tag == BINDING_OBJECT) {
+        for_each (i, vec_object_binding_item, &my object) {
+            Binding const* found = binding_first_name(&i->target);
+            if (found) return found;
+        }
+    } else if (my tag == BINDING_ARRAY) {
+        for_each (i, vec_binding, &my array) {
+            Binding const* found = binding_first_name(i);
+            if (found) return found;
+        }
+    }
+    return nullptr;
+}
+
 // The annotation's walk (tsc's checkSourceElement of the type node). A union or intersection is resolved at it
 // (checkUnionOrIntersectionType: TS2590 of a cross product goes to the type node, not the declaration's name)
 static void binding_annotation_typecheck(Binding const* me, ErrorCtx* errs) {
@@ -1178,6 +1195,16 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
         ty_type_of_symbol(checker, my binding.symbol);
     }
     binding_check_computed_names_first(&my binding);
+    // An annotated pattern's elements are checked before its initializer, and under strictNullChecks the first one's
+    // type asks for the initializer's (tsc's getBindingElementTypeFromParentType, whether it can be undefined): a
+    // function in it with a contextual signature infers its return type then (contextuallyCheckFunctionExpression...),
+    // and a name read there is circular, `const [d, e]: [number, (n: number) => number] = [1, (n) => e(n) + d]`, TS7022
+    if (my binding.tag != BINDING_IDENTIFIER && my binding.has_explicit_type && compiler_options()->strict_null_checks &&
+        initialized_binding_value(me)->tag != EXPR_IMPLICIT_ANY
+    ) {
+        Binding const* first = binding_first_name(&my binding);
+        if (first) ty_type_of_symbol(checker, first->symbol);
+    }
     bool entered = ty_context_root_enter(me);
     initialized_binding_check_value(me);
     ty_context_root_leave(entered);

@@ -2673,6 +2673,7 @@ Ty const* ty_function_return_before_widening(Checker* me, FunctionImpl const* fu
 Ty const* ty_element_before_widening(Checker* me, struct Binding const* element);
 // The return type of a function expression that is an argument of the generic call inferring now: the calls it returns
 // see what that call has inferred so far (tsc's getInferenceContext finds the call through the argument)
+Ty const* ty_contextual_check_return_type(Checker* me, FunctionImpl const* function);
 Ty const* ty_argument_return_type(Checker* me, FunctionImpl const* function);
 // An immediately invoked function's return type, computed while the call inferring now (if any) stays visible
 Ty const* ty_iife_return_type(Checker* me, FunctionImpl const* function);
@@ -2790,6 +2791,9 @@ void ty_resolving_cycle_across_calls(Checker* me, ResolvingKind kind, void const
 // A root binding pattern's LazyType (`key`) was asked for while in flight: the cycle starts at the first of its names
 // resolved since, if any was
 void ty_resolving_pattern_cycle(Checker* me, void const* key, struct Binding const* pattern);
+// Whether one of the pattern's names was pushed since its LazyType (`key`) was last: tsc has no entry for the pattern,
+// whose type it computes again each time (getTypeForBindingElementParent), its names are what's circular
+bool ty_pattern_name_in_flight_since(Checker* me, void const* key, struct Binding const* pattern);
 // Whether it is being resolved above the barrier (for what has no in-flight state of its own, tsc's
 // findResolutionCycleStartIndex: below a barrier it is resolved again, what it reaches has in-flight states that stop it)
 static inline bool ty_resolving_find(Checker* me, ResolvingKind kind, void const* key) {

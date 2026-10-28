@@ -1,10 +1,24 @@
 ttttTuplePatternCircularElement.ts(3,8): error TS7022: 'd' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+ttttTuplePatternCircularElement.ts(4,8): error TS7022: 'd2' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+ttttTuplePatternCircularElement.ts(5,9): error TS7022: 'd3' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+ttttTuplePatternCircularElement.ts(6,8): error TS7022: 'd5' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
 
 
-==== ttttTuplePatternCircularElement.ts (1 errors) ====
-    // Known failing (cor, 2026-10-28): tsgo reports TS7022 on `d`, the tuple pattern's element read inside a function of
-    // its own initializer; tttt reports nothing (agents/bugs/missing_checks.md)
+==== ttttTuplePatternCircularElement.ts (4 errors) ====
+    // An annotated pattern's first name is resolved before its initializer is checked, and under strictNullChecks asks for
+    // the initializer's type; the function in it infers its return type at that check: `d` read there is TS7022
     const [d, e]: [number, (n: number) => number] = [1, (n) => e(n) + d];
            ~
 !!! error TS7022: 'd' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    const [d2, e2]: [number, (n: number) => number] = [1, (n: number) => e2(n) + d2];
+           ~~
+!!! error TS7022: 'd2' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    const { d3, e3 }: { d3: number, e3: (n: number) => number } = { d3: 1, e3: (n) => e3(n) + d3 };
+            ~~
+!!! error TS7022: 'd3' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    const [d5, e5]: [number, () => number] = [1, () => d5];
+           ~~
+!!! error TS7022: 'd5' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    // A name read again by the initializer's second check isn't: its function was contextually checked once
+    const { c6, f6 }: { c6: 0; f6: () => unknown } | { c6: 1; f6: string } = { c6: 0, f6: () => f6 };
     

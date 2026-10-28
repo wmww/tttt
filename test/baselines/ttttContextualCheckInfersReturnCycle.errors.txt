@@ -1,0 +1,24 @@
+ttttContextualCheckInfersReturnCycle.ts(8,14): error TS7022: 'ShowType' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+ttttContextualCheckInfersReturnCycle.ts(10,3): error TS7023: 'fields' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+
+
+==== ttttContextualCheckInfersReturnCycle.ts (2 errors) ====
+    // A function expression with a contextual signature infers its return type at its first check (tsc's
+    // contextuallyCheckFunctionExpressionOrObjectLiteralMethod): the thunk below reads ShowType while it is in flight (TS7022, TS7023)
+    type Thunk<T> = (() => T) | T;
+    interface FieldConfig<S, C> { type: Obj<any, any>; resolve?: (source: S, args: any, ctx: C) => any }
+    interface Config<S, C> { name: string; fields: Thunk<{ [k: string]: FieldConfig<S, C> }> }
+    declare class Obj<S, C> { name: string; constructor(config: Config<S, C>); }
+    interface Ctx { a: number }
+    export const ShowType = new Obj<any, Ctx>({
+                 ~~~~~~~~
+!!! error TS7022: 'ShowType' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+      name: "Show",
+      fields: () => ({
+      ~~~~~~
+!!! error TS7023: 'fields' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+        self: { type: ShowType },
+      }),
+    });
+    export const probe: { __x: 1 } = ShowType;
+    

@@ -6821,9 +6821,10 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
                 // (Not again while it is being decided further up: tsc's ContextChecked flag is set by then, so a call
                 // re-entered from its own body, `wrap()` returning `new Proxy(t, { get() { return wrap(...) } })`,
                 // doesn't make it circular)
-                if (my outer_inference && !expr->function->ret_explicit &&
+                if (!expr->function->ret_explicit &&
                     ty_function_assigned_contextual_signature(me, expr->function) && !ty_function_return_in_flight(me, expr->function)) {
-                    ty_argument_return_type(me, expr->function);
+                    if (my outer_inference) ty_argument_return_type(me, expr->function);
+                    else ty_contextual_check_return_type(me, expr->function);
                 }
             }
             return ty_function_type(me, expr->function);

@@ -5015,6 +5015,17 @@ void ty_resolving_cycle_across_calls(Checker* me, ResolvingKind kind, void const
     }
 }
 
+bool ty_pattern_name_in_flight_since(Checker* me, void const* key, Binding const* pattern) {
+    for (u32 i = my resolving_len; i-- > 0;) {
+        if (my resolving[i].key == key && my resolving[i].kind == RESOLVING_PATTERN) return false;
+        if (my resolving[i].kind != RESOLVING_BINDING) continue;
+        Binding const* root = my resolving[i].key;
+        while (root->parent) root = root->parent;
+        if (root == pattern) return true;
+    }
+    return false;
+}
+
 void ty_resolving_pattern_cycle(Checker* me, void const* key, Binding const* pattern) {
     for (u32 i = my resolving_len; i-- > my resolving_start;) {
         if (my resolving[i].key != key || my resolving[i].kind != RESOLVING_PATTERN) continue;

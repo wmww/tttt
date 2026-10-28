@@ -452,6 +452,10 @@ Ty const* ty_argument_return_type(Checker* me, FunctionImpl const* function) {
     return ret;
 }
 
+Ty const* ty_contextual_check_return_type(Checker* me, FunctionImpl const* function) {
+    return function_return_type(me, function, false, true, true);
+}
+
 Ty const* ty_iife_return_type(Checker* me, FunctionImpl const* function) {
     return function_return_type(me, function, true, true, false);
 }
