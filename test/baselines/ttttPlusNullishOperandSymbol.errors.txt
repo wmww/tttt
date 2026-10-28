@@ -1,0 +1,52 @@
+ttttPlusNullishOperandSymbol.ts(4,1): error TS18048: 'str' is possibly 'undefined'.
+ttttPlusNullishOperandSymbol.ts(4,8): error TS2469: The '+=' operator cannot be applied to type 'symbol'.
+ttttPlusNullishOperandSymbol.ts(6,1): error TS18047: 's2' is possibly 'null'.
+ttttPlusNullishOperandSymbol.ts(6,7): error TS2469: The '+=' operator cannot be applied to type 'symbol'.
+ttttPlusNullishOperandSymbol.ts(8,1): error TS18048: 's3' is possibly 'undefined'.
+ttttPlusNullishOperandSymbol.ts(8,7): error TS2469: The '+=' operator cannot be applied to type 'symbol'.
+ttttPlusNullishOperandSymbol.ts(10,6): error TS2469: The '+=' operator cannot be applied to type 'symbol'.
+ttttPlusNullishOperandSymbol.ts(12,1): error TS18048: 'n' is possibly 'undefined'.
+ttttPlusNullishOperandSymbol.ts(14,1): error TS18048: 'u' is possibly 'undefined'.
+ttttPlusNullishOperandSymbol.ts(15,1): error TS18050: The value 'null' cannot be used here.
+ttttPlusNullishOperandSymbol.ts(15,8): error TS18050: The value 'undefined' cannot be used here.
+
+
+==== ttttPlusNullishOperandSymbol.ts (11 errors) ====
+    // A `+` operand null or undefined is TS18047/TS18048, then the error type: the other operand is still checked, TS2469 for a symbol
+    let symbol!: symbol;
+    let str = undefined;
+    str += symbol;
+    ~~~
+!!! error TS18048: 'str' is possibly 'undefined'.
+           ~~~~~~
+!!! error TS2469: The '+=' operator cannot be applied to type 'symbol'.
+    let s2 = null;
+    s2 += symbol;
+    ~~
+!!! error TS18047: 's2' is possibly 'null'.
+          ~~~~~~
+!!! error TS2469: The '+=' operator cannot be applied to type 'symbol'.
+    let s3;
+    s3 += symbol;
+    ~~
+!!! error TS18048: 's3' is possibly 'undefined'.
+          ~~~~~~
+!!! error TS2469: The '+=' operator cannot be applied to type 'symbol'.
+    declare let a: any;
+    a += symbol;
+         ~~~~~~
+!!! error TS2469: The '+=' operator cannot be applied to type 'symbol'.
+    declare let n: number | undefined;
+    n += 1;
+    ~
+!!! error TS18048: 'n' is possibly 'undefined'.
+    let u = undefined;
+    u + 1;
+    ~
+!!! error TS18048: 'u' is possibly 'undefined'.
+    null + undefined;
+    ~~~~
+!!! error TS18050: The value 'null' cannot be used here.
+           ~~~~~~~~~
+!!! error TS18050: The value 'undefined' cannot be used here.
+    

@@ -1,0 +1,52 @@
+//// [test/cases/ttttPlusNullishOperandSymbol.ts] ////
+
+=== ttttPlusNullishOperandSymbol.ts ===
+// A `+` operand null or undefined is TS18047/TS18048, then the error type: the other operand is still checked, TS2469 for a symbol
+let symbol!: symbol;
+>symbol : Symbol(symbol, Decl(ttttPlusNullishOperandSymbol.ts, 1, 3))
+
+let str = undefined;
+>str : Symbol(str, Decl(ttttPlusNullishOperandSymbol.ts, 2, 3))
+>undefined : Symbol(undefined)
+
+str += symbol;
+>str : Symbol(str, Decl(ttttPlusNullishOperandSymbol.ts, 2, 3))
+>symbol : Symbol(symbol, Decl(ttttPlusNullishOperandSymbol.ts, 1, 3))
+
+let s2 = null;
+>s2 : Symbol(s2, Decl(ttttPlusNullishOperandSymbol.ts, 4, 3))
+
+s2 += symbol;
+>s2 : Symbol(s2, Decl(ttttPlusNullishOperandSymbol.ts, 4, 3))
+>symbol : Symbol(symbol, Decl(ttttPlusNullishOperandSymbol.ts, 1, 3))
+
+let s3;
+>s3 : Symbol(s3, Decl(ttttPlusNullishOperandSymbol.ts, 6, 3))
+
+s3 += symbol;
+>s3 : Symbol(s3, Decl(ttttPlusNullishOperandSymbol.ts, 6, 3))
+>symbol : Symbol(symbol, Decl(ttttPlusNullishOperandSymbol.ts, 1, 3))
+
+declare let a: any;
+>a : Symbol(a, Decl(ttttPlusNullishOperandSymbol.ts, 8, 11))
+
+a += symbol;
+>a : Symbol(a, Decl(ttttPlusNullishOperandSymbol.ts, 8, 11))
+>symbol : Symbol(symbol, Decl(ttttPlusNullishOperandSymbol.ts, 1, 3))
+
+declare let n: number | undefined;
+>n : Symbol(n, Decl(ttttPlusNullishOperandSymbol.ts, 10, 11))
+
+n += 1;
+>n : Symbol(n, Decl(ttttPlusNullishOperandSymbol.ts, 10, 11))
+
+let u = undefined;
+>u : Symbol(u, Decl(ttttPlusNullishOperandSymbol.ts, 12, 3))
+>undefined : Symbol(undefined)
+
+u + 1;
+>u : Symbol(u, Decl(ttttPlusNullishOperandSymbol.ts, 12, 3))
+
+null + undefined;
+>undefined : Symbol(undefined)
+

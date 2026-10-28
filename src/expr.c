@@ -3932,10 +3932,12 @@ static bool binary_op_typecheck(
             if (!ty_is_related(checker, left, ty_intrinsic(checker, TY_STRING), TY_RELATION_ASSIGNABLE) &&
                 !ty_is_related(checker, right, ty_intrinsic(checker, TY_STRING), TY_RELATION_ASSIGNABLE)
             ) {
-                // Null or undefined operands are an error of their own (tsc's checkNonNullType), then any
+                // Null or undefined operands are an error of their own (tsc's checkNonNullType), then the error type,
+                // an any: the other operand is still checked for a symbol (TS2469, `str += sym` with `str` undefined)
                 left = ty_check_non_null_type(checker, left, &expr->binary_op->left, errs);
                 right = ty_check_non_null_type(checker, right, &expr->binary_op->right, errs);
-                if (!left || !right) return false;
+                if (!left) left = ty_intrinsic(checker, TY_ERROR);
+                if (!right) right = ty_intrinsic(checker, TY_ERROR);
             }
             u32 number_like = TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM, bigint_like = TYF_BIGINT | TYF_BIGINT_LITERAL;
             u32 string_like = TYF_STRING_LIKE;

@@ -1,0 +1,61 @@
+//// [test/cases/ttttPlusNullishOperandSymbol.ts] ////
+
+=== ttttPlusNullishOperandSymbol.ts ===
+// A `+` operand null or undefined is TS18047/TS18048, then the error type: the other operand is still checked, TS2469 for a symbol
+let symbol!: symbol;
+>symbol : symbol
+
+let str = undefined;
+>str : any
+>undefined : undefined
+
+str += symbol;
+>str += symbol : any
+>str : undefined
+>symbol : symbol
+
+let s2 = null;
+>s2 : any
+
+s2 += symbol;
+>s2 += symbol : any
+>s2 : null
+>symbol : symbol
+
+let s3;
+>s3 : any
+
+s3 += symbol;
+>s3 += symbol : any
+>s3 : undefined
+>symbol : symbol
+
+declare let a: any;
+>a : any
+
+a += symbol;
+>a += symbol : any
+>a : any
+>symbol : symbol
+
+declare let n: number | undefined;
+>n : number | undefined
+
+n += 1;
+>n += 1 : number
+>n : number | undefined
+>1 : 1
+
+let u = undefined;
+>u : any
+>undefined : undefined
+
+u + 1;
+>u + 1 : any
+>u : undefined
+>1 : 1
+
+null + undefined;
+>null + undefined : any
+>undefined : undefined
+
