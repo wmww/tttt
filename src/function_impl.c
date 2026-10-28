@@ -1026,11 +1026,14 @@ void function_impl_check_jsdoc_overloads(FunctionImpl const* me, Span name, Erro
         Span full = overload->full_span;
         Span tag_name = span_valid(full) && full.size > 1 ?
             span_make_in(full, full.buf + 1, full.buf + full.size) : full;
-        if (!overload->ret_explicit && !my is_constructor && compiler_options()->no_implicit_any && span_valid(tag_name) &&
-            span_valid(name)
-        ) {
-            // (tsgo's reparsed overload is a declaration without a body: reportImplicitAny's TS7010 with its name)
-            error_ctx_error_d(errs, tag_name, 7010, "'", name, "', which lacks return-type annotation, implicitly has an 'any' return type.");
+        if (!overload->ret_explicit && !my is_constructor && compiler_options()->no_implicit_any && span_valid(tag_name)) {
+            // (tsgo's reparsed overload is a declaration without a body: reportImplicitAny's TS7010 with its name, TS7011
+            // without one, `export default function () {}`)
+            if (span_valid(name)) {
+                error_ctx_error_d(errs, tag_name, 7010, "'", name, "', which lacks return-type annotation, implicitly has an 'any' return type.");
+            } else {
+                error_ctx_error_d(errs, tag_name, 7011, "Function expression, which lacks return-type annotation, implicitly has an 'any' return type.");
+            }
         }
         overloads[count] = overload;
         names[count++] = tag_name;

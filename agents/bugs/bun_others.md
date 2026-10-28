@@ -279,8 +279,11 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
   symbols baseline has no symbol for the imported name `A` of such a specifier, tttt's shows the export it names
   (ttttImportSpecifierKeywordName, known failing). [open]
 - A function declaration missing its name (`function () {}`, JS, ttttJsDocOverloadMissingName's neighbours): tsc's
-  TS7010 calls it `(Missing)` (tttt ''), two of them in a file merge into one symbol (tsc's types baseline shows
-  one overloaded type), an `export default function () {}` with an `@overload` gets TS7011 at the tag. [open]
+  TS7010 calls it `(Missing)` (tttt ''); two of them in a file merge into one symbol (tsc's types baseline shows one
+  overloaded type, tttt's too), but tttt's missing-name symbol is one for every script file of the program (two
+  files' nameless functions say TS2393 in the harness, tsc's merge per file). [open] An `export default function ()
+  {}` with an `@overload` and no `@returns` gets TS7011 at the tag (function_impl_check_jsdoc_overloads()).
+  [fixed COMMIT]
 - tsc's TS2314 on `@augments {A<=}` underlines `A<` (the node ends with its missing `>`), tttt's `A`
   (identifier_type_span() reconstructs the end from the text). [text]
 - `@type {yield}` in a generator (92-R03b): a JSDoc type's name isn't a strict-mode identifier (checkStrictModeIdentifier
@@ -338,7 +341,7 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
 - Decorator modifier order (57-L01, 57-L02a, 80-R07): checkGrammarModifiers stops at its first complaint (no TS8038
   after a leading modifier error), `export @a default class` in a namespace is TS1319 at `default` (the `default`
   after decorators is a modifier the checks see), and an `export as namespace`'s decorators are the binder's TS1184
-  alone. [fixed COMMIT]
+  alone. [fixed cee1ecc5d]
 
 ## Not looked at, by code
 - Each paragraph below is a code and direction with the cases it mismatches in, uninvestigated: at least one open

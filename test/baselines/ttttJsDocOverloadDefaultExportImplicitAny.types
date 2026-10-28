@@ -1,0 +1,25 @@
+//// [test/cases/ttttJsDocOverloadDefaultExportImplicitAny.ts] ////
+
+=== b.js ===
+
+/**
+ * @overload
+ * @param {number} x
+ */
+export default function () {}
+=== d.js ===
+/**
+ * @overload
+ * @param {number} x
+ */
+export function g() {}
+>g : (x: number) => any
+
+=== e.js ===
+/**
+ * @overload
+ * @param {number} x
+ */
+export default function h() {}
+>h : (x: number) => any
+
