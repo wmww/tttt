@@ -1,0 +1,20 @@
+//// [test/cases/ttttJsdocTypeLiteralMissingInitializer.ts] ////
+
+=== b.js ===
+/** @typedef {{ q: string= }} T1 */
+/** @typedef {{ q: string=}} T2 */
+/** @typedef {{ q: string=    }} T3 */
+/** @type {{ q: string= , r: number }} */
+let v4;
+>v4 : Symbol(v4, Decl(b.js, 4, 3))
+
+/** @typedef {{ q: string= 1 }} T5 */
+=== c.ts ===
+type A = { q: string = };
+>A : Symbol(A, Decl(c.ts, 0, 0))
+>q : Symbol(q, Decl(c.ts, 0, 10))
+
+interface B { q: string = }
+>B : Symbol(B, Decl(c.ts, 0, 25))
+>q : Symbol(B.q, Decl(c.ts, 1, 13))
+

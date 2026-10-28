@@ -6603,11 +6603,19 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                         type_move(&item.field.explicit_type)
                     ));
                     vec_interface_member_back_mut(&members)->implicit_any = !item.field.has_explicit_type;
-                    if (item.field.value.tag != EXPR_IMPLICIT_ANY) { // (tsc's checkGrammarProperty)
+                    if (item.field.value.tag != EXPR_IMPLICIT_ANY || item.field.value.missing) { // (tsc's checkGrammarProperty)
+                        Span at = expr_outer_span(&item.field.value);
+                        if (item.field.value.missing && span_valid(at)) {
+                            // (A missing initializer, `{ q: T = }`, reported only in JSDoc, which has no parse errors that
+                            // hide grammar errors: at its position, right after the `=`, no trivia skipped)
+                            char const* start = span_start_ptr(at);
+                            while (start > source_file_start(p.shared->source) && is_js_ascii_space(start[-1])) start--;
+                            at = span_make(p.shared->source, start, start);
+                        }
                         if (is_declaration) {
-                            grammar_error(&p, expr_outer_span(&item.field.value), 1246, "An interface property cannot have an initializer.");
+                            grammar_error(&p, at, 1246, "An interface property cannot have an initializer.");
                         } else {
-                            grammar_error(&p, expr_outer_span(&item.field.value), 1247, "A type literal property cannot have an initializer.");
+                            grammar_error(&p, at, 1247, "A type literal property cannot have an initializer.");
                         }
                         interface_member_accessor(vec_interface_member_back_mut(&members))->initializer = ast_new(Expr, item.field.value);
                         item.field.value = expr_implicit_any(span_null);
