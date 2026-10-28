@@ -543,8 +543,15 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   TS6133 under noUnusedLocals in files with parse errors). [open] recursiveTypeRelations: `reduce<C>(cb)` missing its
   initial value is TS2345 on the callback in tsgo, TS2554 in tttt (overload error choice, checker). [open]
   recursiveTypeInferenceReturnTypeConstraint (missing TS2615), isolatedDeclarationErrorsObjects (missing TS9009),
-  noImplicitAnyUnionNormalizedObjectLiteral1 (missing TS7005: [fixed 1faa449eb], cor8's seed 62), esDecorators-contextualTypes.2 (TS7053 elaboration: a union index's is its first member's, ttttIndexUnionElaboration, [fixed HASH] cor8),
-  unlooked at, checker; typeGuardFunctionErrors (TS2677's containing message lost to TS2559's weak type head)
+  noImplicitAnyUnionNormalizedObjectLiteral1 (missing TS7005: [fixed 1faa449eb], cor8's seed 62), esDecorators-contextualTypes.2 (TS7053 elaboration: a union index's is its first member's, ttttIndexUnionElaboration, [fixed 0928d2e68] cor8),
+  unlooked at, checker (cor8 2026-10-28, seed 20261103 `--syntax` rerun: recursiveTypeRelations delete-stmt is parser
+  recovery: tsgo's argument list after the arrow meets `}` (TS1005 ',' expected) and takes a missing expression as a
+  second argument, so `reduce<C>(cb, <missing>)` fits the generic overload's arity and the callback is TS2345; tttt's
+  list has one argument (TS2554) [open, parser]. isolatedDeclarationErrorsObjects ann-number-string: an object
+  literal accessor pair annotated `get x(): string { return 0 }` / `set x(value: number)` is TS9009 at the setter's
+  parameter in tsgo only when another member of the literal needs the equivalence check (an unannotated pair before
+  it); alone it is clean in both. The setter's pseudoTypeEquivalentToType against getWriteTypeOfSymbol fails there in
+  tsgo for a reason not found by reading (the getter's TS2322 seems needed too) [open]); typeGuardFunctionErrors (TS2677's containing message lost to TS2559's weak type head)
   [fixed 67fdf26b2]. Seed 20261103's errors component: noImplicitAnyUnionNormalizedObjectLiteral1 (missing TS7005
   when a spread's function returns `undefined | {...}` without strictNullChecks) and isolatedDeclarationErrorsObjects
   (missing TS9009) [open], checker. Seed 20261031's
