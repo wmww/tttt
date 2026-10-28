@@ -1,0 +1,20 @@
+ttttExcessPropertyFirstDuplicate.ts(3,24): error TS2353: Object literal may only specify known properties, and 'b' does not exist in type '{ a?: 1 | undefined; }'.
+ttttExcessPropertyFirstDuplicate.ts(3,36): error TS1117: An object literal cannot have multiple properties with the same name.
+ttttExcessPropertyFirstDuplicate.ts(4,30): error TS2353: Object literal may only specify known properties, and '"c"' does not exist in type '{ a?: 1 | undefined; }'.
+ttttExcessPropertyFirstDuplicate.ts(4,38): error TS1117: An object literal cannot have multiple properties with the same name.
+
+
+==== ttttExcessPropertyFirstDuplicate.ts (4 errors) ====
+    // A name written twice in an object literal is one symbol whose valueDeclaration is the first: an excess property
+    // is reported there (TS2353), the duplicate itself is TS1117
+    const o: { a?: 1 } = { b: 1, a: 1, b: 2 };
+                           ~
+!!! error TS2353: Object literal may only specify known properties, and 'b' does not exist in type '{ a?: 1 | undefined; }'.
+                                       ~
+!!! error TS1117: An object literal cannot have multiple properties with the same name.
+    const p: { a?: 1 } = { a: 1, "c": 1, c: 2 };
+                                 ~~~
+!!! error TS2353: Object literal may only specify known properties, and '"c"' does not exist in type '{ a?: 1 | undefined; }'.
+                                         ~
+!!! error TS1117: An object literal cannot have multiple properties with the same name.
+    

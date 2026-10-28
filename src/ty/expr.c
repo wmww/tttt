@@ -5204,10 +5204,9 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             .accessor = accessor,
             .setter = setter,
             // (Named as its symbol's first declaration writes it: `{ kk: 1, [k]: 2 }` is `kk`)
-            // (An accessor pair is one symbol, declared by its first accessor: tsc's valueDeclaration, where an excess
-            // property is reported)
-            .name_span = symbol && member_items[0] != item_index && (literal_item_is_late(i) || is_accessor) ?
-                object->data[member_items[0]].name_span : i->name_span,
+            // (A name written twice is one symbol, an accessor pair too, declared by its first member: tsc's
+            // valueDeclaration, where an excess property is reported, `{ b: 1, a: 1, b: 2 }`)
+            .name_span = symbol && member_items[0] != item_index ? object->data[member_items[0]].name_span : i->name_span,
             .decl_spans = decl_span,
             .decl_span_count = decl_span_count,
             .name_is_value = name_is_value,

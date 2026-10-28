@@ -1,0 +1,27 @@
+//// [test/cases/ttttExcessPropertyFirstDuplicate.ts] ////
+
+=== ttttExcessPropertyFirstDuplicate.ts ===
+// A name written twice in an object literal is one symbol whose valueDeclaration is the first: an excess property
+// is reported there (TS2353), the duplicate itself is TS1117
+const o: { a?: 1 } = { b: 1, a: 1, b: 2 };
+>o : { a?: 1; }
+>a : 1 | undefined
+>{ b: 1, a: 1, b: 2 } : { b: number; a: 1; }
+>b : number
+>1 : 1
+>a : 1
+>1 : 1
+>b : number
+>2 : 2
+
+const p: { a?: 1 } = { a: 1, "c": 1, c: 2 };
+>p : { a?: 1; }
+>a : 1 | undefined
+>{ a: 1, "c": 1, c: 2 } : { a: 1; c: number; }
+>a : 1
+>1 : 1
+>"c" : number
+>1 : 1
+>c : number
+>2 : 2
+

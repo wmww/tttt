@@ -1,0 +1,19 @@
+//// [test/cases/ttttExcessPropertyFirstDuplicate.ts] ////
+
+=== ttttExcessPropertyFirstDuplicate.ts ===
+// A name written twice in an object literal is one symbol whose valueDeclaration is the first: an excess property
+// is reported there (TS2353), the duplicate itself is TS1117
+const o: { a?: 1 } = { b: 1, a: 1, b: 2 };
+>o : Symbol(o, Decl(ttttExcessPropertyFirstDuplicate.ts, 2, 5))
+>a : Symbol(a, Decl(ttttExcessPropertyFirstDuplicate.ts, 2, 10))
+>b : Symbol(b, Decl(ttttExcessPropertyFirstDuplicate.ts, 2, 22), Decl(ttttExcessPropertyFirstDuplicate.ts, 2, 34))
+>a : Symbol(a, Decl(ttttExcessPropertyFirstDuplicate.ts, 2, 28))
+>b : Symbol(b, Decl(ttttExcessPropertyFirstDuplicate.ts, 2, 22), Decl(ttttExcessPropertyFirstDuplicate.ts, 2, 34))
+
+const p: { a?: 1 } = { a: 1, "c": 1, c: 2 };
+>p : Symbol(p, Decl(ttttExcessPropertyFirstDuplicate.ts, 3, 5))
+>a : Symbol(a, Decl(ttttExcessPropertyFirstDuplicate.ts, 3, 10))
+>a : Symbol(a, Decl(ttttExcessPropertyFirstDuplicate.ts, 3, 22))
+>"c" : Symbol("c", Decl(ttttExcessPropertyFirstDuplicate.ts, 3, 28), Decl(ttttExcessPropertyFirstDuplicate.ts, 3, 36))
+>c : Symbol("c", Decl(ttttExcessPropertyFirstDuplicate.ts, 3, 28), Decl(ttttExcessPropertyFirstDuplicate.ts, 3, 36))
+
