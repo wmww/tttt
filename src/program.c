@@ -144,7 +144,7 @@ typedef struct Program {
     _Atomic bool dependency_links;
     pthread_mutex_t dependency_links_lock;
     u32 serial; // program_serial()
-    HMapBoxSourceFile source_files_map;
+    HMapBoxSourceFile source_files_map; // By absolute normalized path (program_key_view())
     VecSourceFilePtr source_files_ordered;
     // The program_order of the first file: the files of a parent program (the test harness's shared libraries, see
     // program_copy_globals_from()) come before this one's, like tsc's default library files
@@ -793,8 +793,9 @@ static cstr relative_normalized(csview cwd, csview path) {
     return ret;
 }
 
-static csview program_canonical_view(Program const* me, csview path, cstr* storage) {
-    if (path.buf == canonical_hint.buf && path.size == canonical_hint.size && path.buf) return canonical_hint.canonical;
+// A file's canonical path (SourceFile.canonical_path, what diagnostics and listings show): relative to the working
+// directory. Made once per file (program_make_source()): the loader finds files by absolute path, program_key_view()
+static csview program_relative_view(Program const* me, csview path, cstr* storage) {
     csview cwd = program_cwd(me);
     if (path_is_normalized(path)) {
         if (path.buf[0] != '/') return path;
@@ -809,10 +810,24 @@ static csview program_canonical_view(Program const* me, csview path, cstr* stora
     return cstr_sv(storage);
 }
 
-static cstr program_canonical_path(Program const* me, csview path) {
-    cstr storage = cstr_null;
-    csview view = program_canonical_view(me, path, &storage);
-    return cstr_size(&storage) ? storage : cstr_from_sv(view);
+// The key the program and the load pool find a file by: its absolute normalized path, whatever the working directory
+// (a cwd-relative key cost every import a relative_normalized() of its path outside the working directory: vscode's
+// node_modules, a project checked from elsewhere). A view of path when it is one (a resolution's), else of *storage
+// (which the caller drops)
+static csview program_key_view(Program const* me, csview path, cstr* storage) {
+    if (path.buf == canonical_hint.buf && path.size == canonical_hint.size && path.buf) return canonical_hint.canonical;
+    if (path.size && path.buf[0] == '/' && path_is_normalized(path)) return path;
+    csview cwd = program_cwd(me);
+    if (path.size && cwd.size > 1 && path_is_normalized(path)) {
+        // (Relative and normalized: below the working directory)
+        *storage = cstr_with_capacity(cwd.size + 1 + path.size);
+        cstr_append_sv(storage, cwd);
+        cstr_append_lit(storage, "/");
+        cstr_append_sv(storage, path);
+        return cstr_sv(storage);
+    }
+    *storage = absolute_path_of(cwd, path);
+    return cstr_sv(storage);
 }
 
 void program_set_file_size(Program* me, i64 (*file_size)(void* ctx, csview path), void* ctx) {
@@ -955,7 +970,7 @@ typedef struct PreresolvedEntry {
     ModuleRef const* ref;
     ResolutionMode mode;
     ResolvedModule const* resolved; // The resolver's (module_resolver_resolve_shared())
-    csview canonical; // Of resolved->path when it's a view of it (program_canonical_view() without storage), else empty
+    csview canonical; // Of resolved->path when it's a view of it (program_key_view() without storage), else empty
 } PreresolvedEntry;
 
 typedef struct Preresolved {
@@ -993,7 +1008,9 @@ static csview program_resolution_containing(Program const* me, SourceFile const*
         csview source = program_source_of_output(me, cstr_sv(&file->canonical_path));
         if (source.size) return source;
     }
-    return cstr_sv(&file->canonical_path);
+    // (Absolute: the resolver's key is made from it without normalizing, a relative path outside the working directory
+    // would need it, resolution_key())
+    return cstr_size(&file->absolute_path) ? cstr_sv(&file->absolute_path) : cstr_sv(&file->canonical_path);
 }
 
 // A resolved TypeScript file becomes part of the program, anything else is remembered on the ref as why there's no file
@@ -1581,7 +1598,18 @@ static void program_attach_content_mapped(SourceFile* file, ContentMapper const*
 static SourceFile* program_make_source_text(Program const* me, csview canonical_path, cstr contents,
     ContentMapper const* mapper, ContentMapperOutput* mapped, bool is_stdlib, ErrorCtx* errs);
 
-static SourceFile* program_make_source(Program const* me, csview canonical_path, bool is_stdlib, ErrorCtx* errs) {
+static SourceFile* program_make_source_canonical(Program const* me, csview canonical_path, bool is_stdlib, ErrorCtx* errs);
+
+// (key: program_key_view()'s)
+static SourceFile* program_make_source(Program const* me, csview key, bool is_stdlib, ErrorCtx* errs) {
+    cstr storage = cstr_null;
+    SourceFile* ret = program_make_source_canonical(me, program_relative_view(me, key, &storage), is_stdlib, errs);
+    cstr_drop(&storage);
+    if (ret) cstr_assign_sv(&ret->absolute_path, key);
+    return ret;
+}
+
+static SourceFile* program_make_source_canonical(Program const* me, csview canonical_path, bool is_stdlib, ErrorCtx* errs) {
     cstr contents;
     ContentMapper const* mapper = my options.content_mapper_count && !is_stdlib ?
         content_mapper_for_path(&my options, canonical_path) : nullptr;
@@ -1782,7 +1810,7 @@ static void queue_batch_push(QueueBatch* batch, csview canonical, cstr storage, 
 
 static void program_queue_path(Program* me, QueueBatch* batch, csview absolute, bool is_stdlib) {
     cstr storage = cstr_null;
-    csview canonical = program_canonical_view(me, absolute, &storage);
+    csview canonical = program_key_view(me, absolute, &storage);
     if (!cstr_size(&storage)) storage = cstr_from_sv(canonical);
     queue_batch_push(batch, canonical, storage, is_stdlib);
 }
@@ -1887,7 +1915,7 @@ static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile* fil
         }
         ResolvedModule const* shared = module_resolver_resolve_shared(resolver, cstr_sv(&ref->path), containing, mode);
         cstr storage = cstr_null;
-        csview canonical = program_canonical_view(me, cstr_sv(&shared->path), &storage);
+        csview canonical = program_key_view(me, cstr_sv(&shared->path), &storage);
         if (cstr_size(&storage)) canonical = (csview){0};
         cstr_drop(&storage);
         preresolved->entries[preresolved->count++] = (PreresolvedEntry){
@@ -2117,7 +2145,7 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
 
     cstr storage = cstr_null;
-    csview canonical_view = program_canonical_view(me, path, &storage);
+    csview canonical_view = program_key_view(me, path, &storage);
     SourceFile* cached_source = program_lookup_canonical(me, canonical_view);
     // (After the libs phase, a library file the program doesn't have yet may be one the libs phase left to its worker,
     // or under one: the remembered ones are loaded first, as they would have been, program_finish_deferred_libs(). In
@@ -2299,8 +2327,12 @@ static SourceFile* program_add_made_source(Program* me, cstr canonical_path, Sou
     ContentMapped const* mapped = source_file->content_mapped;
     for (u32 i = 0; mapped && i < mapped->supplemental_count; i++) {
         SourceFile* supplemental = mapped->supplementals[i];
-        if (hmap_box_source_file_get(&my source_files_map, cstr_sv(&supplemental->canonical_path))) continue;
-        program_add_made_source(me, cstr_clone(supplemental->canonical_path), supplemental);
+        cstr key = absolute_path_of(program_cwd(me), cstr_sv(&supplemental->canonical_path));
+        if (hmap_box_source_file_get(&my source_files_map, cstr_sv(&key))) {
+            cstr_drop(&key);
+            continue;
+        }
+        program_add_made_source(me, key, supplemental);
     }
 
     // (A worker's blocks: freed once loading is over, not here, where it would wait on the worker's malloc arena)
@@ -2467,7 +2499,7 @@ SourceFile* program_source_at(Program const* me, u32 index) {
 
 SourceFile* program_find_source(Program const* me, csview path) {
     cstr storage = cstr_null;
-    SourceFile* found = program_lookup_canonical(me, program_canonical_view(me, path, &storage));
+    SourceFile* found = program_lookup_canonical(me, program_key_view(me, path, &storage));
     cstr_drop(&storage);
     // (A redirect as itself: what refers to it says what it stands for)
     if (found && found->excluded && !found->package_redirect) return nullptr;
@@ -2530,7 +2562,7 @@ void program_load_ahead_roots(Program* me, csview const* roots, isize root_count
     csview* canonical = c_new_n(csview, root_count + 1);
     cstr* storage = c_new_n(cstr, root_count + 1);
     for (isize i = 0; i < root_count; i++) storage[i] = cstr_null;
-    for (isize i = 0; i < root_count; i++) canonical[i] = program_canonical_view(me, roots[i], &storage[i]);
+    for (isize i = 0; i < root_count; i++) canonical[i] = program_key_view(me, roots[i], &storage[i]);
     load_pool_queue_many(pool, canonical, root_count, false);
     for (isize i = 0; i < root_count; i++) cstr_drop(&storage[i]);
     c_free_n(storage, root_count + 1);

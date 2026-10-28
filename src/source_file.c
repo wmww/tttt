@@ -165,6 +165,7 @@ void source_file_drop(SourceFile* me) {
     cstr_drop(&my package_id);
     free(my load_children);
     cstr_drop(&my canonical_path);
+    cstr_drop(&my absolute_path);
     if (my text_mapping) source_text_unmap(my text_mapping);
     else cstr_drop(&my contents);
     free(my line_starts);

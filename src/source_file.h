@@ -144,6 +144,7 @@ typedef struct SourceFile {
     // Its index in the process-wide file table (spans hold it, source_file_register()): first, see source_file_id()
     u32 id;
     cstr canonical_path; // The canonical path of this file relative to the current working directory
+    cstr absolute_path; // Its absolute normalized path when the program loaded it from disk (the key it finds it by), else empty
     cstr contents;
     // Whether contents holds "@link" anywhere: 0 not asked yet, 1 no, 2 yes (source_file_has_link_tag(), benign race: idempotent)
     uint8_t has_link_tag;
