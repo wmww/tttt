@@ -12522,10 +12522,11 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
         }
         hop_whitespace(&p);
         attributes_a = anchor(&p);
-        // (A `<` token: tsc's scanner makes `<<` and `<=` tokens of their own. But after a missing name tsgo takes
-        // `<<T>() => void>` as type arguments, `(<a><<<T>()=>void>/></a>)`: bun 93-P04b, not understood)
+        // (A `<` token: tsc's scanner makes `<<` and `<=` tokens of their own. But after a missing name, or right after
+        // a child element's name, tsgo's tree has `<<T>() => void>` as type arguments, `(<a><<<T>()=>void>/></a>)` and
+        // `(<a><c<<T>()=>void> x="1"/></a>)`: bun 93-P04b and 93-P04c, not understood; `<c <<T>` aborts, 93-P04d)
         if (!p.shared->source->is_js && *p.pos == '<' && p.pos[1] != '/' &&
-            ((p.pos[1] != '<' && p.pos[1] != '=') || name_missing)
+            ((p.pos[1] != '<' && p.pos[1] != '=') || name_missing || (p.shared->jsx_children_depth && p.pos == name_end))
         ) {
             // tsc's parseBracketedList(TypeArguments): types separated by commas, anything else ends the list
             Anchor type_args_a = anchor(&p);
