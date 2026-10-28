@@ -2989,6 +2989,11 @@ static Span node_error_span(Expr const* me) {
             if (span_valid(function->name)) return function->name;
             // (An anonymous one's assigned name: tsgo's GetNameOfDeclaration)
             if (span_valid(function_impl_rare(function)->assigned_name)) return function_impl_rare(function)->assigned_name;
+            // (Else its first token, `function` or `async`: tsgo's GetErrorRangeForNode without a name)
+            char const* first_end = start;
+            char const* end = span_end_ptr(span);
+            while (first_end < end && ((*first_end >= 'a' && *first_end <= 'z'))) first_end++;
+            if (first_end > start) return span_make_in(span, start, first_end);
             break;
         }
         case EXPR_CLASS_DECL:
@@ -3675,7 +3680,7 @@ static void yield_typecheck(Expr const* me, ErrorCtx* errs) {
         }
     }
     Ty const* yielded;
-    Span span = yield->expr.tag == EXPR_IMPLICIT_ANY ? expr_outer_span(me) : expr_outer_span(&yield->expr);
+    Span span = yield->expr.tag == EXPR_IMPLICIT_ANY ? expr_outer_span(me) : expr_error_span(&yield->expr); // (tsc's error(node): getErrorSpanForNode)
     if (yield->op == UNARY_OP_YIELD_STAR) {
         u32 use = async ? ITERATION_ASYNC_YIELD_STAR : ITERATION_YIELD_STAR;
         // (What the generator is sent, by its annotation: tsc's checkYieldExpression, signatureNextType)

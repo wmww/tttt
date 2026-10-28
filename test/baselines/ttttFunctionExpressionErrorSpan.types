@@ -1,0 +1,43 @@
+//// [test/cases/ttttFunctionExpressionErrorSpan.ts] ////
+
+=== ttttFunctionExpressionErrorSpan.ts ===
+// An anonymous function expression's error span is its first token (tsgo's GetErrorRangeForNode without a name), and
+// `yield*`'s TS2488 is at its operand's error span (mutation testing seed 20261103, generatorTypeCheck27)
+function* g(): IterableIterator<(x: string) => number> {
+>g : () => IterableIterator<(x: string) => number>
+>x : string
+
+    yield * function* () {
+>yield * function* () {        yield (x: string) => x.length;    } : any
+>function* () {        yield (x: string) => x.length;    } : () => Generator<(x: string) => number, void, unknown>
+
+        yield (x: string) => x.length;
+>yield (x: string) => x.length : any
+>(x: string) => x.length : (x: string) => number
+>x : string
+>x.length : number
+>x : string
+>length : number
+
+    };
+}
+declare function h(cb: number): void;
+>h : (cb: number) => void
+>cb : number
+
+h(function () {
+>h(function () {    return 1;}) : void
+>h : (cb: number) => void
+>function () {    return 1;} : () => number
+
+    return 1;
+>1 : 1
+
+});
+h(async function () {
+>h(async function () {}) : void
+>h : (cb: number) => void
+>async function () {} : () => Promise<void>
+
+});
+

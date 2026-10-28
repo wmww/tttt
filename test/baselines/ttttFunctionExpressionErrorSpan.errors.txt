@@ -1,0 +1,27 @@
+ttttFunctionExpressionErrorSpan.ts(4,13): error TS2488: Type '() => Generator<(x: string) => number, void, unknown>' must have a '[Symbol.iterator]()' method that returns an iterator.
+ttttFunctionExpressionErrorSpan.ts(9,3): error TS2345: Argument of type '() => number' is not assignable to parameter of type 'number'.
+ttttFunctionExpressionErrorSpan.ts(12,3): error TS2345: Argument of type '() => Promise<void>' is not assignable to parameter of type 'number'.
+
+
+==== ttttFunctionExpressionErrorSpan.ts (3 errors) ====
+    // An anonymous function expression's error span is its first token (tsgo's GetErrorRangeForNode without a name), and
+    // `yield*`'s TS2488 is at its operand's error span (mutation testing seed 20261103, generatorTypeCheck27)
+    function* g(): IterableIterator<(x: string) => number> {
+        yield * function* () {
+                ~~~~~~~~
+!!! error TS2488: Type '() => Generator<(x: string) => number, void, unknown>' must have a '[Symbol.iterator]()' method that returns an iterator.
+            yield (x: string) => x.length;
+        };
+    }
+    declare function h(cb: number): void;
+    h(function () {
+      ~~~~~~~~
+!!! error TS2345: Argument of type '() => number' is not assignable to parameter of type 'number'.
+!!! related TS6212 ttttFunctionExpressionErrorSpan.ts:9:3: Did you mean to call this expression?
+        return 1;
+    });
+    h(async function () {
+      ~~~~~
+!!! error TS2345: Argument of type '() => Promise<void>' is not assignable to parameter of type 'number'.
+    });
+    
