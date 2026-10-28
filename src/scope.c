@@ -150,7 +150,8 @@ SymbolEntry* symbol_table_collect(SymbolTable const* me, u32* count) {
 // Binder
 
 Binder* binder_new(ErrorCtx* errs) {
-    Binder* me = c_new(Binder, { .errs = errs });
+    static _Atomic u64 serials;
+    Binder* me = c_new(Binder, { .errs = errs, .serial = atomic_fetch_add(&serials, 1) + 1 });
     my global_scope = arena_new(&my arena, Scope);
     *my global_scope = (Scope){ .kind = SCOPE_GLOBAL, .binder = me };
     return me;
@@ -5455,6 +5456,76 @@ static int suggest_compare_symbols(void* ctx, isize a, isize b) {
     return spelling_compare_strings((void*)my names, a, b);
 }
 
+// The suggestions among the globals, memoized: each is ~2 M instructions (the distance to every global of a length
+// near the name's: lib.dom's thousands), and a project whose test files lack their runner's types asks for `describe`
+// and `expect` tens of thousands of times, one after the other in resolve_shard_merge_chunks() (mikro-orm: 27k
+// unresolved names). spelling_suggestion_ex() only reads the candidates (names and entries, the symbols' declarations
+// for the tie-break, which don't change once declared), so the same candidates give the same answer: a memo slot keeps
+// the candidates it answered for, compared whole each time (their collection, with its side effects, still runs), and
+// the answers by name. Per thread, per binder (its serial: names point into its files' text)
+enum { SUGGEST_MEMO_FROM = 512, SUGGEST_MEMO_SLOTS = 4, SUGGEST_MEMO_NAMES = 64 };
+
+typedef struct SuggestMemo {
+    u64 binder;
+    u32 meaning;
+    u32 count, extra;
+    csview* names; // count + extra
+    SymbolEntry* entries; // count
+    struct { char* name; isize name_len; isize best; } answers[SUGGEST_MEMO_NAMES];
+    u32 answer_count, next_answer;
+} SuggestMemo;
+
+static thread_local SuggestMemo suggest_memo[SUGGEST_MEMO_SLOTS];
+static thread_local u32 suggest_memo_next;
+
+static void suggest_memo_clear(SuggestMemo* me) {
+    free(my names);
+    free(my entries);
+    for (u32 i = 0; i < my answer_count; i++) free(my answers[i].name);
+    *me = (SuggestMemo){0};
+}
+
+// spelling_suggestion_ex() over names (count + extra) with suggest_compare_symbols(), of a binder's globals
+static isize suggest_memoized(SymbolTable const* globals, csview const* names, SymbolEntry const* entries, u32 count,
+    u32 extra, u32 meaning, csview name) {
+    Binder const* binder = (Binder const*)((char const*)globals - offsetof(Binder, globals));
+    SuggestMemo* memo = nullptr;
+    for (u32 i = 0; i < SUGGEST_MEMO_SLOTS && !memo; i++) {
+        SuggestMemo* slot = &suggest_memo[i];
+        if (slot->names && slot->binder == binder->serial && slot->meaning == meaning && slot->count == count &&
+            slot->extra == extra && !memcmp(slot->names, names, sizeof(csview) * (count + extra)) &&
+            !memcmp(slot->entries, entries, sizeof(SymbolEntry) * count)
+        ) {
+            memo = slot;
+        }
+    }
+    if (memo) {
+        for (u32 i = 0; i < memo->answer_count; i++) {
+            if (memo->answers[i].name_len == name.size && !memcmp(memo->answers[i].name, name.buf, (size_t)name.size)) {
+                return memo->answers[i].best;
+            }
+        }
+    } else {
+        memo = &suggest_memo[suggest_memo_next++ % SUGGEST_MEMO_SLOTS];
+        suggest_memo_clear(memo);
+        *memo = (SuggestMemo){ .binder = binder->serial, .meaning = meaning, .count = count, .extra = extra,
+            .names = malloc(sizeof(csview) * (count + extra)), .entries = malloc(sizeof(SymbolEntry) * count) };
+        panic_if(!memo->names || !memo->entries, "out of memory");
+        memcpy(memo->names, names, sizeof(csview) * (count + extra));
+        memcpy(memo->entries, entries, sizeof(SymbolEntry) * count);
+    }
+    SuggestCompare cmp = { .names = memo->names, .entries = memo->entries, .extra = extra };
+    isize best = spelling_suggestion_ex(name, memo->names, count + extra, suggest_compare_symbols, &cmp);
+    u32 at = memo->answer_count < SUGGEST_MEMO_NAMES ? memo->answer_count++ : memo->next_answer++ % SUGGEST_MEMO_NAMES;
+    free(memo->answers[at].name);
+    memo->answers[at].name = malloc((size_t)name.size + 1);
+    panic_if(!memo->answers[at].name, "out of memory");
+    memcpy(memo->answers[at].name, name.buf, (size_t)name.size);
+    memo->answers[at].name_len = name.size;
+    memo->answers[at].best = best;
+    return best;
+}
+
 // tsc's getSuggestionForSymbolNameLookup on one table
 // `exports`: a module's or namespace's exports, where `export default <expr>` is tsc's SymbolFlags.Property (no module
 // member)
@@ -5508,7 +5579,9 @@ static bool suggest_in_table(SymbolTable const* table, bool globals, bool export
         }
     }
     SuggestCompare cmp = { .names = names, .entries = entries, .extra = extra };
-    isize best = spelling_suggestion_ex(name, names, count + extra, suggest_compare_symbols, &cmp);
+    isize best = globals && count >= SUGGEST_MEMO_FROM ?
+        suggest_memoized(table, names, entries, count, extra, meaning, name) :
+        spelling_suggestion_ex(name, names, count + extra, suggest_compare_symbols, &cmp);
     if (best >= 0) *out = (Suggestion){ .name = names[best], .symbol = best >= extra ? entries[best - extra].symbol : nullptr };
     free(names);
     free(entries);

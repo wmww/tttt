@@ -649,6 +649,7 @@ typedef struct Binder {
     Arena scope_arena;
     ErrorCtx* errs;
     SymbolTable globals;
+    u64 serial; // Distinct per binder of the process (suggest_in_table()'s memo)
     Scope* global_scope;
     Symbol* global_this;
     Binder const* parent;
