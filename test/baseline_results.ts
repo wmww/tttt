@@ -9987,8 +9987,8 @@ const baselines = {
     },
     'bun83-R01c': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'bun83-R02a': {
         errors: true,
@@ -12178,6 +12178,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAmbientPatternImplicitAny': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAmbientPatternParameterNullable': {
         errors: true,
         symbols: true,
@@ -12254,6 +12259,11 @@ const baselines = {
         types: true,
     },
     'ttttArrayUnionMethodGenericMember': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttArrowInitializerListRecovery': {
         errors: true,
         symbols: true,
         types: true,
@@ -12503,6 +12513,11 @@ const baselines = {
         dts: true,
     },
     'ttttBodilessParameterPatterns': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttBodilessPatternImplicitAny': {
         errors: true,
         symbols: true,
         types: true,
@@ -12817,6 +12832,11 @@ const baselines = {
         symbols: true,
         types: true,
         dts: true,
+    },
+    'ttttContainingMessageWeakType': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttContextRootSettled': {
         errors: true,
@@ -14117,9 +14137,9 @@ const baselines = {
         types: true,
     },
     'ttttForInitializerDisallowInLeak': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttForOfIterableSeesLoopInProgress': {
         errors: true,
@@ -14152,6 +14172,11 @@ const baselines = {
         types: true,
     },
     'ttttFunctionExpressionDefaultsAtFirstCheck': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttFunctionExpressionErrorSpan': {
         errors: true,
         symbols: true,
         types: true,
@@ -15093,6 +15118,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttJsxTypeArgumentCommas': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttKeyofConstraintChainNotDeeplyNested': {
         errors: true,
         symbols: true,
@@ -15189,6 +15219,11 @@ const baselines = {
         types: true,
     },
     'ttttLimitRerunOneChecker': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttListEndOfFile': {
         errors: true,
         symbols: true,
         types: true,
@@ -15363,6 +15398,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttMappedTypeExtraMembers': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttMappedTypeMemberSeparator': {
         errors: true,
         symbols: true,
@@ -15441,6 +15481,11 @@ const baselines = {
         types: true,
     },
     'ttttNakedTypeParamFallThrough': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttNamespaceBodyMissingBrace': {
         errors: true,
         symbols: true,
         types: true,
@@ -15616,6 +15661,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttObjectBindingMissingTarget': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttObjectLiteralAccessorPairModifiers': {
         errors: true,
         symbols: true,
@@ -15783,6 +15833,11 @@ const baselines = {
         symbols: true,
         types: false,
     },
+    'ttttParameterListMissingParenEnd': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttParameterModifierReservedName': {
         errors: true,
         symbols: true,
@@ -15794,6 +15849,11 @@ const baselines = {
         types: true,
     },
     'ttttParameterPropertyDecoratorRejected(experimentaldecorators=true)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttParameterReservedNameFullStart': {
         errors: true,
         symbols: true,
         types: true,
@@ -15970,6 +16030,11 @@ const baselines = {
         types: true,
     },
     'ttttRequiredTypeParamUndefinedFacts': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttRestElementInitializerUnchecked': {
         errors: true,
         symbols: true,
         types: true,
@@ -16493,6 +16558,11 @@ const baselines = {
         types: true,
     },
     'ttttTypeAssertionNotAssignable': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttTypeLiteralCallSignatureAbort': {
         errors: true,
         symbols: true,
         types: true,
