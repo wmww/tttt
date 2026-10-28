@@ -41,7 +41,17 @@ check, not the bench, and no machine-specific tuning: vision.md "Decisions"); me
 wins first; land fast and gate in batches.
 
 ## Now (2026-10-28): the hub regime, the laptop's two A/Bs
-- **The hub regime diagnosis** (the input to the redesign question; a diagnosis track with a written verdict, no
+- **The shared graph at the laptop's 24 threads** (the next point on the break-even curve, hub_regime.md): flag
+  against plain at the defaults and at `--threads 24 --checkers 24` on zod, drizzle, effect, vscode, dokploy/apps/
+  dokploy and openbot/apps/i18n (physical paths), best of 5 interleaved, wall, user, RSS; `TTTT_SHARED_GRAPH=1` is the
+  flag. If the corpora are at or under 1.0 there, the flag is a default-on candidate pending residue C; else the
+  per-read cost comes first.
+- **Fewer shared reads per unit of work** (the only lever left on the premium): content nesting order instead of
+  first-touch stamps (needs a key that orders a type made while walking into another after it: bugs/shared_graph.md
+  "drizzle C"; it also removes is_deeply_nested_stamped's 311 M instructions and residue C), and variance groups
+  measured once (zod 287 at K1 against 1086 at K8 under the flag: lost work, +3..18% instructions; the 10-22 closure
+  of variance sharing was about K-independence, which the shared graph's taint rules now give a frame for).
+- **The hub regime diagnosis (done 2026-10-29: hub_regime.md)** (the input to the redesign question; a diagnosis track with a written verdict, no
   build-out): on dokploy/apps/dokploy, monkeytype/backend, zod and openbot/i18n, what the hub is (which declarations
   nearly every file reaches: `TTTT_DUP_CENSUS`, arenasites), how long building it serially takes at K1 (the wall
   floor of the per-checker model at any K, and of the parked shared graph), what share of each checker's types it

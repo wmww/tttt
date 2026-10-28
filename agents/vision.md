@@ -95,6 +95,17 @@ measured wins first; land fast and gate in batches.
 6. **Re-pin to 7.1.0 stable** when it ships.
 
 ## Decisions (each with its reason; the narrative is in git history of this file)
+- **The shared graph's premium is attributed; no switch rescues it** (2026-10-29, worker premium; notes/shared_graph.md
+  "The premium, attributed", hub_regime.md "The break-even curve" and the predictor section). The +15% CPU at K8 is
+  not coherence: the flag's instructions are at or below plain's at K8 (it removes the duplication: types made K8/K1
+  1.00-1.06 against plain's 1.4-4.8), and its cost is a cache miss per piece of shared state a checker first reads
+  (half the shared-table probes, half reading types another checker made), present on one thread. Races add 1.6x on
+  dokploy only. Cuts landed (shared hits cached privately, no probes for unpublished kinds): -1..-3%. The curve bends
+  the right way with threads (hubs median wall 1.11/1.05/0.90 at N4/8/16; corpora 1.26/1.15/1.10, crossing only
+  around 32-64 threads), no core-count threshold wins everywhere, and no import-graph predictor separates winners
+  from losers (the type-level fan-in of an `as const` catalog isn't in the import graph). What is left: the laptop
+  at its 24 threads (the curve's next point), fewer shared reads per unit of work (content order instead of
+  first-touch stamps, also residue C's fix; variance groups shared), or accepting the flag as a per-project option.
 - **The leaner type graph is a memory project, not the route to speed** (2026-10-29, the laptop at 2c389b213:
   measurements.md "The 12-core box at 2c389b213"): step 1 (instance props made on first use) cut zod's arena 20% and
   RSS 12% but cycles only 1.6%, because the bytes it saved were written once and never read: the stalls are random
