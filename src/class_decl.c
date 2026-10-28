@@ -2010,7 +2010,9 @@ static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const*
         return;
     }
     if (span_valid(name) && !item->field.has_explicit_type && compiler_options()->no_implicit_any &&
-        !(span_source(name) && span_source(name)->is_js) && item->field.value.tag != EXPR_IMPLICIT_ANY &&
+        !(span_source(name) && span_source(name)->is_js) &&
+        // (Or the constructor's assignments to it without one: its type is theirs, getFlowTypeInConstructor)
+        (item->field.value.tag != EXPR_IMPLICIT_ANY || class_untyped_field_ts_assigned(item)) &&
         class_item_get_type((ClassItem*)item) == ty_intrinsic(current_checker, TY_CIRCULAR)
     ) {
         error_ctx_error_d(errs, name, 7022, "'", name, "' implicitly has type 'any' because it does not have a type "

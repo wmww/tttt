@@ -1,0 +1,94 @@
+//// [test/cases/ttttConstructorAssignedFieldCycle.ts] ////
+
+=== ttttConstructorAssignedFieldCycle.ts ===
+// A field without a type or an initializer is typed by the constructor's assignments to it (tsc's
+// getFlowTypeInConstructor): when they need the field's own type, it is circular, TS7022 at the field like one with an
+// initializer (reportCircularityError of the property; bun 99-V4 checkClassLikeDeclaration__06/07,
+// getTypeOfVariableOrParameterOrPropertyWorker__02, loop__control_class_constructor)
+class C {
+>C : C
+
+  x;
+>x : any
+
+  y;
+>y : any
+
+  constructor() {
+    this.x = this.y;
+>this.x = this.y : any
+>this.x : any
+>this : this
+>x : any
+>this.y : any
+>this : this
+>y : any
+
+    this.y = this.x;
+>this.y = this.x : any
+>this.y : any
+>this : this
+>y : any
+>this.x : any
+>this : this
+>x : any
+  }
+}
+class D {
+>D : D
+
+  x;
+>x : any
+
+  constructor() {
+    this.x = this.read();
+>this.x = this.read() : any
+>this.x : any
+>this : this
+>x : any
+>this.read() : any
+>this.read : () => any
+>this : this
+>read : () => any
+  }
+  read() {
+>read : () => any
+
+    return this.x;
+>this.x : any
+>this : this
+>x : any
+  }
+}
+class E {
+>E : E
+
+  a;
+>a : any
+
+  b;
+>b : any
+
+  constructor(o: E) {
+>o : E
+
+    this.a = o.b;
+>this.a = o.b : any
+>this.a : any
+>this : this
+>a : any
+>o.b : any
+>o : E
+>b : any
+
+    this.b = o.a;
+>this.b = o.a : any
+>this.b : any
+>this : this
+>b : any
+>o.a : any
+>o : E
+>a : any
+  }
+}
+

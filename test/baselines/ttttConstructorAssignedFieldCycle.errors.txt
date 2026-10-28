@@ -1,0 +1,51 @@
+ttttConstructorAssignedFieldCycle.ts(6,3): error TS7022: 'x' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+ttttConstructorAssignedFieldCycle.ts(7,3): error TS7022: 'y' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+ttttConstructorAssignedFieldCycle.ts(14,3): error TS7022: 'x' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+ttttConstructorAssignedFieldCycle.ts(18,3): error TS7023: 'read' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+ttttConstructorAssignedFieldCycle.ts(23,3): error TS7022: 'a' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+ttttConstructorAssignedFieldCycle.ts(24,3): error TS7022: 'b' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+
+
+==== ttttConstructorAssignedFieldCycle.ts (6 errors) ====
+    // A field without a type or an initializer is typed by the constructor's assignments to it (tsc's
+    // getFlowTypeInConstructor): when they need the field's own type, it is circular, TS7022 at the field like one with an
+    // initializer (reportCircularityError of the property; bun 99-V4 checkClassLikeDeclaration__06/07,
+    // getTypeOfVariableOrParameterOrPropertyWorker__02, loop__control_class_constructor)
+    class C {
+      x;
+      ~
+!!! error TS7022: 'x' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+      y;
+      ~
+!!! error TS7022: 'y' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+      constructor() {
+        this.x = this.y;
+        this.y = this.x;
+      }
+    }
+    class D {
+      x;
+      ~
+!!! error TS7022: 'x' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+      constructor() {
+        this.x = this.read();
+      }
+      read() {
+      ~~~~
+!!! error TS7023: 'read' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+        return this.x;
+      }
+    }
+    class E {
+      a;
+      ~
+!!! error TS7022: 'a' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+      b;
+      ~
+!!! error TS7022: 'b' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+      constructor(o: E) {
+        this.a = o.b;
+        this.b = o.a;
+      }
+    }
+    
