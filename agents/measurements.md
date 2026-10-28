@@ -158,6 +158,33 @@ numbers are those of whichever tree last ran each oracle (bugcount.py prints whi
 - 2026-10-24 f8d57e9b9: 294 open (23 designs), 81 text-only, 38 tsgo excluded; symptoms: suite_tsc 63, suite_own 13, suite_bun 1135, bun 886, dt 0, source 7, expect 0, dts 6, flagflip 20, clidiff_text 22, unexplained_sweep 0, unexplained_sourcesweep 1, unexplained_buncases 129
 - 2026-10-24 45397f75f: 309 open (27 designs), 82 text-only, 38 tsgo excluded; symptoms: suite_tsc 67, suite_own 15, suite_bun 1133, bun 879, dt 0, source 3, expect 0, dts 6, flagflip 23, clidiff_text 34, unexplained_sweep 0, unexplained_sourcesweep 0, unexplained_buncases 129
 
+## The 12-core box at df95ec2f: `--huge-pages` off (default) vs on, kernel profile (2026-10-27)
+Run by an agent on the human's laptop (Ryzen AI 9 HX 370, 24 threads, kernel 7.2.11-zen1, THP `always`, defrag
+`defer+madvise`, desktop load 1.3-2). fast/tttt (copied out), `TTTT_SYNC_EXIT=1`, one warm-up each, then 5
+alternating off/on pairs, medians; `perf stat -e cycles:u,cycles:k,instructions:u,page-faults,dTLB-load-misses`
+under `/usr/bin/time -v` (minor faults, peak RSS). `perf_event_paranoid` lowered to 1 for cycles:k.
+
+| corpus | wall s | cycles:u G | cycles:k M | k/u | minor faults | dTLB-load-misses | peak RSS MB |
+|---|---|---|---|---|---|---|---|
+| drizzle off | 0.25 | 6.09 | 499 | 8.0% | 45.7k | 482k | 1180 |
+| drizzle on | 0.23 | 6.05 | 424 | 7.0% | 13.0k | 376k | 1202 |
+| vscode off | 1.57 | 78.0 | 3096 | 4.0% | 166k | 5.55M | 5629 |
+| vscode on | 1.56 | 78.4 | 3148 | 4.0% | 44k | 5.03M | 5651 |
+
+- The flag cuts minor faults 3.6x and dTLB misses 10-22%, but wall and cycles:u are within noise on both (ranges
+  overlap); kernel cycles drop ~75 M on drizzle (~1% of user), none on vscode. **The opt-in huge-pages path has
+  nothing left to buy here.** Kernel/user at the defaults (4% vscode, 8% drizzle) is at or below 3a77c827's 6-9%
+  measured with huge pages still on by default.
+- perf's `page-faults` (6.8k drizzle, 21k vscode) is 6-8x below rusage's minor faults and doesn't move with the
+  flag; rusage is the number that responds.
+- Kernel profile, drizzle, defaults (`perf record -e cycles:k -g`, `--no-children --sort symbol`): `clear_pages`
+  29.8%, `get_page_from_freelist` 5.4%, the rest of faulting/allocation (anon pte, memcg charge, LRU, prep_new_page)
+  ~10%; spinlocks ~4.7% (`rwsem_down_write_slowpath` 0.5%: mmap_lock); TLB shootdowns ~3.7%
+  (`smp_call_function_many_cond`, `flush_tlb_func`); futex and mmap/munmap not in the top 40. So zeroing fresh pages
+  is ~2.4% of user cycles; huge pages don't avoid it (a 2 MB page is zeroed too); touching less fresh memory
+  (reusing arena memory) is the remaining lever. `strace -c -f` on the same run: 2617 madvise calls (24% of
+  syscall time), 2146 futex, 382 mmap, 69 munmap; where the madvise calls come from wasn't looked at.
+
 ## 2 MB-aligned huge arena chunks: A/B on this box (2026-10-23, on 9894ae8e5)
 arena_alloc_chunk() (src/ty/checker.c) mapping a huge-page chunk as whole, aligned 2 MB pages (agents/notes/
 kernel_time.md item 5). fast/tttt before and after, `scripts/abbench.sh` (interleaved, `TTTT_SYNC_EXIT=1`, medians,
