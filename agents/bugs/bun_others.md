@@ -455,9 +455,15 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   (checkAndReportErrorForUsingTypeAsNamespace; its TS2713 alternative needs the declared type's properties, which the
   binder doesn't have: still TS2702 for `import x = I.p` of an interface I with a property p); TS1380 through a
   type-only first name whether the rest resolves or not. [fixed e5478c1f3]
-- 93-P04c `(<a><c<<T>()=>void> x="1"/></a>)`: tsc reports one TS1003 at the `<<` and nothing after it (its child
-  parse isn't understood: see 93-P04b's note above); tttt took `<<` for type arguments before 8981a243d (spurious
-  TS7026/TS2558), and recovers in the attribute list since (TS1003 x2, TS1382 x3 spurious). [open]
+- The JSX `<<` family (93-P04b/c/e): tsgo's parseJsxChildren rescans the scanner (ReScanJsxToken) but never assigns
+  the parser's token, which stays the ordinary token wherever the previous child element ended without its `>` (its
+  attribute list aborted, a closing tag's `>` missing). At a `<<`, `<<=` or `<=` right there the next child's
+  parseExpected(`<`) fails silently (deduplicated with the previous element's error at that position) without
+  advancing, its name is missing, scanJsxIdentifier then makes the scanner's JSX `<` the token, and that `<` opens the
+  type arguments: `(<a><c<<T>()=>void> x="1"/></a>)` is `<c`, then `<` + `<<T>()=>void>` + ` x="1"/>`; `<=` gives an
+  empty list and TS1005 '>' expected. A type argument list also ends at a token that is neither a comma nor a type's
+  start (TS1005, not TS1110). Found by dumping tsgo's tree (a Go test through `go test -overlay` in
+  internal/parser). Replaces 8981a243d's missing-name and 092a66c3d's no-whitespace rules. [fixed bun8-1]
 - Mutation testing (mutate.py -n 2000 --seed 20261030) left after bun7: `--syntax` 5 (2 render; TS2842 renaming in a
   parse-broken destructuring, discriminantPropertyInference; a `<A, B extends Object A>` duplicate type parameter
   that tsc doesn't count for TS2314, genericContextualTypes2; a missing TS1005 in a broken type alias,

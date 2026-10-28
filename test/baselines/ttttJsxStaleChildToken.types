@@ -1,0 +1,101 @@
+//// [test/cases/ttttJsxStaleChildToken.tsx] ////
+
+=== a.tsx ===
+var a = (<a><c<T><<U>()=>void>/></a>);
+>a : any
+>(<a><c<T><<U>()=>void>/></a>) : any
+><a><c<T><<U>()=>void>/></a> : any
+>a : any
+><c<T> : any
+>c : any
+><<U>()=>void>/> : any
+> : any
+>a : any
+
+var b = (<a><c x="1"/<<T>() => 1>/></a>);
+>b : any
+>(<a><c x="1"/<<T>() => 1>/></a>) : any
+><a><c x="1"/<<T>() => 1>/></a> : any
+>a : any
+><c x="1"/ : any
+>c : any
+>x : string
+><<T>() => 1>/> : any
+> : any
+>a : any
+
+var c = (<a><b></b<<T>()=>void>/></a>);
+>c : any
+>(<a><b></b<<T>()=>void>/></a>) : any
+><a><b></b<<T>()=>void>/></a> : any
+>a : any
+><b></b : any
+>b : any
+>b : any
+><<T>()=>void>/> : any
+> : any
+>a : any
+
+var d = (<><c<<T>()=>void>/></>);
+>d : any
+>(<><c<<T>()=>void>/></>) : any
+><><c<<T>()=>void>/></> : any
+><c : any
+>c : any
+><<T>()=>void>/> : any
+> : any
+
+var e = (<a><c<<<T>()=>void>/></a>);
+>e : any
+>(<a><c<<<T>()=>void>/></a>) : any
+><a><c<<<T>()=>void>/></a> : any
+>a : any
+><c : any
+>c : any
+>< : any
+> : any
+><<T>()=>void>/> : any
+> : any
+>a : any
+
+var g = (<a><c<=>/></a>);
+>g : any
+>(<a><c<=>/></a>) : any
+><a><c<=>/></a> : any
+>a : any
+><c : any
+>c : any
+>< : any
+> : any
+>a : any
+
+=== b.jsx ===
+var v = (<a><c<<T>()=>void>/></a>);
+>v : any
+>(<a><c<<T>()=>void>/></a>) : any
+><a><c<<T>()=>void>/></a> : any
+>a : any
+><c : any
+>c : any
+> : any
+> : any
+>< : any
+> : any
+><T>()=>void>/> : any
+>T : any
+> : any
+>a : any
+
+var w = (<a><c<=x/></a>);
+>w : any
+>(<a><c<=x/></a>) : any
+><a><c<=x/></a> : any
+>a : any
+><c : any
+>c : any
+> : any
+> : any
+>< : any
+> : any
+>a : any
+

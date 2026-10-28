@@ -1,0 +1,148 @@
+a.tsx(1,10): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.tsx(1,13): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.tsx(1,16): error TS2304: Cannot find name 'T'.
+a.tsx(1,16): error TS2558: Expected 0 type arguments, but got 1.
+a.tsx(1,18): error TS1003: Identifier expected.
+a.tsx(1,33): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.tsx(2,10): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.tsx(2,13): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.tsx(2,22): error TS1005: '>' expected.
+a.tsx(2,36): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.tsx(3,10): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.tsx(3,13): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.tsx(3,16): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.tsx(3,19): error TS1005: '>' expected.
+a.tsx(3,34): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.tsx(4,12): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.tsx(4,14): error TS1003: Identifier expected.
+a.tsx(5,10): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.tsx(5,13): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.tsx(5,15): error TS1003: Identifier expected.
+a.tsx(5,16): error TS1005: '>' expected.
+a.tsx(5,31): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.tsx(6,10): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.tsx(6,13): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.tsx(6,15): error TS1003: Identifier expected.
+a.tsx(6,16): error TS1005: '>' expected.
+a.tsx(6,17): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+a.tsx(6,19): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+a.tsx(6,20): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+b.jsx(1,10): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+b.jsx(1,13): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+b.jsx(1,15): error TS1003: Identifier expected.
+b.jsx(1,16): error TS1003: Identifier expected.
+b.jsx(1,17): error TS2304: Cannot find name 'T'.
+b.jsx(1,17): error TS17008: JSX element 'T' has no corresponding closing tag.
+b.jsx(1,22): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+b.jsx(1,27): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+b.jsx(1,29): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+b.jsx(1,30): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+b.jsx(2,10): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+b.jsx(2,13): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+b.jsx(2,15): error TS1003: Identifier expected.
+b.jsx(2,16): error TS1003: Identifier expected.
+b.jsx(2,19): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+b.jsx(2,20): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+
+
+==== a.tsx (29 errors) ====
+    var a = (<a><c<T><<U>()=>void>/></a>);
+             ~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+                ~~~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+                   ~
+!!! error TS2304: Cannot find name 'T'.
+                   ~
+!!! error TS2558: Expected 0 type arguments, but got 1.
+                     ~~
+!!! error TS1003: Identifier expected.
+                                    ~~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+    var b = (<a><c x="1"/<<T>() => 1>/></a>);
+             ~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+                ~~~~~~~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+                         ~~
+!!! error TS1005: '>' expected.
+                                       ~~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+    var c = (<a><b></b<<T>()=>void>/></a>);
+             ~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+                ~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+                   ~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+                      ~~
+!!! error TS1005: '>' expected.
+                                     ~~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+    var d = (<><c<<T>()=>void>/></>);
+               ~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+                 ~~
+!!! error TS1003: Identifier expected.
+    var e = (<a><c<<<T>()=>void>/></a>);
+             ~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+                ~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+                  ~~
+!!! error TS1003: Identifier expected.
+                   ~~
+!!! error TS1005: '>' expected.
+                                  ~~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+    var g = (<a><c<=>/></a>);
+             ~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+                ~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+                  ~~
+!!! error TS1003: Identifier expected.
+                   ~~
+!!! error TS1005: '>' expected.
+                    ~
+!!! error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+                      ~
+!!! error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+                       ~~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+==== b.jsx (16 errors) ====
+    var v = (<a><c<<T>()=>void>/></a>);
+             ~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+                ~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+                  ~~
+!!! error TS1003: Identifier expected.
+                   ~
+!!! error TS1003: Identifier expected.
+                    ~
+!!! error TS2304: Cannot find name 'T'.
+                    ~
+!!! error TS17008: JSX element 'T' has no corresponding closing tag.
+                         ~
+!!! error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+                              ~
+!!! error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+                                ~
+!!! error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+                                 ~~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+    var w = (<a><c<=x/></a>);
+             ~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+                ~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+                  ~~
+!!! error TS1003: Identifier expected.
+                   ~
+!!! error TS1003: Identifier expected.
+                      ~
+!!! error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+                       ~~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+    

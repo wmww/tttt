@@ -92,6 +92,9 @@ typedef struct ParserShared {
     // A conflict marker ended the JSX children (tsc's scanJsxToken gives a ConflictMarkerTrivia token that starts with
     // the text before it): where that token starts, for the closing tag's '</' expected. Null otherwise
     const char* jsx_conflict_start;
+    // Where the last JSX child element ended without its tag's final `>` (tsgo's parser token then stays the ordinary
+    // token there, which its next child's rescan doesn't update: parse_jsx_element()'s `stale`). Null otherwise
+    const char* jsx_stale_end;
     // What moduleDetection looks at (SourceFile.has_import_meta, has_jsx): set by attempts that backtrack too
     bool saw_import_meta;
     bool saw_jsx;
@@ -12560,35 +12563,44 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
     const char* conflict = nullptr; // Where a conflict marker's token that ended the children starts
     Parser p = parser(parent);
     Anchor a = anchor(&p);
-    if (!hop_char(&p, '<')) return parse_fail(&p);
+    // A child right after a child element that ended without its `>` at a `<<`, `<<=` or `<=` (no trivia between):
+    // tsgo's parseJsxChildren rescans the scanner to a JSX `<` but leaves the parser's token the ordinary one, so the
+    // element's parseExpected(`<`) fails (deduplicated with the previous element's error there) and doesn't advance, its
+    // name is missing there (scanJsxIdentifier then takes the scanner's `<` as the token) and that same `<` opens its
+    // type arguments: `(<a><c<<T>()=>void> x="1"/></a>)` is `<c` and `<` + `<<T>()=>void>` + ` x="1"/>` (bun 93-P04b/c/e)
+    bool stale = !in_expression_context && p.shared->jsx_stale_end == p.pos && p.pos[0] == '<' &&
+        (p.pos[1] == '<' || p.pos[1] == '=');
+    if (!stale && !hop_char(&p, '<')) return parse_fail(&p);
     const char* name_full_start = p.pos;
-    hop_whitespace(&p);
+    if (!stale) hop_whitespace(&p);
 
     JsxElement* el = ast_new(JsxElement, {
         .tag_name = expr_implicit_any_no_span,
         .closing_name = expr_implicit_any_no_span,
     });
-    bool is_fragment = hop_char(&p, '>');
+    bool is_fragment = !stale && hop_char(&p, '>');
     Anchor attributes_a = anchor(&p);
     const char* attributes_last = nullptr; // The end of the last attribute
     VecJsxAttribute attributes = {0};
+    bool unterminated = false; // The tag's final `>` is missing (jsx_stale_end)
     if (!is_fragment) {
-        parse_jsx_tag_name(&p, &el->tag_name, &el->namespaced, &el->tag_name_broken);
         const char* name_end = p.pos;
-        bool name_missing = el->tag_name.tag == EXPR_IDENTIFIER && !el->tag_name.inner_span.size;
-        if (name_missing) {
-            // A missing name is where the trivia before it starts (tsc's missing node, its TS17008 is there)
-            el->tag_name = expr_identifier(span_make(p.shared->source, name_full_start, name_full_start), (IdentifierExpr){0});
-            name_end = name_full_start;
+        if (stale) {
+            el->tag_name = expr_identifier(span_make(p.shared->source, p.pos, p.pos), (IdentifierExpr){0});
+        } else {
+            parse_jsx_tag_name(&p, &el->tag_name, &el->namespaced, &el->tag_name_broken);
+            name_end = p.pos;
+            if (el->tag_name.tag == EXPR_IDENTIFIER && !el->tag_name.inner_span.size) {
+                // A missing name is where the trivia before it starts (tsc's missing node, its TS17008 is there)
+                el->tag_name = expr_identifier(span_make(p.shared->source, name_full_start, name_full_start), (IdentifierExpr){0});
+                name_end = name_full_start;
+            }
+            hop_whitespace(&p);
         }
-        hop_whitespace(&p);
         attributes_a = anchor(&p);
-        // (A `<` token: tsc's scanner makes `<<` and `<=` tokens of their own. But after a missing name, or right after
-        // a child element's name, tsgo's tree has `<<T>() => void>` as type arguments, `(<a><<<T>()=>void>/></a>)` and
-        // `(<a><c<<T>()=>void> x="1"/></a>)`: bun 93-P04b and 93-P04c, not understood; `<c <<T>` aborts, 93-P04d)
-        if (!p.shared->source->is_js && *p.pos == '<' && p.pos[1] != '/' &&
-            ((p.pos[1] != '<' && p.pos[1] != '=') || name_missing || (p.shared->jsx_children_depth && p.pos == name_end))
-        ) {
+        // (A `<` token: tsc's scanner makes `<<` and `<=` tokens of their own, so they open no type arguments, but the
+        // stale element's `<` does)
+        if (!p.shared->source->is_js && *p.pos == '<' && (stale || (p.pos[1] != '/' && p.pos[1] != '<' && p.pos[1] != '='))) {
             // tsc's parseBracketedList(TypeArguments): types separated by commas, anything else ends the list
             Anchor type_args_a = anchor(&p);
             p.pos++;
@@ -12599,6 +12611,12 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
                 el->type_args_empty = span_from(type_args_a);
             } else while (true) {
                 hop_whitespace(&p);
+                // (tsc's parseDelimitedList(TypeArguments): what is neither a comma nor the start of a type ends it)
+                Tok next = tok_peek(&p);
+                if (!tok_is(next, ",") && !tok_is_start_of_type(&p, next)) {
+                    if (!hop_char(&p, '>')) parse_error(&p, jsx_span_from_token(&p), 1005, "'>' expected.");
+                    break;
+                }
                 Anchor type_a = anchor(&p);
                 TypeNode t;
                 if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
@@ -12632,6 +12650,7 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
                 parse_error(&p, span_from_token(&p), 1005, "'>' expected.");
                 // Nothing of the tag's end: the element ends with its last token (`~< <`, `<a/`)
                 p.pos = slash ? slash_end : attributes_end;
+                unterminated = true;
             }
             el->self_closing = true;
         }
@@ -12691,6 +12710,7 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
                     parse_error(&p, span_from_token(&p), 1005, "'>' expected.");
                     // (The closing element, and the element, end with its name: tsc's parseExpected doesn't advance)
                     p.pos = name_end;
+                    unterminated = true;
                 }
                 el->closing_span = span_from(closing_a);
                 if (!jsx_tag_names_equal(&el->tag_name, &el->closing_name)) {
@@ -12708,6 +12728,9 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
     }
 
     p.shared->saw_jsx = true;
+    // (A stale element in a JavaScript file opens no type arguments: its token is the JSX `<` then, which the next
+    // child's rescan agrees with)
+    if (!in_expression_context) p.shared->jsx_stale_end = unterminated && !(stale && p.shared->source->is_js) ? p.pos : nullptr;
     el->fragment = is_fragment;
     *ret = (Expr){
         .tag = is_fragment ? EXPR_JSX_FRAGMENT : EXPR_JSX_ELEMENT,
