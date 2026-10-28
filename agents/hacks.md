@@ -140,7 +140,13 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   `Symbol(unknown)` (a comment breaks it). Probed 2026-10-23, matches tsgo (`a + /*c*/ [` at the end of the file). Any lookahead (tok_at's
   child parser, a failed modifier attempt) overwrites that last hop, so a token_full_start() after one is the token
   itself: parse_function_args_inner() records the parameter's full start before its lookaheads (2f7b2b1ad). Correct:
-  a full start kept per token position (or tok_at() restoring the hop), checked against tsgoast.sh trees.
+  a full start kept per token position (or tok_at() restoring the hop), checked against tsgoast.sh trees. Measured
+  (bun11 2026-10-28): the suite asks token_full_start() at a position with trivia before it that the cache no longer
+  knows 44 times in ~35 tests (classUpdateTests, constructorWithIncompleteTypeAnnotation, JSX attribute tests...);
+  falling back to skipping whitespace backwards changes no suite result and no bun case, so nothing observable
+  depends on it today. Cheapest fix when one does: that backward scan on a miss (error paths only, free), comments
+  still needing the cache; a per-parser trivia start (copied by parser()/parse_success()) costs like the ~0.6% nest
+  ThisNodeHasError's per-parser flag did.
 - ThisNodeHasError positions (`note_error_node()`, `note_missing_node()`, unused.c `report_imports()`): a flagged node's
   span is found by skipping whitespace and comments forward from the child's start (and whitespace back from its end);
   a missing node's full start by skipping whitespace (not comments) back; the import clause by scanning for the `{`
