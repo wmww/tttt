@@ -976,6 +976,7 @@ typedef struct PreresolvedEntry {
     ResolutionMode mode;
     ResolvedModule const* resolved; // The resolver's (module_resolver_resolve_shared())
     csview canonical; // Of resolved->path when it's a view of it (program_key_view() without storage), else empty
+    ModuleRef const* first; // The file's first ref of the same name and mode when this isn't it, else null
 } PreresolvedEntry;
 
 typedef struct Preresolved {
@@ -990,7 +991,8 @@ static void preresolved_destroy(Preresolved* me) {
 }
 
 // The worker's resolution of ref in mode, if it made one (and its path's canonical view, see PreresolvedEntry)
-static ResolvedModule const* preresolved_take(Preresolved* me, ModuleRef const* ref, ResolutionMode mode, csview* canonical) {
+static ResolvedModule const* preresolved_take(Preresolved* me, ModuleRef const* ref, ResolutionMode mode, csview* canonical,
+    ModuleRef const** first) {
     if (!me) return nullptr;
     for (u32 n = 0; n < my count; n++) {
         u32 i = (my next + n) % my count;
@@ -1000,6 +1002,7 @@ static ResolvedModule const* preresolved_take(Preresolved* me, ModuleRef const* 
         entry->ref = nullptr;
         my next = i + 1;
         *canonical = entry->canonical;
+        *first = entry->first;
         return entry->resolved;
     }
     return nullptr;
@@ -1018,6 +1021,44 @@ static csview program_resolution_containing(Program const* me, SourceFile const*
     return cstr_size(&file->absolute_path) ? cstr_sv(&file->absolute_path) : cstr_sv(&file->canonical_path);
 }
 
+static SourceFile* program_add_source_idempotent(Program* me, csview path);
+
+// A file's import of a name it imported already in the same mode (`first`, loaded before it: the refs load in order),
+// the same resolution: when the first one simply found a TypeScript file the program has, this one is the same but for
+// why the file is included (its include reason, its place among the importer's load children), which
+// program_add_source_idempotent() records for a file it has. A generated declaration file can say
+// `import("@scalar/typebox")` 133k times (nitro), each of them otherwise the whole of program_load_module_ref_inner()
+static bool program_load_module_ref_again(Program* me, SourceFile* source, ModuleRef* ref, ModuleRef const* first,
+    ResolvedModule const* shared, csview canonical) {
+    if (my redirects || !first->file || first->failure != MODULE_REF_NOT_FOUND || first->rare || ref->is_declaration ||
+        first->is_declaration || (shared->kind != RESOLVED_TS && shared->kind != RESOLVED_DTS) ||
+        program_options_of(me, source)->no_resolve
+    ) {
+        return false;
+    }
+    ref->external_library = first->external_library;
+    if (shared->is_external_library) my node_modules_depth++;
+    my include_site = ref->span;
+    my include_kind = INCLUDE_IMPORT;
+    my include_package_id = cstr_sv(&shared->package_id);
+    // (The cached file's path: what program_load_resolved() would have looked up, with the worker's view of it)
+    if (canonical.size) {
+        canonical_hint.buf = cstr_str(&shared->path);
+        canonical_hint.size = cstr_size(&shared->path);
+        canonical_hint.canonical = canonical;
+        canonical_hint.stable = true;
+    }
+    ref->file = program_add_source_idempotent(me, cstr_sv(&shared->path));
+    my include_site = span_null;
+    my include_kind = INCLUDE_NONE;
+    my include_package_id = c_sv("");
+    if (shared->is_external_library) my node_modules_depth--;
+    ref->used_ts_extension = first->used_ts_extension;
+    ref->rewrite_crosses_projects = first->rewrite_crosses_projects;
+    check(ref->file == first->file);
+    return true;
+}
+
 // A resolved TypeScript file becomes part of the program, anything else is remembered on the ref as why there's no file
 static void program_load_module_ref_inner(Program* me, SourceFile* source, ModuleRef* ref) {
     program_resolver(me);
@@ -1025,7 +1066,9 @@ static void program_load_module_ref_inner(Program* me, SourceFile* source, Modul
     csview containing = program_resolution_containing(me, source);
     ResolutionMode mode = program_module_ref_mode(me, source, ref);
     csview canonical = {0};
-    ResolvedModule const* shared = preresolved_take(source->preresolved, ref, mode, &canonical);
+    ModuleRef const* first = nullptr;
+    ResolvedModule const* shared = preresolved_take(source->preresolved, ref, mode, &canonical, &first);
+    if (first && program_load_module_ref_again(me, source, ref, first, shared, canonical)) return;
     if (!shared) {
         // (One file's names, by name and mode: a declaration file can import one name thousands of times, see
         // program_load_ahead_from(). The resolver's resolutions live as long as it does)
@@ -1926,6 +1969,7 @@ static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile* fil
             if (first) {
                 preresolved->entries[preresolved->count++] = (PreresolvedEntry){
                     .ref = ref, .mode = mode, .resolved = first->resolved, .canonical = first->canonical,
+                    .first = first->first ? first->first : first->ref,
                 };
                 continue;
             }
@@ -2023,8 +2067,20 @@ static void record_include_reason(Program* me, SourceFile* file) {
         file->include_reasons = realloc(file->include_reasons, sizeof(IncludeReason) * file->include_reason_cap);
         panic_if(!file->include_reasons, "out of memory");
     }
+    u32 package_id = 0;
+    if (my include_package_id.size) {
+        for (u32 i = file->include_package_id_count; i-- > 0 && !package_id;) {
+            if (csview_equals_sv(cstr_sv(&file->include_package_ids[i]), my include_package_id)) package_id = i + 1;
+        }
+        if (!package_id) {
+            file->include_package_ids = realloc(file->include_package_ids, sizeof(cstr) * (file->include_package_id_count + 1));
+            panic_if(!file->include_package_ids, "out of memory");
+            file->include_package_ids[file->include_package_id_count++] = cstr_from_sv(my include_package_id);
+            package_id = file->include_package_id_count;
+        }
+    }
     file->include_reasons[file->include_reason_count++] = (IncludeReason){
-        .kind = my include_kind, .at = my include_site, .package_id = cstr_from_sv(my include_package_id),
+        .kind = my include_kind, .at = my include_site, .package_id = package_id,
     };
     my include_kind = INCLUDE_NONE;
 }
@@ -2665,8 +2721,7 @@ static void program_collect_files(Program* me) {
             }
             u32 kept = 0;
             for (u32 j = 0; j < file->include_reason_count; j++) {
-                if (from_excluded(file->include_reasons[j].at)) cstr_drop(&file->include_reasons[j].package_id);
-                else file->include_reasons[kept++] = file->include_reasons[j];
+                if (!from_excluded(file->include_reasons[j].at)) file->include_reasons[kept++] = file->include_reasons[j];
             }
             file->include_reason_count = kept;
             if (from_excluded(file->included_at)) {
@@ -3499,6 +3554,7 @@ static ModuleRef const* include_reason_synthetic(SourceFile const* file, Include
 
 // One of tsc's file include reasons as its chain says it (FileIncludeReason.toDiagnostic, file names absolute)
 static cstr include_reason_text(Program* me, SourceFile const* file, IncludeReason const* reason) {
+    csview package_id = reason->package_id ? cstr_sv(&file->include_package_ids[reason->package_id - 1]) : c_sv("");
     switch (reason->kind) {
         case INCLUDE_ROOT: {
             cstr absolute = absolute_path_of(program_cwd(me), cstr_sv(&file->canonical_path));
@@ -3517,8 +3573,8 @@ static cstr include_reason_text(Program* me, SourceFile const* file, IncludeReas
                 // (Its text is the synthesized literal's, quoted: computeReferenceFileDiagnostic)
                 char const* why = synthetic == from->helpers_ref ? " to import 'importHelpers' as specified in compilerOptions" :
                     " to import 'jsx' and 'jsxs' factory functions";
-                cstr ret = cstr_size(&reason->package_id) ?
-                    cstr_d("Imported via \"", synthetic->path, "\" from file '", from_name, "' with packageId '", reason->package_id,
+                cstr ret = package_id.size ?
+                    cstr_d("Imported via \"", synthetic->path, "\" from file '", from_name, "' with packageId '", package_id,
                         "'", why) :
                     cstr_d("Imported via \"", synthetic->path, "\" from file '", from_name, "'", why);
                 c_drop(cstr, &absolute, &from_name);
@@ -3526,8 +3582,8 @@ static cstr include_reason_text(Program* me, SourceFile const* file, IncludeReas
             }
             cstr ret = reason->kind == INCLUDE_REFERENCE ?
                 cstr_d("Referenced via '", reason->at, "' from file '", from_name, "'") :
-                cstr_size(&reason->package_id) ?
-                cstr_d("Imported via ", reason->at, " from file '", from_name, "' with packageId '", reason->package_id, "'") :
+                package_id.size ?
+                cstr_d("Imported via ", reason->at, " from file '", from_name, "' with packageId '", package_id, "'") :
                 cstr_d("Imported via ", reason->at, " from file '", from_name, "'");
             c_drop(cstr, &absolute, &from_name);
             return ret;

@@ -160,8 +160,9 @@ void defer_stat_add(DeferStat stat, i64 n) {
 void source_file_drop(SourceFile* me) {
     names_unregister_source(me);
     source_file_unregister(me);
-    for (u32 i = 0; i < my include_reason_count; i++) cstr_drop(&my include_reasons[i].package_id);
     free(my include_reasons);
+    for (u32 i = 0; i < my include_package_id_count; i++) cstr_drop(&my include_package_ids[i]);
+    free(my include_package_ids);
     cstr_drop(&my package_id);
     free(my load_children);
     cstr_drop(&my canonical_path);

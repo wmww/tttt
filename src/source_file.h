@@ -137,7 +137,9 @@ typedef enum IncludeKind : uint8_t {
 typedef struct IncludeReason {
     IncludeKind kind;
     Span at; // INCLUDE_IMPORT: the module name literal; INCLUDE_REFERENCE: the path
-    cstr package_id; // INCLUDE_IMPORT of a package's file: its name, path in it and version (tsc's packageId)
+    // INCLUDE_IMPORT of a package's file: its name, path in it and version (tsc's packageId), 1 + its index in the
+    // file's include_package_ids (0: none). A file imported 133k times has one or two of them
+    u32 package_id;
 } IncludeReason;
 
 typedef struct SourceFile {
@@ -172,6 +174,8 @@ typedef struct SourceFile {
     struct IncludeReason* include_reasons;
     u32 include_reason_count;
     u32 include_reason_cap;
+    cstr* include_package_ids; // IncludeReason.package_id's, distinct
+    u32 include_package_id_count;
     // A JavaScript file of a package the program followed imports into (maxNodeModuleJsDepth): how many such files deep
     // (tsc's currentNodeModulesDepth), 0 for the project's own. Such a file is never checked (isSourceFileFromExternalLibrary)
     u32 node_modules_js_depth;
