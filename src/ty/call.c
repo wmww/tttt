@@ -771,13 +771,14 @@ static TyMapper const* outer_return_mapper(Checker* me, OuterInference* outer) {
 // What the contextual return type alone says about the type parameters (tsc's InferenceContext.returnMapper, from
 // cloneInferredPartOfContext): the ones it says nothing about stay themselves. Null if it says nothing
 // `fallback`, if set: for the type parameters `inf` has nothing on
-static TyMapper const* return_inference_mapper(Checker* me, Signature const* sig, Inference* inf, Inference* fallback) {
+// `ignored_priority`: priority bits `inf`'s candidates are taken as not having (inference_call_result())
+static TyMapper const* return_inference_mapper(Checker* me, Signature const* sig, Inference* inf, Inference* fallback, u32 ignored_priority) {
     TyList params = sig_res(me, sig)->type_params;
     Ty const** results = arena_new_n(&my arena, Ty const*, params.len ? params.len : 1);
     bool any = false;
     for (u32 i = 0; i < params.len; i++) {
-        results[i] = inf->params[i].co_len || inf->params[i].contra_len ? inference_call_result(me, inf, i, true) :
-            fallback && (fallback->params[i].co_len || fallback->params[i].contra_len) ? inference_call_result(me, fallback, i, true) :
+        results[i] = inf->params[i].co_len || inf->params[i].contra_len ? inference_call_result(me, inf, i, true, ignored_priority) :
+            fallback && (fallback->params[i].co_len || fallback->params[i].contra_len) ? inference_call_result(me, fallback, i, true, 0) :
             nullptr;
         any |= results[i] != nullptr;
         if (!results[i]) results[i] = params.data[i];
@@ -1520,7 +1521,7 @@ static TyMapper const* infer_type_arguments(
             Inference pattern_inf;
             inference_init(&pattern_inf, sig_res(me, sig)->type_params);
             infer_types(me, &pattern_inf, contextual, return_type, INFER_PRIORITY_NORMAL);
-            return_mapper = return_inference_mapper(me, sig, &pattern_inf, nullptr);
+            return_mapper = return_inference_mapper(me, sig, &pattern_inf, nullptr, 0);
             inference_drop(&pattern_inf);
             // HACK: the `any` of an element without default is tsc's nonInferrableAnyType, which infers nothing. And a
             // pattern with a rest element isn't a contextual type at all (see ty_rest_binding_initializer_type(): tsc types such an
@@ -1573,23 +1574,26 @@ static TyMapper const* infer_type_arguments(
             // (its return mapper, then everything it has inferred so far, defaults for the rest), so that in
             // `new Map(xs.map(x => [x, 1]))` `[K, V]` still makes the callback return a tuple, and in
             // `layerEffect(Foo, effectGen(() => ({ fn: ... })))` AEff is what Foo said S is
-            // (The main inference's candidates, when it had the same source, only if no parameter has more than one: those
-            // are of the return type's priority, which combines several into a union, where these are of no priority,
-            // whose common supertype is the first that takes the others in union order: `xs.map(x => [x.id, x])` for
-            // `REs<string, H> | KV<H>` infers H, not a tuple, freelens' TS2345. One candidate is the same either way:
-            // return_inference_mapper() keeps literals, so top-level widening doesn't matter. A second inference for
-            // every call costs zod 3% instructions)
+            // (When the main inference just had the same source, which nothing else has gone into yet, its candidates
+            // are what that inference's would be: the walk depends on its priority only through comparisons between
+            // priorities, all of which have the return type's bit, and the top-level flag, which
+            // return_inference_mapper()'s kept literals make moot. What differs is how several combine: the return
+            // type's priority unions them, no priority takes the common supertype, the first that takes the others in
+            // union order (`xs.map(x => [x.id, x])` for `REs<string, H> | KV<H>` infers H, not a tuple, freelens'
+            // TS2345): so the main candidates, taken without that bit. Unless a rest type parameter's implied arity,
+            // which only the main inference has, may have split a tuple differently. A second walk costs vscode 3%
+            // instructions, all of it in one file's 146 calls inferring from a large union, mapSessionEvents.test.ts)
             Ty const* return_source = !outer ? uninferred_contextual :
                 ty_instantiate(me, uninferred_contextual, outer_return_mapper(me, outer));
             bool same = source == contextual && return_source == contextual;
-            for (u32 i = 0; same && i < inf.len; i++) same = inf.params[i].co_len <= 1 && !inf.params[i].contra_len;
+            for (u32 i = 0; same && i < inf.len; i++) same = !inf.params[i].implied_arity_plus_one;
             if (same) {
-                return_mapper = return_inference_mapper(me, sig, &inf, nullptr);
+                return_mapper = return_inference_mapper(me, sig, &inf, nullptr, INFER_PRIORITY_RETURN_TYPE);
             } else {
                 Inference return_inf;
                 inference_init(&return_inf, sig_res(me, sig)->type_params);
                 infer_types(me, &return_inf, return_source, return_type, INFER_PRIORITY_NORMAL);
-                return_mapper = return_inference_mapper(me, sig, &return_inf, nullptr);
+                return_mapper = return_inference_mapper(me, sig, &return_inf, nullptr, 0);
                 inference_drop(&return_inf);
             }
         }

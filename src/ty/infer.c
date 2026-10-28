@@ -2412,8 +2412,10 @@ static bool has_primitive_constraint(Checker* me, Ty const* param) {
         constraint->kind == TY_KEYOF;
 }
 
-Ty const* inference_call_result(Checker* me, Inference* inf, u32 i, bool keep_literals) {
-    return inference_call_result_fallback(me, inf, i, keep_literals, nullptr);
+static Ty const* call_result(Checker* me, Inference* inf, u32 i, bool keep_literals, u32 ignored_priority, Ty const** fallback);
+
+Ty const* inference_call_result(Checker* me, Inference* inf, u32 i, bool keep_literals, u32 ignored_priority) {
+    return call_result(me, inf, i, keep_literals, ignored_priority, nullptr);
 }
 
 // The intersection of contravariant candidates (tsc's getIntersectionType, which has no shortcut for one type: a lone
@@ -2427,8 +2429,13 @@ static Ty const* contra_intersection(Checker* me, Ty const* const* types, u32 le
 // `*fallback` (if asked for) gets the inference of the other variance when there are both, which the constraint
 // check takes instead of the constraint if it fits (tsc's getInferredType fallbackType)
 Ty const* inference_call_result_fallback(Checker* me, Inference* inf, u32 i, bool keep_literals, Ty const** fallback) {
+    return call_result(me, inf, i, keep_literals, 0, fallback);
+}
+
+static Ty const* call_result(Checker* me, Inference* inf, u32 i, bool keep_literals, u32 ignored_priority, Ty const** fallback) {
     if (fallback) *fallback = nullptr;
     InferParam* param = &inf->params[i];
+    bool combine = (param->priority & ~ignored_priority & INFER_PRIORITY_IMPLIES_COMBINATION) != 0;
     if (param->fixed) return param->fixed;
     Ty const* co = nullptr;
     if (param->co_len) {
@@ -2471,14 +2478,14 @@ Ty const* inference_call_result_fallback(Checker* me, Inference* inf, u32 i, boo
             if (literals != literals_small) free(literals);
         }
         // (A combining priority unions them with subtype reduction: tsgo's getCovariantInference, UnionReductionSubtype)
-        co = (param->priority & INFER_PRIORITY_IMPLIES_COMBINATION) ?
+        co = combine ?
             (len > 1 ? ty_union_subtype_reduced(me, candidates, len) : candidates[0]) :
             common_supertype(me, candidates, len);
         co = ty_widened_nullable(me, ty_widened_objects(me, co)); // (tsc's getWidenedType of the inference)
         if (candidates != candidates_small) free(candidates);
     }
     // (Candidates of a priority that implies combining them are intersected)
-    Ty const* contra = !param->contra_len ? nullptr : (param->priority & INFER_PRIORITY_IMPLIES_COMBINATION) ?
+    Ty const* contra = !param->contra_len ? nullptr : combine ?
         contra_intersection(me, param->contra, param->contra_len) : common_subtype(me, param->contra, param->contra_len);
     if (co && contra) {
         // The covariant inference wins if it fits what the contravariant positions ask for
