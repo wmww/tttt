@@ -62,6 +62,7 @@ typedef struct DebugEnv {
     // order alone (every entry newer than the one below it), "seed" the ids permuted by TTTT_ORDER_SEED, "content" bun's
     // id-free test (relate.rs is_at_least_as_new: the type's height, then push order on the stack; order.c ty_height())
     uint8_t nesting_order;
+    bool nesting_log; // TTTT_NESTING_LOG: each walk-order decision the ids would have made otherwise, with the stack
     // TTTT_ROLLBACK_STATS (sg2's rollback-rate audit): one `RB` line per checked file on stderr (program order, checker,
     // thread CPU ns, types made, cycle keys closed, limit hits, deep cuts), and the census' VC lines name the file
     bool rollback_stats;

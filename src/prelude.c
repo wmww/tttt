@@ -52,6 +52,7 @@ static void read_debug_env() {
             !strcmp(getenv("TTTT_NESTING_ORDER"), "seed") ? NESTING_SEED :
             !strcmp(getenv("TTTT_NESTING_ORDER"), "content") ? NESTING_CONTENT :
             !strcmp(getenv("TTTT_NESTING_ORDER"), "walk") ? NESTING_WALK : NESTING_DEFAULT,
+        .nesting_log = getenv("TTTT_NESTING_LOG") != nullptr,
         .rollback_stats = getenv("TTTT_ROLLBACK_STATS") != nullptr,
         .deep_hit_no_taint = getenv("TTTT_DEEP_HIT_NO_TAINT") != nullptr,
         .vma_names = getenv("TTTT_VMA_NAMES") != nullptr,

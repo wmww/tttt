@@ -7104,9 +7104,7 @@ static bool walk_newer(Checker* me, Ty const* const* stack, Ty const* ty, u32 de
         last_at = i;
     }
     // (TTTT_NESTING_LOG=1: each decision the ids would have made otherwise, with the stack, matching entries starred)
-    static int nesting_log = -1;
-    if (__builtin_expect(nesting_log < 0, 0)) nesting_log = getenv("TTTT_NESTING_LOG") != nullptr;
-    if (nesting_log) {
+    if (__builtin_expect(debug_env.nesting_log, 0)) {
         u32 id_count = 0, last_id = 0;
         bool by_id = false;
         for (u32 i = 0; i <= depth && !by_id; i++) {
