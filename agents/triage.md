@@ -251,3 +251,15 @@ intersection's property symbol to bugs/type_core.md.
   getNameOfSymbolAsWritten names a nameless declaration by its parent variable declaration anywhere, the harness's
   `this_compile_test_info()` only inside that variable's own statement (ctx->variable_type_literal) (cor4,
   2026-10-28). [open]
+- (cor6, 2026-10-28, bun 99-V4 getTypeOfParameter__07) An optional binding pattern parameter of an unannotated
+  function expression or arrow checked without a contextual signature (`const f = function ({ a }?) {}`): tsc's
+  assignNonContextualParameterTypes adds the optionality to the parameter's type before assigning its binding elements
+  (`{ a: any } | undefined`), so the element is TS2339 under strictNullChecks; a function declaration's elements take
+  the declared type without it (no TS2339, matching). tttt's elements always take the declaration's. Only next to
+  TS2463 (an optional pattern in an implementation), low value. [open]
+- (cor6, 2026-10-28, bun 99-V4 checkParameter__05) `declare function f(a = b, b?: number): void; f(1);` is TS2373 in
+  tsc once f is called (the call types the parameters, whose initializer resolves `b`); tttt reports TS2373 for a
+  bodiless overload's default (`function h(a = d, d?)` + implementation) but not for this ambient one. [open]
+- (cor6, 2026-10-28) Symbols baseline: a union member's property reached through another member's template literal
+  index signature (`v.b` with `{ b: 1 } | { readonly [k: `b${string}`]: 1 }`) has no symbol in tttt's harness, tsc
+  prints the union property's (errors match: ttttUnionReadonlyIndexForName left it out). [open]

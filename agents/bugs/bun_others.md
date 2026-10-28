@@ -49,7 +49,7 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   tuple member, where tttt said TS2542): check.c member_refs() asked a member without the property for its string
   index signature, tsc for the one applying to the name (getApplicableIndexInfoForName); and a union of members that
   only have index signatures has no such property (String's readonly index in classDoesNotDependOnBaseTypes stays
-  TS2542). Test ttttUnionReadonlyIndexForName [fixed UNION].
+  TS2542). Test ttttUnionReadonlyIndexForName [fixed 1f110d86a].
 - Control flow of loops with `finally` and back edges after a never-returning call or a `break` in a narrowing:
   73-R01e and 73-R01f (TS2339 both ways on `x.foo` in `do { try {} finally { x.foo } } while (true)` after `fail()`),
   73-R03a (an evolving `let x = []` narrowed by `Array.isArray` in a for loop's incrementor: tttt says TS2339 on never
