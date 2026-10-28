@@ -1360,13 +1360,19 @@ static void function_check_widened_return(FunctionImpl const* me, ErrorCtx* errs
     }
 }
 
-// The parameters a call has to pass (tsc's isAritySmaller of the target): up to the first optional one, `this` aside
-static u32 jsdoc_required_params(FunctionImpl const* me) {
+// The parameters a call has to pass (tsc's isAritySmaller of the target): up to the first optional one (`?`, a default, a
+// rest, or a JSDoc optional type `{T=}`: isJSDocOptionalParameter), a `this` parameter aside (a written one, or what a
+// JSDoc `@this` adds, which isn't one of tsc's parameters at all)
+u32 function_impl_jsdoc_required_params(FunctionImpl const* me) {
     u32 count = 0;
     for_each (i, vec_function_arg, &my args) {
         Binding const* binding = &i->initializer.binding;
         if (i->jsdoc_this || (!i_index && binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this"))) continue;
-        if (i->rest || i->explicit_optional || initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY) break;
+        if (i->rest || i->explicit_optional || initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY ||
+            (binding->has_explicit_type && binding_type(binding)->jsdoc_optional)
+        ) {
+            break;
+        }
         count++;
     }
     return count;
@@ -1433,7 +1439,7 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     if (span_valid(function_impl_rare(me)->jsdoc_signature_span) && my has_body && !my accessor) {
         bool mismatch = my jsdoc_signature_mismatch;
         if (!mismatch && function_impl_rare(me)->jsdoc_signature_type) {
-            mismatch = !ty_has_call_signature_for_arity(current_checker, ty_of_node(function_impl_rare(me)->jsdoc_signature_type), jsdoc_required_params(me));
+            mismatch = !ty_has_call_signature_for_arity(current_checker, ty_of_node(function_impl_rare(me)->jsdoc_signature_type), function_impl_jsdoc_required_params(me));
         }
         if (mismatch) {
             error_ctx_error_d(errs, function_impl_rare(me)->jsdoc_signature_span, 8030,

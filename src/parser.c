@@ -5033,21 +5033,6 @@ static FunctionImpl* jsdoc_single_signature(TypeNode* type) {
     return nullptr;
 }
 
-// The parameters a call has to pass (tsc's isAritySmaller of the target): up to the first optional one, `this` aside
-static u32 jsdoc_required_param_count(FunctionImpl const* function) {
-    u32 count = 0;
-    for_each (i, vec_function_arg, &function->args) {
-        Binding const* binding = &i->initializer.binding;
-        if (!i_index && binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
-        if (i->rest || i->explicit_optional || initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY ||
-            (binding->has_explicit_type && binding_type(binding)->jsdoc_optional)
-        ) {
-            break;
-        }
-        count++;
-    }
-    return count;
-}
 
 static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function, bool declaration) {
     JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_TYPE);
@@ -5069,7 +5054,7 @@ static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function
             rest |= i->rest;
             count++;
         }
-        function->jsdoc_signature_mismatch = !rest && count < jsdoc_required_param_count(function);
+        function->jsdoc_signature_mismatch = !rest && count < function_impl_jsdoc_required_params(function);
     }
     if (!signature || signature->is_constructor || declaration) return;
     // `(this: T) => R`: the function's `this` parameter, unless it has one (or is an arrow function), and not a

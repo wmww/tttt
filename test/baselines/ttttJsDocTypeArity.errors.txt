@@ -1,0 +1,92 @@
+a.js(1,12): error TS8030: A JSDoc '@type' tag on a function must have a signature with the correct number of arguments.
+a.js(4,13): error TS7006: Parameter 'a' implicitly has an 'any' type.
+a.js(9,13): error TS7006: Parameter 'a' implicitly has an 'any' type.
+a.js(22,7): error TS2322: Type '(a: any, b: any) => void' is not assignable to type '(a: string) => void'.
+  Target signature provides too few arguments. Expected 2 or more, but got 1.
+a.js(22,22): error TS7006: Parameter 'a' implicitly has an 'any' type.
+a.js(22,25): error TS7006: Parameter 'b' implicitly has an 'any' type.
+a.js(24,7): error TS2322: Type '(a: any, b: string | undefined) => void' is not assignable to type '(a: string) => void'.
+  Target signature provides too few arguments. Expected 2 or more, but got 1.
+a.js(24,22): error TS7006: Parameter 'a' implicitly has an 'any' type.
+b.js(2,12): error TS8030: A JSDoc '@type' tag on a function must have a signature with the correct number of arguments.
+b.js(5,13): error TS7006: Parameter 'a' implicitly has an 'any' type.
+b.js(16,13): error TS7006: Parameter 'a' implicitly has an 'any' type.
+b.js(18,13): error TS7006: Parameter 'a' implicitly has an 'any' type.
+b.js(19,12): error TS8030: A JSDoc '@type' tag on a function must have a signature with the correct number of arguments.
+
+
+==== a.js (8 errors) ====
+    /** @type {(a: string) => void} */
+               ~~~~~~~~~~~~~~~~~~~
+!!! error TS8030: A JSDoc '@type' tag on a function must have a signature with the correct number of arguments.
+    function f1(a, b) {}
+    /** @type {(a: string) => void} */
+    function f2(a, /** @type {string=} */ b) {}
+                ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+    /**
+     * @this {{x: number}}
+     * @type {(a: string) => void}
+     */
+    function f3(a) {}
+                ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+    /**
+     * @param {string} a
+     * @param {string=} b
+     * @type {(a: string) => void}
+     */
+    function f4(a, b) {}
+    /**
+     * @this {{x: number}}
+     * @param {number} a
+     */
+    function f5(a) {}
+    /** @type {(a: string) => void} */
+    const g1 = function (a, b) {};
+          ~~
+!!! error TS2322: Type '(a: any, b: any) => void' is not assignable to type '(a: string) => void'.
+!!! error TS2322:   Target signature provides too few arguments. Expected 2 or more, but got 1.
+                         ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                            ~
+!!! error TS7006: Parameter 'b' implicitly has an 'any' type.
+    /** @type {(a: string) => void} */
+    const g2 = function (a, /** @type {string=} */ b) {};
+          ~~
+!!! error TS2322: Type '(a: any, b: string | undefined) => void' is not assignable to type '(a: string) => void'.
+!!! error TS2322:   Target signature provides too few arguments. Expected 2 or more, but got 1.
+                         ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+==== b.js (5 errors) ====
+    /** @typedef {(a: string) => void} F */
+    /** @type {F} */
+               ~
+!!! error TS8030: A JSDoc '@type' tag on a function must have a signature with the correct number of arguments.
+    function f1(a, b) {}
+    /** @type {F} */
+    function f2(a, /** @type {string=} */ b) {}
+                ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+    /**
+     * @param {string} a
+     * @param {string=} b
+     * @type {F}
+     */
+    function f4(a, b) {}
+    /**
+     * @this {{x: number}}
+     * @type {F}
+     */
+    function f3(a) {}
+                ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+    /** @type {F} */
+    function f6(a, /** @type {string=} */ b) { a.length; }
+                ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+    /** @type {F} */
+               ~
+!!! error TS8030: A JSDoc '@type' tag on a function must have a signature with the correct number of arguments.
+    function f7(a, b) { a.length; }
+    

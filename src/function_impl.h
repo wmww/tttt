@@ -456,3 +456,5 @@ void function_impl_check_jsdoc_overloads(FunctionImpl const* me, Span name, Erro
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs);
 // The part of function_impl_typecheck() about the body, deferred for a function expression (Checker.defer_checks)
 void function_impl_typecheck_body(FunctionImpl* me, ErrorCtx* errs);
+// The parameters a call has to pass for a JSDoc `@type` signature to fit (tsc's isAritySmaller of the target)
+u32 function_impl_jsdoc_required_params(FunctionImpl const* me);

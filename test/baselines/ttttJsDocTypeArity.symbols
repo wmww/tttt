@@ -1,0 +1,101 @@
+//// [test/cases/ttttJsDocTypeArity.ts] ////
+
+=== a.js ===
+/** @type {(a: string) => void} */
+function f1(a, b) {}
+>f1 : Symbol(f1, Decl(a.js, 0, 0), Decl(b.js, 0, 0))
+>a : Symbol(a, Decl(a.js, 1, 12))
+>b : Symbol(b, Decl(a.js, 1, 14))
+
+/** @type {(a: string) => void} */
+function f2(a, /** @type {string=} */ b) {}
+>f2 : Symbol(f2, Decl(a.js, 1, 20), Decl(b.js, 2, 20))
+>a : Symbol(a, Decl(a.js, 3, 12))
+>b : Symbol(b, Decl(a.js, 3, 14))
+
+/**
+ * @this {{x: number}}
+ * @type {(a: string) => void}
+ */
+function f3(a) {}
+>f3 : Symbol(f3, Decl(a.js, 3, 43), Decl(b.js, 10, 20))
+>a : Symbol(a, Decl(a.js, 8, 12))
+
+/**
+ * @param {string} a
+ * @param {string=} b
+ * @type {(a: string) => void}
+ */
+function f4(a, b) {}
+>f4 : Symbol(f4, Decl(a.js, 8, 17), Decl(b.js, 4, 43))
+>a : Symbol(a, Decl(a.js, 14, 12))
+>b : Symbol(b, Decl(a.js, 14, 14))
+
+/**
+ * @this {{x: number}}
+ * @param {number} a
+ */
+function f5(a) {}
+>f5 : Symbol(f5, Decl(a.js, 14, 20))
+>a : Symbol(a, Decl(a.js, 19, 12))
+
+/** @type {(a: string) => void} */
+const g1 = function (a, b) {};
+>g1 : Symbol(g1, Decl(a.js, 21, 5))
+>a : Symbol(a, Decl(a.js, 21, 21))
+>b : Symbol(b, Decl(a.js, 21, 23))
+
+/** @type {(a: string) => void} */
+const g2 = function (a, /** @type {string=} */ b) {};
+>g2 : Symbol(g2, Decl(a.js, 23, 5))
+>a : Symbol(a, Decl(a.js, 23, 21))
+>b : Symbol(b, Decl(a.js, 23, 23))
+
+=== b.js ===
+/** @typedef {(a: string) => void} F */
+/** @type {F} */
+function f1(a, b) {}
+>f1 : Symbol(f1, Decl(a.js, 0, 0), Decl(b.js, 0, 0))
+>a : Symbol(a, Decl(b.js, 2, 12))
+>b : Symbol(b, Decl(b.js, 2, 14))
+
+/** @type {F} */
+function f2(a, /** @type {string=} */ b) {}
+>f2 : Symbol(f2, Decl(a.js, 1, 20), Decl(b.js, 2, 20))
+>a : Symbol(a, Decl(b.js, 4, 12))
+>b : Symbol(b, Decl(b.js, 4, 14))
+
+/**
+ * @param {string} a
+ * @param {string=} b
+ * @type {F}
+ */
+function f4(a, b) {}
+>f4 : Symbol(f4, Decl(a.js, 8, 17), Decl(b.js, 4, 43))
+>a : Symbol(a, Decl(b.js, 10, 12))
+>b : Symbol(b, Decl(b.js, 10, 14))
+
+/**
+ * @this {{x: number}}
+ * @type {F}
+ */
+function f3(a) {}
+>f3 : Symbol(f3, Decl(a.js, 3, 43), Decl(b.js, 10, 20))
+>a : Symbol(a, Decl(b.js, 15, 12))
+
+/** @type {F} */
+function f6(a, /** @type {string=} */ b) { a.length; }
+>f6 : Symbol(f6, Decl(b.js, 15, 17))
+>a : Symbol(a, Decl(b.js, 17, 12))
+>b : Symbol(b, Decl(b.js, 17, 14))
+>a : Symbol(a, Decl(b.js, 17, 12))
+
+/** @type {F} */
+function f7(a, b) { a.length; }
+>f7 : Symbol(f7, Decl(b.js, 17, 54))
+>a : Symbol(a, Decl(b.js, 19, 12))
+>b : Symbol(b, Decl(b.js, 19, 14))
+>a.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(b.js, 19, 12))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
