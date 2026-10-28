@@ -3589,6 +3589,22 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
     Anchor path_anchor = anchor(&p);
     bool has_path = parse_string(&p, &path);
     Span path_span = span_from(path_anchor);
+    if (has_path) {
+        // (A string literal that is only the start of the type, `import("m" | "n")`, isn't the specifier: tsc's
+        // parseType takes the whole union, TS1141 from the checker)
+        Parser after = parser(&p);
+        hop_whitespace(&after);
+        bool alone = *after.pos == ')' || *after.pos == ',' || at_eof(&after, after.pos);
+        parse_fail(&after);
+        if (!alone) {
+            cstr_drop(&path);
+            path = cstr_null;
+            p.pos = path_anchor.start;
+            p.whitespace = WHITESPACE_NONE;
+            p.whitespace_end = nullptr;
+            has_path = false;
+        }
+    }
     if (!has_path) {
         // Any type goes, the checker says TS1141 (tsc's parseImportType, checkImportType)
         TypeNode argument;
@@ -3617,7 +3633,11 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
             rare.import_argument = ast_new(TypeNode, type_identifier(ast_new(IdentifierType, missing)));
             rare.import_argument_span = span_from(path_anchor);
         } else {
-            parse_error(&p, span_from_token(&p), 1141, "String literal expected.");
+            // (A missing type, TS1110, which the checker says TS1141 about: `import(>`)
+            expect_type(&p, TYPE_PRECEDENCE_NULL, &argument);
+            checker_error(&p, span_from_token(&p), 1141, "String literal expected.");
+            rare.import_argument = ast_new(TypeNode, argument);
+            rare.import_argument_span = span_from(path_anchor);
         }
     }
     hop_whitespace(&p);
@@ -7148,6 +7168,9 @@ static bool parse_function_args_inner(
         if (hop_start_if_ends_on_word_break(&p, "new")) {
             hop_whitespace(&p);
             ret->is_constructor = true;
+            // (In a type `new` starts a constructor type whatever follows, tsc's isStartOfFunctionTypeOrConstructorType:
+            // `new>` is missing its `(`)
+            if (parse_type_return_syntax) is_definitely_function = true;
         } else if (ret->is_abstract_constructor) {
             return parse_fail(&p);
         }
@@ -7427,7 +7450,7 @@ static bool parse_function_args_inner(
             function_impl_set_ret_span(ret, span_from(ret_a));
             ret->ret_explicit = true;
         } else if (unambiguous_function_type ||
-            (is_definitely_function && (parse_type_return_syntax ? *args_start.start == '(' : commit_on_paren))
+            (is_definitely_function && (parse_type_return_syntax ? *args_start.start == '(' || ret->is_constructor : commit_on_paren))
         ) {
             // A function type is committed (tsc's parseFunctionOrConstructorType), so is a function whose parameter
             // list was (a definite arrow function, a declaration): its return type is missing (tsc's

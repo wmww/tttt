@@ -1,0 +1,31 @@
+//// [test/cases/ttttConstructorTypeMissingParameters.ts] ////
+
+=== ttttConstructorTypeMissingParameters.ts ===
+// `new` in a type starts a constructor type whatever follows (tsc's isStartOfFunctionTypeOrConstructorType):
+// `new>` is missing its `(`, in a type and in type arguments
+declare function f<T>(x: any): void;
+>f : <T>(x: any) => void
+>x : any
+
+declare const x: any;
+>x : any
+
+let t: new>(x);
+>t : new () => any
+>>(x) : boolean
+> : any
+>(x) : any
+>x : any
+
+var v = f<new>(x);
+>v : void
+>f<new>(x) : void
+>f : <T>(x: any) => void
+>x : any
+
+var w = f<abstract new>(x);
+>w : void
+>f<abstract new>(x) : void
+>f : <T>(x: any) => void
+>x : any
+

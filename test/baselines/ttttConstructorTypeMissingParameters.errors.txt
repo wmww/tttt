@@ -1,0 +1,20 @@
+ttttConstructorTypeMissingParameters.ts(5,11): error TS1005: '(' expected.
+ttttConstructorTypeMissingParameters.ts(6,14): error TS1005: '(' expected.
+ttttConstructorTypeMissingParameters.ts(7,23): error TS1005: '(' expected.
+
+
+==== ttttConstructorTypeMissingParameters.ts (3 errors) ====
+    // `new` in a type starts a constructor type whatever follows (tsc's isStartOfFunctionTypeOrConstructorType):
+    // `new>` is missing its `(`, in a type and in type arguments
+    declare function f<T>(x: any): void;
+    declare const x: any;
+    let t: new>(x);
+              ~
+!!! error TS1005: '(' expected.
+    var v = f<new>(x);
+                 ~
+!!! error TS1005: '(' expected.
+    var w = f<abstract new>(x);
+                          ~
+!!! error TS1005: '(' expected.
+    

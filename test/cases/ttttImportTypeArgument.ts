@@ -1,0 +1,3 @@
+// An import type's argument is a type (tsc's parseImportType): a union of string literals is no specifier (TS1141 from
+// the checker), a missing one is TS1110
+type A = import("m" | "n");

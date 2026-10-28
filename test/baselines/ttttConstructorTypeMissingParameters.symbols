@@ -1,0 +1,30 @@
+//// [test/cases/ttttConstructorTypeMissingParameters.ts] ////
+
+=== ttttConstructorTypeMissingParameters.ts ===
+// `new` in a type starts a constructor type whatever follows (tsc's isStartOfFunctionTypeOrConstructorType):
+// `new>` is missing its `(`, in a type and in type arguments
+declare function f<T>(x: any): void;
+>f : Symbol(f, Decl(ttttConstructorTypeMissingParameters.ts, 0, 0))
+>T : Symbol(T, Decl(ttttConstructorTypeMissingParameters.ts, 2, 19))
+>x : Symbol(x, Decl(ttttConstructorTypeMissingParameters.ts, 2, 22))
+
+declare const x: any;
+>x : Symbol(x, Decl(ttttConstructorTypeMissingParameters.ts, 3, 13))
+
+let t: new>(x);
+>t : Symbol(t, Decl(ttttConstructorTypeMissingParameters.ts, 4, 3))
+> : Symbol(unknown)
+>x : Symbol(x, Decl(ttttConstructorTypeMissingParameters.ts, 3, 13))
+
+var v = f<new>(x);
+>v : Symbol(v, Decl(ttttConstructorTypeMissingParameters.ts, 5, 3))
+>f : Symbol(f, Decl(ttttConstructorTypeMissingParameters.ts, 0, 0))
+> : Symbol(unknown)
+>x : Symbol(x, Decl(ttttConstructorTypeMissingParameters.ts, 3, 13))
+
+var w = f<abstract new>(x);
+>w : Symbol(w, Decl(ttttConstructorTypeMissingParameters.ts, 6, 3))
+>f : Symbol(f, Decl(ttttConstructorTypeMissingParameters.ts, 0, 0))
+> : Symbol(unknown)
+>x : Symbol(x, Decl(ttttConstructorTypeMissingParameters.ts, 3, 13))
+
