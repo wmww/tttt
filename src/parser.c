@@ -9794,7 +9794,12 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             FunctionCtx outer = { .in_async = p.shared->in_async, .in_generator = p.shared->in_generator,
                 .in_static_block = p.shared->in_static_block, .in_parameters = p.shared->in_parameters };
             p.shared->in_async = p.shared->in_generator = p.shared->in_static_block = false;
+            // (A `declare` property is parsed in an ambient context, tsc's parseClassElement: `declare p = async () => {}`
+            // is TS1040)
+            bool outer_ambient = p.shared->in_ambient;
+            p.shared->in_ambient |= ret->field.is_declare;
             bool initialized = parse_initialization_or_set_to_default(&p, expr_ctx_null, &ret->field.value);
+            p.shared->in_ambient = outer_ambient;
             p.shared->in_async = outer.in_async;
             p.shared->in_generator = outer.in_generator;
             p.shared->in_static_block = outer.in_static_block;

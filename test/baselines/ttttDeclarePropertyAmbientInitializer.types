@@ -1,0 +1,63 @@
+//// [test/cases/ttttDeclarePropertyAmbientInitializer.ts] ////
+
+=== ttttDeclarePropertyAmbientInitializer.ts ===
+// A `declare` property is parsed in an ambient context (tsc's parseClassElement), its name and initializer too: a
+// function there is TS1183, an async arrow TS1040 (bun 53-L15)
+class D1 { declare p = async () => {}; }
+>D1 : D1
+>p : () => Promise<void>
+>async () => {} : () => Promise<void>
+
+class D3 { declare p = function () {}; }
+>D3 : D3
+>p : () => void
+>function () {} : () => void
+
+class D4 { declare p = { m() {}, get g() { return 1; } }; }
+>D4 : D4
+>p : { m(): void; readonly g: number; }
+>{ m() {}, get g() { return 1; } } : { m(): void; readonly g: number; }
+>m : () => void
+>g : number
+>1 : 1
+
+class D5 { declare p = class { m() {} }; }
+>D5 : D5
+>p : typeof (Anonymous class)
+>class { m() {} } : typeof (Anonymous class)
+>m : () => void
+
+class D6 { declare static p = () => {}; }
+>D6 : D6
+>p : () => void
+>() => {} : () => void
+
+class D7 { declare readonly p = () => { let x = 1; }; }
+>D7 : D7
+>p : () => void
+>() => { let x = 1; } : () => void
+>x : number
+>1 : 1
+
+class D8 { declare [(() => { return "a" as const; })()]: number; }
+>D8 : D8
+>[(() => { return "a" as const; })()] : number
+>(() => { return "a" as const; })() : "a"
+>(() => { return "a" as const; }) : () => "a"
+>() => { return "a" as const; } : () => "a"
+>"a" as const : "a"
+>"a" : "a"
+
+const E13 = class { declare p = () => {}; };
+>E13 : typeof E13
+>class { declare p = () => {}; } : typeof E13
+>p : () => void
+>() => {} : () => void
+
+class D14 { declare p = (a = () => {}) => {}; }
+>D14 : D14
+>p : (a?: () => void) => void
+>(a = () => {}) => {} : (a?: () => void) => void
+>a : () => void
+>() => {} : () => void
+

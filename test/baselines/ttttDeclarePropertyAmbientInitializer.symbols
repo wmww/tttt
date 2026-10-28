@@ -1,0 +1,47 @@
+//// [test/cases/ttttDeclarePropertyAmbientInitializer.ts] ////
+
+=== ttttDeclarePropertyAmbientInitializer.ts ===
+// A `declare` property is parsed in an ambient context (tsc's parseClassElement), its name and initializer too: a
+// function there is TS1183, an async arrow TS1040 (bun 53-L15)
+class D1 { declare p = async () => {}; }
+>D1 : Symbol(D1, Decl(ttttDeclarePropertyAmbientInitializer.ts, 0, 0))
+>p : Symbol(D1.p, Decl(ttttDeclarePropertyAmbientInitializer.ts, 2, 10))
+
+class D3 { declare p = function () {}; }
+>D3 : Symbol(D3, Decl(ttttDeclarePropertyAmbientInitializer.ts, 2, 40))
+>p : Symbol(D3.p, Decl(ttttDeclarePropertyAmbientInitializer.ts, 3, 10))
+
+class D4 { declare p = { m() {}, get g() { return 1; } }; }
+>D4 : Symbol(D4, Decl(ttttDeclarePropertyAmbientInitializer.ts, 3, 40))
+>p : Symbol(D4.p, Decl(ttttDeclarePropertyAmbientInitializer.ts, 4, 10))
+>m : Symbol(m, Decl(ttttDeclarePropertyAmbientInitializer.ts, 4, 24))
+>g : Symbol(g, Decl(ttttDeclarePropertyAmbientInitializer.ts, 4, 32))
+
+class D5 { declare p = class { m() {} }; }
+>D5 : Symbol(D5, Decl(ttttDeclarePropertyAmbientInitializer.ts, 4, 59))
+>p : Symbol(D5.p, Decl(ttttDeclarePropertyAmbientInitializer.ts, 5, 10))
+>m : Symbol((Anonymous class).m, Decl(ttttDeclarePropertyAmbientInitializer.ts, 5, 30))
+
+class D6 { declare static p = () => {}; }
+>D6 : Symbol(D6, Decl(ttttDeclarePropertyAmbientInitializer.ts, 5, 42))
+>p : Symbol(D6.p, Decl(ttttDeclarePropertyAmbientInitializer.ts, 6, 10))
+
+class D7 { declare readonly p = () => { let x = 1; }; }
+>D7 : Symbol(D7, Decl(ttttDeclarePropertyAmbientInitializer.ts, 6, 41))
+>p : Symbol(D7.p, Decl(ttttDeclarePropertyAmbientInitializer.ts, 7, 10))
+>x : Symbol(x, Decl(ttttDeclarePropertyAmbientInitializer.ts, 7, 43))
+
+class D8 { declare [(() => { return "a" as const; })()]: number; }
+>D8 : Symbol(D8, Decl(ttttDeclarePropertyAmbientInitializer.ts, 7, 55))
+>[(() => { return "a" as const; })()] : Symbol(D8[(() => { return "a" as const; })()], Decl(ttttDeclarePropertyAmbientInitializer.ts, 8, 10))
+>const : Symbol(const)
+
+const E13 = class { declare p = () => {}; };
+>E13 : Symbol(E13, Decl(ttttDeclarePropertyAmbientInitializer.ts, 9, 5))
+>p : Symbol(E13.p, Decl(ttttDeclarePropertyAmbientInitializer.ts, 9, 19))
+
+class D14 { declare p = (a = () => {}) => {}; }
+>D14 : Symbol(D14, Decl(ttttDeclarePropertyAmbientInitializer.ts, 9, 44))
+>p : Symbol(D14.p, Decl(ttttDeclarePropertyAmbientInitializer.ts, 10, 11))
+>a : Symbol(a, Decl(ttttDeclarePropertyAmbientInitializer.ts, 10, 25))
+

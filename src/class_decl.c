@@ -342,6 +342,13 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
             break;
 
         case CLASS_ITEM_FIELD:
+            if (my field.is_declare && !names->ambient) {
+                // (`declare p = () => {}`: tsc's parseClassElement parses the whole member in an ambient context, its
+                // name and initializer's functions too: TS1183, TS1040)
+                names = scope_new(names, SCOPE_BLOCK);
+                names->ambient = true;
+                names->binder_transparent = true;
+            }
             if (my field.computed_key) {
                 scope_flow(names)->type_only_alias_ok = my field.is_abstract || my field.is_declare;
                 bool quiet = class_item_key_is_quiet(class_decl, me);
@@ -2371,7 +2378,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                         "A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.");
                 }
             } else {
-                error_ctx_grammar_error_d(errs, expr_outer_span(&i->field.value), 1039, "Initializers are not allowed in ambient contexts.");
+                error_ctx_grammar_error_d(errs, expr_error_span(&i->field.value), 1039, "Initializers are not allowed in ambient contexts.");
             }
         }
         // tsc's checkAccessorDeclaration: a getter and setter pair agree on abstract (TS2676), and the getter is at least

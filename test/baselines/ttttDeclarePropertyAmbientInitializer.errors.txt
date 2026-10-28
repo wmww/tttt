@@ -1,0 +1,81 @@
+ttttDeclarePropertyAmbientInitializer.ts(3,24): error TS1040: 'async' modifier cannot be used in an ambient context.
+ttttDeclarePropertyAmbientInitializer.ts(3,24): error TS1039: Initializers are not allowed in ambient contexts.
+ttttDeclarePropertyAmbientInitializer.ts(3,36): error TS1183: An implementation cannot be declared in ambient contexts.
+ttttDeclarePropertyAmbientInitializer.ts(4,24): error TS1039: Initializers are not allowed in ambient contexts.
+ttttDeclarePropertyAmbientInitializer.ts(4,36): error TS1183: An implementation cannot be declared in ambient contexts.
+ttttDeclarePropertyAmbientInitializer.ts(5,24): error TS1039: Initializers are not allowed in ambient contexts.
+ttttDeclarePropertyAmbientInitializer.ts(5,30): error TS1183: An implementation cannot be declared in ambient contexts.
+ttttDeclarePropertyAmbientInitializer.ts(5,42): error TS1183: An implementation cannot be declared in ambient contexts.
+ttttDeclarePropertyAmbientInitializer.ts(6,24): error TS1039: Initializers are not allowed in ambient contexts.
+ttttDeclarePropertyAmbientInitializer.ts(6,36): error TS1183: An implementation cannot be declared in ambient contexts.
+ttttDeclarePropertyAmbientInitializer.ts(7,31): error TS1039: Initializers are not allowed in ambient contexts.
+ttttDeclarePropertyAmbientInitializer.ts(7,37): error TS1183: An implementation cannot be declared in ambient contexts.
+ttttDeclarePropertyAmbientInitializer.ts(8,33): error TS1254: A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.
+ttttDeclarePropertyAmbientInitializer.ts(8,39): error TS1183: An implementation cannot be declared in ambient contexts.
+ttttDeclarePropertyAmbientInitializer.ts(8,49): error TS1039: Initializers are not allowed in ambient contexts.
+ttttDeclarePropertyAmbientInitializer.ts(9,20): error TS1166: A computed property name in a class property declaration must have a simple literal type or a 'unique symbol' type.
+ttttDeclarePropertyAmbientInitializer.ts(9,28): error TS1183: An implementation cannot be declared in ambient contexts.
+ttttDeclarePropertyAmbientInitializer.ts(10,33): error TS1039: Initializers are not allowed in ambient contexts.
+ttttDeclarePropertyAmbientInitializer.ts(10,39): error TS1183: An implementation cannot be declared in ambient contexts.
+ttttDeclarePropertyAmbientInitializer.ts(11,25): error TS1039: Initializers are not allowed in ambient contexts.
+ttttDeclarePropertyAmbientInitializer.ts(11,36): error TS1183: An implementation cannot be declared in ambient contexts.
+ttttDeclarePropertyAmbientInitializer.ts(11,43): error TS1183: An implementation cannot be declared in ambient contexts.
+
+
+==== ttttDeclarePropertyAmbientInitializer.ts (22 errors) ====
+    // A `declare` property is parsed in an ambient context (tsc's parseClassElement), its name and initializer too: a
+    // function there is TS1183, an async arrow TS1040 (bun 53-L15)
+    class D1 { declare p = async () => {}; }
+                           ~~~~~
+!!! error TS1040: 'async' modifier cannot be used in an ambient context.
+                           ~~~~~~~~~~~~~~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+                                       ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+    class D3 { declare p = function () {}; }
+                           ~~~~~~~~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+                                       ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+    class D4 { declare p = { m() {}, get g() { return 1; } }; }
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+                                 ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+                                             ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+    class D5 { declare p = class { m() {} }; }
+                           ~~~~~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+                                       ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+    class D6 { declare static p = () => {}; }
+                                  ~~~~~~~~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+                                        ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+    class D7 { declare readonly p = () => { let x = 1; }; }
+                                    ~~~~~~~~~~~~~~~~~~~~
+!!! error TS1254: A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.
+                                          ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+                                                    ~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+    class D8 { declare [(() => { return "a" as const; })()]: number; }
+                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1166: A computed property name in a class property declaration must have a simple literal type or a 'unique symbol' type.
+                               ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+    const E13 = class { declare p = () => {}; };
+                                    ~~~~~~~~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+                                          ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+    class D14 { declare p = (a = () => {}) => {}; }
+                            ~~~~~~~~~~~~~~~~~~~~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+                                       ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+                                              ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+    
