@@ -242,8 +242,31 @@ void binding_flow_assign(Binding const* me, Scope* names) {
 // elements without one (and the patterns without one, element by element) are implicitly any
 // tsc's checkVariableLikeDeclaration doesn't check a renaming (`{ a: b }`) in the parameters of a signature without a
 // body at all (`bodiless`): only TS2842 is said about it
+// Whether checking one of a parameter pattern's elements asks for the parameter's type, which reports the whole pattern
+// (tsc's checkVariableLikeDeclaration returns early only for a renaming to a name in a bodiless signature; any other
+// element, a shorthand, a nested pattern, an array element, a rest, reaches getTypeForBindingElementParent)
+static bool binding_has_unrenamed_element(Binding const* me) {
+    switch (my tag) {
+        case BINDING_ARRAY:
+            for_each (i, vec_binding, &my array) {
+                if (i->tag != BINDING_NOOP) return true;
+            }
+            return false;
+        case BINDING_OBJECT:
+            for_each (i, vec_object_binding_item, &my object) {
+                bool renaming = i->target.tag == BINDING_IDENTIFIER && !i->target.rest &&
+                    !span_eq(i->source_span, i->target.content_span);
+                if (!renaming) return true;
+            }
+            return false;
+        default:
+            return false;
+    }
+}
+
 void binding_add_implicit_any_type_errors(Binding const* me, Span parameter, bool bodiless, ErrorCtx* errs) {
     bool toplevel = span_valid(parameter);
+    if (toplevel && bodiless && binding_has_unrenamed_element(me)) bodiless = false;
     if (!toplevel && my default_value) {
         // A default of null or undefined widens to any without strictNullChecks (tsc's reportErrorsFromWidening)
         if (my tag != BINDING_IDENTIFIER || compiler_options()->strict_null_checks) return;

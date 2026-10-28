@@ -1,0 +1,53 @@
+//// [test/cases/ttttBodilessPatternImplicitAny.ts] ////
+
+=== ttttBodilessPatternImplicitAny.ts ===
+// In a bodiless signature a renaming in a parameter pattern is TS2842 alone, but any other element (a shorthand, a
+// nested pattern, an array element) asks for the parameter's type, which reports every element of the pattern, the
+// renamings too (tsc's checkVariableLikeDeclaration: getTypeForBindingElementParent; mutation testing seed 20261104,
+// reverseMappedTypePrimitiveConstraintProperty)
+declare function h({ a: b, c }): void;
+>h : Symbol(h, Decl(ttttBodilessPatternImplicitAny.ts, 0, 0))
+>a : Symbol(a)
+>b : Symbol(b, Decl(ttttBodilessPatternImplicitAny.ts, 4, 20))
+>c : Symbol(c, Decl(ttttBodilessPatternImplicitAny.ts, 4, 26))
+
+declare function k({ a: b, d: { e } }): void;
+>k : Symbol(k, Decl(ttttBodilessPatternImplicitAny.ts, 4, 38))
+>a : Symbol(a)
+>b : Symbol(b, Decl(ttttBodilessPatternImplicitAny.ts, 5, 20))
+>d : Symbol(d)
+>e : Symbol(e, Decl(ttttBodilessPatternImplicitAny.ts, 5, 31))
+
+declare function m({ a: b }, { f }): void;
+>m : Symbol(m, Decl(ttttBodilessPatternImplicitAny.ts, 5, 45))
+>a : Symbol(a)
+>b : Symbol(b, Decl(ttttBodilessPatternImplicitAny.ts, 6, 20))
+>f : Symbol(f, Decl(ttttBodilessPatternImplicitAny.ts, 6, 30))
+
+type T = ({ a: b, g }: any) => void;
+>T : Symbol(T, Decl(ttttBodilessPatternImplicitAny.ts, 6, 42))
+>b : Symbol(b, Decl(ttttBodilessPatternImplicitAny.ts, 7, 11))
+>g : Symbol(g, Decl(ttttBodilessPatternImplicitAny.ts, 7, 17))
+
+declare function f2({ a: b }): void;
+>f2 : Symbol(f2, Decl(ttttBodilessPatternImplicitAny.ts, 7, 36))
+>a : Symbol(a)
+>b : Symbol(b, Decl(ttttBodilessPatternImplicitAny.ts, 8, 21))
+
+declare function g2({ a: }): void;
+>g2 : Symbol(g2, Decl(ttttBodilessPatternImplicitAny.ts, 8, 36))
+>a : Symbol(a)
+> : Symbol((Missing), Decl(ttttBodilessPatternImplicitAny.ts, 9, 21))
+
+declare function h2({ a: b, "c" }): void;
+>h2 : Symbol(h2, Decl(ttttBodilessPatternImplicitAny.ts, 9, 34))
+>a : Symbol(a)
+>b : Symbol(b, Decl(ttttBodilessPatternImplicitAny.ts, 10, 21))
+> : Symbol((Missing), Decl(ttttBodilessPatternImplicitAny.ts, 10, 27))
+
+declare function n([o], { a: p }): void;
+>n : Symbol(n, Decl(ttttBodilessPatternImplicitAny.ts, 10, 41))
+>o : Symbol(o, Decl(ttttBodilessPatternImplicitAny.ts, 11, 20))
+>a : Symbol(a)
+>p : Symbol(p, Decl(ttttBodilessPatternImplicitAny.ts, 11, 25))
+

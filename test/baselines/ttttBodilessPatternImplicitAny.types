@@ -1,0 +1,54 @@
+//// [test/cases/ttttBodilessPatternImplicitAny.ts] ////
+
+=== ttttBodilessPatternImplicitAny.ts ===
+// In a bodiless signature a renaming in a parameter pattern is TS2842 alone, but any other element (a shorthand, a
+// nested pattern, an array element) asks for the parameter's type, which reports every element of the pattern, the
+// renamings too (tsc's checkVariableLikeDeclaration: getTypeForBindingElementParent; mutation testing seed 20261104,
+// reverseMappedTypePrimitiveConstraintProperty)
+declare function h({ a: b, c }): void;
+>h : ({ a: b, c }: { a: any; c: any; }) => void
+>a : any
+>b : any
+>c : any
+
+declare function k({ a: b, d: { e } }): void;
+>k : ({ a: b, d: { e } }: { a: any; d: { e: any; }; }) => void
+>a : any
+>b : any
+>d : any
+>e : any
+
+declare function m({ a: b }, { f }): void;
+>m : ({ a: b }: { a: any; }, { f }: { f: any; }) => void
+>a : any
+>b : any
+>f : any
+
+type T = ({ a: b, g }: any) => void;
+>T : T
+>a : any
+>b : any
+>g : any
+
+declare function f2({ a: b }): void;
+>f2 : ({ a: b }: { a: any; }) => void
+>a : any
+>b : any
+
+declare function g2({ a: }): void;
+>g2 : ({ a:  }: { a: any; }) => void
+>a : any
+> : any
+
+declare function h2({ a: b, "c" }): void;
+>h2 : ({ a: b, "c":  }: { a: any; c: any; }) => void
+>a : any
+>b : any
+> : any
+
+declare function n([o], { a: p }): void;
+>n : ([o]: [any], { a: p }: { a: any; }) => void
+>o : any
+>a : any
+>p : any
+
