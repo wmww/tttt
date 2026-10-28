@@ -1,0 +1,106 @@
+//// [test/cases/ttttIntersectionPrivateMappedProperty.ts] ////
+
+=== ttttIntersectionPrivateMappedProperty.ts ===
+declare class D { private readonly id: string | number; other: 1 }
+>D : Symbol(D, Decl(ttttIntersectionPrivateMappedProperty.ts, 0, 0))
+>id : Symbol(D.id, Decl(ttttIntersectionPrivateMappedProperty.ts, 0, 17))
+>other : Symbol(D.other, Decl(ttttIntersectionPrivateMappedProperty.ts, 0, 55))
+
+type Writable<T> = { -readonly [K in keyof T]: T[K] }
+>Writable : Symbol(Writable, Decl(ttttIntersectionPrivateMappedProperty.ts, 0, 66))
+>T : Symbol(T, Decl(ttttIntersectionPrivateMappedProperty.ts, 1, 14))
+>K : Symbol(K, Decl(ttttIntersectionPrivateMappedProperty.ts, 1, 32))
+>T : Symbol(T, Decl(ttttIntersectionPrivateMappedProperty.ts, 1, 14))
+>T : Symbol(T, Decl(ttttIntersectionPrivateMappedProperty.ts, 1, 14))
+>K : Symbol(K, Decl(ttttIntersectionPrivateMappedProperty.ts, 1, 32))
+
+type W = Pick<Writable<D>, 'id'>
+>W : Symbol(W, Decl(ttttIntersectionPrivateMappedProperty.ts, 1, 53))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>Writable : Symbol(Writable, Decl(ttttIntersectionPrivateMappedProperty.ts, 0, 66))
+>D : Symbol(D, Decl(ttttIntersectionPrivateMappedProperty.ts, 0, 0))
+
+declare const wd: W & D
+>wd : Symbol(wd, Decl(ttttIntersectionPrivateMappedProperty.ts, 3, 13))
+>W : Symbol(W, Decl(ttttIntersectionPrivateMappedProperty.ts, 1, 53))
+>D : Symbol(D, Decl(ttttIntersectionPrivateMappedProperty.ts, 0, 0))
+
+const t: { id: string | number } = wd
+>t : Symbol(t, Decl(ttttIntersectionPrivateMappedProperty.ts, 4, 5))
+>id : Symbol(id, Decl(ttttIntersectionPrivateMappedProperty.ts, 4, 10))
+>wd : Symbol(wd, Decl(ttttIntersectionPrivateMappedProperty.ts, 3, 13))
+
+wd.id;
+>wd.id : Symbol(D.id, Decl(ttttIntersectionPrivateMappedProperty.ts, 0, 17))
+>wd : Symbol(wd, Decl(ttttIntersectionPrivateMappedProperty.ts, 3, 13))
+>id : Symbol(D.id, Decl(ttttIntersectionPrivateMappedProperty.ts, 0, 17))
+
+declare class E { protected id: string; private p: number; q: 1 }
+>E : Symbol(E, Decl(ttttIntersectionPrivateMappedProperty.ts, 5, 6))
+>id : Symbol(E.id, Decl(ttttIntersectionPrivateMappedProperty.ts, 6, 17))
+>p : Symbol(E.p, Decl(ttttIntersectionPrivateMappedProperty.ts, 6, 39))
+>q : Symbol(E.q, Decl(ttttIntersectionPrivateMappedProperty.ts, 6, 58))
+
+declare const we: Pick<Writable<E>, 'id' | 'p'> & E
+>we : Symbol(we, Decl(ttttIntersectionPrivateMappedProperty.ts, 7, 13))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>Writable : Symbol(Writable, Decl(ttttIntersectionPrivateMappedProperty.ts, 0, 66))
+>E : Symbol(E, Decl(ttttIntersectionPrivateMappedProperty.ts, 5, 6))
+>E : Symbol(E, Decl(ttttIntersectionPrivateMappedProperty.ts, 5, 6))
+
+we.id; we.p;
+>we.id : Symbol(E.id, Decl(ttttIntersectionPrivateMappedProperty.ts, 6, 17))
+>we : Symbol(we, Decl(ttttIntersectionPrivateMappedProperty.ts, 7, 13))
+>id : Symbol(E.id, Decl(ttttIntersectionPrivateMappedProperty.ts, 6, 17))
+>we.p : Symbol(E.p, Decl(ttttIntersectionPrivateMappedProperty.ts, 6, 39))
+>we : Symbol(we, Decl(ttttIntersectionPrivateMappedProperty.ts, 7, 13))
+>p : Symbol(E.p, Decl(ttttIntersectionPrivateMappedProperty.ts, 6, 39))
+
+const t2: { id: string, p: number } = we
+>t2 : Symbol(t2, Decl(ttttIntersectionPrivateMappedProperty.ts, 9, 5))
+>id : Symbol(id, Decl(ttttIntersectionPrivateMappedProperty.ts, 9, 11))
+>p : Symbol(p, Decl(ttttIntersectionPrivateMappedProperty.ts, 9, 23))
+>we : Symbol(we, Decl(ttttIntersectionPrivateMappedProperty.ts, 7, 13))
+
+class F extends E { m(x: Pick<Writable<E>, 'id'> & E) { x.id; const y: { id: string } = x } }
+>F : Symbol(F, Decl(ttttIntersectionPrivateMappedProperty.ts, 9, 40))
+>E : Symbol(E, Decl(ttttIntersectionPrivateMappedProperty.ts, 5, 6))
+>m : Symbol(F.m, Decl(ttttIntersectionPrivateMappedProperty.ts, 10, 19))
+>x : Symbol(x, Decl(ttttIntersectionPrivateMappedProperty.ts, 10, 22))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>Writable : Symbol(Writable, Decl(ttttIntersectionPrivateMappedProperty.ts, 0, 66))
+>E : Symbol(E, Decl(ttttIntersectionPrivateMappedProperty.ts, 5, 6))
+>E : Symbol(E, Decl(ttttIntersectionPrivateMappedProperty.ts, 5, 6))
+>x.id : Symbol(E.id, Decl(ttttIntersectionPrivateMappedProperty.ts, 6, 17))
+>x : Symbol(x, Decl(ttttIntersectionPrivateMappedProperty.ts, 10, 22))
+>id : Symbol(E.id, Decl(ttttIntersectionPrivateMappedProperty.ts, 6, 17))
+>y : Symbol(y, Decl(ttttIntersectionPrivateMappedProperty.ts, 10, 67))
+>id : Symbol(id, Decl(ttttIntersectionPrivateMappedProperty.ts, 10, 72))
+>x : Symbol(x, Decl(ttttIntersectionPrivateMappedProperty.ts, 10, 22))
+
+declare const wdp: D & { id: string | number }
+>wdp : Symbol(wdp, Decl(ttttIntersectionPrivateMappedProperty.ts, 11, 13))
+>D : Symbol(D, Decl(ttttIntersectionPrivateMappedProperty.ts, 0, 0))
+>id : Symbol(id, Decl(ttttIntersectionPrivateMappedProperty.ts, 11, 24))
+
+wdp.id = 'x'
+>wdp : Symbol(wdp, Decl(ttttIntersectionPrivateMappedProperty.ts, 11, 13))
+
+function wdp_generic<T extends typeof wdp>(t: T) { t.id = 'x'; t.other; }
+>wdp_generic : Symbol(wdp_generic, Decl(ttttIntersectionPrivateMappedProperty.ts, 12, 12))
+>T : Symbol(T, Decl(ttttIntersectionPrivateMappedProperty.ts, 13, 21))
+>wdp : Symbol(wdp, Decl(ttttIntersectionPrivateMappedProperty.ts, 11, 13))
+>t : Symbol(t, Decl(ttttIntersectionPrivateMappedProperty.ts, 13, 43))
+>T : Symbol(T, Decl(ttttIntersectionPrivateMappedProperty.ts, 13, 21))
+>t : Symbol(t, Decl(ttttIntersectionPrivateMappedProperty.ts, 13, 43))
+>t : Symbol(t, Decl(ttttIntersectionPrivateMappedProperty.ts, 13, 43))
+
+function g2<T extends D & { id: string | number }>(t: T) { t.id; }
+>g2 : Symbol(g2, Decl(ttttIntersectionPrivateMappedProperty.ts, 13, 73))
+>T : Symbol(T, Decl(ttttIntersectionPrivateMappedProperty.ts, 14, 12))
+>D : Symbol(D, Decl(ttttIntersectionPrivateMappedProperty.ts, 0, 0))
+>id : Symbol(id, Decl(ttttIntersectionPrivateMappedProperty.ts, 14, 27))
+>t : Symbol(t, Decl(ttttIntersectionPrivateMappedProperty.ts, 14, 51))
+>T : Symbol(T, Decl(ttttIntersectionPrivateMappedProperty.ts, 14, 12))
+>t : Symbol(t, Decl(ttttIntersectionPrivateMappedProperty.ts, 14, 51))
+

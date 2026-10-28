@@ -1,0 +1,94 @@
+//// [test/cases/ttttIntersectionPrivateMappedProperty.ts] ////
+
+=== ttttIntersectionPrivateMappedProperty.ts ===
+declare class D { private readonly id: string | number; other: 1 }
+>D : D
+>id : string | number
+>other : 1
+
+type Writable<T> = { -readonly [K in keyof T]: T[K] }
+>Writable : Writable<T>
+
+type W = Pick<Writable<D>, 'id'>
+>W : W
+
+declare const wd: W & D
+>wd : W & D
+
+const t: { id: string | number } = wd
+>t : { id: string | number; }
+>id : string | number
+>wd : W & D
+
+wd.id;
+>wd.id : string | number
+>wd : W & D
+>id : string | number
+
+declare class E { protected id: string; private p: number; q: 1 }
+>E : E
+>id : string
+>p : number
+>q : 1
+
+declare const we: Pick<Writable<E>, 'id' | 'p'> & E
+>we : Pick<Writable<E>, "id" | "p"> & E
+
+we.id; we.p;
+>we.id : string
+>we : Pick<Writable<E>, "id" | "p"> & E
+>id : string
+>we.p : number
+>we : Pick<Writable<E>, "id" | "p"> & E
+>p : number
+
+const t2: { id: string, p: number } = we
+>t2 : { id: string; p: number; }
+>id : string
+>p : number
+>we : Pick<Writable<E>, "id" | "p"> & E
+
+class F extends E { m(x: Pick<Writable<E>, 'id'> & E) { x.id; const y: { id: string } = x } }
+>F : F
+>E : E
+>m : (x: Pick<Writable<E>, 'id'> & E) => void
+>x : Pick<Writable<E>, "id"> & E
+>x.id : string
+>x : Pick<Writable<E>, "id"> & E
+>id : string
+>y : { id: string; }
+>id : string
+>x : Pick<Writable<E>, "id"> & E
+
+declare const wdp: D & { id: string | number }
+>wdp : never
+>id : string | number
+
+wdp.id = 'x'
+>wdp.id = 'x' : "x"
+>wdp.id : any
+>wdp : never
+>id : any
+>'x' : "x"
+
+function wdp_generic<T extends typeof wdp>(t: T) { t.id = 'x'; t.other; }
+>wdp_generic : <T extends typeof wdp>(t: T) => void
+>wdp : never
+>t : T
+>t.id = 'x' : "x"
+>t.id : any
+>t : T
+>id : any
+>'x' : "x"
+>t.other : any
+>t : T
+>other : any
+
+function g2<T extends D & { id: string | number }>(t: T) { t.id; }
+>g2 : <T extends D & { id: string | number; }>(t: T) => void
+>id : string | number
+>t : T
+>t.id : any
+>t : T
+>id : any
+

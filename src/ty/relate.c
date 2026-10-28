@@ -1569,6 +1569,10 @@ static Ty const* apparent_type_inner(Checker* me, Ty const* ty) {
         // (Unknown without one, which is `{}` only without strictNullChecks; `T extends R | string` with R unconstrained
         // has none either)
         if (!constraint) return compiler_options()->strict_null_checks ? ty_intrinsic(me, TY_UNKNOWN_) : global_type(me, GLOBAL_EMPTY_OBJECT);
+        // (A constraint that is a never-reduced intersection, `T extends C & { p: X }` with C's `private p`, is never
+        // with T as its `this` too, which apparent_type() can't tell any more: its members are generic then. tsc's
+        // getReducedApparentType reduces the intersection with the this-argument)
+        if (constraint->kind == TY_INTERSECTION) constraint = ty_reduced(me, constraint);
         if (constraint->flags & (TYF_OBJECT | TYF_INTERSECTION)) return ty_with_this_arg(me, constraint, ty);
         ty = constraint;
     }
@@ -1734,9 +1738,11 @@ static FoundProp find_prop(Checker* me, Ty const* ty, Atom const* name, u32 dept
     }
     // (Readonly only if every member's is: tsc's createUnionOrIntersectionProperty)
     if (!all_readonly) flags &= ~(u32)PROP_READONLY;
-    // (Private if any member's is, else public if any is: tsc's getDeclarationModifierFlagsFromSymbol of a synthetic
-    // property)
-    if (!(flags & PROP_PRIVATE) && any_public) flags &= ~(u32)PROP_PROTECTED;
+    // (Public if any member's is, else protected if any is, else private: tsgo's getDeclarationModifierFlagsFromSymbol
+    // of a synthetic property. `Pick<Writable<C>, "id"> & C` with C's `private id` is public: the mapped property has
+    // no declaration, so the intersection's isn't conflicting either)
+    if (any_public) flags &= ~(u32)(PROP_PRIVATE | PROP_PROTECTED);
+    else if (flags & PROP_PROTECTED) flags &= ~(u32)PROP_PRIVATE;
     if (!len && own_only && !skip_augment) {
         own_only = false;
         goto again;

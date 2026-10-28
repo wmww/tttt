@@ -1,0 +1,44 @@
+ttttIntersectionPrivateMappedProperty.ts(3,28): error TS2344: Type '"id"' does not satisfy the constraint '"other"'.
+ttttIntersectionPrivateMappedProperty.ts(8,37): error TS2344: Type '"id" | "p"' does not satisfy the constraint '"q"'.
+  Type '"id"' is not assignable to type '"q"'.
+ttttIntersectionPrivateMappedProperty.ts(11,44): error TS2344: Type '"id"' does not satisfy the constraint '"q"'.
+ttttIntersectionPrivateMappedProperty.ts(13,5): error TS2339: Property 'id' does not exist on type 'never'.
+  The intersection 'D & { id: string | number; }' was reduced to 'never' because property 'id' exists in multiple constituents and is private in some.
+ttttIntersectionPrivateMappedProperty.ts(14,54): error TS2339: Property 'id' does not exist on type 'T'.
+ttttIntersectionPrivateMappedProperty.ts(14,66): error TS2339: Property 'other' does not exist on type 'T'.
+ttttIntersectionPrivateMappedProperty.ts(15,62): error TS2339: Property 'id' does not exist on type 'T'.
+
+
+==== ttttIntersectionPrivateMappedProperty.ts (7 errors) ====
+    declare class D { private readonly id: string | number; other: 1 }
+    type Writable<T> = { -readonly [K in keyof T]: T[K] }
+    type W = Pick<Writable<D>, 'id'>
+                               ~~~~
+!!! error TS2344: Type '"id"' does not satisfy the constraint '"other"'.
+    declare const wd: W & D
+    const t: { id: string | number } = wd
+    wd.id;
+    declare class E { protected id: string; private p: number; q: 1 }
+    declare const we: Pick<Writable<E>, 'id' | 'p'> & E
+                                        ~~~~~~~~~~
+!!! error TS2344: Type '"id" | "p"' does not satisfy the constraint '"q"'.
+!!! error TS2344:   Type '"id"' is not assignable to type '"q"'.
+    we.id; we.p;
+    const t2: { id: string, p: number } = we
+    class F extends E { m(x: Pick<Writable<E>, 'id'> & E) { x.id; const y: { id: string } = x } }
+                                               ~~~~
+!!! error TS2344: Type '"id"' does not satisfy the constraint '"q"'.
+    declare const wdp: D & { id: string | number }
+    wdp.id = 'x'
+        ~~
+!!! error TS2339: Property 'id' does not exist on type 'never'.
+!!! error TS2339:   The intersection 'D & { id: string | number; }' was reduced to 'never' because property 'id' exists in multiple constituents and is private in some.
+    function wdp_generic<T extends typeof wdp>(t: T) { t.id = 'x'; t.other; }
+                                                         ~~
+!!! error TS2339: Property 'id' does not exist on type 'T'.
+                                                                     ~~~~~
+!!! error TS2339: Property 'other' does not exist on type 'T'.
+    function g2<T extends D & { id: string | number }>(t: T) { t.id; }
+                                                                 ~~
+!!! error TS2339: Property 'id' does not exist on type 'T'.
+    
