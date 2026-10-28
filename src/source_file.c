@@ -480,7 +480,14 @@ void module_ref_report_require_of_esm(ModuleRef const* me, Span at, ErrorCtx* er
     // it before looking at the resolved file's format. dexie-react-hooks' `declare module 'yjs'` next to an ES yjs)
     if (my module_state == ALIAS_DONE && my module && my module->is_module && my module->module && !my module->module->file) return;
     SourceFile const* from = span_source(my span);
-    bool sync_import = my syntax == MODULE_REF_REQUIRE || (my syntax == MODULE_REF_IMPORT && from && !from->is_esm);
+    // (A referenced project's output goes by its project's options, tsgo's GetDefaultResolutionModeForFile with
+    // getCompilerOptionsForFile: without node formats there it has none, unless its extension says CommonJS)
+    bool from_cjs = from && !from->is_esm;
+    if (from_cjs && from->resolution_project && !from->has_format) {
+        csview path = cstr_sv(&from->canonical_path);
+        from_cjs = csview_ends_with(path, ".cts") || csview_ends_with(path, ".cjs");
+    }
+    bool sync_import = my syntax == MODULE_REF_REQUIRE || (my syntax == MODULE_REF_IMPORT && from_cjs);
     // (A `resolution-mode` attribute of a type-only import or an import type lets it import across formats: tsc's
     // hasResolutionModeOverride)
     if ((options->module == MODULE_KIND_NODE16 || options->module == MODULE_KIND_NODE18) && sync_import &&
