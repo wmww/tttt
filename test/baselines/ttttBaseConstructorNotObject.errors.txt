@@ -1,0 +1,75 @@
+ttttBaseConstructorNotObject.ts(5,18): error TS2509: Base constructor return type 'A | B' is not an object type or intersection of object types with statically known members.
+ttttBaseConstructorNotObject.ts(7,18): error TS2509: Base constructor return type 'A | (A & B)' is not an object type or intersection of object types with statically known members.
+ttttBaseConstructorNotObject.ts(10,18): error TS2509: Base constructor return type 'A | Wr<A>' is not an object type or intersection of object types with statically known members.
+ttttBaseConstructorNotObject.ts(12,18): error TS2509: Base constructor return type 'string' is not an object type or intersection of object types with statically known members.
+ttttBaseConstructorNotObject.ts(14,18): error TS2509: Base constructor return type 'null' is not an object type or intersection of object types with statically known members.
+ttttBaseConstructorNotObject.ts(16,22): error TS2509: Base constructor return type 'T' is not an object type or intersection of object types with statically known members.
+ttttBaseConstructorNotObject.ts(18,22): error TS2509: Base constructor return type 'V' is not an object type or intersection of object types with statically known members.
+ttttBaseConstructorNotObject.ts(19,22): error TS2509: Base constructor return type 'Readonly<U>' is not an object type or intersection of object types with statically known members.
+ttttBaseConstructorNotObject.ts(21,29): error TS2509: Base constructor return type 'V' is not an object type or intersection of object types with statically known members.
+ttttBaseConstructorNotObject.ts(24,18): error TS2509: Base constructor return type 'unknown' is not an object type or intersection of object types with statically known members.
+ttttBaseConstructorNotObject.ts(26,18): error TS2509: Base constructor return type 'never' is not an object type or intersection of object types with statically known members.
+ttttBaseConstructorNotObject.ts(28,18): error TS2509: Base constructor return type 'never' is not an object type or intersection of object types with statically known members.
+  The intersection '{ a: 1; } & { a: 2; }' was reduced to 'never' because property 'a' has conflicting types in some constituents.
+ttttBaseConstructorNotObject.ts(30,18): error TS2509: Base constructor return type 'string' is not an object type or intersection of object types with statically known members.
+
+
+==== ttttBaseConstructorNotObject.ts (13 errors) ====
+    // A base constructor that constructs a union, a primitive, unknown, a type parameter or a generic mapped type: TS2509 (tsc's isValidBaseType of the reduced base), not only an intersection reduced to never
+    interface A { a: 1 }
+    interface B { b: 1 }
+    declare const base1: new () => A | B
+    class D1 extends base1 { }
+                     ~~~~~
+!!! error TS2509: Base constructor return type 'A | B' is not an object type or intersection of object types with statically known members.
+    declare const base2: new () => A & (A | B)
+    class D2 extends base2 { }
+                     ~~~~~
+!!! error TS2509: Base constructor return type 'A | (A & B)' is not an object type or intersection of object types with statically known members.
+    type Wr<T> = { -readonly [K in keyof T]: T[K] }
+    declare const base3: new () => Wr<A> | A
+    class D3 extends base3 { }
+                     ~~~~~
+!!! error TS2509: Base constructor return type 'A | Wr<A>' is not an object type or intersection of object types with statically known members.
+    declare const s: new () => string
+    class E1 extends s {}
+                     ~
+!!! error TS2509: Base constructor return type 'string' is not an object type or intersection of object types with statically known members.
+    declare const n: new () => null
+    class E2 extends n {}
+                     ~
+!!! error TS2509: Base constructor return type 'null' is not an object type or intersection of object types with statically known members.
+    function f<T, U extends object, V extends string>(a: new () => T, b: new () => U, c: new () => V, d: new () => Readonly<U>, e: new () => Partial<{x: 1}>) {
+        class F1 extends a {}
+                         ~
+!!! error TS2509: Base constructor return type 'T' is not an object type or intersection of object types with statically known members.
+        class F2 extends b {}
+        class F3 extends c {}
+                         ~
+!!! error TS2509: Base constructor return type 'V' is not an object type or intersection of object types with statically known members.
+        class F4 extends d {}
+                         ~
+!!! error TS2509: Base constructor return type 'Readonly<U>' is not an object type or intersection of object types with statically known members.
+        class F5 extends e {}
+        const g = class extends c {}
+                                ~
+!!! error TS2509: Base constructor return type 'V' is not an object type or intersection of object types with statically known members.
+    }
+    declare const u: new () => unknown
+    class E3 extends u {}
+                     ~
+!!! error TS2509: Base constructor return type 'unknown' is not an object type or intersection of object types with statically known members.
+    declare const nv: new () => never
+    class E4 extends nv {}
+                     ~~
+!!! error TS2509: Base constructor return type 'never' is not an object type or intersection of object types with statically known members.
+    declare const nvi: new () => { a: 1 } & { a: 2 }
+    class E5 extends nvi {}
+                     ~~~
+!!! error TS2509: Base constructor return type 'never' is not an object type or intersection of object types with statically known members.
+!!! error TS2509:   The intersection '{ a: 1; } & { a: 2; }' was reduced to 'never' because property 'a' has conflicting types in some constituents.
+    declare const ov: { new (): string; new <T>(x: T): { a: T } }
+    class E6 extends ov {}
+                     ~~
+!!! error TS2509: Base constructor return type 'string' is not an object type or intersection of object types with statically known members.
+    

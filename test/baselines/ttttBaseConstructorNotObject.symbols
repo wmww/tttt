@@ -1,0 +1,140 @@
+//// [test/cases/ttttBaseConstructorNotObject.ts] ////
+
+=== ttttBaseConstructorNotObject.ts ===
+// A base constructor that constructs a union, a primitive, unknown, a type parameter or a generic mapped type: TS2509 (tsc's isValidBaseType of the reduced base), not only an intersection reduced to never
+interface A { a: 1 }
+>A : Symbol(A, Decl(ttttBaseConstructorNotObject.ts, 0, 0))
+>a : Symbol(A.a, Decl(ttttBaseConstructorNotObject.ts, 1, 13))
+
+interface B { b: 1 }
+>B : Symbol(B, Decl(ttttBaseConstructorNotObject.ts, 1, 20))
+>b : Symbol(B.b, Decl(ttttBaseConstructorNotObject.ts, 2, 13))
+
+declare const base1: new () => A | B
+>base1 : Symbol(base1, Decl(ttttBaseConstructorNotObject.ts, 3, 13))
+>A : Symbol(A, Decl(ttttBaseConstructorNotObject.ts, 0, 0))
+>B : Symbol(B, Decl(ttttBaseConstructorNotObject.ts, 1, 20))
+
+class D1 extends base1 { }
+>D1 : Symbol(D1, Decl(ttttBaseConstructorNotObject.ts, 3, 36))
+>base1 : Symbol(base1, Decl(ttttBaseConstructorNotObject.ts, 3, 13))
+
+declare const base2: new () => A & (A | B)
+>base2 : Symbol(base2, Decl(ttttBaseConstructorNotObject.ts, 5, 13))
+>A : Symbol(A, Decl(ttttBaseConstructorNotObject.ts, 0, 0))
+>A : Symbol(A, Decl(ttttBaseConstructorNotObject.ts, 0, 0))
+>B : Symbol(B, Decl(ttttBaseConstructorNotObject.ts, 1, 20))
+
+class D2 extends base2 { }
+>D2 : Symbol(D2, Decl(ttttBaseConstructorNotObject.ts, 5, 42))
+>base2 : Symbol(base2, Decl(ttttBaseConstructorNotObject.ts, 5, 13))
+
+type Wr<T> = { -readonly [K in keyof T]: T[K] }
+>Wr : Symbol(Wr, Decl(ttttBaseConstructorNotObject.ts, 6, 26))
+>T : Symbol(T, Decl(ttttBaseConstructorNotObject.ts, 7, 8))
+>K : Symbol(K, Decl(ttttBaseConstructorNotObject.ts, 7, 26))
+>T : Symbol(T, Decl(ttttBaseConstructorNotObject.ts, 7, 8))
+>T : Symbol(T, Decl(ttttBaseConstructorNotObject.ts, 7, 8))
+>K : Symbol(K, Decl(ttttBaseConstructorNotObject.ts, 7, 26))
+
+declare const base3: new () => Wr<A> | A
+>base3 : Symbol(base3, Decl(ttttBaseConstructorNotObject.ts, 8, 13))
+>Wr : Symbol(Wr, Decl(ttttBaseConstructorNotObject.ts, 6, 26))
+>A : Symbol(A, Decl(ttttBaseConstructorNotObject.ts, 0, 0))
+>A : Symbol(A, Decl(ttttBaseConstructorNotObject.ts, 0, 0))
+
+class D3 extends base3 { }
+>D3 : Symbol(D3, Decl(ttttBaseConstructorNotObject.ts, 8, 40))
+>base3 : Symbol(base3, Decl(ttttBaseConstructorNotObject.ts, 8, 13))
+
+declare const s: new () => string
+>s : Symbol(s, Decl(ttttBaseConstructorNotObject.ts, 10, 13))
+
+class E1 extends s {}
+>E1 : Symbol(E1, Decl(ttttBaseConstructorNotObject.ts, 10, 33))
+>s : Symbol(s, Decl(ttttBaseConstructorNotObject.ts, 10, 13))
+
+declare const n: new () => null
+>n : Symbol(n, Decl(ttttBaseConstructorNotObject.ts, 12, 13))
+
+class E2 extends n {}
+>E2 : Symbol(E2, Decl(ttttBaseConstructorNotObject.ts, 12, 31))
+>n : Symbol(n, Decl(ttttBaseConstructorNotObject.ts, 12, 13))
+
+function f<T, U extends object, V extends string>(a: new () => T, b: new () => U, c: new () => V, d: new () => Readonly<U>, e: new () => Partial<{x: 1}>) {
+>f : Symbol(f, Decl(ttttBaseConstructorNotObject.ts, 13, 21))
+>T : Symbol(T, Decl(ttttBaseConstructorNotObject.ts, 14, 11))
+>U : Symbol(U, Decl(ttttBaseConstructorNotObject.ts, 14, 13))
+>V : Symbol(V, Decl(ttttBaseConstructorNotObject.ts, 14, 31))
+>a : Symbol(a, Decl(ttttBaseConstructorNotObject.ts, 14, 50))
+>T : Symbol(T, Decl(ttttBaseConstructorNotObject.ts, 14, 11))
+>b : Symbol(b, Decl(ttttBaseConstructorNotObject.ts, 14, 65))
+>U : Symbol(U, Decl(ttttBaseConstructorNotObject.ts, 14, 13))
+>c : Symbol(c, Decl(ttttBaseConstructorNotObject.ts, 14, 81))
+>V : Symbol(V, Decl(ttttBaseConstructorNotObject.ts, 14, 31))
+>d : Symbol(d, Decl(ttttBaseConstructorNotObject.ts, 14, 97))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>U : Symbol(U, Decl(ttttBaseConstructorNotObject.ts, 14, 13))
+>e : Symbol(e, Decl(ttttBaseConstructorNotObject.ts, 14, 123))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttBaseConstructorNotObject.ts, 14, 146))
+
+    class F1 extends a {}
+>F1 : Symbol(F1, Decl(ttttBaseConstructorNotObject.ts, 14, 155))
+>a : Symbol(a, Decl(ttttBaseConstructorNotObject.ts, 14, 50))
+
+    class F2 extends b {}
+>F2 : Symbol(F2, Decl(ttttBaseConstructorNotObject.ts, 15, 25))
+>b : Symbol(b, Decl(ttttBaseConstructorNotObject.ts, 14, 65))
+
+    class F3 extends c {}
+>F3 : Symbol(F3, Decl(ttttBaseConstructorNotObject.ts, 16, 25))
+>c : Symbol(c, Decl(ttttBaseConstructorNotObject.ts, 14, 81))
+
+    class F4 extends d {}
+>F4 : Symbol(F4, Decl(ttttBaseConstructorNotObject.ts, 17, 25))
+>d : Symbol(d, Decl(ttttBaseConstructorNotObject.ts, 14, 97))
+
+    class F5 extends e {}
+>F5 : Symbol(F5, Decl(ttttBaseConstructorNotObject.ts, 18, 25))
+>e : Symbol(e, Decl(ttttBaseConstructorNotObject.ts, 14, 123))
+
+    const g = class extends c {}
+>g : Symbol(g, Decl(ttttBaseConstructorNotObject.ts, 20, 9))
+>c : Symbol(c, Decl(ttttBaseConstructorNotObject.ts, 14, 81))
+}
+declare const u: new () => unknown
+>u : Symbol(u, Decl(ttttBaseConstructorNotObject.ts, 22, 13))
+
+class E3 extends u {}
+>E3 : Symbol(E3, Decl(ttttBaseConstructorNotObject.ts, 22, 34))
+>u : Symbol(u, Decl(ttttBaseConstructorNotObject.ts, 22, 13))
+
+declare const nv: new () => never
+>nv : Symbol(nv, Decl(ttttBaseConstructorNotObject.ts, 24, 13))
+
+class E4 extends nv {}
+>E4 : Symbol(E4, Decl(ttttBaseConstructorNotObject.ts, 24, 33))
+>nv : Symbol(nv, Decl(ttttBaseConstructorNotObject.ts, 24, 13))
+
+declare const nvi: new () => { a: 1 } & { a: 2 }
+>nvi : Symbol(nvi, Decl(ttttBaseConstructorNotObject.ts, 26, 13))
+>a : Symbol(a, Decl(ttttBaseConstructorNotObject.ts, 26, 30))
+>a : Symbol(a, Decl(ttttBaseConstructorNotObject.ts, 26, 41))
+
+class E5 extends nvi {}
+>E5 : Symbol(E5, Decl(ttttBaseConstructorNotObject.ts, 26, 48))
+>nvi : Symbol(nvi, Decl(ttttBaseConstructorNotObject.ts, 26, 13))
+
+declare const ov: { new (): string; new <T>(x: T): { a: T } }
+>ov : Symbol(ov, Decl(ttttBaseConstructorNotObject.ts, 28, 13))
+>T : Symbol(T, Decl(ttttBaseConstructorNotObject.ts, 28, 41))
+>x : Symbol(x, Decl(ttttBaseConstructorNotObject.ts, 28, 44))
+>T : Symbol(T, Decl(ttttBaseConstructorNotObject.ts, 28, 41))
+>a : Symbol(a, Decl(ttttBaseConstructorNotObject.ts, 28, 52))
+>T : Symbol(T, Decl(ttttBaseConstructorNotObject.ts, 28, 41))
+
+class E6 extends ov {}
+>E6 : Symbol(E6, Decl(ttttBaseConstructorNotObject.ts, 28, 61))
+>ov : Symbol(ov, Decl(ttttBaseConstructorNotObject.ts, 28, 13))
+

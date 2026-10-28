@@ -1475,14 +1475,17 @@ static void class_heritage_typecheck(ClassDecl* me, ErrorCtx* errs) {
         null_base = base != nullptr;
     }
     if (!base && my extends.tag != EXPR_IMPLICIT_ANY) {
-        Ty const* never_base = ty_class_never_base(checker, me);
-        unsigned code;
-        cstr why;
-        if (never_base && ty_never_intersection_elaboration(checker, never_base, &code, &why)) {
+        Ty const* invalid_base = ty_class_invalid_base(checker, me);
+        if (invalid_base) {
             Expr const* extends = my extends.tag == EXPR_GENERIC_PARAMS ? &my extends.generic_params->expr : &my extends;
-            Error* error = error_ctx_error_d(errs, expr_outer_span(extends), 2509, "Base constructor return type 'never' is not an "
-                "object type or intersection of object types with statically known members.");
-            if (error) error_sub_error_s(error, (Span){0}, code, why); else cstr_drop(&why);
+            cstr text = ty_to_cstr(checker, ty_reduced(checker, invalid_base));
+            Error* error = error_ctx_error_d(errs, expr_outer_span(extends), 2509, "Base constructor return type '", text,
+                "' is not an object type or intersection of object types with statically known members.");
+            cstr_drop(&text);
+            // (tsc's elaborateNeverIntersection of the unreduced base, below it)
+            unsigned code;
+            cstr why;
+            if (error && ty_never_intersection_elaboration(checker, invalid_base, &code, &why)) error_sub_error_s(error, (Span){0}, code, why);
         }
     }
     class_check_mixin(me, errs);

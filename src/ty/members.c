@@ -1524,7 +1524,7 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
             if (mapper) constructed = ty_instantiate(me, constructed, mapper);
         }
         if (!constructed || !is_valid_base_type(me, constructed, 0)) {
-            if (constructed) *instance = constructed; // (For ty_class_never_base())
+            if (constructed) *instance = constructed; // (For ty_class_invalid_base())
             return false;
         }
         *instance = constructed;
@@ -3202,16 +3202,17 @@ bool ty_class_base_constructors_differ(Checker* me, ClassDecl const* class_decl,
     return false;
 }
 
-// The base a class's `extends` expression constructs when it is an intersection that is never (TS2509, tsc's
-// resolveBaseTypesOfClass with elaborateNeverIntersection). Null otherwise
-Ty const* ty_class_never_base(Checker* me, ClassDecl const* class_decl) {
+// The base a class's `extends` expression constructs when it can't be a base: not an object type, `object`, a type
+// parameter constrained to one or an intersection of them, or a generic mapped type (TS2509, tsc's
+// resolveBaseTypesOfClass's isValidBaseType of the reduced base). Null otherwise, and for `any` and the error type
+Ty const* ty_class_invalid_base(Checker* me, ClassDecl const* class_decl) {
     Ty const* base = nullptr;
     Symbol const* base_decl = nullptr;
     Ty const* declared = class_decl->symbol ? ty_declared_type_of(me, class_decl->symbol) : nullptr;
     LowerCtx ctx = { .generic = declared && declared->kind == TY_DECLARED &&
         (declared->declared.type_params.len || declared->declared.this_param) };
-    if (class_base(me, class_decl, ctx, &base, &base_decl) || !base) return nullptr;
-    return base->kind == TY_INTERSECTION && (ty_reduced(me, base)->flags & TYF_NEVER) ? base : nullptr;
+    if (class_base(me, class_decl, ctx, &base, &base_decl) || !base || (base->flags & TYF_ANY)) return nullptr;
+    return base;
 }
 
 Atom const* ty_member_name(Checker* me, cstr const* name_string, Expr const* computed_key) {

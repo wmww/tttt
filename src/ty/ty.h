@@ -1730,7 +1730,7 @@ static inline Ty const* ty_reduced(Checker* me, Ty const* ty) {
     }
     return ty_reduced_slow(me, ty);
 }
-Ty const* ty_class_never_base(Checker* me, struct ClassDecl const* class_decl);
+Ty const* ty_class_invalid_base(Checker* me, struct ClassDecl const* class_decl);
 bool ty_never_intersection_elaboration(Checker* me, Ty const* ty, unsigned* ts_code, cstr* message);
 // The same without dropping a `{}` next to a primitive: a written `string & {}` (tsc's NoSupertypeReduction)
 Ty const* ty_intersection_keeping_empty_object(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args);

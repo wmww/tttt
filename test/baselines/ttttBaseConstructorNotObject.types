@@ -1,0 +1,114 @@
+//// [test/cases/ttttBaseConstructorNotObject.ts] ////
+
+=== ttttBaseConstructorNotObject.ts ===
+// A base constructor that constructs a union, a primitive, unknown, a type parameter or a generic mapped type: TS2509 (tsc's isValidBaseType of the reduced base), not only an intersection reduced to never
+interface A { a: 1 }
+>a : 1
+
+interface B { b: 1 }
+>b : 1
+
+declare const base1: new () => A | B
+>base1 : new () => A | B
+
+class D1 extends base1 { }
+>D1 : D1
+>base1 : new () => A | B
+
+declare const base2: new () => A & (A | B)
+>base2 : new () => A & (A | B)
+
+class D2 extends base2 { }
+>D2 : D2
+>base2 : new () => A & (A | B)
+
+type Wr<T> = { -readonly [K in keyof T]: T[K] }
+>Wr : Wr<T>
+
+declare const base3: new () => Wr<A> | A
+>base3 : new () => Wr<A> | A
+
+class D3 extends base3 { }
+>D3 : D3
+>base3 : new () => Wr<A> | A
+
+declare const s: new () => string
+>s : new () => string
+
+class E1 extends s {}
+>E1 : E1
+>s : new () => string
+
+declare const n: new () => null
+>n : new () => null
+
+class E2 extends n {}
+>E2 : E2
+>n : new () => null
+
+function f<T, U extends object, V extends string>(a: new () => T, b: new () => U, c: new () => V, d: new () => Readonly<U>, e: new () => Partial<{x: 1}>) {
+>f : <T, U extends object, V extends string>(a: new () => T, b: new () => U, c: new () => V, d: new () => Readonly<U>, e: new () => Partial<{ x: 1; }>) => void
+>a : new () => T
+>b : new () => U
+>c : new () => V
+>d : new () => Readonly<U>
+>e : new () => Partial<{ x: 1; }>
+>x : 1
+
+    class F1 extends a {}
+>F1 : F1
+>a : new () => T
+
+    class F2 extends b {}
+>F2 : F2
+>b : U
+
+    class F3 extends c {}
+>F3 : F3
+>c : new () => V
+
+    class F4 extends d {}
+>F4 : F4
+>d : new () => Readonly<U>
+
+    class F5 extends e {}
+>F5 : F5
+>e : Partial<{ x: 1; }>
+
+    const g = class extends c {}
+>g : typeof g
+>class extends c {} : typeof g
+>c : new () => V
+}
+declare const u: new () => unknown
+>u : new () => unknown
+
+class E3 extends u {}
+>E3 : E3
+>u : new () => unknown
+
+declare const nv: new () => never
+>nv : new () => never
+
+class E4 extends nv {}
+>E4 : E4
+>nv : new () => never
+
+declare const nvi: new () => { a: 1 } & { a: 2 }
+>nvi : new () => { a: 1; } & { a: 2; }
+>a : 1
+>a : 2
+
+class E5 extends nvi {}
+>E5 : E5
+>nvi : new () => { a: 1; } & { a: 2; }
+
+declare const ov: { new (): string; new <T>(x: T): { a: T } }
+>ov : { new (): string; new <T>(x: T): { a: T; }; }
+>x : T
+>a : T
+
+class E6 extends ov {}
+>E6 : E6
+>ov : { new (): string; new <T>(x: T): { a: T; }; }
+
