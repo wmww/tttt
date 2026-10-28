@@ -1,0 +1,29 @@
+ttttWhileBodyDeclarationScope.ts(5,11): error TS1156: 'const' declarations can only be declared inside a block.
+ttttWhileBodyDeclarationScope.ts(6,1): error TS2454: Variable 'x' is used before being assigned.
+ttttWhileBodyDeclarationScope.ts(7,4): error TS1156: 'const' declarations can only be declared inside a block.
+ttttWhileBodyDeclarationScope.ts(9,10): error TS1156: 'const' declarations can only be declared inside a block.
+ttttWhileBodyDeclarationScope.ts(10,1): error TS2304: Cannot find name 'z'.
+
+
+==== ttttWhileBodyDeclarationScope.ts (5 errors) ====
+    // A `let`/`const` as the whole body of a while or do statement (TS1156) is declared where the loop is: those aren't
+    // block scope containers to tsc's binder (a for statement is), so the name is found after the loop
+    // (missing_checks.md)
+    declare let a: boolean;
+    while (a) const x = 1;
+              ~~~~~~~~~~~~
+!!! error TS1156: 'const' declarations can only be declared inside a block.
+    x;
+    ~
+!!! error TS2454: Variable 'x' is used before being assigned.
+    do const y = 1; while (a);
+       ~~~~~~~~~~~~
+!!! error TS1156: 'const' declarations can only be declared inside a block.
+    y;
+    for (;;) const z = 2;
+             ~~~~~~~~~~~~
+!!! error TS1156: 'const' declarations can only be declared inside a block.
+    z;
+    ~
+!!! error TS2304: Cannot find name 'z'.
+    

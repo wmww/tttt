@@ -1,0 +1,32 @@
+//// [test/cases/ttttWhileBodyDeclarationScope.ts] ////
+
+=== ttttWhileBodyDeclarationScope.ts ===
+// A `let`/`const` as the whole body of a while or do statement (TS1156) is declared where the loop is: those aren't
+// block scope containers to tsc's binder (a for statement is), so the name is found after the loop
+// (missing_checks.md)
+declare let a: boolean;
+>a : boolean
+
+while (a) const x = 1;
+>a : boolean
+>x : 1
+>1 : 1
+
+x;
+>x : 1
+
+do const y = 1; while (a);
+>y : 1
+>1 : 1
+>a : false
+
+y;
+>y : 1
+
+for (;;) const z = 2;
+>z : 2
+>2 : 2
+
+z;
+>z : any
+

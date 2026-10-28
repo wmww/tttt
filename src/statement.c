@@ -1767,7 +1767,10 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             ForLoopStatement* loop = my for_loop;
             Scope* loop_scope = scope_new(names, SCOPE_BLOCK);
             statement_add_names(&loop->initialization, loop_scope);
-            statement_add_names(&loop->body, loop_scope);
+            // (`while (a) const x = 1;` (TS1156) declares x where the loop is: a while or do statement isn't a block
+            // scope container to tsc's binder, a for statement is)
+            bool while_declares_around = (loop->is_while || loop->is_do_while) && loop->body.tag == STATEMENT_DECL_VARIABLE;
+            statement_add_names(&loop->body, while_declares_around ? names : loop_scope);
             if (loop->is_do_while) {
                 // (Nothing in these, but every expression wants its names looked up)
                 statement_resolve_names(&loop->initialization, loop_scope, errs);
