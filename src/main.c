@@ -1137,6 +1137,12 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         if (opts->time) {
             out_eprintln(out, "time: checkers: ", program_checker_count(program), " (", (i64)(program_checked_source_bytes(program) >> 10),
                 " KB of checked source, ", opts->threads, " threads)");
+            ProgramRerun const* rerun = program_rerun(program);
+            if (rerun) {
+                out_eprintln(out, "time: rerun in one checker after a parallel pass of ", rerun->parallel_ms, " ms at ",
+                    rerun->checkers, " checkers", rerun->stopped ? ", stopped early" : "", " (", rerun->rule, ", TS", rerun->code, rerun->file ? " in " : "",
+                    rerun->file ? cstr_sv(&rerun->file->canonical_path) : c_sv(""), ")");
+            }
             for (u32 i = 0; i < program_checker_count(program); i++) {
                 Checker const* checker = program_checker_at(program, i);
                 out_eprintln(out, "time: checker ", i, ": ", checker->check_ms, " ms, arena ", (i64)(checker->arena.total >> 20),

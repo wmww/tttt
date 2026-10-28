@@ -157,6 +157,18 @@ void program_set_memory_pool(Program* me, u64 bytes);
 // checker recycles only while the memory available now is under a fifth of that (pool_recycle_due())
 void program_set_memory_pool_basis(Program* me, u64 resident, u64 available);
 // The bytes of the files the checkers check, the default library's aside (what the default checker count follows)
+// Why program_typecheck() reran its checking in one checker (agents/notes/one_checker_rerun.md): the rule of
+// history_dependent_matters() that fired, the diagnostic it fired on, the parallel pass's checkers and its wall from the
+// start of program_typecheck(); null when it didn't
+typedef struct ProgramRerun {
+    char const* rule;
+    bool stopped; // The parallel pass stopped at the checkers' next file once a rule fired
+    u32 code;
+    SourceFile const* file;
+    u32 checkers;
+    double parallel_ms;
+} ProgramRerun;
+ProgramRerun const* program_rerun(Program const* me);
 u64 program_checked_source_bytes(Program const* me);
 
 // The program is checked like tsc's command line does (not like its test harness): with noEmit or noEmitOnError, the

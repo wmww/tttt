@@ -210,8 +210,15 @@ typedef struct Program {
     bool declarations_only; // program_set_declarations_only()
     bool defer_bodies; // program_set_defer_bodies()
     bool no_rerun; // program_set_history_rerun(): no one-checker rerun on a history-dependent diagnostic
+    ProgramRerun rerun; // program_rerun(): why and after how long program_typecheck() reran in one checker
     _Atomic bool defer_failed; // program_defer_failed()
     _Atomic bool history_reported; // A history-dependent diagnostic was reported (error_history_flag)
+    // While typechecking: a checker's diagnostics fire a rule of history_dependent_matters(), so the one-checker rerun is
+    // certain; every checker stops at its next file (check_share()), rerun_watch: whether checkers look for one
+    _Atomic bool rerun_due;
+    bool rerun_watch;
+    u32 debug_rerun_stop; // TTTT_DEBUG_RERUN_STOP
+    _Atomic u32 debug_rerun_stopped;
     // program_member_referenced(): open addressing, keys the members' declaration texts, values the earliest order
     pthread_mutex_t member_refs_lock;
     char const** member_refs_keys;
@@ -5056,31 +5063,44 @@ static bool reached_from_earlier(Program* me, SourceFile const* source) {
 //   (reached_from_earlier()): sequelize's `models` field forms its cycle only where no earlier file resolved the class
 //   first. A function inferring its own return type (nest's TS7023 samples) is found at that function from any entry;
 // - anything after a recycle, or without a file.
-static bool history_dependent_matters(Program* me, ErrorCtx const* checker_errs, u32 count) {
+// The rule of history_dependent_matters() a reported diagnostic fires (a static string for program_rerun()), else null
+static char const* history_error_rule(Program* me, Error const* e, bool recycled) {
+    if (!error_is_history_dependent(e->ts_code) || e->suggestion) return nullptr;
+    SourceFile* source = (SourceFile*)span_source(e->span);
+    if (!span_valid(e->span) || !source) return "no file";
+    if (source->excluded || source->unchecked) return nullptr;
+    if (preceding_comment_directive(source, e->span)) return nullptr;
+    if (recycled) return "recycled";
+    // (Any limit: where one trips depends on what its checker instantiated before even in the file it checks, and its
+    // error type silences diagnostics in later files: cloudflare-os workshop-backend's TS5114 at every K but 1, with 1
+    // to 12 more errors depending on the deal)
+    if (!error_is_circularity(e->ts_code)) return "limit";
+    if (e->history_foreign) return "foreign";
+    // (An implicit-any circularity of more than one function in a file an earlier file reaches: whether it forms at all
+    // can depend on that earlier file having resolved its declarations first, with every entry of the cycle in this
+    // file: sequelize's `models` field, 3 of 15 runs at the defaults without this)
+    if ((e->ts_code == 7022 || e->ts_code == 7023 || e->ts_code == 7024) && e->history_entry_dependent &&
+        reached_from_earlier(me, source)
+    ) {
+        return "implicit any";
+    }
+    return nullptr;
+}
+
+// Its rule's name for program_rerun(), else null; *why the diagnostic. Monotone in the diagnostics reported: once a
+// checker's diagnostics fire a rule, every later state of them does (check_share()'s early stop relies on it)
+static char const* history_dependent_matters(Program* me, ErrorCtx const* checker_errs, u32 count, Error const** why) {
     bool recycled = program_recycled(me);
     for (u32 c = 0; c < count; c++) {
         for_each (e, vec_error, &checker_errs[c].errors) {
-            if (!error_is_history_dependent(e->ts_code) || e->suggestion) continue;
-            SourceFile* source = (SourceFile*)span_source(e->span);
-            if (!span_valid(e->span) || !source) return true;
-            if (source->excluded || source->unchecked) continue;
-            if (preceding_comment_directive(source, e->span)) continue;
-            if (recycled || e->history_foreign) return true;
-            // (An implicit-any circularity of more than one function in a file an earlier file reaches: whether it forms
-            // at all can depend on that earlier file having resolved its declarations first, with every entry of the cycle
-            // in this file: sequelize's `models` field, 3 of 15 runs at the defaults without this)
-            if ((e->ts_code == 7022 || e->ts_code == 7023 || e->ts_code == 7024) && e->history_entry_dependent &&
-                reached_from_earlier(me, source)
-            ) {
-                return true;
-            }
-            // (Any limit: where one trips depends on what its checker instantiated before even in the file it checks, and
-            // its error type silences diagnostics in later files: cloudflare-os workshop-backend's TS5114 at every K but
-            // 1, with 1 to 12 more errors depending on the deal)
-            if (!error_is_circularity(e->ts_code)) return true;
+            char const* rule = history_error_rule(me, e, recycled);
+            if (!rule) continue;
+            *why = e;
+            return rule;
         }
     }
-    return false;
+    *why = nullptr;
+    return nullptr;
 }
 
 Binder const* program_get_binder(Program const* me) {
@@ -5804,7 +5824,7 @@ static void check_file(Program* me, Checker* checker, SourceFile* source, u32 at
     checker->checking_file = source;
     block_typecheck(&source->ast, (BlockTypecheckCtx){ .ambient = source->is_declaration }, checker->errs);
     // (What a deferred check defers joins the end of the queue)
-    for (u32 d = 0; d < checker->deferred_count; d++) {
+    for (u32 d = 0; d < checker->deferred_count && !typecheck_stopping(); d++) {
         check_deferred(checker->deferred[d], checker->errs);
     }
     checker->deferred_count = 0;
@@ -6053,6 +6073,30 @@ static void graph_epoch_join(Program* me) {
     pthread_mutex_unlock(&my graph_epoch_lock);
 }
 
+// A checker's TypecheckStop in a parallel pass with the rerun's early stop (Program.rerun_watch)
+typedef struct RerunWatch {
+    TypecheckStop stop;
+    Program* program;
+    ErrorCtx const* errs; // The checker's (a recycled checker's successor reports into the same)
+    isize scanned; // Of the checker's diagnostics, those polled (merges insert before it: those wait for the pass's end)
+} RerunWatch;
+
+// A diagnostic of the checker's that makes history_dependent_matters() true now makes it true at the end of the pass
+// too (it is monotone): the one-checker rerun is certain, and what the checkers have left would be dropped
+static bool rerun_watch_poll(TypecheckStop* stop) {
+    RerunWatch* watch = (RerunWatch*)stop;
+    Program* me = watch->program;
+    if (atomic_load_explicit(&my rerun_due, memory_order_relaxed)) return true;
+    if (!atomic_load_explicit(&my history_reported, memory_order_relaxed)) return false;
+    VecError const* errors = &watch->errs->errors;
+    for (; watch->scanned < vec_error_size(errors); watch->scanned++) {
+        if (!history_error_rule(me, &errors->data[watch->scanned], false)) continue;
+        atomic_store_explicit(&my rerun_due, true, memory_order_relaxed);
+        return true;
+    }
+    return false;
+}
+
 static void check_share(Program* me, u32 c, u32 count) {
     struct timespec start, end;
     timespec_get(&start, TIME_UTC);
@@ -6079,7 +6123,13 @@ static void check_share(Program* me, u32 c, u32 count) {
     bool steal = my steal_files && count > 1;
     bool steal_blocks = getenv("TTTT_STEAL_BLOCK") != nullptr;
     u32 steal_cursor = UINT32_MAX;
+    // (The rerun's early stop: typecheck_stopping())
+    RerunWatch watch = { .stop = { .stop = &my rerun_due, .history = &my history_reported, .poll = rerun_watch_poll },
+        .program = me, .errs = checker->errs };
+    if (my rerun_watch) typecheck_stop = &watch.stop;
     for (u32 next = 0, first = my share_first[c];;) {
+        // (The one-checker rerun is certain: what's left of this pass would be dropped)
+        if (atomic_load_explicit(&my rerun_due, memory_order_relaxed)) break;
         u32 at = UINT32_MAX;
         if (first != UINT32_MAX && claim_file(me, first, c)) at = first;
         first = UINT32_MAX;
@@ -6180,6 +6230,12 @@ static void check_share(Program* me, u32 c, u32 count) {
             atomic_store_explicit(&my declaration_diagnostics_moot, true, memory_order_relaxed);
             moot_watch = false;
         }
+        if (typecheck_stop) typecheck_stop->poll(typecheck_stop);
+        // (TTTT_DEBUG_RERUN_STOP=N: the early stop's oracle, the rerun forced after the pass's N-th checked file: the
+        // other checkers stop mid-file, and the output must be --checkers 1's)
+        if (my rerun_watch && my debug_rerun_stop && atomic_fetch_add(&my debug_rerun_stopped, 1) + 1 == my debug_rerun_stop) {
+            atomic_store_explicit(&my rerun_due, true, memory_order_relaxed);
+        }
         // (--shared-graph on threads: the graph-wide recycle, at this file boundary. The segment's after-check pass
         // first, with the types it needs)
         if (graph_epoch_due(me, checker, c, count)) {
@@ -6213,7 +6269,9 @@ static void check_share(Program* me, u32 c, u32 count) {
     }
     if (my graph) graph_lead_done(me, c);
     atomic_store_explicit(&my share_states[c], 2, memory_order_release);
-    check_segment_after(me, checker, c, segment, segment_count);
+    // (Stopped for the rerun: the after-check pass and the declaration walks would be dropped too)
+    bool stopped = atomic_load_explicit(&my rerun_due, memory_order_relaxed);
+    if (!stopped) check_segment_after(me, checker, c, segment, segment_count);
     free(segment);
     if (debug_env.file_times) {
         // (Its idle tail: the last checker's finish minus this one's, scripts/perfshape.sh)
@@ -6232,7 +6290,7 @@ static void check_share(Program* me, u32 c, u32 count) {
         // (A JavaScript file's only when it is emitted: its declaration diagnostics aren't reported, plan 64 stage 6.
         // Declarations only, every file's walk is here, a checked JavaScript file's as after its check)
         bool checked = source_file_is_checked(source);
-        if (source->is_stdlib || (checked && !my declarations_only) ||
+        if (stopped || source->is_stdlib || (checked && !my declarations_only) ||
             (source->is_js && !checked && !my emit_declarations)) continue;
         if (index++ % count != c) continue;
         if (my declaration_errs && !declaration_walk_moot(me)) {
@@ -6254,6 +6312,7 @@ static void check_share(Program* me, u32 c, u32 count) {
     checker_make_current(nullptr);
     error_history_flag = nullptr;
     error_checking_file = nullptr;
+    typecheck_stop = nullptr;
     graph_epoch_leave(me, count);
     timespec_get(&end, TIME_UTC);
     checker->check_ms = (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
@@ -6365,6 +6424,10 @@ static void deal_files(Program* me) {
         free(check_index);
         fclose(graph);
     }
+}
+
+ProgramRerun const* program_rerun(Program const* me) {
+    return my rerun.rule ? &my rerun : nullptr;
 }
 
 u64 program_checked_source_bytes(Program const* me) {
@@ -6703,6 +6766,11 @@ again:
     deal_files(me);
     // (What was reported before the checkers start isn't their history's)
     atomic_store(&my history_reported, false);
+    atomic_store(&my rerun_due, false);
+    my rerun_watch = count > 1 && !limit_rerun && !my graph && !my no_rerun;
+    char const* debug_stop = getenv("TTTT_DEBUG_RERUN_STOP");
+    my debug_rerun_stop = debug_stop ? (u32)strtoul(debug_stop, nullptr, 10) : 0;
+    atomic_store(&my debug_rerun_stopped, 0);
     timespec_get(&my check_start, TIME_UTC);
     if (debug_env.file_times) {
         fprintf(stderr, "file time: checkers started %.1f ms into program_typecheck\n",
@@ -6762,10 +6830,26 @@ again:
     // fresh checker, in program order, never recycled but by the memory pool: tsgo --singleThreaded's output, at any
     // checker count
     // (Not with --no-rerun: program_set_history_rerun())
-    if (!limit_rerun && !my graph && !my no_rerun && program_limit_history_dependent(me) &&
-        history_dependent_matters(me, checker_errs, count)
+    Error const* why = nullptr;
+    char const* rule = nullptr;
+    bool stopped = atomic_load(&my rerun_due);
+    if (stopped) rule = history_dependent_matters(me, checker_errs, count, &why);
+    if (stopped || (!limit_rerun && !my graph && !my no_rerun && program_limit_history_dependent(me) &&
+        (rule = history_dependent_matters(me, checker_errs, count, &why)))
     ) {
+        // (Stopped early, the diagnostics fire a rule but for a comment directive met meanwhile: rerun all the same)
+        if (!rule) rule = "stopped";
         if (getenv("TTTT_DEBUG_LIMIT_RERUN")) eprintln("tttt: limit rerun in one checker");
+        struct timespec now;
+        timespec_get(&now, TIME_UTC);
+        my rerun = (ProgramRerun){
+            .rule = rule,
+            .stopped = stopped,
+            .code = why ? why->ts_code : 0,
+            .file = why ? span_source(why->span) : nullptr,
+            .checkers = count,
+            .parallel_ms = (double)(now.tv_sec - typecheck_start.tv_sec) * 1e3 + (double)(now.tv_nsec - typecheck_start.tv_nsec) / 1e6,
+        };
         typecheck_pass_drop(me, checker_errs, count);
         member_refs_clear(me);
         my checker = checker_new(me);

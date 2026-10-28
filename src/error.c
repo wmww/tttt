@@ -844,6 +844,7 @@ static Error* global_insert(ErrorCtx* me, Error error) {
 }
 
 thread_local _Atomic bool* error_history_flag;
+thread_local TypecheckStop* typecheck_stop;
 thread_local struct SourceFile const* error_checking_file;
 thread_local bool error_cycle_foreign;
 thread_local bool error_cycle_entry_dependent;

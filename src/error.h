@@ -110,6 +110,25 @@ void error_ctx_drop(ErrorCtx* me);
 // the checker saw before is reported into any context (error_is_history_dependent(): program_typecheck()'s rerun in one
 // checker)
 extern thread_local _Atomic bool* error_history_flag;
+// While a checker checks its share in a parallel pass that a history-dependent diagnostic may make rerun in one checker
+// (program.c's check_share()), else null: `stop` is set once the rerun is certain, and every checker then drops what
+// it is checking at its next statement (typecheck_stopping()); `history` is the program's history_reported, and once
+// it is set `poll` looks for a diagnostic of this checker's that makes the rerun certain (setting `stop`)
+typedef struct TypecheckStop TypecheckStop;
+struct TypecheckStop {
+    _Atomic bool* stop;
+    _Atomic bool* history;
+    bool (*poll)(TypecheckStop* me);
+};
+extern thread_local TypecheckStop* typecheck_stop;
+// Whether the checker should drop the rest of what it is checking (statements_typecheck(), check_file()): its results
+// and diagnostics go unread
+static inline bool typecheck_stopping(void) {
+    TypecheckStop* s = typecheck_stop;
+    if (__builtin_expect(s == nullptr, 1)) return false;
+    if (atomic_load_explicit(s->stop, memory_order_relaxed)) return true;
+    return __builtin_expect(atomic_load_explicit(s->history, memory_order_relaxed), 0) && s->poll(s);
+}
 // The file the thread's checker is checking (program.c's check_file()), null outside one: see Error.history_foreign
 extern thread_local struct SourceFile const* error_checking_file;
 // A cycle found while checking error_checking_file went through another file's declarations (ty/checker.c's

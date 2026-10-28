@@ -2587,12 +2587,16 @@ static bool statement_unreachable_by_flow(Statement const* me) {
 void statements_typecheck(VecStatement* list, BlockTypecheckCtx ctx, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();
     if (!options->is_set[COMPILER_OPTION_allow_unreachable_code] || options->allow_unreachable_code) {
-        for_each (i, vec_statement, list) statement_typecheck(i, ctx, errs);
+        for_each (i, vec_statement, list) {
+            if (typecheck_stopping()) return;
+            statement_typecheck(i, ctx, errs);
+        }
         return;
     }
     Checker* checker = current_checker;
     isize_t count = vec_statement_size(list);
     for (isize_t i = 0; i < count; i++) {
+        if (typecheck_stopping()) return;
         Statement* statement = vec_statement_at_mut(list, i);
         bool was_within = checker->within_unreachable;
         isize_t last = i;
