@@ -6866,6 +6866,8 @@ static void parse_heritage_clauses(Parser* p, HeritageClauses* h) {
         u32 count = 0;
         Span trailing_comma = span_null;
         Span second_element = span_null;
+        // The first element `import<T>` (TS1326, checkGrammarExpressionWithTypeArguments in checkGrammarHeritageClause)
+        Span import_element = span_null;
         intptr_t clause_mark = error_mark(p);
         const char* clause_end = span_end_ptr(keyword);
         u32 saved_elements = list_enter(p, PARSING_HERITAGE_CLAUSE_ELEMENT);
@@ -6877,6 +6879,11 @@ static void parse_heritage_clauses(Parser* p, HeritageClauses* h) {
                 if (count == 1) second_element = span_make(p->shared->source, e.start, e.end);
                 parse_heritage_element(p, h, is_extends, checked, keyword, count);
                 clause_end = p->pos;
+                if (!span_valid(import_element) && tok_is(e, "import")) {
+                    const char* after = e.end;
+                    while (after < p->pos && is_js_ascii_space(*after)) after++;
+                    if (after < p->pos && *after == '<') import_element = span_make(p->shared->source, e.start, p->pos);
+                }
                 count++;
                 trailing_comma = span_null;
                 hop_whitespace(p);
@@ -6932,6 +6939,9 @@ static void parse_heritage_clauses(Parser* p, HeritageClauses* h) {
         } else if (count == 0) {
             Span at = span_make(p->shared->source, span_end_ptr(keyword), span_end_ptr(keyword));
             grammar_error(p, at, 1097, "'", keyword, "' list cannot be empty.");
+        } else if (span_valid(import_element)) {
+            grammar_error(p, import_element, 1326, "This use of 'import' is invalid. 'import()' calls can be written, but "
+                "they must have parentheses and cannot have type arguments.");
         } else if (h->is_class && is_extends && span_valid(h->base_args_comma)) {
             grammar_error(p, h->base_args_comma, 1009, "Trailing comma not allowed.");
         } else if (h->is_class && is_extends && span_valid(h->base_args_empty)) {

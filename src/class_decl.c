@@ -2681,7 +2681,7 @@ static void class_typecheck_implements(ClassDecl* me, ErrorCtx* errs) {
         }
     }
     for (u32 i = 0; i < my invalid_implements_checked; i++) {
-        error_ctx_error_d(errs, expr_outer_span(&my invalid_implements.data[i]), 2500,
+        error_ctx_error_d(errs, expr_heritage_expression_span(&my invalid_implements.data[i]), 2500,
             "A class can only implement an identifier/qualified-name with optional type arguments.");
     }
     class_check_base_arity(me, errs);

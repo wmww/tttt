@@ -256,7 +256,7 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
         // TODO: TS2312 (not an object type)
     }
     for (u32 i = 0; i < my invalid_extends_checked; i++) {
-        error_ctx_error_d(errs, expr_outer_span(&my invalid_extends.data[i]), 2499,
+        error_ctx_error_d(errs, expr_heritage_expression_span(&my invalid_extends.data[i]), 2499,
             "An interface can only extend an identifier/qualified-name with optional type arguments.");
     }
 

@@ -4650,7 +4650,9 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
         case EXPR_GENERIC_PARAMS: {
             Expr const* inner = &my generic_params->expr;
             if (inner->tag == EXPR_IDENTIFIER && inner->identifier.keyword == KEYWORD_IDENTIFIER_IMPORT) {
-                // `import<T>` (tsc's checkGrammarExpressionWithTypeArguments: at the whole expression, which is all)
+                // `import<T>` (tsc's checkGrammarExpressionWithTypeArguments: at the whole expression, which is all).
+                // A class's `extends import<T>` is the parser's, with the other heritage clause grammar
+                if (my generic_params->heritage) break;
                 Span whole = span_make_in(my inner_span, span_start_ptr(inner->inner_span), span_end_ptr(my inner_span));
                 error_ctx_grammar_error_d(errs, whole, 1326, "This use of 'import' is invalid. 'import()' calls can be "
                     "written, but they must have parentheses and cannot have type arguments.");

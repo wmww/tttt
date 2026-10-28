@@ -1,0 +1,28 @@
+//// [test/cases/ttttHeritageImportTypeArguments.ts] ////
+
+=== ttttHeritageImportTypeArguments.ts ===
+// `import<T>` in a heritage clause is TS1326 from checkGrammarHeritageClause, clause by clause after the clause's own
+// complaints (trailing comma, empty list), and never once the class's heritage checks stopped (TS1174 and co)
+declare const v: any;
+>v : any
+
+interface I {}
+class X1 extends import<string> {}
+>X1 : X1
+
+class X2 extends import<string>, v {}
+>X2 : X2
+>v : any
+
+class X3 extends v implements import<string> {}
+>X3 : X3
+>v : any
+
+class X4 implements I, import<string> {}
+>X4 : X4
+
+interface I2 extends import<string> {}
+interface I3 extends I, import<string> {}
+class X5 extends import<string> implements I implements I {}
+>X5 : X5
+

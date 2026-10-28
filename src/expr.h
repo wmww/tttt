@@ -762,6 +762,12 @@ typedef struct GenericParamsExpr {
     bool heritage;
 } GenericParamsExpr;
 
+// A heritage clause element's expression, without its type arguments (tsc's ExpressionWithTypeArguments.Expression,
+// where TS2499/TS2500 are)
+static inline Span expr_heritage_expression_span(Expr const* me) {
+    return expr_outer_span(my tag == EXPR_GENERIC_PARAMS ? &my generic_params->expr : me);
+}
+
 // As type
 
 typedef struct AsTypeExpr {
