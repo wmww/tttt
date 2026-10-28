@@ -1,0 +1,25 @@
+ttttShorthandDefaultNotFound.ts(4,8): error TS18004: No value exists in scope for the shorthand property 'used'. Either declare one or provide an initializer.
+ttttShorthandDefaultNotFound.ts(5,9): error TS2304: Cannot find name 'used2'.
+ttttShorthandDefaultNotFound.ts(6,12): error TS18004: No value exists in scope for the shorthand property 'used4'. Either declare one or provide an initializer.
+ttttShorthandDefaultNotFound.ts(8,12): error TS18004: No value exists in scope for the shorthand property 'used5'. Either declare one or provide an initializer.
+
+
+==== ttttShorthandDefaultNotFound.ts (4 errors) ====
+    // A name right after a shorthand property's `=` is that property's child: not found, it is TS18004 like the property's own
+    // name (tsc's getCannotFindNameDiagnosticForName; mutation testing, noUnusedLocals_writeOnly)
+    declare let x: number | undefined;
+    ({ x = used } = { x: 1 });
+           ~~~~
+!!! error TS18004: No value exists in scope for the shorthand property 'used'. Either declare one or provide an initializer.
+    ({ x = (used2) } = { x: 1 });
+            ~~~~~
+!!! error TS2304: Cannot find name 'used2'.
+    for ({ x = used4 } of [{ x: 1 }]);
+               ~~~~~
+!!! error TS18004: No value exists in scope for the shorthand property 'used4'. Either declare one or provide an initializer.
+    function f(y = 0, b = false) {
+        ({ y = used5 } = { y: b ? 1 : undefined });
+               ~~~~~
+!!! error TS18004: No value exists in scope for the shorthand property 'used5'. Either declare one or provide an initializer.
+    }
+    

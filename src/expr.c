@@ -2862,8 +2862,8 @@ static void assignment_target_typecheck_of(
                     Ty const* default_type = ty_check_expr(checker, object_item_rare(i)->shorthand_default, declared);
                     expr_typecheck(object_item_rare(i)->shorthand_default, errs);
                     assignment_target_typecheck(&i->value, default_type, object_item_rare(i)->shorthand_default, site, errs);
+                    // (any and unknown have no IsUndefined fact either: tsgo's getTypeFacts gives them UnknownFacts)
                     if (property && compiler_options()->strict_null_checks &&
-                        !(default_type->flags & (TYF_ANY | TYF_UNKNOWN)) &&
                         ty_without_undefined(checker, default_type) == default_type
                     ) {
                         property = ty_without_undefined(checker, property);

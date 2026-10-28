@@ -1,0 +1,32 @@
+//// [test/cases/ttttShorthandDefaultNotFound.ts] ////
+
+=== ttttShorthandDefaultNotFound.ts ===
+// A name right after a shorthand property's `=` is that property's child: not found, it is TS18004 like the property's own
+// name (tsc's getCannotFindNameDiagnosticForName; mutation testing, noUnusedLocals_writeOnly)
+declare let x: number | undefined;
+>x : Symbol(x, Decl(ttttShorthandDefaultNotFound.ts, 2, 11))
+
+({ x = used } = { x: 1 });
+>x : Symbol(x, Decl(ttttShorthandDefaultNotFound.ts, 3, 2))
+>x : Symbol(x, Decl(ttttShorthandDefaultNotFound.ts, 3, 17))
+
+({ x = (used2) } = { x: 1 });
+>x : Symbol(x, Decl(ttttShorthandDefaultNotFound.ts, 4, 2))
+>x : Symbol(x, Decl(ttttShorthandDefaultNotFound.ts, 4, 20))
+
+for ({ x = used4 } of [{ x: 1 }]);
+>x : Symbol(x, Decl(ttttShorthandDefaultNotFound.ts, 5, 6))
+>x : Symbol(x, Decl(ttttShorthandDefaultNotFound.ts, 5, 24))
+
+function f(y = 0, b = false) {
+>f : Symbol(f, Decl(ttttShorthandDefaultNotFound.ts, 5, 34))
+>y : Symbol(y, Decl(ttttShorthandDefaultNotFound.ts, 6, 11))
+>b : Symbol(b, Decl(ttttShorthandDefaultNotFound.ts, 6, 17))
+
+    ({ y = used5 } = { y: b ? 1 : undefined });
+>y : Symbol(y, Decl(ttttShorthandDefaultNotFound.ts, 7, 6))
+>y : Symbol(y, Decl(ttttShorthandDefaultNotFound.ts, 7, 22))
+>b : Symbol(b, Decl(ttttShorthandDefaultNotFound.ts, 6, 17))
+>undefined : Symbol(undefined)
+}
+

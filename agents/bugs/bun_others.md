@@ -480,10 +480,19 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   comparable through the union of its branches, where a never branch is no member (`null as (T extends number ?
   string : never)` is TS2352; conditional_source_related() took never's relation for the comparable relation's
   "some member": simplifyingConditionalWithInteriorConditionalIsRelated, ttttConditionalComparableNeverBranch).
-  [fixed bun8-4] After a call fails at an earlier argument (`Array.from(v, ({ a }) => ...)` with `v: void`), tsc types
+  [fixed 0d3156599] After a call fails at an earlier argument (`Array.from(v, ({ a }) => ...)` with `v: void`), tsc types
   the later arrow function's destructured parameter unknown and its pattern reports TS2339; without the argument
   error assignParameterType's binding-pattern fallback applies (TS2345). tttt reports neither TS2339 (arrayFrom;
   ttttFailedCallPatternParamUnknown, known failing: where tsgo's parameter type is assigned isn't traced). [open]
+- A name right after a shorthand property's `=` (`({ x = used } = o)`, unparenthesized) is that property's child:
+  not found, it is TS18004 (tsc's getCannotFindNameDiagnosticForName); and an any or unknown default removes
+  undefined from the property's type like any other (tsgo's getTypeFacts gives them UnknownFacts, no IsUndefined: no
+  TS2322 for `x: number`). Mutation testing seed 20261031, noUnusedLocals_writeOnly; ttttShorthandDefaultNotFound.
+  [fixed bun8-5] Seed 20261031's `--syntax` leftovers, unlooked at: inferFromAnnotatedReturn1 (missing TS2365 on a
+  broken `{...} > class {...}`), noImplicitSymbolToString (missing TS2469 `+=` on symbol after `let str =
+  undefined`), awaitedTypeJQuery (TS2689 'Cannot extend an interface' where tttt says TS2693 in a parse-broken
+  heritage clause), contextualTypesNegatedTypeLikeConstraintInGenericMappedType2 (missing TS2842/TS7031 for a
+  `(Missing)` binding element). [open]
 - Class member TS1171/TS1166/TS1168 after the member's own modifier or signature grammar errors (tsgo's
   checkGrammarModifiers || checkGrammarProperty/Method/Accessor chains: TS1028, TS1029, TS1030, TS1031, TS1244...,
   then a method's or accessor's parameter list, `use strict` parameters, accessor and generator checks): the parser

@@ -8954,6 +8954,10 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
             Expr default_value;
             if (expect_expr(&p, expr_ctx_null, &default_value)) {
                 mark_named_evaluation(&default_value, false);
+                // (A name right there is the shorthand property's child too: tsc's TS18004 when it isn't found)
+                if (default_value.tag == EXPR_IDENTIFIER && !expr_is_perenthisized(&default_value)) {
+                    default_value.identifier.shorthand = true;
+                }
                 object_item_rare_mut(&item)->shorthand_default = ast_new(Expr, default_value);
             } else {
                 expr_drop(&default_value);
