@@ -114,3 +114,37 @@ observation (bun >10x its single thread) doesn't reproduce on these four here: b
    premium is the one number to buy down. (b) The premium on the laptop's counters at these projects. (c) Only if
    both are good: a speculative-helper prototype on dokploy (start the K checkers on the router and schema files in
    reverse program order, the client files after), against the x5.1 bound.
+
+## The shared graph with a program-order deal, at breadth (2026-10-29)
+`TTTT_SHARED_GRAPH=1 TTTT_DUP_DEAL=<i % 8> TTTT_NO_COSTLIEST_FIRST=1` ("sg-rr") against plain defaults, both
+`--threads 8 --checkers 8`, fast/tttt at f936fad40, best of 3 interleaved, on the 42 hub projects and the 15 `-p`
+corpora. Load 11-28 (two other workers): walls are noisy (a plain dokploy/apps/api run took 1.06 s in one pass and
+0.32 s in another), so the CPU of the check phase is the steadier number. A second pass added the deal alone
+(plain-rr) and the shared graph with its own deal (sg-def) to split the losses.
+
+| set | sg-rr wins wall > 5% | loses > 5% | median wall | median check CPU | median peak RSS | second pass, median check CPU: sg-rr / plain-rr / sg-def |
+|---|---|---|---|---|---|---|
+| 41 hub projects | 20 | 10 | 0.96 | 0.95 | 0.69 | 0.92 / 1.03 / 0.94 |
+| 13 corpora | 1 (excalidraw -10%) | 11 | 1.22 | 1.15 | 0.87 | 1.17 / 1.06 / 1.15 |
+
+- Wins (sg-rr, wall): openbot i18n -49%, team-client -35%, monkeytype/frontend -21%, openbot auth-api -19%,
+  monkeytype/frontend/__tests__ -18%, openbot mobile -16%, folo mobile -15%, karakeep trpc -14%, openbio -13%,
+  dokploy schedules -12%, karakeep api, immutable-js tests, monkeytype/backend -11%, dokploy/apps/dokploy -10%; the
+  rest -5..-9%. Losses: mikro-orm seeder +36%, nest platform-fastify test +26%, vite __tests_dts__ +24%, five small
+  mcp-sdk projects +6..+12% (70-100 ms runs), nest microservices +9%. Corpora: xstate +76%, react +34%,
+  tanstack-router +26%, effect +25%, type-fest +24%, zod-root +24%, valibot +22%, vscode +17%, tsc +8%, zod +8%,
+  drizzle +6%.
+- **The losses are the premium, not the deal**: on the corpora the shared graph costs +15% CPU with either deal
+  (sg-def 1.15, sg-rr 1.17) while the deal alone costs +6%; on the hubs the deal alone is neutral (1.03) and the
+  shared graph saves 6-8% CPU with either deal. The program-order deal adds little over the shared graph's own on most
+  hubs (medians 0.92 against 0.94); where it matters it is the dokploy family (dokploy -7..-10% against sg-def -1%).
+- Memory: the shared graph's peak RSS is a median -31% on the hubs (dokploy 2461 -> 1428 MB, i18n 1028 -> 467).
+- **Not wins**: webpack (-73%), vue (-74%) and better-drizzle are runs where plain does the one-checker rerun (TS2502
+  / limits: notes/one_checker_rerun.md) and the shared graph doesn't; they are excluded above. Output differs from
+  plain on better-drizzle (2 of 3 runs: it needed the rerun) and **openbot/apps/auth-api (3 of 3)**, a residue not in
+  sharing_design.md §4's list (with the program-order deal only: 75 spurious lines, TS2345 in
+  scripts/cloud-authorization-e2e.ts, an Effect's error channel `unknown` where plain infers `never`; clean under the
+  shared graph's own deal in the one run checked); every other project was byte-identical in all runs.
+- Verdict: file-granular sharing wins on about half the hub projects (by 5-49%, the i18n-style clusters most) and
+  loses on 11 of 13 corpora by the premium (+15% CPU median). It would pay only with the premium bought down, as
+  the first half of this note concluded; a per-project switch is a heuristic the human has ruled out.
