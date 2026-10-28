@@ -42,9 +42,8 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - **Lazily made instance props** (`members_prop()`, `members_prop_make()`, `MembersLazy`, ty.h/members.c;
   type_graph_design.md step 1): an instantiation's props array is preceded by a header (source, mapper) found by
   pointer arithmetic, and an unmade slot is its source prop's pointer with the low bit set. members_prop_make() takes
-  its arena from `current_checker`, not the caller's `me` (keeping `me` alive cost every ty_get_prop() a frame);
-  instantiate_members() copies the source's slots with plain reads (a concurrent make under --shared-graph is a benign
-  race: either value names the same prop).
+  its arena from `current_checker`, not the caller's `me` (keeping `me` alive cost every ty_get_prop() a frame).
+  Every read of a slot that can still be tagged is atomic (relaxed where only the name is read, acquire otherwise).
 - LazyType slots (`lazy_slot_new`): process-wide numbers, never reused, taken eagerly (panic past 1G slots: vscode
   takes ~12M, re-materialized bodies take new ones). Handed out in per-thread blocks of a memo page, a fresh one per file
   (2026-10-17), the pages a checker touches are still only ~60% used (vscode: ~7 MB a checker at 4 checkers, ~20 MB

@@ -3892,11 +3892,12 @@ static Members const* instantiate_members(
             builder.props = (Prop**)(void*)(header + 1);
             builder.props_cap = builder.props_count = source->prop_count;
             builder.lazy_names = source;
-            // (Plain reads, vectorized: a source slot another worker makes meanwhile (--shared-graph) is either value,
-            // and either names the same prop)
-            uintptr_t const* restrict from = (uintptr_t const*)(void const*)source->lazy_props;
-            uintptr_t* restrict to = (uintptr_t*)(void*)builder.props;
-            for (u32 i = 0; i < source->prop_count; i++) to[i] = from[i] | MEMBERS_PROP_UNMADE;
+            // (Relaxed: a source slot another worker makes meanwhile (--shared-graph) is either value, and either names
+            // the same prop)
+            for (u32 i = 0; i < source->prop_count; i++) {
+                uintptr_t from = (uintptr_t)__atomic_load_n(&source->lazy_props[i], __ATOMIC_RELAXED);
+                builder.props[i] = (Prop*)(from | MEMBERS_PROP_UNMADE);
+            }
             // (Only `this` mapped: a prop that can't mention it is the source's own, tsc's mappingThisOnly. One not made
             // yet is an instantiation, never thisless)
             for (u32 i = 0; this_only && i < source->prop_count; i++) {
