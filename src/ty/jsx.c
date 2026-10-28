@@ -565,9 +565,17 @@ static Symbol const* jsx_factory_symbol(Checker* me, JsxElement const* element, 
 bool ty_jsx_tag_arity_fits(Checker* me, JsxElement const* element, Ty const* tag_type, ErrorCtx* errs) {
     if (element->runtime_module) return true;
     Ty const* apparent = ty_apparent_type(me, tag_type);
-    if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) || apparent->kind == TY_UNION) return true;
-    Members const* tag_members = ty_members(me, apparent);
-    if (!tag_members->call_count) return true;
+    // (A union's are its union signatures: tsc's getSignaturesOfType)
+    Signature* const* tag_sigs = nullptr;
+    u32 tag_sig_count = 0;
+    if (apparent->kind == TY_UNION) {
+        tag_sigs = ty_union_signatures(me, apparent->composite.types, false, &tag_sig_count);
+    } else if (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
+        Members const* tag_members = ty_members(me, apparent);
+        tag_sigs = tag_members->call;
+        tag_sig_count = tag_members->call_count;
+    }
+    if (!tag_sig_count) return true;
     cstr entity = jsx_factory_entity(element);
     Symbol const* factory = jsx_factory_symbol(me, element, cstr_sv(&entity));
     Members const* factory_members = factory ? ty_members(me, ty_apparent_type(me, ty_type_of_symbol(me, factory))) : nullptr;
@@ -597,9 +605,9 @@ bool ty_jsx_tag_arity_fits(Checker* me, JsxElement const* element, Ty const* tag
         return true;
     }
     u32 min_args = UINT32_MAX;
-    for (u32 i = 0; i < tag_members->call_count; i++) {
-        signature_resolve(me, tag_members->call[i]);
-        if (sig_res(me, tag_members->call[i])->min_args < min_args) min_args = sig_res(me, tag_members->call[i])->min_args;
+    for (u32 i = 0; i < tag_sig_count; i++) {
+        signature_resolve(me, tag_sigs[i]);
+        if (sig_res(me, tag_sigs[i])->min_args < min_args) min_args = sig_res(me, tag_sigs[i])->min_args;
     }
     if (min_args <= max_params) {
         cstr_drop(&entity);

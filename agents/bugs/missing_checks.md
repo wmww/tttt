@@ -300,7 +300,9 @@ tsc keeps one local symbol per block for a name's exported and local declaration
   shows the current state. The framework (lists, commit points, missing nodes) is documentation.md "Error recovery". [note]
 
 ## JSX
-- TS6229 isn't checked for union tag types or inside an overload chain. [open]
+- TS6229 isn't checked for union tag types or inside an overload chain: now a union tag's union signatures
+  (ty_jsx_tag_arity_fits) and CallInfo.jsx_arity_unfit failing every candidate (an overloaded component is TS2769,
+  the last overload's TS6229). Test ttttJsxTagArityUnionOverloads. [fixed HASH]
 
 ## Messages: elaboration and printing (`scripts/errtextdiff.py`)
 - Union sources: for `Snap<...>` (a union alias) not assignable to `number`, tsc adds a line for the union's first
@@ -580,7 +582,7 @@ Diagnostics-class leftovers, not fixed:
 - Seen while fixing: `/** @type {} */ var w = 1` types w as any in tsgo (TS1110 there), number in tttt. The tag now
   has tsc's missing type (parse_jsdoc_type_expression), and a missing type node lowers to the error type (so `x
   satisfies <missing>` is any, TS and JSDoc), a type running into the comment's end is kept. Test ttttJsdocEmptyType.
-  [fixed HASH] Left, JSDoc parser (bun's area): `/** @type {\n */` and `/** @type { */` miss tsgo's TS1110 at the
+  [fixed 1d2a5b7aa] Left, JSDoc parser (bun's area): `/** @type {\n */` and `/** @type { */` miss tsgo's TS1110 at the
   newline/whitespace token after `{` (tsgo's JSDoc scanner makes whitespace a token); `/** @type {\n * number} */` is
   `*` (JSDocAllType) then '}' expected at `number` in tsgo, number without errors in tttt (the continuation's `*`
   skipped). Text: `{ x: 1 } satisfies ;`'s types line prints `satisfies ` with a trailing space (the missing type's span

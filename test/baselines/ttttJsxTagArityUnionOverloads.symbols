@@ -1,0 +1,81 @@
+//// [test/cases/ttttJsxTagArityUnionOverloads.ts] ////
+
+=== a.tsx ===
+declare namespace React {
+>React : Symbol(React, Decl(a.tsx, 0, 0))
+
+    function createElement(type: (props: any) => any, props?: any, ...children: any[]): any;
+>createElement : Symbol(createElement, Decl(a.tsx, 0, 25), Decl(a.tsx, 1, 92))
+>type : Symbol(type, Decl(a.tsx, 1, 27))
+>props : Symbol(props, Decl(a.tsx, 1, 34))
+>props : Symbol(props, Decl(a.tsx, 1, 53))
+>children : Symbol(children, Decl(a.tsx, 1, 66))
+
+    function createElement(type: string, props?: any, ...children: any[]): any;
+>createElement : Symbol(createElement, Decl(a.tsx, 0, 25), Decl(a.tsx, 1, 92))
+>type : Symbol(type, Decl(a.tsx, 2, 27))
+>props : Symbol(props, Decl(a.tsx, 2, 40))
+>children : Symbol(children, Decl(a.tsx, 2, 53))
+}
+declare namespace JSX {
+>JSX : Symbol(JSX, Decl(a.tsx, 3, 1))
+
+    interface Element {}
+>Element : Symbol(Element, Decl(a.tsx, 4, 23))
+
+    interface IntrinsicElements { div: any }
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 5, 24))
+>div : Symbol(IntrinsicElements.div, Decl(a.tsx, 6, 33))
+}
+declare function A(props: {}, ctx: {}, extra: number): JSX.Element;
+>A : Symbol(A, Decl(a.tsx, 7, 1))
+>props : Symbol(props, Decl(a.tsx, 8, 19))
+>ctx : Symbol(ctx, Decl(a.tsx, 8, 29))
+>extra : Symbol(extra, Decl(a.tsx, 8, 38))
+>JSX : Symbol(JSX, Decl(a.tsx, 3, 1))
+>Element : Symbol(JSX.Element, Decl(a.tsx, 4, 23))
+
+declare function B(props: {}, ctx: {}, extra: string): JSX.Element;
+>B : Symbol(B, Decl(a.tsx, 8, 67))
+>props : Symbol(props, Decl(a.tsx, 9, 19))
+>ctx : Symbol(ctx, Decl(a.tsx, 9, 29))
+>extra : Symbol(extra, Decl(a.tsx, 9, 38))
+>JSX : Symbol(JSX, Decl(a.tsx, 3, 1))
+>Element : Symbol(JSX.Element, Decl(a.tsx, 4, 23))
+
+declare const AB: typeof A | typeof B;
+>AB : Symbol(AB, Decl(a.tsx, 10, 13))
+>A : Symbol(A, Decl(a.tsx, 7, 1))
+>B : Symbol(B, Decl(a.tsx, 8, 67))
+
+const x = <AB />;
+>x : Symbol(x, Decl(a.tsx, 11, 5))
+>AB : Symbol(AB, Decl(a.tsx, 10, 13))
+
+declare function O(props: { a: number }, ctx: {}, extra: number): JSX.Element;
+>O : Symbol(O, Decl(a.tsx, 11, 17), Decl(a.tsx, 12, 78))
+>props : Symbol(props, Decl(a.tsx, 12, 19))
+>a : Symbol(a, Decl(a.tsx, 12, 27))
+>ctx : Symbol(ctx, Decl(a.tsx, 12, 40))
+>extra : Symbol(extra, Decl(a.tsx, 12, 49))
+>JSX : Symbol(JSX, Decl(a.tsx, 3, 1))
+>Element : Symbol(JSX.Element, Decl(a.tsx, 4, 23))
+
+declare function O(props: { b: string }, ctx: {}, extra: number): JSX.Element;
+>O : Symbol(O, Decl(a.tsx, 11, 17), Decl(a.tsx, 12, 78))
+>props : Symbol(props, Decl(a.tsx, 13, 19))
+>b : Symbol(b, Decl(a.tsx, 13, 27))
+>ctx : Symbol(ctx, Decl(a.tsx, 13, 40))
+>extra : Symbol(extra, Decl(a.tsx, 13, 49))
+>JSX : Symbol(JSX, Decl(a.tsx, 3, 1))
+>Element : Symbol(JSX.Element, Decl(a.tsx, 4, 23))
+
+const y = <O a={1} />;
+>y : Symbol(y, Decl(a.tsx, 14, 5))
+>O : Symbol(O, Decl(a.tsx, 11, 17), Decl(a.tsx, 12, 78))
+>a : Symbol(a, Decl(a.tsx, 14, 12))
+
+const z = <A />;
+>z : Symbol(z, Decl(a.tsx, 15, 5))
+>A : Symbol(A, Decl(a.tsx, 7, 1))
+

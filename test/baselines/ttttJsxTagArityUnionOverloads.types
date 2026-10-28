@@ -1,0 +1,76 @@
+//// [test/cases/ttttJsxTagArityUnionOverloads.ts] ////
+
+=== a.tsx ===
+declare namespace React {
+>React : typeof React
+
+    function createElement(type: (props: any) => any, props?: any, ...children: any[]): any;
+>createElement : { (type: (props: any) => any, props?: any, ...children: any[]): any; (type: string, props?: any, ...children: any[]): any; }
+>type : (props: any) => any
+>props : any
+>props : any
+>children : any[]
+
+    function createElement(type: string, props?: any, ...children: any[]): any;
+>createElement : { (type: (props: any) => any, props?: any, ...children: any[]): any; (type: string, props?: any, ...children: any[]): any; }
+>type : string
+>props : any
+>children : any[]
+}
+declare namespace JSX {
+    interface Element {}
+    interface IntrinsicElements { div: any }
+>div : any
+}
+declare function A(props: {}, ctx: {}, extra: number): JSX.Element;
+>A : (props: {}, ctx: {}, extra: number) => JSX.Element
+>props : {}
+>ctx : {}
+>extra : number
+>JSX : any
+
+declare function B(props: {}, ctx: {}, extra: string): JSX.Element;
+>B : (props: {}, ctx: {}, extra: string) => JSX.Element
+>props : {}
+>ctx : {}
+>extra : string
+>JSX : any
+
+declare const AB: typeof A | typeof B;
+>AB : ((props: {}, ctx: {}, extra: number) => JSX.Element) | ((props: {}, ctx: {}, extra: string) => JSX.Element)
+>A : (props: {}, ctx: {}, extra: number) => JSX.Element
+>B : (props: {}, ctx: {}, extra: string) => JSX.Element
+
+const x = <AB />;
+>x : JSX.Element
+><AB /> : JSX.Element
+>AB : ((props: {}, ctx: {}, extra: number) => JSX.Element) | ((props: {}, ctx: {}, extra: string) => JSX.Element)
+
+declare function O(props: { a: number }, ctx: {}, extra: number): JSX.Element;
+>O : { (props: { a: number; }, ctx: {}, extra: number): JSX.Element; (props: { b: string; }, ctx: {}, extra: number): JSX.Element; }
+>props : { a: number; }
+>a : number
+>ctx : {}
+>extra : number
+>JSX : any
+
+declare function O(props: { b: string }, ctx: {}, extra: number): JSX.Element;
+>O : { (props: { a: number; }, ctx: {}, extra: number): JSX.Element; (props: { b: string; }, ctx: {}, extra: number): JSX.Element; }
+>props : { b: string; }
+>b : string
+>ctx : {}
+>extra : number
+>JSX : any
+
+const y = <O a={1} />;
+>y : JSX.Element
+><O a={1} /> : JSX.Element
+>O : { (props: { a: number; }, ctx: {}, extra: number): JSX.Element; (props: { b: string; }, ctx: {}, extra: number): JSX.Element; }
+>a : number
+>1 : 1
+
+const z = <A />;
+>z : JSX.Element
+><A /> : JSX.Element
+>A : (props: {}, ctx: {}, extra: number) => JSX.Element
+

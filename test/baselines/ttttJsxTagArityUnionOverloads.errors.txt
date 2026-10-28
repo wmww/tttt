@@ -1,0 +1,37 @@
+a.tsx(12,12): error TS6229: Tag 'AB' expects at least '3' arguments, but the JSX factory 'React.createElement' provides at most '1'.
+a.tsx(15,12): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Tag 'O' expects at least '3' arguments, but the JSX factory 'React.createElement' provides at most '1'.
+a.tsx(16,12): error TS6229: Tag 'A' expects at least '3' arguments, but the JSX factory 'React.createElement' provides at most '1'.
+
+
+==== a.tsx (3 errors) ====
+    declare namespace React {
+        function createElement(type: (props: any) => any, props?: any, ...children: any[]): any;
+        function createElement(type: string, props?: any, ...children: any[]): any;
+    }
+    declare namespace JSX {
+        interface Element {}
+        interface IntrinsicElements { div: any }
+    }
+    declare function A(props: {}, ctx: {}, extra: number): JSX.Element;
+    declare function B(props: {}, ctx: {}, extra: string): JSX.Element;
+    declare const AB: typeof A | typeof B;
+    const x = <AB />;
+               ~~
+!!! error TS6229: Tag 'AB' expects at least '3' arguments, but the JSX factory 'React.createElement' provides at most '1'.
+!!! related TS2728 a.tsx:11:15: 'AB' is declared here.
+    declare function O(props: { a: number }, ctx: {}, extra: number): JSX.Element;
+    declare function O(props: { b: string }, ctx: {}, extra: number): JSX.Element;
+    const y = <O a={1} />;
+               ~
+!!! error TS2769: No overload matches this call.
+!!! error TS2769:   The last overload gave the following error.
+!!! error TS2769:     Tag 'O' expects at least '3' arguments, but the JSX factory 'React.createElement' provides at most '1'.
+!!! related TS2728 a.tsx:13:18: 'O' is declared here.
+!!! related TS2771 a.tsx:14:18: The last overload is declared here.
+    const z = <A />;
+               ~
+!!! error TS6229: Tag 'A' expects at least '3' arguments, but the JSX factory 'React.createElement' provides at most '1'.
+!!! related TS2728 a.tsx:9:18: 'A' is declared here.
+    

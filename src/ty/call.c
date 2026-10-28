@@ -154,6 +154,9 @@ typedef struct CallInfo {
     // `new f()` on something with call signatures only, resolved as a call (tsc's resolveNewExpression)
     bool new_as_call;
     DecoratorCall const* decorator; // A decorator (tsc's resolveDecorator): its synthetic arguments
+    // A JSX element whose function component needs more arguments than the factory gives (TS6229): no signature fits,
+    // checkApplicableSignatureForJsxCallLikeElement's first check (ty_jsx_tag_arity_fits())
+    bool jsx_arity_unfit;
 } CallInfo;
 
 // (An Args lives where it was initialized: `data` may point into it)
@@ -2196,6 +2199,10 @@ static bool this_fits(Checker* me, Candidate const* candidate, CallInfo const* i
 static Span report_unfit_argument(
     Checker* me, Candidate const* candidate, Args* args, CallInfo const* info, Span call_span, ErrorCtx* errs
 ) {
+    if (info->jsx_arity_unfit) {
+        ty_jsx_tag_arity_fits(me, info->jsx, ty_expr_type(me, &info->jsx->tag_name), errs);
+        return callee_span(info);
+    }
     if (!this_fits(me, candidate, info, TY_RELATION_ASSIGNABLE)) {
         Ty const* target = ty_instantiate(me, sig_res(me, candidate->sig)->this_type, candidate->mapper);
         ty_report_unfit_this(me, info->this_arg, target, info->this_span, errs);
@@ -2738,7 +2745,7 @@ static Resolution resolve_with_signatures_inner(
                 }
                 fits = check_args_until_unfit(me, &shape, args, rounds[round], false, false, &arg_type, &param_type) < 0;
             }
-            fits = fits && this_fits(me, &candidate, info, rounds[round]);
+            fits = fits && !info->jsx_arity_unfit && this_fits(me, &candidate, info, rounds[round]);
             if (fits) {
                 ret.chosen = candidate;
                 if (info->outcome_out && shape.count) {
@@ -3569,9 +3576,9 @@ JsxResolution ty_resolve_jsx_element(Checker* me, JsxElement const* element, Err
     Args args;
     args_init(&args);
     args_push(&args, (Arg){ .expr = &element->attributes, .context_sensitive = ty_expr_is_context_sensitive(&element->attributes) });
-    // A component that needs more arguments than the factory gives fits no signature, which is all that's said
-    // (checkApplicableSignatureForJsxCallLikeElement checks the arity before the attributes)
-    if (!element->fragment && !ty_jsx_tag_arity_fits(me, element, tag_type, errs)) errs = nullptr;
+    // A component that needs more arguments than the factory gives fits no signature, which is what each candidate
+    // reports (checkApplicableSignatureForJsxCallLikeElement checks the arity before the attributes)
+    info.jsx_arity_unfit = !element->fragment && !ty_jsx_tag_arity_fits(me, element, tag_type, nullptr);
     Resolution resolution = resolve_with_signatures(me, signatures, count, &args, &info, at, errs);
     args_drop(&args);
     ret.sig = resolution.chosen.sig;

@@ -59,7 +59,10 @@ passing tests).
   `defineContract({ operations: { [k]: { ...base, kind: "action" } } })`: tsgo prints the inner object as `{ input:
   ...; kind: "action"; }` (the spread result's properties aren't readonly, getSpreadType drops it), tttt as `{
   readonly input: ...; readonly kind: "action"; }` (types baseline only; openclaw's plugin-sdk/feature-plugin.test.ts).
-  [open]
+  (cor8 2026-10-28: not the spread: any object literal under a non-literal computed key loses the readonly in tsgo,
+  `dc({ [k]: { input: 1 } })` is `{ readonly [k]: { input: 1; }; }` (the literal 1 kept, so still a const context),
+  where `dc({ a: { input: 1 } })` and `dc([{ input: 1 }])` have readonly members. Which step of the index signature's
+  value type (getObjectLiteralIndexInfo) or of its printing drops it wasn't found by reading.) [open]
 
 - (types only) ttttNonNullOperandNotInferential: the diagnostics match; `mapping[k]` inside `mapping[k]!` in a generic
   call's argument prints `M[keyof S]` where tsc prints its constraint `string | number | undefined` (the non-null
