@@ -173,7 +173,7 @@ void vma_name(void* addr, size_t len, char const* name) {
     prctl(0x53564d41, 0, (unsigned long)addr, len, (unsigned long)full);
 }
 
-// The budget itself (what huge_pages_take() does under --huge-pages, and huge_text_take() always)
+// The budget itself (what huge_pages_take() does under --huge-pages)
 static _Atomic u64 huge_page_budget_read_ns; // When /proc/buddyinfo was last read again (CLOCK_MONOTONIC)
 #define HUGE_PAGE_BUDGET_MS 20
 static bool huge_pages_budget_take(size_t bytes) {
@@ -200,10 +200,6 @@ static bool huge_pages_budget_take(size_t bytes) {
 bool huge_pages_take(size_t bytes) {
     if (debug_env.huge_pages >= 0) return debug_env.huge_pages;
     return huge_pages_budget_take(bytes);
-}
-
-bool huge_text_take(void) {
-    return debug_env.huge_pages > 0 || huge_pages_budget_take((size_t)2 << 20);
 }
 
 void huge_pages_set_budgeted(void) {

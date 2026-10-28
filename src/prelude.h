@@ -77,9 +77,6 @@ extern DebugEnv debug_env;
 // blocks it counts). Off costs within noise to +5% (2026-10-24). --huge-pages (TTTT_HUGEPAGES=budget) madvises while
 // the free blocks of order >= 9 /proc/buddyinfo listed at the first call cover them; TTTT_HUGEPAGES=1 every chunk
 bool huge_pages_take(size_t bytes);
-// The hot text's one 2 MB page (main.c's huge_text()): from the budget whatever --huge-pages says (one page at startup,
-// faulted at once and collapsed if it didn't get one)
-bool huge_text_take(void);
 // --huge-pages: huge_pages_take() goes by the budget (unless TTTT_HUGEPAGES said 1)
 void huge_pages_set_budgeted(void);
 // The process's resident set, bytes (/proc/self/statm; 0 if unreadable). A read of an fd kept open: cheap enough per file

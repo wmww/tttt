@@ -16,7 +16,9 @@ and the path doesn't.
 2. `scripts/boltbuild.sh`: llvm-bolt (LLVM 21) in instrumentation mode on pgobuild's training set at K1 and at the
    defaults, then ext-tsp blocks, cdsort functions, hot/cold splitting, ICF (bolt/tttt). Hot text ~2.05 MB in its own
    2 MB-aligned segment.
-3. At startup, main.c's huge_text() puts the first 2 MB of that segment on an anonymous huge page (below).
+3. (Until 2026-10-28: at startup, main.c's huge_text() put the first 2 MB of that segment on an anonymous huge page,
+   below. Removed with the rest of the huge-page machinery: the laptop measured huge pages within noise on wall and
+   user cycles, measurements.md "The 12-core box at df95ec2f".)
 
 ## Measured (cachegrind, K1)
 | | zod I1 misses | drizzle | tsc (untrained) | vscode (untrained) | instructions |
@@ -120,7 +122,9 @@ PGO build executes 2-6% fewer instructions (6% on vscode, untrained) but its hot
 the I1 misses and the stall estimate are 7-12% worse: by the proxies GCC stays. The laptop could still A/B cycles
 (fewer instructions against a bigger footprint), but nothing here says clang wins.
 
-## Huge pages for the hot text (main.c's huge_text())
+## Huge pages for the hot text (main.c's huge_text(), removed 2026-10-28)
+Removed: huge pages, the text page included, measured within noise on the laptop (measurements.md "The 12-core box
+at df95ec2f"). What it was:
 At startup, the first 2 MB of BOLT's hot segment (an executable PT_LOAD with p_align >= 2 MB, so pgo/ and release/
 binaries are left alone) are copied into a 2 MB-aligned anonymous MADV_HUGEPAGE page, which mremap(MREMAP_FIXED)
 moves over the text atomically. Gated by huge_pages_take()'s free-block budget (no synchronous compaction), skipped
@@ -137,14 +141,11 @@ the hot range (BOLT's hot text is 2.05 MB: the first page covers 97% of it).
 `scripts/fastbuild.sh` then, on vscode (`-p thirdparty/corpora/vscode/src/tsconfig.corpus.json --noEmit`):
 - `perf stat -M PipelineL1` and `-M PipelineL2` at `--threads 1 --checkers 1`, pgo/tttt against fast/tttt
 - the same at the defaults
-- `perf stat -e instructions:u,cycles:u,L1-icache-load-misses,iTLB-load-misses` for both, and fast/tttt with
-  `TTTT_HUGE_TEXT=0` (huge text pages off) as the third column
-- nest's wall (`hyperfine -N`) with and without `TTTT_HUGE_TEXT=0`: the remap must cost it nothing measurable
+- `perf stat -e instructions:u,cycles:u,L1-icache-load-misses,iTLB-load-misses` for both
 - loop peeling off, the one flag that cut I1 misses 5-10% (for +1-2% instructions): `PGO_DIR=pgo-np BOLT_DIR=bolt-np
   PGO_CFLAGS=-fno-peel-loops scripts/boltbuild.sh`, then `bolt-np/tttt` against fast/tttt, cycles at K1 and the
   defaults (op cache hit rate too: smaller hot code is what moves it)
 - optionally clang: `CC=clang PGO_DIR=pgo-clang BOLT_DIR=bolt-clang scripts/boltbuild.sh` (-2 to -6% instructions,
   +8-12% I1 misses against GCC's: worth a cycles A/B on vscode)
-- profiling fast/tttt with perf: set `TTTT_HUGE_TEXT=0`, or the hot code shows as `//anon`
 - the two noinline commits (6863a4294, b83258c34): fast/tttt against a build of b113f6fb6, cycles and
   `L1-icache-load-misses` at K1 and the defaults (the parse one matters most at the defaults: every thread parses)

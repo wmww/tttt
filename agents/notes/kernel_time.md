@@ -94,7 +94,8 @@ on the rest of the machine:
     and our own 16 threads drained the blocks it counted.
   - Now: off by default. `--huge-pages` (TTTT_HUGEPAGES=budget) is the budget, which a read every 20 ms can only
     lower: to half of what is free when other processes took blocks. TTTT_HUGEPAGES=1 still forces. The hot text's
-    single 2 MB page (main.c huge_text()) keeps the startup budget: one page, faulted at once, collapsed if missed.
+    single 2 MB page (main.c huge_text()) kept the startup budget: one page, faulted at once, collapsed if missed
+    (removed 2026-10-28, measurements.md "The 12-core box at df95ec2f": huge pages within noise).
   - Cost of off, 5 interleaved runs, load ~15, few free 2 MB blocks on this box: openclaw root 7.16 against 7.07 s
     (+1%), vscode 1.71 against 1.69 s (+1%), drizzle 0.24-0.26 against 0.22-0.24 s (+5%: sys 0.19 against 0.08 s,
     the 4 KB faults of a short run). `--huge-pages`: within noise of the old default on all three. On a machine with
