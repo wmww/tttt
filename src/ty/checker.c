@@ -4750,8 +4750,8 @@ void rollback_cycle(void const* key) {
     rollback_cycle_count++;
 }
 
-// The file a resolution entry's declaration is in, null when it can't say (program.c's history_dependent_matters())
-static SourceFile const* resolving_entry_file(Resolving const* entry) {
+// Where a resolution entry's declaration is, span_null when it can't say
+static Span resolving_entry_span(Resolving const* entry) {
     Span span = span_null;
     switch ((ResolvingKind)entry->kind) {
         case RESOLVING_DECLARATION:
@@ -4793,8 +4793,178 @@ static SourceFile const* resolving_entry_file(Resolving const* entry) {
         }   break;
         default: break;
     }
+    return span;
+}
+
+// The file a resolution entry's declaration is in, null when it can't say (program.c's history_dependent_matters())
+static SourceFile const* resolving_entry_file(Resolving const* entry) {
+    Span span = resolving_entry_span(entry);
     return span_valid(span) ? span_source(span) : nullptr;
 }
+
+#ifdef TTTT_HUB_TRACE
+// TTTT_HUB_TRACE=PATH (a -DTTTT_HUB_TRACE build): every resolution (each ty_resolving_push() .. pop) and every checked
+// file as a node of a tree, the resolutions a resolution or a file's check started as its children. One line per node
+// when it ends: `N id parent depth kind incl_cpu_ns self_cpu_ns incl_types self_types file line`, files as
+// `F id 0 checker cpu_ns self_cpu_ns types self_types path`. A resolution is computed once per checker, so with one
+// checker the tree is where each piece of the type graph was first built and what it cost inclusive of what it needed
+// first. scripts/hubtrace.py builds it, runs it and computes the critical paths (agents/notes/hub_regime.md)
+typedef struct HubOpen {
+    u32 id;
+    u64 cpu0, child_cpu;
+    u32 types0, child_types;
+} HubOpen;
+static thread_local HubOpen hub_stack[1 << 16];
+static thread_local u32 hub_len;
+static _Atomic u32 hub_next_id = 1;
+static FILE* hub_out;
+static bool hub_checked, hub_no_uses;
+static pthread_mutex_t hub_lock = PTHREAD_MUTEX_INITIALIZER;
+
+static u64 hub_cpu_now(void) {
+    struct timespec t;
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t);
+    return (u64)t.tv_sec * 1000000000ull + (u64)t.tv_nsec;
+}
+
+static bool hub_on(void) {
+    if (!hub_checked) {
+        pthread_mutex_lock(&hub_lock);
+        if (!hub_checked) {
+            char const* path = getenv("TTTT_HUB_TRACE");
+            if (path) hub_out = fopen(path, "w");
+            // (TTTT_HUB_NO_USES=1: no uses edges, whose hash lookups on every memo hit inflate the CPU times; the node
+            // ids are the same, so a second run's times go with the first run's edges)
+            hub_no_uses = getenv("TTTT_HUB_NO_USES") != nullptr;
+            hub_checked = true;
+        }
+        pthread_mutex_unlock(&hub_lock);
+    }
+    return hub_out != nullptr;
+}
+
+static void hub_open(Checker* me) {
+    check(hub_len < c_arraylen(hub_stack));
+    hub_stack[hub_len++] = (HubOpen){ .id = atomic_fetch_add(&hub_next_id, 1), .cpu0 = hub_cpu_now(),
+        .types0 = checker_type_count(me) };
+}
+
+// Closes the innermost node: its inclusive and self costs, added to its parent's children
+static HubOpen hub_close(Checker* me, u64* incl, u32* types, u32* parent) {
+    HubOpen node = hub_stack[--hub_len];
+    *incl = hub_cpu_now() - node.cpu0;
+    *types = checker_type_count(me) - node.types0;
+    *parent = hub_len ? hub_stack[hub_len - 1].id : 0;
+    if (hub_len) {
+        hub_stack[hub_len - 1].child_cpu += *incl;
+        hub_stack[hub_len - 1].child_types += *types;
+    }
+    return node;
+}
+
+void hub_trace_push(Checker* me) {
+    if (!hub_on()) return;
+    hub_open(me);
+}
+
+// Which node computed a key (a LazyType, Prop, Signature, FunctionImpl: what the entry was keyed by), and the uses
+// edges written so far ((reader, owner) pairs): one thread only
+static u64* hub_owner_keys;
+static u32* hub_owner_ids;
+static u64 hub_owner_cap, hub_owner_len;
+static u64* hub_edges;
+static u64 hub_edge_cap, hub_edge_len;
+
+static u64 hub_hash(u64 x) {
+    x ^= x >> 33; x *= 0xff51afd7ed558ccdull; x ^= x >> 33; x *= 0xc4ceb9fe1a85ec53ull; x ^= x >> 33;
+    return x;
+}
+
+// The slot of `key` in a table of `cap` (a power of two) keys, 0 = empty
+static u64 hub_slot(u64 const* keys, u64 cap, u64 key) {
+    u64 i = hub_hash(key) & (cap - 1);
+    while (keys[i] && keys[i] != key) i = (i + 1) & (cap - 1);
+    return i;
+}
+
+static void hub_owner_set(u64 key, u32 id) {
+    if ((hub_owner_len + 1) * 2 > hub_owner_cap) {
+        u64 cap = hub_owner_cap ? hub_owner_cap * 2 : 1 << 16;
+        u64* keys = calloc(cap, sizeof(u64));
+        u32* ids = calloc(cap, sizeof(u32));
+        for (u64 i = 0; i < hub_owner_cap; i++) {
+            if (!hub_owner_keys[i]) continue;
+            u64 j = hub_slot(keys, cap, hub_owner_keys[i]);
+            keys[j] = hub_owner_keys[i];
+            ids[j] = hub_owner_ids[i];
+        }
+        free(hub_owner_keys);
+        free(hub_owner_ids);
+        hub_owner_keys = keys;
+        hub_owner_ids = ids;
+        hub_owner_cap = cap;
+    }
+    u64 j = hub_slot(hub_owner_keys, hub_owner_cap, key);
+    if (!hub_owner_keys[j]) hub_owner_len++;
+    hub_owner_keys[j] = key;
+    hub_owner_ids[j] = id;
+}
+
+// A memo hit on `key` by the innermost open node: a uses edge to the node that computed it, written once per pair
+void hub_trace_hit(void const* key) {
+    if (!hub_out || !hub_len || !hub_owner_cap || hub_no_uses) return;
+    u64 j = hub_slot(hub_owner_keys, hub_owner_cap, (u64)(uintptr_t)key);
+    if (!hub_owner_keys[j]) return;
+    u32 owner = hub_owner_ids[j], reader = hub_stack[hub_len - 1].id;
+    if (owner == reader) return;
+    u64 pair = (u64)reader << 32 | owner;
+    if ((hub_edge_len + 1) * 2 > hub_edge_cap) {
+        u64 cap = hub_edge_cap ? hub_edge_cap * 2 : 1 << 16;
+        u64* edges = calloc(cap, sizeof(u64));
+        for (u64 i = 0; i < hub_edge_cap; i++) if (hub_edges[i]) edges[hub_slot(edges, cap, hub_edges[i])] = hub_edges[i];
+        free(hub_edges);
+        hub_edges = edges;
+        hub_edge_cap = cap;
+    }
+    u64 e = hub_slot(hub_edges, hub_edge_cap, pair);
+    if (hub_edges[e]) return;
+    hub_edges[e] = pair;
+    hub_edge_len++;
+    fprintf(hub_out, "U %u %u\n", reader, owner);
+}
+
+void hub_trace_pop(Checker* me, Resolving const* entry) {
+    if (!hub_out || !hub_len) return;
+    u64 incl;
+    u32 types, parent;
+    HubOpen node = hub_close(me, &incl, &types, &parent);
+    hub_owner_set((u64)(uintptr_t)entry->key, node.id);
+    Span span = resolving_entry_span(entry);
+    char const* path = span_valid(span) ? cstr_str(&span_source(span)->canonical_path) : "-";
+    u32 line = span_valid(span) ? span_line_index(span) + 1 : 0;
+    pthread_mutex_lock(&hub_lock);
+    fprintf(hub_out, "N %u %u %u %u %llu %llu %u %u %s %u\n", node.id, parent, hub_len, entry->kind,
+        (unsigned long long)incl, (unsigned long long)(incl - node.child_cpu), types, types - node.child_types, path, line);
+    pthread_mutex_unlock(&hub_lock);
+}
+
+void hub_trace_file(Checker* me, SourceFile const* source, bool begin) {
+    if (!hub_on()) return;
+    if (begin) {
+        check(hub_len == 0);
+        hub_open(me);
+        return;
+    }
+    u64 incl;
+    u32 types, parent;
+    HubOpen node = hub_close(me, &incl, &types, &parent);
+    pthread_mutex_lock(&hub_lock);
+    fprintf(hub_out, "F %u 0 %p %llu %llu %u %u %s\n", node.id, (void*)me, (unsigned long long)incl,
+        (unsigned long long)(incl - node.child_cpu), types, types - node.child_types, cstr_str(&source->canonical_path));
+    fflush(hub_out);
+    pthread_mutex_unlock(&hub_lock);
+}
+#endif
 
 // A cycle among the entries from `first` on, marked circular. Two things about it say whether a circularity it causes
 // depends on where the cycle was entered (program.c's history_dependent_matters()):

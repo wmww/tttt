@@ -6152,7 +6152,14 @@ static void check_share(Program* me, u32 c, u32 count) {
             rollback_cycle_count = 0;
             clock_gettime(CLOCK_THREAD_CPUTIME_ID, &rb_cpu);
         }
+#ifdef TTTT_HUB_TRACE
+        void hub_trace_file(Checker* checker, SourceFile const* source, bool begin);
+        hub_trace_file(checker, source, true);
+#endif
         check_file(me, checker, source, at);
+#ifdef TTTT_HUB_TRACE
+        hub_trace_file(checker, source, false);
+#endif
         if (__builtin_expect(debug_env.rollback_stats, 0)) {
             // (Its line: RB order checker cpu_ns types limit_hits deep_cuts cycles path keys...)
             struct timespec rb_end;

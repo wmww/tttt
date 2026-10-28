@@ -504,6 +504,9 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
         }
     }
     if (v) {
+#ifdef TTTT_HUB_TRACE
+        hub_trace_hit(function);
+#endif
         report_promise_missing(me, function, v);
         return FR_TYPE(v);
     }

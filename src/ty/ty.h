@@ -2723,9 +2723,18 @@ typedef struct Resolving {
     uint8_t key_type; // RESOLVING_DECLARATION: RESOLVING_KEY_*
 } Resolving;
 void ty_resolving_grow(Checker* me);
+#ifdef TTTT_HUB_TRACE
+// (-DTTTT_HUB_TRACE builds only, TTTT_HUB_TRACE=PATH: the tree of resolutions with their CPU time and types, checker.c)
+void hub_trace_push(Checker* me);
+void hub_trace_pop(Checker* me, Resolving const* entry);
+void hub_trace_hit(void const* key);
+#endif
 static inline void ty_resolving_push_keyed(Checker* me, ResolvingKind kind, void const* key, uint8_t key_type) {
     if (my resolving_len == my resolving_cap) ty_resolving_grow(me);
     my resolving[my resolving_len++] = (Resolving){ .key = key, .kind = kind, .key_type = key_type };
+#ifdef TTTT_HUB_TRACE
+    hub_trace_push(me);
+#endif
 }
 static inline void ty_resolving_push(Checker* me, ResolvingKind kind, void const* key) {
     ty_resolving_push_keyed(me, kind, key, RESOLVING_KEY_LAZY);
@@ -2764,6 +2773,9 @@ static inline Claim* ty_claim_find(Checker* me, ClaimKind kind, void const* key,
 }
 // Whether it turned out circular
 static inline bool ty_resolving_pop(Checker* me) {
+#ifdef TTTT_HUB_TRACE
+    hub_trace_pop(me, &my resolving[my resolving_len - 1]);
+#endif
     return my resolving[--my resolving_len].circular;
 }
 void ty_resolving_cycle(Checker* me, ResolvingKind kind, void const* key); // It was asked for while in flight

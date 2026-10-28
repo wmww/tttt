@@ -5710,6 +5710,9 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
     uintptr_t v = sw_load(&prop->type);
     if (__builtin_expect(v > SW_NONE && !my graph_shadowed, 1)) {
         TAINT_READ(TK_PROP_TYPE, prop);
+#ifdef TTTT_HUB_TRACE
+        hub_trace_hit(prop);
+#endif
         return (Ty const*)v;
     }
     return prop_type_slow(me, prop);
@@ -6307,6 +6310,9 @@ Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
     uintptr_t v = sw_load(&sig->ret);
     if (__builtin_expect(v > SW_NONE && sw_load(&sig->res) > SW_NONE && !my graph_shadowed, 1)) {
         TAINT_READ(TK_SIGNATURE_RETURN, sig);
+#ifdef TTTT_HUB_TRACE
+        hub_trace_hit(sig);
+#endif
         return (Ty const*)v;
     }
     return signature_return_type_slow(me, sig);
@@ -6347,6 +6353,9 @@ static Ty const* signature_return_type_in(Checker* me, Signature* sig, SigResolv
     uintptr_t v;
     switch (sw_look_fast(me, &sig->ret, &sig->ret_flight, &v)) {
         case SW_LOOK_DONE:
+#ifdef TTTT_HUB_TRACE
+            hub_trace_hit(sig);
+#endif
             TAINT_READ(TK_SIGNATURE_RETURN, sig);
             return SW_PTR(v);
         case SW_LOOK_MINE:
