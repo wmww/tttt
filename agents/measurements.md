@@ -1802,3 +1802,34 @@ interleaved, best of 3. tttt ST/MT median 3.16 (p10 1.74, min 0.81; MT <= ST on 
 1.22 (K8/K1 at `--threads 1`, median; p90 2.24) x ~1.36 per-instruction, 6.3 of 8 cores busy; bun CPU MT/ST 1.90 at
 7.3 busy. Summed loss over ST/8: 51.9 s of 66.6 s MT wall (dup 9.2, idle tail 12.8, front end 9.5, rerun 4.0).
 Details and the verdicts: agents/notes/bun_breadth.md "2026-10-28".
+
+## The 12-core box at 15f15fdeb: the shared graph against plain at the defaults and at 24/24 (2026-10-29)
+Run by an agent on the human's laptop (Ryzen AI 9 HX 370, 24 threads), fast build of main 15f15fdeb, 5 rounds of
+interleaved pairs per project from an empty directory, `TTTT_SYNC_EXIT=1`; the defaults chose 12 checkers on 24
+threads everywhere; "24/24" is `--threads 24 --checkers 24`. dokploy and openbot installed there with ensure-sources.sh
+(openbot/packages/i18n is the i18n project). Medians (best of 5 in brackets); user is CPU seconds.
+
+| project | mode | plain wall | SG wall | wall | plain user | SG user | plain RSS MB | SG RSS MB |
+|---|---|---|---|---|---|---|---|---|
+| zod | def | 0.16 (0.15) | 0.16 (0.15) | 0 | 1.3 | 1.5 | 773 | 668 |
+| zod | 24/24 | 0.16 (0.15) | 0.17 (0.15) | +6% | 2.2 | 2.1 | 900 | 815 |
+| drizzle | def | 0.24 (0.22) | 0.19 (0.19) | -21% | 2.1 | 1.8 | 990 | 734 |
+| drizzle | 24/24 | 0.22 (0.22) | 0.18 (0.18) | -18% | 3.7 | 2.8 | 1266 | 920 |
+| effect | def | 0.24 (0.22) | 0.25 (0.24) | +4% | 2.2 | 2.6 | 911 | 890 |
+| effect | 24/24 | 0.22 (0.20) | 0.25 (0.23) | +14% | 3.3 | 3.6 | 1001 | 1045 |
+| vscode | def | 1.73 (1.64) | 1.91 (1.79) | +10% | 28.8 | 29.9 | 5255 | 4919 |
+| vscode | 24/24 | 1.70 (1.52) | 1.90 (1.82) | +12% | 29.1 | 30.7 | 5244 | 4909 |
+| dokploy | def | 0.86 (0.82) | 0.87 (0.74) | +1% (best -10%) | 8.6 | 8.2 | 2881 | 1736 |
+| dokploy | 24/24 | 1.14 (1.02) | 1.01 (0.88) | -11% | 22.6 | 16.1 | 4683 | 2387 |
+| i18n | def | 0.36 (0.35) | 0.16 (0.16) | -56% | 2.5 | 1.3 | 1278 | 662 |
+| i18n | 24/24 | 0.43 (0.41) | 0.17 (0.16) | -60% | 4.8 | 2.2 | 1713 | 777 |
+
+- The 24-thread point: 12 -> 24 checkers makes plain slower on the hub projects (dokploy 0.86 -> 1.14 s, i18n 0.36 ->
+  0.43: the duplication); the shared graph holds steady there. On the corpora 24/24 changes little.
+- Memory: SG uses less RSS everywhere but effect at 24/24 (+4%): -40..-50% on dokploy and i18n, -6% on vscode.
+- vscode: runs varied 0.3-0.5 s between rounds, but SG lost all 5 pairs in both modes; its wall loss (+10..12%) is
+  larger than its CPU loss (+4..5%): the critical path, not only the per-read cost (open: notes/hub_regime.md).
+- Correctness: the shared graph is nondeterministic on drizzle (residue C, bugs/shared_graph.md): at 24/24 4 different
+  outputs in 5 runs, 1 of 8 more matched K1 (the others add a TS2430 at mysql-core/query-builders/select.ts(1076,18),
+  one also drops the TS2416 at mysql2/session.ts(281,17)); at the defaults 3 of 10 differ. Plain matched K1 in every
+  run; the other five projects were identical in every run. Far more often than the 5/10 at K8 recorded on this box.
