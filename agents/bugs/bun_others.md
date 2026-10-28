@@ -204,11 +204,11 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
   and cascades (+TS1005 +TS1109 +TS1128 +TS1131 +TS1146 +TS1434): 56-L14b 83-R20a. JavaScript `function h(export
   @dec x)`: modifiers before decorators, TS8012 (tttt TS1359): 84-R01. [open]
 - `yield` takes an operand only on the same line and is an AssignmentExpression (no `?:` or binary operator after
-  it): -TS1109/-TS1005 43-X6a 43-X6b 43-X6c 43-X6e. [fixed COMMIT4]
-- A private name where an identifier is expected outside classes: tsc parses `#a` as the name (TS2304 "Cannot find
-  name '#a'" for a JSX tag or type reference, TS18016 after `asserts`) and takes it as an import attribute key or a
-  JSX attribute name without complaint: 43-P8e 43-X5f 56-L19 80-R01a 80-R01b 43-C13d (+TS1003 +TS1005 +TS1109
-  +TS1110 +TS1144 +TS1478). [open]
+  it): -TS1109/-TS1005 43-X6a 43-X6b 43-X6c 43-X6e. [fixed a92d14079]
+- A private name where an identifier name goes: tsc's tokenIsIdentifierOrKeyword says yes to PrivateIdentifier (it
+  follows Identifier among the token kinds), so `#a` is an Identifier node in a type reference (TS2304), a JSX tag or
+  attribute name, an import attribute's key, and after `asserts` parseIdentifier's TS18016; not where isStartOfType
+  is asked (an indexed access, type arguments): 43-P8e 43-X5f 56-L19 80-R01a 80-R01b 43-C13d. [fixed COMMIT5]
 - `await` at the top level of a module in a computed property name or a type parameter list: tsc's
   parseIdentifier says TS1262 and the name is an identifier (TS2304), tttt TS1109; `<await>(x: await) => x` isn't
   an arrow to tsc: 56-L11 93-P01b 74-R15d. [open]

@@ -1,0 +1,45 @@
+//// [test/cases/ttttPrivateNameAsIdentifierName.ts] ////
+
+=== x.ts ===
+export const a = 1;
+>a : 1
+>1 : 1
+
+=== a.ts ===
+var x: #a;
+>x : #a
+
+var y: #b.c;
+>y : #b.c
+>#b : any
+
+import { a } from "./x" with { #constructor: "a" };
+>a : 1
+>#constructor : any
+
+declare function f(x: any): asserts #a;
+>f : (x: any) => asserts #a
+>x : any
+
+=== b.tsx ===
+declare namespace JSX { interface IntrinsicElements { div: any } interface Element {} }
+>div : any
+
+const j1 = <div #constructor="x" />;
+>j1 : JSX.Element
+><div #constructor="x" /> : JSX.Element
+>div : any
+>#constructor : string
+
+const j2 = <div a="1" #b />;
+>j2 : JSX.Element
+><div a="1" #b /> : JSX.Element
+>div : any
+>a : string
+>#b : true
+
+const j3 = <#c />;
+>j3 : JSX.Element
+><#c /> : JSX.Element
+>#c : any
+

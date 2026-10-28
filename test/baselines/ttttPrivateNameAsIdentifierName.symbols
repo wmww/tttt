@@ -1,0 +1,44 @@
+//// [test/cases/ttttPrivateNameAsIdentifierName.ts] ////
+
+=== x.ts ===
+export const a = 1;
+>a : Symbol(a, Decl(x.ts, 0, 12))
+
+=== a.ts ===
+var x: #a;
+>x : Symbol(x, Decl(a.ts, 0, 3))
+>#a : Symbol(#a)
+
+var y: #b.c;
+>y : Symbol(y, Decl(a.ts, 1, 3))
+>#b : Symbol(#b)
+>c : Symbol(#b.c)
+
+import { a } from "./x" with { #constructor: "a" };
+>a : Symbol(a, Decl(a.ts, 2, 8))
+
+declare function f(x: any): asserts #a;
+>f : Symbol(f, Decl(a.ts, 2, 51))
+>x : Symbol(x, Decl(a.ts, 3, 19))
+
+=== b.tsx ===
+declare namespace JSX { interface IntrinsicElements { div: any } interface Element {} }
+>JSX : Symbol(JSX, Decl(b.tsx, 0, 0))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(b.tsx, 0, 23))
+>div : Symbol(IntrinsicElements.div, Decl(b.tsx, 0, 53))
+>Element : Symbol(Element, Decl(b.tsx, 0, 64))
+
+const j1 = <div #constructor="x" />;
+>j1 : Symbol(j1, Decl(b.tsx, 1, 5))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(b.tsx, 0, 53))
+>#constructor : Symbol(#constructor, Decl(b.tsx, 1, 15))
+
+const j2 = <div a="1" #b />;
+>j2 : Symbol(j2, Decl(b.tsx, 2, 5))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(b.tsx, 0, 53))
+>a : Symbol(a, Decl(b.tsx, 2, 15))
+>#b : Symbol(#b, Decl(b.tsx, 2, 21))
+
+const j3 = <#c />;
+>j3 : Symbol(j3, Decl(b.tsx, 3, 5))
+

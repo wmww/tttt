@@ -2942,7 +2942,9 @@ static bool parse_generic_params(Parser* parent, bool fail_on_error, VecSpannedT
         trailing_comma_span = span_null;
         TypeNode t;
         Anchor type_a = anchor(&p);
-        if (parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
+        // (A private name is no start of a type, tsc's isStartOfType for the list's elements, though a type reference
+        // takes it as its name where a type must be: parse_identifier_type())
+        if (*p.pos != '#' && parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
             list_push(vec_spanned_type, ret, spanned_type(span_from(type_a), t));
             hop_whitespace(&p);
         } else if (*p.pos == ',') {
@@ -3354,7 +3356,8 @@ static inline bool parse_type_right_side_inner(Parser* parent, TypePrecedence mi
     if (postfix && p.whitespace != WHITESPACE_NEWLINE && hop_char(&p, '[')) {
         hop_whitespace(&p);
         Anchor index_anchor = anchor(&p);
-        if (parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
+        // (Only what isStartOfType says yes to is an index, no private name: `C[#a]` is an array type missing its `]`)
+        if (*p.pos != '#' && parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
             Span index_span = span_from(index_anchor);
             hop_whitespace(&p);
             expect_char(&p, ']');
@@ -3421,10 +3424,16 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
 
     Span name;
     AstSpans namespaces = ast_spans_init();
-    if (!parse_identifier(&p, &name)) {
+    Anchor word = anchor(&p);
+    if (*p.pos == '#' && identifier_char_size(p.pos + 1, true)) {
+        // (A private name is an identifier name to tsc, tokenIsIdentifierOrKeyword: parseEntityNameOfTypeReference
+        // takes `#a` as the name, an Identifier: TS2304, never the binder's TS18012)
+        p.pos++;
+        parse_identifier_or_keyword(&p, nullptr);
+        name = span_from(word);
+    } else if (!parse_identifier(&p, &name)) {
         // (A type reference takes the reserved words parse_identifier() refuses for expressions: `x: var` is TS2304)
         if (!starts_with_followed_by_word_break(&p, "var")) return parse_fail(&p);
-        Anchor word = anchor(&p);
         parse_identifier_or_keyword(&p, nullptr);
         name = span_from(word);
     }
@@ -4039,7 +4048,7 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
         grammar_error(&p, span_from(operand_a), 1005, "'symbol' expected.");
         type_drop(&operand);
         *ret = type_any;
-    } else if (word && parse_identifier_type(&p, &parsed.identifier)) {
+    } else if ((word || (c == '#' && identifier_char_size(p.pos + 1, true))) && parse_identifier_type(&p, &parsed.identifier)) {
         parsed.identifier.jsdoc = p.shared->in_jsdoc;
         parsed.identifier.jsdoc_unchecked = p.shared->in_jsdoc && p.shared->jsdoc_unchecked;
         *ret = type_identifier(ast_new(IdentifierType, parsed.identifier));
@@ -7001,7 +7010,15 @@ static bool parse_type_predicate(Parser* parent, FunctionImpl* ret) {
     }
     if (asserts_word && !starts_with_followed_by_word_break(&p, "is")) {
         Span keyword = name;
-        if (!parse_identifier_or_keyword(&p, &name)) {
+        Anchor name_a = anchor(&p);
+        if (*p.pos == '#' && identifier_char_size(p.pos + 1, true)) {
+            // (tsc's lookahead takes a private name for an identifier name, tokenIsIdentifierOrKeyword, then
+            // parseIdentifier says TS18016 and takes it as the name)
+            p.pos++;
+            parse_identifier_or_keyword(&p, nullptr);
+            name = span_from(name_a);
+            parse_error(&p, name, 18016, "Private identifiers are not allowed outside class bodies.");
+        } else if (!parse_identifier_or_keyword(&p, &name)) {
             return parse_fail(&p);
         }
         if (escaped_asserts) parse_error(&p, keyword, 1260, "Keywords cannot contain escape characters.");
@@ -11574,7 +11591,16 @@ static bool parse_jsx_identifier_hyphens(Parser* parent, bool hyphens, Span* ret
     return true;
 }
 
+// A tag, namespace or attribute name: a private name is one too (tsc's parseIdentifierName takes any token
+// tokenIsIdentifierOrKeyword says yes to, PrivateIdentifier included: `<#a />` is TS2304, `<a #b />` an attribute)
 static bool parse_jsx_identifier(Parser* parent, Span* ret) {
+    if (*parent->pos == '#' && identifier_char_size(parent->pos + 1, true)) {
+        Anchor a = anchor(parent);
+        parent->pos++;
+        if (!parse_jsx_identifier_hyphens(parent, true, ret)) impossible;
+        *ret = span_from(a);
+        return true;
+    }
     return parse_jsx_identifier_hyphens(parent, true, ret);
 }
 
@@ -12138,7 +12164,8 @@ __attribute__((noinline)) static bool at_jsx_element_start(Parser* parent, bool 
     Parser p = parser(parent);
     p.pos++;
     hop_whitespace(&p);
-    bool ret = *p.pos == '>' || identifier_char_size(p.pos, true) || identifier_escape_size(p.pos);
+    bool ret = *p.pos == '>' || identifier_char_size(p.pos, true) || identifier_escape_size(p.pos) ||
+        (*p.pos == '#' && identifier_char_size(p.pos + 1, true)); // (`<#a />`: parse_jsx_identifier())
     parse_fail(&p);
     return ret;
 }
@@ -12892,6 +12919,11 @@ static void parse_import_attributes_body(Parser* parent, ImportAttributes* ret) 
         if (*p->pos == '"' || *p->pos == '\'') {
             parse_string(p, &ignored);
             cstr_drop(&ignored);
+        } else if (*p->pos == '#' && identifier_char_size(p->pos + 1, true)) {
+            // (A private name is an identifier name to tsc's tokenIsIdentifierOrKeyword: `{ #a: "x" }` is a key, an
+            // Identifier node, which the binder's TS18012 for `#constructor` doesn't look at)
+            p->pos++;
+            parse_identifier_or_keyword(p, nullptr);
         } else if (!parse_identifier_or_keyword(p, nullptr)) {
             // (tsc's parsingContextErrors for ImportAttributes)
             parse_error(p, span_from_token(p), 1478, "Identifier or string literal expected.");

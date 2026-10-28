@@ -1,0 +1,30 @@
+a.ts(1,8): error TS2304: Cannot find name '#a'.
+a.ts(2,8): error TS2503: Cannot find namespace '#b'.
+a.ts(4,37): error TS1225: Cannot find parameter '#a'.
+a.ts(4,37): error TS18016: Private identifiers are not allowed outside class bodies.
+b.tsx(4,13): error TS2304: Cannot find name '#c'.
+
+
+==== x.ts (0 errors) ====
+    export const a = 1;
+==== a.ts (4 errors) ====
+    var x: #a;
+           ~~
+!!! error TS2304: Cannot find name '#a'.
+    var y: #b.c;
+           ~~
+!!! error TS2503: Cannot find namespace '#b'.
+    import { a } from "./x" with { #constructor: "a" };
+    declare function f(x: any): asserts #a;
+                                        ~~
+!!! error TS1225: Cannot find parameter '#a'.
+                                        ~~
+!!! error TS18016: Private identifiers are not allowed outside class bodies.
+==== b.tsx (1 errors) ====
+    declare namespace JSX { interface IntrinsicElements { div: any } interface Element {} }
+    const j1 = <div #constructor="x" />;
+    const j2 = <div a="1" #b />;
+    const j3 = <#c />;
+                ~~
+!!! error TS2304: Cannot find name '#c'.
+    
