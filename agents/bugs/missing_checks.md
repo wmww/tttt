@@ -575,7 +575,7 @@ never-const (harness writes no errors baseline).
 - reachabilityChecksNoCrash1 never-const: parser recovery turns `out: never = []` into a shorthand `never = []` in an
   object literal; tsgo's checkShorthandPropertyAssignment checks only the initializer of such a shorthand outside a
   destructuring target, so its name, a type keyword, is no TS2693 (nor a namespace TS2708). Test
-  ttttShorthandDefaultNameUnchecked. [fixed HASH]
+  ttttShorthandDefaultNameUnchecked. [fixed 3e1405428]
 - renamingDestructuredPropertyInFunctionType3 delete-stmt: TS2304 for a computed name in a function type's parameter
   pattern is found only by tsgo's emit resolver (the harness's pre/post-emit count mismatch); tsgo's CLI reports it
   like tttt. [tsgo]
@@ -583,8 +583,12 @@ never-const (harness writes no errors baseline).
   `K extends 42` on a mapped `{[K in "foo"]: ...}`), contextualTypeWithUnionTypeIndexSignatures ann-number-string
   (TS2322 position: tsgo elaborates into the method's return, tttt reports at the declaration), recursiveTypeInference add-optional (TS2345 text), circularBaseTypes delete-stmt
   (missing TS2310, the base cycle design), nonPrimitiveAndEmptyObject drop-optional (TS2339 names the narrowed `{}`
-  in tsgo, the union in tttt), ambientExternalModuleWithRelativeExternalImportDeclaration delete-stmt (spurious TS2307
-  for a relative import in an ambient module once nothing uses it). [open]
+  in tsgo, the union in tttt). [open]
+- ambientExternalModuleWithRelativeExternalImportDeclaration delete-stmt: `declare module "M" { import m2 =
+  require("./Sub"); }` with m2 unused is only TS2439 in tsgo: the program doesn't resolve a relative name in an ambient
+  module (collectExternalModuleReferences) and checkExternalImportOrExportDeclaration returns after TS2439, so TS2307
+  comes only from resolving the alias on a use. tttt reports TS2307 eagerly. Needs the module-not-found error deferred
+  to the alias's first resolution for such refs. [open]
 
 ## Mutation seed 2810 (2026-10-28, cor8: `MUTATE_DIR=/tmp/X scripts/mutate.py -n 8000 --seed 2810 --tests multi,js`)
 27 of 8000 differ: 9 render, the rest below or known (commonJSAliasedExport/moduleExportAlias5 never-const, importTag14,
