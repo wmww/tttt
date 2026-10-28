@@ -1,36 +1,53 @@
 //// [test/cases/ttttTypeParameterListReservedWord.ts] ////
 
-=== a.ts ===
-export type BoundedInteger<
->BoundedInteger : export
+=== ttttTypeParameterListReservedWord.ts ===
+// A type parameter list recovers the same way after `function f`, a method name, in a type and in a speculative arrow
+// function (tsc's parseTypeParameters): a reserved word that is no element is TS1139 and skipped (`default` too,
+// which the Parameters context, not entered yet, would take as a modifier)
+function f<T, default>() {}
+>f : <T>() => void
 
-  LowerBound extends number,
-  UpperBound extends number
+class C { m<T, default>() {} }
+>C : C
+>m : <T>() => void
 
-export const toBoundedInteger = <L extends number>(bounds: L) => (n: number): BoundedInteger<L, L> => ({} as any);
->toBoundedInteger : <L extends number>(bounds: L) => (n: number) => BoundedInteger<L, L>
-><L extends number>(bounds: L) => (n: number): BoundedInteger<L, L> => ({} as any) : <L extends number>(bounds: L) => (n: number) => BoundedInteger<L, L>
->bounds : L
->(n: number): BoundedInteger<L, L> => ({} as any) : (n: number) => BoundedInteger<L, L>
->n : number
->({} as any) : any
->{} as any : any
->{} : {}
+let o = { m<T, default>() {} };
+>o : { m<T>(): any; default: boolean; }
+>{ m<T, default>() : { m<T>(): any; default: boolean; }
+>m : <T>() => any
+>default : boolean
+>>() : boolean
+> : any
+>() : any
+> : any
 
-type X<export T> = T;
->X : T
+type F = <T, default>() => void;
+>F : F
 
-interface I<T, default U> { a: T; b: U }
->a : T
->b : U
+let a = <T, default>() => 1;
+>a : <T>() => number
+><T, default>() => 1 : <T>() => number
+>1 : 1
 
-type Y<
->Y : any
+interface I { m<T, default>(): void; <U, default>(): void }
+>m : <T>() => void
 
-=== b.tsx ===
-class A</T> {}
->A : A
->T> {} : boolean
->T : any
->{} : {}
+let a2 = <T, default>(x) => 1;
+>a2 : <T>(x: any) => number
+><T, default>(x) => 1 : <T>(x: any) => number
+>x : any
+>1 : 1
+
+function g<T, while>() {}
+>g : <T>() => any
+>>() : boolean
+> : any
+>() : any
+> : any
+
+function h<T, null>() {}
+>h : <T>() => any
+>null>() : boolean
+>() : any
+> : any
 

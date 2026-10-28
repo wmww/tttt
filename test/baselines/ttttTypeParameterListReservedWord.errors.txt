@@ -1,38 +1,85 @@
-a.ts(5,1): error TS1005: ',' expected.
-a.ts(5,1): error TS2552: Cannot find name 'export'. Did you mean 'Report'?
-a.ts(5,8): error TS1005: ';' expected.
-a.ts(6,8): error TS1139: Type parameter declaration expected.
-a.ts(7,16): error TS1139: Type parameter declaration expected.
-a.ts(8,8): error TS1005: '>' expected.
-b.tsx(1,8): error TS1005: '{' expected.
-b.tsx(1,10): error TS2304: Cannot find name 'T'.
+ttttTypeParameterListReservedWord.ts(4,15): error TS1139: Type parameter declaration expected.
+ttttTypeParameterListReservedWord.ts(5,16): error TS1139: Type parameter declaration expected.
+ttttTypeParameterListReservedWord.ts(6,16): error TS1139: Type parameter declaration expected.
+ttttTypeParameterListReservedWord.ts(6,23): error TS1005: ':' expected.
+ttttTypeParameterListReservedWord.ts(6,25): error TS1109: Expression expected.
+ttttTypeParameterListReservedWord.ts(6,27): error TS1005: ',' expected.
+ttttTypeParameterListReservedWord.ts(6,30): error TS1128: Declaration or statement expected.
+ttttTypeParameterListReservedWord.ts(7,14): error TS1139: Type parameter declaration expected.
+ttttTypeParameterListReservedWord.ts(8,13): error TS1139: Type parameter declaration expected.
+ttttTypeParameterListReservedWord.ts(9,20): error TS1139: Type parameter declaration expected.
+ttttTypeParameterListReservedWord.ts(9,42): error TS1139: Type parameter declaration expected.
+ttttTypeParameterListReservedWord.ts(10,14): error TS1139: Type parameter declaration expected.
+ttttTypeParameterListReservedWord.ts(10,23): error TS7006: Parameter 'x' implicitly has an 'any' type.
+ttttTypeParameterListReservedWord.ts(11,10): error TS7010: 'g', which lacks return-type annotation, implicitly has an 'any' return type.
+ttttTypeParameterListReservedWord.ts(11,15): error TS1139: Type parameter declaration expected.
+ttttTypeParameterListReservedWord.ts(11,20): error TS1005: '(' expected.
+ttttTypeParameterListReservedWord.ts(11,22): error TS1109: Expression expected.
+ttttTypeParameterListReservedWord.ts(11,24): error TS1005: ')' expected.
+ttttTypeParameterListReservedWord.ts(12,10): error TS7010: 'h', which lacks return-type annotation, implicitly has an 'any' return type.
+ttttTypeParameterListReservedWord.ts(12,15): error TS1139: Type parameter declaration expected.
+ttttTypeParameterListReservedWord.ts(12,15): error TS18050: The value 'null' cannot be used here.
+ttttTypeParameterListReservedWord.ts(12,21): error TS1109: Expression expected.
+ttttTypeParameterListReservedWord.ts(12,23): error TS1005: ';' expected.
 
 
-==== a.ts (6 errors) ====
-    export type BoundedInteger<
-      LowerBound extends number,
-      UpperBound extends number
-    
-    export const toBoundedInteger = <L extends number>(bounds: L) => (n: number): BoundedInteger<L, L> => ({} as any);
-    ~~~~~~
-!!! error TS1005: ',' expected.
-    ~~~~~~
-!!! error TS2552: Cannot find name 'export'. Did you mean 'Report'?
-           ~~~~~
-!!! error TS1005: ';' expected.
-    type X<export T> = T;
-           ~~~~~~
+==== ttttTypeParameterListReservedWord.ts (23 errors) ====
+    // A type parameter list recovers the same way after `function f`, a method name, in a type and in a speculative arrow
+    // function (tsc's parseTypeParameters): a reserved word that is no element is TS1139 and skipped (`default` too,
+    // which the Parameters context, not entered yet, would take as a modifier)
+    function f<T, default>() {}
+                  ~~~~~~~
 !!! error TS1139: Type parameter declaration expected.
-    interface I<T, default U> { a: T; b: U }
+    class C { m<T, default>() {} }
                    ~~~~~~~
 !!! error TS1139: Type parameter declaration expected.
-    type Y<
-           
-!!! error TS1005: '>' expected.
-==== b.tsx (2 errors) ====
-    class A</T> {}
-           ~~
-!!! error TS1005: '{' expected.
+    let o = { m<T, default>() {} };
+                   ~~~~~~~
+!!! error TS1139: Type parameter declaration expected.
+                          ~
+!!! error TS1005: ':' expected.
+                            ~
+!!! error TS1109: Expression expected.
+                              ~
+!!! error TS1005: ',' expected.
+                                 ~
+!!! error TS1128: Declaration or statement expected.
+    type F = <T, default>() => void;
+                 ~~~~~~~
+!!! error TS1139: Type parameter declaration expected.
+    let a = <T, default>() => 1;
+                ~~~~~~~
+!!! error TS1139: Type parameter declaration expected.
+    interface I { m<T, default>(): void; <U, default>(): void }
+                       ~~~~~~~
+!!! error TS1139: Type parameter declaration expected.
+                                             ~~~~~~~
+!!! error TS1139: Type parameter declaration expected.
+    let a2 = <T, default>(x) => 1;
+                 ~~~~~~~
+!!! error TS1139: Type parameter declaration expected.
+                          ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+    function g<T, while>() {}
              ~
-!!! error TS2304: Cannot find name 'T'.
+!!! error TS7010: 'g', which lacks return-type annotation, implicitly has an 'any' return type.
+                  ~~~~~
+!!! error TS1139: Type parameter declaration expected.
+                       ~
+!!! error TS1005: '(' expected.
+                         ~
+!!! error TS1109: Expression expected.
+                           ~
+!!! error TS1005: ')' expected.
+    function h<T, null>() {}
+             ~
+!!! error TS7010: 'h', which lacks return-type annotation, implicitly has an 'any' return type.
+                  ~~~~
+!!! error TS1139: Type parameter declaration expected.
+                  ~~~~
+!!! error TS18050: The value 'null' cannot be used here.
+                        ~
+!!! error TS1109: Expression expected.
+                          ~
+!!! error TS1005: ';' expected.
     

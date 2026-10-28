@@ -1,45 +1,48 @@
 //// [test/cases/ttttTypeParameterListReservedWord.ts] ////
 
-=== a.ts ===
-export type BoundedInteger<
->BoundedInteger : Symbol(BoundedInteger, Decl(a.ts, 0, 0))
+=== ttttTypeParameterListReservedWord.ts ===
+// A type parameter list recovers the same way after `function f`, a method name, in a type and in a speculative arrow
+// function (tsc's parseTypeParameters): a reserved word that is no element is TS1139 and skipped (`default` too,
+// which the Parameters context, not entered yet, would take as a modifier)
+function f<T, default>() {}
+>f : Symbol(f, Decl(ttttTypeParameterListReservedWord.ts, 0, 0))
+>T : Symbol(T, Decl(ttttTypeParameterListReservedWord.ts, 3, 11))
 
-  LowerBound extends number,
->LowerBound : Symbol(LowerBound, Decl(a.ts, 0, 27))
+class C { m<T, default>() {} }
+>C : Symbol(C, Decl(ttttTypeParameterListReservedWord.ts, 3, 27))
+>m : Symbol(C.m, Decl(ttttTypeParameterListReservedWord.ts, 4, 9))
+>T : Symbol(T, Decl(ttttTypeParameterListReservedWord.ts, 4, 12))
 
-  UpperBound extends number
->UpperBound : Symbol(UpperBound, Decl(a.ts, 1, 28))
+let o = { m<T, default>() {} };
+>o : Symbol(o, Decl(ttttTypeParameterListReservedWord.ts, 5, 3))
+>m : Symbol(m, Decl(ttttTypeParameterListReservedWord.ts, 5, 9))
+>T : Symbol(T, Decl(ttttTypeParameterListReservedWord.ts, 5, 12))
+>default : Symbol(default, Decl(ttttTypeParameterListReservedWord.ts, 5, 14))
 
-export const toBoundedInteger = <L extends number>(bounds: L) => (n: number): BoundedInteger<L, L> => ({} as any);
->export : Symbol(export)
->toBoundedInteger : Symbol(toBoundedInteger, Decl(a.ts, 4, 12))
->L : Symbol(L, Decl(a.ts, 4, 33))
->bounds : Symbol(bounds, Decl(a.ts, 4, 51))
->L : Symbol(L, Decl(a.ts, 4, 33))
->n : Symbol(n, Decl(a.ts, 4, 66))
->BoundedInteger : Symbol(BoundedInteger, Decl(a.ts, 0, 0))
->L : Symbol(L, Decl(a.ts, 4, 33))
->L : Symbol(L, Decl(a.ts, 4, 33))
+type F = <T, default>() => void;
+>F : Symbol(F, Decl(ttttTypeParameterListReservedWord.ts, 5, 31))
+>T : Symbol(T, Decl(ttttTypeParameterListReservedWord.ts, 6, 10))
 
-type X<export T> = T;
->X : Symbol(X, Decl(a.ts, 4, 114))
->T : Symbol(T, Decl(a.ts, 5, 13))
->T : Symbol(T, Decl(a.ts, 5, 13))
+let a = <T, default>() => 1;
+>a : Symbol(a, Decl(ttttTypeParameterListReservedWord.ts, 7, 3))
+>T : Symbol(T, Decl(ttttTypeParameterListReservedWord.ts, 7, 9))
 
-interface I<T, default U> { a: T; b: U }
->I : Symbol(I, Decl(a.ts, 5, 21))
->T : Symbol(T, Decl(a.ts, 6, 12))
->U : Symbol(U, Decl(a.ts, 6, 22))
->a : Symbol(I.a, Decl(a.ts, 6, 27))
->T : Symbol(T, Decl(a.ts, 6, 12))
->b : Symbol(I.b, Decl(a.ts, 6, 33))
->U : Symbol(U, Decl(a.ts, 6, 22))
+interface I { m<T, default>(): void; <U, default>(): void }
+>I : Symbol(I, Decl(ttttTypeParameterListReservedWord.ts, 7, 28))
+>m : Symbol(I.m, Decl(ttttTypeParameterListReservedWord.ts, 8, 13))
+>T : Symbol(T, Decl(ttttTypeParameterListReservedWord.ts, 8, 16))
+>U : Symbol(U, Decl(ttttTypeParameterListReservedWord.ts, 8, 38))
 
-type Y<
->Y : Symbol(Y, Decl(a.ts, 6, 40))
-> : Symbol(unknown)
+let a2 = <T, default>(x) => 1;
+>a2 : Symbol(a2, Decl(ttttTypeParameterListReservedWord.ts, 9, 3))
+>T : Symbol(T, Decl(ttttTypeParameterListReservedWord.ts, 9, 10))
+>x : Symbol(x, Decl(ttttTypeParameterListReservedWord.ts, 9, 22))
 
-=== b.tsx ===
-class A</T> {}
->A : Symbol(A, Decl(b.tsx, 0, 0))
+function g<T, while>() {}
+>g : Symbol(g, Decl(ttttTypeParameterListReservedWord.ts, 9, 30))
+>T : Symbol(T, Decl(ttttTypeParameterListReservedWord.ts, 10, 11))
+
+function h<T, null>() {}
+>h : Symbol(h, Decl(ttttTypeParameterListReservedWord.ts, 10, 25))
+>T : Symbol(T, Decl(ttttTypeParameterListReservedWord.ts, 11, 11))
 

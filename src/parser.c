@@ -2971,11 +2971,12 @@ static bool parse_generic_decl(Parser* parent, TypeParamOwner owner, Generic* re
             p.pos++;
             hop_whitespace(&p);
             continue;
-        } else if (owner != TYPE_PARAM_OF_FUNCTION && !tok_is_eof(tok_peek(&p)) && *p.pos != '(' && *p.pos != '{' &&
+        } else if ((owner != TYPE_PARAM_OF_FUNCTION || !p.shared->in_jsdoc) && !tok_is_eof(tok_peek(&p)) && *p.pos != '(' && *p.pos != '{' &&
             !tok_is(tok_peek(&p), "extends") && !tok_is(tok_peek(&p), "implements")
         ) {
-            // A class's, interface's or type alias's `<` commits to a type parameter list (tsc's parseTypeParameters,
-            // never speculative there): a
+            // A `<` that opened a type parameter list is one (tsc's parseTypeParameters, whose recovery is the same in a
+            // speculative arrow function, which fails later if no `=>` follows: `<T, default>() => 1`; a JSDoc
+            // function type's keeps failing, `{<}`'s TS1098 is parse_function_args_inner()'s): a
             // token that can't start one is TS1139 and skipped, unless a list being parsed takes it (tsc's
             // abortParsingListOrMoveToNextToken): `class <%= classify(name) %>Component` of a schematics template
             Tok t = tok_peek(&p);
@@ -7437,6 +7438,7 @@ static bool parse_function_args_inner(
     bool parse_type_return_syntax,
     bool parse_ret_type,
     bool commit_on_paren,
+    u32 outer_context,
     FunctionImpl* ret
 );
 
@@ -7454,7 +7456,7 @@ static bool parse_function_args(
     parent->shared->in_parameters = true;
     u32 saved_context = list_enter(parent, PARSING_PARAMETERS);
     bool success = parse_function_args_inner(
-        parent, parse_abstract_and_new, parse_type_return_syntax, parse_ret_type, commit_on_paren, ret
+        parent, parse_abstract_and_new, parse_type_return_syntax, parse_ret_type, commit_on_paren, saved_context, ret
     );
     if (success) shrink_list(vec_function_arg, &ret->args);
     list_leave(parent, saved_context);
@@ -7468,6 +7470,7 @@ static bool parse_function_args_inner(
     bool parse_type_return_syntax,
     bool parse_ret_type,
     bool commit_on_paren,
+    u32 outer_context,
     FunctionImpl* ret
 ) {
     // (In a type or an ambient context, the initializers in the parameters, a binding pattern's too, are never checked:
@@ -7503,7 +7506,12 @@ static bool parse_function_args_inner(
         }
     }
 
-    if (parse_generic_decl(&p, TYPE_PARAM_OF_FUNCTION, &ret->generic)) {
+    // (Before the parameter list: tsc's parseTypeParameters isn't in the Parameters context parse_function_args() entered)
+    u32 parsing_context = p.shared->parsing_context;
+    p.shared->parsing_context = outer_context;
+    bool generic = parse_generic_decl(&p, TYPE_PARAM_OF_FUNCTION, &ret->generic);
+    p.shared->parsing_context = parsing_context;
+    if (generic) {
         hop_whitespace(&p);
         // An arrow function's type parameters don't commit it (tsc's parseParenthesizedArrowFunctionExpression
         // without allowAmbiguity): `<T>(x => y)` is a type assertion of a parenthesized arrow function

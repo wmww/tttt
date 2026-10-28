@@ -1,16 +1,13 @@
-// A type parameter list's element is `in`, `const` or an identifier (tsc's isListElement(TypeParameters)): another
-// reserved word ends the list when a statement takes it, else it is TS1139 and skipped (mutation testing,
-// declarationEmitArrowFunctionNoRenaming)
-// In a JSX file `</` is a token of its own: no type parameter list (bun 56-L06)
-// @jsx: preserve
-// @filename: a.ts
-export type BoundedInteger<
-  LowerBound extends number,
-  UpperBound extends number
-
-export const toBoundedInteger = <L extends number>(bounds: L) => (n: number): BoundedInteger<L, L> => ({} as any);
-type X<export T> = T;
-interface I<T, default U> { a: T; b: U }
-type Y<
-// @filename: b.tsx
-class A</T> {}
+// @noEmit: true
+// A type parameter list recovers the same way after `function f`, a method name, in a type and in a speculative arrow
+// function (tsc's parseTypeParameters): a reserved word that is no element is TS1139 and skipped (`default` too,
+// which the Parameters context, not entered yet, would take as a modifier)
+function f<T, default>() {}
+class C { m<T, default>() {} }
+let o = { m<T, default>() {} };
+type F = <T, default>() => void;
+let a = <T, default>() => 1;
+interface I { m<T, default>(): void; <U, default>(): void }
+let a2 = <T, default>(x) => 1;
+function g<T, while>() {}
+function h<T, null>() {}
