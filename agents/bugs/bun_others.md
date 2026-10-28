@@ -47,7 +47,7 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   common to all members (hasCommonDeclaration: Pick's mapped id is declared at D.id), tttt's
   ty_union_non_public_conflict() compares prop_root()s, and a mapped prop's root is its template (`.target`), not the
   property it maps. Now compared by declaration (ty_props_share_declaration(): the name span mapped_prop_decl() copies),
-  and a mapped property reads as public (no value declaration of its own). [fixed COMMIT8]
+  and a mapped property reads as public (no value declaration of its own). [fixed 8d0716ee1]
 - 99-V1's protected_* files are other shapes than the union above (intersections `W & D`, spreads and Writable of
   them, `delete`): 20 +TS2445, 13 +TS2339, 9 -TS2540, -TS2536, -TS2704. [open]
 - Circular mapped types and interfaces whose members are being resolved: 10-C8c (`interface I9 extends
