@@ -206,8 +206,9 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - Merged interface/class type parameters share one symbol per name (`scope_new_generic_merged`, serial walk) except
   against the shared lib; `type_parameter_is_unused` compensates.
 - TS2301/TS2844: fields are walked before the constructor's scope exists, so `constructor_locals()` (class_decl.c)
-  collects names with `function_collect_local_value_names()`/`statement_collect_var_names()`, a read-only copy of
-  `statement_hoist_names()`: keep in sync.
+  lists the names the constructor will declare (`function_collect_local_value_names()`: its parameters and top-level
+  declarations by hand, nested `var`s through statement_hoist_names()'s own walk, `hoist_walk()`). Correct: tsc's
+  locals of the constructor, which needs its scope before the fields' walk.
 - TS1361/TS1362 valid sites (`FlowBuilder.type_only_alias_ok`, `in_type_query`) set by enclosing constructs, not
   derived; `export =`/`export default` of a type-only name gets `symbol` without `target`; TS1376/TS1377's related span
   (`span_from_type_keyword()`) scans back for `type` (PortItem has no span of the whole specifier).

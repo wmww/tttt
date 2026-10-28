@@ -1031,145 +1031,106 @@ static bool scope_in_script_block(Scope const* scope) {
     return scope && scope->kind == SCOPE_SCRIPT;
 }
 
-static void block_hoist_names(Block* me, Scope* scope) {
-    for_each (i, vec_statement, &my statements) {
-        statement_hoist_names(i, scope);
-    }
-}
+// Where hoisted names go: declared into `scope` (statement_hoist_names()), or only listed into `out`
+// (statement_collect_var_names(): strict code, so `var`s alone)
+typedef struct Hoist {
+    Scope* scope;
+    VecSpan* out;
+} Hoist;
 
-// Declares the `var`s of nested statements in the function, module or namespace scope they belong to. Never looks
-// into functions. The blocks they're in skip them when their turn comes (scope_init_declaration())
-void statement_hoist_names(Statement* me, Scope* scope) {
-    switch (my tag) {
-        case STATEMENT_DECL_NAMESPACE: {
-            // `declare module "m"` in a block of a script (TS2435) is a global ambient module all the same: a block is
-            // no container to tsc's binder, the file is. Known before linking, so that imports find it; the block
-            // declares into the same module symbol when its turn comes
-            NamespaceDecl const* ns = my decl.namespace;
-            if (scope->kind == SCOPE_SCRIPT && ns->is_ambient_module && !ns->is_global && ns->module_ref) {
-                binder_ambient_module(scope->binder, cstr_sv(&ns->module_ref->path), ns->name, ns->attributes);
-            }
-        }   break;
+static void hoist_walk(Statement* me, Hoist h);
 
-        case STATEMENT_DECL_FUNCTION:
-            // (`export function` in a block of a namespace is exported: tsc's declareSymbolAndAddToSymbolTable goes by the
-            // container, declareModuleMember)
-            if (!scope->strict) {
-                DeclStatementProps props = my decl.props;
-                if (props.exported != DECL_EXPORTED_YES) props.exported = DECL_EXPORTED_NO;
-                function_impl_add_names(my decl.function.impl, scope, props, true);
-            }
-            break;
-
-        case STATEMENT_BLOCK:
-            block_hoist_names(&my block, scope);
-            break;
-
-        case STATEMENT_IF_ELSE:
-            for_each (i, vec_statement, &my if_else.statements) {
-                statement_hoist_names(i, scope);
-            }
-            break;
-
-        case STATEMENT_FOR_LOOP:
-            statement_hoist_names(&my for_loop->initialization, scope);
-            statement_hoist_names(&my for_loop->body, scope);
-            break;
-
-        case STATEMENT_FOR_EACH_LOOP:
-            if (my for_each_loop->variable.tag == FOR_EACH_LOOP_STATEMENT &&
-                my for_each_loop->variable.statement.keyword == VAR_INIT_VAR
-            ) {
-                for_each_loop_add_names(my for_each_loop, scope);
-            }
-            statement_hoist_names(&my for_each_loop->body, scope);
-            break;
-
-        case STATEMENT_SWITCH:
-            for_each (i, vec_switch_case, &my switch_->cases) {
-                for_each (j, vec_statement, &i->statements) {
-                    statement_hoist_names(j, scope);
-                }
-            }
-            break;
-
-        case STATEMENT_TRY_CATCH:
-            block_hoist_names(&my try_catch->try_block, scope);
-            block_hoist_names(&my try_catch->catch_block, scope);
-            block_hoist_names(&my try_catch->finally_block, scope);
-            break;
-
-        case STATEMENT_LABELED:
-            statement_hoist_names(my labeled.body, scope);
-            break;
-
-        case STATEMENT_WITH:
-            statement_hoist_names(&my with->body, scope);
-            break;
-
-        case STATEMENT_DECL_VARIABLE:
-            if (my decl.variable.keyword == VAR_INIT_VAR) {
-                variable_statement_add_names(&my decl.variable, scope, my decl.props);
-            }
-            break;
-
-        default:
-            break;
-    }
-}
-
-static void block_collect_var_names(Block const* me, VecSpan* out) {
-    for_each (i, vec_statement, &my statements) statement_collect_var_names(i, out);
+static void block_hoist_walk(Block* me, Hoist h) {
+    for_each (i, vec_statement, &my statements) hoist_walk(i, h);
 }
 
 static void variable_statement_collect_names(VariableStatement const* me, VecSpan* out) {
     for_each (i, vec_initialized_binding, &my initializers) binding_collect_names(&i->binding, out);
 }
 
-// The names of the `var`s statement_hoist_names() hoists, for strict code (no function declarations)
-void statement_collect_var_names(Statement const* me, VecSpan* out) {
+// Declares the `var`s of nested statements in the function, module or namespace scope they belong to. Never looks
+// into functions. The blocks they're in skip them when their turn comes (scope_init_declaration())
+static void hoist_walk(Statement* me, Hoist h) {
     switch (my tag) {
+        case STATEMENT_DECL_NAMESPACE: {
+            // `declare module "m"` in a block of a script (TS2435) is a global ambient module all the same: a block is
+            // no container to tsc's binder, the file is. Known before linking, so that imports find it; the block
+            // declares into the same module symbol when its turn comes
+            NamespaceDecl const* ns = my decl.namespace;
+            if (h.scope && h.scope->kind == SCOPE_SCRIPT && ns->is_ambient_module && !ns->is_global && ns->module_ref) {
+                binder_ambient_module(h.scope->binder, cstr_sv(&ns->module_ref->path), ns->name, ns->attributes);
+            }
+        }   break;
+
+        case STATEMENT_DECL_FUNCTION:
+            // (`export function` in a block of a namespace is exported: tsc's declareSymbolAndAddToSymbolTable goes by the
+            // container, declareModuleMember)
+            if (h.scope && !h.scope->strict) {
+                DeclStatementProps props = my decl.props;
+                if (props.exported != DECL_EXPORTED_YES) props.exported = DECL_EXPORTED_NO;
+                function_impl_add_names(my decl.function.impl, h.scope, props, true);
+            }
+            break;
+
         case STATEMENT_BLOCK:
-            block_collect_var_names(&my block, out);
+            block_hoist_walk(&my block, h);
             break;
+
         case STATEMENT_IF_ELSE:
-            for_each (i, vec_statement, &my if_else.statements) statement_collect_var_names(i, out);
+            for_each (i, vec_statement, &my if_else.statements) hoist_walk(i, h);
             break;
+
         case STATEMENT_FOR_LOOP:
-            statement_collect_var_names(&my for_loop->initialization, out);
-            statement_collect_var_names(&my for_loop->body, out);
+            hoist_walk(&my for_loop->initialization, h);
+            hoist_walk(&my for_loop->body, h);
             break;
+
         case STATEMENT_FOR_EACH_LOOP:
             if (my for_each_loop->variable.tag == FOR_EACH_LOOP_STATEMENT &&
                 my for_each_loop->variable.statement.keyword == VAR_INIT_VAR
             ) {
-                variable_statement_collect_names(&my for_each_loop->variable.statement, out);
+                if (h.out) variable_statement_collect_names(&my for_each_loop->variable.statement, h.out);
+                else for_each_loop_add_names(my for_each_loop, h.scope);
             }
-            statement_collect_var_names(&my for_each_loop->body, out);
+            hoist_walk(&my for_each_loop->body, h);
             break;
+
         case STATEMENT_SWITCH:
             for_each (i, vec_switch_case, &my switch_->cases) {
-                for_each (j, vec_statement, &i->statements) statement_collect_var_names(j, out);
+                for_each (j, vec_statement, &i->statements) hoist_walk(j, h);
             }
             break;
+
         case STATEMENT_TRY_CATCH:
-            block_collect_var_names(&my try_catch->try_block, out);
-            block_collect_var_names(&my try_catch->catch_block, out);
-            block_collect_var_names(&my try_catch->finally_block, out);
+            block_hoist_walk(&my try_catch->try_block, h);
+            block_hoist_walk(&my try_catch->catch_block, h);
+            block_hoist_walk(&my try_catch->finally_block, h);
             break;
+
         case STATEMENT_LABELED:
-            statement_collect_var_names(my labeled.body, out);
+            hoist_walk(my labeled.body, h);
             break;
+
         case STATEMENT_WITH:
-            statement_collect_var_names(&my with->body, out);
+            hoist_walk(&my with->body, h);
             break;
+
         case STATEMENT_DECL_VARIABLE:
-            if (my decl.variable.keyword == VAR_INIT_VAR) variable_statement_collect_names(&my decl.variable, out);
+            if (my decl.variable.keyword == VAR_INIT_VAR) {
+                if (h.out) variable_statement_collect_names(&my decl.variable, h.out);
+                else variable_statement_add_names(&my decl.variable, h.scope, my decl.props);
+            }
             break;
+
         default:
             break;
     }
 }
+
+void statement_hoist_names(Statement* me, Scope* scope) { hoist_walk(me, (Hoist){ .scope = scope }); }
+
+// (The walk only reads when listing)
+void statement_collect_var_names(Statement const* me, VecSpan* out) { hoist_walk((Statement*)me, (Hoist){ .out = out }); }
 
 void function_collect_local_value_names(FunctionImpl const* function, VecSpan* out) {
     for_each (i, vec_function_arg, &function->args) binding_collect_names(&i->initializer.binding, out);
