@@ -1,0 +1,128 @@
+ttttMissingSemicolonInvalidName.ts(5,12): error TS7008: Member 'interface' implicitly has an 'any' type.
+ttttMissingSemicolonInvalidName.ts(5,23): error TS2427: Interface name cannot be 'interface'.
+ttttMissingSemicolonInvalidName.ts(6,12): error TS1434: Unexpected keyword or identifier.
+ttttMissingSemicolonInvalidName.ts(6,12): error TS7008: Member 'foo' implicitly has an 'any' type.
+ttttMissingSemicolonInvalidName.ts(6,17): error TS1068: Unexpected token. A constructor, method, accessor, or property was expected.
+ttttMissingSemicolonInvalidName.ts(7,12): error TS1435: Unknown keyword or identifier. Did you mean 'async'?
+ttttMissingSemicolonInvalidName.ts(7,12): error TS7008: Member 'asynx' implicitly has an 'any' type.
+ttttMissingSemicolonInvalidName.ts(7,18): error TS7008: Member 'foo' implicitly has an 'any' type.
+ttttMissingSemicolonInvalidName.ts(8,12): error TS1068: Unexpected token. A constructor, method, accessor, or property was expected.
+ttttMissingSemicolonInvalidName.ts(8,19): error TS1005: '=' expected.
+ttttMissingSemicolonInvalidName.ts(9,12): error TS1068: Unexpected token. A constructor, method, accessor, or property was expected.
+ttttMissingSemicolonInvalidName.ts(9,12): error TS2304: Cannot find name 'is'.
+ttttMissingSemicolonInvalidName.ts(9,15): error TS2693: 'x' only refers to a type, but is being used as a value here.
+ttttMissingSemicolonInvalidName.ts(9,17): error TS1128: Declaration or statement expected.
+ttttMissingSemicolonInvalidName.ts(10,12): error TS1068: Unexpected token. A constructor, method, accessor, or property was expected.
+ttttMissingSemicolonInvalidName.ts(10,12): error TS2591: Cannot find name 'module'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+ttttMissingSemicolonInvalidName.ts(10,19): error TS1437: Namespace must be given a name.
+ttttMissingSemicolonInvalidName.ts(10,23): error TS1128: Declaration or statement expected.
+ttttMissingSemicolonInvalidName.ts(11,12): error TS7008: Member 'declare' implicitly has an 'any' type.
+ttttMissingSemicolonInvalidName.ts(12,19): error TS1434: Unexpected keyword or identifier.
+ttttMissingSemicolonInvalidName.ts(12,19): error TS7008: Member 'foo' implicitly has an 'any' type.
+ttttMissingSemicolonInvalidName.ts(12,23): error TS7008: Member 'bar' implicitly has an 'any' type.
+ttttMissingSemicolonInvalidName.ts(13,1): error TS2304: Cannot find name 'type'.
+ttttMissingSemicolonInvalidName.ts(13,6): error TS2457: Type alias name cannot be 'type'.
+ttttMissingSemicolonInvalidName.ts(14,1): error TS2304: Cannot find name 'interface'.
+ttttMissingSemicolonInvalidName.ts(14,11): error TS2427: Interface name cannot be 'interface'.
+ttttMissingSemicolonInvalidName.ts(15,22): error TS2304: Cannot find name 'type'.
+ttttMissingSemicolonInvalidName.ts(15,27): error TS2457: Type alias name cannot be 'type'.
+ttttMissingSemicolonInvalidName.ts(15,29): error TS2304: Cannot find name 'A'.
+ttttMissingSemicolonInvalidName.ts(16,1): error TS2304: Cannot find name 'interface'.
+ttttMissingSemicolonInvalidName.ts(16,11): error TS2427: Interface name cannot be 'x'.
+ttttMissingSemicolonInvalidName.ts(17,1): error TS2591: Cannot find name 'module'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+ttttMissingSemicolonInvalidName.ts(17,8): error TS2819: Namespace name cannot be '1'.
+ttttMissingSemicolonInvalidName.ts(18,1): error TS2304: Cannot find name 'namespace'.
+ttttMissingSemicolonInvalidName.ts(19,12): error TS1005: '=' expected.
+
+
+==== ttttMissingSemicolonInvalidName.ts (35 errors) ====
+    // tsc's parseErrorForMissingSemicolonAfter: after a class property's name and a throw statement's expression too, its
+    // TS2427/TS2457/TS2819 deduplicated with the next statement's or member's error at the same token (a parse diagnostic
+    // of tsc's parser, not a checker's), and naming the scanner's TokenValue(), which punctuation leaves at the name's
+    // (bun 96-SOLID1)
+    class C2 { interface? ) }
+               ~~~~~~~~~
+!!! error TS7008: Member 'interface' implicitly has an 'any' type.
+                          ~
+!!! error TS2427: Interface name cannot be 'interface'.
+    class C3 { foo? ) }
+               ~~~
+!!! error TS1434: Unexpected keyword or identifier.
+               ~~~
+!!! error TS7008: Member 'foo' implicitly has an 'any' type.
+                    ~
+!!! error TS1068: Unexpected token. A constructor, method, accessor, or property was expected.
+    class C4 { asynx foo }
+               ~~~~~
+!!! error TS1435: Unknown keyword or identifier. Did you mean 'async'?
+               ~~~~~
+!!! error TS7008: Member 'asynx' implicitly has an 'any' type.
+                     ~~~
+!!! error TS7008: Member 'foo' implicitly has an 'any' type.
+    class C5 { type x }
+               ~~~~
+!!! error TS1068: Unexpected token. A constructor, method, accessor, or property was expected.
+                      ~
+!!! error TS1005: '=' expected.
+    class C6 { is x }
+               ~~
+!!! error TS1068: Unexpected token. A constructor, method, accessor, or property was expected.
+               ~~
+!!! error TS2304: Cannot find name 'is'.
+                  ~
+!!! error TS2693: 'x' only refers to a type, but is being used as a value here.
+                    ~
+!!! error TS1128: Declaration or statement expected.
+    class C7 { module { } }
+               ~~~~~~
+!!! error TS1068: Unexpected token. A constructor, method, accessor, or property was expected.
+               ~~~~~~
+!!! error TS2591: Cannot find name 'module'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+                      ~
+!!! error TS1437: Namespace must be given a name.
+                          ~
+!!! error TS1128: Declaration or statement expected.
+    class C8 { declare }
+               ~~~~~~~
+!!! error TS7008: Member 'declare' implicitly has an 'any' type.
+    class C9 { static foo bar }
+                      ~~~
+!!! error TS1434: Unexpected keyword or identifier.
+                      ~~~
+!!! error TS7008: Member 'foo' implicitly has an 'any' type.
+                          ~~~
+!!! error TS7008: Member 'bar' implicitly has an 'any' type.
+    type ) ;
+    ~~~~
+!!! error TS2304: Cannot find name 'type'.
+         ~
+!!! error TS2457: Type alias name cannot be 'type'.
+    interface ] ;
+    ~~~~~~~~~
+!!! error TS2304: Cannot find name 'interface'.
+              ~
+!!! error TS2427: Interface name cannot be 'interface'.
+    function f() { throw type { A }; }
+                         ~~~~
+!!! error TS2304: Cannot find name 'type'.
+                              ~
+!!! error TS2457: Type alias name cannot be 'type'.
+                                ~
+!!! error TS2304: Cannot find name 'A'.
+    interface "x" ;
+    ~~~~~~~~~
+!!! error TS2304: Cannot find name 'interface'.
+              ~~~
+!!! error TS2427: Interface name cannot be 'x'.
+    module 1;
+    ~~~~~~
+!!! error TS2591: Cannot find name 'module'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+           ~
+!!! error TS2819: Namespace name cannot be '1'.
+    namespace `t`;
+    ~~~~~~~~~
+!!! error TS2304: Cannot find name 'namespace'.
+    type \u0061;
+               ~
+!!! error TS1005: '=' expected.
+    

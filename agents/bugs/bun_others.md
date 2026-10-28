@@ -407,7 +407,7 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   parseParenthesizedArrowFunctionExpression keeps the arrow (parseDelimitedList skips the token no list takes; the
   missing expression's and the list's errors land on the TS1127 and are deduplicated); parse_function_args_inner()'s
   first-parameter gate now lets an invalid character through to the list's recovery (43-C14a). A lone `#` is a private
-  identifier to tsc's scanner (`(#) => 1`, `(x = #) => x`), not handled. [fixed HASH]
+  identifier to tsc's scanner (`(#) => 1`, `(x = #) => x`), not handled. [fixed 9633b679e]
 - A signature without a body (overload, `declare function`) checks a parameter's initializer only through
   getTypeOfParameter, which takes getQuickTypeOfExpression first (an `await` of a literal, an assertion, a call of a
   single non-generic signature): 78-R07 (`function q(a = await 1): void;` has no TS2524/TS1308, tttt's parser said
@@ -426,6 +426,12 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   returns at TS1118/TS1119, after which no later member's modifier is reported (28-C24a, 28-P13a), and a destructuring
   assignment target reports none. The parser keeps their spans (ObjectExprItemRare.modifiers) for
   object_check_grammar(). [fixed f119a6f9d]
+
+### 2026-10-28 (worker bun7)
+- tsc's parseErrorForMissingSemicolonAfter also follows a class property's name and a throw statement's expression;
+  its TS2427/TS2457/TS2819 are tsc parse diagnostics (deduplicated with the next statement's TS1128 or member's TS1068
+  at the same token: is_semantic_code() took every TS2xxx for a checker's) and name the scanner's TokenValue(), which
+  punctuation leaves at the name's (96-SOLID1). [fixed HASH]
 
 ## Not looked at, by code
 - Each paragraph below is a code and direction with the cases it mismatches in, uninvestigated: at least one open

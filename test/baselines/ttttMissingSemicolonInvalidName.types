@@ -1,0 +1,69 @@
+//// [test/cases/ttttMissingSemicolonInvalidName.ts] ////
+
+=== ttttMissingSemicolonInvalidName.ts ===
+// tsc's parseErrorForMissingSemicolonAfter: after a class property's name and a throw statement's expression too, its
+// TS2427/TS2457/TS2819 deduplicated with the next statement's or member's error at the same token (a parse diagnostic
+// of tsc's parser, not a checker's), and naming the scanner's TokenValue(), which punctuation leaves at the name's
+// (bun 96-SOLID1)
+class C2 { interface? ) }
+>C2 : C2
+>interface : any
+
+class C3 { foo? ) }
+>C3 : C3
+>foo : any
+
+class C4 { asynx foo }
+>C4 : C4
+>asynx : any
+>foo : any
+
+class C5 { type x }
+>C5 : C5
+>x : any
+
+class C6 { is x }
+>C6 : C6
+>is : any
+>x : any
+
+class C7 { module { } }
+>C7 : C7
+>module : any
+
+class C8 { declare }
+>C8 : C8
+>declare : any
+
+class C9 { static foo bar }
+>C9 : C9
+>foo : any
+>bar : any
+
+type ) ;
+>type : any
+
+interface ] ;
+>interface : any
+
+function f() { throw type { A }; }
+>f : () => void
+>type : any
+>A : any
+
+interface "x" ;
+>interface : any
+>"x" : "x"
+
+module 1;
+>module : any
+>1 : 1
+
+namespace `t`;
+>namespace `t` : any
+>namespace : any
+>`t` : "t"
+
+type \u0061;
+>\u0061 : any
+

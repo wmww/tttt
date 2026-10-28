@@ -632,6 +632,7 @@ static bool object_binding_name_follows(Parser* parent);
 static bool parse_binding_type_or_set_to_default(Parser* parent, Binding* ret);
 static bool parse_binding_type_ex(Parser* parent, Binding* ret, bool report_js, TypeNode* into);
 static bool parse_initialization(Parser* parent, ExprCtx ctx, Expr* ret);
+static void report_missing_semicolon_after_identifier(Parser* p, Span name);
 static bool parse_initialization_or_set_to_default(Parser* parent, ExprCtx ctx, Expr* ret);
 static Expr* parse_initialization_boxed(Parser* parent, ExprCtx ctx);
 
@@ -766,8 +767,14 @@ static inline bool at_eof(Parser const* p, char const* at) {
 }
 static int invalid_char_size(Parser const* p, const char* c);
 // A checker's code (TS2xxx) the parser reports in tttt: not one of tsc's parse diagnostics, which parseErrorAtPosition
-// compares with
-static bool is_semantic_code(unsigned code) { return code >= 2000 && code < 3000; }
+// compares with. (tsc's parser reports a few TS2xxx itself: parseErrorForInvalidName's, JSX's TS2657, `super<T>`'s,
+// TS2809, TS2880)
+static bool is_semantic_code(unsigned code) {
+    switch (code) {
+        case 2427: case 2457: case 2819: case 2657: case 2754: case 2809: case 2880: return false;
+        default: return code >= 2000 && code < 3000;
+    }
+}
 
 // tsc's parseErrorAtPosition: an error that starts where the previous one does is dropped (the first error at a
 // position is the one that explains it; whatever recovery reports there next is noise). An error at a character no
@@ -9905,7 +9912,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                             // parseErrorForMissingSemicolonAfter, `interface X { default p: number }`)
                             parse_error(&p, span_from_token(&p), 1005, "';' expected.");
                         } else {
-                            parse_error(&p, name_span, 1434, "Unexpected keyword or identifier.");
+                            report_missing_semicolon_after_identifier(&p, name_span);
                         }
                 }
             }
@@ -14937,6 +14944,15 @@ static void report_missing_semicolon_after_identifier(Parser* p, Span name) {
     // (Unknown tokens have their scanner errors, tsc says nothing more)
     bool unknown = invalid_char_size(p, t.start) != 0;
     Span token = span_make(p->shared->source, t.start, t.end);
+    // (tsc's parseErrorForInvalidName says the scanner's TokenValue(), which punctuation leaves alone: then it's the
+    // name's, the last token with a value)
+    bool valued = t.end > t.start && (identifier_char_size(t.start, true) || is_number_start_char(*t.start) ||
+        *t.start == '"' || *t.start == '\'' || *t.start == '`' || *t.start == '#' || (unsigned char)*t.start >= 0x80);
+    Span value = valued ? token : name;
+    // (a string literal's without its quotes)
+    if (value.size >= 2 && (value.buf[0] == '"' || value.buf[0] == '\'') && value.buf[value.size - 1] == value.buf[0]) {
+        value = span_make_in(value, value.buf + 1, value.buf + value.size - 1);
+    }
     if (span_equals(name, "const") || span_equals(name, "let") || span_equals(name, "var")) {
         parse_error(p, name, 1440, "Variable declaration not allowed at this location.");
     } else if (span_equals(name, "declare")) {
@@ -14945,11 +14961,6 @@ static void report_missing_semicolon_after_identifier(Parser* p, Span name) {
         if (tok_is(t, "{")) {
             parse_error(p, token, 1438, "Interface must be given a name.");
         } else {
-            // (tsc's parseErrorForInvalidName: the token's value, a string literal's without its quotes)
-            Span value = token;
-            if (token.size >= 2 && (token.buf[0] == '"' || token.buf[0] == '\'') && token.buf[token.size - 1] == token.buf[0]) {
-                value = span_make_in(token, token.buf + 1, token.buf + token.size - 1);
-            }
             parse_error(p, token, 2427, "Interface name cannot be '", span_sv(value), "'.");
         }
     } else if (span_equals(name, "is")) {
@@ -14959,13 +14970,13 @@ static void report_missing_semicolon_after_identifier(Parser* p, Span name) {
         if (tok_is(t, "{")) {
             parse_error(p, token, 1437, "Namespace must be given a name.");
         } else {
-            parse_error(p, token, 2819, "Namespace name cannot be '", token, "'.");
+            parse_error(p, token, 2819, "Namespace name cannot be '", span_sv(value), "'.");
         }
     } else if (span_equals(name, "type")) {
         if (tok_is(t, "=")) {
             parse_error(p, token, 1439, "Type alias must be given a name.");
         } else {
-            parse_error(p, token, 2457, "Type alias name cannot be '", token, "'.");
+            parse_error(p, token, 2457, "Type alias name cannot be '", span_sv(value), "'.");
         }
     } else {
         // A misspelled keyword (tsc's viableKeywordSuggestions: the keywords longer than two characters), or one
@@ -15031,11 +15042,11 @@ static void parse_statement_semicolon(Parser* parent, Statement* statement) {
         return;
     }
     if (marker_next) p.pos = p.shared->binary_marker;
-    if (statement->tag == STATEMENT_EXPR && statement->expr.tag == EXPR_IDENTIFIER &&
-        !expr_is_perenthisized(&statement->expr)
-    ) {
+    // (tsc's parseErrorForMissingSemicolonAfter: an expression statement's or a throw statement's expression)
+    bool expression = statement->tag == STATEMENT_EXPR || statement->tag == STATEMENT_THROW_EXPR;
+    if (expression && statement->expr.tag == EXPR_IDENTIFIER && !expr_is_perenthisized(&statement->expr)) {
         report_missing_semicolon_after_identifier(&p, statement->expr.inner_span);
-    } else if (statement->tag == STATEMENT_EXPR && statement->expr.tag == EXPR_TEMPLATE && statement->expr.template_->tag &&
+    } else if (expression && statement->expr.tag == EXPR_TEMPLATE && statement->expr.template_->tag &&
         !expr_is_perenthisized(&statement->expr)
     ) {
         // (tsc's parseErrorForMissingSemicolonAfter: `module \`M\` {` is a tagged template)
