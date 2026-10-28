@@ -148,3 +148,56 @@ corpora. Load 11-28 (two other workers): walls are noisy (a plain dokploy/apps/a
 - Verdict: file-granular sharing wins on about half the hub projects (by 5-49%, the i18n-style clusters most) and
   loses on 11 of 13 corpora by the premium (+15% CPU median). It would pay only with the premium bought down, as
   the first half of this note concluded; a per-project switch is a heuristic the human has ruled out.
+
+## The lead's erosion with threads (2026-10-29, the decisive measurement)
+The human's framing: tttt is ~2x faster than bun single-threaded and much less so with threads. Both sides at
+N = 1, 2, 4, 8, 16 (tttt `--threads N --checkers N`, bun `--threads=N`), best of 3 interleaved, fast/tttt at
+f936fad40, bun 1.4.4-canary.20261027.1, `TTTT_FILE_TIMES=1` on every tttt run; the 42 hub projects (load median 16)
+and the 15 corpora (load median 9). Medians over the projects without a one-checker rerun (vue, webpack and
+better-drizzle rerun at K1 and erode 2.7-4.1x for that reason alone). "types K/K1": types made summed over the
+checkers' files against K1's (duplication); "file CPU": the same for the files' check CPU; busy: the checkers' summed
+spans over K x the check phase (1 - idle).
+
+| | N1 | N2 | N4 | N8 | N16 |
+|---|---|---|---|---|---|
+| hubs (41): wall lead tttt / bun | 0.63 | 0.60 | 0.69 | 0.71 | **0.97** |
+| check-phase lead (tttt typecheck / bun check) | 0.54 | 0.57 | 0.63 | 0.69 | **0.93** |
+| front-end lead (tttt's four front phases / bun's load) | 1.06 | 0.94 | 1.01 | 1.03 | 1.13 |
+| tttt types K/K1 / file CPU K/K1 | 1.00 / 1.00 | 1.47 / 1.35 | 2.23 / 1.96 | 3.25 / 3.00 | **4.76 / 4.98** |
+| process CPU N/1: tttt / bun | 1 / 1 | 1.28 / 1.20 | 1.72 / 1.45 | 2.46 / 1.85 | **3.80 / 2.43** |
+| tttt busy | 1.00 | 0.99 | 0.95 | 0.85 | 0.77 |
+| peak RSS tttt / bun | 1.42 | 1.57 | 1.79 | 2.11 | 2.43 |
+| corpora (13): wall lead | 0.63 | 0.63 | 0.67 | 0.68 | 0.67 |
+| check-phase lead | 0.57 | 0.60 | 0.64 | 0.67 | 0.68 |
+| tttt types K/K1 / file CPU K/K1 | 1 / 1 | 1.17 / 1.06 | 1.45 / 1.22 | 1.91 / 1.58 | 2.49 / 2.30 |
+| process CPU N/1: tttt / bun | 1 / 1 | 1.08 / 1.05 | 1.22 / 1.15 | 1.55 / 1.46 | 2.19 / 1.90 |
+
+The lead erodes from N = 1 to 16 on 35 of the 42 hub projects (median x1.42 of the ratio, p90 x1.97; tttt behind bun
+at 16 on 17 of them, by up to 47%: inbox-zero, vite __tests_dts__, dokploy/apps/dokploy 1.44, dokploy schedules,
+api, server 1.25-1.28, openscience cli 1.26) and on 6 of the 15 corpora (zod-root x1.81, zod x1.41, drizzle x1.31,
+vscode x1.14, three by the rerun); on the other corpora it holds or grows (effect 0.57 -> 0.43, type-fest 0.26 ->
+0.20, excalidraw, react, nest). On this 8-core box the erosion is entirely past the physical cores on the corpora and
+mostly from N = 8 to 16 on the hubs; the laptop's 24 threads would extend the N8 -> N16 trend.
+
+Verdict per cause:
+- **Duplicated work grows linearly with K, and it is the erosion.** Hub projects make 1.47 / 2.23 / 3.25 / 4.76x K1's
+  types at K = 2 / 4 / 8 / 16 (about 1 + 0.25 K), and the files' check CPU follows (4.98x at 16); bun's whole-process
+  CPU grows 2.43x over the same range, so tttt's CPU grows 1.56x more than bun's: that alone accounts for most of the
+  check-phase lead going 0.54 -> 0.93 (x1.72). The corpora duplicate half as much (2.49x types at 16) and their lead
+  barely moves. The per-checker warm-up is paid K times; bun's shared store pays it about once (bun duplicates too,
+  "duplicate, don't wait", hence its 2.43x).
+- **The front end is not it.** tttt's front phases scale like bun's load at every N (lead 0.94-1.13, a serial share of
+  15-18% of the wall at 16 on both sides): tttt has no lead there to lose, and none is lost. All of tttt's 2x is in
+  the check phase.
+- **Memory bandwidth / K arenas: no per-instruction slowdown visible at this resolution.** File CPU per type made at
+  K16 is within 5% of K1's on both sets (1.05 hubs, 0.92 corpora), though tttt's peak RSS grows to 2.4x bun's on the
+  hubs. (Thread CPU under SMT and load can't separate instruction counts; the laptop's counters would, and the
+  per-file type counter wraps on recycled checkers, so 3 projects were left out of that ratio.)
+- **The idle tail: secondary.** Busy falls to 0.77 at 16 on both sets (0.85 at 8): the costliest file and the
+  K-times warm-up landing in each checker's first file. It costs ~1.3x at 16 on both sets, so it erodes the hubs no
+  more than the corpora; bun's own idle isn't visible from outside.
+
+**So the redesign question has its answer in one number: tttt's per-checker duplication, ~1 + 0.25 K on hub projects
+(~1 + 0.1 K on the corpora), is what eats the single-thread lead.** Only a shared store removes it (the parked graph
+cuts the hubs' CPU 6-8% at K8 and their RSS 31%, but pays a +15% per-instruction premium elsewhere, above); building the
+hub in parallel (the first half of this note) is the second step and matters only for the 7 true hubs.
