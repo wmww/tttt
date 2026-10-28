@@ -1,0 +1,40 @@
+ttttIndexUnionElaboration.ts(4,3): error TS2538: Type 'symbol' cannot be used as an index type.
+ttttIndexUnionElaboration.ts(7,1): error TS7053: Element implicitly has an 'any' type because expression of type 'number | "a" | "b"' can't be used to index type '{ a: 1; }'.
+  No index signature with a parameter of type 'number' was found on type '{ a: 1; }'.
+ttttIndexUnionElaboration.ts(9,1): error TS7053: Element implicitly has an 'any' type because expression of type 'number | "a"' can't be used to index type '{ a: 1; }'.
+  No index signature with a parameter of type 'number' was found on type '{ a: 1; }'.
+ttttIndexUnionElaboration.ts(10,45): error TS7053: Element implicitly has an 'any' type because expression of type 'string | symbol' can't be used to index type 'unknown'.
+  No index signature with a parameter of type 'string' was found on type 'unknown'.
+ttttIndexUnionElaboration.ts(13,1): error TS7053: Element implicitly has an 'any' type because expression of type 'string | symbol' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+
+
+==== ttttIndexUnionElaboration.ts (5 errors) ====
+    // TS7053's elaboration for a union index is its first member's (tsc distributes the index): 'string' of 'string | symbol'
+    declare const o: { [k: string]: number };
+    declare const k: string | symbol;
+    o[k];
+      ~
+!!! error TS2538: Type 'symbol' cannot be used as an index type.
+    declare const p: { a: 1 };
+    declare const k2: "a" | "b" | number;
+    p[k2];
+    ~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type 'number | "a" | "b"' can't be used to index type '{ a: 1; }'.
+!!! error TS7053:   No index signature with a parameter of type 'number' was found on type '{ a: 1; }'.
+    declare const k3: number | "a";
+    p[k3];
+    ~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type 'number | "a"' can't be used to index type '{ a: 1; }'.
+!!! error TS7053:   No index signature with a parameter of type 'number' was found on type '{ a: 1; }'.
+    function f<T>(t: T, key: string | symbol) { t[key]; }
+                                                ~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type 'string | symbol' can't be used to index type 'unknown'.
+!!! error TS7053:   No index signature with a parameter of type 'string' was found on type 'unknown'.
+    declare const q: {};
+    declare const k4: symbol | string;
+    q[k4];
+    ~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type 'string | symbol' can't be used to index type '{}'.
+!!! error TS7053:   No index signature with a parameter of type 'string' was found on type '{}'.
+    

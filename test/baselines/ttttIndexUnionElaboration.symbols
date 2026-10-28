@@ -1,0 +1,52 @@
+//// [test/cases/ttttIndexUnionElaboration.ts] ////
+
+=== ttttIndexUnionElaboration.ts ===
+// TS7053's elaboration for a union index is its first member's (tsc distributes the index): 'string' of 'string | symbol'
+declare const o: { [k: string]: number };
+>o : Symbol(o, Decl(ttttIndexUnionElaboration.ts, 1, 13))
+>k : Symbol(k, Decl(ttttIndexUnionElaboration.ts, 1, 20))
+
+declare const k: string | symbol;
+>k : Symbol(k, Decl(ttttIndexUnionElaboration.ts, 2, 13))
+
+o[k];
+>o : Symbol(o, Decl(ttttIndexUnionElaboration.ts, 1, 13))
+>k : Symbol(k, Decl(ttttIndexUnionElaboration.ts, 2, 13))
+
+declare const p: { a: 1 };
+>p : Symbol(p, Decl(ttttIndexUnionElaboration.ts, 4, 13))
+>a : Symbol(a, Decl(ttttIndexUnionElaboration.ts, 4, 18))
+
+declare const k2: "a" | "b" | number;
+>k2 : Symbol(k2, Decl(ttttIndexUnionElaboration.ts, 5, 13))
+
+p[k2];
+>p : Symbol(p, Decl(ttttIndexUnionElaboration.ts, 4, 13))
+>k2 : Symbol(k2, Decl(ttttIndexUnionElaboration.ts, 5, 13))
+
+declare const k3: number | "a";
+>k3 : Symbol(k3, Decl(ttttIndexUnionElaboration.ts, 7, 13))
+
+p[k3];
+>p : Symbol(p, Decl(ttttIndexUnionElaboration.ts, 4, 13))
+>k3 : Symbol(k3, Decl(ttttIndexUnionElaboration.ts, 7, 13))
+
+function f<T>(t: T, key: string | symbol) { t[key]; }
+>f : Symbol(f, Decl(ttttIndexUnionElaboration.ts, 8, 6))
+>T : Symbol(T, Decl(ttttIndexUnionElaboration.ts, 9, 11))
+>t : Symbol(t, Decl(ttttIndexUnionElaboration.ts, 9, 14))
+>T : Symbol(T, Decl(ttttIndexUnionElaboration.ts, 9, 11))
+>key : Symbol(key, Decl(ttttIndexUnionElaboration.ts, 9, 19))
+>t : Symbol(t, Decl(ttttIndexUnionElaboration.ts, 9, 14))
+>key : Symbol(key, Decl(ttttIndexUnionElaboration.ts, 9, 19))
+
+declare const q: {};
+>q : Symbol(q, Decl(ttttIndexUnionElaboration.ts, 10, 13))
+
+declare const k4: symbol | string;
+>k4 : Symbol(k4, Decl(ttttIndexUnionElaboration.ts, 11, 13))
+
+q[k4];
+>q : Symbol(q, Decl(ttttIndexUnionElaboration.ts, 10, 13))
+>k4 : Symbol(k4, Decl(ttttIndexUnionElaboration.ts, 11, 13))
+

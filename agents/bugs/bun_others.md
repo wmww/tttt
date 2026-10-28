@@ -514,7 +514,7 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   TS2322 for `x: number`). Mutation testing seed 20261031, noUnusedLocals_writeOnly; ttttShorthandDefaultNotFound.
   [fixed fba66e41d] Seed 20261031's `--syntax` leftovers, unlooked at: inferFromAnnotatedReturn1 (missing TS2365 on a
   broken `{...} > class {...}`), noImplicitSymbolToString (missing TS2469 `+=` on symbol after `let str =
-  undefined`: a nullish `+` operand is the error type after TS18048, not the end of the check, ttttPlusNullishOperandSymbol, [fixed HASH] cor8), contextualTypesNegatedTypeLikeConstraintInGenericMappedType2 (missing TS2842/TS7031 for a
+  undefined`: a nullish `+` operand is the error type after TS18048, not the end of the check, ttttPlusNullishOperandSymbol, [fixed 9747a0a64] cor8), contextualTypesNegatedTypeLikeConstraintInGenericMappedType2 (missing TS2842/TS7031 for a
   `(Missing)` binding element). [open]
 - An instantiation expression is an ExpressionWithTypeArguments to tsc: a value use of an interface (or `N.J`) there
   is TS2689 'Cannot extend an interface' (getEntityNameForExtendingInterface), not TS2693/TS2708: `const x = I<string>`
@@ -543,7 +543,7 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   TS6133 under noUnusedLocals in files with parse errors). [open] recursiveTypeRelations: `reduce<C>(cb)` missing its
   initial value is TS2345 on the callback in tsgo, TS2554 in tttt (overload error choice, checker). [open]
   recursiveTypeInferenceReturnTypeConstraint (missing TS2615), isolatedDeclarationErrorsObjects (missing TS9009),
-  noImplicitAnyUnionNormalizedObjectLiteral1 (missing TS7005: [fixed 1faa449eb], cor8's seed 62), esDecorators-contextualTypes.2 (TS7053 elaboration),
+  noImplicitAnyUnionNormalizedObjectLiteral1 (missing TS7005: [fixed 1faa449eb], cor8's seed 62), esDecorators-contextualTypes.2 (TS7053 elaboration: a union index's is its first member's, ttttIndexUnionElaboration, [fixed HASH] cor8),
   unlooked at, checker; typeGuardFunctionErrors (TS2677's containing message lost to TS2559's weak type head)
   [fixed 67fdf26b2]. Seed 20261103's errors component: noImplicitAnyUnionNormalizedObjectLiteral1 (missing TS7005
   when a spread's function returns `undefined | {...}` without strictNullChecks) and isolatedDeclarationErrorsObjects

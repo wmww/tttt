@@ -2823,6 +2823,9 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
         cstr full_str = index_type_str(me, fresh_index, span_null);
         Error* error = error_ctx_error_d(errs, span, 7053, "Element implicitly has an 'any' type because expression of type '",
             full_str, "' can't be used to index type '", object_str, "'.");
+        // (A union index is distributed by tsc's getIndexedAccessTypeOrUndefined: the elaboration is its first member's,
+        // `string` of `string | symbol`)
+        if (index->kind == TY_UNION && index->composite.types.len) index = index->composite.types.data[0];
         cstr index_str = index_name(me, index == full_index ? fresh_index : index);
         if (!error) {
         } else if (index->flags & TYF_UNIQUE_ES_SYMBOL) {

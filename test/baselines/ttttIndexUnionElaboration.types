@@ -1,0 +1,55 @@
+//// [test/cases/ttttIndexUnionElaboration.ts] ////
+
+=== ttttIndexUnionElaboration.ts ===
+// TS7053's elaboration for a union index is its first member's (tsc distributes the index): 'string' of 'string | symbol'
+declare const o: { [k: string]: number };
+>o : { [k: string]: number; }
+>k : string
+
+declare const k: string | symbol;
+>k : string | symbol
+
+o[k];
+>o[k] : number
+>o : { [k: string]: number; }
+>k : string | symbol
+
+declare const p: { a: 1 };
+>p : { a: 1; }
+>a : 1
+
+declare const k2: "a" | "b" | number;
+>k2 : number | "a" | "b"
+
+p[k2];
+>p[k2] : any
+>p : { a: 1; }
+>k2 : number | "a" | "b"
+
+declare const k3: number | "a";
+>k3 : number | "a"
+
+p[k3];
+>p[k3] : any
+>p : { a: 1; }
+>k3 : number | "a"
+
+function f<T>(t: T, key: string | symbol) { t[key]; }
+>f : <T>(t: T, key: string | symbol) => void
+>t : T
+>key : string | symbol
+>t[key] : any
+>t : T
+>key : string | symbol
+
+declare const q: {};
+>q : {}
+
+declare const k4: symbol | string;
+>k4 : string | symbol
+
+q[k4];
+>q[k4] : any
+>q : {}
+>k4 : string | symbol
+
