@@ -540,7 +540,7 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   yield*'s TS2488 uses it (46c70b16d). Left: unusedSwitchStatement (`default?:`): tsgo's reportUnused skips a
   declaration whose subtree has a node with ThisNodeHasError (the first node finished after any parse error, here the
   identifier `z` of the `let z` after the TS1129), so no TS6133 there; tttt has no notion of that flag (a spurious
-  TS6133 under noUnusedLocals in files with parse errors). [fixed (bun11: below)] recursiveTypeRelations: `reduce<C>(cb)` missing its
+  TS6133 under noUnusedLocals in files with parse errors). [fixed d77440699] recursiveTypeRelations: `reduce<C>(cb)` missing its
   initial value is TS2345 on the callback in tsgo, TS2554 in tttt (overload error choice, checker). [open]
   recursiveTypeInferenceReturnTypeConstraint (missing TS2615), isolatedDeclarationErrorsObjects (missing TS9009),
   noImplicitAnyUnionNormalizedObjectLiteral1 (missing TS7005: [fixed 1faa449eb], cor8's seed 62), esDecorators-contextualTypes.2 (TS7053 elaboration: a union index's is its first member's, ttttIndexUnionElaboration, [fixed 0928d2e68] cor8),
@@ -570,7 +570,7 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   object literal method's TS18016 is a grammar error (4a3ee8051), a bodiless function expression's or object literal
   method's renamings are TS7031 and a function expression's body is required (c142ccd3c). Left:
   unusedLocalsAndParameters add-arg and unusedTypeParametersWithUnderscore delete-stmt: TS6133/TS6196 that tsgo's
-  ThisNodeHasError hides (the unusedSwitchStatement item above) [fixed (bun11)]. Checker, relayed: typePredicatesOptionalChaining1
+  ThisNodeHasError hides (the unusedSwitchStatement item above) [fixed d77440699]. Checker, relayed: typePredicatesOptionalChaining1
   (TS2353 for a duplicated excess property is at its first declaration in tsgo, the binder merges the two into one
   symbol whose valueDeclaration is the first; tttt at the last: `const o: { a?: 1 } = { b: 1, a: 1, b: 2 }`) [open];
   narrowingTypeofUndefined2 (`[...arg]` of `T extends unknown[] | undefined` narrowed by `typeof arg !== 42` misses
@@ -594,9 +594,13 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   declaration or parameter for its binding elements, the list for TS6199, the declaration statement, the class member,
   the import clause or specifier, the owner of type parameters, the infer type) and asks
   source_file_error_node_within(). 15 probe shapes match tsgo (2026-10-28); cost a load and a branch per parse_success
-  (nest +0.35%, zod +0.09%, drizzle +0.08% instructions). Granularity: a tttt child that isn't a tsgo node (a
+  (nest +0.35%, zod +0.09%, drizzle +0.08% instructions). A post-pass over the finished tree (zero cost in clean files)
+  was considered and rejected: finish order isn't end order around errors. `let b = [1, 2;` reports ',' expected at the
+  `;` while the array and b are still open (b hidden), `let y = 1 2` reports it at the `2` after y finished (y
+  reported): the same textual shape, told apart only by when the error came. Missing types and names (`b: ,`) and
+  skipped tokens (`) let r`) aren't in tttt's AST either, and ast_walk.c walks expressions only. Granularity: a tttt child that isn't a tsgo node (a
   wrapper, a succeeding lookahead) records a slightly different span than tsgo's node; none seen in the probes.
-  [fixed (bun11, this commit)]
+  [fixed d77440699]
 - A class field's or enum member's missing initializer (`private x = ;`, `x: U = ;`, `enum E { A = }`): tsgo has an
   initializer (a missing expression: no TS7008, no TS2564, `> : any` in the types baseline); tttt's
   EXPR_IMPLICIT_ANY with `missing` reads as none at ~15 `field.value.tag == EXPR_IMPLICIT_ANY` sites (class_decl.c,
