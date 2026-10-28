@@ -762,7 +762,7 @@ void scope_check_strict_identifier(Scope const* me, Span name, bool in_type) {
             break;
         }
         // (tsc's binder asks IsExternalModule: an ES module, not a CommonJS one, whose `await` is any identifier)
-        if (await_word && my file && my file->is_module && !my file->is_commonjs && top_level && !await_context) {
+        if (await_word && my file && source_file_is_external_module(my file) && top_level && !await_context) {
             error_ctx_error_d(binder_errs(my binder), name, 1262, "Identifier expected. '", name, "' is a reserved word at the top-level of a module.");
         } else if ((await && await_context) || (yield && yield_context)) {
             error_ctx_error_d(binder_errs(my binder), name, 1359, "Identifier expected. '", name, "' is a reserved word that cannot be used here.");
@@ -2153,7 +2153,8 @@ void scope_add_port(Scope* me, PortItem* item) {
             if (item->not_top_level) {
                 error_ctx_error_d(binder_errs(my binder), span_with_semicolon(item->full_span), 1316, "Global module exports may only appear at top level.");
                 return;
-            } else if (my kind != SCOPE_MODULE) {
+            } else if (my kind != SCOPE_MODULE || (my file && !source_file_is_external_module(my file))) {
+                // (tsc's binder asks IsExternalModule: not of a CommonJS module)
                 error_ctx_error_d(binder_errs(my binder), span_with_semicolon(item->full_span), 1314, "Global module exports may only appear in module files.");
                 return;
             } else if (my file && !my file->is_declaration) {

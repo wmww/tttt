@@ -504,6 +504,18 @@ static inline bool source_file_is_checked(SourceFile const* me) {
     return !my unchecked || my plain_js;
 }
 
+// tsc's IsExternalModule: a module by its ES imports or exports (or moduleDetection), not a CommonJS one
+static inline bool source_file_is_external_module(SourceFile const* me) {
+    return my is_module && !my is_commonjs;
+}
+
+// tsc's IsEffectiveExternalModule: a CommonJS module too when the emit module kind contains CommonJS
+static inline bool source_file_is_effective_external_module(SourceFile const* me) {
+    ModuleKind module = compiler_options()->module;
+    return source_file_is_external_module(me) || (my is_commonjs &&
+        (module == MODULE_KIND_COMMONJS || (module >= MODULE_KIND_NODE16 && module <= MODULE_KIND_NODENEXT)));
+}
+
 // How messages name the file: the way the test wrote it under the harness, else the canonical path
 static inline csview source_file_display_path(SourceFile const* me) {
     return my display_path_override ? csview_from(my display_path_override) : cstr_sv(&my canonical_path);

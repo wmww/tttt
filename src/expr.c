@@ -1308,7 +1308,7 @@ void await_check_grammar(AwaitPlace place, AwaitKind kind, Span at, FunctionImpl
     if (place != AWAIT_AT_TOP_LEVEL) return;
     SourceFile const* file = span_source(at);
     CompilerOptions const* options = compiler_options();
-    if (!file->is_module) {
+    if (!source_file_is_effective_external_module(file)) {
         error_ctx_grammar_error_d(errs, at, kind == AWAIT_KIND_EXPR ? 1375 : kind == AWAIT_KIND_FOR ? 1431 : 2853,
             what[kind], " are only allowed at the top level of a file when that file is a module, but this file has "
             "no imports or exports. Consider adding an empty 'export {}' to make this file a module.");

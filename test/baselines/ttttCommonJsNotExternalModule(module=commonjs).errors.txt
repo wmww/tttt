@@ -1,0 +1,15 @@
+a.js(2,1): error TS1378: Top-level 'await' expressions are only allowed when the 'module' option is set to 'es2022', 'esnext', 'system', 'node16', 'node18', 'node20', 'nodenext', or 'preserve', and the 'target' option is set to 'es2017' or higher.
+j.js(2,1): error TS1314: Global module exports may only appear in module files.
+
+
+==== j.js (1 errors) ====
+    exports.a = 1;
+    export as namespace Foo;
+    ~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1314: Global module exports may only appear in module files.
+==== a.js (1 errors) ====
+    module.exports = 1;
+    await 1;
+    ~~~~~
+!!! error TS1378: Top-level 'await' expressions are only allowed when the 'module' option is set to 'es2022', 'esnext', 'system', 'node16', 'node18', 'node20', 'nodenext', or 'preserve', and the 'target' option is set to 'es2017' or higher.
+    
