@@ -1,0 +1,38 @@
+//// [test/cases/ttttConstEnumNumericIndex.ts] ////
+
+=== ttttConstEnumNumericIndex.ts ===
+// A const enum's object has the reverse mapping's `[x: number]: string` like any enum with a numeric member (tsc's
+// resolveAnonymousTypeMembers): `E2["1"]` is a string, not TS2339; by a number it is TS2476 and the error type
+const enum E2 { A }
+>E2 : Symbol(E2, Decl(ttttConstEnumNumericIndex.ts, 0, 0))
+>A : Symbol(E2.A, Decl(ttttConstEnumNumericIndex.ts, 2, 15))
+
+var y0 = E2["1"];
+>y0 : Symbol(y0, Decl(ttttConstEnumNumericIndex.ts, 3, 3))
+>E2 : Symbol(E2, Decl(ttttConstEnumNumericIndex.ts, 0, 0))
+
+var y1 = E2["A"];
+>y1 : Symbol(y1, Decl(ttttConstEnumNumericIndex.ts, 4, 3))
+>E2 : Symbol(E2, Decl(ttttConstEnumNumericIndex.ts, 0, 0))
+>"A" : Symbol(E2.A, Decl(ttttConstEnumNumericIndex.ts, 2, 15))
+
+var y2 = E2[1];
+>y2 : Symbol(y2, Decl(ttttConstEnumNumericIndex.ts, 5, 3))
+>E2 : Symbol(E2, Decl(ttttConstEnumNumericIndex.ts, 0, 0))
+
+declare enum E3 { A }
+>E3 : Symbol(E3, Decl(ttttConstEnumNumericIndex.ts, 5, 15))
+>A : Symbol(E3.A, Decl(ttttConstEnumNumericIndex.ts, 6, 17))
+
+var y4 = E3["1"];
+>y4 : Symbol(y4, Decl(ttttConstEnumNumericIndex.ts, 7, 3))
+>E3 : Symbol(E3, Decl(ttttConstEnumNumericIndex.ts, 5, 15))
+
+const enum E4 { A = "a" }
+>E4 : Symbol(E4, Decl(ttttConstEnumNumericIndex.ts, 7, 17))
+>A : Symbol(E4.A, Decl(ttttConstEnumNumericIndex.ts, 8, 15))
+
+var y5 = E4["1"];
+>y5 : Symbol(y5, Decl(ttttConstEnumNumericIndex.ts, 9, 3))
+>E4 : Symbol(E4, Decl(ttttConstEnumNumericIndex.ts, 7, 17))
+

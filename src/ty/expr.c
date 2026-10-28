@@ -6777,6 +6777,15 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (object->flags & TYF_ERROR) return expr->property->form == PROPERTY_EXPR_BRACKET ? object : ty_intrinsic(me, TY_ERROR);
             // `never` has no properties (TS2339, the error type: `never.a<T>` isn't TS2635 too), `never[k]` is never
             if ((ty_reduced(me, object)->flags & TYF_NEVER) && expr->property->form == PROPERTY_EXPR_DOT) return ty_intrinsic(me, TY_ERROR);
+            // A const enum's element by anything but a string literal is TS2476 and the error type (tsc's
+            // checkElementAccessExpression), its reverse mapping's index signature notwithstanding
+            if (expr->property->form == PROPERTY_EXPR_BRACKET && object->kind == TY_DECLARED &&
+                object->declared.kind == TY_DECLARED_ENUM_OBJECT && object->declared.symbol &&
+                (object->declared.symbol->flags & SYMBOL_CONST_ENUM) &&
+                (expr->property->index.tag != EXPR_LITERAL || expr->property->index.literal.tag != VALUE_STRING)
+            ) {
+                return ty_intrinsic(me, TY_ERROR);
+            }
             Ty const* key = ty_access_key_type(me, expr->property);
             if (expr->property->form == PROPERTY_EXPR_BRACKET) key = ty_string_index_only_key(me, object, key);
             // `o[k]` with k any and no index signature that takes it is errorType (tsc's getPropertyTypeForIndexType

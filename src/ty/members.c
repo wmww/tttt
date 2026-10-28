@@ -2812,7 +2812,9 @@ static void builder_add_enum_object(Checker* me, MembersBuilder* builder, EnumDe
         builder_push(builder, props, prop);
     }
     // The reverse mapping of numeric members
-    if (any_numeric && !enum_decl->is_const && !builder->index_count) {
+    // (A const enum's too, though it has no reverse mapping at run time: tsc's resolveAnonymousTypeMembers, `E["1"]` is a
+    // string)
+    if (any_numeric && !builder->index_count) {
         IndexInfo info = {
             .key = ty_intrinsic(me, TY_NUMBER),
             .value = ty_intrinsic(me, TY_STRING),
