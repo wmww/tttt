@@ -534,6 +534,19 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   signature now commits at its `(`, ttttTypeLiteralCallSignatureAbort) [fixed 5baf47b39], and missed TS7031 for an
   ambient destructuring declaration without an initializer (`declare const { a };`, ttttAmbientPatternImplicitAny)
   [fixed 60ecc4f3e]
+- Mutation seeds 20261102 and 20261103 (bun9, `--syntax`, 2000 each: 4 and 7 errors-component differences). Fixed:
+  a parameter list missing its `)` ends at its last token (TS7020's underline, 3a927304f), a mapped type's extra
+  members aren't checked (TS7008, 02a144d6b), an anonymous function expression's error span is its first token and
+  yield*'s TS2488 uses it (46c70b16d). Left: [open] unusedSwitchStatement (`default?:`): tsgo's reportUnused skips a
+  declaration whose subtree has a node with ThisNodeHasError (the first node finished after any parse error, here the
+  identifier `z` of the `let z` after the TS1129), so no TS6133 there; tttt has no notion of that flag (a spurious
+  TS6133 under noUnusedLocals in files with parse errors). [open] recursiveTypeRelations: `reduce<C>(cb)` missing its
+  initial value is TS2345 on the callback in tsgo, TS2554 in tttt (overload error choice, checker). [open]
+  recursiveTypeInferenceReturnTypeConstraint (missing TS2615), isolatedDeclarationErrorsObjects (missing TS9009),
+  noImplicitAnyUnionNormalizedObjectLiteral1 (missing TS7005), esDecorators-contextualTypes.2 (TS7053 elaboration),
+  typeGuardFunctionErrors (TS2677's head missing: TS2559 alone): unlooked at, checker. Seed 20261031's
+  inferFromAnnotatedReturn1 is now text-only (`computation: {}` in tsgo's TS2365 type, an arrow's type printed
+  mid-inference as `{}`), its contextualTypesNegatedTypeLikeConstraintInGenericMappedType2 fixed (c6c305d83).
 - After a parameter's modifiers a reserved word is TS1359 (parseBindingIdentifier), not TS1003: `declare function`
   where a parameter was expected (seed 20261101, contextualParamTypeVsNestedReturnTypeInference4;
   ttttParameterModifierReservedName). [fixed 56abcd061]
