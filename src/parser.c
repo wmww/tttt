@@ -9105,6 +9105,8 @@ static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
         bool is_property = modifiers.includes[MODIFIER_READONLY] || modifiers.includes[MODIFIER_PUBLIC] ||
             modifiers.includes[MODIFIER_PROTECTED] || modifiers.includes[MODIFIER_PRIVATE] ||
             modifiers.includes[MODIFIER_OVERRIDE];
+        // (A parameter's modifiers all the same, tsc's checkParameter: `[in K: string]` is TS1274)
+        if (has_modifiers) check_modifiers(&p, &modifiers, (ModifiedNode){ .kind = MODIFIED_PARAMETER, .parent = MODIFIED_IN_OTHER });
         modifier_list_drop(&modifiers);
         hop_whitespace(&p);
 
@@ -9810,7 +9812,9 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             parse_index_signature(&p, &ret->interface_memeber) ||
             parse_expr_interface_member(&p, is_type, function_flags, &ret->interface_memeber)
         ) {
-            if (ret->interface_memeber.key.tag != INTERFACE_KEY_MAPPED) {
+            // (A class's decorated index signature is TS1206 alone, which ends tsc's checkGrammarModifiers: class_decl.c)
+            bool decorators_invalid = decorated && !is_type && ret->interface_memeber.key.tag == INTERFACE_KEY_INDEX;
+            if (ret->interface_memeber.key.tag != INTERFACE_KEY_MAPPED && !decorators_invalid) {
                 check_modifiers(&p, &modifiers, (ModifiedNode){
                     .kind = ret->interface_memeber.key.tag == INTERFACE_KEY_INDEX ? MODIFIED_INDEX_SIGNATURE :
                         ret->interface_memeber.key.tag == INTERFACE_KEY_CALLABLE ? MODIFIED_METHOD_SIGNATURE :
@@ -11836,6 +11840,10 @@ static inline bool parse_async_function_expr(Parser* parent, ExprCtx ctx, Functi
         !parse_arrow_function(&p, ctx, (FunctionFlags){ .is_async = true }, arrow_tristate == TRISTATE_TRUE, ret)
     ) {
         return parse_fail(&p);
+    }
+    // (tsc's checkGrammarModifiers: `declare const f = async () => {}`)
+    if (p.shared->in_ambient) {
+        grammar_error(&p, span_make(p.shared->source, a.start, a.start + 5), 1040, "'async' modifier cannot be used in an ambient context.");
     }
 
     ret->full_span = span_from(a);

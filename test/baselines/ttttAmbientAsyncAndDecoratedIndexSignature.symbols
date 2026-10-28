@@ -1,0 +1,33 @@
+//// [test/cases/ttttAmbientAsyncAndDecoratedIndexSignature.ts] ////
+
+=== ttttAmbientAsyncAndDecoratedIndexSignature.ts ===
+// tsc's checkGrammarModifiers: an async arrow function in an ambient context is TS1040 (`declare const f = async () =>
+// {}`, a `declare namespace`'s); a class's decorated index signature is TS1206 alone, which ends the check (no TS1071)
+declare const x: any = async () => { };
+>x : Symbol(x, Decl(ttttAmbientAsyncAndDecoratedIndexSignature.ts, 2, 13))
+
+declare namespace N { const z: any = async () => 1; }
+>N : Symbol(N, Decl(ttttAmbientAsyncAndDecoratedIndexSignature.ts, 2, 39))
+>z : Symbol(z, Decl(ttttAmbientAsyncAndDecoratedIndexSignature.ts, 3, 27))
+
+declare const dec: any;
+>dec : Symbol(dec, Decl(ttttAmbientAsyncAndDecoratedIndexSignature.ts, 4, 13))
+
+class A { @dec public [k: string]: any }
+>A : Symbol(A, Decl(ttttAmbientAsyncAndDecoratedIndexSignature.ts, 4, 23))
+>dec : Symbol(dec, Decl(ttttAmbientAsyncAndDecoratedIndexSignature.ts, 4, 13))
+>k : Symbol(k, Decl(ttttAmbientAsyncAndDecoratedIndexSignature.ts, 5, 23))
+
+// An index signature's parameter modifiers are a parameter's (tsc's checkParameter): `in`/`out` TS1274, `async` TS1090
+type W1 = { [in K: string]: 1 };
+>W1 : Symbol(W1, Decl(ttttAmbientAsyncAndDecoratedIndexSignature.ts, 5, 40))
+>K : Symbol(K, Decl(ttttAmbientAsyncAndDecoratedIndexSignature.ts, 7, 13))
+
+type W2 = { [out K: string]: 1 };
+>W2 : Symbol(W2, Decl(ttttAmbientAsyncAndDecoratedIndexSignature.ts, 7, 32))
+>K : Symbol(K, Decl(ttttAmbientAsyncAndDecoratedIndexSignature.ts, 8, 13))
+
+type W5 = { [async K: string]: 1 };
+>W5 : Symbol(W5, Decl(ttttAmbientAsyncAndDecoratedIndexSignature.ts, 8, 33))
+>K : Symbol(K, Decl(ttttAmbientAsyncAndDecoratedIndexSignature.ts, 9, 13))
+

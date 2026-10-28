@@ -1,0 +1,36 @@
+//// [test/cases/ttttAmbientAsyncAndDecoratedIndexSignature.ts] ////
+
+=== ttttAmbientAsyncAndDecoratedIndexSignature.ts ===
+// tsc's checkGrammarModifiers: an async arrow function in an ambient context is TS1040 (`declare const f = async () =>
+// {}`, a `declare namespace`'s); a class's decorated index signature is TS1206 alone, which ends the check (no TS1071)
+declare const x: any = async () => { };
+>x : any
+>async () => { } : () => Promise<void>
+
+declare namespace N { const z: any = async () => 1; }
+>N : typeof N
+>z : any
+>async () => 1 : () => Promise<number>
+>1 : 1
+
+declare const dec: any;
+>dec : any
+
+class A { @dec public [k: string]: any }
+>A : A
+>dec : any
+>k : string
+
+// An index signature's parameter modifiers are a parameter's (tsc's checkParameter): `in`/`out` TS1274, `async` TS1090
+type W1 = { [in K: string]: 1 };
+>W1 : W1
+>K : string
+
+type W2 = { [out K: string]: 1 };
+>W2 : W2
+>K : string
+
+type W5 = { [async K: string]: 1 };
+>W5 : W5
+>K : string
+

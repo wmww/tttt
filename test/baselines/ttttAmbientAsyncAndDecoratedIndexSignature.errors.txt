@@ -1,0 +1,50 @@
+ttttAmbientAsyncAndDecoratedIndexSignature.ts(3,24): error TS1040: 'async' modifier cannot be used in an ambient context.
+ttttAmbientAsyncAndDecoratedIndexSignature.ts(3,24): error TS1039: Initializers are not allowed in ambient contexts.
+ttttAmbientAsyncAndDecoratedIndexSignature.ts(3,36): error TS1183: An implementation cannot be declared in ambient contexts.
+ttttAmbientAsyncAndDecoratedIndexSignature.ts(4,38): error TS1040: 'async' modifier cannot be used in an ambient context.
+ttttAmbientAsyncAndDecoratedIndexSignature.ts(4,38): error TS1039: Initializers are not allowed in ambient contexts.
+ttttAmbientAsyncAndDecoratedIndexSignature.ts(6,11): error TS1206: Decorators are not valid here.
+ttttAmbientAsyncAndDecoratedIndexSignature.ts(8,14): error TS1274: 'in' modifier can only appear on a type parameter of a class, interface or type alias
+ttttAmbientAsyncAndDecoratedIndexSignature.ts(8,17): error TS1018: An index signature parameter cannot have an accessibility modifier.
+ttttAmbientAsyncAndDecoratedIndexSignature.ts(9,14): error TS1274: 'out' modifier can only appear on a type parameter of a class, interface or type alias
+ttttAmbientAsyncAndDecoratedIndexSignature.ts(9,18): error TS1018: An index signature parameter cannot have an accessibility modifier.
+ttttAmbientAsyncAndDecoratedIndexSignature.ts(10,14): error TS1090: 'async' modifier cannot appear on a parameter.
+ttttAmbientAsyncAndDecoratedIndexSignature.ts(10,20): error TS1018: An index signature parameter cannot have an accessibility modifier.
+
+
+==== ttttAmbientAsyncAndDecoratedIndexSignature.ts (12 errors) ====
+    // tsc's checkGrammarModifiers: an async arrow function in an ambient context is TS1040 (`declare const f = async () =>
+    // {}`, a `declare namespace`'s); a class's decorated index signature is TS1206 alone, which ends the check (no TS1071)
+    declare const x: any = async () => { };
+                           ~~~~~
+!!! error TS1040: 'async' modifier cannot be used in an ambient context.
+                           ~~~~~~~~~~~~~~~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+                                       ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+    declare namespace N { const z: any = async () => 1; }
+                                         ~~~~~
+!!! error TS1040: 'async' modifier cannot be used in an ambient context.
+                                         ~~~~~~~~~~~~~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+    declare const dec: any;
+    class A { @dec public [k: string]: any }
+              ~
+!!! error TS1206: Decorators are not valid here.
+    // An index signature's parameter modifiers are a parameter's (tsc's checkParameter): `in`/`out` TS1274, `async` TS1090
+    type W1 = { [in K: string]: 1 };
+                 ~~
+!!! error TS1274: 'in' modifier can only appear on a type parameter of a class, interface or type alias
+                    ~
+!!! error TS1018: An index signature parameter cannot have an accessibility modifier.
+    type W2 = { [out K: string]: 1 };
+                 ~~~
+!!! error TS1274: 'out' modifier can only appear on a type parameter of a class, interface or type alias
+                     ~
+!!! error TS1018: An index signature parameter cannot have an accessibility modifier.
+    type W5 = { [async K: string]: 1 };
+                 ~~~~~
+!!! error TS1090: 'async' modifier cannot appear on a parameter.
+                       ~
+!!! error TS1018: An index signature parameter cannot have an accessibility modifier.
+    

@@ -1272,3 +1272,6 @@ block.".
   a union's thenable member is dropped (`string | Bad` awaits as string). Still open: 16-C13d, where a contextual type
   `U` computed the awaited type of `U` first (no error) and a later `await u` says nothing in tsc: tttt's await
   expression computes its type before checking, so its own computation can't count. [open]
+- Modifier grammar (28-C18b 28-C5b 02-C23b): an async arrow or function expression in an ambient context is TS1040,
+  a class's decorated index signature TS1206 alone (no TS1071), an index signature parameter's modifiers are checked
+  like a parameter's (TS1274 for `in`/`out`). [fixed]
