@@ -1,0 +1,9 @@
+//// [test/cases/ttttExportDefaultMisspelledSelfImport.ts] ////
+
+=== c.ts ===
+import Missin = require("./c");
+>Missin : any
+
+export = Missing;
+>Missing : any
+

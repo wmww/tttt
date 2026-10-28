@@ -293,13 +293,39 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
   declarations with a missing name (`type )`, `interface ]`, a class member `interface? )`, `throw type { A }`:
   96-SOLID1), `export *` and `export type *` at EOF (TS1109 then 'from' expected:
   export-from-without-a-module-specifier-where-declarations-are-emitted), `export * as`/`super`/`new.` at EOF
-  (43-P9d 43-P9h 43-P9l), `(this?: any) => void` (34-P6a: one ',' expected),
+  (43-P9d 43-P9h 43-P9l),
   `typeof Array<<T>() => T>` (43-C4d), `(x = €) => x` (43-C14a: TS1127 only), an unterminated template at EOF
   (93-P03a 93-P03b: no ')' expected), a JS object literal method without a body (80-R09b: TS8017),
   `@dec get x(): number;` in a class (34-C16: no '{' expected). [open]
 - Ambient contexts: TS1183 for each function body in a `declare` member's initializer and for an accessor body in an
   ambient type literal (53-L15 61-L09), the initializers of `declare const {} = ...` not checked (52-L05: +TS2304
   +TS1183 +TS1039), `declare export default (...)` (80-R04: TS1120, tttt TS1029). [open]
+- JSDoc `@satisfies` on a variable statement (43-P3): the first initialized declaration, a declaration's own tag, and
+  TS1360 at the token after the initializer when the declaration has JSDoc of its own (tsgo's
+  findOriginatingJSDocSatisfiesTag). [fixed fd89ada48]
+- A JSDoc type literal property's missing initializer `{ q: string= }` is TS1247 too (75-R01b). [fixed babc8ab99]
+- `(this?: any) => void` (34-P6a: one ',' expected) and `(this = 1)`'s empty parameter's TS7006 position.
+  [fixed 6d1bcf4d3]
+- No TS1035 after a modifier error on `module "x"` (03-C18), no TS1142 on the `throw` TS1036 reports (03-C21).
+  [fixed e8aaaa93d]
+- `readonly [k]: unique symbol` in a type literal, interface or static class field (23-P3: spurious TS1335, missing
+  TS2719). [fixed 3a6808c4d] Its text: tsc prints such a member's unique symbol as `unique symbol` inside the literal
+  and names it `typeof b.x` / `(typeof b)[typeof k]` (through the variable whose annotation it is) in an elaboration;
+  tttt prints `typeof x` / `typeof [k]`, for named members too (a type literal's UniqueSymbolDecl has no owner).
+  test/cases/ttttUniqueSymbolMemberDisplay.ts fails on it. [text]
+- A decorated generic method is a generic function argument of its decorator (06-P2: spurious TS1270; tsc infers the
+  higher-order signature). [fixed f02a388f6]
+- `export default Missing` with a misspelled self-import `import Missin from "./b"` (80-R13b): tsgo's TS2304/TS2552 on
+  the name comes from checkExpressionCached, run either by checkExportAssignment (the walk) or inside the default
+  alias's resolution (getTargetOfAliasLikeExpression), whichever is first; the suggestion resolves candidate aliases
+  with tryResolveAlias, which skips one in flight. a.ts (import first): the expression is first checked inside
+  Missin's resolution, Missin is skipped: TS2304 only, cached for the walk. b.ts (export first): the walk's check
+  suggests Missin, whose resolution reaches the default alias, whose own check (nested, Missin in flight) says TS2304:
+  both TS2304 and TS2552, no TS2303. tttt resolves aliases at bind time in symbol order (binder_link) with
+  resolve_alias_target_in()'s scope_suggest standing in for the nested check, and the walk recomputes the suggestion:
+  b.ts gets TS2303 twice, a.ts TS2552. A fix: run an `export default name` alias's suggestion outside its flight when
+  binder_link reaches it first, and keep each check's verdict (nested and outer) for the walk to report. Contrived
+  (a circular self-import), left. [open]
 
 ## Not looked at, by code
 - Each paragraph below is a code and direction with the cases it mismatches in, uninvestigated: at least one open

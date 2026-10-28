@@ -1,0 +1,21 @@
+error TS-1: Pre-emit (1) and post-emit (3) diagnostic counts do not match! This can indicate that a semantic _error_ was added by the emit resolver - such an error may not be reflected on the command line or in the editor, but may be captured in a baseline here!
+c.ts(2,10): error TS2304: Cannot find name 'Missing'.
+
+
+!!! error TS-1: Pre-emit (1) and post-emit (3) diagnostic counts do not match! This can indicate that a semantic _error_ was added by the emit resolver - such an error may not be reflected on the command line or in the editor, but may be captured in a baseline here!
+!!! related TS-1: The excess diagnostics are:
+!!! related TS2303 c.ts:1:1: Circular definition of import alias 'Missin'.
+!!! related TS2303 c.ts:2:1: Circular definition of import alias 'Missing'.
+!!! related TS2552 c.ts:2:10: Cannot find name 'Missing'. Did you mean 'Missin'?
+==== c.ts (1 errors) ====
+    import Missin = require("./c");
+    export = Missing;
+             ~~~~~~~
+!!! error TS2304: Cannot find name 'Missing'.
+    
+==== a.ts (0 errors) ====
+    import Missin from "./a";
+    export default Missing;
+==== b.ts (0 errors) ====
+    export default Missing;
+    import Missin from "./b";
