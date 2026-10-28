@@ -587,8 +587,12 @@ never-const (harness writes no errors baseline).
 - ambientExternalModuleWithRelativeExternalImportDeclaration delete-stmt: `declare module "M" { import m2 =
   require("./Sub"); }` with m2 unused is only TS2439 in tsgo: the program doesn't resolve a relative name in an ambient
   module (collectExternalModuleReferences) and checkExternalImportOrExportDeclaration returns after TS2439, so TS2307
-  comes only from resolving the alias on a use. tttt reports TS2307 eagerly. Needs the module-not-found error deferred
-  to the alias's first resolution for such refs. [open]
+  comes only from resolving the alias on a use. Imports now go by PortItem.resolve_on_use (the namespace TS1147
+  mechanism: reported on a use, in the import's own file). Test ttttAmbientRelativeImportOnUse. [fixed 5788a6941]
+- Left from it: a re-export of a relative name in an ambient module (`export { b } from "./x"`, `export *`) is TS2307
+  in tsgo only when something resolves the module's exports (checkExternalModuleExports' hasExportedMembersOfKind
+  under an `export =`, an importer); tttt reports it eagerly (binder_link resolves every alias). Rare: needs a kept
+  error flushed by those resolutions, like a misplaced import's SymbolRare.unreported_errs. [open]
 
 ## Mutation seed 2810 (2026-10-28, cor8: `MUTATE_DIR=/tmp/X scripts/mutate.py -n 8000 --seed 2810 --tests multi,js`)
 27 of 8000 differ: 9 render, the rest below or known (commonJSAliasedExport/moduleExportAlias5 never-const, importTag14,
