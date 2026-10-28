@@ -141,3 +141,10 @@ on the rest of the machine:
   pool binds as before: openclaw at 20000 MB recycled 16 times (main 16), peak 16.4 GB; at 12000 MB 57 times (main
   64), peak 9.8 GB. At the defaults with 38-47 GB available: 0 recycles, peak 22.8 GB, 7.8 s.
 Output: openclaw root byte-identical to main and to --checkers 1; vscode checkerdiff -k 16 identical.
+
+## Huge pages: back and out again (2026-10-30)
+rehuge's ef4fa4e67 brought arena/AST huge pages back behind a rule on the kernel's THP `enabled`/`defrag` settings
+(aligned only under `always`; madvise under `madvise`+non-stalling defrag; v1's free-block budget under the stalling
+modes). The human judged the rule overfit to the boxes it was tried on and had it reverted the same day, accepting the
+measured cost on THP-`madvise` boxes (vscode K1 +5.5%, defaults +15%; drizzle/zod/effect K1 +7%, defaults +13..17%).
+Standing decision: no page policy reads the kernel's state or settings (vision.md "No huge-page machinery, final").

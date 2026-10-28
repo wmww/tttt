@@ -20,7 +20,7 @@ CPU. Three causes, each recoverable on its own; the coordinator decides.
   madvise only when `/sys/kernel/mm/transparent_hugepage/defrag` doesn't make madvised faults compact synchronously
   (`defer`, `never`), or MADV_HUGEPAGE + the free-block budget only for the first chunks, or ask the human whether
   THP `madvise` machines (Ubuntu's default) matter. Back by the kernel's THP settings (kernel_time.md "Back
-  2026-10-29"): vscode K1 -5.5%, defaults -15.6% on this box. [fixed b5c829162]
+  2026-10-29"): vscode K1 -5.5%, defaults -15.6% on this box. [design] (huge pages: brought back then reverted at the human's decision, 2026-10-30; the regression is accepted: vision.md "No huge-page machinery, final")
 - **The huge text page** (removed in 24820df46). Nothing on this box (EPYC VM, +-0.2%), but the laptop measured it at
   -4.6% wall / -3.6% cycles at K1 and -1.2% at the defaults on 2026-10-22 (measurements.md "The 12-core box at
   277be4bc"), and the A/B the removal cited (df95ec2f) had it on in both arms. Likely the laptop's largest share:

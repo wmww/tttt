@@ -95,6 +95,14 @@ measured wins first; land fast and gate in batches.
 6. **Re-pin to 7.1.0 stable** when it ships.
 
 ## Decisions (each with its reason; the narrative is in git history of this file)
+- **No huge-page machinery, final** (2026-10-30, the human, after rehuge brought arena/AST huge pages back behind a
+  rule on the kernel's THP and defrag settings: "there is absolutely no way this isn't overfit on whatever devices
+  we've tried it on... don't make it more complicated, get rid of it and accept the slight regression"). The two
+  commits (ef4fa4e67, 5f117f404) are reverted; the return-mapper fix (989dbee59) stays. The accepted cost, measured on
+  this THP-`madvise` box: vscode K1 wall +5.5%, defaults +15%, drizzle/zod/effect K1 +7%, defaults +13..17%, sys 2x
+  (measurements.md "vscode since v1"). On THP-`always` boxes the kernel gives huge pages on its own. Any future page
+  policy must not read the kernel's state or settings; the one allowed input is what the kernel does with a plain
+  mmap.
 - **The shared graph ships as an option for hub-shaped projects; the per-checker model stays the default**
   (2026-10-30, the coordinator's call on the go/no-go table the human asked for, hub_regime.md "The go/no-go table";
   the human can overrule). On today's main (33e018294: walk order, variance frames, private caching, the graph's own
