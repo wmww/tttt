@@ -263,7 +263,12 @@ static Ty const* best_match_indexed_access(Checker* me, Ty const* source, Ty con
     Ty const* ret = nullable_member ? nullptr : ty_access(me, target, name_type);
     if (ret || target->kind != TY_UNION) return ret;
     Ty const* best = ty_best_matching_type(me, source, target);
-    return best && !ty_is_generic_object(me, best) ? ty_access(me, best, name_type) : nullptr;
+    if (!best || ty_is_generic_object(me, best)) return nullptr;
+    ret = ty_access(me, best, name_type);
+    // (Past the end of a tuple: undefined, tsc's getTupleElementTypeOutOfStartCount. `["a", 1, false]` against
+    // `[string, number] | undefined` is TS2322 'false' to 'undefined')
+    if (!ret && ty_tuple_past_the_end(me, best, name_type)) ret = ty_intrinsic(me, TY_UNDEFINED);
+    return ret;
 }
 
 static Ty const* access_or_unknown(Checker* me, Ty const* ty, Ty const* name_type) {

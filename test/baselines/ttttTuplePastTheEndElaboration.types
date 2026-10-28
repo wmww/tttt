@@ -1,0 +1,79 @@
+//// [test/cases/ttttTuplePastTheEndElaboration.ts] ////
+
+=== ttttTuplePastTheEndElaboration.ts ===
+// Past the end of a tuple is undefined (tsc's getTupleElementTypeOutOfStartCount): an array literal's extra elements
+// against `[string, number] | undefined` elaborate to 'undefined', and an element access of a possibly undefined
+// tuple past its end is undefined after TS18048
+declare let a: [string, number] | undefined;
+>a : [string, number] | undefined
+
+var e1 = a![2];
+>e1 : undefined
+>a![2] : undefined
+>a! : [string, number]
+>a : [string, number] | undefined
+>2 : 2
+
+declare let b: [string, number];
+>b : [string, number]
+
+var e2 = b[2];
+>e2 : undefined
+>b[2] : undefined
+>b : [string, number]
+>2 : 2
+
+declare let c: { t?: [string, number] };
+>c : { t?: [string, number]; }
+>t : [string, number] | undefined
+
+var e3 = c.t![2];
+>e3 : undefined
+>c.t![2] : undefined
+>c.t! : [string, number]
+>c.t : [string, number] | undefined
+>c : { t?: [string, number]; }
+>t : [string, number] | undefined
+>2 : 2
+
+c.t = ["foo", 5, false, true];
+>c.t = ["foo", 5, false, true] : [string, number, boolean, boolean]
+>c.t : [string, number] | undefined
+>c : { t?: [string, number]; }
+>t : [string, number] | undefined
+>["foo", 5, false, true] : [string, number, boolean, boolean]
+>"foo" : "foo"
+>5 : 5
+>false : false
+>true : true
+
+let x: [string, number] | undefined = ["foo", 5, false];
+>x : [string, number] | undefined
+>["foo", 5, false] : [string, number, boolean]
+>"foo" : "foo"
+>5 : 5
+>false : false
+
+declare let o: { t?: [string, number] };
+>o : { t?: [string, number]; }
+>t : [string, number] | undefined
+
+var e4 = o.t[2];
+>e4 : undefined
+>o.t[2] : undefined
+>o.t : [string, number] | undefined
+>o : { t?: [string, number]; }
+>t : [string, number] | undefined
+>2 : 2
+
+o.t[3] = { a: "string" };
+>o.t[3] = { a: "string" } : { a: string; }
+>o.t[3] : undefined
+>o.t : [string, number] | undefined
+>o : { t?: [string, number]; }
+>t : [string, number] | undefined
+>3 : 3
+>{ a: "string" } : { a: string; }
+>a : string
+>"string" : "string"
+

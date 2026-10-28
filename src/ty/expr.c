@@ -6455,17 +6455,21 @@ static Ty const* tuple_numeric_name_access(Checker* me, Ty const* object, Ty con
     return ret;
 }
 
-static bool tuple_past_the_end(Checker* me, Ty const* object, Ty const* key) {
+bool ty_tuple_past_the_end(Checker* me, Ty const* object, Ty const* key) {
     // (A numeric string literal names an element too: tsc's isNumericLiteralName(propName))
     bool numeric_name = (key->flags & TYF_STRING_LITERAL) && !(key->flags & TYF_ENUM_LITERAL) && key->literal.string &&
         ty_is_numeric_name(key->literal.string);
     if (!(key->flags & TYF_NUMBER_LITERAL) && !numeric_name) return false;
     TyList types = object->kind == TY_UNION ? object->composite.types : (TyList){ .data = &object, .len = 1 };
+    // (Null and undefined aside: an element access's object is checkNonNullExpression's, TS18048 says the rest)
+    bool tuple = false;
     for (u32 i = 0; i < types.len; i++) {
+        if (types.data[i]->flags & TYF_NULLABLE) continue;
         Ty const* apparent = ty_apparent_type(me, types.data[i]);
         if (!ty_is_tuple(apparent) && !ty_tuple_shape(apparent)) return false; // (`[]` is its own target)
+        tuple = true;
     }
-    return true;
+    return tuple;
 }
 
 // `{ a: 1, b: "" }[k]` that doesn't find k (tsc's getPropertyTypeForIndexType on an object literal type): a missing
@@ -6815,7 +6819,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
                 Prop const* prop = ty_namespace_type_only_prop(me, object, ty_literal_name(me, key));
                 if (prop) ret = prop_type(me, prop);
             }
-            if (!ret && expr->property->form == PROPERTY_EXPR_BRACKET && tuple_past_the_end(me, object, key)) {
+            if (!ret && expr->property->form == PROPERTY_EXPR_BRACKET && ty_tuple_past_the_end(me, object, key)) {
                 return ty_intrinsic(me, TY_UNDEFINED); // TS2493/TS2514 (tsc's getPropertyTypeForIndexType)
             }
             if (!ret) {

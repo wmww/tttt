@@ -1,0 +1,54 @@
+//// [test/cases/ttttTuplePastTheEndElaboration.ts] ////
+
+=== ttttTuplePastTheEndElaboration.ts ===
+// Past the end of a tuple is undefined (tsc's getTupleElementTypeOutOfStartCount): an array literal's extra elements
+// against `[string, number] | undefined` elaborate to 'undefined', and an element access of a possibly undefined
+// tuple past its end is undefined after TS18048
+declare let a: [string, number] | undefined;
+>a : Symbol(a, Decl(ttttTuplePastTheEndElaboration.ts, 3, 11))
+
+var e1 = a![2];
+>e1 : Symbol(e1, Decl(ttttTuplePastTheEndElaboration.ts, 4, 3))
+>a : Symbol(a, Decl(ttttTuplePastTheEndElaboration.ts, 3, 11))
+
+declare let b: [string, number];
+>b : Symbol(b, Decl(ttttTuplePastTheEndElaboration.ts, 5, 11))
+
+var e2 = b[2];
+>e2 : Symbol(e2, Decl(ttttTuplePastTheEndElaboration.ts, 6, 3))
+>b : Symbol(b, Decl(ttttTuplePastTheEndElaboration.ts, 5, 11))
+
+declare let c: { t?: [string, number] };
+>c : Symbol(c, Decl(ttttTuplePastTheEndElaboration.ts, 7, 11))
+>t : Symbol(t, Decl(ttttTuplePastTheEndElaboration.ts, 7, 16))
+
+var e3 = c.t![2];
+>e3 : Symbol(e3, Decl(ttttTuplePastTheEndElaboration.ts, 8, 3))
+>c.t : Symbol(t, Decl(ttttTuplePastTheEndElaboration.ts, 7, 16))
+>c : Symbol(c, Decl(ttttTuplePastTheEndElaboration.ts, 7, 11))
+>t : Symbol(t, Decl(ttttTuplePastTheEndElaboration.ts, 7, 16))
+
+c.t = ["foo", 5, false, true];
+>c.t : Symbol(t, Decl(ttttTuplePastTheEndElaboration.ts, 7, 16))
+>c : Symbol(c, Decl(ttttTuplePastTheEndElaboration.ts, 7, 11))
+>t : Symbol(t, Decl(ttttTuplePastTheEndElaboration.ts, 7, 16))
+
+let x: [string, number] | undefined = ["foo", 5, false];
+>x : Symbol(x, Decl(ttttTuplePastTheEndElaboration.ts, 10, 3))
+
+declare let o: { t?: [string, number] };
+>o : Symbol(o, Decl(ttttTuplePastTheEndElaboration.ts, 11, 11))
+>t : Symbol(t, Decl(ttttTuplePastTheEndElaboration.ts, 11, 16))
+
+var e4 = o.t[2];
+>e4 : Symbol(e4, Decl(ttttTuplePastTheEndElaboration.ts, 12, 3))
+>o.t : Symbol(t, Decl(ttttTuplePastTheEndElaboration.ts, 11, 16))
+>o : Symbol(o, Decl(ttttTuplePastTheEndElaboration.ts, 11, 11))
+>t : Symbol(t, Decl(ttttTuplePastTheEndElaboration.ts, 11, 16))
+
+o.t[3] = { a: "string" };
+>o.t : Symbol(t, Decl(ttttTuplePastTheEndElaboration.ts, 11, 16))
+>o : Symbol(o, Decl(ttttTuplePastTheEndElaboration.ts, 11, 11))
+>t : Symbol(t, Decl(ttttTuplePastTheEndElaboration.ts, 11, 16))
+>a : Symbol(a, Decl(ttttTuplePastTheEndElaboration.ts, 13, 10))
+

@@ -2569,6 +2569,8 @@ bool ty_definitely_unassignable(Checker* me, Ty const* source, Ty const* target)
 // The type of `object[index]` (and `object.name`, the index being the name as a literal). Null if there's no such
 // property or the index isn't one that can be looked up
 Ty const* ty_access(Checker* me, Ty const* object, Ty const* index);
+// `object[key]` with a numeric key past the end of every tuple of object (TS2493 with an access node): undefined to tsc
+bool ty_tuple_past_the_end(Checker* me, Ty const* object, Ty const* key);
 // What ty_access() gives for the property `name` of a single object type that has it, without the name's literal type
 // (tsc makes that only for index signatures and mapped types, and when it's made is union order). Null when the object
 // isn't such a type (a union, intersection, list...) or lacks it: then ask ty_access() with ty_prop_name_literal()

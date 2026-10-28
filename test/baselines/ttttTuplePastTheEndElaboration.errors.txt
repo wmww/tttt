@@ -1,0 +1,51 @@
+ttttTuplePastTheEndElaboration.ts(5,13): error TS2493: Tuple type '[string, number]' of length '2' has no element at index '2'.
+ttttTuplePastTheEndElaboration.ts(7,12): error TS2493: Tuple type '[string, number]' of length '2' has no element at index '2'.
+ttttTuplePastTheEndElaboration.ts(9,15): error TS2493: Tuple type '[string, number]' of length '2' has no element at index '2'.
+ttttTuplePastTheEndElaboration.ts(10,18): error TS2322: Type 'false' is not assignable to type 'undefined'.
+ttttTuplePastTheEndElaboration.ts(10,25): error TS2322: Type 'true' is not assignable to type 'undefined'.
+ttttTuplePastTheEndElaboration.ts(11,50): error TS2322: Type 'false' is not assignable to type 'undefined'.
+ttttTuplePastTheEndElaboration.ts(13,10): error TS18048: 'o.t' is possibly 'undefined'.
+ttttTuplePastTheEndElaboration.ts(13,14): error TS2493: Tuple type '[string, number]' of length '2' has no element at index '2'.
+ttttTuplePastTheEndElaboration.ts(14,1): error TS18048: 'o.t' is possibly 'undefined'.
+ttttTuplePastTheEndElaboration.ts(14,1): error TS2322: Type '{ a: string; }' is not assignable to type 'undefined'.
+ttttTuplePastTheEndElaboration.ts(14,5): error TS2493: Tuple type '[string, number]' of length '2' has no element at index '3'.
+
+
+==== ttttTuplePastTheEndElaboration.ts (11 errors) ====
+    // Past the end of a tuple is undefined (tsc's getTupleElementTypeOutOfStartCount): an array literal's extra elements
+    // against `[string, number] | undefined` elaborate to 'undefined', and an element access of a possibly undefined
+    // tuple past its end is undefined after TS18048
+    declare let a: [string, number] | undefined;
+    var e1 = a![2];
+                ~
+!!! error TS2493: Tuple type '[string, number]' of length '2' has no element at index '2'.
+    declare let b: [string, number];
+    var e2 = b[2];
+               ~
+!!! error TS2493: Tuple type '[string, number]' of length '2' has no element at index '2'.
+    declare let c: { t?: [string, number] };
+    var e3 = c.t![2];
+                  ~
+!!! error TS2493: Tuple type '[string, number]' of length '2' has no element at index '2'.
+    c.t = ["foo", 5, false, true];
+                     ~~~~~
+!!! error TS2322: Type 'false' is not assignable to type 'undefined'.
+                            ~~~~
+!!! error TS2322: Type 'true' is not assignable to type 'undefined'.
+    let x: [string, number] | undefined = ["foo", 5, false];
+                                                     ~~~~~
+!!! error TS2322: Type 'false' is not assignable to type 'undefined'.
+    declare let o: { t?: [string, number] };
+    var e4 = o.t[2];
+             ~~~
+!!! error TS18048: 'o.t' is possibly 'undefined'.
+                 ~
+!!! error TS2493: Tuple type '[string, number]' of length '2' has no element at index '2'.
+    o.t[3] = { a: "string" };
+    ~~~
+!!! error TS18048: 'o.t' is possibly 'undefined'.
+    ~~~~~~
+!!! error TS2322: Type '{ a: string; }' is not assignable to type 'undefined'.
+        ~
+!!! error TS2493: Tuple type '[string, number]' of length '2' has no element at index '3'.
+    
