@@ -15876,7 +15876,15 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
     // without isUsingDeclaration's lookahead, `@dec using 1` is TS1134)
     p.shared->using_forced = !vec_expr_is_empty(&decorators);
     p.shared->let_forced = vec_spanned_modifier_size(&modifiers.spanned) > 0;
-    p.shared->decl_modifiers_failed = modifiers_would_fail(&p, &modifiers, dry, MODIFIED_VARIABLE_STATEMENT);
+    // (The dry checks below only for the kind the next word can start: one per declaration, not one per kind tried)
+    Parser word_p = parser(&p);
+    hop_whitespace(&word_p);
+    char const* word = word_p.pos;
+    parse_fail(&word_p);
+    bool any_modifier = !vec_spanned_modifier_is_empty(&modifiers.spanned);
+#define WORD_NEXT(w) (strncmp(word, w, sizeof(w) - 1) == 0)
+    p.shared->decl_modifiers_failed = any_modifier && (WORD_NEXT("var") || WORD_NEXT("let") || WORD_NEXT("const") ||
+        WORD_NEXT("using") || WORD_NEXT("await")) && modifiers_would_fail(&p, &modifiers, dry, MODIFIED_VARIABLE_STATEMENT);
     bool variable = decl_props.exported != DECL_EXPORTED_YES_DEFAULT &&
         parse_variable_statement(&p, expr_ctx_null, false, &parsed.variable);
     p.shared->decl_modifiers_failed = false;
@@ -15908,7 +15916,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             },
         };
     } else if (parse_class_decl_after(&p, modifiers.includes[MODIFIER_ABSTRACT],
-        modifiers_would_fail(&p, &modifiers, dry, MODIFIED_CLASS), decorated, &parsed.class)
+        any_modifier && WORD_NEXT("class") && modifiers_would_fail(&p, &modifiers, dry, MODIFIED_CLASS), decorated, &parsed.class)
     ) {
         modified.kind = MODIFIED_CLASS;
         parsed.class.full_span = span_from(a);
@@ -15938,7 +15946,8 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             },
         };
     } else if ((p.shared->decl_committed = decorated,
-        p.shared->decl_modifiers_failed = modifiers_would_fail(&p, &modifiers, dry, MODIFIED_INTERFACE),
+        p.shared->decl_modifiers_failed = any_modifier && WORD_NEXT("interface") &&
+            modifiers_would_fail(&p, &modifiers, dry, MODIFIED_INTERFACE),
         parse_interface_decl(&p, decl_props.exported == DECL_EXPORTED_YES_DEFAULT, &parsed.interface_decl))
     ) {
         modified.kind = MODIFIED_INTERFACE;
