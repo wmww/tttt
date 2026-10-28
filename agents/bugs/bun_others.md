@@ -59,8 +59,9 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   getPropertiesOfType of the modifiers type, a union property with a common non-public declaration and public through
   one member included; getUnionIndexInfos for its index signatures), tttt read the keys of `keyof (W | D)` (`keyof W &
   keyof D`, never): now union_mapped_keys() in expand_mapped() (members.c), test ttttMappedUnionKeyProperties. [fixed 004a96d40]
-- 99-V1's private_class_* files: `Pick<Writable<D>, "id"> & D` with D's `id` private (+TS2322 `W & D` to `{ id }`),
-  and -TS2339 `t.id` on `T extends W & D` (the `*_generic` entry below). [open]
+- 99-V1's private_class_* files: `Pick<Writable<D>, "id"> & D` with D's `id` private (+TS2322 `W & D` to `{ id }`):
+  tsgo's synthetic property is public if any member's is (getDeclarationModifierFlagsFromSymbol; Strada's was private
+  first), find_prop_in_intersection() now follows it. [fixed 6451b9c94]
 - Circular mapped types and interfaces whose members are being resolved: 10-C8c (`interface I9 extends
   Array<typeof a9>`), 11-C15 (`{ [K in "a"]: A1["a"] }`: tsc's property is missing, TS2339, where tttt says TS2615),
   93-R01a, 93-R01c, 93-R01d (mapped types with `as` clauses through each other), 12-C1d (`Alt<B, A>` alternating),
@@ -162,7 +163,9 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
 - 99-V1's TS2698/TS2700/TS2339 on intersections that reduce to never (spread, rest, keyof-mapped). [fixed ef5be1fd5]
 - `t.other` with `<T extends D & { id: string }>` (D's id private): tsc's reduced apparent type of T is never
   (TS2339), tttt's type literal inside the generic signature has TYF_COULD_CONTAIN_TYPE_VARIABLES and
-  is_known_object_for_reduction() declines to reduce (99-V1's `*_generic` lines). [open]
+  is_known_object_for_reduction() declines to reduce (99-V1's `*_generic` lines). Its constraint is reduced before the
+  this-argument goes in (apparent_type_inner()); a type literal nested in a generic signature's own constraint, with a
+  type parameter in it, still isn't. [fixed 6451b9c94]
 - checks-of-a-value-assigned-on-a-loop-back-edge (87 TS2322, TS2345...): tsc reports the assigned expression's errors
   twice, once while the loop's flow types are incomplete (getInitialOrAssignedType checks `x = more ? "a" :
   takeNum(x)` with x still `string`) and once in the ordinary check (`string | number`); tttt reports the second
