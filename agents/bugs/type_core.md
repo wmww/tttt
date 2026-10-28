@@ -107,9 +107,6 @@ passing tests).
   TS2322: the order in which the two explore the copies differs somewhere along that chain. Repro without the corpus
   checkout's symlink: /tmp project with `wpl -> <real webpack>` and a tsconfig whose only file is
   `wpl/examples/aggressive-merging/webpack.config.js` (types node, typeRoots wpl/node_modules/@types). [open]
-- Distributive conditional base constraint: with `S2<T> = T extends string ? T : number`,
-  `g2<T extends unknown[]>(x: [...{ [K in keyof T]: S2<T[K]> }])` widens `g2(['a'])` to `[string]`, tsc `["a"]` (its
-  forConstraint constraint of `S2<T[number]>` keeps the true branch with T's implied `string`). [open]
 - `StateId<U>` to `StateId<T>` (xstate's StateId, no variance measurement) gives TS2589 next to the TS2322 tsc also
   reports: the definitely-assignable checks instantiate deeply nested indexed-access chains. Repro:
   test/probes/xstate/state_id_deep_nesting.ts. [open]
@@ -120,8 +117,6 @@ passing tests).
   wildcard, where tsc's permissiveMapper maps every one it meets; the wildcard has to stay the wildcard wherever tsc
   special-cases it (getIndexType, instantiateMappedType's instantiateConstituent: both fixed 2026-10-18, a missed one
   decides a conditional type definitely false too early, ramdaToolsNoInfinite2's TS5114). [note]
-- **isTupleLikeType's length half**: an array-like context whose `length` is a number literal isn't tuple-like
-  (only the "0" property rule is in `context_is_tuple_like`). [open]
 - **Conditional true branch with `infer`s**: relating a deferred conditional through its true branch with `infer`s as
   unknown is done only when the check type is generic; with a generic extends type tsc has real inferences. [open]
 - A homomorphic mapped type over a `satisfies`/const object doesn't resolve its keys (the `computedOptions` mapped
