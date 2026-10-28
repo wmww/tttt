@@ -550,6 +550,11 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   (missing TS9009) [open], checker. Seed 20261031's
   inferFromAnnotatedReturn1 is now text-only (`computation: {}` in tsgo's TS2365 type, an arrow's type printed
   mid-inference as `{}`), its contextualTypesNegatedTypeLikeConstraintInGenericMappedType2 fixed (c6c305d83).
+- Mutation seed 20261104 (bun9, `--syntax`, 2000: 4 errors-component differences, 2 render): a bodiless signature's
+  parameter pattern reports every element once one isn't a renaming (f47710625), a destructuring rest element's
+  initializer resolves silently (712fb465d), a namespace body's missing `}` has no TS1007 (161cda90c). Left: [open]
+  circularInlineMappedGenericTupleTypeNoCrash: TS2464's underline on a broken computed name `[P in keyof Elements]`
+  in an object literal is one character shorter than tsgo's (render only).
 - After a parameter's modifiers a reserved word is TS1359 (parseBindingIdentifier), not TS1003: `declare function`
   where a parameter was expected (seed 20261101, contextualParamTypeVsNestedReturnTypeInference4;
   ttttParameterModifierReservedName). [fixed 56abcd061]
