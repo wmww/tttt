@@ -5,18 +5,18 @@ open ones are tagged `[note]` and don't count in the headline; they block turnin
 `scripts/sgcheck.py` (flagged runs at K 1/4/8/16, the scheduler's deal and a program-order round robin, against plain
 K1 byte for byte). Census 2026-10-29 (K8, both deals, 3 runs each, the 43 hub projects and 15 corpora of
 scripts/sharedgraph/sgcheck_projects.txt, load 8-15): main at ab39dce20 12 of 348 runs differ in 5 projects
-(auth-api 3, folo renderer 2, better-drizzle 5, drizzle 1, effect 1); wt-sg after 30bee8a72 6 runs in 3 projects
-(better-drizzle 4, drizzle 1, effect 1), after 756a0b2d4 better-drizzle 0/21.
+(auth-api 3, folo renderer 2, better-drizzle 5, drizzle 1, effect 1); wt-sg after a775230c7 6 runs in 3 projects
+(better-drizzle 4, drizzle 1, effect 1), after 7e7f10ccb better-drizzle 0/21.
 
 - **openbot/apps/auth-api: private names raced** (hub_regime.md's 75 TS2345s): ty_private_name() returned its own
   `#x` atom when another checker's was published first; the class's members carried the winner's, so lookups missed
-  them (TS18014, TS6133, `unknown`/`{}` through Effect chains). 10/10 runs before, 0/60 after. [fixed 30bee8a72]
+  them (TS18014, TS6133, `unknown`/`{}` through Effect chains). 10/10 runs before, 0/60 after. [fixed a775230c7]
 - **No one-checker rerun under the flag**: a history-dependent TS2589 stayed whatever the schedule hit
-  (better-drizzle src/shared/client/factory.ts(77,19)). The flag reruns now, in a fresh graph. [fixed 756a0b2d4]
+  (better-drizzle src/shared/client/factory.ts(77,19)). The flag reruns now, in a fresh graph. [fixed 7e7f10ccb]
 - **TSan groups**: the could-contain-type-variables memo in xflags bits (fetch_or against plain reads, five groups)
   and KEY_PROP_WRITE_TYPE's null "none" written into another checker's published block (intern_set()), fixed by
-  90735aabd; ty_reduced_slow()'s second KEY_REDUCED_UNION store into a possibly published block, fixed by 3be65fc1d.
-  TSan clean on drizzle, effect, excalidraw, zod at T4/T8 after. [fixed 90735aabd]
+  67068f9da; ty_reduced_slow()'s second KEY_REDUCED_UNION store into a possibly published block, fixed by a1349a3a9.
+  TSan clean on drizzle, effect, excalidraw, zod at T4/T8 after. [fixed 67068f9da]
 - **drizzle residue C** (sharing_design.md §4): the Gel/MySql query builders' `execute` chains (TS2430/TS2416 at
   src/gel-core/query-builders/delete.ts(98,18), insert.ts(198,18), update.ts(280,18), mysql2/session.ts(281,17))
   missing or elaborated differently (`Promise<unknown>`). 5/10 K8 runs with the scheduler's deal, 0/30 with the round
@@ -42,5 +42,13 @@ scripts/sharedgraph/sgcheck_projects.txt, load 8-15): main at ab39dce20 12 of 34
   next step a fingerprint build without the record pass (compare against a stored K1 dump). [note]
 - **folo/apps/desktop/layer/renderer** (residue W): data-control.tsx(36,77) and CustomIntegrationSection.tsx(18,3)
   TS2345, `GeneralSettings[K]` with `K extends keyof ReturnType<typeof getSettingsRaw>` read as `never`, 1/6 K8 runs
-  with the scheduler's deal (2/3 on main before 30bee8a72, so possibly partly the private-name race), 0/6 round robin.
+  with the scheduler's deal (2/3 on main before a775230c7, so possibly partly the private-name race), 0/6 round robin.
   Repro: `scripts/sgcheck.py -f 'folo/apps/desktop/layer/renderer' -k 8 -n 6`. [note]
+- **mikro-orm/packages/seeder at K16, round robin**: packages/core/src/entity/Reference.ts(131,44) TS2322 "Type
+  'object' is not assignable to type 'T'", 2/2 runs at K16 rr, 0/10 at K4/K8 and K16 with the scheduler's deal
+  (shared_graph.md's residue C listed mikro-orm; not yet run under the content order). Repro: `scripts/sgcheck.py -f
+  'mikro-orm/packages/seeder' -k 16 --deals rr -n 4`. [note]
+
+Final state on wt-sg rebased on fc64a1ea3 (2026-10-29, the default list at K 4/8/16, both deals, 2 runs, 696 runs):
+9 differ in 4 projects: drizzle 2 (K8 def, C), effect 3, folo renderer 2 (K16 def), mikro-orm seeder 2 (K16 rr).
+TSan clean at T8 on drizzle, effect, excalidraw, zod, vue (with the lazily made instance properties).
