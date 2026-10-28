@@ -760,11 +760,13 @@ static csview program_cwd(Program const* me) {
 // view of path then, else of *storage (which the caller drops)
 // The loader's hint (program_load_module_ref()): a load pool worker's canonical view of the path whose characters are at
 // buf, a resolution's (the resolver's, not moved meanwhile). The worker scanned the path, the loader needn't
-static thread_local struct { char const* buf; isize size; csview canonical; } canonical_hint;
+// stable: buf is the resolver's own (a copy's characters on the heap are the resolver's too; a short string's are in
+// the copy, on the stack), which stays put as long as the resolver
+static thread_local struct { char const* buf; isize size; csview canonical; bool stable; } canonical_hint;
 
 // The last source_files_map lookup by a view whose characters are at buf (the loader asks for one path two or three
 // times per import: whether it's new, then to add it). Forgotten at every insert
-static thread_local struct { u32 program; char const* buf; isize size; SourceFile* found; } lookup_memo; // (program: its serial)
+static thread_local struct { u32 program; char const* buf; isize size; SourceFile* found; bool stable; } lookup_memo; // (program: its serial)
 
 typedef struct SourceFile SourceFile;
 static SourceFile* program_lookup_canonical(Program const* me, csview canonical);
@@ -1044,6 +1046,7 @@ static void program_load_module_ref_inner(Program* me, SourceFile* source, Modul
         canonical_hint.buf = cstr_str(&resolved.path);
         canonical_hint.size = cstr_size(&resolved.path);
         canonical_hint.canonical = canonical;
+        canonical_hint.stable = cstr_str(&resolved.path) == cstr_str(&shared->path);
     }
     program_learn_symlink_shared(me, shared);
     // A referenced project's .tsx/.jsx source when this program has no --jsx: tsc's resolveExternalModule has the
@@ -1096,13 +1099,15 @@ static void program_load_module_ref_inner(Program* me, SourceFile* source, Modul
     }
     // (The resolver's resolution, not a copy: its name's characters stay put, so the same buffer is the same name, and
     // a name met again needs nothing, a declaration file's flag once set stays)
-    bool same_package = !owned && cstr_str(&resolved.package_name) == my last_package_name &&
+    char const* package_chars = !owned && cstr_str(&resolved.package_name) == cstr_str(&shared->package_name) ?
+        cstr_str(&shared->package_name) : nullptr;
+    bool same_package = package_chars && package_chars == my last_package_name &&
         (resolved.kind != RESOLVED_DTS || my last_package_dts);
     if (cstr_size(&resolved.package_name) && !same_package) {
         auto found = hmap_package_flag_get_mut(&my packages, cstr_sv(&resolved.package_name));
         PackageFlag* flag = found ? &found->second : &hmap_package_flag_insert(&my packages, cstr_clone(resolved.package_name), 0).ref->second;
         if (resolved.kind == RESOLVED_DTS) *flag = 1;
-        my last_package_name = owned ? nullptr : cstr_str(&resolved.package_name);
+        my last_package_name = package_chars;
         my last_package_dts = *flag;
     }
     if (program_options_of(me, source)->no_resolve) {
@@ -1156,11 +1161,12 @@ static void program_load_module_ref_inner(Program* me, SourceFile* source, Modul
 static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* ref) {
     program_load_module_ref_inner(me, source, ref);
     // (The hint is good for this resolution only: its path may be freed, and the address reused, after loading. The
-    // lookup memo's view is the resolver's path then, which stays put as long as the program's resolver: it stays until
-    // the next insert, for the file's next import of the same file, unless the path was a copy, program_redirects())
+    // lookup memo's view is the resolver's own path when it was stable (see canonical_hint), which stays put as long as
+    // the program's resolver: it stays until the next insert, for the file's next import of the same file)
     canonical_hint.buf = nullptr;
     canonical_hint.size = 0;
-    if (my redirects) lookup_memo.buf = nullptr;
+    canonical_hint.stable = false;
+    if (!lookup_memo.stable) lookup_memo.buf = nullptr;
 }
 
 // The same version of a package installed twice is one package (tsc's packageIdToSourceFile), unless
@@ -2035,6 +2041,7 @@ static SourceFile* program_lookup_canonical(Program const* me, csview canonical)
         lookup_memo.buf = canonical.buf;
         lookup_memo.size = canonical.size;
         lookup_memo.found = ret;
+        lookup_memo.stable = canonical_hint.stable;
     }
     return ret;
 }
