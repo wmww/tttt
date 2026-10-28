@@ -566,6 +566,23 @@ never-const (harness writes no errors baseline).
   the excess-property message itself is reported. [open]
 - **elaboration TS2344** (distributiveConditionalBaseConstraint drop-optional): the chain differs. [text]
 
+## Mutation seed 2811 (2026-10-28, cor8: `scripts/mutate.py -n 8000 --seed 2811`, 9 of 8000 differ)
+- classDoesNotDependOnBaseTypes ann-number-string: writing `x[0]` on `string | StringTreeCollection` (a string index
+  signature) is TS7053 in tsgo: the union has an index signature only for the key types its first member has and every
+  member has exactly (getUnionIndexInfos), none here; tttt's write check took any member's applicable readonly one
+  (String's) and said TS2542. ty_union_index_info (access.c) now. Test ttttUnionWriteIndexExactKeys. Left: `string |
+  T` with T constrained to a string index misses that TS7053 (generic member). [fixed HASH]
+- renamingDestructuredPropertyInFunctionType3 delete-stmt: TS2304 for a computed name in a function type's parameter
+  pattern is found only by tsgo's emit resolver (the harness's pre/post-emit count mismatch); tsgo's CLI reports it
+  like tttt. [tsgo]
+- Not looked at: assignmentGenericLookupTypeNarrowing str-to-num (missing TS2536 `Type 'K' cannot be used to index` for
+  `K extends 42` on a mapped `{[K in "foo"]: ...}`), contextualTypeWithUnionTypeIndexSignatures ann-number-string
+  (TS2322 position: tsgo elaborates into the method's return, tttt reports at the declaration), reachabilityChecksNoCrash1
+  never-const (spurious TS2693), recursiveTypeInference add-optional (TS2345 text), circularBaseTypes delete-stmt
+  (missing TS2310, the base cycle design), nonPrimitiveAndEmptyObject drop-optional (TS2339 names the narrowed `{}`
+  in tsgo, the union in tttt), ambientExternalModuleWithRelativeExternalImportDeclaration delete-stmt (spurious TS2307
+  for a relative import in an ambient module once nothing uses it). [open]
+
 ## Mutation seed 2810 (2026-10-28, cor8: `MUTATE_DIR=/tmp/X scripts/mutate.py -n 8000 --seed 2810 --tests multi,js`)
 27 of 8000 differ: 9 render, the rest below or known (commonJSAliasedExport/moduleExportAlias5 never-const, importTag14,
 umd7, typeTagNoErasure, importHelpersES6: the seeds 2311/2312 entries).

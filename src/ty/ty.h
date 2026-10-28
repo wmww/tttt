@@ -3327,6 +3327,9 @@ static inline u32 ty_key_flags(Ty const* index) {
     return flags;
 }
 IndexInfo const* ty_applicable_index_info(Checker* me, Ty const* object, Ty const* index); // Of an apparent type
+// A union's index signature applicable to `index` (tsc's getUnionIndexInfos: the first member's key types every member
+// has exactly, readonly if any member's is), its value type the first member's; null if none. Unknown shapes: null
+bool ty_union_index_info(Checker* me, Ty const* object, Ty const* index, IndexInfo* out);
 IndexInfo const* ty_applicable_index_info_for_name(Checker* me, Ty const* object, Atom const* name); // A union member's, see access.c
 void ty_check_export_equals_property_reference(Checker* me, struct IdentifierType const* identifier); // lower.c
 // The symbols baseline's symbol of a type reference to a property of what `export =` names (the type it is, the

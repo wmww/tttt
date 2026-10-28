@@ -145,6 +145,35 @@ IndexInfo const* ty_applicable_index_info_for_name(Checker* me, Ty const* object
     return ty_applicable_index_info(me, object, key);
 }
 
+bool ty_union_index_info(Checker* me, Ty const* object, Ty const* index, IndexInfo* out) {
+    if (object->kind != TY_UNION || !object->composite.types.len) return false;
+    IndexInfo kept[8];
+    u32 kept_count = 0;
+    for (u32 i = 0; i < object->composite.types.len; i++) {
+        Ty const* member = ty_apparent_type(me, object->composite.types.data[i]);
+        if (!(member->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false;
+        Members const* m = ty_members(me, member);
+        if (i == 0) {
+            for (u32 j = 0; j < m->index_count && kept_count < c_arraylen(kept); j++) kept[kept_count++] = m->index[j];
+            continue;
+        }
+        u32 n = 0;
+        for (u32 k = 0; k < kept_count; k++) {
+            IndexInfo const* same = nullptr;
+            for (u32 j = 0; j < m->index_count && !same; j++) if (m->index[j].key == kept[k].key) same = &m->index[j];
+            if (!same) continue;
+            kept[n] = kept[k];
+            kept[n].readonly |= same->readonly;
+            n++;
+        }
+        kept_count = n;
+    }
+    IndexInfo const* found = find_applicable_index_info(me, kept, kept_count, index);
+    if (!found) return false;
+    *out = *found;
+    return true;
+}
+
 IndexInfo const* ty_applicable_index_info(Checker* me, Ty const* object, Ty const* index) {
     // (An intersection's are its members' intersected per key, see resolve_intersection_members())
     Members const* members = ty_members(me, object);

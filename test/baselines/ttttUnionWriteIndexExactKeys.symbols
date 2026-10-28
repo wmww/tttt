@@ -1,0 +1,25 @@
+//// [test/cases/ttttUnionWriteIndexExactKeys.ts] ////
+
+=== ttttUnionWriteIndexExactKeys.ts ===
+// Writing through a union's index signature: the union has one only for the key types its first member has and every member
+// has exactly (tsc's getUnionIndexInfos): `string | { [k: string]: string }` is TS7053, not a readonly TS2542
+declare let u1: string | { [k: string]: string };
+>u1 : Symbol(u1, Decl(ttttUnionWriteIndexExactKeys.ts, 2, 11))
+>k : Symbol(k, Decl(ttttUnionWriteIndexExactKeys.ts, 2, 28))
+
+u1[0] = "";
+>u1 : Symbol(u1, Decl(ttttUnionWriteIndexExactKeys.ts, 2, 11))
+
+declare let u2: string | string[];
+>u2 : Symbol(u2, Decl(ttttUnionWriteIndexExactKeys.ts, 4, 11))
+
+u2[0] = "";
+>u2 : Symbol(u2, Decl(ttttUnionWriteIndexExactKeys.ts, 4, 11))
+
+declare let u3: { [k: string]: string } | readonly string[];
+>u3 : Symbol(u3, Decl(ttttUnionWriteIndexExactKeys.ts, 6, 11))
+>k : Symbol(k, Decl(ttttUnionWriteIndexExactKeys.ts, 6, 19))
+
+u3[0] = "";
+>u3 : Symbol(u3, Decl(ttttUnionWriteIndexExactKeys.ts, 6, 11))
+

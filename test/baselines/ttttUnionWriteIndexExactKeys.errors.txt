@@ -1,0 +1,25 @@
+ttttUnionWriteIndexExactKeys.ts(4,1): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'string | { [k: string]: string; }'.
+  Property '0' does not exist on type 'string | { [k: string]: string; }'.
+ttttUnionWriteIndexExactKeys.ts(6,1): error TS2542: Index signature in type 'string | string[]' only permits reading.
+ttttUnionWriteIndexExactKeys.ts(8,1): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'readonly string[] | { [k: string]: string; }'.
+  Property '0' does not exist on type 'readonly string[] | { [k: string]: string; }'.
+
+
+==== ttttUnionWriteIndexExactKeys.ts (3 errors) ====
+    // Writing through a union's index signature: the union has one only for the key types its first member has and every member
+    // has exactly (tsc's getUnionIndexInfos): `string | { [k: string]: string }` is TS7053, not a readonly TS2542
+    declare let u1: string | { [k: string]: string };
+    u1[0] = "";
+    ~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'string | { [k: string]: string; }'.
+!!! error TS7053:   Property '0' does not exist on type 'string | { [k: string]: string; }'.
+    declare let u2: string | string[];
+    u2[0] = "";
+    ~~~~~
+!!! error TS2542: Index signature in type 'string | string[]' only permits reading.
+    declare let u3: { [k: string]: string } | readonly string[];
+    u3[0] = "";
+    ~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'readonly string[] | { [k: string]: string; }'.
+!!! error TS7053:   Property '0' does not exist on type 'readonly string[] | { [k: string]: string; }'.
+    

@@ -5195,20 +5195,11 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
         Ty const* apparent = ty_apparent_type(me, object);
         Ty const* key = ty_regular(me, ty_access_key_type(me, access));
         IndexInfo const* info = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty_applicable_index_info(me, apparent, key) : nullptr;
-        // (Of a union, any member's: tsc's getIndexedAccessType goes member by member, `string | T` has String's
-        // readonly number index signature, and names the union)
-        // (A union has an index signature only if every member has one: tsc's getIndexInfosOfType of a union. A member
-        // without one makes it TS7053, nothing about reading)
-        if (!info && apparent->kind == TY_UNION && !(apparent->flags & TYF_BOOLEAN)) {
-            IndexInfo const* readonly_info = nullptr;
-            bool all = true;
-            for (u32 i = 0; all && i < apparent->composite.types.len; i++) {
-                Ty const* member = ty_apparent_type(me, apparent->composite.types.data[i]);
-                IndexInfo const* member_info = member->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty_applicable_index_info(me, member, key) : nullptr;
-                all = member_info != nullptr;
-                if (member_info && member_info->readonly) readonly_info = member_info;
-            }
-            if (all) info = readonly_info;
+        // (A union has an index signature only for the key types its first member has exactly and every member has: tsc's
+        // getUnionIndexInfos. `string | { [k: string]: string }` has none, TS7053 then, nothing about reading)
+        IndexInfo union_info;
+        if (!info && apparent->kind == TY_UNION && !(apparent->flags & TYF_BOOLEAN) && ty_union_index_info(me, apparent, key, &union_info)) {
+            info = &union_info;
         }
         if (info && info->readonly) {
             cstr object_str = ty_to_cstr(me, apparent); // (tsc shows the apparent type either way)
