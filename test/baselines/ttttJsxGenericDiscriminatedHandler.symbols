@@ -1,0 +1,110 @@
+//// [test/cases/ttttJsxGenericDiscriminatedHandler.tsx] ////
+
+=== ttttJsxGenericDiscriminatedHandler.tsx ===
+// origin: npm Doezer/Questarr @ de563f0 (tsconfig.bench.json), client/src/components/CompactGameCard.tsx:361, wouter 3.13 Link
+// flip: yes
+// A generic component (Link<H = BH>) whose props are a union discriminated by an absent `asChild`: while the call infers H,
+// the attribute function takes its contextual signature from the discriminated member
+declare namespace JSX { interface Element {} interface IntrinsicElements {} }
+>JSX : Symbol(JSX, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 0, 0))
+>Element : Symbol(Element, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 4, 23))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 4, 44))
+
+interface Ev<T> { target: T; stop(): void }
+>Ev : Symbol(Ev, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 4, 77))
+>T : Symbol(T, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 5, 13))
+>target : Symbol(Ev.target, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 5, 17))
+>T : Symbol(T, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 5, 13))
+>stop : Symbol(Ev.stop, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 5, 28))
+
+type Handler<T = Element> = (e: Ev<T>) => void;
+>Handler : Symbol(Handler, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 5, 43))
+>T : Symbol(T, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 6, 13))
+>Element : Symbol(Element, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>e : Symbol(e, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 6, 29))
+>Ev : Symbol(Ev, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 4, 77))
+>T : Symbol(T, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 6, 13))
+
+type Hook = (...args: any[]) => [string, (path: string, ...args: any[]) => any];
+>Hook : Symbol(Hook, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 6, 47))
+>args : Symbol(args, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 7, 13))
+>path : Symbol(path, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 7, 42))
+>args : Symbol(args, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 7, 55))
+
+type Opts<H extends Hook> = NonNullable<Parameters<ReturnType<H>[1]>[1]>;
+>Opts : Symbol(Opts, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 7, 80))
+>H : Symbol(H, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 8, 10))
+>Hook : Symbol(Hook, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 6, 47))
+>NonNullable : Symbol(NonNullable, Decl(lib.es5.d.ts, --, --))
+>Parameters : Symbol(Parameters, Decl(lib.es5.d.ts, --, --))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>H : Symbol(H, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 8, 10))
+
+type Nav<H extends Hook> = { href: string } & Opts<H>;
+>Nav : Symbol(Nav, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 8, 73))
+>H : Symbol(H, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 9, 9))
+>Hook : Symbol(Hook, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 6, 47))
+>href : Symbol(href, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 9, 28))
+>Opts : Symbol(Opts, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 7, 80))
+>H : Symbol(H, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 9, 9))
+
+type AsChild<C, D> = ({ asChild?: false } & D) | ({ asChild: true } & C);
+>AsChild : Symbol(AsChild, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 9, 54))
+>C : Symbol(C, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 10, 13))
+>D : Symbol(D, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 10, 15))
+>asChild : Symbol(asChild, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 10, 23))
+>D : Symbol(D, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 10, 15))
+>asChild : Symbol(asChild, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 10, 51))
+>C : Symbol(C, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 10, 13))
+
+type Props<H extends Hook> = Nav<H> & AsChild<{ onClick?: Handler }, { onClick?: Handler<HTMLAnchorElement> }>;
+>Props : Symbol(Props, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 10, 73))
+>H : Symbol(H, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 11, 11))
+>Hook : Symbol(Hook, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 6, 47))
+>Nav : Symbol(Nav, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 8, 73))
+>H : Symbol(H, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 11, 11))
+>AsChild : Symbol(AsChild, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 9, 54))
+>onClick : Symbol(onClick, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 11, 47))
+>Handler : Symbol(Handler, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 5, 43))
+>onClick : Symbol(onClick, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 11, 70))
+>Handler : Symbol(Handler, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 5, 43))
+>HTMLAnchorElement : Symbol(HTMLAnchorElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+type BH = (o?: {}) => [string, (to: string, o?: { replace?: boolean }) => void];
+>BH : Symbol(BH, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 11, 111))
+>o : Symbol(o, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 12, 11))
+>to : Symbol(to, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 12, 32))
+>o : Symbol(o, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 12, 43))
+>replace : Symbol(replace, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 12, 49))
+
+declare function Link<H extends Hook = BH>(props: Props<H>): JSX.Element;
+>Link : Symbol(Link, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 12, 80))
+>H : Symbol(H, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 13, 22))
+>Hook : Symbol(Hook, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 6, 47))
+>BH : Symbol(BH, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 11, 111))
+>props : Symbol(props, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 13, 43))
+>Props : Symbol(Props, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 10, 73))
+>H : Symbol(H, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 13, 22))
+>JSX : Symbol(JSX, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 0, 0))
+>Element : Symbol(JSX.Element, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 4, 23))
+
+const a = <Link href="/x" onClick={(e) => { e.stop(); }} />;
+>a : Symbol(a, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 14, 5))
+>Link : Symbol(Link, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 12, 80))
+>href : Symbol(href, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 14, 15))
+>onClick : Symbol(onClick, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 14, 25))
+>e : Symbol(e, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 14, 36))
+>e.stop : Symbol(Ev.stop, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 5, 28))
+>e : Symbol(e, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 14, 36))
+>stop : Symbol(Ev.stop, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 5, 28))
+
+const b = Link({ href: "/x", onClick: (e) => { e.stop(); } });
+>b : Symbol(b, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 15, 5))
+>Link : Symbol(Link, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 12, 80))
+>href : Symbol(href, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 15, 16))
+>onClick : Symbol(onClick, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 15, 28))
+>e : Symbol(e, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 15, 39))
+>e.stop : Symbol(Ev.stop, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 5, 28))
+>e : Symbol(e, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 15, 39))
+>stop : Symbol(Ev.stop, Decl(ttttJsxGenericDiscriminatedHandler.tsx, 5, 28))
+

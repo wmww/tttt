@@ -5512,6 +5512,11 @@ static Ty const* check_jsx_attributes(Checker* me, Expr const* expr, ExprCtx ctx
     if (ctx.contextual && ctx.contextual->kind == TY_UNION) {
         ctx.contextual = discriminate_by_jsx_attributes(me, ctx.contextual, expr);
     }
+    // (And the view a contextual signature sees while a call infers, which the attributes discriminate as well: a generic
+    // component's `Props<H>` instantiated, `onClick={(e) => ...}` typed by the member `asChild` absent picks, wouter's Link)
+    if (ctx.sig_contextual && ctx.sig_contextual->kind == TY_UNION) {
+        ctx.sig_contextual = discriminate_by_jsx_attributes(me, ctx.sig_contextual, expr);
+    }
     LiteralBuilder builder = {0}; // The attributes since the last spread
     SpreadAcc spread = {0};
     bool has_attribute = false, has_spread = false, has_children = false;

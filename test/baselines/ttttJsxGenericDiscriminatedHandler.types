@@ -1,0 +1,81 @@
+//// [test/cases/ttttJsxGenericDiscriminatedHandler.tsx] ////
+
+=== ttttJsxGenericDiscriminatedHandler.tsx ===
+// origin: npm Doezer/Questarr @ de563f0 (tsconfig.bench.json), client/src/components/CompactGameCard.tsx:361, wouter 3.13 Link
+// flip: yes
+// A generic component (Link<H = BH>) whose props are a union discriminated by an absent `asChild`: while the call infers H,
+// the attribute function takes its contextual signature from the discriminated member
+declare namespace JSX { interface Element {} interface IntrinsicElements {} }
+interface Ev<T> { target: T; stop(): void }
+>target : T
+>stop : () => void
+
+type Handler<T = Element> = (e: Ev<T>) => void;
+>Handler : Handler<T>
+>e : Ev<T>
+
+type Hook = (...args: any[]) => [string, (path: string, ...args: any[]) => any];
+>Hook : Hook
+>args : any[]
+>path : string
+>args : any[]
+
+type Opts<H extends Hook> = NonNullable<Parameters<ReturnType<H>[1]>[1]>;
+>Opts : Opts<H>
+
+type Nav<H extends Hook> = { href: string } & Opts<H>;
+>Nav : Nav<H>
+>href : string
+
+type AsChild<C, D> = ({ asChild?: false } & D) | ({ asChild: true } & C);
+>AsChild : AsChild<C, D>
+>asChild : false | undefined
+>false : false
+>asChild : true
+>true : true
+
+type Props<H extends Hook> = Nav<H> & AsChild<{ onClick?: Handler }, { onClick?: Handler<HTMLAnchorElement> }>;
+>Props : Props<H>
+>onClick : Handler<Element> | undefined
+>onClick : Handler<HTMLAnchorElement> | undefined
+
+type BH = (o?: {}) => [string, (to: string, o?: { replace?: boolean }) => void];
+>BH : BH
+>o : {} | undefined
+>to : string
+>o : { replace?: boolean; } | undefined
+>replace : boolean | undefined
+
+declare function Link<H extends Hook = BH>(props: Props<H>): JSX.Element;
+>Link : <H extends Hook = BH>(props: Props<H>) => JSX.Element
+>props : Props<H>
+>JSX : any
+
+const a = <Link href="/x" onClick={(e) => { e.stop(); }} />;
+>a : JSX.Element
+><Link href="/x" onClick={(e) => { e.stop(); }} /> : JSX.Element
+>Link : <H extends Hook = BH>(props: Props<H>) => JSX.Element
+>href : string
+>onClick : (e: Ev<HTMLAnchorElement>) => void
+>(e) => { e.stop(); } : (e: Ev<HTMLAnchorElement>) => void
+>e : Ev<HTMLAnchorElement>
+>e.stop() : void
+>e.stop : () => void
+>e : Ev<HTMLAnchorElement>
+>stop : () => void
+
+const b = Link({ href: "/x", onClick: (e) => { e.stop(); } });
+>b : JSX.Element
+>Link({ href: "/x", onClick: (e) => { e.stop(); } }) : JSX.Element
+>Link : <H extends Hook = BH>(props: Props<H>) => JSX.Element
+>{ href: "/x", onClick: (e) => { e.stop(); } } : { href: string; onClick: (e: Ev<HTMLAnchorElement>) => void; }
+>href : string
+>"/x" : "/x"
+>onClick : (e: Ev<HTMLAnchorElement>) => void
+>(e) => { e.stop(); } : (e: Ev<HTMLAnchorElement>) => void
+>e : Ev<HTMLAnchorElement>
+>e.stop() : void
+>e.stop : () => void
+>e : Ev<HTMLAnchorElement>
+>stop : () => void
+
