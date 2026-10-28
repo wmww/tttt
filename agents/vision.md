@@ -95,6 +95,19 @@ measured wins first; land fast and gate in batches.
 6. **Re-pin to 7.1.0 stable** when it ships.
 
 ## Decisions (each with its reason; the narrative is in git history of this file)
+- **The shared graph ships as an option for hub-shaped projects; the per-checker model stays the default**
+  (2026-10-30, the coordinator's call on the go/no-go table the human asked for, hub_regime.md "The go/no-go table";
+  the human can overrule). On today's main (33e018294: walk order, variance frames, private caching, the graph's own
+  mappings) the flag is byte-identical to one plain checker on 0 of 464 flagged runs and TSan-clean, so correctness no
+  longer blocks it. Perf does: at the defaults it slows 30 of 58 projects by over 5% (every corpus but drizzle and
+  excalidraw: react +43%, xstate +29%, zod +27%, effect +16%, vscode +6%) to speed up 19 (i18n -50%, team-client -34%,
+  drizzle -9%), median wall 1.00, median RSS 0.74. The ceiling is mechanical: the flag pays ~1.15-1.3x per shared
+  read and can win only where plain duplicates more than ~2.5x (hubs: 2.3-6x); the corpora duplicate 1.2-1.8x at 8
+  checkers. So `--shared-graph` is documented as: lower memory on hub projects (-28% at the defaults, -42% at 16/16)
+  and up to 2x faster where many files import one large hub. The threading track's other results stand: the
+  erosion of tttt's lead with threads is duplication (hub_regime.md), the only architecture beyond this is building a
+  hub's members in parallel (modelled -50% on dokploy's check for ~2% of projects, weeks: todo.md "Parked"). A K7/K8
+  deep-cut storm under the flag on monkeytype/frontend (3-10x check CPU in some runs, output identical) is a [note].
 - **The shared graph's premium is attributed; no switch rescues it** (2026-10-29, worker premium; notes/shared_graph.md
   "The premium, attributed", hub_regime.md "The break-even curve" and the predictor section). The +15% CPU at K8 is
   not coherence: the flag's instructions are at or below plain's at K8 (it removes the duplication: types made K8/K1

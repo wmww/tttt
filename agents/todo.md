@@ -40,7 +40,17 @@ than bun canary on real projects, judged on their private set (perf work needs a
 check, not the bench, and no machine-specific tuning: vision.md "Decisions"); memory where cheap; easy, measured
 wins first; land fast and gate in batches.
 
-## Now (2026-10-28): the hub regime, the laptop's two A/Bs
+## Now (2026-10-30): the vscode regression since v1, then correctness
+- **vscode since v1** (measurements.md "vscode since v1: the regression attributed", bugs/perf_leads.md): worker rehuge
+  brings the arena/AST huge pages back with a kernel-configuration guard (THP enabled/defrag; v1's free-block budget
+  as the fallback) and makes a5a0b7100's second inference cheaper; the huge text page needs a THP-`always` box (the
+  human's laptop) to measure: v1 vs main vs `git revert 4f3fa414e 24820df46` at K1 on vscode.
+- **Correctness resumes** (the human, 2026-10-29: when the perf track completes or walls): cor3's queue
+  (bugs/missing_checks.md, type_core.md, the 99-V4 leftovers), the bun worker's parser keys, then the lists.
+- **The shared graph as an option**: documentation.md and `--help` describe `--shared-graph` as above; the
+  monkeytype/frontend K7/K8 deep-cut storm (bugs/shared_graph.md) is its open perf bug.
+
+## Done (2026-10-28/29): the hub regime, the shared graph's finish line
 - **The shared graph at the laptop's 24 threads** (the next point on the break-even curve, hub_regime.md): flag
   against plain at the defaults and at `--threads 24 --checkers 24` on zod, drizzle, effect, vscode, dokploy/apps/
   dokploy and openbot/apps/i18n (physical paths), best of 5 interleaved, wall, user, RSS; `TTTT_SHARED_GRAPH=1` is the
