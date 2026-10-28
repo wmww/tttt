@@ -1911,7 +1911,14 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             // unless a JSDoc `@type` gives it one)
             uintptr_t outer_root = flow->context_root;
             flow->context_root = my expr_jsdoc_type ? 0 : context_root_make(&my expr, CONTEXT_ROOT_EXPR);
-            expr_lookup_names(&my expr, names, errs);
+            // (`declare export default x`: the expression is in an ambient context, see STATEMENT_DECL_VARIABLE)
+            Scope* expr_names = names;
+            if (my export_declared && !names->ambient) {
+                expr_names = scope_new(names, SCOPE_BLOCK);
+                expr_names->ambient = true;
+                expr_names->binder_transparent = true;
+            }
+            expr_lookup_names(&my expr, expr_names, errs);
             flow->context_root = outer_root;
             flow->in_type_query = saved_type_query;
             flow->export_equals_name = false;

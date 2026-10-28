@@ -15737,6 +15737,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
     }
     decorated = !vec_expr_is_empty(&decorators); // (Trailing ones too: `export @dec type { A }` is a type alias)
     const char* keyword = p.pos;
+    bool export_assignment_modifiers = false; // `declare export default x`: the modifiers before `export default`
     DeclStatementProps decl_props = {
         .exported = modifiers.includes[MODIFIER_EXPORT_DEFAULT] ?
             DECL_EXPORTED_YES_DEFAULT :
@@ -15877,6 +15878,19 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             .tag = STATEMENT_EXPORT_DEFAULT_EXPR,
             .expr = parsed.expr,
         };
+        // The `export default` before an expression is no pair of modifiers to tsc (nextTokenCanFollowDefaultKeyword):
+        // it is the export assignment, which the modifiers before it are on (TS1120, and `declare` makes it ambient)
+        isize n = vec_spanned_modifier_size(&modifiers.spanned);
+        if (n >= 2 && vec_spanned_modifier_at(&modifiers.spanned, n - 1)->tag == MODIFIER_EXPORT_DEFAULT &&
+            vec_spanned_modifier_at(&modifiers.spanned, n - 2)->tag == MODIFIER_EXPORT
+        ) {
+            modifiers.spanned.size -= 2;
+            modifiers.includes[MODIFIER_EXPORT_DEFAULT] = false;
+            modifiers.includes[MODIFIER_EXPORT] = false;
+            for_each (i, vec_spanned_modifier, &modifiers.spanned) modifiers.includes[i->tag] = true;
+            ret->export_declared = modifiers.includes[MODIFIER_DECLARE];
+            export_assignment_modifiers = true;
+        }
     } else if (decl_props.exported != DECL_EXPORTED_YES_DEFAULT &&
         (p.shared->decl_committed = decorated, parse_namespace(&p, &parsed.namespace_decl))
     ) {
@@ -15990,6 +16004,9 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
     }
     p.shared->in_ambient = outer_ambient;
     bool modifiers_reported = check_modifiers(&p, &modifiers, modified);
+    if (export_assignment_modifiers && !modifiers_reported && !vec_spanned_modifier_is_empty(&modifiers.spanned)) {
+        grammar_error(&p, vec_spanned_modifier_front(&modifiers.spanned)->span, 1120, "An export assignment cannot have modifiers.");
+    }
     js_syntax_declaration(&p, mark, a.start, keyword, ret);
 
     if (!vec_expr_is_empty(&decorators)) {

@@ -1,0 +1,12 @@
+ttttDeclareExportDefaultLiteral.ts(2,1): error TS1120: An export assignment cannot have modifiers.
+ttttDeclareExportDefaultLiteral.ts(2,24): error TS2714: The expression of an export assignment must be an identifier or qualified name in an ambient context.
+
+
+==== ttttDeclareExportDefaultLiteral.ts (2 errors) ====
+    // `declare export default 1`: an export assignment with a `declare` modifier (TS1120), ambient (TS2714)
+    declare export default 1;
+    ~~~~~~~
+!!! error TS1120: An export assignment cannot have modifiers.
+                           ~
+!!! error TS2714: The expression of an export assignment must be an identifier or qualified name in an ambient context.
+    

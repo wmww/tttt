@@ -1,0 +1,20 @@
+ttttDeclareExportDefaultExpression.ts(4,1): error TS1120: An export assignment cannot have modifiers.
+ttttDeclareExportDefaultExpression.ts(4,24): error TS2714: The expression of an export assignment must be an identifier or qualified name in an ambient context.
+ttttDeclareExportDefaultExpression.ts(4,31): error TS1183: An implementation cannot be declared in ambient contexts.
+ttttDeclareExportDefaultExpression.ts(4,44): error TS1036: Statements are not allowed in ambient contexts.
+
+
+==== ttttDeclareExportDefaultExpression.ts (4 errors) ====
+    // `declare export default x`: before an expression `export default` is no pair of modifiers to tsc (its
+    // nextTokenCanFollowDefaultKeyword), so the statement is an export assignment with a `declare` modifier: TS1120, not
+    // TS1029, and ambient, its function expressions too: TS2714, TS1183, TS1036 (bun 80-R04)
+    declare export default (() => { for (;;) { break; } })();
+    ~~~~~~~
+!!! error TS1120: An export assignment cannot have modifiers.
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2714: The expression of an export assignment must be an identifier or qualified name in an ambient context.
+                                  ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+                                               ~~~~~
+!!! error TS1036: Statements are not allowed in ambient contexts.
+    
