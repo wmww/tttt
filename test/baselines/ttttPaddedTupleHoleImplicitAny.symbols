@@ -1,0 +1,10 @@
+//// [test/cases/ttttPaddedTupleHoleImplicitAny.ts] ////
+
+=== ttttPaddedTupleHoleImplicitAny.ts ===
+// A hole in an array pattern parameter past its tuple default's length is padded with any like a name, and tsc's
+// reportImplicitAny says so of the OmittedExpression, named `(Missing)` (bun 99-V4 checkDeclarationInitializer__03)
+function g([c, , d] = [""]) {}
+>g : Symbol(g, Decl(ttttPaddedTupleHoleImplicitAny.ts, 0, 0))
+>c : Symbol(c, Decl(ttttPaddedTupleHoleImplicitAny.ts, 2, 12))
+>d : Symbol(d, Decl(ttttPaddedTupleHoleImplicitAny.ts, 2, 16))
+

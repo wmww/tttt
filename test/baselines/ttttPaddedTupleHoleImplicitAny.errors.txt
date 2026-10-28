@@ -1,0 +1,13 @@
+ttttPaddedTupleHoleImplicitAny.ts(3,16): error TS7031: Binding element '(Missing)' implicitly has an 'any' type.
+ttttPaddedTupleHoleImplicitAny.ts(3,18): error TS7031: Binding element 'd' implicitly has an 'any' type.
+
+
+==== ttttPaddedTupleHoleImplicitAny.ts (2 errors) ====
+    // A hole in an array pattern parameter past its tuple default's length is padded with any like a name, and tsc's
+    // reportImplicitAny says so of the OmittedExpression, named `(Missing)` (bun 99-V4 checkDeclarationInitializer__03)
+    function g([c, , d] = [""]) {}
+                   ~
+!!! error TS7031: Binding element '(Missing)' implicitly has an 'any' type.
+                     ~
+!!! error TS7031: Binding element 'd' implicitly has an 'any' type.
+    

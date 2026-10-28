@@ -161,7 +161,17 @@ passing tests).
   TS2353. tttt's `ty_widened_objects()` keeps `anonymous.object_literal`, so `binding_assigned_type` (lower.c) and
   binding.c treat widened declarations as literals. Fix: the widened twin gets `object_literal = false`, after auditing
   every reader (union partial-property rule, excess properties, the isObjectLiteralType relation rules) and the array
-  literal element types tttt widens early (`for (var {x = ""} of [{}])`). Medium to large. [open]
+  literal element types tttt widens early (`for (var {x = ""} of [{}])`). Medium to large. (cor3, 2026-10-29) bun 99-V4's
+  getTypeFromBindingElement__03/04 are this: a parameter pattern defaulted by a named constant (`function f({ a, b = a }
+  = o)` with `const o = { a: 1 }`) is padded by tttt (ty_pad_initializer_type()) and its missing `b` allowed
+  (AllowMissing), where tsc's isObjectLiteralType of the widened `o` is false: TS2339 on b, no padding, and no
+  spurious TS7022 on a through the padded default. Switching the five AllowMissing/padding sites (lower.c
+  ty_pad_initializer_type and the AllowMissing branch, binding.c x2, expr.c x2, binding_add_padded_implicit_any_errors)
+  to ty_is_unwidened_object_literal() fixes those two and breaks three suite tests (destructuringWithLiteralInitializers'
+  `{ a: { x = 0, y = 0 } } = { a: {} }`, shorthandPropertyAssignmentsInDestructuring's `for ({ s1 = 5 } of [{}])`):
+  the nested and the array element literals are widened early by check_for_mutable_location()'s ty_widened_objects()
+  (expr.c ~644 and ~1200), so OBJECT_LITERAL stands for both tsc's widened and its regular-but-nested types. The fix
+  needs the early widening to keep regular literals regular (or a widened kind of its own). [open]
 - (mut1640) An element *write* with a `never` index on a union of objects (`both[sym] = 'x'`, `sym: never`, members
   `{ s: number, '0': number, [sym]: boolean } | { [n: number]: number, [s: string]: string | number }`): tsc reads the
   union's number index info (getUnionIndexInfos, getApplicableIndexInfo with never: `number | boolean`), tttt `never`. [open]

@@ -332,7 +332,14 @@ void binding_add_padded_implicit_any_errors(Binding const* me, Ty const* initial
     u32 len = (u32)vec_binding_size(&my array);
     for (u32 i = shape->arity; i < len; i++) {
         Binding const* element = vec_binding_at(&my array, i);
-        if (element->tag == BINDING_NOOP || element->default_value || (i == len - 1 && element->rest)) continue;
+        if (element->default_value || (i == len - 1 && element->rest)) continue;
+        // (A hole too, an OmittedExpression to tsc, whose name prints as `(Missing)`)
+        if (element->tag == BINDING_NOOP) {
+            if (span_source(element->content_span)) {
+                error_ctx_error_d(errs, element->content_span, 7031, "Binding element '(Missing)' implicitly has an 'any' type.");
+            }
+            continue;
+        }
         // (tsc's reportImplicitAny of a binding element: the name for an identifier, else the whole pattern)
         error_ctx_error_d(errs, element->content_span, 7031, "Binding element '", span_name_text(element->content_span),
             "' implicitly has an 'any' type.");
