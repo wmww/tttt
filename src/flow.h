@@ -143,6 +143,9 @@ typedef struct FlowBuilder {
     // instantiation expression `f<T>`, a type literal's computed key, a type query): assignments there don't count for
     // narrowing in closures (identifier_mark_assigned())
     u32 unmarked_assignments;
+    // In a type node's expression (a type member's computed name, a `typeof`): no yield there is the generator's (tsc's
+    // forEachYieldExpression skips type nodes; a class's heritage expression isn't one to it, unlike to unmarked_assignments)
+    u32 in_type_node;
     bool callee_of_call; // The expression walked next is a call's callee (whose type arguments are the call's)
     Arena* arena;
     u32* next_id;

@@ -1,0 +1,35 @@
+ttttYieldInTypeInGenerator.ts(5,26): error TS1170: A computed property name in a type literal must refer to an expression whose type is a literal type or a 'unique symbol' type.
+ttttYieldInTypeInGenerator.ts(5,27): error TS1163: A 'yield' expression is only allowed in a generator body.
+ttttYieldInTypeInGenerator.ts(5,27): error TS7057: 'yield' expression implicitly results in an 'any' type because its containing generator lacks a return-type annotation.
+ttttYieldInTypeInGenerator.ts(6,31): error TS1163: A 'yield' expression is only allowed in a generator body.
+ttttYieldInTypeInGenerator.ts(6,31): error TS7057: 'yield' expression implicitly results in an 'any' type because its containing generator lacks a return-type annotation.
+ttttYieldInTypeInGenerator.ts(7,59): error TS1170: A computed property name in a type literal must refer to an expression whose type is a literal type or a 'unique symbol' type.
+ttttYieldInTypeInGenerator.ts(7,60): error TS1163: A 'yield' expression is only allowed in a generator body.
+ttttYieldInTypeInGenerator.ts(7,66): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== ttttYieldInTypeInGenerator.ts (8 errors) ====
+    // A `yield` outside a generator body but inside a generator (a type literal's computed name, a class field) is TS1163
+    // and still checked against that generator (tsc's checkYieldExpression, GetContainingFunction): TS7057 without a
+    // return type annotation (bun 33-P6a); one in a type isn't among the generator's yields (forEachYieldExpression skips
+    // type nodes), one in a class field is
+    function* g() { let x: { [yield 1]: 1 }; }
+                             ~~~~~~~~~
+!!! error TS1170: A computed property name in a type literal must refer to an expression whose type is a literal type or a 'unique symbol' type.
+                              ~~~~~
+!!! error TS1163: A 'yield' expression is only allowed in a generator body.
+                              ~~~~~
+!!! error TS7057: 'yield' expression implicitly results in an 'any' type because its containing generator lacks a return-type annotation.
+    function* h() { class C { p = yield 2; } }
+                                  ~~~~~
+!!! error TS1163: A 'yield' expression is only allowed in a generator body.
+                                  ~~~~~
+!!! error TS7057: 'yield' expression implicitly results in an 'any' type because its containing generator lacks a return-type annotation.
+    function* k(): Generator<number, void, string> { let x: { [yield "a"]: 1 }; }
+                                                              ~~~~~~~~~~~
+!!! error TS1170: A computed property name in a type literal must refer to an expression whose type is a literal type or a 'unique symbol' type.
+                                                               ~~~~~
+!!! error TS1163: A 'yield' expression is only allowed in a generator body.
+                                                                     ~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

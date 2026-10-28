@@ -1,0 +1,23 @@
+//// [test/cases/ttttYieldInTypeInGenerator.ts] ////
+
+=== ttttYieldInTypeInGenerator.ts ===
+// A `yield` outside a generator body but inside a generator (a type literal's computed name, a class field) is TS1163
+// and still checked against that generator (tsc's checkYieldExpression, GetContainingFunction): TS7057 without a
+// return type annotation (bun 33-P6a); one in a type isn't among the generator's yields (forEachYieldExpression skips
+// type nodes), one in a class field is
+function* g() { let x: { [yield 1]: 1 }; }
+>g : Symbol(g, Decl(ttttYieldInTypeInGenerator.ts, 0, 0))
+>x : Symbol(x, Decl(ttttYieldInTypeInGenerator.ts, 4, 19))
+>[yield 1] : Symbol([yield 1], Decl(ttttYieldInTypeInGenerator.ts, 4, 24))
+
+function* h() { class C { p = yield 2; } }
+>h : Symbol(h, Decl(ttttYieldInTypeInGenerator.ts, 4, 42))
+>C : Symbol(C, Decl(ttttYieldInTypeInGenerator.ts, 5, 15))
+>p : Symbol(C.p, Decl(ttttYieldInTypeInGenerator.ts, 5, 25))
+
+function* k(): Generator<number, void, string> { let x: { [yield "a"]: 1 }; }
+>k : Symbol(k, Decl(ttttYieldInTypeInGenerator.ts, 5, 42))
+>Generator : Symbol(Generator, Decl(lib.es2015.generator.d.ts, --, --))
+>x : Symbol(x, Decl(ttttYieldInTypeInGenerator.ts, 6, 52))
+>[yield "a"] : Symbol([yield "a"], Decl(ttttYieldInTypeInGenerator.ts, 6, 57))
+

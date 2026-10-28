@@ -2088,7 +2088,14 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                     }
                     // (A class field's in a generator is TS1163, but still something the generator yields)
                     FlowBuilder* generator_flow = yield_generator_body_flow(names);
-                    if (generator_flow) {
+                    // (And checked against that generator, tsc's checkYieldExpression with GetContainingFunction: a type
+                    // literal's computed name's TS7057)
+                    if (my unary_op->outside_generator && generator_flow && generator_flow->function && !flow->method_name) {
+                        my unary_op->generator = generator_flow->function;
+                        my unary_op->no_type_params_in_scope = !names->generics;
+                    }
+                    // (Not one in a type, tsc's forEachYieldExpression skips type nodes and interfaces)
+                    if (generator_flow && !flow->in_type_node) {
                         if (generator_flow->yield_count == generator_flow->yield_cap) {
                             generator_flow->yield_cap = generator_flow->yield_cap ? generator_flow->yield_cap * 2 : 4;
                             generator_flow->yields = realloc(generator_flow->yields, sizeof(Expr const*) * generator_flow->yield_cap);
@@ -4631,7 +4638,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
         case EXPR_BINARY_OP: binary_expr_typecheck(me, errs); break;
 
         case EXPR_UNARY_OP:
-            if (my unary_op->outside_generator) { // TS1163 (from the resolve walk), the operand checked anyway
+            if (my unary_op->outside_generator && !my unary_op->generator) { // TS1163 (from the resolve walk), the operand checked anyway
                 expr_typecheck(&my unary_op->expr, errs);
                 break;
             }
