@@ -2306,9 +2306,9 @@ const baselines = {
         types: false,
     },
     'bun14-C6': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun14-C7': {
         errors: true,
@@ -6016,9 +6016,9 @@ const baselines = {
         types: true,
     },
     'bun32-C16': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun32-C17': {
         errors: false,
@@ -6526,9 +6526,9 @@ const baselines = {
         types: true,
     },
     'bun34-C11': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun34-C12': {
         errors: true,
@@ -13571,6 +13571,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDeclareFieldBaseType': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDeclarePropertyAmbientInitializer': {
         errors: true,
         symbols: true,
@@ -15380,6 +15385,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttMonkeytypeInstantiationCount': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
     'ttttMtsFormatExplanation': {
         errors: true,
         symbols: true,
@@ -15825,6 +15835,11 @@ const baselines = {
         types: true,
     },
     'ttttQuotedModuleModifierError': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttReadonlyFromMergedInterface': {
         errors: true,
         symbols: true,
         types: true,
@@ -16707,6 +16722,11 @@ const baselines = {
         errors: false,
         symbols: true,
         types: false,
+    },
+    'ttttVarianceRepeatedTypeParameter': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttVarianceRestartReentersBaseConstraint': {
         errors: true,
