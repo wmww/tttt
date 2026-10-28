@@ -265,8 +265,6 @@ void compiler_options_add_path(CompilerOptions* me, csview pattern, StrList subs
 void compiler_options_clear_paths(CompilerOptions* me);
 // Applies the defaults that depend on other options. Idempotent
 void compiler_options_resolve(CompilerOptions* me);
-// Shorthand for tests and tools: `strict: true` and resolve
-void compiler_options_enable_strict(CompilerOptions* me);
 
 // The standard library files (names as in thirdparty/lib, without .d.ts) to load for these options, comma separated:
 // the `lib` option if there is one (mapped through tsc's lib names, "es6" is lib.es2015.d.ts), else the default

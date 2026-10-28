@@ -795,10 +795,6 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
     }
 }
 
-Ty const* identifier_expr_evaluate_type(IdentifierExpr const* me) {
-    return ty_identifier_reference_type(current_checker, me);
-}
-
 // tsc's closeEnoughKind: a type that has a good chance of being a valid operand of an arithmetic operator
 static bool plausible_operand(Ty const* ty) {
     u32 close_enough = TYF_NUMBER | TYF_BIGINT | TYF_STRING | TYF_ANY | TYF_UNKNOWN | TYF_NUMBER_LITERAL |
@@ -5185,13 +5181,6 @@ Span expr_static_property_name(Expr const* me) {
     ret.buf++;
     ret.size -= 2;
     return ret;
-}
-
-Expr* expr_prototype_object(Expr* me) {
-    Span name = expr_static_property_name(me);
-    if (!span_valid(name) || !span_equals(name, "prototype")) return nullptr;
-    Expr* object = &my property->expr;
-    return expr_is_entity_name(object) ? object : nullptr;
 }
 
 IdentifierExpr const* expr_this_keyword(Expr const* me) {

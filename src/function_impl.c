@@ -1179,18 +1179,6 @@ bool function_impl_return_void_any_or_undefined(FunctionImpl const* me, Ty const
     return unwrapped && (ty_maybe_void(unwrapped) || unwrapped->flags & (TYF_ANY | TYF_UNDEFINED));
 }
 
-FunctionImpl const* function_impl_jsdoc_tag_signature(FunctionImpl const* me) {
-    TypeNode const* tag = function_impl_rare(me)->jsdoc_signature_type;
-    if (!tag) return nullptr;
-    if (tag->tag == TYPE_CALLABLE) return tag->callable->function;
-    if (tag->tag == TYPE_INTERFACE && vec_interface_member_size(&tag->interface.members) == 1 &&
-        tag->interface.members.data[0].key.tag == INTERFACE_KEY_CALLABLE && tag->interface.members.data[0].type.tag == TYPE_CALLABLE
-    ) {
-        return tag->interface.members.data[0].type.callable->function;
-    }
-    return nullptr;
-}
-
 // tsc: checkAllCodePathsInNonVoidFunctionReturnOrThrow(). Only when it is certain that control can fall off the end
 // (ty_function_end_reachability())
 static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {

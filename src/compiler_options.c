@@ -347,12 +347,6 @@ void compiler_options_resolve(CompilerOptions* me) {
 #undef DEFAULT
 }
 
-void compiler_options_enable_strict(CompilerOptions* me) {
-    my strict = true;
-    my is_set[COMPILER_OPTION_strict] = true;
-    compiler_options_resolve(me);
-}
-
 bool compiler_options_lib_name_valid(csview name) {
     for (u32 i = 0; i < lib_name_count; i++) {
         if (name_equals(name, lib_names[i])) return true;

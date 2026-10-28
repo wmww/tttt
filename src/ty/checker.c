@@ -794,8 +794,6 @@ static Checker* checker_make(Program* program, bool join_graph);
 
 Checker* checker_new(Program* program) { return checker_make(program, true); }
 
-Checker* checker_new_private(Program* program) { return checker_make(program, false); }
-
 static Checker* checker_make(Program* program, bool join_graph) {
     Checker* me = calloc(1, sizeof(Checker));
     panic_if(!me, "out of memory");

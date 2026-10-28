@@ -5073,14 +5073,6 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         // (tsgo's isReadonlySymbol: a getter without a setter)
         if ((symbol_flags & LIT_SYM_GET) && !(symbol_flags & LIT_SYM_SET)) flags |= PROP_READONLY;
         if (ctx.is_const) flags |= PROP_READONLY;
-        FunctionImpl const* const* methods = nullptr;
-        u32 method_count = 0;
-        if (i->tag == OBJECT_ITEM_METHOD && i->value.tag == EXPR_FUNCTION && !object_item_rare(i)->jsdoc_type) {
-            FunctionImpl const** list = arena_new_n(&my arena, FunctionImpl const*, 1);
-            list[0] = i->value.function;
-            methods = list;
-            method_count = 1;
-        }
         ObjectExprItem const* value_declaration = symbol ? &object->data[symbol->first] : i;
         if (pattern_context) {
             Prop const* implied = ty_get_prop(me, pattern_context, name);
@@ -5098,8 +5090,6 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             .type = type,
             .accessor = accessor,
             .setter = setter,
-            .methods = methods,
-            .method_count = method_count,
             // (Named as its symbol's first declaration writes it: `{ kk: 1, [k]: 2 }` is `kk`)
             // (An accessor pair is one symbol, declared by its first accessor: tsc's valueDeclaration, where an excess
             // property is reported)

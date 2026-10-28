@@ -1554,8 +1554,6 @@ static inline bool ty_reference_args_known(Checker const* me, Ty const* referenc
 
 // checker.c
 Checker* checker_new(Program* program);
-// One that doesn't join --shared-graph's graph (computes everything itself, like a checker without one)
-Checker* checker_new_private(Program* program);
 void checker_drop(Checker* me);
 // What the checker holds, in bytes: its arena and its tables (the intern and link tables, the relation caches, the
 // type directory). Not the LazyMemo pages, whose number depends on how the parser threads numbered the slots: this is
@@ -1637,8 +1635,6 @@ Ty* ty_alloc(Checker* me, TyKind kind, u32 flags);
 TyList ty_list_copy(Checker* me, Ty const* const* data, u32 len);
 
 Ty const* ty_unresolved(Checker* me, csview name, TyList args);
-// A type node printed like tsc's printer reprints it (as the types baseline reuses annotations)
-cstr ty_type_node_to_cstr(Checker* me, TypeNode const* node);
 Ty const* ty_literal(Checker* me, Value const* value);
 // The property name a string, number or unique symbol literal type is as a key (null for other types)
 Atom const* ty_literal_name(Checker* me, Ty const* literal);
@@ -2574,10 +2570,6 @@ typedef struct ObjectLiteralProp {
     Ty const* type; // Null for an accessor (PROP_GETTER/PROP_SETTER): `accessor` has it
     FunctionImpl const* accessor;
     FunctionImpl const* setter; // See PropDecl.setter
-    // The methods of the name in an object literal, in order, while every declaration of it is a method (one binder
-    // symbol to tsc, whose type has the signatures of them all)
-    FunctionImpl const* const* methods;
-    u32 method_count;
     Span name_span;
     Span const* decl_spans;
     u32 decl_span_count;
@@ -2834,7 +2826,6 @@ typedef enum IdentifierFlowIssue {
 } IdentifierFlowIssue;
 IdentifierFlowIssue ty_identifier_flow_issue(Checker* me, IdentifierExpr const* identifier);
 // Type facts, for the operators
-Ty const* ty_truthy_part(Checker* me, Ty const* ty); // What is left of x where `x` was truthy
 Ty const* ty_non_nullish_part(Checker* me, Ty const* ty);
 Ty const* ty_non_nullable_if_needed(Checker* me, Ty const* ty);
 Ty const* ty_remove_definitely_falsy(Checker* me, Ty const* ty); // Without the members that are always falsy
@@ -3449,8 +3440,7 @@ struct Pseudo;
 void ty_display_pseudo(Checker* me, TyDisplay d, struct Pseudo const* pseudo, Ty const* ty);
 // A string literal node the emitter makes (tsc's factory.createStringLiteral() printed): ASCII-escaped, `"\u00E9"`
 void ty_display_synthesized_string(TyDisplay d, csview sv);
-void ty_append_binding_pattern(cstr* out, struct Binding const* binding);
-// The same with declaration maps' marks for `map`, the file being written (decl_map.h)
+// A binding pattern as written, with declaration maps' marks for `map`, the file being written (decl_map.h)
 void ty_append_binding_pattern_mapped(cstr* out, struct Binding const* binding, struct SourceFile const* map);
 // The same with the comments around its elements (a parameter's pattern the declaration transformer visits)
 struct DeclComments;
@@ -3461,7 +3451,6 @@ bool ty_is_identifier_name(csview name); // An identifier as written (`#x` too)
 // (trackExistingEntityName, or checkEntityNameVisibility): not a value the JSDoc fallback makes a type of
 bool ty_jsdoc_name_is_type(struct Symbol const* found, struct IdentifierType const* identifier);
 void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig);
-void ty_display_signature_arrow(Checker* me, TyDisplay d, Signature const* sig);
 void ty_display_predicate(Checker* me, TyDisplay d, TyPredicate const* predicate);
 cstr ty_to_cstr(Checker* me, Ty const* ty);
 // Where a message prints a type from, null if from nowhere: an expression type that isn't context sensitive, from its

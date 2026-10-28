@@ -45,7 +45,6 @@ enum {
     KEY_NAMESPACE,      // Symbol -> Ty
     KEY_TYPE_ONLY_EXPORT, // (namespace Symbol, export Symbol) -> Prop, see ty_namespace_type_only_prop()
     KEY_MERGED_VALUE,   // Symbol -> Ty, see ty_merged_value_type()
-    KEY_LITERAL_METHOD_OVERLOADS, // Last FunctionImpl of an object literal's methods of one name -> Ty, see check_object_literal()
     KEY_DEFERRED_OUTER, // TypeNode of a deferred reference -> TyConditionalOuter
     KEY_CALL_RESOLUTION, // CallExpr or tagged template Expr -> CallResolution (call.c): what its one resolution returned and reported
     KEY_DEFERRED_REFERENCE, // (TYPE_ARRAY/TYPE_TUPLE/TYPE_IDENTIFIER node, the pairs of the mapper it mentions) -> Ty
@@ -374,7 +373,6 @@ Ty const* ty_tuple_slice_element_type(Checker* me, Ty const* tuple, u32 from, u3
 bool ty_is_empty_anonymous_object(Checker* me, Ty const* ty); // tsc's isEmptyAnonymousObjectType
 // ty_access() as tsc's getIndexedAccessTypeOrUndefined without an access node (constraints): a symbol key reads the
 // string index signature when nothing else applies
-Ty const* ty_access_without_node(Checker* me, Ty const* object, Ty const* index);
 Ty const* ty_access_without_node_include_undefined(Checker* me, Ty const* object, Ty const* index, bool include_undefined);
 Ty const* ty_access_for_constraint(Checker* me, Ty const* object, Ty const* index, bool include_undefined);
 bool ty_symbol_reads_string_index(Checker* me, Ty const* object, Ty const* index); // access.c, TS2538
@@ -523,7 +521,6 @@ bool ty_conditional_distribution_dependent(Checker* me, Ty const* conditional);
 bool ty_elides_default_type_args(Checker* me, Ty const* target); // iterate.c
 bool ty_is_tuple(Ty const* ty); // Not the empty tuple, which is its own target (TY_DECLARED)
 bool ty_is_generic_tuple(Checker* me, Ty const* ty); // checker.c, tsc's isGenericTupleType
-bool ty_tuple_node_has_variadic(TypeNode const* node); // lower.c: a rest element not written as an array
 // inner, then outer: what inner maps to gets instantiated by outer, and outer's own mappings are carried along
 TyMapper const* ty_compose_mappers(Checker* me, TyMapper const* inner, TyMapper const* outer); // instantiate.c
 TyMapper const* ty_mapper_with(Checker* me, TyMapper const* mapper, Ty const* source, Ty const* target); // instantiate.c

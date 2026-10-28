@@ -941,7 +941,6 @@ Scope* scope_new_generic(Scope* parent, Generic* generic, Span owner, Span owner
 Scope* scope_new_generic_merged(
     Scope* parent, Generic* generic, Symbol const* owner, void const* node, Span owner_name, ErrorCtx* errs
 );
-bool scope_has_function(Scope const* me);
 // Whether `var` and function declarations of nested blocks end up here
 static inline bool scope_is_var_container(Scope const* me) {
     return my kind != SCOPE_BLOCK && my kind != SCOPE_ENUM;

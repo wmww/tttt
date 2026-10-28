@@ -661,10 +661,6 @@ Ty const* ty_access_for_constraint(Checker* me, Ty const* object, Ty const* inde
         (include_undefined ? ACCESS_INCLUDE_UNDEFINED : 0));
 }
 
-Ty const* ty_access_without_node(Checker* me, Ty const* object, Ty const* index) {
-    return access(me, object, ty_regular(me, index), 0, ACCESS_NO_NODE | ACCESS_SYMBOL_STRING);
-}
-
 // `object[index]` as an element access expression reads it: a symbol key reads a string index signature too (TS2538)
 Ty const* ty_access_element(Checker* me, Ty const* object, Ty const* index, bool reading) {
     u32 flags = ACCESS_SYMBOL_STRING | (reading && compiler_options()->no_unchecked_indexed_access ? ACCESS_INCLUDE_UNDEFINED : 0);

@@ -228,8 +228,8 @@ passing tests).
   mm() { return 1 }, [m](x: number) { return "" } }`): tsgo types both method nodes, the member and `o.mm` by the
   merged binder symbol (`{ (): number; (x: number): string; }`, the literal `{ mm(): number; mm(x: number): string;
   }`), tttt by the last alone. Two early `mm()`s are separate symbols to tsgo (last wins, tttt agrees). Needs a method
-  function type built from several FunctionImpls: `ObjectLiteralProp.methods`/`method_count` (check_object_literal) are
-  filled but never read, and `KEY_LITERAL_METHOD_OVERLOADS` is declared but unused: the natural home for it. [open]
+  function type built from several FunctionImpls (an unread `ObjectLiteralProp.methods` list and an unused
+  `KEY_LITERAL_METHOD_OVERLOADS` kind were removed 2026-10-28: start from tsgo's merged symbol, not those). [open]
 - (triage 2026-10-16) **An accessor pair split between a written and a late-bound name**: `get x(): number` with
   `set [k](v: string)` (k of type `"x"`, not a literal key) is one symbol under tsc (the late setter merges into the
   early `x`: read `number`, write `string`, `c.x = 1` is TS2322). tttt types `c.x` as `any` and reports TS2540 (no

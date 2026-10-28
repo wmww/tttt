@@ -2921,14 +2921,6 @@ static TypeNode const* array_element_type_node(TypeNode const* node) {
     return nullptr;
 }
 
-// A rest element whose type isn't written as an array: tsc flags it Variadic (getRestTypeElementFlags)
-bool ty_tuple_node_has_variadic(TypeNode const* node) {
-    for_each (i, vec_tuple_element, &node->tuple.elements) {
-        if (i->rest && !array_element_type_node(&i->type)) return true;
-    }
-    return false;
-}
-
 // Deferred references, see Ty.reference.deferred
 
 // tsc's getTupleElementFlags check in getTypeFromArrayOrTupleTypeNode: `a: ...T` is a named member without a `...`

@@ -4063,11 +4063,6 @@ void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig) {
     display_signature_top(me, d, sig, ": ");
 }
 
-// tsc's signatureToString with WriteArrowStyleSignature: `new (x: number) => C`
-void ty_display_signature_arrow(Checker* me, TyDisplay d, Signature const* sig) {
-    display_signature_top(me, d, sig, " => ");
-}
-
 static Atom const* numbered_name(Checker* me, csview base, char const* suffix_format, u32 n) {
     char buf[256];
     int len = snprintf(buf, sizeof buf, "%.*s", (int)base.size, base.buf);
@@ -7569,12 +7564,6 @@ Scope const* ty_report_enclosing(Checker* me, Ty const* ty) {
     return statement_scope_at(&file->ast, file->scope, at, 0);
 }
 
-cstr ty_type_node_to_cstr(Checker* me, TypeNode const* node) {
-    cstr ret = cstr_null;
-    display_node(me, (TyDisplay){ .target = &ret }, node);
-    return ret;
-}
-
 // Declaration emit's entry points (plan 64, declaration_emit.c's writer)
 
 void ty_display_node(Checker* me, TyDisplay d, TypeNode const* node) {
@@ -7604,7 +7593,6 @@ void ty_display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty const*
     display_pseudo_with_fallback(me, d, pseudo, ty);
 }
 
-void ty_append_binding_pattern(cstr* out, Binding const* binding) { append_binding_pattern(out, binding); }
 void ty_append_binding_pattern_mapped(cstr* out, Binding const* binding, SourceFile const* map) {
     append_binding_pattern_mapped(out, binding, map);
 }

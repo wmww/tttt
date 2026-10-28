@@ -929,13 +929,6 @@ Scope* scope_new_generic_merged(
     return ret;
 }
 
-bool scope_has_function(Scope const* me) {
-    for (Scope const* i = me; i; i = i->parent) {
-        if (i->kind == SCOPE_FUNCTION) return true;
-    }
-    return false;
-}
-
 // Declaring
 
 // `display`: the name to say when it isn't the declaration's text (tsc's getDisplayName: `export=`)

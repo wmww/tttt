@@ -598,7 +598,6 @@ static Ty const* adjusted_type_with_facts(Checker* me, Ty const* ty, u32 facts) 
 }
 
 // What the operators in expr.c make of their operands
-Ty const* ty_truthy_part(Checker* me, Ty const* ty) { return adjusted_type_with_facts(me, ty, TF_TRUTHY); }
 Ty const* ty_non_nullish_part(Checker* me, Ty const* ty) { return adjusted_type_with_facts(me, ty, TF_NE_UNDEFINED_OR_NULL); }
 // tsc's getNonNullableTypeIfNeeded: a type that can't be null or undefined stays as it is (an unconstrained T too)
 Ty const* ty_non_nullable_if_needed(Checker* me, Ty const* ty) {

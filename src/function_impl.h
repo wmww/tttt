@@ -414,8 +414,6 @@ void function_impl_drop(FunctionImpl* me);
 // tsc's getErrorSpanForNode() of a function: its name, else an arrow function up to the end of its first line, else
 // its first token
 Span function_error_span(FunctionImpl const* me);
-// The written signature of the JSDoc `@type` that types the function (its own or its variable's), null if there's none
-FunctionImpl const* function_impl_jsdoc_tag_signature(FunctionImpl const* me);
 // tsc's isUnwrappedReturnTypeUndefinedVoidOrAny
 bool function_impl_return_void_any_or_undefined(FunctionImpl const* me, struct Ty const* return_type);
 // tsc's nodeCanBeDecorated for parameter `index`: legacy decorators of a constructor, method or setter with a body in

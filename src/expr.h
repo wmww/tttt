@@ -132,7 +132,6 @@ static inline struct Expr const* identifier_element_index(IdentifierExpr const* 
 
 void identifier_expr_drop(IdentifierExpr* me);
 void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* errs);
-Ty const* identifier_expr_evaluate_type(IdentifierExpr const* me);
 void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs);
 // A class, function, constant... being assigned to (the error is identifier_expr_typecheck()'s)
 bool identifier_is_invalid_assignment_target(IdentifierExpr const* me);
@@ -352,9 +351,6 @@ typedef enum CommonJsTarget {
 } CommonJsTarget;
 // `a.b` or `a["b"]` (not parenthesized, not optional): the name b (in the source, no quotes), else an invalid span
 Span expr_static_property_name(Expr const* me);
-// `F.prototype` (F a plain identifier): F, else null
-// `F` of `F.prototype` (an entity name: `a.b.prototype` too), null for anything else
-Expr* expr_prototype_object(Expr* me);
 // The symbol an entity name `a` or `a.b.c` names through the exports of what's before each dot, once names are
 // resolved. Null if some name isn't there
 Symbol const* expr_entity_name_symbol(Expr const* me);
