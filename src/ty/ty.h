@@ -2671,6 +2671,8 @@ Ty const* ty_import_meta_expr_type(Checker* me, Expr const* expr);
 Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function); // null if nothing says what `this` is
 // The contextual signature a function expression's parameters were typed by, if any (after it was checked)
 Signature const* ty_function_assigned_contextual_signature(Checker* me, FunctionImpl const* function);
+// Whether its first check found no contextual signature (tsc's ContextChecked without one: assignNonContextualParameterTypes)
+bool ty_function_checked_without_context(Checker* me, FunctionImpl const* function);
 // A function expression nothing has checked yet: its context root is checked first (FunctionImpl.context_root), so
 // its contextual signature is the one the walk gives it, whatever asks first. Whether that checked it
 bool ty_settle_function_context(Checker* me, FunctionImpl const* function);

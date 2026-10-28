@@ -989,7 +989,19 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
         // An unannotated pattern without a default takes what the pattern implies (tsc's getWidenedTypeForVariableLikeDeclaration),
         // a rest parameter's too (`...{ a, b }`, `...[x, y]`)
         if (initialized_binding_value(me)->tag == EXPR_IMPLICIT_ANY && (my binding.tag == BINDING_OBJECT || my binding.tag == BINDING_ARRAY)) {
-            return ty_binding_pattern_type(checker, &my binding, false);
+            Ty const* pattern = ty_binding_pattern_type(checker, &my binding, false);
+            // An optional one of a context-sensitive function checked without a contextual signature has undefined, which
+            // its elements are taken from too (tsc's assignNonContextualParameterTypes: assignParameterType's
+            // addOptionality before assignBindingElementTypes; a declaration's pattern type has none)
+            FunctionImpl const* function = initialized_binding_rare(me)->context_function;
+            if (function && compiler_options()->strict_null_checks && !my is_rest_parameter &&
+                c_container_of(me, FunctionArg, initializer)->explicit_optional &&
+                ty_function_checked_without_context(checker, function) && ty_function_is_context_sensitive(function)
+            ) {
+                Ty const* parts[2] = { pattern, ty_intrinsic(checker, TY_UNDEFINED) };
+                pattern = ty_union(checker, parts, 2, nullptr, (TyList){0});
+            }
+            return pattern;
         }
     }
     Ty const* auto_typed = auto_type(me);

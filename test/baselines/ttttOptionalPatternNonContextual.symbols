@@ -1,0 +1,47 @@
+//// [test/cases/ttttOptionalPatternNonContextual.ts] ////
+
+=== ttttOptionalPatternNonContextual.ts ===
+// An optional binding pattern parameter of a context-sensitive function checked without a contextual signature has
+// undefined in its type, and its elements are taken from that (tsc's assignNonContextualParameterTypes)
+const f = function ({ a }?) {};
+>f : Symbol(f, Decl(ttttOptionalPatternNonContextual.ts, 2, 5))
+>a : Symbol(a, Decl(ttttOptionalPatternNonContextual.ts, 2, 21))
+
+const g = ({ b }?) => {};
+>g : Symbol(g, Decl(ttttOptionalPatternNonContextual.ts, 3, 5))
+>b : Symbol(b, Decl(ttttOptionalPatternNonContextual.ts, 3, 12))
+
+function h({ c }?) {}
+>h : Symbol(h, Decl(ttttOptionalPatternNonContextual.ts, 3, 25))
+>c : Symbol(c, Decl(ttttOptionalPatternNonContextual.ts, 4, 12))
+
+const k = function ([x]?) {};
+>k : Symbol(k, Decl(ttttOptionalPatternNonContextual.ts, 5, 5))
+>x : Symbol(x, Decl(ttttOptionalPatternNonContextual.ts, 5, 21))
+
+const m = ({ d = 1 }?, e?) => d;
+>m : Symbol(m, Decl(ttttOptionalPatternNonContextual.ts, 6, 5))
+>d : Symbol(d, Decl(ttttOptionalPatternNonContextual.ts, 6, 12))
+>e : Symbol(e, Decl(ttttOptionalPatternNonContextual.ts, 6, 22))
+>d : Symbol(d, Decl(ttttOptionalPatternNonContextual.ts, 6, 12))
+
+const n: (o?: { p: number }) => void = function ({ p }?) {};
+>n : Symbol(n, Decl(ttttOptionalPatternNonContextual.ts, 7, 5))
+>o : Symbol(o, Decl(ttttOptionalPatternNonContextual.ts, 7, 10))
+>p : Symbol(p, Decl(ttttOptionalPatternNonContextual.ts, 7, 15))
+>p : Symbol(p, Decl(ttttOptionalPatternNonContextual.ts, 7, 50))
+
+const q = function ({ r }?: { r: number }) {};
+>q : Symbol(q, Decl(ttttOptionalPatternNonContextual.ts, 8, 5))
+>r : Symbol(r, Decl(ttttOptionalPatternNonContextual.ts, 8, 21))
+>r : Symbol(r, Decl(ttttOptionalPatternNonContextual.ts, 8, 29))
+
+f(); g({ b: 1 }); k(); m(); n(); q();
+>f : Symbol(f, Decl(ttttOptionalPatternNonContextual.ts, 2, 5))
+>g : Symbol(g, Decl(ttttOptionalPatternNonContextual.ts, 3, 5))
+>b : Symbol(b, Decl(ttttOptionalPatternNonContextual.ts, 9, 8))
+>k : Symbol(k, Decl(ttttOptionalPatternNonContextual.ts, 5, 5))
+>m : Symbol(m, Decl(ttttOptionalPatternNonContextual.ts, 6, 5))
+>n : Symbol(n, Decl(ttttOptionalPatternNonContextual.ts, 7, 5))
+>q : Symbol(q, Decl(ttttOptionalPatternNonContextual.ts, 8, 5))
+

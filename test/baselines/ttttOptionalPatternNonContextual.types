@@ -1,0 +1,62 @@
+//// [test/cases/ttttOptionalPatternNonContextual.ts] ////
+
+=== ttttOptionalPatternNonContextual.ts ===
+// An optional binding pattern parameter of a context-sensitive function checked without a contextual signature has
+// undefined in its type, and its elements are taken from that (tsc's assignNonContextualParameterTypes)
+const f = function ({ a }?) {};
+>f : ({ a }?: { a: any; } | undefined) => void
+>function ({ a }?) {} : ({ a }?: { a: any; } | undefined) => void
+>a : any
+
+const g = ({ b }?) => {};
+>g : ({ b }?: { b: any; } | undefined) => void
+>({ b }?) => {} : ({ b }?: { b: any; } | undefined) => void
+>b : any
+
+function h({ c }?) {}
+>h : ({ c }?: { c: any; }) => void
+>c : any
+
+const k = function ([x]?) {};
+>k : ([x]?: [any] | undefined) => void
+>function ([x]?) {} : ([x]?: [any] | undefined) => void
+>x : any
+
+const m = ({ d = 1 }?, e?) => d;
+>m : ({ d }?: { d?: number | undefined; } | undefined, e?: any) => any
+>({ d = 1 }?, e?) => d : ({ d }?: { d?: number | undefined; } | undefined, e?: any) => any
+>d : any
+>1 : 1
+>e : any
+>d : any
+
+const n: (o?: { p: number }) => void = function ({ p }?) {};
+>n : (o?: { p: number; }) => void
+>o : { p: number; } | undefined
+>p : number
+>function ({ p }?) {} : ({ p }?: { p: number; } | undefined) => void
+>p : any
+
+const q = function ({ r }?: { r: number }) {};
+>q : ({ r }?: { r: number; }) => void
+>function ({ r }?: { r: number }) {} : ({ r }?: { r: number; }) => void
+>r : number
+>r : number
+
+f(); g({ b: 1 }); k(); m(); n(); q();
+>f() : void
+>f : ({ a }?: { a: any; } | undefined) => void
+>g({ b: 1 }) : void
+>g : ({ b }?: { b: any; } | undefined) => void
+>{ b: 1 } : { b: number; }
+>b : number
+>1 : 1
+>k() : void
+>k : ([x]?: [any] | undefined) => void
+>m() : any
+>m : ({ d }?: { d?: number | undefined; } | undefined, e?: any) => any
+>n() : void
+>n : (o?: { p: number; }) => void
+>q() : void
+>q : ({ r }?: { r: number; }) => void
+

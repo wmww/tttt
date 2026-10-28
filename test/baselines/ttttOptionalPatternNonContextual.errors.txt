@@ -1,0 +1,65 @@
+ttttOptionalPatternNonContextual.ts(3,21): error TS2463: A binding pattern parameter cannot be optional in an implementation signature.
+ttttOptionalPatternNonContextual.ts(3,23): error TS2339: Property 'a' does not exist on type '{ a: any; } | undefined'.
+ttttOptionalPatternNonContextual.ts(3,23): error TS7031: Binding element 'a' implicitly has an 'any' type.
+ttttOptionalPatternNonContextual.ts(4,12): error TS2463: A binding pattern parameter cannot be optional in an implementation signature.
+ttttOptionalPatternNonContextual.ts(4,14): error TS2339: Property 'b' does not exist on type '{ b: any; } | undefined'.
+ttttOptionalPatternNonContextual.ts(4,14): error TS7031: Binding element 'b' implicitly has an 'any' type.
+ttttOptionalPatternNonContextual.ts(5,12): error TS2463: A binding pattern parameter cannot be optional in an implementation signature.
+ttttOptionalPatternNonContextual.ts(5,14): error TS7031: Binding element 'c' implicitly has an 'any' type.
+ttttOptionalPatternNonContextual.ts(6,21): error TS2488: Type '[any] | undefined' must have a '[Symbol.iterator]()' method that returns an iterator.
+ttttOptionalPatternNonContextual.ts(6,21): error TS2463: A binding pattern parameter cannot be optional in an implementation signature.
+ttttOptionalPatternNonContextual.ts(6,22): error TS7031: Binding element 'x' implicitly has an 'any' type.
+ttttOptionalPatternNonContextual.ts(7,12): error TS2463: A binding pattern parameter cannot be optional in an implementation signature.
+ttttOptionalPatternNonContextual.ts(7,14): error TS2339: Property 'd' does not exist on type '{ d?: number | undefined; } | undefined'.
+ttttOptionalPatternNonContextual.ts(7,24): error TS7006: Parameter 'e' implicitly has an 'any' type.
+ttttOptionalPatternNonContextual.ts(8,50): error TS2463: A binding pattern parameter cannot be optional in an implementation signature.
+ttttOptionalPatternNonContextual.ts(8,52): error TS2339: Property 'p' does not exist on type '{ p: number; } | undefined'.
+ttttOptionalPatternNonContextual.ts(9,21): error TS2463: A binding pattern parameter cannot be optional in an implementation signature.
+
+
+==== ttttOptionalPatternNonContextual.ts (17 errors) ====
+    // An optional binding pattern parameter of a context-sensitive function checked without a contextual signature has
+    // undefined in its type, and its elements are taken from that (tsc's assignNonContextualParameterTypes)
+    const f = function ({ a }?) {};
+                        ~~~~~~
+!!! error TS2463: A binding pattern parameter cannot be optional in an implementation signature.
+                          ~
+!!! error TS2339: Property 'a' does not exist on type '{ a: any; } | undefined'.
+                          ~
+!!! error TS7031: Binding element 'a' implicitly has an 'any' type.
+    const g = ({ b }?) => {};
+               ~~~~~~
+!!! error TS2463: A binding pattern parameter cannot be optional in an implementation signature.
+                 ~
+!!! error TS2339: Property 'b' does not exist on type '{ b: any; } | undefined'.
+                 ~
+!!! error TS7031: Binding element 'b' implicitly has an 'any' type.
+    function h({ c }?) {}
+               ~~~~~~
+!!! error TS2463: A binding pattern parameter cannot be optional in an implementation signature.
+                 ~
+!!! error TS7031: Binding element 'c' implicitly has an 'any' type.
+    const k = function ([x]?) {};
+                        ~~~
+!!! error TS2488: Type '[any] | undefined' must have a '[Symbol.iterator]()' method that returns an iterator.
+                        ~~~~
+!!! error TS2463: A binding pattern parameter cannot be optional in an implementation signature.
+                         ~
+!!! error TS7031: Binding element 'x' implicitly has an 'any' type.
+    const m = ({ d = 1 }?, e?) => d;
+               ~~~~~~~~~~
+!!! error TS2463: A binding pattern parameter cannot be optional in an implementation signature.
+                 ~
+!!! error TS2339: Property 'd' does not exist on type '{ d?: number | undefined; } | undefined'.
+                           ~~
+!!! error TS7006: Parameter 'e' implicitly has an 'any' type.
+    const n: (o?: { p: number }) => void = function ({ p }?) {};
+                                                     ~~~~~~
+!!! error TS2463: A binding pattern parameter cannot be optional in an implementation signature.
+                                                       ~
+!!! error TS2339: Property 'p' does not exist on type '{ p: number; } | undefined'.
+    const q = function ({ r }?: { r: number }) {};
+                        ~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2463: A binding pattern parameter cannot be optional in an implementation signature.
+    f(); g({ b: 1 }); k(); m(); n(); q();
+    

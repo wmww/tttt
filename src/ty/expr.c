@@ -1755,6 +1755,10 @@ Signature const* ty_function_assigned_contextual_signature(Checker* me, Function
     return sig == &context_checked_none ? nullptr : sig;
 }
 
+bool ty_function_checked_without_context(Checker* me, FunctionImpl const* function) {
+    return ty_link_get(me, KEY_CONTEXT_CHECKED, function) == &context_checked_none;
+}
+
 // The contextual type of a function's return expressions: its contextual signature's return type, as the last check of
 // the function saw it (tsc goes through the resolved signature of the call it is an argument of), instantiated where it
 // is looked at while the call infers (ty_instantiate_contextual_type())
