@@ -56,7 +56,7 @@ scripts/sharedgraph/sgcheck_projects.txt, load 8-15): main at ab39dce20 12 of 34
     so recursion that unwraps a type (the descent tsc's deep-nesting test exists for, in inference) is never cut. Not
     bounded: any content key must order an unwrapped instantiation after its wrapper, which height can't. openscience's
     TS7006 (a `.map((file) => ...)` callback's parameter) is probably the same cut through inference, not traced.
-    [design]
+    [note]
 - **A signature's instance shared while its signature's resolution was private** (effect's Schema.ts
   `X.pipe(lowercased(...))` cascade: TS2507 "never is not a constructor", Schema.tst.ts(2892,39) TS2345, 2-3 of 10 K8
   runs; folo/apps/desktop/layer/renderer's residue W: `GeneralSettings[K]` read as never, TS2345 at
