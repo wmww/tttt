@@ -77,6 +77,9 @@ typedef struct IdentifierType {
     // Inside a conditional type whose check type is a bare reference to the type parameter this names (the check type
     // included): it stands for the distributed type parameter (tsgo 7.1's getDistributedTypeParameter, plan 57)
     bool distributed;
+    // The class a JavaScript `@implements` tag names (tsc's ExpressionWithTypeArguments under a JSDocImplementsTag): a
+    // wrong type argument count asks for an `@extends` tag (TS8026, getTypeFromClassOrInterfaceReference)
+    bool jsdoc_implements;
 } IdentifierType;
 
 // The rare part, made on demand

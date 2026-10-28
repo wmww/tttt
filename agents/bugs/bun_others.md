@@ -264,9 +264,15 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
 - `@null! as typeof mk<number>|` (93-P02b: decorators on no expression are a missing declaration the binary parsers go
   on with), `a?..b` (92-R02b: `?.` before `.` is the token, missing its name, which ends the member expression),
   `a?.<T>\`x\`` (92-R02h: type arguments after `?.` then a tagged template, TS1358). [fixed]
-- JSDoc parsing: `@import a-b from` (43-C8e), `{@link Map#delete}` reserved words TS1359 and `{@link Map.}` (54-L07b),
-  `@augments {A<=}`/`{A<<=}` and `{<>}`/`Array<<>>` (56-L01 56-L20b), `function () {}` with `@overload` in JS
-  (61-L17, TS1003 twice), `@import { A as await }` in an async function (92-R03d: tsc TS1473, TS1003, TS2307). [open]
+- JSDoc parsing: `@import a-b from` (43-C8e: the JSDoc scanner's first token after the tag takes `-`,
+  jsdoc_extend_dashed_name()), `{@link Map#delete}` reserved words TS1359 and `{@link Map.}` (54-L07b:
+  jsdoc_parse_link()), `@augments {A<=}`/`{A<<=}` and `{<>}`/`Array<<>>` (56-L01 56-L20b: the augments class's `<` is
+  the JSDoc scanner's one-character token, `<=`/`<<=` start no type argument list elsewhere, type parameters commit a
+  function type; `@implements` arity is TS8026). [fixed]
+- JSDoc parsing, still open: `function () {}` with `@overload` in JS (61-L17, TS1003 twice), `@import { A as await }`
+  in an async function (92-R03d: tsc TS1473, TS1003, TS2307). [open]
+- tsc's TS2314 on `@augments {A<=}` underlines `A<` (the node ends with its missing `>`), tttt's `A`
+  (identifier_type_span() reconstructs the end from the text). [text]
 - `@type {yield}` in a generator (92-R03b): a JSDoc type's name isn't a strict-mode identifier (checkStrictModeIdentifier
   skips JSDoc nodes): no TS1212 (several_types.c). [fixed]
 - `typeof a..b` (84-R04): in an entity name a `.` after the dot is a missing name (parseEntityName), `...` ends it

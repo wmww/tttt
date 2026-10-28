@@ -645,7 +645,7 @@ static void identifier_type_check_arity(IdentifierType const* me, bool resolved_
         if (arg_count) error_ctx_error_d(errs, span, 2315, "Type '", symbol->name, "' is not generic.");
         return;
     }
-    if (!several_types_check_arity(symbol, arg_count, span, false, errs) && arg_count && !my jsdoc_unchecked && !resolved_error) {
+    if (!several_types_check_arity(symbol, arg_count, span, my jsdoc_implements, errs) && arg_count && !my jsdoc_unchecked && !resolved_error) {
         ty_check_type_reference_constraints(current_checker, symbol, &my generic_params, errs);
     }
 }

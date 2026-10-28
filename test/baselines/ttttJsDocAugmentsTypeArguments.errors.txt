@@ -1,0 +1,76 @@
+a.js(5,17): error TS1099: Type argument list cannot be empty.
+a.js(5,18): error TS1005: '>' expected.
+a.js(7,17): error TS1099: Type argument list cannot be empty.
+a.js(7,18): error TS1005: '>' expected.
+a.js(9,16): error TS1099: Type argument list cannot be empty.
+a.js(9,17): error TS1005: '>' expected.
+a.js(11,19): error TS1099: Type argument list cannot be empty.
+a.js(11,20): error TS1005: '>' expected.
+a.js(13,18): error TS8026: Expected G<T> type arguments; provide these with an '@extends' tag.
+a.js(15,12): error TS1098: Type parameter list cannot be empty.
+a.js(15,14): error TS1005: '(' expected.
+a.js(17,18): error TS1098: Type parameter list cannot be empty.
+a.js(17,20): error TS1005: '(' expected.
+a.js(19,18): error TS1098: Type parameter list cannot be empty.
+b.ts(2,10): error TS1005: '(' expected.
+b.ts(3,16): error TS1005: '(' expected.
+
+
+==== a.js (14 errors) ====
+    /** @template [T=number] */
+    class A { /** @type {T | undefined} */ x = undefined; }
+    /** @template T */
+    class G {}
+    /** @augments {A<=} */
+                    ~~
+!!! error TS1099: Type argument list cannot be empty.
+                     ~
+!!! error TS1005: '>' expected.
+    class B extends A {}
+    /** @augments {A<<=} */
+                    ~~
+!!! error TS1099: Type argument list cannot be empty.
+                     ~~
+!!! error TS1005: '>' expected.
+    class C extends A {}
+    /** @augments A<= */
+                   ~~
+!!! error TS1099: Type argument list cannot be empty.
+                    ~
+!!! error TS1005: '>' expected.
+    class D extends A {}
+    /** @implements {A<=} */
+                      ~~
+!!! error TS1099: Type argument list cannot be empty.
+                       ~
+!!! error TS1005: '>' expected.
+    class E { x = undefined }
+    /** @implements {G} */
+                     ~
+!!! error TS8026: Expected G<T> type arguments; provide these with an '@extends' tag.
+    class F { }
+    /** @type {<>} */
+               ~~
+!!! error TS1098: Type parameter list cannot be empty.
+                 ~
+!!! error TS1005: '(' expected.
+    let a;
+    /** @type {Array<<>>} */
+                     ~~
+!!! error TS1098: Type parameter list cannot be empty.
+                       ~
+!!! error TS1005: '(' expected.
+    let b;
+    /** @type {Array<<>() => void>} */
+                     ~~
+!!! error TS1098: Type parameter list cannot be empty.
+    let c;
+==== b.ts (2 errors) ====
+    let d: Array<<T>() => T>;
+    let e: <>;
+             ~
+!!! error TS1005: '(' expected.
+    let f: Array<<>>;
+                   ~
+!!! error TS1005: '(' expected.
+    

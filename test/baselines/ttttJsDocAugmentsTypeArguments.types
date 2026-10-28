@@ -1,0 +1,60 @@
+//// [test/cases/ttttJsDocAugmentsTypeArguments.ts] ////
+
+=== a.js ===
+/** @template [T=number] */
+class A { /** @type {T | undefined} */ x = undefined; }
+>A : A<T>
+>x : undefined
+>undefined : undefined
+
+/** @template T */
+class G {}
+>G : G<T>
+
+/** @augments {A<=} */
+class B extends A {}
+>B : B
+>A : A<number>
+
+/** @augments {A<<=} */
+class C extends A {}
+>C : C
+>A : A<number>
+
+/** @augments A<= */
+class D extends A {}
+>D : D
+>A : A<number>
+
+/** @implements {A<=} */
+class E { x = undefined }
+>E : E
+>x : undefined
+>undefined : undefined
+
+/** @implements {G} */
+class F { }
+>F : F
+
+/** @type {<>} */
+let a;
+>a : () => any
+
+/** @type {Array<<>>} */
+let b;
+>b : (() => any)[]
+
+/** @type {Array<<>() => void>} */
+let c;
+>c : (() => void)[]
+
+=== b.ts ===
+let d: Array<<T>() => T>;
+>d : (<T>() => T)[]
+
+let e: <>;
+>e : () => any
+
+let f: Array<<>>;
+>f : (() => any)[]
+

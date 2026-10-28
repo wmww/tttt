@@ -176,6 +176,12 @@ typedef struct ParserShared {
     // The next identifier type is a heritage element's (tsc's parseExpressionWithTypeArguments, tryParseTypeArguments):
     // its type arguments want a `<` token, not a `<<`. Cleared by the identifier type that reads it
     bool heritage_type_args;
+    // The next identifier type is a JSDoc `@augments`/`@implements` class (tsc's
+    // parseExpressionWithTypeArgumentsForAugments): the `<` after its name is the JSDoc scanner's one-character token,
+    // `A<=` has type arguments. Cleared by the identifier type that reads it
+    bool jsdoc_augments_type_args;
+    // parse_generic_params()'s `<` is a one-character token whatever follows it (set and cleared around one call)
+    bool single_less_than;
     // The `{` of the innermost Block (statement block, function body) being parsed, for TernaryType.enclosing_block
     const char* block_open;
     ModifiedParent statement_parent;
@@ -2955,6 +2961,11 @@ static bool parse_generic_params(Parser* parent, bool fail_on_error, VecSpannedT
     bool unchecked = p.shared->unchecked_type_args;
     p.shared->unchecked_type_args = false;
 
+    // (tsc's reScanLessThanToken makes only a `<<` a `<`: `<=` and `<<=` start no list, `A<=`, unless the `<` is the
+    // JSDoc scanner's)
+    if (!p.shared->single_less_than && p.pos[0] == '<' && (p.pos[1] == '=' || (p.pos[1] == '<' && p.pos[2] == '='))) {
+        return parse_fail(&p);
+    }
     if (!hop_char(&p, '<')) {
         return parse_fail(&p);
     }
@@ -2966,8 +2977,9 @@ static bool parse_generic_params(Parser* parent, bool fail_on_error, VecSpannedT
         TypeNode t;
         Anchor type_a = anchor(&p);
         // (A private name is no start of a type, tsc's isStartOfType for the list's elements, though a type reference
-        // takes it as its name where a type must be: parse_identifier_type())
-        if (*p.pos != '#' && parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
+        // takes it as its name where a type must be: parse_identifier_type(). Nor a `<<` or `<=` token, which isn't a `<`)
+        bool less_than_token = p.pos[0] == '<' && (p.pos[1] == '<' || p.pos[1] == '=');
+        if (*p.pos != '#' && !less_than_token && parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
             list_push(vec_spanned_type, ret, spanned_type(span_from(type_a), t));
             hop_whitespace(&p);
         } else if (*p.pos == ',') {
@@ -2997,15 +3009,17 @@ static bool parse_generic_params(Parser* parent, bool fail_on_error, VecSpannedT
         grammar_error(&p, trailing_comma_span, 1009, "Trailing comma not allowed.");
     }
 
+    char const* close = p.pos;
     if (!expect_char(&p, '>')) {
         if (fail_on_error) { goto fail; }
     }
 
-    // (tsc's checkGrammarTypeArguments)
+    // (tsc's checkGrammarTypeArguments: from the `<` over the token after the list, `>` or not)
     if (vec_spanned_type_is_empty(ret) && !(p.shared->in_jsdoc && p.shared->jsdoc_unchecked) && !p.shared->import_type_args &&
         !unchecked
     ) {
-        grammar_error(&p, span_from(a), 1099, "Type argument list cannot be empty.");
+        grammar_error(&p, span_make(p.shared->source, a.start, close < p.pos ? p.pos : close + (!at_eof(&p, close))), 1099,
+            "Type argument list cannot be empty.");
     }
     shrink_list(vec_spanned_type, ret);
 
@@ -3500,8 +3514,15 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
 
     bool heritage_shift = p.shared->heritage_type_args && p.pos[0] == '<' && p.pos[1] == '<';
     p.shared->heritage_type_args = false;
+    bool augments = p.shared->jsdoc_augments_type_args;
+    p.shared->jsdoc_augments_type_args = false;
+    // (The JSDoc scanner's `<` comes right after the name)
+    if (augments && (p.pos != end || *p.pos != '<')) heritage_shift = true;
     if (p.whitespace != WHITESPACE_NEWLINE && !heritage_shift) {
-        if (parse_generic_params(&p, false, &generic_params)) {
+        p.shared->single_less_than = augments;
+        bool parsed = parse_generic_params(&p, false, &generic_params);
+        p.shared->single_less_than = false;
+        if (parsed) {
             end = p.pos;
         } else {
             generic_params = vec_spanned_type_init();
@@ -4320,7 +4341,8 @@ static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const 
     }
     if (tag->predicate || parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
     parsed:
-        if (!tag->predicate) hop_jsdoc_optional(&p, &type);
+        // (Not after an `@augments`/`@implements` class, which is no type: tsc's parseExpressionWithTypeArgumentsForAugments)
+        if (!tag->predicate && tag->kind != JSDOC_TAG_EXTENDS && tag->kind != JSDOC_TAG_IMPLEMENTS) hop_jsdoc_optional(&p, &type);
         Span type_span = span_from(a);
         hop_whitespace(&p);
         if (p.pos < end) {
@@ -4367,12 +4389,16 @@ static bool parse_jsdoc_bare_type(Parser* parent, const char** pos, const char* 
     p.shared->in_jsdoc = true;
     p.shared->jsdoc_end = end;
     hop_whitespace(&p);
+    // (An `@augments`/`@implements` class's parse errors are reported, braces or not: tsc's
+    // parseExpressionWithTypeArgumentsForAugments)
+    bool keep_errors = p.shared->jsdoc_augments_type_args;
     bool parsed = parse_type(&p, TYPE_PRECEDENCE_NULL, ret) && p.pos <= end;
     if (parsed) {
         *pos = p.pos;
     }
     p.shared->in_jsdoc = outer_in_jsdoc;
     p.shared->jsdoc_end = outer_end;
+    if (parsed && keep_errors) jsdoc_keep_errors(&p);
     parse_fail(&p);
     return parsed;
 }
@@ -4674,6 +4700,8 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
         case JSDOC_TAG_EXTENDS:
         case JSDOC_TAG_IMPLEMENTS: {
             const char* after = jsdoc_skip_space(c, end);
+            bool augments = tag.kind == JSDOC_TAG_EXTENDS || tag.kind == JSDOC_TAG_IMPLEMENTS;
+            parent->shared->jsdoc_augments_type_args = augments;
             if (after < end && *after == '{') {
                 parse_jsdoc_type_expression(parent, &after, end, &tag);
                 c = after;
@@ -4713,6 +4741,7 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
                     c = after;
                 }
             }
+            parent->shared->jsdoc_augments_type_args = false;
             if ((tag.kind == JSDOC_TAG_EXTENDS || tag.kind == JSDOC_TAG_IMPLEMENTS) && !tag.has_type &&
                 (after >= end || *after == '@' || memchr(c, '\n', (size_t)(after - c)))
             ) {
@@ -5584,6 +5613,7 @@ static void jsdoc_apply_class(Parser* p, VecJsDocTag* tags, ClassDecl* class_dec
         if (i->kind != JSDOC_TAG_IMPLEMENTS || !i->has_type || i->earlier) continue;
         Span span;
         TypeNode type = jsdoc_take_type(i, &span);
+        if (type.tag == TYPE_IDENTIFIER && p->shared->source->is_js) type.identifier->jsdoc_implements = true;
         list_push(vec_spanned_type, &class_decl->implements, spanned_type(span, type));
     }
     if (!supplier) return;
@@ -7237,6 +7267,9 @@ static bool parse_function_args_inner(
     Parser p = parser(parent);
     bool is_definitely_function = false;
     bool unambiguous_function_type = false;
+    // (Type parameters in a type commit a function type, missing parameters, `=>` and return type and all: `<>}` is
+    // '(' expected, tsc's isStartOfFunctionTypeOrConstructorType)
+    bool generic_commits = false;
 
     *ret = (FunctionImpl){0};
 
@@ -7262,6 +7295,7 @@ static bool parse_function_args_inner(
         // An arrow function's type parameters don't commit it (tsc's parseParenthesizedArrowFunctionExpression
         // without allowAmbiguity): `<T>(x => y)` is a type assertion of a parenthesized arrow function
         is_definitely_function = parse_abstract_and_new || parse_type_return_syntax || commit_on_paren;
+        generic_commits = parse_type_return_syntax;
     } else if (parse_abstract_and_new && *p.pos == '<') {
         // A `<` in a type or a type member is a signature's (tsc's isStartOfFunctionTypeOrConstructorType,
         // isTypeMemberStart): `<-` is missing its type parameters, the list's recovery leaves the token
@@ -7531,7 +7565,8 @@ static bool parse_function_args_inner(
             function_impl_set_ret_span(ret, span_from(ret_a));
             ret->ret_explicit = true;
         } else if (unambiguous_function_type ||
-            (is_definitely_function && (parse_type_return_syntax ? *args_start.start == '(' || ret->is_constructor : commit_on_paren))
+            (is_definitely_function && (parse_type_return_syntax ? *args_start.start == '(' || ret->is_constructor ||
+                generic_commits : commit_on_paren))
         ) {
             // A function type is committed (tsc's parseFunctionOrConstructorType), so is a function whose parameter
             // list was (a definite arrow function, a declaration): its return type is missing (tsc's
