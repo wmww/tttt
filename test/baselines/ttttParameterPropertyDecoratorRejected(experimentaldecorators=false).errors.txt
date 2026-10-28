@@ -1,0 +1,18 @@
+ttttParameterPropertyDecoratorRejected.ts(4,23): error TS1206: Decorators are not valid here.
+ttttParameterPropertyDecoratorRejected.ts(4,45): error TS1206: Decorators are not valid here.
+ttttParameterPropertyDecoratorRejected.ts(5,31): error TS1206: Decorators are not valid here.
+
+
+==== ttttParameterPropertyDecoratorRejected.ts (3 errors) ====
+    // A parameter's TS1206 (decorators not valid there) ends tsc's checkGrammarModifiers: no TS1187 for a parameter
+    // property's binding pattern after it (bun 28-C27b), no TS1317 for a rest one
+    declare const dec: any;
+    class C { constructor(@dec public {x}: any, @dec public ...r: any[]) {} }
+                          ~
+!!! error TS1206: Decorators are not valid here.
+                                                ~
+!!! error TS1206: Decorators are not valid here.
+    const D = class { constructor(@dec public {x}: any) {} };
+                                  ~
+!!! error TS1206: Decorators are not valid here.
+    

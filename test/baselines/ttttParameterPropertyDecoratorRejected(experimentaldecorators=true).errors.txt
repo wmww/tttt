@@ -1,0 +1,18 @@
+ttttParameterPropertyDecoratorRejected.ts(4,23): error TS1187: A parameter property may not be declared using a binding pattern.
+ttttParameterPropertyDecoratorRejected.ts(4,45): error TS1317: A parameter property cannot be declared using a rest parameter.
+ttttParameterPropertyDecoratorRejected.ts(5,31): error TS1206: Decorators are not valid here.
+
+
+==== ttttParameterPropertyDecoratorRejected.ts (3 errors) ====
+    // A parameter's TS1206 (decorators not valid there) ends tsc's checkGrammarModifiers: no TS1187 for a parameter
+    // property's binding pattern after it (bun 28-C27b), no TS1317 for a rest one
+    declare const dec: any;
+    class C { constructor(@dec public {x}: any, @dec public ...r: any[]) {} }
+                          ~~~~~~~~~~~~~~~~~~~~
+!!! error TS1187: A parameter property may not be declared using a binding pattern.
+                                                ~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1317: A parameter property cannot be declared using a rest parameter.
+    const D = class { constructor(@dec public {x}: any) {} };
+                                  ~
+!!! error TS1206: Decorators are not valid here.
+    

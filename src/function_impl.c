@@ -1068,8 +1068,11 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
     for_each (i, vec_function_arg, &my args) {
         bool has_initializer = initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY;
         bool is_pattern = i->initializer.binding.tag == BINDING_ARRAY || i->initializer.binding.tag == BINDING_OBJECT;
-        if (i->is_parameter_property && is_pattern) {
-            // (tsc's checkGrammarModifiers)
+        // (tsc's checkGrammarModifiers, after its decorators' TS1206: class_decl_typecheck() reported that first)
+        bool decorators_rejected = vec_expr_size(function_arg_decorators(i)) && span_valid(i->span) &&
+            error_ctx_find(errs, span_make_in(i->span, span_start_ptr(i->span), span_start_ptr(i->span) + 1), 1206);
+        if (decorators_rejected) {
+        } else if (i->is_parameter_property && is_pattern) {
             error_ctx_grammar_error_d(errs, i->span, 1187, "A parameter property may not be declared using a binding pattern.");
         } else if (i->is_parameter_property && i->rest) {
             error_ctx_grammar_error_d(errs, i->span, 1317, "A parameter property cannot be declared using a rest parameter.");

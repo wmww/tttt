@@ -1,0 +1,20 @@
+//// [test/cases/ttttParameterPropertyDecoratorRejected.ts] ////
+
+=== ttttParameterPropertyDecoratorRejected.ts ===
+// A parameter's TS1206 (decorators not valid there) ends tsc's checkGrammarModifiers: no TS1187 for a parameter
+// property's binding pattern after it (bun 28-C27b), no TS1317 for a rest one
+declare const dec: any;
+>dec : Symbol(dec, Decl(ttttParameterPropertyDecoratorRejected.ts, 2, 13))
+
+class C { constructor(@dec public {x}: any, @dec public ...r: any[]) {} }
+>C : Symbol(C, Decl(ttttParameterPropertyDecoratorRejected.ts, 2, 23))
+>dec : Symbol(dec, Decl(ttttParameterPropertyDecoratorRejected.ts, 2, 13))
+>x : Symbol(x, Decl(ttttParameterPropertyDecoratorRejected.ts, 3, 35))
+>dec : Symbol(dec, Decl(ttttParameterPropertyDecoratorRejected.ts, 2, 13))
+>r : Symbol(C.r, Decl(ttttParameterPropertyDecoratorRejected.ts, 3, 43))
+
+const D = class { constructor(@dec public {x}: any) {} };
+>D : Symbol(D, Decl(ttttParameterPropertyDecoratorRejected.ts, 4, 5))
+>dec : Symbol(dec, Decl(ttttParameterPropertyDecoratorRejected.ts, 2, 13))
+>x : Symbol(x, Decl(ttttParameterPropertyDecoratorRejected.ts, 4, 43))
+
