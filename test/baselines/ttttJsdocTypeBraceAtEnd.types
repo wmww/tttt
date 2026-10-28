@@ -1,0 +1,32 @@
+//// [test/cases/ttttJsdocTypeBraceAtEnd.ts] ////
+
+=== z.js ===
+/** @type {
+ */
+var a = 1;
+>a : any
+>1 : 1
+
+/** @type { */
+var b = 1;
+>b : any
+>1 : 1
+
+/** @type {
+ * number} */
+var c = 1;
+>c : any
+>1 : 1
+
+/** @param {...
+ */
+function d(a) {}
+>d : (a: any[]) => void
+>a : any[]
+
+/** @type {
+ *   number } */
+var e = 1;
+>e : any
+>1 : 1
+

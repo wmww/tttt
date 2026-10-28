@@ -4386,7 +4386,11 @@ static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const 
     // (A `@returns` type is the function's return type annotation to tsgo's reparser, checked like any: only `@throws`'s
     // isn't visited)
     p.shared->jsdoc_unchecked = outer_unchecked || tag->kind == JSDOC_TAG_THROWS;
+    // (The token after the `{` is scanned before tsc's parseJSDocType turns on SetSkipJSDocLeadingAsterisks: a line's
+    // leading `*` there is a JSDocAllType, `{\n * number}` is '}' expected at `number`)
+    p.shared->in_jsdoc = false;
     hop_whitespace(&p);
+    p.shared->in_jsdoc = true;
     bool variadic = hop_start(&p, "...");
     Anchor a = anchor(&p);
     // (An `@type` or `@property` type may be a whole `unique symbol`, whose host decides: tsgo's reparser makes it a
@@ -4394,6 +4398,25 @@ static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const 
     char const* outer_allowed_at = p.shared->unique_allowed_at;
     p.shared->unique_allowed_at = tag->kind == JSDOC_TAG_TYPE || tag->kind == JSDOC_TAG_PROPERTY ? a.start : nullptr;
     p.shared->unique_allowed_found = nullptr;
+    char const* after_dots = p.pos;
+    Parser ahead = parser(&p);
+    if (variadic) hop_whitespace(&ahead);
+    bool at_end = ahead.pos >= end;
+    parse_fail(&ahead);
+    if (at_end) {
+        // Nothing before the comment's end, its scanner's end of file: tsc's missing identifier is TS1110 at the
+        // token's full start (right after the `{`), then '}' expected at the end
+        char const* full_start = variadic ? after_dots : *pos + 1;
+        parse_error(&p, span_make(p.shared->source, full_start, full_start), 1110, "Type expected.");
+        parse_error(&p, span_make(p.shared->source, end, end), 1005, "'}' expected.");
+        if (tag->has_type) type_drop(&tag->type);
+        tag->has_type = true;
+        tag->type = (TypeNode){ .tag = TYPE_ANY, .any.unkown_symbol_span = span_make(p.shared->source, full_start, full_start) };
+        tag->type_span = span_make(p.shared->source, full_start, full_start);
+        tag->variadic = variadic;
+        *pos = end;
+        goto done;
+    }
     TypeNode type;
     FunctionImpl predicate = {0};
     if (tag->kind == JSDOC_TAG_RETURNS && parse_type_predicate(&p, &predicate)) {
@@ -4453,6 +4476,7 @@ static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const 
         while (c < end && *c != '}' && *c != '\n') c++;
         *pos = c < end && *c == '}' ? c + 1 : c;
     }
+done:
     // Past the braces even when the type didn't parse (tsc: `{` starts a type expression that ends at `}`)
     if (!tag->has_type) {
         const char* c = *pos;

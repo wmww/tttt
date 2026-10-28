@@ -1,0 +1,42 @@
+z.js(1,12): error TS1110: Type expected.
+z.js(2,2): error TS1005: '}' expected.
+z.js(4,12): error TS1110: Type expected.
+z.js(4,13): error TS1005: '}' expected.
+z.js(7,4): error TS1005: '}' expected.
+z.js(9,16): error TS1110: Type expected.
+z.js(10,2): error TS1005: '}' expected.
+z.js(13,6): error TS1005: '}' expected.
+
+
+==== z.js (8 errors) ====
+    /** @type {
+               
+!!! error TS1110: Type expected.
+     */
+     
+!!! error TS1005: '}' expected.
+    var a = 1;
+    /** @type { */
+               
+!!! error TS1110: Type expected.
+                
+!!! error TS1005: '}' expected.
+    var b = 1;
+    /** @type {
+     * number} */
+       ~~~~~~
+!!! error TS1005: '}' expected.
+    var c = 1;
+    /** @param {...
+                   
+!!! error TS1110: Type expected.
+     */
+     
+!!! error TS1005: '}' expected.
+    function d(a) {}
+    /** @type {
+     *   number } */
+         ~~~~~~
+!!! error TS1005: '}' expected.
+    var e = 1;
+    

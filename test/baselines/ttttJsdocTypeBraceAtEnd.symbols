@@ -1,0 +1,28 @@
+//// [test/cases/ttttJsdocTypeBraceAtEnd.ts] ////
+
+=== z.js ===
+/** @type {
+ */
+var a = 1;
+>a : Symbol(a, Decl(z.js, 2, 3))
+
+/** @type { */
+var b = 1;
+>b : Symbol(b, Decl(z.js, 4, 3))
+
+/** @type {
+ * number} */
+var c = 1;
+>c : Symbol(c, Decl(z.js, 7, 3))
+
+/** @param {...
+ */
+function d(a) {}
+>d : Symbol(d, Decl(z.js, 7, 10))
+>a : Symbol(a, Decl(z.js, 10, 11))
+
+/** @type {
+ *   number } */
+var e = 1;
+>e : Symbol(e, Decl(z.js, 13, 3))
+
