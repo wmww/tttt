@@ -1,0 +1,83 @@
+//// [test/cases/ttttObjectLiteralModifierAfterDuplicate.ts] ////
+
+=== ttttObjectLiteralModifierAfterDuplicate.ts ===
+// An object literal member's modifiers (TS1042) are tsc's checkGrammarObjectLiteralExpression's, in member order: it
+// returns at a TS1118/TS1119, so no later member's modifier is reported (bun 28-C24a); a destructuring assignment
+// target isn't checked as an object literal at all
+declare let o: any;
+>o : any
+
+let y: any, x: any;
+>y : any
+>x : any
+
+const a1 = { get a() { return 1 }, get a() { return 1 }, public b: 1 };
+>a1 : { readonly a: number; b: number; }
+>{ get a() { return 1 }, get a() { return 1 }, public b: 1 } : { readonly a: number; b: number; }
+>a : number
+>1 : 1
+>a : number
+>1 : 1
+>b : number
+>1 : 1
+
+const a2 = { public b: 1, get a() { return 1 }, get a() { return 1 } };
+>a2 : { b: number; readonly a: number; }
+>{ public b: 1, get a() { return 1 }, get a() { return 1 } } : { b: number; readonly a: number; }
+>b : number
+>1 : 1
+>a : number
+>1 : 1
+>a : number
+>1 : 1
+
+({ public x } = o);
+>({ public x } = o) : any
+>{ public x } = o : any
+>{ public x } : { x: any; }
+>x : any
+>o : any
+
+({ public x: y } = o);
+>({ public x: y } = o) : any
+>{ public x: y } = o : any
+>{ public x: y } : { x: any; }
+>x : any
+>y : any
+>o : any
+
+const a3 = { async x: 1 };
+>a3 : { x: number; }
+>{ async x: 1 } : { x: number; }
+>x : number
+>1 : 1
+
+const a4 = { a: 1, b: 2, a: 3, public c: 1 };
+>a4 : { a: number; b: number; c: number; }
+>{ a: 1, b: 2, a: 3, public c: 1 } : { a: number; b: number; c: number; }
+>a : number
+>1 : 1
+>b : number
+>2 : 2
+>a : number
+>3 : 3
+>c : number
+>1 : 1
+
+const a5 = { a: 1, get a() { return 1 }, static c: 1, async d() {} };
+>a5 : { readonly a: number; c: number; d(): Promise<void>; }
+>{ a: 1, get a() { return 1 }, static c: 1, async d() {} } : { readonly a: number; c: number; d(): Promise<void>; }
+>a : number
+>1 : 1
+>a : number
+>1 : 1
+>c : number
+>1 : 1
+>d : () => Promise<void>
+
+for ({ readonly x } of [o]) {}
+>{ readonly x } : { readonly x: any; }
+>x : any
+>[o] : any[]
+>o : any
+

@@ -3432,6 +3432,10 @@ static void object_check_grammar(Expr const* me, ErrorCtx* errs) {
             error_ctx_grammar_error_d(errs, expr_outer_span(item->computed_key), 1171,
                 "A comma expression is not allowed in a computed property name.");
         }
+        for (u32 m = 0; m < object_item_rare(item)->modifier_count; m++) {
+            Span modifier = object_item_rare(item)->modifiers[m];
+            error_ctx_grammar_error_d(errs, modifier, 1042, "'", modifier, "' modifier cannot be used here.");
+        }
         uint8_t kind;
         switch (item->tag) {
             case OBJECT_ITEM_PROPERTY: case OBJECT_ITEM_SHORTHAND:
@@ -5270,6 +5274,7 @@ void object_expr_item_drop(ObjectExprItem* me) {
         type_drop(my rare->jsdoc_type);
         ast_delete(my rare->jsdoc_type);
     }
+    if (my rare && my rare->modifiers) ast_free(my rare->modifiers, sizeof(Span) * my rare->modifier_count);
     ast_delete(my rare);
     expr_drop(&my value);
 }

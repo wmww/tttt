@@ -417,13 +417,14 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   past the return types and the arity (isImplementationCompatibleWithOverload, compareSignaturesRelated), which
   replays tsgo's checkDeclarationInitializer: nothing for a literal, an assertion's type names, a call's callee
   (checkNonNullExpression: TS18048, then the whole when no single non-generic signature), else all of it.
-  TS2523/TS2524 moved from the parser to the resolve walk (UnaryOpExpr.in_parameter_initializer). [fixed HASH]
+  TS2523/TS2524 moved from the parser to the resolve walk (UnaryOpExpr.in_parameter_initializer). [fixed bd8877096]
   Not modelled: other askers of an overload's parameter type (a call with arguments, a relation of the function's
   type, declaration emit: the harness's post-emit count shows them), and compareSignaturesRelated stopping at the
   first unrelated parameter. [open]
-- An object literal's member modifiers (TS1042) are the parser's: tsgo's checkGrammarObjectLiteralExpression returns at
-  TS1118/TS1119, after which no later member's modifier is reported (28-C24a). The modifiers' spans would have to
-  reach object_check_grammar(). [open]
+- An object literal's member modifiers (TS1042) are tsgo's checkGrammarObjectLiteralExpression's, in member order: it
+  returns at TS1118/TS1119, after which no later member's modifier is reported (28-C24a, 28-P13a), and a destructuring
+  assignment target reports none. The parser keeps their spans (ObjectExprItemRare.modifiers) for
+  object_check_grammar(). [fixed HASH]
 
 ## Not looked at, by code
 - Each paragraph below is a code and direction with the cases it mismatches in, uninvestigated: at least one open

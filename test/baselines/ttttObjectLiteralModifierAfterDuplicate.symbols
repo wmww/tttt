@@ -1,0 +1,56 @@
+//// [test/cases/ttttObjectLiteralModifierAfterDuplicate.ts] ////
+
+=== ttttObjectLiteralModifierAfterDuplicate.ts ===
+// An object literal member's modifiers (TS1042) are tsc's checkGrammarObjectLiteralExpression's, in member order: it
+// returns at a TS1118/TS1119, so no later member's modifier is reported (bun 28-C24a); a destructuring assignment
+// target isn't checked as an object literal at all
+declare let o: any;
+>o : Symbol(o, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 3, 11))
+
+let y: any, x: any;
+>y : Symbol(y, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 4, 3))
+>x : Symbol(x, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 4, 11))
+
+const a1 = { get a() { return 1 }, get a() { return 1 }, public b: 1 };
+>a1 : Symbol(a1, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 5, 5))
+>a : Symbol(a, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 5, 12))
+>a : Symbol(a, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 5, 34))
+>b : Symbol(b, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 5, 56))
+
+const a2 = { public b: 1, get a() { return 1 }, get a() { return 1 } };
+>a2 : Symbol(a2, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 6, 5))
+>b : Symbol(b, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 6, 12))
+>a : Symbol(a, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 6, 25))
+>a : Symbol(a, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 6, 47))
+
+({ public x } = o);
+>x : Symbol(x, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 7, 2))
+>o : Symbol(o, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 3, 11))
+
+({ public x: y } = o);
+>x : Symbol(x, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 8, 2))
+>y : Symbol(y, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 4, 3))
+>o : Symbol(o, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 3, 11))
+
+const a3 = { async x: 1 };
+>a3 : Symbol(a3, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 9, 5))
+>x : Symbol(x, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 9, 12))
+
+const a4 = { a: 1, b: 2, a: 3, public c: 1 };
+>a4 : Symbol(a4, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 10, 5))
+>a : Symbol(a, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 10, 12), Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 10, 24))
+>b : Symbol(b, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 10, 18))
+>a : Symbol(a, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 10, 12), Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 10, 24))
+>c : Symbol(c, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 10, 30))
+
+const a5 = { a: 1, get a() { return 1 }, static c: 1, async d() {} };
+>a5 : Symbol(a5, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 11, 5))
+>a : Symbol(a, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 11, 12), Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 11, 18))
+>a : Symbol(a, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 11, 12), Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 11, 18))
+>c : Symbol(c, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 11, 40))
+>d : Symbol(d, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 11, 53))
+
+for ({ readonly x } of [o]) {}
+>x : Symbol(x, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 12, 6))
+>o : Symbol(o, Decl(ttttObjectLiteralModifierAfterDuplicate.ts, 3, 11))
+

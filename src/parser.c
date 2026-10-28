@@ -8677,14 +8677,14 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     if (modifiers.includes[MODIFIER_ASYNC]) flags.is_async = true;
     Span async_modifier = span_null;
 
-    // tsc's checkGrammarObjectLiteralExpression: every modifier but `async` (TS1184 on a method is checkGrammarMethod)
+    // tsc's checkGrammarObjectLiteralExpression: every modifier but a method's `async` (TS1184 on a method is
+    // checkGrammarMethod), reported by object_check_grammar()
     bool report_modifiers_cannot_appear = false;
     for_each (i, vec_spanned_modifier, &modifiers.spanned) {
         if (i->tag == MODIFIER_ASYNC) {
             if (!span_valid(async_modifier)) async_modifier = i->span;
             continue;
         }
-        grammar_error(&p, i->span, 1042, "'", i->span, "' modifier cannot be used here.");
         report_modifiers_cannot_appear = true;
     }
     Span first_modifier = vec_spanned_modifier_is_empty(&modifiers.spanned) ?
@@ -8782,9 +8782,16 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         hop_whitespace(&p);
     }
 
-    // (A property with an `async` modifier: a grammar error)
-    if (span_valid(async_modifier) && !must_be_method && *p.pos != '(' && *p.pos != '<') {
-        grammar_error(&p, async_modifier, 1042, "'async' modifier cannot be used here.");
+    // (A property with an `async` modifier: its `async` too)
+    bool async_reported = span_valid(async_modifier) && !must_be_method && *p.pos != '(' && *p.pos != '<';
+    u32 reported = 0;
+    for_each (i, vec_spanned_modifier, &modifiers.spanned) reported += i->tag != MODIFIER_ASYNC || async_reported;
+    if (reported) {
+        ObjectExprItemRare* rare = object_item_rare_mut(&item);
+        rare->modifiers = ast_malloc(sizeof(Span) * reported);
+        for_each (i, vec_spanned_modifier, &modifiers.spanned) {
+            if (i->tag != MODIFIER_ASYNC || async_reported) rare->modifiers[rare->modifier_count++] = i->span;
+        }
     }
     FunctionImpl func;
     if ((*p.pos == '(' || *p.pos == '<') && parse_non_arrow_function(&p, flags, &func)) {

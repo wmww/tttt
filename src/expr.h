@@ -905,6 +905,10 @@ typedef struct ObjectExprItemRare {
     // Owned, a JavaScript property's JSDoc `@type` (`/** @type {T} */ a: v`): the property's declared type, which the
     // value is contextually typed by and checked against (tsc's getTypeForDeclarationFromJSDocComment in checkObjectLiteral)
     TypeNode* jsdoc_type;
+    // Its modifiers that can't be used there (TS1042: all but a method's `async`), reported by object_check_grammar()
+    // (tsc's checkGrammarObjectLiteralExpression, which stops at a TS1118/TS1119). Owned (ast_malloc)
+    Span* modifiers;
+    u32 modifier_count;
 } ObjectExprItemRare;
 
 extern const ObjectExprItemRare object_item_no_rare;
