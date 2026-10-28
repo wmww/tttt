@@ -1,0 +1,21 @@
+//// [test/cases/ttttDuplicateFieldImplicitAny.ts] ////
+
+=== ttttDuplicateFieldImplicitAny.ts ===
+// A property declared again without a type is typed by its first declaration (the symbol's valueDeclaration): TS2717
+// for the second, no TS7008, which tsc reports only while widening the valueDeclaration's type
+class C {
+>C : Symbol(C, Decl(ttttDuplicateFieldImplicitAny.ts, 0, 0))
+
+    public "1": string = "number";
+>"1" : Symbol(C["1"], Decl(ttttDuplicateFieldImplicitAny.ts, 2, 9), Decl(ttttDuplicateFieldImplicitAny.ts, 3, 34))
+
+    1;
+>1 : Symbol(C["1"], Decl(ttttDuplicateFieldImplicitAny.ts, 2, 9), Decl(ttttDuplicateFieldImplicitAny.ts, 3, 34))
+
+    x;
+>x : Symbol(C.x, Decl(ttttDuplicateFieldImplicitAny.ts, 4, 6), Decl(ttttDuplicateFieldImplicitAny.ts, 5, 6))
+
+    x: number;
+>x : Symbol(C.x, Decl(ttttDuplicateFieldImplicitAny.ts, 4, 6), Decl(ttttDuplicateFieldImplicitAny.ts, 5, 6))
+}
+

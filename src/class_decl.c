@@ -2206,6 +2206,9 @@ static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const*
         return;
     }
     if (item->field.has_explicit_type || !compiler_options()->no_implicit_any || !span_valid(name)) return;
+    // (Only of the member symbol's first declaration, its valueDeclaration: a property declared again is typed by the
+    // first (TS2717 if this one differs), tsc reports implicit any while widening the valueDeclaration's type)
+    if (item->symbol_first && item->symbol_first != item) return;
     // (A name recovery left missing, `@dec }`: declarationNameToString's "(Missing)")
     csview shown = name.size ? span_sv(name) : c_sv("(Missing)");
     // (Typed by the accessors it joined: its own declaration's type is never asked for)
