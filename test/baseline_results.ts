@@ -616,7 +616,7 @@ const baselines = {
         types: true,
     },
     'bun04-C2a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -681,7 +681,7 @@ const baselines = {
         types: true,
     },
     'bun04-C9b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1066,9 +1066,9 @@ const baselines = {
         types: true,
     },
     'bun07-C5': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun07-C6': {
         errors: true,
@@ -6041,9 +6041,9 @@ const baselines = {
         types: true,
     },
     'bun32-C2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun32-C20': {
         errors: true,
@@ -10876,7 +10876,7 @@ const baselines = {
         types: true,
     },
     'bun93-R19a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11426,7 +11426,7 @@ const baselines = {
         types: false,
     },
     'bun99-V7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -14061,6 +14061,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttForOfVariableTypedFirst': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttForceTupleNestedElaboration': {
         errors: true,
         symbols: true,
@@ -14082,6 +14087,11 @@ const baselines = {
         types: true,
     },
     'ttttFunctionExpressionDefaultsAtFirstCheck': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttFunctionInitializerTypedFirst': {
         errors: true,
         symbols: true,
         types: true,
@@ -14617,6 +14627,11 @@ const baselines = {
         types: true,
     },
     'ttttIntrinsicAliasKeywordAlone': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttIteratorProblemsReportedAtFirstAsk': {
         errors: true,
         symbols: true,
         types: true,
@@ -15830,6 +15845,11 @@ const baselines = {
         symbols: true,
         types: false,
     },
+    'ttttReturnCheckedAgainstCircularAnnotation': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttReturnMapperAnyContextualArgument': {
         errors: true,
         symbols: true,
@@ -16142,12 +16162,22 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttThisInParameterDefault': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttThisInstantiatedAnnotatedImplementation': {
         errors: true,
         symbols: true,
         types: true,
     },
     'ttttThisInstantiatedMethodErased': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttThisOfParenthesizedAssignmentTarget': {
         errors: true,
         symbols: true,
         types: true,
@@ -16391,6 +16421,11 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
+    },
+    'ttttUnassignedContextualParameterRead': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
     'ttttUncheckedHeritageExpressionsQuiet': {
         errors: true,
