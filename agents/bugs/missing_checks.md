@@ -91,7 +91,16 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   (9d2091d15), bun 99-V4 has 17 fewer missing diagnostics. Left: in the loop case the while condition's `current` prints
   `Item` where tsc's is `Item | undefined` (types only, the loop's flow result from inside the cycle is kept), and 99-V4's
   checkObjectLiteralMethod__03 / checkPropertyAssignment__07 report their spurious TS7023 on the first method instead of
-  the second (both wrong before and after: tsc has TS2683 there). Test ttttFunctionExpressionDefaultsAtFirstCheck. [fixed]
+  the second (both wrong before and after: tsc has TS2683 there). Test ttttFunctionExpressionDefaultsAtFirstCheck. [fixed ffba37893]
+- (cor2, 2026-10-28, bun 99-V4, ~11 diagnostics, not started) **Accessor write-type circularity**: tsc pushes an
+  accessor's write type (getWriteTypeOfAccessors, TypeSystemPropertyNameWriteType) and reports a failing pop as TS2502
+  at the setter's name, with the accessor's name in the message; its read type from a setter annotation is read from the
+  type node (getAnnotatedAccessorType), not through the parameter's symbol. tttt resolves the setter parameter's binding
+  (RESOLVING_BINDING) and reports TS2502 at the parameter, named after it (getWriteTypeOfAccessors__06: `set x(v:
+  C["x"])`). A union or intersection property also computes each member's write type at creation
+  (createUnionOrIntersectionProperty), so `set x(v: typeof r | number)` with `const r = u.x` over `A | B` is circular in
+  tsc (TS2502 on x and TS7022 on r), nothing in tttt (getWriteTypeOfSymbol__01/02/04, getWriteTypeOfAccessors__01-03).
+  Starting points: prop_write_type() (members.c, no resolution entry), class_item_accessor_evaluate_type(). [open]
 - **Base constraint circularity and base types resolved through constraints** (re-checked 2026-10-07, errors only).
   Port, plan-sized: a resolution-identity stack for base constraints (tsc's pushTypeResolution with
   ImmediateBaseConstraint plus getImmediateBaseConstraint's 5-deep identity check), TS2313 at the type node being
