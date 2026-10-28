@@ -31,6 +31,14 @@ scripts/sharedgraph/sgcheck_projects.txt, load 8-15): main at ab39dce20 12 of 34
   infer_from_type_args -> get_variances) whose cloned `TResult1`'s mapper targets `any` where K1's targets `unknown`
   (9/12 runs, output unaffected there). Fix: the content order (sharing_design.md stage 1; its parity cost is listed
   there), a decision for the coordinator; stamps can't be made a function of the node. [note]
+  - The content order's parity cost, measured 2026-10-29 (plain K1 with and without `TTTT_NESTING_ORDER=content
+    TTTT_FIRST_TOUCH_STAMPS=0` on sgcheck's 58 projects): 55 identical; drizzle chain text only (12 lines: the
+    mysql2/session.ts TS2416 elaboration one return level deeper, `with(...).update(...).set(...).where(...).$dynamic()`);
+    but two diagnostics appear: webpack tooling/generate-types.js(397,35) TS2345 (`string | number | boolean | Type`
+    to `Type`, sharing_design.md §1 had it) and openscience/backend/cli test/tool/bash-output-receipts.test.ts(52,49)
+    TS7006 (`file` implicitly any in a `.map((file) => file.path)` callback). So the content order is not yet only
+    text: making it the flag's order was stopped there. Candidate cause, untested: the prototype takes the first push
+    on this stack, bun's is_at_least_as_new the first on either stack (sharing_design.md §1). [note]
 - **effect: Schema.ts's `X.pipe(lowercased(...))` classes** (the known Schema.tst.ts cascade, now (2892,39) TS2345 and
   80-110 lines): 2-3/10 K8 runs with either nesting order, not the never-intersection commits (9967c8e35 2/10,
   73f823ccc 3/10). `TTTT_GRAPH_RECHECK=1` (a fresh checker over the finished graph) reproduces it in 3 of 6 runs:
