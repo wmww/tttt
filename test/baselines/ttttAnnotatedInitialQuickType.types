@@ -1,0 +1,122 @@
+//// [test/cases/ttttAnnotatedInitialQuickType.ts] ////
+
+=== ttttAnnotatedInitialQuickType.ts ===
+// An annotated variable's initial type in control flow is its initializer's quick type when it has one (tsc's
+// getInitialTypeOfVariableDeclaration -> getTypeOfInitializer -> getTypeOfExpression): a call of one non-generic
+// signature, a `new`, an awaited one or an assertion, arguments and operands unchecked, so a closure that reads the
+// variable through a later function isn't circular (bun 99-V4 getTypeOfInitializer__01/04/05)
+declare function pick(v: unknown): number;
+>pick : (v: unknown) => number
+>v : unknown
+
+const x: string | number = pick(later());
+>x : string | number
+>pick(later()) : number
+>pick : (v: unknown) => number
+>later() : number
+>later : () => number
+
+function later() {
+>later : () => number
+
+  return g();
+>g() : number
+>g : () => number
+}
+const g = () => x;
+>g : () => number
+>() => x : () => number
+>x : number
+
+const probe: never = g();
+>probe : never
+>g() : number
+>g : () => number
+
+class A {
+>A : A
+
+  a = 1;
+>a : number
+>1 : 1
+
+  constructor(v: unknown) {}
+>v : unknown
+}
+class B {
+>B : B
+
+  b = 2;
+>b : number
+>2 : 2
+}
+const n: A | B = new A(laterN());
+>n : A | B
+>new A(laterN()) : A
+>A : typeof A
+>laterN() : A
+>laterN : () => A
+
+function laterN() {
+>laterN : () => A
+
+  return gn();
+>gn() : A
+>gn : () => A
+}
+const gn = () => n;
+>gn : () => A
+>() => n : () => A
+>n : A
+
+declare function load(v: unknown): Promise<number>;
+>load : (v: unknown) => Promise<number>
+>v : unknown
+
+declare const more: boolean;
+>more : boolean
+
+const w: string | number = await load(laterW());
+>w : string | number
+>await load(laterW()) : number
+>load(laterW()) : Promise<number>
+>load : (v: unknown) => Promise<number>
+>laterW() : number
+>laterW : () => number
+
+function laterW() {
+>laterW : () => number
+
+  return gw();
+>gw() : number
+>gw : () => number
+}
+const gw = () => w;
+>gw : () => number
+>() => w : () => number
+>w : number
+
+const y: string | number = (more ? laterY() : 1) as number;
+>y : string | number
+>(more ? laterY() : 1) as number : number
+>(more ? laterY() : 1) : number
+>more ? laterY() : 1 : number
+>more : boolean
+>laterY() : number
+>laterY : () => number
+>1 : 1
+
+function laterY() {
+>laterY : () => number
+
+  return gy();
+>gy() : number
+>gy : () => number
+}
+const gy = () => y;
+>gy : () => number
+>() => y : () => number
+>y : number
+
+export {}
+

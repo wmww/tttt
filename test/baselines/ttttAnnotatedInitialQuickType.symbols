@@ -1,0 +1,102 @@
+//// [test/cases/ttttAnnotatedInitialQuickType.ts] ////
+
+=== ttttAnnotatedInitialQuickType.ts ===
+// An annotated variable's initial type in control flow is its initializer's quick type when it has one (tsc's
+// getInitialTypeOfVariableDeclaration -> getTypeOfInitializer -> getTypeOfExpression): a call of one non-generic
+// signature, a `new`, an awaited one or an assertion, arguments and operands unchecked, so a closure that reads the
+// variable through a later function isn't circular (bun 99-V4 getTypeOfInitializer__01/04/05)
+declare function pick(v: unknown): number;
+>pick : Symbol(pick, Decl(ttttAnnotatedInitialQuickType.ts, 0, 0))
+>v : Symbol(v, Decl(ttttAnnotatedInitialQuickType.ts, 4, 22))
+
+const x: string | number = pick(later());
+>x : Symbol(x, Decl(ttttAnnotatedInitialQuickType.ts, 5, 5))
+>pick : Symbol(pick, Decl(ttttAnnotatedInitialQuickType.ts, 0, 0))
+>later : Symbol(later, Decl(ttttAnnotatedInitialQuickType.ts, 5, 41))
+
+function later() {
+>later : Symbol(later, Decl(ttttAnnotatedInitialQuickType.ts, 5, 41))
+
+  return g();
+>g : Symbol(g, Decl(ttttAnnotatedInitialQuickType.ts, 9, 5))
+}
+const g = () => x;
+>g : Symbol(g, Decl(ttttAnnotatedInitialQuickType.ts, 9, 5))
+>x : Symbol(x, Decl(ttttAnnotatedInitialQuickType.ts, 5, 5))
+
+const probe: never = g();
+>probe : Symbol(probe, Decl(ttttAnnotatedInitialQuickType.ts, 10, 5))
+>g : Symbol(g, Decl(ttttAnnotatedInitialQuickType.ts, 9, 5))
+
+class A {
+>A : Symbol(A, Decl(ttttAnnotatedInitialQuickType.ts, 10, 25))
+
+  a = 1;
+>a : Symbol(A.a, Decl(ttttAnnotatedInitialQuickType.ts, 12, 9))
+
+  constructor(v: unknown) {}
+>v : Symbol(v, Decl(ttttAnnotatedInitialQuickType.ts, 14, 14))
+}
+class B {
+>B : Symbol(B, Decl(ttttAnnotatedInitialQuickType.ts, 15, 1))
+
+  b = 2;
+>b : Symbol(B.b, Decl(ttttAnnotatedInitialQuickType.ts, 16, 9))
+}
+const n: A | B = new A(laterN());
+>n : Symbol(n, Decl(ttttAnnotatedInitialQuickType.ts, 19, 5))
+>A : Symbol(A, Decl(ttttAnnotatedInitialQuickType.ts, 10, 25))
+>B : Symbol(B, Decl(ttttAnnotatedInitialQuickType.ts, 15, 1))
+>A : Symbol(A, Decl(ttttAnnotatedInitialQuickType.ts, 10, 25))
+>laterN : Symbol(laterN, Decl(ttttAnnotatedInitialQuickType.ts, 19, 33))
+
+function laterN() {
+>laterN : Symbol(laterN, Decl(ttttAnnotatedInitialQuickType.ts, 19, 33))
+
+  return gn();
+>gn : Symbol(gn, Decl(ttttAnnotatedInitialQuickType.ts, 23, 5))
+}
+const gn = () => n;
+>gn : Symbol(gn, Decl(ttttAnnotatedInitialQuickType.ts, 23, 5))
+>n : Symbol(n, Decl(ttttAnnotatedInitialQuickType.ts, 19, 5))
+
+declare function load(v: unknown): Promise<number>;
+>load : Symbol(load, Decl(ttttAnnotatedInitialQuickType.ts, 23, 19))
+>v : Symbol(v, Decl(ttttAnnotatedInitialQuickType.ts, 25, 22))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+
+declare const more: boolean;
+>more : Symbol(more, Decl(ttttAnnotatedInitialQuickType.ts, 26, 13))
+
+const w: string | number = await load(laterW());
+>w : Symbol(w, Decl(ttttAnnotatedInitialQuickType.ts, 27, 5))
+>load : Symbol(load, Decl(ttttAnnotatedInitialQuickType.ts, 23, 19))
+>laterW : Symbol(laterW, Decl(ttttAnnotatedInitialQuickType.ts, 27, 48))
+
+function laterW() {
+>laterW : Symbol(laterW, Decl(ttttAnnotatedInitialQuickType.ts, 27, 48))
+
+  return gw();
+>gw : Symbol(gw, Decl(ttttAnnotatedInitialQuickType.ts, 31, 5))
+}
+const gw = () => w;
+>gw : Symbol(gw, Decl(ttttAnnotatedInitialQuickType.ts, 31, 5))
+>w : Symbol(w, Decl(ttttAnnotatedInitialQuickType.ts, 27, 5))
+
+const y: string | number = (more ? laterY() : 1) as number;
+>y : Symbol(y, Decl(ttttAnnotatedInitialQuickType.ts, 32, 5))
+>more : Symbol(more, Decl(ttttAnnotatedInitialQuickType.ts, 26, 13))
+>laterY : Symbol(laterY, Decl(ttttAnnotatedInitialQuickType.ts, 32, 59))
+
+function laterY() {
+>laterY : Symbol(laterY, Decl(ttttAnnotatedInitialQuickType.ts, 32, 59))
+
+  return gy();
+>gy : Symbol(gy, Decl(ttttAnnotatedInitialQuickType.ts, 36, 5))
+}
+const gy = () => y;
+>gy : Symbol(gy, Decl(ttttAnnotatedInitialQuickType.ts, 36, 5))
+>y : Symbol(y, Decl(ttttAnnotatedInitialQuickType.ts, 32, 5))
+
+export {}
+
