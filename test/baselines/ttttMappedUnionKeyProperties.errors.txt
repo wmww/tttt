@@ -1,0 +1,44 @@
+ttttMappedUnionKeyProperties.ts(7,27): error TS2344: Type '"id"' does not satisfy the constraint '"other"'.
+ttttMappedUnionKeyProperties.ts(10,10): error TS2540: Cannot assign to 'id' because it is a read-only property.
+ttttMappedUnionKeyProperties.ts(21,10): error TS2339: Property 'id' does not exist on type '{}'.
+ttttMappedUnionKeyProperties.ts(23,67): error TS2411: Property 'a' of type '1' is not assignable to 'string' index type 'string'.
+ttttMappedUnionKeyProperties.ts(25,7): error TS2322: Type '{ [x: string]: string | number; a: number; }' is not assignable to type 'never'.
+
+
+==== ttttMappedUnionKeyProperties.ts (5 errors) ====
+    // `[K in keyof U]` over a union U that isn't generic goes by the union's properties (tsc's
+    // forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType over getPropertiesOfType), not `keyof U`: a property some
+    // member has public is a key even when another member declares it protected (keyof drops it), a protected one the
+    // members don't share isn't a property at all, and the index signatures are the union's (string, no number)
+    type Writable<T> = { -readonly [K in keyof T]: T[K] }
+    declare class D { protected readonly id: string | number; other: 1 }
+    type W = Writable<Pick<D, 'id'>>
+                              ~~~~
+!!! error TS2344: Type '"id"' does not satisfy the constraint '"other"'.
+    declare const u: W | D
+    declare const u_mapped: { [K in keyof typeof u]: (typeof u)[K] }
+    u_mapped.id = 'x'
+             ~~
+!!! error TS2540: Cannot assign to 'id' because it is a read-only property.
+    
+    declare class D2 { protected id: string | number; other: 1 }
+    type W2 = { +readonly [K in keyof D2]: D2[K] }
+    declare const dju: D2 & ({ id: string | number } | W2)
+    declare const dju_mapped: { [K in keyof typeof dju]: (typeof dju)[K] }
+    dju_mapped.id = 'x'
+    
+    type Plain = { id: string | number }
+    declare const p: Plain | D
+    declare const p_mapped: { [K in keyof typeof p]: (typeof p)[K] }
+    p_mapped.id = 'x'
+             ~~
+!!! error TS2339: Property 'id' does not exist on type '{}'.
+    
+    declare const s: { [k: string]: number } | { [k: string]: string; a: 1 }
+                                                                      ~
+!!! error TS2411: Property 'a' of type '1' is not assignable to 'string' index type 'string'.
+    declare const s_mapped: { [K in keyof typeof s]: (typeof s)[K] }
+    const s_printed: never = s_mapped
+          ~~~~~~~~~
+!!! error TS2322: Type '{ [x: string]: string | number; a: number; }' is not assignable to type 'never'.
+    

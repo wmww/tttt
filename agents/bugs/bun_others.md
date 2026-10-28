@@ -54,13 +54,13 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   declaration of a member's synthetic property, so D's `id` is common, and the union's property is public through `D &
   J`: synthetic_common_declaration(); TS2536 rather than TS4105 for `T["id"]`, getConstituentProperty's intersection
   property being public: intersection_prop_non_public()). [fixed be0df3a7a]
-- 99-V1, still open: a mapped type over a non-generic union's keys, `{ [K in keyof typeof u]: (typeof u)[K] }` with `u:
-  W | D`, has the union's properties to tsc (forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType reads
+- 99-V1: a mapped type over a non-generic union's keys, `{ [K in keyof typeof u]: (typeof u)[K] }` with `u: W | D`,
+  has the union's properties to tsc (forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType reads
   getPropertiesOfType of the modifiers type, a union property with a common non-public declaration and public through
-  one member included), tttt the keys of `keyof (W | D)` (`keyof W & keyof D`, never): +TS2339 at
-  protected_class__writable_of_pick.ts:148 and protected_writable_class__plus_readonly.ts:212/276 (expand_mapped(),
-  members.c). The private_class_* files: `Pick<Writable<D>, "id"> & D` with D's `id` private (+TS2322 `W & D` to `{ id
-  }`, -TS2339 `t.id` on `T extends W & D`). [open]
+  one member included; getUnionIndexInfos for its index signatures), tttt read the keys of `keyof (W | D)` (`keyof W &
+  keyof D`, never): now union_mapped_keys() in expand_mapped() (members.c), test ttttMappedUnionKeyProperties. [fixed]
+- 99-V1's private_class_* files: `Pick<Writable<D>, "id"> & D` with D's `id` private (+TS2322 `W & D` to `{ id }`),
+  and -TS2339 `t.id` on `T extends W & D` (the `*_generic` entry below). [open]
 - Circular mapped types and interfaces whose members are being resolved: 10-C8c (`interface I9 extends
   Array<typeof a9>`), 11-C15 (`{ [K in "a"]: A1["a"] }`: tsc's property is missing, TS2339, where tttt says TS2615),
   93-R01a, 93-R01c, 93-R01d (mapped types with `as` clauses through each other), 12-C1d (`Alt<B, A>` alternating),

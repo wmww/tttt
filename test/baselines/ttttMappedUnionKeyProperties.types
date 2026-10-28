@@ -1,0 +1,91 @@
+//// [test/cases/ttttMappedUnionKeyProperties.ts] ////
+
+=== ttttMappedUnionKeyProperties.ts ===
+// `[K in keyof U]` over a union U that isn't generic goes by the union's properties (tsc's
+// forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType over getPropertiesOfType), not `keyof U`: a property some
+// member has public is a key even when another member declares it protected (keyof drops it), a protected one the
+// members don't share isn't a property at all, and the index signatures are the union's (string, no number)
+type Writable<T> = { -readonly [K in keyof T]: T[K] }
+>Writable : Writable<T>
+
+declare class D { protected readonly id: string | number; other: 1 }
+>D : D
+>id : string | number
+>other : 1
+
+type W = Writable<Pick<D, 'id'>>
+>W : Writable<Pick<D, "id">>
+
+declare const u: W | D
+>u : D | Writable<Pick<D, "id">>
+
+declare const u_mapped: { [K in keyof typeof u]: (typeof u)[K] }
+>u_mapped : { readonly id: string | number; }
+>u : D | Writable<Pick<D, "id">>
+>u : D | Writable<Pick<D, "id">>
+
+u_mapped.id = 'x'
+>u_mapped.id = 'x' : "x"
+>u_mapped.id : any
+>u_mapped : { readonly id: string | number; }
+>id : any
+>'x' : "x"
+
+declare class D2 { protected id: string | number; other: 1 }
+>D2 : D2
+>id : string | number
+>other : 1
+
+type W2 = { +readonly [K in keyof D2]: D2[K] }
+>W2 : W2
+
+declare const dju: D2 & ({ id: string | number } | W2)
+>dju : D2 & (W2 | { id: string | number; })
+>id : string | number
+
+declare const dju_mapped: { [K in keyof typeof dju]: (typeof dju)[K] }
+>dju_mapped : { id: string | number; other: 1; }
+>dju : D2 & (W2 | { id: string | number; })
+>dju : D2 & (W2 | { id: string | number; })
+
+dju_mapped.id = 'x'
+>dju_mapped.id = 'x' : "x"
+>dju_mapped.id : string | number
+>dju_mapped : { id: string | number; other: 1; }
+>id : string | number
+>'x' : "x"
+
+type Plain = { id: string | number }
+>Plain : Plain
+>id : string | number
+
+declare const p: Plain | D
+>p : D | Plain
+
+declare const p_mapped: { [K in keyof typeof p]: (typeof p)[K] }
+>p_mapped : {}
+>p : D | Plain
+>p : D | Plain
+
+p_mapped.id = 'x'
+>p_mapped.id = 'x' : "x"
+>p_mapped.id : any
+>p_mapped : {}
+>id : any
+>'x' : "x"
+
+declare const s: { [k: string]: number } | { [k: string]: string; a: 1 }
+>s : { [k: string]: number; } | { [k: string]: string; a: 1; }
+>k : string
+>k : string
+>a : 1
+
+declare const s_mapped: { [K in keyof typeof s]: (typeof s)[K] }
+>s_mapped : { [x: string]: string | number; a: number; }
+>s : { [k: string]: number; } | { [k: string]: string; a: 1; }
+>s : { [k: string]: number; } | { [k: string]: string; a: 1; }
+
+const s_printed: never = s_mapped
+>s_printed : never
+>s_mapped : { [x: string]: string | number; a: number; }
+

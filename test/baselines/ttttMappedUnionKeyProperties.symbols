@@ -1,0 +1,109 @@
+//// [test/cases/ttttMappedUnionKeyProperties.ts] ////
+
+=== ttttMappedUnionKeyProperties.ts ===
+// `[K in keyof U]` over a union U that isn't generic goes by the union's properties (tsc's
+// forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType over getPropertiesOfType), not `keyof U`: a property some
+// member has public is a key even when another member declares it protected (keyof drops it), a protected one the
+// members don't share isn't a property at all, and the index signatures are the union's (string, no number)
+type Writable<T> = { -readonly [K in keyof T]: T[K] }
+>Writable : Symbol(Writable, Decl(ttttMappedUnionKeyProperties.ts, 0, 0))
+>T : Symbol(T, Decl(ttttMappedUnionKeyProperties.ts, 4, 14))
+>K : Symbol(K, Decl(ttttMappedUnionKeyProperties.ts, 4, 32))
+>T : Symbol(T, Decl(ttttMappedUnionKeyProperties.ts, 4, 14))
+>T : Symbol(T, Decl(ttttMappedUnionKeyProperties.ts, 4, 14))
+>K : Symbol(K, Decl(ttttMappedUnionKeyProperties.ts, 4, 32))
+
+declare class D { protected readonly id: string | number; other: 1 }
+>D : Symbol(D, Decl(ttttMappedUnionKeyProperties.ts, 4, 53))
+>id : Symbol(D.id, Decl(ttttMappedUnionKeyProperties.ts, 5, 17))
+>other : Symbol(D.other, Decl(ttttMappedUnionKeyProperties.ts, 5, 57))
+
+type W = Writable<Pick<D, 'id'>>
+>W : Symbol(W, Decl(ttttMappedUnionKeyProperties.ts, 5, 68))
+>Writable : Symbol(Writable, Decl(ttttMappedUnionKeyProperties.ts, 0, 0))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>D : Symbol(D, Decl(ttttMappedUnionKeyProperties.ts, 4, 53))
+
+declare const u: W | D
+>u : Symbol(u, Decl(ttttMappedUnionKeyProperties.ts, 7, 13))
+>W : Symbol(W, Decl(ttttMappedUnionKeyProperties.ts, 5, 68))
+>D : Symbol(D, Decl(ttttMappedUnionKeyProperties.ts, 4, 53))
+
+declare const u_mapped: { [K in keyof typeof u]: (typeof u)[K] }
+>u_mapped : Symbol(u_mapped, Decl(ttttMappedUnionKeyProperties.ts, 8, 13))
+>K : Symbol(K, Decl(ttttMappedUnionKeyProperties.ts, 8, 27))
+>u : Symbol(u, Decl(ttttMappedUnionKeyProperties.ts, 7, 13))
+>u : Symbol(u, Decl(ttttMappedUnionKeyProperties.ts, 7, 13))
+>K : Symbol(K, Decl(ttttMappedUnionKeyProperties.ts, 8, 27))
+
+u_mapped.id = 'x'
+>u_mapped.id : Symbol(id, Decl(ttttMappedUnionKeyProperties.ts, 5, 17))
+>u_mapped : Symbol(u_mapped, Decl(ttttMappedUnionKeyProperties.ts, 8, 13))
+>id : Symbol(id, Decl(ttttMappedUnionKeyProperties.ts, 5, 17))
+
+declare class D2 { protected id: string | number; other: 1 }
+>D2 : Symbol(D2, Decl(ttttMappedUnionKeyProperties.ts, 9, 17))
+>id : Symbol(D2.id, Decl(ttttMappedUnionKeyProperties.ts, 11, 18))
+>other : Symbol(D2.other, Decl(ttttMappedUnionKeyProperties.ts, 11, 49))
+
+type W2 = { +readonly [K in keyof D2]: D2[K] }
+>W2 : Symbol(W2, Decl(ttttMappedUnionKeyProperties.ts, 11, 60))
+>K : Symbol(K, Decl(ttttMappedUnionKeyProperties.ts, 12, 23))
+>D2 : Symbol(D2, Decl(ttttMappedUnionKeyProperties.ts, 9, 17))
+>D2 : Symbol(D2, Decl(ttttMappedUnionKeyProperties.ts, 9, 17))
+>K : Symbol(K, Decl(ttttMappedUnionKeyProperties.ts, 12, 23))
+
+declare const dju: D2 & ({ id: string | number } | W2)
+>dju : Symbol(dju, Decl(ttttMappedUnionKeyProperties.ts, 13, 13))
+>D2 : Symbol(D2, Decl(ttttMappedUnionKeyProperties.ts, 9, 17))
+>id : Symbol(id, Decl(ttttMappedUnionKeyProperties.ts, 13, 26))
+>W2 : Symbol(W2, Decl(ttttMappedUnionKeyProperties.ts, 11, 60))
+
+declare const dju_mapped: { [K in keyof typeof dju]: (typeof dju)[K] }
+>dju_mapped : Symbol(dju_mapped, Decl(ttttMappedUnionKeyProperties.ts, 14, 13))
+>K : Symbol(K, Decl(ttttMappedUnionKeyProperties.ts, 14, 29))
+>dju : Symbol(dju, Decl(ttttMappedUnionKeyProperties.ts, 13, 13))
+>dju : Symbol(dju, Decl(ttttMappedUnionKeyProperties.ts, 13, 13))
+>K : Symbol(K, Decl(ttttMappedUnionKeyProperties.ts, 14, 29))
+
+dju_mapped.id = 'x'
+>dju_mapped.id : Symbol(id, Decl(ttttMappedUnionKeyProperties.ts, 11, 18), Decl(ttttMappedUnionKeyProperties.ts, 13, 26))
+>dju_mapped : Symbol(dju_mapped, Decl(ttttMappedUnionKeyProperties.ts, 14, 13))
+>id : Symbol(id, Decl(ttttMappedUnionKeyProperties.ts, 11, 18), Decl(ttttMappedUnionKeyProperties.ts, 13, 26))
+
+type Plain = { id: string | number }
+>Plain : Symbol(Plain, Decl(ttttMappedUnionKeyProperties.ts, 15, 19))
+>id : Symbol(id, Decl(ttttMappedUnionKeyProperties.ts, 17, 14))
+
+declare const p: Plain | D
+>p : Symbol(p, Decl(ttttMappedUnionKeyProperties.ts, 18, 13))
+>Plain : Symbol(Plain, Decl(ttttMappedUnionKeyProperties.ts, 15, 19))
+>D : Symbol(D, Decl(ttttMappedUnionKeyProperties.ts, 4, 53))
+
+declare const p_mapped: { [K in keyof typeof p]: (typeof p)[K] }
+>p_mapped : Symbol(p_mapped, Decl(ttttMappedUnionKeyProperties.ts, 19, 13))
+>K : Symbol(K, Decl(ttttMappedUnionKeyProperties.ts, 19, 27))
+>p : Symbol(p, Decl(ttttMappedUnionKeyProperties.ts, 18, 13))
+>p : Symbol(p, Decl(ttttMappedUnionKeyProperties.ts, 18, 13))
+>K : Symbol(K, Decl(ttttMappedUnionKeyProperties.ts, 19, 27))
+
+p_mapped.id = 'x'
+>p_mapped : Symbol(p_mapped, Decl(ttttMappedUnionKeyProperties.ts, 19, 13))
+
+declare const s: { [k: string]: number } | { [k: string]: string; a: 1 }
+>s : Symbol(s, Decl(ttttMappedUnionKeyProperties.ts, 22, 13))
+>k : Symbol(k, Decl(ttttMappedUnionKeyProperties.ts, 22, 20))
+>k : Symbol(k, Decl(ttttMappedUnionKeyProperties.ts, 22, 46))
+>a : Symbol(a, Decl(ttttMappedUnionKeyProperties.ts, 22, 65))
+
+declare const s_mapped: { [K in keyof typeof s]: (typeof s)[K] }
+>s_mapped : Symbol(s_mapped, Decl(ttttMappedUnionKeyProperties.ts, 23, 13))
+>K : Symbol(K, Decl(ttttMappedUnionKeyProperties.ts, 23, 27))
+>s : Symbol(s, Decl(ttttMappedUnionKeyProperties.ts, 22, 13))
+>s : Symbol(s, Decl(ttttMappedUnionKeyProperties.ts, 22, 13))
+>K : Symbol(K, Decl(ttttMappedUnionKeyProperties.ts, 23, 27))
+
+const s_printed: never = s_mapped
+>s_printed : Symbol(s_printed, Decl(ttttMappedUnionKeyProperties.ts, 24, 5))
+>s_mapped : Symbol(s_mapped, Decl(ttttMappedUnionKeyProperties.ts, 23, 13))
+

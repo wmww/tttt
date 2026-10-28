@@ -4577,6 +4577,104 @@ static Prop const* modifiers_prop(Checker* me, Ty const* modifiers, Atom const* 
     return first;
 }
 
+// Whether a union or intersection (or object) type has a property `name`, and whether it is a key (tsc's union or
+// intersection property, keyed by getLiteralTypeFromProperty when some constituent's is public:
+// CheckFlags.ContainsPublic): 0 none, 1 a property but no key, 2 a key. A union member without it but with an
+// applicable index signature doesn't make the union's property partial
+static u32 composite_prop_key_state(Checker* me, Ty const* ty, Atom const* name, u32 depth) {
+    if (depth > 8) return 0;
+    ty = ty_apparent_type(me, ty);
+    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
+        bool is_union = ty->kind == TY_UNION;
+        u32 state = 0;
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            Ty const* member = ty->composite.types.data[i];
+            u32 part = composite_prop_key_state(me, member, name, depth + 1);
+            if (!part && is_union) {
+                Ty const* apparent = ty_apparent_type(me, member);
+                bool indexed = ((apparent->flags & TYF_OBJECT) || apparent->kind == TY_INTERSECTION) &&
+                    ty_applicable_index_info(me, apparent, ty_prop_name_literal(me, name));
+                if (!indexed) return 0;
+                continue;
+            }
+            if (part > state) state = part;
+        }
+        // (A union's property with a private or protected declaration in a member that the others don't share isn't
+        // one: tsc's createUnionOrIntersectionProperty)
+        if (is_union && state && ty_union_non_public_conflict(me, ty, name)) return 0;
+        return state;
+    }
+    if (!(ty->flags & TYF_OBJECT)) return 0;
+    Prop const* prop = ty_get_prop(me, ty, name);
+    return !prop ? 0 : ty_prop_is_key(me, prop) ? 2 : 1;
+}
+
+// Adds the properties of the object types in a union or intersection (apparent types, nested ones too) not yet in
+// `out` (by name)
+static void collect_composite_props(Checker* me, Ty const* ty, Prop const** out, u32* count, u32 cap, u32 depth) {
+    if (depth > 8) return;
+    ty = ty_apparent_type(me, ty);
+    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) collect_composite_props(me, ty->composite.types.data[i], out, count, cap, depth + 1);
+        return;
+    }
+    if (!(ty->flags & TYF_OBJECT)) return;
+    Members const* source = ty_members(me, ty);
+    for (u32 i = 0; i < source->prop_count && *count < cap; i++) {
+        Prop const* prop = members_prop_keyed(source, i);
+        bool seen = false;
+        for (u32 j = 0; j < *count && !seen; j++) seen = out[j]->name == prop->name;
+        if (!seen) out[(*count)++] = prop;
+    }
+}
+
+static u32 composite_prop_cap(Checker* me, Ty const* ty, u32 depth) {
+    if (depth > 8) return 0;
+    ty = ty_apparent_type(me, ty);
+    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
+        u32 cap = 0;
+        for (u32 i = 0; i < ty->composite.types.len; i++) cap += composite_prop_cap(me, ty->composite.types.data[i], depth + 1);
+        return cap;
+    }
+    return (ty->flags & TYF_OBJECT) ? ty_members(me, ty)->prop_count : 0;
+}
+
+// The keys `[K in keyof U]` goes by for a union U that isn't generic: the properties of the union (tsc's
+// forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType over getPropertiesOfType, not `keyof U`): a property is a key
+// when some member's is public (`W | D` with D's `id` protected and W's public has `id`, which keyof drops), then the
+// union's index signature keys (tsc's getUnionIndexInfos: the first member's index key types that every member has an
+// index signature of)
+static Members const* apparent_members(Checker* me, Ty const* ty) {
+    ty = ty_apparent_type(me, ty);
+    return (ty->flags & TYF_OBJECT) || ty->kind == TY_INTERSECTION ? ty_members(me, ty) : nullptr;
+}
+
+static Ty const* const* union_mapped_keys(Checker* me, Ty const* un, u32* count) {
+    u32 cap = composite_prop_cap(me, un, 0);
+    Prop const** props = arena_new_n(&my arena, Prop const*, cap ? cap : 1);
+    u32 prop_count = 0;
+    collect_composite_props(me, un, props, &prop_count, cap, 0);
+    Members const* first = apparent_members(me, un->composite.types.data[0]);
+    u32 index_count = first ? first->index_count : 0;
+    Ty const** keys = arena_new_n(&my arena, Ty const*, prop_count + index_count + 1);
+    u32 n = 0;
+    for (u32 i = 0; i < prop_count; i++) {
+        if (composite_prop_key_state(me, un, props[i]->name, 0) == 2) keys[n++] = ty_prop_key_literal(me, props[i]);
+    }
+    for (u32 i = 0; i < index_count; i++) {
+        Ty const* key = first->index[i].key;
+        bool every = true;
+        for (u32 m = 1; m < un->composite.types.len && every; m++) {
+            Members const* other = apparent_members(me, un->composite.types.data[m]);
+            every = false;
+            for (u32 k = 0; other && k < other->index_count && !every; k++) every = other->index[k].key == key;
+        }
+        if (every) keys[n++] = key;
+    }
+    *count = n;
+    return keys;
+}
+
 // What a generic key type is known to include at least (tsc's getLowerBoundOfKeyType): `keyof T` the keys of T's
 // constraint, a distributive conditional type over it (`Exclude<keyof T, K>`) that conditional type of those keys
 static Ty const* lower_bound_of_key_type(Checker* me, Ty const* ty, u32 depth) {
@@ -4777,6 +4875,8 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
             }
         }
         keys = member_keys;
+    } else if (mapped->keyof_constraint && keyed && keyed->kind == TY_UNION && !generic && !ty_is_generic_index(constraint)) {
+        keys = member_keys = (Ty const**)union_mapped_keys(me, keyed, &key_count);
     } else if (mapped->keyof_constraint && keyed && (keyed->flags & TYF_ANY)) {
         // `[K in keyof any]` goes by any, whose one key is string (tsc's
         // forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType)
@@ -4884,22 +4984,9 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                 while (declared && declared->target && !declared->decl->decl_span_count) declared = declared->target;
                 if (declared) {
                     prop->decl = mapped_prop_decl(me, declared, true, modifiers->kind == TY_INTERSECTION ? modifiers : nullptr);
-                    // (Of a union, declared where each member's property is: tsc's union property symbol)
-                    if (modifiers->kind == TY_UNION) {
-                        for (u32 m = 0; m < modifiers->composite.types.len; m++) {
-                            Ty const* member = ty_apparent_type(me, modifiers->composite.types.data[m]);
-                            Prop const* other = (member->flags & TYF_OBJECT) ? ty_get_prop(me, member, name) : nullptr;
-                            while (other && other->target && !other->decl->decl_span_count) other = other->target;
-                            if (!other || other == declared) continue;
-                            for (u32 k = 0; k < other->decl->decl_span_count; k++) {
-                                bool seen = false;
-                                for (u32 q = 0; q < prop->decl->decl_span_count && !seen; q++) {
-                                    seen = span_eq(prop->decl->decl_spans[q], other->decl->decl_spans[k]);
-                                }
-                                if (!seen) prop_add_decl_spans(me, prop, &other->decl->decl_spans[k], 1);
-                            }
-                        }
-                    }
+                    // (Of a union, declared where each member's property is, intersections' too: tsc's union property
+                    // symbol)
+                    if (modifiers->kind == TY_UNION) add_member_decl_spans(me, prop, modifiers, name, 0);
                 }
                 // A number key is a number to keyof (tsc's mapped symbol's nameType, getLiteralTypeFromProperty), which
                 // the name, a string, doesn't say; an enum member is that member (and prints as one, `[E.A]`)
