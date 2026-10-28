@@ -1,0 +1,17 @@
+//// [test/cases/ttttTypeOperatorOperandNew.ts] ////
+
+=== ttttTypeOperatorOperandNew.ts ===
+// A type operator's operand is no constructor type (tsc's parseTypeOperatorOrHigher): `keyof new () => Z` is a
+// reference to a type named `new`, escaped or not; in an intersection it is one (TS1388)
+let x1: keyof new () => Z;
+>x1 : Symbol(x1, Decl(ttttTypeOperatorOperandNew.ts, 2, 3))
+>new : Symbol(new)
+
+let x3: readonly new () => Z[];
+>x3 : Symbol(x3, Decl(ttttTypeOperatorOperandNew.ts, 3, 3))
+>new : Symbol(new)
+
+let x4: 1 & n\u0065w () => Z;
+>x4 : Symbol(x4, Decl(ttttTypeOperatorOperandNew.ts, 4, 3))
+>Z : Symbol(Z)
+

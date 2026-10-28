@@ -169,6 +169,8 @@ typedef struct ParserShared {
     // tsc's DisallowConditionalTypes context: parsing a conditional type's extends type or an `infer X extends C`
     // constraint, where a type operator's operands can't be conditional types (a primary type's insides can)
     bool disallow_conditional;
+    // The type parse_type_inner() parses next is a type operator's operand (`keyof`'s): no constructor type there
+    bool type_operator_operand;
     // The next identifier type is a heritage element's (tsc's parseExpressionWithTypeArguments, tryParseTypeArguments):
     // its type arguments want a `<` token, not a `<<`. Cleared by the identifier type that reads it
     bool heritage_type_args;
@@ -2620,7 +2622,9 @@ static bool parse_modifier_list_ex(Parser* parent, bool is_member, bool permit_c
                 if (!follows) break;
             }
             mod.tag = MODIFIER_EXPORT;
-        } else if (span_equals(mod.span, "default") && (prev_was_export || (!is_member && can_follow_default_keyword(&p)))) {
+        } else if (span_equals(mod.span, "default") && (prev_was_export || can_follow_default_keyword(&p))) {
+            // (A member's too, tsc's nextTokenCanFollowDefaultKeyword: `interface I { default class: 1 }` has a property
+            // `class` with the modifier, TS1070)
             mod.tag = MODIFIER_EXPORT_DEFAULT;
         } else if (span_equals(mod.span, "async")) {
             mod.tag = MODIFIER_ASYNC;
@@ -3934,6 +3938,8 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
     bool parenthesized = false;
     uint8_t paren_extra = 0;
     bool placeholder = false;
+    bool operator_operand = p.shared->type_operator_operand;
+    p.shared->type_operator_operand = false;
     Span readonly_span = span_null;
     if (hop_start_if_ends_on_word_break(&p, "readonly")) {
         readonly_span = span_from(a);
@@ -3990,7 +3996,9 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
         *ret = type_string;
     } else if (hop_start_if_ends_on_word_break(&p, "keyof")) {
         hop_whitespace(&p);
+        p.shared->type_operator_operand = true;
         expect_type(&p, TYPE_PRECEDENCE_OPERATOR, &parsed.type);
+        p.shared->type_operator_operand = false;
         *ret = type_keyof(ast_new(KeyofType, {
             .interface = parsed.type,
         }));
@@ -4048,7 +4056,10 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
         } else {
             return parse_fail(&p);
         }
-    } else if ((c == '(' || c == '<' || c == 'a' || c == 'n') &&
+    } else if ((c == '(' || c == '<' ||
+            // (A type operator's operand is no constructor type, tsc's parseTypeOperatorOrHigher: `keyof new () => Z`
+            // is a reference to a type named `new`)
+            ((c == 'a' || c == 'n') && !operator_operand && !span_valid(readonly_span))) &&
         parse_function_type_keeping_context(&p, disallow_conditional, &parsed.func)
     ) {
         parsed.func.full_span = span_from(value_anchor);
@@ -9306,6 +9317,13 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             name_string = cstr_init();
             missing_name = true;
         }
+    }
+    // A member with the `default` modifier (TS1070, TS1029) is bound as `default` whatever its name (tsc's
+    // declareSymbol: a default export's name)
+    if (modifiers.includes[MODIFIER_EXPORT_DEFAULT] && span_valid(name_span) && !computed_key) {
+        cstr_drop(&name_string);
+        name_string = cstr_lit("default");
+        name_is_value = false;
     }
     hop_whitespace(&p);
     // (tsc's parseAccessorDeclaration: after `get`/`set` and a name the parameter list is committed)

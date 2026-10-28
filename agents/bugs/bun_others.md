@@ -246,7 +246,14 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
   `\` that starts no word); an escaped modifier's TS1260 before a conflict marker is dropped at the `;` expected's
   position (tsc reports the marker later, when it scans the token after it: last_error_starts_at() skips a later
   TS1185), and an escaped `static` before a block is a static block (83-R03a 93-P05). [fixed]
-- `keyof n\u0065w () => Z` (83-R03c); `d\u0065fault class: 1` (61-L16). [open]
+- `keyof n\u0065w () => Z` (83-R03c: a type operator's operand is no constructor type, tsc's
+  parseTypeOperatorOrHigher, escaped or not: a type reference `new`; ParserShared.type_operator_operand);
+  `d\u0065fault class: 1` (61-L16) and `default` as a member modifier (61-L15b): tsc's
+  nextTokenCanFollowDefaultKeyword makes it a member's modifier too (TS1070 on a type member, TS1029 on a class
+  member), and declareSymbol binds such a member as `default`. [fixed]
+- The symbols baseline names a `default`-modified member by its written name (`I.class`), tsc by its symbol's
+  (`I.default`): the harness's member naming reads the declaration's name span (ttttDefaultMemberModifier fails its
+  symbols). [text]
 - Arrow and type-argument speculation: `async <T extends object>(x: T)` at EOF, `async <T extends U>(x: any);`
   (57-L18 56-L10), `<T>(x?: number);` (74-R15e), `f((a, ...) => 1)` (83-R13a d16), `f<new>(x)`, `f<import(>(x)`,
   `f<abstract new>(x)` (83-R01b), `@null! as typeof mk<number>|` (93-P02b), `a?..b` (92-R02b), `a?.<T>\`x\``
@@ -255,7 +262,7 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
   `@augments {A<=}`/`{A<<=}` and `{<>}`/`Array<<>>` (56-L01 56-L20b), `function () {}` with `@overload` in JS
   (61-L17, TS1003 twice), `typeof a..b` (84-R04), `@import yield`/`{ A as await }` in generators and async functions
   (92-R03b 92-R03d), type literal members `static {}` and `[` (92-R07a 92-R07b 92-R07f). [open]
-- Declaration and statement recovery: `default` as a member modifier (61-L15b: TS1070, TS1029), contextual-keyword
+- Declaration and statement recovery: contextual-keyword
   declarations with a missing name (`type )`, `interface ]`, a class member `interface? )`, `throw type { A }`:
   96-SOLID1), `export *` and `export type *` at EOF (TS1109 then 'from' expected:
   export-from-without-a-module-specifier-where-declarations-are-emitted), `export * as`/`super`/`new.` at EOF

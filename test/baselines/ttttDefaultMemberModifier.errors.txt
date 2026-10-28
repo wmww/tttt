@@ -1,0 +1,42 @@
+ttttDefaultMemberModifier.ts(4,15): error TS1070: 'default' modifier cannot appear on a type member.
+ttttDefaultMemberModifier.ts(4,56): error TS2339: Property 'class' does not exist on type 'I'.
+ttttDefaultMemberModifier.ts(5,12): error TS1070: 'default' modifier cannot appear on a type member.
+ttttDefaultMemberModifier.ts(5,57): error TS2339: Property 'function' does not exist on type 'T'.
+ttttDefaultMemberModifier.ts(6,11): error TS1029: 'export' modifier must precede 'default' modifier.
+ttttDefaultMemberModifier.ts(6,53): error TS2339: Property 'class' does not exist on type 'C'.
+ttttDefaultMemberModifier.ts(7,15): error TS1070: 'default' modifier cannot appear on a type member.
+ttttDefaultMemberModifier.ts(7,23): error TS2300: Duplicate identifier 'class'.
+ttttDefaultMemberModifier.ts(7,33): error TS2300: Duplicate identifier 'class'.
+ttttDefaultMemberModifier.ts(7,33): error TS2717: Subsequent property declarations must have the same type.  Property 'default' must be of type '1', but here has type '2'.
+
+
+==== ttttDefaultMemberModifier.ts (10 errors) ====
+    // `default` is a member's modifier before what can follow it (tsc's nextTokenCanFollowDefaultKeyword): TS1070 on a type
+    // member, TS1029 on a class member, and the member is bound as `default` (declareSymbol's default export name)
+    export {};
+    interface I { default class: 1 } declare const i: I; i.class; i.default;
+                  ~~~~~~~
+!!! error TS1070: 'default' modifier cannot appear on a type member.
+                                                           ~~~~~
+!!! error TS2339: Property 'class' does not exist on type 'I'.
+    type T = { default function: 1 }; declare const t: T; t.function; t.default;
+               ~~~~~~~
+!!! error TS1070: 'default' modifier cannot appear on a type member.
+                                                            ~~~~~~~~
+!!! error TS2339: Property 'function' does not exist on type 'T'.
+    class C { default class = 1 } declare const c: C; c.class; c.default;
+              ~~~~~~~
+!!! error TS1029: 'export' modifier must precede 'default' modifier.
+                                                        ~~~~~
+!!! error TS2339: Property 'class' does not exist on type 'C'.
+    interface L { default class: 1; default: 2 }
+                  ~~~~~~~
+!!! error TS1070: 'default' modifier cannot appear on a type member.
+                          ~~~~~
+!!! error TS2300: Duplicate identifier 'class'.
+                                    ~~~~~~~
+!!! error TS2300: Duplicate identifier 'class'.
+                                    ~~~~~~~
+!!! error TS2717: Subsequent property declarations must have the same type.  Property 'default' must be of type '1', but here has type '2'.
+!!! related TS6203 ttttDefaultMemberModifier.ts:7:23: 'default' was also declared here.
+    

@@ -1,0 +1,41 @@
+//// [test/cases/ttttDefaultMemberModifier.ts] ////
+
+=== ttttDefaultMemberModifier.ts ===
+// `default` is a member's modifier before what can follow it (tsc's nextTokenCanFollowDefaultKeyword): TS1070 on a type
+// member, TS1029 on a class member, and the member is bound as `default` (declareSymbol's default export name)
+export {};
+interface I { default class: 1 } declare const i: I; i.class; i.default;
+>I : Symbol(I, Decl(ttttDefaultMemberModifier.ts, 2, 10))
+>class : Symbol(I.default, Decl(ttttDefaultMemberModifier.ts, 3, 13))
+>i : Symbol(i, Decl(ttttDefaultMemberModifier.ts, 3, 46))
+>I : Symbol(I, Decl(ttttDefaultMemberModifier.ts, 2, 10))
+>i : Symbol(i, Decl(ttttDefaultMemberModifier.ts, 3, 46))
+>i.default : Symbol(I.default, Decl(ttttDefaultMemberModifier.ts, 3, 13))
+>i : Symbol(i, Decl(ttttDefaultMemberModifier.ts, 3, 46))
+>default : Symbol(I.default, Decl(ttttDefaultMemberModifier.ts, 3, 13))
+
+type T = { default function: 1 }; declare const t: T; t.function; t.default;
+>T : Symbol(T, Decl(ttttDefaultMemberModifier.ts, 3, 72))
+>function : Symbol(function, Decl(ttttDefaultMemberModifier.ts, 4, 10))
+>t : Symbol(t, Decl(ttttDefaultMemberModifier.ts, 4, 47))
+>T : Symbol(T, Decl(ttttDefaultMemberModifier.ts, 3, 72))
+>t : Symbol(t, Decl(ttttDefaultMemberModifier.ts, 4, 47))
+>t.default : Symbol(function, Decl(ttttDefaultMemberModifier.ts, 4, 10))
+>t : Symbol(t, Decl(ttttDefaultMemberModifier.ts, 4, 47))
+>default : Symbol(function, Decl(ttttDefaultMemberModifier.ts, 4, 10))
+
+class C { default class = 1 } declare const c: C; c.class; c.default;
+>C : Symbol(C, Decl(ttttDefaultMemberModifier.ts, 4, 76))
+>class : Symbol(C.default, Decl(ttttDefaultMemberModifier.ts, 5, 9))
+>c : Symbol(c, Decl(ttttDefaultMemberModifier.ts, 5, 43))
+>C : Symbol(C, Decl(ttttDefaultMemberModifier.ts, 4, 76))
+>c : Symbol(c, Decl(ttttDefaultMemberModifier.ts, 5, 43))
+>c.default : Symbol(C.default, Decl(ttttDefaultMemberModifier.ts, 5, 9))
+>c : Symbol(c, Decl(ttttDefaultMemberModifier.ts, 5, 43))
+>default : Symbol(C.default, Decl(ttttDefaultMemberModifier.ts, 5, 9))
+
+interface L { default class: 1; default: 2 }
+>L : Symbol(L, Decl(ttttDefaultMemberModifier.ts, 5, 69))
+>class : Symbol(L.default, Decl(ttttDefaultMemberModifier.ts, 6, 13), Decl(ttttDefaultMemberModifier.ts, 6, 31))
+>default : Symbol(L.default, Decl(ttttDefaultMemberModifier.ts, 6, 13), Decl(ttttDefaultMemberModifier.ts, 6, 31))
+
