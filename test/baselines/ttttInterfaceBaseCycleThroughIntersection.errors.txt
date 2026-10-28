@@ -1,0 +1,33 @@
+ttttInterfaceBaseCycleThroughIntersection.ts(3,11): error TS2310: Type 'L0' recursively references itself as a base type.
+ttttInterfaceBaseCycleThroughIntersection.ts(4,11): error TS2310: Type 'L1' recursively references itself as a base type.
+ttttInterfaceBaseCycleThroughIntersection.ts(6,11): error TS2310: Type 'K0' recursively references itself as a base type.
+ttttInterfaceBaseCycleThroughIntersection.ts(8,11): error TS2310: Type 'J0' recursively references itself as a base type.
+ttttInterfaceBaseCycleThroughIntersection.ts(9,11): error TS2310: Type 'J1' recursively references itself as a base type.
+ttttInterfaceBaseCycleThroughIntersection.ts(11,3): error TS2339: Property 'z' does not exist on type 'K0'.
+
+
+==== ttttInterfaceBaseCycleThroughIntersection.ts (6 errors) ====
+    // An interface whose base is an intersection that contains it, directly or through another interface: TS2310 (tsc's
+    // hasBaseType looks through intersections)
+    interface L0 extends L1 { q0: 1 }
+              ~~
+!!! error TS2310: Type 'L0' recursively references itself as a base type.
+    interface L1 extends M { }
+              ~~
+!!! error TS2310: Type 'L1' recursively references itself as a base type.
+    type M = L0 & { z: 1 };
+    interface K0 extends N { }
+              ~~
+!!! error TS2310: Type 'K0' recursively references itself as a base type.
+    type N = K0 & { z: 1 };
+    interface J0 extends J1 { }
+              ~~
+!!! error TS2310: Type 'J0' recursively references itself as a base type.
+    interface J1 extends J0 { }
+              ~~
+!!! error TS2310: Type 'J1' recursively references itself as a base type.
+    declare const k: K0
+    k.z
+      ~
+!!! error TS2339: Property 'z' does not exist on type 'K0'.
+    

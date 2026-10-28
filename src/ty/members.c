@@ -2988,11 +2988,22 @@ typedef struct BaseWalk {
 } BaseWalk;
 
 // The interface an `extends` of an interface names, null if it isn't one
-static Symbol const* interface_base_symbol(Checker* me, TypeNode const* node, LowerCtx ctx) {
-    Ty const* base = ty_from_node(me, node, ctx);
+// The interfaces a heritage type is or intersects (tsc's hasBaseType looks through intersections: `interface K extends
+// N` with `type N = K & { z: 1 }` is a base cycle), at most cap of them
+static u32 base_type_symbols(Ty const* base, Symbol const** out, u32 count, u32 cap, u32 depth) {
+    if (depth > 8) return count;
+    if (base->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < base->composite.types.len; i++) count = base_type_symbols(base->composite.types.data[i], out, count, cap, depth + 1);
+        return count;
+    }
     if (base->kind == TY_REFERENCE) base = base->reference.target;
-    if (base->kind != TY_DECLARED || base->declared.kind != TY_DECLARED_INTERFACE) return nullptr;
-    return base->declared.symbol;
+    if (base->kind != TY_DECLARED || base->declared.kind != TY_DECLARED_INTERFACE || count == cap) return count;
+    out[count] = base->declared.symbol;
+    return count + 1;
+}
+
+static u32 interface_base_symbols(Checker* me, TypeNode const* node, LowerCtx ctx, Symbol const** out, u32 cap) {
+    return base_type_symbols(ty_from_node(me, node, ctx), out, 0, cap, 0);
 }
 
 // Whether the interface `symbol` is or (transitively) extends walk->target, each interface visited once
@@ -3009,8 +3020,9 @@ static bool interface_reaches(Checker* me, Symbol const* symbol, BaseWalk* walk)
         if (node->kind != SYMBOL_DECL_INTERFACE) continue;
         InterfaceDecl const* interface_decl = node->node;
         for_each (extends, vec_spanned_type, &interface_decl->extends) {
-            Symbol const* base = interface_base_symbol(me, &extends->type, ctx);
-            if (base && interface_reaches(me, base, walk)) return true;
+            Symbol const* bases[8];
+            u32 count = interface_base_symbols(me, &extends->type, ctx, bases, c_arraylen(bases));
+            for (u32 i = 0; i < count; i++) if (interface_reaches(me, bases[i], walk)) return true;
         }
     }
     return false;
@@ -3064,11 +3076,10 @@ static bool interface_walk_finds_cycle(Checker* me, Symbol const* symbol) {
         if (node->kind != SYMBOL_DECL_INTERFACE) continue;
         InterfaceDecl const* interface_decl = node->node;
         for_each (extends, vec_spanned_type, &interface_decl->extends) {
-            Symbol const* base = interface_base_symbol(me, &extends->type, ctx);
-            if (base && interface_reaches(me, base, walk)) {
-                found = true;
-                break;
-            }
+            Symbol const* bases[8];
+            u32 count = interface_base_symbols(me, &extends->type, ctx, bases, c_arraylen(bases));
+            for (u32 i = 0; i < count && !found; i++) found = interface_reaches(me, bases[i], walk);
+            if (found) break;
         }
     }
     free(walk);
@@ -3087,20 +3098,23 @@ bool ty_interface_decl_reports_base_cycle(Checker* me, Symbol const* symbol, Int
         if (node->kind != SYMBOL_DECL_INTERFACE) continue;
         InterfaceDecl const* interface_decl = node->node;
         for_each (extends, vec_spanned_type, &interface_decl->extends) {
-            Symbol const* base = interface_base_symbol(me, &extends->type, ctx);
-            if (base == symbol) {
-                names_itself |= interface_decl == decl;
-                continue;
+            Symbol const* bases[8];
+            u32 count = interface_base_symbols(me, &extends->type, ctx, bases, c_arraylen(bases));
+            for (u32 i = 0; i < count; i++) {
+                Symbol const* base = bases[i];
+                if (base == symbol) {
+                    names_itself |= interface_decl == decl;
+                    continue;
+                }
+                BaseWalk* walk = malloc(sizeof(BaseWalk));
+                panic_if(!walk, "out of memory");
+                walk->target = symbol;
+                walk->visited_count = 1;
+                walk->visited[0] = symbol;
+                bool reaches = interface_reaches(me, base, walk);
+                free(walk);
+                if (reaches) return true;
             }
-            if (!base) continue;
-            BaseWalk* walk = malloc(sizeof(BaseWalk));
-            panic_if(!walk, "out of memory");
-            walk->target = symbol;
-            walk->visited_count = 1;
-            walk->visited[0] = symbol;
-            bool reaches = interface_reaches(me, base, walk);
-            free(walk);
-            if (reaches) return true;
         }
     }
     return names_itself;

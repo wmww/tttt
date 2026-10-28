@@ -1,0 +1,43 @@
+//// [test/cases/ttttInterfaceBaseCycleThroughIntersection.ts] ////
+
+=== ttttInterfaceBaseCycleThroughIntersection.ts ===
+// An interface whose base is an intersection that contains it, directly or through another interface: TS2310 (tsc's
+// hasBaseType looks through intersections)
+interface L0 extends L1 { q0: 1 }
+>L0 : Symbol(L0, Decl(ttttInterfaceBaseCycleThroughIntersection.ts, 0, 0))
+>L1 : Symbol(L1, Decl(ttttInterfaceBaseCycleThroughIntersection.ts, 2, 33))
+>q0 : Symbol(L0.q0, Decl(ttttInterfaceBaseCycleThroughIntersection.ts, 2, 25))
+
+interface L1 extends M { }
+>L1 : Symbol(L1, Decl(ttttInterfaceBaseCycleThroughIntersection.ts, 2, 33))
+>M : Symbol(M, Decl(ttttInterfaceBaseCycleThroughIntersection.ts, 3, 26))
+
+type M = L0 & { z: 1 };
+>M : Symbol(M, Decl(ttttInterfaceBaseCycleThroughIntersection.ts, 3, 26))
+>L0 : Symbol(L0, Decl(ttttInterfaceBaseCycleThroughIntersection.ts, 0, 0))
+>z : Symbol(z, Decl(ttttInterfaceBaseCycleThroughIntersection.ts, 4, 15))
+
+interface K0 extends N { }
+>K0 : Symbol(K0, Decl(ttttInterfaceBaseCycleThroughIntersection.ts, 4, 23))
+>N : Symbol(N, Decl(ttttInterfaceBaseCycleThroughIntersection.ts, 5, 26))
+
+type N = K0 & { z: 1 };
+>N : Symbol(N, Decl(ttttInterfaceBaseCycleThroughIntersection.ts, 5, 26))
+>K0 : Symbol(K0, Decl(ttttInterfaceBaseCycleThroughIntersection.ts, 4, 23))
+>z : Symbol(z, Decl(ttttInterfaceBaseCycleThroughIntersection.ts, 6, 15))
+
+interface J0 extends J1 { }
+>J0 : Symbol(J0, Decl(ttttInterfaceBaseCycleThroughIntersection.ts, 6, 23))
+>J1 : Symbol(J1, Decl(ttttInterfaceBaseCycleThroughIntersection.ts, 7, 27))
+
+interface J1 extends J0 { }
+>J1 : Symbol(J1, Decl(ttttInterfaceBaseCycleThroughIntersection.ts, 7, 27))
+>J0 : Symbol(J0, Decl(ttttInterfaceBaseCycleThroughIntersection.ts, 6, 23))
+
+declare const k: K0
+>k : Symbol(k, Decl(ttttInterfaceBaseCycleThroughIntersection.ts, 9, 13))
+>K0 : Symbol(K0, Decl(ttttInterfaceBaseCycleThroughIntersection.ts, 4, 23))
+
+k.z
+>k : Symbol(k, Decl(ttttInterfaceBaseCycleThroughIntersection.ts, 9, 13))
+
