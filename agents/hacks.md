@@ -96,6 +96,11 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   perfsweep.py (synced runs, wall to the last output byte of `--time`) already do. The tail was measured on a box
   with THP `madvise` (4 KB pages: 7-66 ms); the laptop, THP `always`, should measure it (fewer pages to free: it may
   be smaller there).
+- `graph_fresh_worker()` (program.c), `--shared-graph`'s shadowed-worker hand-over: the retired checker stays allocated
+  until the program ends or a graph-wide recycle (its arena holds published types); 0-12 a 20-run table.
+- `program_set_checker_memory_shared()` (program.c, program.h): unused by the CLI since the memory default changed
+  (2026-10-22: no growing start, `default_checker_memory()` in main.c). Delete it and its `checker_memory_shared`
+  field after the laptop bench confirms the defaults.
 
 ## Parser
 - **A program with a syntax error is loaded twice when it has deferred bodies** (`program_deferred_bodies_parse()`,
@@ -231,6 +236,16 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   (resolveName -> resolveAlias -> getTargetOfImportSpecifier/Clause) reports TS2307/TS2305 at the import the first
   time. Closing this needs either use tracking in all modes (the resolve walk marking each alias it hits, like
   `referenced` under noUnusedLocals) or deferring these aliases' error reporting to their first use in the checker.
+- **interface_heritage_typecheck's `aug_one_level`** (interface_decl.c, scope.c aug_merge_fixup): when module
+  augmentations clone one symbol along a chain longer than one (tsc's mergeSymbol of a re-export of an already augmented
+  interface: @stencil/vitest's `interface Assertion extends CustomMatchers` through vitest over @vitest/expect's), tttt
+  makes the symbol the end of the chain for everything, but checks its declarations' heritage (TS2320) as the first
+  clone, which tsc's getSymbolOfDeclaration (getMergedSymbol once) gives them. tsc's lookups apply getMergedSymbol a
+  path-dependent number of times (a declaration's symbol once, a type reference twice, a table entry once more), so
+  names and the symbols baseline still differ there (npm_My-first-stencil-project-001_TS2320's SYM/TYP). The faithful
+  model (a symbol the binder made is its first clone; type references and lookups go one level further) was tried on
+  2026-10-24 and regressed ttttAugmentationCloneChain's symbols and types (which symbol the harness names, local twins
+  of module exports): it needs the harness's twin logic and the display's container search reworked with it.
 
 ## Control flow and narrowing (`flow.c`, `ty/flow.c`)
 - `without_unit()` (ty/flow.c): the `!==`-a-unit filter of a union is memoized per (union, unit), KEY_FLOW_NOT_UNIT.
@@ -675,6 +690,8 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `ty_keyof()` (ty/checker.c): a mapped type with an `as` clause over `keyof X` gets its keys from
   ty_mapped_type_name_keys() (tsc's getIndexTypeForMappedType), other renamed mapped types still from their expanded
   members (an `any` name there would be a string index signature). Oracle: ttttKeyofMappedAsAnyName.
+- `KEY_REDUCTION_KEY`'s memo in subtype reduction (each member's discriminating property): could keep a transient
+  answer if a property type is read mid-cycle (circular resolution); no test or oracle shows it.
 
 ## Checks (`ty/check.c`, `unused.c`, `statement.c`, `class_decl.c`)
 - `check_duplicate_declarations()` (TS2300): artifact of tsgo's checking order: in a class, a member before the first
@@ -845,20 +862,3 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   files (unchecked since tttt emits declarations), `-b`'s tsbuildinfo `contentMapperIdentities`.
 - `node_in_mapped_file()` (ty_display.c, declaration maps): a reused TypeNode doesn't know its file; found from one of
   its spans, a keyword by comparing the text at its offset. Correct: TypeNodes knowing their file. Shown by: dtsdiff.py.
-- `graph_fresh_worker()` (program.c), `--shared-graph`'s shadowed-worker hand-over: the retired checker stays allocated
-  until the program ends or a graph-wide recycle (its arena holds published types); 0-12 a 20-run table.
-- `program_set_checker_memory_shared()` (program.c, program.h): unused by the CLI since the memory default changed
-  (2026-10-22: no growing start, `default_checker_memory()` in main.c). Delete it and its `checker_memory_shared`
-  field after the laptop bench confirms the defaults.
-- `KEY_REDUCTION_KEY`'s memo in subtype reduction (each member's discriminating property): could keep a transient
-  answer if a property type is read mid-cycle (circular resolution); no test or oracle shows it.
-- **interface_heritage_typecheck's `aug_one_level`** (interface_decl.c, scope.c aug_merge_fixup): when module
-  augmentations clone one symbol along a chain longer than one (tsc's mergeSymbol of a re-export of an already augmented
-  interface: @stencil/vitest's `interface Assertion extends CustomMatchers` through vitest over @vitest/expect's), tttt
-  makes the symbol the end of the chain for everything, but checks its declarations' heritage (TS2320) as the first
-  clone, which tsc's getSymbolOfDeclaration (getMergedSymbol once) gives them. tsc's lookups apply getMergedSymbol a
-  path-dependent number of times (a declaration's symbol once, a type reference twice, a table entry once more), so
-  names and the symbols baseline still differ there (npm_My-first-stencil-project-001_TS2320's SYM/TYP). The faithful
-  model (a symbol the binder made is its first clone; type references and lookups go one level further) was tried on
-  2026-10-24 and regressed ttttAugmentationCloneChain's symbols and types (which symbol the harness names, local twins
-  of module exports): it needs the harness's twin logic and the display's container search reworked with it.
