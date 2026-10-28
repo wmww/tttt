@@ -12381,6 +12381,16 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAugmentedExportEqualsAmbientName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttAugmentedExportEqualsModuleName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAugmentedStarExportNotLocal': {
         errors: true,
         symbols: true,
@@ -14086,6 +14096,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttExportedAsStringName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttExtendedConfigDiagnosticLocated': {
         errors: true,
         symbols: true,
@@ -14312,6 +14327,17 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttHeritageOptionalChain': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttHeritageOptionalChainDeclaration': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttHeritageShiftTypeArguments': {
         errors: true,
         symbols: true,
@@ -14468,6 +14494,11 @@ const baselines = {
         types: true,
     },
     'ttttIndexSignatureMethodSuggestion': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttIndexUnionElaboration': {
         errors: true,
         symbols: true,
         types: true,
@@ -14953,6 +14984,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttJsdocEmptyType': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttJsdocExtendsErrorBaseNoMatchCheck': {
         errors: true,
         symbols: true,
@@ -14964,6 +15000,11 @@ const baselines = {
         types: true,
     },
     'ttttJsdocSatisfiesHost': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttJsdocSignatureMissingReturn': {
         errors: true,
         symbols: true,
         types: true,
@@ -15108,6 +15149,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttJsxTagArityUnionOverloads': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttJsxTagIntersectionMemberNoSignatures': {
         errors: true,
         symbols: true,
@@ -15214,6 +15260,11 @@ const baselines = {
         types: true,
     },
     'ttttLibReplacementJavaScriptDefaultLib': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttLibReplacementNoRelatedInfo': {
         errors: true,
         symbols: true,
         types: true,
@@ -15451,6 +15502,11 @@ const baselines = {
         types: true,
     },
     'ttttMissingInitializerNoImplicitAny': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttMissingPropertyEscapedName': {
         errors: true,
         symbols: true,
         types: true,
@@ -15933,6 +15989,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttPlusNullishOperandSymbol': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttPrivateNameAsIdentifierName': {
         errors: true,
         symbols: true,
@@ -16142,6 +16203,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttShorthandDefaultNameUnchecked': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttShorthandDefaultNotFound': {
         errors: true,
         symbols: true,
@@ -16300,6 +16366,11 @@ const baselines = {
         types: true,
     },
     'ttttSpreadOverridesOwnProperties': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttSpreadOverwrittenWidening': {
         errors: true,
         symbols: true,
         types: true,
@@ -16792,6 +16863,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttUnionSignatureNonTupleRest': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttUnionSignatureOptionalNeverParam': {
         errors: true,
         symbols: true,
@@ -16803,6 +16879,11 @@ const baselines = {
         types: true,
     },
     'ttttUnionTemplateIndexSymbol': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUnionWriteIndexExactKeys': {
         errors: true,
         symbols: true,
         types: true,
