@@ -1,0 +1,19 @@
+//// [test/cases/ttttParameterReservedNameFullStart.ts] ////
+
+=== ttttParameterReservedNameFullStart.ts ===
+// A reserved word where a parameter starts is TS1359 and a missing name (tsc's parseNameOfParameter): the missing
+// identifier is at the parameter's full start, where TS2300 '(Missing)' goes, after the comma before it (mutation
+// testing seed 20261101, conditionalPromptInference); TS7006 is at the parameter, after the trivia
+declare function f(a: number,
+>f : Symbol(f, Decl(ttttParameterReservedNameFullStart.ts, 0, 0))
+>a : Symbol(a, Decl(ttttParameterReservedNameFullStart.ts, 3, 19))
+
+const b: number, c: number,
+> : Symbol((Missing), Decl(ttttParameterReservedNameFullStart.ts, 3, 29))
+>b : Symbol(b, Decl(ttttParameterReservedNameFullStart.ts, 5, 5))
+>c : Symbol(c, Decl(ttttParameterReservedNameFullStart.ts, 5, 16))
+
+  const d: string): void;
+> : Symbol((Missing), Decl(ttttParameterReservedNameFullStart.ts, 5, 27))
+>d : Symbol(d, Decl(ttttParameterReservedNameFullStart.ts, 6, 7))
+

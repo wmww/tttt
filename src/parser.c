@@ -7544,6 +7544,8 @@ static bool parse_function_args_inner(
             } else {
                 InitializedBinding initializer = {0};
                 const char* before_param = p.pos;
+                // (Where the trivia before it starts: lookaheads below hop trivia of their own)
+                const char* param_full_start = token_full_start(&p);
                 u32 errors_before_param = p.shared->errors_attempted;
                 bool explicit_optional = false;
                 bool rest = false, this_param = false;
@@ -7627,7 +7629,10 @@ static bool parse_function_args_inner(
                     // `null`): parseNameOfParameter reports it (TS1359), the name is missing, and a modifier word
                     // is skipped (a type's is left for the list to trip over)
                     Tok word = tok_peek(&p);
+                    bool at_start = p.pos == before_param;
                     expect_non_reserved_identifier(&p, &initializer.binding.content_span);
+                    // (The missing name is at the parameter's full start, TS2300 '(Missing)' there)
+                    if (at_start) initializer.binding.content_span = span_make(p.shared->source, param_full_start, param_full_start);
                     initializer.binding.tag = BINDING_IDENTIFIER;
                     if (tok_is(word, "default") || tok_is(word, "export") || tok_is(word, "const") || tok_is(word, "in")) {
                         p.pos = word.end;

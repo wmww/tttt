@@ -1,0 +1,35 @@
+ttttParameterReservedNameFullStart.ts(4,30): error TS2300: Duplicate identifier '(Missing)'.
+ttttParameterReservedNameFullStart.ts(6,1): error TS1359: Identifier expected. 'const' is a reserved word that cannot be used here.
+ttttParameterReservedNameFullStart.ts(6,1): error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+ttttParameterReservedNameFullStart.ts(6,7): error TS1005: ',' expected.
+ttttParameterReservedNameFullStart.ts(6,28): error TS2300: Duplicate identifier '(Missing)'.
+ttttParameterReservedNameFullStart.ts(7,3): error TS1359: Identifier expected. 'const' is a reserved word that cannot be used here.
+ttttParameterReservedNameFullStart.ts(7,3): error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+ttttParameterReservedNameFullStart.ts(7,9): error TS1005: ',' expected.
+
+
+==== ttttParameterReservedNameFullStart.ts (8 errors) ====
+    // A reserved word where a parameter starts is TS1359 and a missing name (tsc's parseNameOfParameter): the missing
+    // identifier is at the parameter's full start, where TS2300 '(Missing)' goes, after the comma before it (mutation
+    // testing seed 20261101, conditionalPromptInference); TS7006 is at the parameter, after the trivia
+    declare function f(a: number,
+                                 
+!!! error TS2300: Duplicate identifier '(Missing)'.
+    
+    const b: number, c: number,
+    ~~~~~
+!!! error TS1359: Identifier expected. 'const' is a reserved word that cannot be used here.
+    ~~~~~
+!!! error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+          ~
+!!! error TS1005: ',' expected.
+                               
+!!! error TS2300: Duplicate identifier '(Missing)'.
+      const d: string): void;
+      ~~~~~
+!!! error TS1359: Identifier expected. 'const' is a reserved word that cannot be used here.
+      ~~~~~
+!!! error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+            ~
+!!! error TS1005: ',' expected.
+    
