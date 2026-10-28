@@ -1,0 +1,41 @@
+ttttForEachInitializerChecked.ts(4,10): error TS1190: The variable declaration of a 'for...of' statement cannot have an initializer.
+ttttForEachInitializerChecked.ts(4,10): error TS2322: Type 'string' is not assignable to type 'number'.
+ttttForEachInitializerChecked.ts(5,10): error TS1189: The variable declaration of a 'for...in' statement cannot have an initializer.
+ttttForEachInitializerChecked.ts(7,10): error TS1189: The variable declaration of a 'for...in' statement cannot have an initializer.
+ttttForEachInitializerChecked.ts(7,10): error TS2322: Type 'number' is not assignable to type 'string'.
+ttttForEachInitializerChecked.ts(8,10): error TS1189: The variable declaration of a 'for...in' statement cannot have an initializer.
+ttttForEachInitializerChecked.ts(10,10): error TS1189: The variable declaration of a 'for...in' statement cannot have an initializer.
+ttttForEachInitializerChecked.ts(10,10): error TS2322: Type '(a: any) => number' is not assignable to type 'string'.
+ttttForEachInitializerChecked.ts(10,15): error TS7006: Parameter 'a' implicitly has an 'any' type.
+
+
+==== ttttForEachInitializerChecked.ts (9 errors) ====
+    // A for-in or for-of declaration's initializer (TS1189/TS1190) is checked against the variable's type (tsc's
+    // checkVariableLikeDeclaration), except a for-in's at the symbol's first declaration; a secondary one's is (bun 83-R01c,
+    // another file's `for (var i = [x in b];;)`)
+    for (var x = "s" of [1]) {}
+             ~
+!!! error TS1190: The variable declaration of a 'for...of' statement cannot have an initializer.
+             ~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    for (let y = 1 in {}) {}
+             ~
+!!! error TS1189: The variable declaration of a 'for...in' statement cannot have an initializer.
+    declare var z: string;
+    for (var z = 1 in {}) {}
+             ~
+!!! error TS1189: The variable declaration of a 'for...in' statement cannot have an initializer.
+             ~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    for (var w = (a) => 1 in {}) {}
+             ~
+!!! error TS1189: The variable declaration of a 'for...in' statement cannot have an initializer.
+    var w: string;
+    for (var w = (a) => 1 in {}) {}
+             ~
+!!! error TS1189: The variable declaration of a 'for...in' statement cannot have an initializer.
+             ~
+!!! error TS2322: Type '(a: any) => number' is not assignable to type 'string'.
+                  ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+    

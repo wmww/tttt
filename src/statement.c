@@ -2709,6 +2709,25 @@ static void function_check_duplicate_implementation(FunctionImpl const* me, Erro
 
 static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs);
 
+// A for-in or for-of declaration's initializer (a parse or grammar error already, TS1189/TS1190): tsc's
+// checkVariableLikeDeclaration checks it against the variable's type, except a for-in's at the symbol's first
+// declaration (`for (var i = [x in b];;)`, the DisallowIn recovery, then another file's `var i` with one: TS2322)
+static void for_each_loop_check_initializer(ForEachLoopStatement* loop, InitializedBinding* binding, ErrorCtx* errs) {
+    Expr* value = (Expr*)initialized_binding_value(binding);
+    if (binding->binding.tag != BINDING_IDENTIFIER || !binding->binding.symbol || value->tag == EXPR_IMPLICIT_ANY) return;
+    Symbol const* symbol = binding->binding.symbol;
+    SymbolDecl const* first = nullptr;
+    for (u32 i = 0; i < symbol->decl_count && !first; i++) {
+        if (symbol->decls[i].flags & SYMBOL_VALUE && symbol->decls[i].kind != SYMBOL_DECL_EXPANDO) first = &symbol->decls[i];
+    }
+    if (loop->keyword == FOR_EACH_LOOP_IN && (!first || first->node == &binding->binding)) return;
+    Checker* checker = current_checker;
+    expr_typecheck(value, errs);
+    ty_check_assignable_expr(checker, ty_expr_type(checker, value), lazy_type_get(&loop->var_type),
+        binding->binding.content_span, value, errs);
+}
+
+
 static bool binding_declares_name(Binding const* me, csview name) {
     switch (my tag) {
         case BINDING_NOOP: return false;
@@ -2964,6 +2983,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                     for_each (i, vec_initialized_binding, &my for_each_loop->variable.statement.initializers) {
                         variable_statement_check_let_names(&my for_each_loop->variable.statement, i, errs);
                         binding_typecheck(&i->binding, nullptr, errs);
+                        for_each_loop_check_initializer(my for_each_loop, i, errs);
                         if (my for_each_loop->keyword == FOR_EACH_LOOP_OF && compiler_options()->no_implicit_any &&
                             !compiler_options()->strict_null_checks
                         ) {

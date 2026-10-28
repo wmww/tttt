@@ -1,0 +1,29 @@
+//// [test/cases/ttttForEachInitializerChecked.ts] ////
+
+=== ttttForEachInitializerChecked.ts ===
+// A for-in or for-of declaration's initializer (TS1189/TS1190) is checked against the variable's type (tsc's
+// checkVariableLikeDeclaration), except a for-in's at the symbol's first declaration; a secondary one's is (bun 83-R01c,
+// another file's `for (var i = [x in b];;)`)
+for (var x = "s" of [1]) {}
+>x : Symbol(x, Decl(ttttForEachInitializerChecked.ts, 3, 8))
+
+for (let y = 1 in {}) {}
+>y : Symbol(y, Decl(ttttForEachInitializerChecked.ts, 4, 8))
+
+declare var z: string;
+>z : Symbol(z, Decl(ttttForEachInitializerChecked.ts, 5, 11), Decl(ttttForEachInitializerChecked.ts, 6, 8))
+
+for (var z = 1 in {}) {}
+>z : Symbol(z, Decl(ttttForEachInitializerChecked.ts, 5, 11), Decl(ttttForEachInitializerChecked.ts, 6, 8))
+
+for (var w = (a) => 1 in {}) {}
+>w : Symbol(w, Decl(ttttForEachInitializerChecked.ts, 7, 8), Decl(ttttForEachInitializerChecked.ts, 8, 3), Decl(ttttForEachInitializerChecked.ts, 9, 8))
+>a : Symbol(a, Decl(ttttForEachInitializerChecked.ts, 7, 14))
+
+var w: string;
+>w : Symbol(w, Decl(ttttForEachInitializerChecked.ts, 7, 8), Decl(ttttForEachInitializerChecked.ts, 8, 3), Decl(ttttForEachInitializerChecked.ts, 9, 8))
+
+for (var w = (a) => 1 in {}) {}
+>w : Symbol(w, Decl(ttttForEachInitializerChecked.ts, 7, 8), Decl(ttttForEachInitializerChecked.ts, 8, 3), Decl(ttttForEachInitializerChecked.ts, 9, 8))
+>a : Symbol(a, Decl(ttttForEachInitializerChecked.ts, 9, 14))
+
