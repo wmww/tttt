@@ -247,6 +247,9 @@ typedef struct FunctionImpl {
     bool body_missing : 1;
     bool private_ambient : 1; // A private method of an ambient class: no implicit any errors (tsc's isPrivateWithinAmbient)
     bool ambient : 1; // Declared in an ambient context (`declare`, a declaration file), where it can't have a body
+    // A function declaration with the `declare` keyword and no `export`: an export context doesn't export it (tsc's
+    // getEffectiveDeclarationFlags gives the Export flag only to an ambient declaration without the modifier)
+    bool declared_unexported : 1;
     bool expression_body : 1; // An arrow function whose body is an expression (a synthesized `return`)
     // The nearest function expression around it that is context-sensitive (tsc's isContextSensitive), null if none: one
     // typed by a generic contextual signature takes that signature's type parameters, which the functions inside it

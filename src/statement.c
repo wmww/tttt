@@ -2018,6 +2018,8 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
         case STATEMENT_DECL_FUNCTION: {
             ScopePendingMark pending_mark = scope_pending_mark(names->binder);
             Scope* self_scope = scope_new_self(names, my decl.function.impl->symbol, my decl.props.declared);
+            my decl.function.impl->declared_unexported = span_valid(my decl.props.declare_keyword) &&
+                my decl.props.exported == DECL_EXPORTED_NO;
             function_impl_lookup_names(my decl.function.impl, true, self_scope, errs);
             if (self_scope != names) scope_release(self_scope, pending_mark);
         }   break;
@@ -2507,7 +2509,11 @@ static u32 function_local_symbol_decls(Symbol const* symbol, SymbolDecl const** 
                 at--;
             }
             out[at] = decl;
-            exported[at] = s == 1 || (symbols[s] == exports) || (block && block->export_context);
+            // (An export context exports an ambient declaration only without its own `declare`: `declare function f();`
+            // beside `export function f(x);` in a declaration file is TS2383. tttt binds it with the exports all the same)
+            bool declared = block && block->export_context && decl->kind == SYMBOL_DECL_FUNCTION &&
+                ((FunctionImpl const*)decl->node)->declared_unexported;
+            exported[at] = (s == 1 || (symbols[s] == exports) || (block && block->export_context)) && !declared;
             count++;
         }
     }

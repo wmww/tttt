@@ -1,0 +1,43 @@
+//// [test/cases/ttttDeclaredOverloadNotExported.ts] ////
+
+=== a.d.ts ===
+declare function f(): void;
+>f : Symbol(f, Decl(a.d.ts, 0, 0), Decl(a.d.ts, 0, 27))
+
+export function f(x: number): void;
+>f : Symbol(f, Decl(a.d.ts, 0, 0), Decl(a.d.ts, 0, 27))
+>x : Symbol(x, Decl(a.d.ts, 1, 18))
+
+declare function g(): void;
+>g : Symbol(g, Decl(a.d.ts, 1, 35), Decl(a.d.ts, 2, 27), Decl(a.d.ts, 3, 36))
+
+declare function g(x: number): void;
+>g : Symbol(g, Decl(a.d.ts, 1, 35), Decl(a.d.ts, 2, 27), Decl(a.d.ts, 3, 36))
+>x : Symbol(x, Decl(a.d.ts, 3, 19))
+
+export function g(x: string): void;
+>g : Symbol(g, Decl(a.d.ts, 1, 35), Decl(a.d.ts, 2, 27), Decl(a.d.ts, 3, 36))
+>x : Symbol(x, Decl(a.d.ts, 4, 18))
+
+function h(): void;
+>h : Symbol(h, Decl(a.d.ts, 4, 35), Decl(a.d.ts, 5, 19))
+
+export function h(x: number): void;
+>h : Symbol(h, Decl(a.d.ts, 4, 35), Decl(a.d.ts, 5, 19))
+>x : Symbol(x, Decl(a.d.ts, 6, 18))
+
+export declare function k(): void;
+>k : Symbol(k, Decl(a.d.ts, 6, 35), Decl(a.d.ts, 7, 34))
+
+declare function k(x: number): void;
+>k : Symbol(k, Decl(a.d.ts, 6, 35), Decl(a.d.ts, 7, 34))
+>x : Symbol(x, Decl(a.d.ts, 8, 19))
+
+=== b.d.ts ===
+declare function f(): void;
+>f : Symbol(f, Decl(b.d.ts, 0, 0), Decl(b.d.ts, 0, 27))
+
+declare function f(x: number): void;
+>f : Symbol(f, Decl(b.d.ts, 0, 0), Decl(b.d.ts, 0, 27))
+>x : Symbol(x, Decl(b.d.ts, 1, 19))
+

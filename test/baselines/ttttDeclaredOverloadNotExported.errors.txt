@@ -1,0 +1,28 @@
+a.d.ts(2,17): error TS2383: Overload signatures must all be exported or non-exported.
+a.d.ts(5,17): error TS2383: Overload signatures must all be exported or non-exported.
+a.d.ts(6,1): error TS1046: Top-level declarations in .d.ts files must start with either a 'declare' or 'export' modifier.
+a.d.ts(9,18): error TS2383: Overload signatures must all be exported or non-exported.
+
+
+==== a.d.ts (4 errors) ====
+    declare function f(): void;
+    export function f(x: number): void;
+                    ~
+!!! error TS2383: Overload signatures must all be exported or non-exported.
+    declare function g(): void;
+    declare function g(x: number): void;
+    export function g(x: string): void;
+                    ~
+!!! error TS2383: Overload signatures must all be exported or non-exported.
+    function h(): void;
+    ~~~~~~~~
+!!! error TS1046: Top-level declarations in .d.ts files must start with either a 'declare' or 'export' modifier.
+    export function h(x: number): void;
+    export declare function k(): void;
+    declare function k(x: number): void;
+                     ~
+!!! error TS2383: Overload signatures must all be exported or non-exported.
+==== b.d.ts (0 errors) ====
+    declare function f(): void;
+    declare function f(x: number): void;
+    

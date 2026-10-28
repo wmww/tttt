@@ -1,0 +1,43 @@
+//// [test/cases/ttttDeclaredOverloadNotExported.ts] ////
+
+=== a.d.ts ===
+declare function f(): void;
+>f : { (): void; (x: number): void; }
+
+export function f(x: number): void;
+>f : { (): void; (x: number): void; }
+>x : number
+
+declare function g(): void;
+>g : { (): void; (x: number): void; (x: string): void; }
+
+declare function g(x: number): void;
+>g : { (): void; (x: number): void; (x: string): void; }
+>x : number
+
+export function g(x: string): void;
+>g : { (): void; (x: number): void; (x: string): void; }
+>x : string
+
+function h(): void;
+>h : { (): void; (x: number): void; }
+
+export function h(x: number): void;
+>h : { (): void; (x: number): void; }
+>x : number
+
+export declare function k(): void;
+>k : { (): void; (x: number): void; }
+
+declare function k(x: number): void;
+>k : { (): void; (x: number): void; }
+>x : number
+
+=== b.d.ts ===
+declare function f(): void;
+>f : { (): void; (x: number): void; }
+
+declare function f(x: number): void;
+>f : { (): void; (x: number): void; }
+>x : number
+

@@ -326,7 +326,10 @@ tsc keeps one local symbol per block for a name's exported and local declaration
   check for `assignment_pattern`, so a faithful fix needs "does this right side ask for its context" (a lazy context,
   or the list of expression kinds that ask). [open]
 - A declaration file in an export context (`declare function f(): void; export function f(x: number): void;`): tsc
-  reports TS2383 (overloads must all be exported or non-exported) at the exported one, tttt nothing. [open]
+  reports TS2383 (overloads must all be exported or non-exported) at the exported one, tttt nothing: an export context
+  exports an ambient declaration only without its own `declare` (getEffectiveDeclarationFlags), tttt's
+  function_local_symbol_decls() counted every one as exported (FunctionImpl.declared_unexported). Test
+  ttttDeclaredOverloadNotExported [fixed COMMIT-next].
 
 ## Flagflip after the distributed type parameters (2026-10-09, every cell but vscode: 453 -> 141 missing)
 The 141 are almost all the corpora's own default-flag misses repeated in every cell:

@@ -13,7 +13,7 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   (60-L16b's `Id<{ a: A } & { a: A }>`: the mapped property's syntheticOrigin is the non-uniform one) and 60-L16a's
   key-remapped mapped type (`as` clause: tsc keeps the syntheticOrigin without the declarations, PropDeclRare.
   remapped_from), the related TS2782 at the origin under its name: test ttttAssertionThroughMappedOrigin [fixed
-  COMMIT-next]. Left: a remapping `as` clause over such an intersection (remapped_from has no intersection).
+  992489211]. Left: a remapping `as` clause over such an intersection (remapped_from has no intersection).
   Test ttttAssertionThroughIntersectionProperty [fixed cdf52a5aa].
 - Missing TS2367 on a loop's partial types (99-V4 getTypeOfExpression__01/02, getAssignedType__05/06,
   checks-of-a-value-assigned-on-a-loop-back-edge a2/a3): tsc reports an equality's TS2367 while control flow evaluates
