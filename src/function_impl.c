@@ -263,8 +263,10 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         if (!vec_expr_size(decorators)) continue;
         // (What can't be decorated, tsc doesn't check: its names are still resolved for the baselines)
         ClassDecl const* class_decl = scope_enclosing_class(names);
-        ErrorCtx* decorator_errs = function_arg_decoratable(me, a, class_decl && !class_decl->is_expression) ? errs :
-            binder_discarded_errs(names->binder);
+        bool decoratable = function_arg_decoratable(me, a, class_decl && !class_decl->is_expression);
+        ErrorCtx* decorator_errs = decoratable ? errs : binder_discarded_errs(names->binder);
+        // (Nor are they uses: `const a = 1; m(@dec(a) x)` leaves `a` unused without experimentalDecorators)
+        unused_marking_suppressed += !decoratable;
         for_each (decorator, vec_expr, decorators) {
             // (A class member's parameter decorators see the `this` outside the class, like the member's own)
             if (!decorator_names) {
@@ -278,6 +280,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
             expr_lookup_names(decorator, decorator_names, decorator_errs);
             if (scope_flow(names)) scope_flow(names)->member_name = member_name;
         }
+        unused_marking_suppressed -= !decoratable;
     }
 
     // A control flow container. tsc: bindContainer()

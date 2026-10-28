@@ -264,7 +264,8 @@ static void report_function(Reporter const* r, FunctionImpl const* me) {
     if (!my has_body || my is_type) return;
     for_each (i, vec_function_arg, &my args) {
         Binding const* binding = &i->initializer.binding;
-        if (i->is_parameter_property) continue;
+        // (A property only in a constructor: elsewhere it's a parameter, TS2369, tsc's isParameterPropertyDeclaration)
+        if (i->is_parameter_property && my is_constructor) continue;
         if (binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
         report_binding(r, binding, true, false, true);
     }

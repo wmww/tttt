@@ -1,0 +1,54 @@
+ttttUnusedParameterPropertyOutsideConstructor.ts(4,19): error TS2369: A parameter property is only allowed in a constructor implementation.
+ttttUnusedParameterPropertyOutsideConstructor.ts(4,27): error TS6133: 'x' is declared but its value is never read.
+ttttUnusedParameterPropertyOutsideConstructor.ts(5,20): error TS2369: A parameter property is only allowed in a constructor implementation.
+ttttUnusedParameterPropertyOutsideConstructor.ts(5,27): error TS6133: 'y' is declared but its value is never read.
+ttttUnusedParameterPropertyOutsideConstructor.ts(5,61): error TS6138: Property 'z' is declared but its value is never read.
+ttttUnusedParameterPropertyOutsideConstructor.ts(6,22): error TS2369: A parameter property is only allowed in a constructor implementation.
+ttttUnusedParameterPropertyOutsideConstructor.ts(6,31): error TS6133: 'q' is declared but its value is never read.
+ttttUnusedParameterPropertyOutsideConstructor.ts(7,30): error TS2369: A parameter property is only allowed in a constructor implementation.
+ttttUnusedParameterPropertyOutsideConstructor.ts(7,38): error TS6138: Property 'z' is declared but its value is never read.
+ttttUnusedParameterPropertyOutsideConstructor.ts(7,62): error TS6133: 'z' is declared but its value is never read.
+ttttUnusedParameterPropertyOutsideConstructor.ts(9,7): error TS6133: 'a' is declared but its value is never read.
+ttttUnusedParameterPropertyOutsideConstructor.ts(10,20): error TS1206: Decorators are not valid here.
+ttttUnusedParameterPropertyOutsideConstructor.ts(11,19): error TS1206: Decorators are not valid here.
+
+
+==== ttttUnusedParameterPropertyOutsideConstructor.ts (13 errors) ====
+    // A parameter property outside a constructor implementation (TS2369) is a parameter: TS6133 when unused (tsc's
+    // isParameterPropertyDeclaration needs a constructor). Parameter decorators tsc doesn't check (no
+    // experimentalDecorators: TS1206) don't use the names they mention
+    export function f(private x: number) {}
+                      ~~~~~~~~~~~~~~~~~
+!!! error TS2369: A parameter property is only allowed in a constructor implementation.
+                              ~
+!!! error TS6133: 'x' is declared but its value is never read.
+    export class C { m(public y: number) {} constructor(private z: number, public w: number) {} }
+                       ~~~~~~~~~~~~~~~~
+!!! error TS2369: A parameter property is only allowed in a constructor implementation.
+                              ~
+!!! error TS6133: 'y' is declared but its value is never read.
+                                                                ~
+!!! error TS6138: Property 'z' is declared but its value is never read.
+    export const o = { m(readonly q: number) {} }
+                         ~~~~~~~~~~~~~~~~~~
+!!! error TS2369: A parameter property is only allowed in a constructor implementation.
+                                  ~
+!!! error TS6133: 'q' is declared but its value is never read.
+    export class D { constructor(private z: number); constructor(z: any) {} }
+                                 ~~~~~~~~~~~~~~~~~
+!!! error TS2369: A parameter property is only allowed in a constructor implementation.
+                                         ~
+!!! error TS6138: Property 'z' is declared but its value is never read.
+                                                                 ~
+!!! error TS6133: 'z' is declared but its value is never read.
+    declare function dec(...a: any[]): any;
+    const a = 1;
+          ~
+!!! error TS6133: 'a' is declared but its value is never read.
+    export class B { m(@dec(a, zzz) x: number) { return x; } }
+                       ~
+!!! error TS1206: Decorators are not valid here.
+    export function g(@dec(a) y: number) { return y }
+                      ~
+!!! error TS1206: Decorators are not valid here.
+    

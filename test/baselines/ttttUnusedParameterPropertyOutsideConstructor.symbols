@@ -1,0 +1,49 @@
+//// [test/cases/ttttUnusedParameterPropertyOutsideConstructor.ts] ////
+
+=== ttttUnusedParameterPropertyOutsideConstructor.ts ===
+// A parameter property outside a constructor implementation (TS2369) is a parameter: TS6133 when unused (tsc's
+// isParameterPropertyDeclaration needs a constructor). Parameter decorators tsc doesn't check (no
+// experimentalDecorators: TS1206) don't use the names they mention
+export function f(private x: number) {}
+>f : Symbol(f, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 0, 0))
+>x : Symbol(x, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 3, 18))
+
+export class C { m(public y: number) {} constructor(private z: number, public w: number) {} }
+>C : Symbol(C, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 3, 39))
+>m : Symbol(C.m, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 4, 16))
+>y : Symbol(y, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 4, 19))
+>z : Symbol(C.z, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 4, 52))
+>w : Symbol(C.w, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 4, 70))
+
+export const o = { m(readonly q: number) {} }
+>o : Symbol(o, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 5, 12))
+>m : Symbol(m, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 5, 18))
+>q : Symbol(q, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 5, 21))
+
+export class D { constructor(private z: number); constructor(z: any) {} }
+>D : Symbol(D, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 5, 45))
+>z : Symbol(D.z, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 6, 29))
+>z : Symbol(z, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 6, 61))
+
+declare function dec(...a: any[]): any;
+>dec : Symbol(dec, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 6, 73))
+>a : Symbol(a, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 7, 21))
+
+const a = 1;
+>a : Symbol(a, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 8, 5))
+
+export class B { m(@dec(a, zzz) x: number) { return x; } }
+>B : Symbol(B, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 8, 12))
+>m : Symbol(B.m, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 9, 16))
+>dec : Symbol(dec, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 6, 73))
+>a : Symbol(a, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 8, 5))
+>x : Symbol(x, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 9, 19))
+>x : Symbol(x, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 9, 19))
+
+export function g(@dec(a) y: number) { return y }
+>g : Symbol(g, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 9, 58))
+>dec : Symbol(dec, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 6, 73))
+>a : Symbol(a, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 8, 5))
+>y : Symbol(y, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 10, 18))
+>y : Symbol(y, Decl(ttttUnusedParameterPropertyOutsideConstructor.ts, 10, 18))
+

@@ -1,0 +1,54 @@
+//// [test/cases/ttttUnusedParameterPropertyOutsideConstructor.ts] ////
+
+=== ttttUnusedParameterPropertyOutsideConstructor.ts ===
+// A parameter property outside a constructor implementation (TS2369) is a parameter: TS6133 when unused (tsc's
+// isParameterPropertyDeclaration needs a constructor). Parameter decorators tsc doesn't check (no
+// experimentalDecorators: TS1206) don't use the names they mention
+export function f(private x: number) {}
+>f : (x: number) => void
+>x : number
+
+export class C { m(public y: number) {} constructor(private z: number, public w: number) {} }
+>C : C
+>m : (y: number) => void
+>y : number
+>z : number
+>w : number
+
+export const o = { m(readonly q: number) {} }
+>o : { m(q: number): void; }
+>{ m(readonly q: number) {} } : { m(q: number): void; }
+>m : (q: number) => void
+>q : number
+
+export class D { constructor(private z: number); constructor(z: any) {} }
+>D : D
+>z : number
+>z : any
+
+declare function dec(...a: any[]): any;
+>dec : (...a: any[]) => any
+>a : any[]
+
+const a = 1;
+>a : 1
+>1 : 1
+
+export class B { m(@dec(a, zzz) x: number) { return x; } }
+>B : B
+>m : (x: number) => number
+>dec(a, zzz) : any
+>dec : (...a: any[]) => any
+>a : 1
+>zzz : any
+>x : number
+>x : number
+
+export function g(@dec(a) y: number) { return y }
+>g : (y: number) => number
+>dec(a) : any
+>dec : (...a: any[]) => any
+>a : 1
+>y : number
+>y : number
+
