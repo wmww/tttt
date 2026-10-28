@@ -61,6 +61,11 @@ scripts/sharedgraph/sgcheck_projects.txt, load 8-15): main at ab39dce20 12 of 34
     bounded: any content key must order an unwrapped instantiation after its wrapper, which height can't. openscience's
     TS7006 (a `.map((file) => ...)` callback's parameter) is probably the same cut through inference, not traced.
     [note]
+  - A content key that keeps the ids' answers (sharing_design.md §6, 2026-10-29): `TTTT_NESTING_ORDER=walk` (older:
+    a key sub-term, a value reached through made-before parts, or on the other stack first) is byte-identical to the
+    ids at K1 on all 58 projects and the suite, and 0/856 flagged runs differ with it (stamps: 18/60 on drizzle and
+    mikro-orm, the laptop's K24 TS2430 select.ts(1076,18) among them). Making it the flag's order is the fix,
+    pending the coordinator. [note]
 - **A signature's instance shared while its signature's resolution was private** (effect's Schema.ts
   `X.pipe(lowercased(...))` cascade: TS2507 "never is not a constructor", Schema.tst.ts(2892,39) TS2345, 2-3 of 10 K8
   runs; folo/apps/desktop/layer/renderer's residue W: `GeneralSettings[K]` read as never, TS2345 at
