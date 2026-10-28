@@ -4991,7 +4991,7 @@ const baselines = {
         types: true,
     },
     'bun28-C33d': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9986,7 +9986,7 @@ const baselines = {
         types: false,
     },
     'bun83-R01c': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -12522,6 +12522,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttBodilessExpressionPatternImplicitAny': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttBodilessParameterPatterns': {
         errors: true,
         symbols: true,
@@ -12533,6 +12538,11 @@ const baselines = {
         types: true,
     },
     'ttttBuildInfoFileOverwrites': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttCallMissingParenIncomplete': {
         errors: true,
         symbols: true,
         types: true,
@@ -14151,7 +14161,17 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttForEachInitializerChecked': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttForInitializerDisallowInLeak': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttForOfExpressionNoComma': {
         errors: true,
         symbols: true,
         types: true,
@@ -14999,12 +15019,22 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttJsdocParamNestingEnds': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttJsdocSatisfiesHost': {
         errors: true,
         symbols: true,
         types: true,
     },
     'ttttJsdocSignatureMissingReturn': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttJsdocTypeBraceAtEnd': {
         errors: true,
         symbols: true,
         types: true,
@@ -15454,6 +15484,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttMappedTypeExtraMembersEmit': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttMappedTypeMemberSeparator': {
         errors: true,
         symbols: true,
@@ -15487,6 +15523,11 @@ const baselines = {
         types: true,
     },
     'ttttMisplacedAmbientModuleQuotedName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttMisplacedImportAliasUnresolved': {
         errors: true,
         symbols: true,
         types: true,
@@ -15722,6 +15763,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttObjectComputedKeyMissing': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttObjectLiteralAccessorPairModifiers': {
         errors: true,
         symbols: true,
@@ -15749,6 +15795,11 @@ const baselines = {
         types: true,
     },
     'ttttObjectLiteralOuterInstantiableNotGeneric': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttObjectPrivateMethodGrammar': {
         errors: true,
         symbols: true,
         types: true,
@@ -15888,6 +15939,11 @@ const baselines = {
         errors: true,
         symbols: true,
         types: false,
+    },
+    'ttttParameterListBracketEnds': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttParameterListMissingParenEnd': {
         errors: true,
@@ -16638,6 +16694,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttTypeMemberEndsAtEof': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttTypeMemberGetterBody': {
         errors: true,
         symbols: true,
@@ -16966,6 +17027,11 @@ const baselines = {
     },
     'ttttUnusedTypeOnlyNamespaceImport': {
         errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUnusedUnderParseError': {
+        errors: false,
         symbols: true,
         types: true,
     },
