@@ -1,0 +1,72 @@
+//// [test/cases/ttttJsdocUniqueSymbolPlaces.ts] ////
+
+=== a.js ===
+/** @param {unique symbol} x */
+function f(x) {}
+>f : Symbol(f, Decl(a.js, 0, 0))
+>x : Symbol(x, Decl(a.js, 1, 11))
+
+/** @type {unique symbol[]} */
+const u = [];
+>u : Symbol(u, Decl(a.js, 3, 5))
+
+/** @type {unique symbol} */
+var v = Symbol(), w = 1;
+>v : Symbol(v, Decl(a.js, 5, 3))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>w : Symbol(w, Decl(a.js, 5, 17))
+
+for (/** @type {unique symbol} */ const k of []) {}
+>k : Symbol(k, Decl(a.js, 6, 39))
+
+class C {
+>C : Symbol(C, Decl(a.js, 6, 51))
+
+    /** @type {unique symbol} */
+    static p = Symbol();
+>p : Symbol(C.p, Decl(a.js, 7, 9))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+
+    /** @type {unique symbol} */
+    static readonly = Symbol();
+>readonly : Symbol(C.readonly, Decl(a.js, 9, 24))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+}
+/** @type {{ a: unique symbol }} */
+const o = { a: Symbol() };
+>o : Symbol(o, Decl(a.js, 14, 5))
+>a : Symbol(a, Decl(a.js, 14, 11))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+
+/** @returns {unique symbol} */
+function g() { return Symbol(); }
+>g : Symbol(g, Decl(a.js, 14, 26))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+
+/** @typedef {unique symbol} T */
+/**
+ * @typedef {Object} O
+ * @property {unique symbol} q
+ */
+/** @type {unique symbol} */
+export default Symbol();
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+
+/** @type {(x: unique symbol) => void} */
+const h = (x) => {};
+>h : Symbol(h, Decl(a.js, 25, 5))
+>x : Symbol(x, Decl(a.js, 25, 11))
+
+const z = /** @type {unique symbol} */ (Symbol());
+>z : Symbol(z, Decl(a.js, 26, 5))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+
+/** @type {unique symbol | number} */
+const un = 1;
+>un : Symbol(un, Decl(a.js, 28, 5))
+
+/** @type {(unique symbol)} */
+const par = Symbol();
+>par : Symbol(par, Decl(a.js, 30, 5))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+

@@ -1,0 +1,87 @@
+//// [test/cases/ttttJsdocUniqueSymbolPlaces.ts] ////
+
+=== a.js ===
+/** @param {unique symbol} x */
+function f(x) {}
+>f : (x: unique symbol) => void
+>x : symbol
+
+/** @type {unique symbol[]} */
+const u = [];
+>u : any
+>[] : never[]
+
+/** @type {unique symbol} */
+var v = Symbol(), w = 1;
+>v : symbol
+>Symbol() : symbol
+>Symbol : SymbolConstructor
+>w : number
+>1 : 1
+
+for (/** @type {unique symbol} */ const k of []) {}
+>k : never
+>[] : never[]
+
+class C {
+>C : C
+
+    /** @type {unique symbol} */
+    static p = Symbol();
+>p : symbol
+>Symbol() : symbol
+>Symbol : SymbolConstructor
+
+    /** @type {unique symbol} */
+    static readonly = Symbol();
+>readonly : symbol
+>Symbol() : symbol
+>Symbol : SymbolConstructor
+}
+/** @type {{ a: unique symbol }} */
+const o = { a: Symbol() };
+>o : { a: unique symbol; }
+>{ a: Symbol() } : { a: symbol; }
+>a : symbol
+>Symbol() : symbol
+>Symbol : SymbolConstructor
+
+/** @returns {unique symbol} */
+function g() { return Symbol(); }
+>g : () => unique symbol
+>Symbol() : symbol
+>Symbol : SymbolConstructor
+
+/** @typedef {unique symbol} T */
+/**
+ * @typedef {Object} O
+ * @property {unique symbol} q
+ */
+/** @type {unique symbol} */
+export default Symbol();
+>Symbol() : symbol
+>Symbol : SymbolConstructor
+
+/** @type {(x: unique symbol) => void} */
+const h = (x) => {};
+>h : (x: unique symbol) => void
+>(x) => {} : (x: symbol) => void
+>x : symbol
+
+const z = /** @type {unique symbol} */ (Symbol());
+>z : symbol
+>(Symbol()) : symbol
+>Symbol() : symbol
+>Symbol : SymbolConstructor
+
+/** @type {unique symbol | number} */
+const un = 1;
+>un : number | symbol
+>1 : 1
+
+/** @type {(unique symbol)} */
+const par = Symbol();
+>par : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+

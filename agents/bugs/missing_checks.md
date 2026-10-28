@@ -31,7 +31,7 @@ here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in 
   resolveExternalModule diagnostics (TS7016 for a JavaScript runtime). [open]
 - `while (a) const x = 1;` still scopes x to the loop (tsc: the enclosing block). [open]
 - Known-failing tests of hacks.md's audit (2026-10-23; each hack's entry there has the mechanism):
-  - ttttHackJsdocUniqueSymbolLet: a JSDoc `@type {unique symbol}` on a `let` misses TS1332. [open]
+  - ttttHackJsdocUniqueSymbolLet: a JSDoc `@type {unique symbol}` on a `let` misses TS1332. [fixed see git log]
   - ttttHackAugmentationAliasConflict: `export { x as y }` in a module augmentation misses TS2323/TS2484. [open]
   - ttttHackJsdocLinkShadowed: a JSDoc `{@link}` to a shadowed name keeps the import used (TS6133 missing). [open]
 

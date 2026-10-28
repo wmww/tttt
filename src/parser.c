@@ -587,6 +587,7 @@ static bool expr_ends_with_arrow(Expr const* e);
 static bool jsx_generic_arrow_start(Parser* parent);
 static bool parse_binding_content(Parser* parent, Binding* ret);
 static bool is_reserved_word(csview word);
+static void unique_symbol_misplaced(Parser* p, char const* found);
 // tsc's `\s` in a regex, ASCII only
 static bool is_regex_space(char c) {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\v' || c == '\f';
@@ -3961,7 +3962,7 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
         *ret = (TypeNode){ .tag = TYPE_UNIQUE_SYMBOL };
         if (value_anchor.start == p.shared->unique_allowed_at) {
             p.shared->unique_allowed_found = value_anchor.start;
-        } else if (!p.shared->in_jsdoc) { // (A JSDoc tag's host decides, see hacks.md)
+        } else {
             grammar_error(&p, span_from(value_anchor), 1335, "'unique symbol' types are not allowed here.");
         }
     } else if (c == 'u' && starts_with_followed_by_word_break(&p, "unique") && unique_operator_follows(&p)) {
@@ -4161,6 +4162,11 @@ static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const 
     hop_whitespace(&p);
     bool variadic = hop_start(&p, "...");
     Anchor a = anchor(&p);
+    // (An `@type` or `@property` type may be a whole `unique symbol`, whose host decides: tsgo's reparser makes it a
+    // variable's, a class property's or a property signature's annotation. Any other tag's is TS1335)
+    char const* outer_allowed_at = p.shared->unique_allowed_at;
+    p.shared->unique_allowed_at = tag->kind == JSDOC_TAG_TYPE || tag->kind == JSDOC_TAG_PROPERTY ? a.start : nullptr;
+    p.shared->unique_allowed_found = nullptr;
     TypeNode type;
     FunctionImpl predicate = {0};
     if (tag->kind == JSDOC_TAG_RETURNS && parse_type_predicate(&p, &predicate)) {
@@ -4213,6 +4219,10 @@ static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const 
     p.shared->in_jsdoc = outer_in_jsdoc;
     p.shared->jsdoc_end = outer_end;
     p.shared->jsdoc_unchecked = outer_unchecked;
+    char const* found = p.shared->unique_allowed_found;
+    p.shared->unique_allowed_found = nullptr;
+    p.shared->unique_allowed_at = outer_allowed_at;
+    if (found && (!tag->has_type || tag->type.tag != TYPE_UNIQUE_SYMBOL)) unique_symbol_misplaced(&p, found);
     jsdoc_keep_errors(&p);
     parse_fail(&p);
 }
@@ -4697,6 +4707,11 @@ static void parse_jsdoc_comment(Parser* parent, JsDocRange range, VecJsDocTag* t
                 if (tag->kind == JSDOC_TAG_RETURNS) owner = JSDOC_TAG_OTHER;
             } else if (owner == JSDOC_TAG_TYPEDEF && tag->kind == JSDOC_TAG_PROPERTY) {
                 tag->nested = true;
+                // (A property signature of the typedef's type literal to tsgo's reparser, never readonly)
+                if (tag->has_type && tag->type.tag == TYPE_UNIQUE_SYMBOL && span_valid(tag->name)) {
+                    grammar_error(parent, tag->name, 1330, "A property of an interface or type literal whose type is a "
+                        "'unique symbol' type must be 'readonly'.");
+                }
             } else {
                 owner = JSDOC_TAG_OTHER;
             }
@@ -4903,15 +4918,16 @@ static TypeNode jsdoc_take_type(JsDocTag* tag, Span* span_ret) {
     return tag->type;
 }
 
-// `@type` on a declaration with no annotation of its own
-static void jsdoc_apply_type_to_binding(VecJsDocTag* tags, Binding* binding) {
-    if (binding->has_explicit_type) return;
+// `@type` on a declaration with no annotation of its own. Whether it took one
+static bool jsdoc_apply_type_to_binding(VecJsDocTag* tags, Binding* binding) {
+    if (binding->has_explicit_type) return false;
     JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_TYPE);
-    if (!tag) return;
+    if (!tag) return false;
     Span type_span;
     binding_set_type(binding, jsdoc_take_type(tag, &type_span));
     binding_set_explicit_type_span(binding, type_span);
     binding->has_explicit_type = true;
+    return true;
 }
 
 // The type of a tag whose type a declaration took already, parsed again from its text (a pattern parameter matched by
@@ -11985,6 +12001,9 @@ static void jsdoc_apply_parenthesized(Parser* p, const char* start, Span span, E
     JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
     bool is_satisfies = !tag;
     if (!tag) tag = jsdoc_find_typed(&tags, JSDOC_TAG_SATISFIES);
+    if (tag && !is_satisfies && tag->type.tag == TYPE_UNIQUE_SYMBOL) {
+        grammar_error(p, tag->type_span, 1335, "'unique symbol' types are not allowed here.");
+    }
     if (tag) {
         // (The parentheses are the assertion's: tsc's ParenthesizedExpression has the asserted type)
         Expr inner = *ret;
@@ -13363,6 +13382,14 @@ static bool parse_binding_content_or_private_name(Parser* parent, Binding* ret, 
 }
 
 // `report_js`: TS8010 in JavaScript (not for a property signature)
+// TS1335 at the `unique symbol` at `found`, which was allowed where it is only as a whole annotation (`unique symbol[]`)
+static void unique_symbol_misplaced(Parser* p, char const* found) {
+    char const* end = found + strlen("unique");
+    while (end < p->pos && !(end[0] == 's' && strncmp(end, "symbol", 6) == 0)) end++;
+    grammar_error(p, span_make(p->shared->source, found, end + strlen("symbol")), 1335,
+        "'unique symbol' types are not allowed here.");
+}
+
 // The type of an annotation that may be `unique symbol` (Parser.unique_annotation_next): TS1335 unless that is the
 // whole type (`unique symbol[]` isn't)
 __attribute__((noinline)) static void expect_annotation_type(Parser* parent, char const* start, TypeNode* type) {
@@ -13373,12 +13400,7 @@ __attribute__((noinline)) static void expect_annotation_type(Parser* parent, cha
     expect_type(parent, TYPE_PRECEDENCE_NULL, type);
     char const* found = parent->shared->unique_allowed_found;
     parent->shared->unique_allowed_found = nullptr;
-    if (found && type->tag != TYPE_UNIQUE_SYMBOL) {
-        char const* end = found + strlen("unique");
-        while (end < parent->pos && !(end[0] == 's' && strncmp(end, "symbol", 6) == 0)) end++;
-        grammar_error(parent, span_make(parent->shared->source, found, end + strlen("symbol")), 1335,
-            "'unique symbol' types are not allowed here.");
-    }
+    if (found && type->tag != TYPE_UNIQUE_SYMBOL) unique_symbol_misplaced(parent, found);
     parent->shared->unique_allowed_at = outer_allowed_at;
 }
 
@@ -13552,6 +13574,20 @@ static void note_require_declaration(InitializedBinding* initializer) {
 }
 
 // in_for: the declaration of a `for` loop, where `using of` is `for (using of x)`
+// tsc's checkGrammarTypeOperatorNode for a VariableDeclaration typed `unique symbol` (by its annotation or, in
+// JavaScript, its JSDoc `@type`)
+static void unique_symbol_variable_check(Parser* p, Binding const* binding, bool in_for, uint8_t keyword) {
+    if (!binding->has_explicit_type || binding_type(binding)->tag != TYPE_UNIQUE_SYMBOL) return;
+    Span node = binding_explicit_type_span(binding);
+    if (binding->tag != BINDING_IDENTIFIER) {
+        grammar_error(p, node, 1333, "'unique symbol' types may not be used on a variable declaration with a binding name.");
+    } else if (in_for) {
+        grammar_error(p, node, 1334, "'unique symbol' types are only allowed on variables in a variable statement.");
+    } else if (keyword != VAR_INIT_CONST && keyword != VAR_INIT_AWAIT_USING) {
+        grammar_error(p, binding->content_span, 1332, "A variable whose type is a 'unique symbol' type must be 'const'.");
+    }
+}
+
 static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, VariableStatement* ret) {
     Parser p = parser(parent);
     bool using_forced = p.shared->using_forced;
@@ -13664,17 +13700,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
         p.shared->unique_annotation_next = false;
         if (has_type) {
             typed = true;
-            if (binding_type(&initializer.binding)->tag == TYPE_UNIQUE_SYMBOL) {
-                // (tsc's checkGrammarTypeOperatorNode for a VariableDeclaration)
-                Span node = binding_explicit_type_span(&initializer.binding);
-                if (initializer.binding.tag != BINDING_IDENTIFIER) {
-                    grammar_error(&p, node, 1333, "'unique symbol' types may not be used on a variable declaration with a binding name.");
-                } else if (in_for) {
-                    grammar_error(&p, node, 1334, "'unique symbol' types are only allowed on variables in a variable statement.");
-                } else if (ret->keyword != VAR_INIT_CONST && ret->keyword != VAR_INIT_AWAIT_USING) {
-                    grammar_error(&p, initializer.binding.content_span, 1332, "A variable whose type is a 'unique symbol' type must be 'const'.");
-                }
-            }
+            unique_symbol_variable_check(&p, &initializer.binding, in_for, ret->keyword);
             end_of_initialization = p.pos;
             hop_whitespace(&p);
         }
@@ -13709,7 +13735,11 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
             // or for...in variable's is the TS2483/TS2404 grammar error a written annotation is (tsgo's reparser)
             if (!initializer.binding.has_explicit_type) {
                 VecJsDocTag tags = {0};
-                if (jsdoc_before(&p, declaration_start, &tags)) jsdoc_apply_type_to_binding(&tags, &initializer.binding);
+                if (jsdoc_before(&p, declaration_start, &tags)) {
+                    if (jsdoc_apply_type_to_binding(&tags, &initializer.binding)) {
+                        unique_symbol_variable_check(&p, &initializer.binding, in_for, ret->keyword);
+                    }
+                }
                 vec_jsdoc_tag_drop(&tags);
             }
             note_require_declaration(&initializer);
@@ -15262,7 +15292,11 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
             if (vec_initialized_binding_size(list) > 1) {
                 // The `@type` is the first declaration's, the function tags its initializer's (tsgo's reparser,
                 // getFunctionLikeHost: the first declaration's initializer only)
-                if (!list->data[0].binding.parent) jsdoc_apply_type_to_binding(&tags, &list->data[0].binding);
+                if (!list->data[0].binding.parent) {
+                    if (jsdoc_apply_type_to_binding(&tags, &list->data[0].binding)) {
+                        unique_symbol_variable_check(p, &list->data[0].binding, false, statement->decl.variable.keyword);
+                    }
+                }
                 FunctionImpl* function = jsdoc_function_of(initialized_binding_value(&list->data[0]));
                 if (function) jsdoc_apply_function(p, &tags, function);
                 break;
@@ -15270,7 +15304,9 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
             if (vec_initialized_binding_size(list) != 1) break;
             InitializedBinding* initializer = list->data;
             bool type_tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
-            jsdoc_apply_type_to_binding(&tags, &initializer->binding);
+            if (jsdoc_apply_type_to_binding(&tags, &initializer->binding)) {
+                unique_symbol_variable_check(p, &initializer->binding, false, statement->decl.variable.keyword);
+            }
             if (type_tag && initialized_binding_rare(initializer)->require_port_count) {
                 // `/** @type {T} */ const x = require("m")` is a variable, whose initializer is checked against T
                 // (tsc's bindVariableDeclarationOrBindingElement: isVariableDeclarationInitializedToBareOrAccessedRequire
