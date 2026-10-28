@@ -95,6 +95,14 @@ measured wins first; land fast and gate in batches.
 6. **Re-pin to 7.1.0 stable** when it ships.
 
 ## Decisions (each with its reason; the narrative is in git history of this file)
+- **The leaner type graph is a memory project, not the route to speed** (2026-10-29, the laptop at 2c389b213:
+  measurements.md "The 12-core box at 2c389b213"): step 1 (instance props made on first use) cut zod's arena 20% and
+  RSS 12% but cycles only 1.6%, because the bytes it saved were written once and never read: the stalls are random
+  reads of the objects that are used. Step 2 is not started (its stop rule); steps 2-4 are re-estimated at 0 to -2%
+  cycles for 9-14 days (type_graph_design.md §4) and would be gated on read misses, not arena bytes. The intern tables
+  at 8 bytes a slot are kept (cycles -1..-6% on all five shapes, RSS -4..-13%). The threading speedup therefore goes
+  through the shared graph's premium directly: attribute the +15% CPU to instructions, coherence or lost work, then
+  cut the largest bucket (worker premium).
 - **The threading speedup and the leaner type graph that enables it are the priority** (the human, 2026-10-29, after
   the laptop's counters: footprint.md "The laptop's counters"). Order: the shared-members design (notes/
   type_graph_design.md, in progress), its stages landed output-identical and measured on the laptop's `.d.ts`
