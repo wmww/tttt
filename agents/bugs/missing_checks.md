@@ -579,9 +579,13 @@ never-const (harness writes no errors baseline).
 - renamingDestructuredPropertyInFunctionType3 delete-stmt: TS2304 for a computed name in a function type's parameter
   pattern is found only by tsgo's emit resolver (the harness's pre/post-emit count mismatch); tsgo's CLI reports it
   like tttt. [tsgo]
-- Not looked at: assignmentGenericLookupTypeNarrowing str-to-num (missing TS2536 `Type 'K' cannot be used to index` for
-  `K extends 42` on a mapped `{[K in "foo"]: ...}`), contextualTypeWithUnionTypeIndexSignatures ann-number-string
-  (TS2322 position: tsgo elaborates into the method's return, tttt reports at the declaration), recursiveTypeInference add-optional (TS2345 text), circularBaseTypes delete-stmt
+- assignmentGenericLookupTypeNarrowing str-to-num: `foo(mappedObject[key])` with `K extends 42` is TS2536 from the
+  generic call's inference pass (no constraint substitution in an inferential check); the final check's type is the
+  constraint. The walk now also reports an access any evaluation found invalid (KEY_INVALID_GENERIC_ACCESS). Test
+  ttttInvalidGenericAccessInInference. [fixed c3ffa3e8f]
+- contextualTypeWithUnionTypeIndexSignatures ann-number-string: findMostOverlappyType keys `{ 1: x }` by the number
+  literal 1, which a number index overlaps; tttt used the string "1". Test ttttOverlappyNumericKeys. [fixed fdd3692e3]
+- Not looked at: recursiveTypeInference add-optional (TS2345 text), circularBaseTypes delete-stmt
   (missing TS2310, the base cycle design), nonPrimitiveAndEmptyObject drop-optional (TS2339 names the narrowed `{}`
   in tsgo, the union in tttt). [open]
 - ambientExternalModuleWithRelativeExternalImportDeclaration delete-stmt: `declare module "M" { import m2 =
