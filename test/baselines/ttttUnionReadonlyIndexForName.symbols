@@ -1,0 +1,50 @@
+//// [test/cases/ttttUnionReadonlyIndexForName.ts] ////
+
+=== ttttUnionReadonlyIndexForName.ts ===
+// A union's property through a member's index signature takes the signature that applies to the name (tsc's
+// getApplicableIndexInfoForName in createUnionOrIntersectionProperty): a numeric name reaches a readonly number index
+// signature, so the write is TS2540 (bun 99-V4 getTypeOfSymbolWithDeferredType__05)
+declare const v1: { readonly 0: "p" } | { 0: "q" };
+>v1 : Symbol(v1, Decl(ttttUnionReadonlyIndexForName.ts, 3, 13))
+>0 : Symbol(0, Decl(ttttUnionReadonlyIndexForName.ts, 3, 19))
+>0 : Symbol(0, Decl(ttttUnionReadonlyIndexForName.ts, 3, 41))
+
+v1[0] = "q";
+>v1 : Symbol(v1, Decl(ttttUnionReadonlyIndexForName.ts, 3, 13))
+>0 : Symbol(0, Decl(ttttUnionReadonlyIndexForName.ts, 3, 19), Decl(ttttUnionReadonlyIndexForName.ts, 3, 41))
+
+declare const v2: { 0: "q" } | { readonly [k: number]: null };
+>v2 : Symbol(v2, Decl(ttttUnionReadonlyIndexForName.ts, 5, 13))
+>0 : Symbol(0, Decl(ttttUnionReadonlyIndexForName.ts, 5, 19))
+>k : Symbol(k, Decl(ttttUnionReadonlyIndexForName.ts, 5, 43))
+
+v2[0] = "q";
+>v2 : Symbol(v2, Decl(ttttUnionReadonlyIndexForName.ts, 5, 13))
+>0 : Symbol(0, Decl(ttttUnionReadonlyIndexForName.ts, 5, 19))
+
+declare const v3: [boolean, ...number[]] | { readonly [k: number]: null };
+>v3 : Symbol(v3, Decl(ttttUnionReadonlyIndexForName.ts, 7, 13))
+>k : Symbol(k, Decl(ttttUnionReadonlyIndexForName.ts, 7, 55))
+
+v3[0] = null;
+>v3 : Symbol(v3, Decl(ttttUnionReadonlyIndexForName.ts, 7, 13))
+>0 : Symbol(0)
+
+declare const v4: { 0: "q" } | [boolean];
+>v4 : Symbol(v4, Decl(ttttUnionReadonlyIndexForName.ts, 9, 13))
+>0 : Symbol(0, Decl(ttttUnionReadonlyIndexForName.ts, 9, 19))
+
+v4[0] = "q";
+>v4 : Symbol(v4, Decl(ttttUnionReadonlyIndexForName.ts, 9, 13))
+>0 : Symbol(0, Decl(ttttUnionReadonlyIndexForName.ts, 9, 19))
+
+declare const v5: { a: 1 } | { readonly [k: string]: 1 };
+>v5 : Symbol(v5, Decl(ttttUnionReadonlyIndexForName.ts, 11, 13))
+>a : Symbol(a, Decl(ttttUnionReadonlyIndexForName.ts, 11, 19))
+>k : Symbol(k, Decl(ttttUnionReadonlyIndexForName.ts, 11, 41))
+
+v5.a = 1;
+>v5.a : Symbol(a, Decl(ttttUnionReadonlyIndexForName.ts, 11, 19))
+>v5 : Symbol(v5, Decl(ttttUnionReadonlyIndexForName.ts, 11, 13))
+>a : Symbol(a, Decl(ttttUnionReadonlyIndexForName.ts, 11, 19))
+

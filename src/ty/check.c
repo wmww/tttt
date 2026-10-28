@@ -2943,15 +2943,18 @@ static int member_refs(Checker* me, Ty const* object, Atom const* name, MemberRe
     if ((object->kind == TY_UNION && !(object->flags & TYF_BOOLEAN)) || object->kind == TY_INTERSECTION) {
         bool is_union = object->kind == TY_UNION;
         int ret = -1;
+        bool any_property = false; // (A union's property needs one member's: index signatures alone make none)
         for (u32 i = 0; i < object->composite.types.len; i++) {
             Ty const* member = object->composite.types.data[i];
             if (member->flags & TYF_NULLABLE) continue;
             int readonly = member_refs(me, member, name, out, depth + 1);
+            any_property |= readonly >= 0;
             if (readonly < 0 && is_union) {
-                // A member without it: through an index signature, else the union has no such property
+                // A member without it: through an index signature, else the union has no such property (the one for
+                // the name: a numeric name takes a number index signature too, tsc's getApplicableIndexInfoForName)
                 Ty const* apparent = ty_apparent_type(me, member);
                 IndexInfo const* info = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ?
-                    ty_applicable_index_info(me, apparent, ty_intrinsic(me, TY_STRING)) : nullptr;
+                    ty_applicable_index_info(me, apparent, ty_string_literal(me, atom_sv(name))) : nullptr;
                 if (!info) return -1;
                 readonly = info->readonly;
                 if (info->value->flags & (TYF_ANY | TYF_UNKNOWN)) out->index_mask |= INDEX_REF_ANY_UNKNOWN;
@@ -2960,6 +2963,7 @@ static int member_refs(Checker* me, Ty const* object, Atom const* name, MemberRe
             if (readonly < 0) continue;
             ret = ret < 0 ? readonly : is_union ? (ret || readonly) : (ret && readonly);
         }
+        if (is_union && !any_property) return -1;
         return is_union && ret >= 0 && ty_union_non_public_conflict(me, object, name) ? -1 : ret;
     }
     if (!(object->flags & TYF_OBJECT)) return -1;
