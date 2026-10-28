@@ -1932,3 +1932,13 @@ vscode, K8 on effect), "16" is `--threads 16 --checkers 16`. Medians (best in br
   the 256 shards' D1 misses +0.4%, LL +0.1%. effect's loss is CPU on its costliest files (notes/shared_graph.md).
 - Flag K8 at one thread, callgrind: zod -1.2%, drizzle -1.2% instructions (ZeroPages: no memset of doubled tables).
 - Peak RSS under the flag +6..10 MB on zod and drizzle (the 256 KB populated ahead per ZeroPages, one per checker).
+
+## The shared graph's go/no-go table (2026-10-29, verdict, release build of main 33e018294, this box at load 10-15)
+`scripts/sgbench.py --modes 8,16,def -n 10` (sgcheck's 58 projects, plain against `TTTT_SHARED_GRAPH=1`, interleaved,
+best of 10, `TTTT_SYNC_EXIT=1`, from an empty directory, nice 15; load at run start median 10.6, p90 15.2). Flag/plain
+medians, check wall (the typecheck phase) / whole wall / peak RSS: at the defaults (K8 on most) hubs 0.98 / 1.00 /
+0.72, corpora 1.14 / 1.10 / 0.92, all 58 1.05 / 1.00 / 0.74 (30 worse by >5%, 9 within, 19 better); at 16/16 hubs
+0.89 / 0.87 / 0.58, corpora 1.22 / 1.12 / 0.79. Corpora at the defaults: react +43%, xstate +29%, zod +27%, effect
++16%, vscode +6%, drizzle -9%; hubs: i18n -50%, team-client -34%, platform-fastify/test +47%. `sgcheck.py -k 8,16
+-n 2`: 0 of 464 differ. Verdict: option for hub-shaped projects, not default-on (notes/hub_regime.md "The go/no-go
+table"); a new K7/K8 deep-cut storm on monkeytype/frontend (bugs/shared_graph.md).

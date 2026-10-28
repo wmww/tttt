@@ -95,6 +95,20 @@ Final state on wt-sg rebased on fc64a1ea3 (2026-10-29, the default list at K 4/8
 9 differ in 4 projects: drizzle 2 (K8 def, C), effect 3, folo renderer 2 (K16 def), mikro-orm seeder 2 (K16 rr).
 TSan clean at T8 on drizzle, effect, excalidraw, zod, vue (with the lazily made instance properties).
 
+On main 33e018294 (2026-10-29, verdict: the default list at K 8/16, both deals, 2 runs, 464 runs): 0 differ.
+
+- **monkeytype/frontend at K7/K8: a deep-cut storm** (perf only, output identical; found by verdict's go/no-go
+  table, hub_regime.md). Flagged check CPU is bimodal: 1.6 s (plain 1.9 s) or 5.5-18 s, 9 of 10 runs bad at K8, about
+  half at K7, 0 of 5-10 at K4, K6, K9, K12, K16. A bad run computes 3-4.5x the relation pairs (`TTTT_GRAPH_STATS`:
+  1.5-2.3M against 0.5M) and 10-20x the deep-nesting cuts (116-280k against 8-16k), shard locks found taken 20x; with
+  `TTTT_FILE_TIMES=1` all eight checkers spend 500-800 ms CPU each on one modal .tsx (EditPresetModal, Login,
+  CustomGeneratorModal, StreakHourOffsetModal...; ~1 ms each under plain, warm by then) and finish within 2 ms of each
+  other. Looks like a schedule where several workers enter the same heavy JSX relation at once and none of their
+  results is reusable (cut, so cached CACHE_DEEP or tainted), so each grinds it privately. Not looked at further.
+  Repro: `for i in $(seq 10); do TTTT_GRAPH_STATS=1 TTTT_SHARED_GRAPH=1 release/tttt --time --threads 8 --checkers 8
+  --noEmit -p thirdparty/sources/monkeytype/frontend 2>&1 >/dev/null | grep -E 'process CPU|deep-nesting' | tail -2;
+  done`. [note]
+
 ## Audit: identities made of private records (2026-10-29)
 The rule (notes/shared_graph.md "Identities are published whatever their taint"): a published identity's fields must
 be a function of its key, the AST and other published identities, never of a record this worker resolved privately.

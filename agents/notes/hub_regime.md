@@ -344,3 +344,148 @@ The three rerun projects are left out (55 remain). A winner has flag/plain below
 A policy would need either a measured signal at the start of the run (a checker's first files' types, or plain's
 recycle thrash: notes/shared_graph.md "Before reopening it" item 5, adaptive), or the premium bought down until the
 flag doesn't lose where it doesn't win.
+
+## The go/no-go table (2026-10-29, 33e018294, worker verdict)
+The decision's evidence after the four changes on the flag's path since the break-even curve (shared hits cached
+privately d4411b9f5, the walk order b2b3cdcd2, variance frames 8cff1aef4, the graph's own mappings and 256 shards
+ba727aa29..bf7b2a36e). `scripts/sgbench.py` (release build of main 33e018294; d75afaa0b adds the script): sgcheck's
+58 projects (43 hubs, 15 corpora), plain against `TTTT_SHARED_GRAPH=1` at `--threads 8 --checkers 8`, `--threads 16
+--checkers 16` and the defaults (this box, 8 cores / 16 vCPU EPYC: 16 threads, and the K cap chose 8 checkers on
+every project but vscode 16, tsc 4 and the three rerun projects), interleaved, `TTTT_SYNC_EXIT=1`, from an empty
+directory, nice 15; best of 10 per measure (two passes of 5 whose medians agreed within 0.04). Load at run start
+median 10.6, p90 15.2 (the other workers): walls are loaded walls. Check = the typecheck phase (`--time`), wall and
+peak RSS the whole run's.
+
+| set | mode | check CPU flag/plain | check wall | whole wall | peak RSS | check wall >5% worse | within 5% | >5% better |
+|---|---|---|---|---|---|---|---|---|
+| 43 hubs | 8/8 | 0.97 | 1.00 | 0.96 | 0.70 | 18 | 8 | 17 |
+| | 16/16 | 0.77 | 0.89 | 0.87 | 0.58 | 11 | 6 | 26 |
+| | defaults | 0.97 | 0.98 | 1.00 | 0.72 | 18 | 7 | 18 |
+| 15 corpora | 8/8 | 1.13 | 1.12 | 1.07 | 0.91 | 12 | 1 | 2 |
+| | 16/16 | 1.05 | 1.22 | 1.12 | 0.79 | 11 | 2 | 2 |
+| | defaults | 1.13 | 1.14 | 1.10 | 0.92 | 12 | 2 | 1 |
+| all 58 | 8/8 | 0.99 | 1.05 | 1.00 | 0.73 | 30 | 9 | 19 |
+| | 16/16 | 0.85 | 0.97 | 0.91 | 0.62 | 22 | 8 | 28 |
+| | defaults | 0.99 | 1.05 | 1.00 | 0.74 | 30 | 9 | 19 |
+
+Medians of the runs instead of the best give the same picture (defaults: hubs 0.92, corpora 1.13). Summed check wall
+over the 58 at the defaults: plain 11.82 s, flag 12.18 s. Plain's own 16/16 against plain's defaults is 1.12 on the
+hubs (the K cap is right for plain); the flag at 16/16 against plain at the defaults is 1.04 on the hubs, 1.08 on the
+corpora: on this box the flag's 16/16 win is mostly over plain's 16/16, not over plain's defaults.
+
+**Byte identity:** `scripts/sgcheck.py -k 8,16 -n 2` (both deals): 0 of 464 flagged runs differ from plain K1; every
+sgbench run's stdout was identical between flag and plain too (`out` column: same on all 58 at all three modes).
+
+**The duplication ceiling** (types and check CPU at `--threads 1`, K8 and K16 against K1, `--checker-memory off`): the
+flag can at best bring plain's check CPU at K down to K1's, and in practice pays a per-read premium (~1.15-1.3 on the
+corpora). Check CPU K16/K1: most hubs 2.3-6.0 (dokploy 4.4-6.0, i18n 4.0, auth-api 3.1; the hub list's losers are its low ones:
+nest's tests 1.07-1.34, mikro-orm seeder 1.41, vite __tests_dts__ 1.08, inbox-zero 0.77), the corpora 0.55-2.5
+(effect 1.73, vscode 1.23, zod 1.48, type-fest 0.55, tanstack-router 0.78, xstate 1.81, drizzle 1.77; webpack, vue
+and better-drizzle rerun at K1). Where K16/K1 is under ~1.8 the premium eats all of it; the flag wins only where it
+is over ~2.5, which is the hubs and drizzle/excalidraw/react's CPU.
+
+Per project, flag/plain, best of 10 (check CPU / check wall / whole wall / peak RSS):
+
+| project | 8/8 | 16/16 | defaults | plain check wall s (8 / 16 / def) |
+|---|---|---|---|---|
+| openbot/packages/i18n | 0.60 / 0.49 / 0.53 / 0.49 | 0.51 / 0.48 / 0.47 / 0.38 | 0.60 / 0.50 / 0.53 / 0.49 | 0.30 / 0.31 / 0.30 |
+| dokploy/packages/server | 0.93 / 1.00 / 0.94 / 0.65 | 0.61 / 0.84 / 0.83 / 0.46 | 0.96 / 1.05 / 1.00 / 0.62 | 0.22 / 0.27 / 0.21 |
+| dokploy/apps/schedules | 1.06 / 1.37 / 1.16 / 0.60 | 0.47 / 0.80 / 0.79 / 0.43 | 1.13 / 1.26 / 1.12 / 0.61 | 0.19 / 0.28 / 0.21 |
+| dokploy/apps/api | 1.10 / 1.33 / 1.16 / 0.60 | 0.57 / 0.81 / 0.79 / 0.45 | 1.12 / 1.21 / 1.12 / 0.70 | 0.20 / 0.27 / 0.22 |
+| dokploy/apps/dokploy | 1.11 / 1.16 / 1.09 / 0.69 | 0.66 / 1.08 / 1.00 / 0.46 | 1.13 / 1.17 / 1.09 / 0.73 | 0.56 / 0.70 / 0.55 |
+| monkeytype/backend/scripts | 1.00 / 0.81 / 0.82 / 0.59 | 0.93 / 0.82 / 0.75 / 0.55 | 0.98 / 0.86 / 0.82 / 0.61 | 0.09 / 0.09 / 0.09 |
+| karakeep/packages/api | 0.84 / 1.32 / 1.18 / 0.64 | 0.58 / 1.12 / 1.00 / 0.49 | 0.99 / 1.24 / 1.09 / 0.70 | 0.14 / 0.17 / 0.15 |
+| openbot/packages/team-client | 0.71 / 0.66 / 0.67 / 0.56 | 0.55 / 0.51 / 0.52 / 0.43 | 0.71 / 0.66 / 0.69 / 0.58 | 0.26 / 0.31 / 0.26 |
+| karakeep/packages/e2e_tests | 1.01 / 0.99 / 0.96 / 0.71 | 0.71 / 0.89 / 0.87 / 0.56 | 0.99 / 0.99 / 0.96 / 0.74 | 0.14 / 0.19 / 0.14 |
+| karakeep/packages/trpc | 0.99 / 1.31 / 1.19 / 0.69 | 0.58 / 1.17 / 1.03 / 0.52 | 1.13 / 1.37 / 1.19 / 0.68 | 0.16 / 0.21 / 0.16 |
+| lexical/dev-examples/mdast-editor | 0.91 / 0.88 / 0.94 / 0.70 | 0.85 / 0.81 / 0.80 / 0.58 | 0.83 / 0.82 / 0.88 / 0.69 | 0.13 / 0.16 / 0.13 |
+| openbot/apps/auth-api | 0.79 / 0.83 / 0.84 / 0.60 | 0.47 / 0.58 / 0.59 / 0.42 | 0.79 / 0.84 / 0.84 / 0.61 | 0.32 / 0.39 / 0.32 |
+| karakeep/apps/browser-extension | 0.93 / 1.25 / 1.08 / 0.71 | 0.71 / 0.87 / 0.83 / 0.55 | 0.96 / 1.16 / 1.04 / 0.71 | 0.15 / 0.18 / 0.16 |
+| openbio | 0.82 / 1.19 / 1.00 / 0.69 | 0.62 / 0.96 / 0.94 / 0.57 | 1.15 / 1.17 / 1.06 / 0.77 | 0.08 / 0.09 / 0.08 |
+| karakeep/tools/seed-snapshot | 1.20 / 1.32 / 1.14 / 0.80 | 1.01 / 1.29 / 1.13 / 0.64 | 1.12 / 1.30 / 1.19 / 0.76 | 0.14 / 0.14 / 0.14 |
+| portabase | 0.98 / 1.02 / 0.98 / 0.81 | 0.65 / 0.77 / 0.80 / 0.66 | 0.93 / 0.98 / 0.98 / 0.82 | 0.20 / 0.23 / 0.21 |
+| monkeytype/frontend/__tests__ | 1.05 / 1.10 / 1.00 / 0.56 | 0.64 / 0.83 / 0.75 / 0.41 | 0.97 / 1.05 / 1.04 / 0.63 | 0.17 / 0.23 / 0.17 |
+| immutable-js/__tests__ | 1.04 / 1.06 / 0.96 / 0.39 | 0.59 / 0.95 / 0.81 / 0.25 | 0.90 / 0.94 / 0.88 / 0.39 | 0.19 / 0.24 / 0.20 |
+| monkeytype/frontend (bimodal at K7/K8, below) | 0.84 / 0.81 / 0.80 / 0.55 | 0.61 / 0.76 / 0.73 / 0.37 | 0.80 / 0.79 / 0.80 / 0.55 | 0.26 / 0.31 / 0.26 |
+| tanstack-table/examples/react/material-react-table | 0.76 / 0.74 / 0.79 / 0.65 | 0.59 / 0.79 / 0.86 / 0.58 | 0.75 / 0.69 / 0.86 / 0.65 | 0.07 / 0.08 / 0.08 |
+| monkeytype/backend/__tests__ | 0.97 / 0.96 / 0.91 / 0.67 | 0.78 / 0.84 / 0.80 / 0.52 | 0.97 / 0.92 / 0.91 / 0.67 | 0.17 / 0.19 / 0.17 |
+| karakeep/packages/benchmarks | 1.07 / 1.32 / 1.19 / 0.74 | 0.77 / 1.35 / 1.14 / 0.60 | 1.10 / 1.35 / 1.14 / 0.73 | 0.13 / 0.13 / 0.13 |
+| react-select/packages/react-select/src/__tests__ | 0.98 / 0.76 / 0.79 / 0.77 | 0.99 / 0.90 / 0.92 / 0.74 | 0.89 / 0.74 / 0.79 / 0.77 | 0.12 / 0.11 / 0.12 |
+| folo/apps/desktop/layer/renderer | 0.81 / 0.94 / 0.93 / 0.71 | 0.64 / 0.90 / 0.86 / 0.57 | 0.80 / 0.94 / 0.93 / 0.72 | 0.40 / 0.46 / 0.40 |
+| folo/apps/mobile | 0.74 / 0.78 / 0.82 / 0.72 | 0.67 / 0.88 / 0.91 / 0.62 | 0.74 / 0.77 / 0.84 / 0.72 | 0.17 / 0.18 / 0.17 |
+| photography-website | 0.97 / 0.99 / 0.95 / 0.76 | 0.93 / 1.12 / 1.00 / 0.64 | 0.95 / 0.97 / 1.00 / 0.75 | 0.10 / 0.11 / 0.10 |
+| monkeytype/backend | 1.03 / 0.94 / 0.95 / 0.65 | 0.86 / 0.89 / 0.86 / 0.53 | 0.93 / 0.92 / 0.90 / 0.64 | 0.15 / 0.17 / 0.15 |
+| afilmory/be/apps/core | 0.89 / 0.86 / 0.90 / 0.69 | 0.79 / 1.03 / 0.91 / 0.58 | 0.88 / 0.87 / 0.85 / 0.68 | 0.11 / 0.12 / 0.11 |
+| mcp-sdk/examples/client-quickstart | 1.12 / 1.18 / 1.14 / 0.69 | 0.76 / 1.05 / 0.88 / 0.59 | 1.04 / 1.17 / 1.14 / 0.69 | 0.05 / 0.05 / 0.05 |
+| lexical/packages/lexical-website | 0.89 / 0.91 / 0.91 / 0.78 | 0.78 / 0.82 / 0.85 / 0.67 | 0.85 / 0.90 / 0.83 / 0.78 | 0.07 / 0.08 / 0.07 |
+| mcp-sdk/test/helpers | 1.19 / 1.14 / 1.17 / 0.70 | 0.85 / 1.14 / 1.00 / 0.60 | 1.07 / 0.96 / 1.00 / 0.72 | 0.04 / 0.04 / 0.05 |
+| mcp-sdk/packages/middleware/express | 0.97 / 1.05 / 1.00 / 0.71 | 0.89 / 0.94 / 0.88 / 0.68 | 0.97 / 1.10 / 1.00 / 0.73 | 0.05 / 0.05 / 0.04 |
+| lexical/dev-examples/dom-import | 0.85 / 0.89 / 0.85 / 0.75 | 0.89 / 0.85 / 0.87 / 0.63 | 0.99 / 0.88 / 0.85 / 0.74 | 0.10 / 0.12 / 0.10 |
+| mcp-sdk/examples/shared | 0.99 / 1.02 / 1.00 / 0.74 | 0.85 / 1.03 / 0.89 / 0.66 | 0.92 / 0.99 / 1.00 / 0.75 | 0.05 / 0.05 / 0.05 |
+| mcp-sdk/packages/core-internal | 0.97 / 0.99 / 0.80 / 0.69 | 0.86 / 0.87 / 0.80 / 0.59 | 1.00 / 1.08 / 1.00 / 0.70 | 0.07 / 0.07 / 0.06 |
+| afilmory/packages/ui | 0.92 / 0.87 / 0.83 / 0.79 | 0.77 / 0.98 / 1.00 / 0.71 | 0.94 / 0.97 / 1.00 / 0.79 | 0.03 / 0.03 / 0.03 |
+| vite/packages/vite/src/node/__tests_dts__ | 0.89 / 0.77 / 0.81 / 0.82 | 0.91 / 0.80 / 0.81 / 0.80 | 0.93 / 0.78 / 0.80 / 0.83 | 0.32 / 0.32 / 0.32 |
+| nest/packages/platform-fastify/test | 1.37 / 1.31 / 1.23 / 0.97 | 1.06 / 1.05 / 0.96 / 0.77 | 1.35 / 1.47 / 1.23 / 0.98 | 0.14 / 0.16 / 0.13 |
+| mikro-orm/packages/seeder | 1.24 / 1.47 / 1.40 / 0.97 | 1.29 / 1.43 / 1.27 / 0.89 | 1.19 / 1.40 / 1.40 / 0.95 | 0.08 / 0.09 / 0.08 |
+| inbox-zero/apps/web | 1.08 / 1.07 / 1.02 / 0.97 | 1.03 / 1.04 / 1.03 / 0.93 | 1.06 / 1.06 / 1.05 / 0.96 | 0.19 / 0.15 / 0.19 |
+| openscience/backend/cli | 0.88 / 0.90 / 0.89 / 0.75 | 0.76 / 0.78 / 0.80 / 0.62 | 0.88 / 0.88 / 0.89 / 0.75 | 0.31 / 0.29 / 0.30 |
+| nest/packages/microservices/test | 1.37 / 1.44 / 1.26 / 0.99 | 1.03 / 1.09 / 0.96 / 0.76 | 1.28 / 1.36 / 1.22 / 0.97 | 0.14 / 0.16 / 0.14 |
+| better-drizzle (reruns at K1) | 1.39 / 1.20 / 1.17 / 0.64 | 0.88 / 1.14 / 1.13 / 0.46 | 1.15 / 1.17 / 1.15 / 0.63 | 0.46 / 0.54 / 0.47 |
+| tsc | 1.04 / 1.05 / 1.00 / 0.86 | 1.00 / 1.01 / 1.05 / 0.79 | 1.12 / 1.05 / 1.05 / 0.95 | 0.18 / 0.19 / 0.18 |
+| type-fest | 1.24 / 1.15 / 1.07 / 0.88 | 1.30 / 1.39 / 1.25 / 0.79 | 1.24 / 1.18 / 1.15 / 0.92 | 0.24 / 0.18 / 0.23 |
+| valibot | 1.17 / 1.17 / 1.09 / 0.92 | 1.07 / 1.28 / 1.22 / 0.83 | 1.20 / 1.14 / 1.10 / 0.92 | 0.07 / 0.06 / 0.07 |
+| react | 0.96 / 1.39 / 1.20 / 0.91 | 0.79 / 1.29 / 1.09 / 0.70 | 1.01 / 1.43 / 1.20 / 0.81 | 0.06 / 0.07 / 0.06 |
+| nest | 0.96 / 1.06 / 1.00 / 0.95 | 0.89 / 1.12 / 1.00 / 0.93 | 1.00 / 1.14 / 1.00 / 0.97 | 0.01 / 0.01 / 0.01 |
+| webpack (reruns at K1) | 1.07 / 1.04 / 1.04 / 0.94 | 1.02 / 1.03 / 1.02 / 0.85 | 1.07 / 1.04 / 1.05 / 0.94 | 0.96 / 0.95 / 0.97 |
+| zod | 1.13 / 1.26 / 1.19 / 0.87 | 1.03 / 1.22 / 1.12 / 0.74 | 1.13 / 1.27 / 1.19 / 0.88 | 0.12 / 0.12 / 0.12 |
+| zod-root | 1.15 / 1.18 / 1.10 / 0.85 | 1.05 / 1.35 / 1.16 / 0.74 | 1.16 / 1.20 / 1.10 / 0.86 | 0.14 / 0.12 / 0.14 |
+| xstate | 1.24 / 1.23 / 1.11 / 0.86 | 1.13 / 1.26 / 1.22 / 0.79 | 1.23 / 1.29 / 1.22 / 0.89 | 0.07 / 0.06 / 0.06 |
+| drizzle | 0.96 / 0.94 / 0.92 / 0.72 | 0.76 / 0.90 / 0.91 / 0.59 | 0.98 / 0.91 / 0.91 / 0.72 | 0.17 / 0.17 / 0.17 |
+| vue (reruns at K1) | 1.21 / 1.08 / 1.08 / 1.02 | 1.46 / 1.12 / 1.13 / 1.02 | 1.21 / 1.07 / 1.08 / 1.01 | 0.62 / 0.58 / 0.62 |
+| effect | 1.17 / 1.16 / 1.11 / 0.96 | 1.10 / 1.24 / 1.12 / 0.92 | 1.16 / 1.16 / 1.11 / 0.98 | 0.18 / 0.16 / 0.18 |
+| vscode | 1.04 / 1.06 / 1.07 / 0.99 | 1.06 / 1.09 / 1.06 / 0.93 | 1.05 / 1.06 / 1.04 / 0.93 | 1.74 / 1.30 / 1.32 |
+| excalidraw | 0.93 / 0.91 / 0.90 / 0.83 | 0.84 / 0.82 / 0.80 / 0.73 | 0.97 / 0.96 / 0.95 / 0.83 | 0.14 / 0.13 / 0.13 |
+| tanstack-router | 1.25 / 1.12 / 1.07 / 0.93 | 1.27 / 1.29 / 1.20 / 0.83 | 1.17 / 1.19 / 1.15 / 0.95 | 0.11 / 0.12 / 0.10 |
+
+Most plain check walls are 0.05-0.3 s, so a 10 ms difference is a few percent: the counts' borderline cells are
+noise, the medians and the large ratios aren't.
+
+**A new flag-only pathology, monkeytype/frontend at K7/K8:** the flag's check CPU is bimodal there, 1.6 s (0.86x
+plain) or 5.5-18 s (3-9x), 9 of 10 runs bad at K8 in one batch, 0 of 10 at K4, K6, K9, K12, K16; plain is stable
+(1.85-1.94 s). A bad run computes 3-4.5x the relation pairs and 10-20x the deep-nesting cuts, and the eight checkers
+each spend ~500-800 ms of CPU on one modal .tsx (EditPresetModal, Login, CustomGeneratorModal...: ~1 ms each under
+plain) and finish together. Best of 10 hides it (the table's 0.80); the defaults choose K8 on it. Output identical.
+bugs/shared_graph.md has the repro.
+
+### The decision
+(a) **Default-on** (the defaults: K8 here on all but vscode K16, tsc K4 and the reruns). Slower: 30 of 58 by >5% in
+check wall, 18 of them hubs. Every corpus but drizzle and excalidraw: react +43%, xstate +29%, zod +27%, zod-root
++20%, tanstack-router +19%, type-fest +18%, effect +16%, valibot +14%, nest +14% (a 10 ms check), vue +7% (rerun),
+vscode +6%; tsc +5%, webpack +4% within. Hubs over +5%: platform-fastify/test +47%, mikro-orm seeder +40%,
+karakeep trpc +37%, microservices/test +36%, karakeep benchmarks +35%, seed-snapshot +30%, dokploy schedules +26%,
+karakeep api +24%, dokploy api +21%, dokploy/apps/dokploy +17%, openbio +17%, client-quickstart +17%, better-drizzle
++17%, browser-extension +16%, middleware/express +10%, core-internal +8%, inbox-zero +6%, dokploy/packages/server +5%. Faster by >5%: 19, i18n
+-50%, team-client -34%, material-react-table -31%, react-select tests -26%, folo mobile -23%, vite __tests_dts__
+-22%, monkeytype/frontend -21% (best of; bimodal), mdast-editor -18%, auth-api -16%, drizzle -9%. Median over the 58:
+check wall 1.05, whole wall 1.00, peak RSS 0.74; check CPU 0.99.
+(b) **Option only:** a hub user setting `--shared-graph` at the defaults gets median check wall 0.98 and RSS 0.72 on
+the 43 hubs, a large win only on the strongly duplicated ones (i18n 0.50, team-client 0.66, auth-api 0.84 at the
+defaults; 0.48 / 0.51 / 0.58 at 16/16), and loses on 18. With `--threads 16 --checkers 16` the hubs' median is 0.89
+against plain 16/16 (RSS 0.58, 26 better), but only 1.04 against plain's defaults: on this box the K cap already
+avoids most of what the flag removes, so the option's honest pitch is memory (hubs' peak RSS median -28% at the defaults, -42% at 16/16) plus 2x on a
+handful of hub projects, not speed in general.
+(c) **What still blocks (a):** correctness is clean on the measured list (sgcheck 0/464 at K8/K16 both deals; the
+excalidraw rr K8 1-in-30 is not reproduced here, bugs/shared_graph.md [note]); the GRAPH_CHECKS build still reports
+instantiate_anonymous's KEY_ANONYMOUS_INSTANCE window (over-approximate, no output effect) and ty_erased_signature's
+done-ness peek (nest tests), and made_before_step()'s fact-2 return-type peek is a history input in principle
+(hacks.md; openscience only, output identical); none is a known wrong output. The blocker is performance: the per-read
+premium on the corpora (median check CPU 1.13 at the defaults, 1.05 at 16/16), the K7/K8 deep-cut storm above, and
+nothing at K8 to remove on projects whose check CPU K16/K1 is under ~2.
+
+**The numbers support (b), not (a).** Default-on would slow 30 of 58 projects by more than 5%, every corpus but
+drizzle and excalidraw among them (react, xstate, zod over +25%), to speed up 19, for a median wall of 1.00-1.05 and
+a median RSS of 0.74. The ceiling explains why tuning won't change this soon: the flag can't beat plain by more than
+the duplication a project has, and at the defaults' K8 the corpora have 1.2-1.8x check CPU of duplication against a
+1.15-1.3x per-read premium, while the hubs (2.5-6x) already win or tie. So the per-checker model stays the default
+and `--shared-graph` ships as an option for hub-shaped projects, documented by what it does (peak RSS on the hubs median -28% at the defaults, -42% at 16/16;
+up to 2x faster where many files import one large hub), with the K7/K8 storm fixed or noted before it's advertised.
