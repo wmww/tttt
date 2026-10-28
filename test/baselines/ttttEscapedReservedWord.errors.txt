@@ -1,0 +1,29 @@
+ttttEscapedReservedWord.ts(5,3): error TS1135: Argument expression expected.
+ttttEscapedReservedWord.ts(6,1): error TS1128: Declaration or statement expected.
+ttttEscapedReservedWord.ts(7,17): error TS1005: ';' expected.
+ttttEscapedReservedWord.ts(8,1): error TS1185: Merge conflict marker encountered.
+ttttEscapedReservedWord.ts(10,11): error TS1260: Keywords cannot contain escape characters.
+
+
+==== ttttEscapedReservedWord.ts (5 errors) ====
+    // An escaped reserved word is that word to tsc's scanner (`\u0065lse` is ElseKeyword): no identifier, no expression
+    // or statement starts with it (TS1135, TS1128); an escaped `static` before a block is a static block (TS1260), and an
+    // escaped modifier's TS1260 is dropped where the `;` expected before it is reported, a conflict marker after it or not
+    declare function f(...x: any[]): void;
+    f(\u0065lse);
+      ~~~~~~~~~
+!!! error TS1135: Argument expression expected.
+    \u0065lse;
+    ~~~~~~~~~
+!!! error TS1128: Declaration or statement expected.
+    class C { a = 1 st\u0061tic
+                    ~~~~~~~~~~~
+!!! error TS1005: ';' expected.
+    <<<<<<< x
+    ~~~~~~~
+!!! error TS1185: Merge conflict marker encountered.
+    b = 2 }
+    class D { st\u0061tic {} }
+              ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+    

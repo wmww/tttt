@@ -242,8 +242,11 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
   tttt continues after the marker at once: it needs a pending unconsumable token in the parser), TSX generic arrows `<T,>x => x` and `</T>` in type parameter lists
   (56-L05b 56-L06). ±TS1003 ±TS1005 ±TS1109 ±TS1128 +TS1139 +TS1145. [open]
 - Escaped keywords: `\u0065lse;` is the keyword to tsc's statement parser (TS1128, TS1135 as an argument: 82-R17c
-  82-R17e); an escaped modifier before a line break or a conflict marker isn't one (tttt +TS1260: 83-R03a 93-P05);
-  `keyof n\u0065w () => Z` (83-R03c); `d\u0065fault class: 1` (61-L16). [open]
+  82-R17e: tok_is_identifier() and parse_identifier_expr() cook an escaped word, the statement list's TS1127 is for a
+  `\` that starts no word); an escaped modifier's TS1260 before a conflict marker is dropped at the `;` expected's
+  position (tsc reports the marker later, when it scans the token after it: last_error_starts_at() skips a later
+  TS1185), and an escaped `static` before a block is a static block (83-R03a 93-P05). [fixed]
+- `keyof n\u0065w () => Z` (83-R03c); `d\u0065fault class: 1` (61-L16). [open]
 - Arrow and type-argument speculation: `async <T extends object>(x: T)` at EOF, `async <T extends U>(x: any);`
   (57-L18 56-L10), `<T>(x?: number);` (74-R15e), `f((a, ...) => 1)` (83-R13a d16), `f<new>(x)`, `f<import(>(x)`,
   `f<abstract new>(x)` (83-R01b), `@null! as typeof mk<number>|` (93-P02b), `a?..b` (92-R02b), `a?.<T>\`x\``

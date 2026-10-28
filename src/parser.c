@@ -1937,7 +1937,13 @@ static bool is_reserved_word(csview word);
 // tsc's isIdentifier (reserved words and private names aren't; `yield`/`await` are, which only matters to the
 // stricter predicates)
 static bool tok_is_identifier(Tok t) {
-    return identifier_char_size(t.start, true) && !is_reserved_word((csview){ t.start, t.end - t.start });
+    if (!identifier_char_size(t.start, true)) return false;
+    if (!t.escaped) return !is_reserved_word((csview){ t.start, t.end - t.start });
+    // (Spelled with escapes a reserved word is that word all the same: tsc's scanner makes `\u0065lse` ElseKeyword)
+    cstr cooked = identifier_name_value((csview){ t.start, t.end - t.start });
+    bool reserved = is_reserved_word(cstr_sv(&cooked));
+    cstr_drop(&cooked);
+    return !reserved;
 }
 
 // Any keyword tsc's scanner knows, contextual ones included (tsc's textToKeywordObj)
@@ -9313,8 +9319,14 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
     bool outer_static_block = p.shared->in_static_block, outer_generator = p.shared->in_generator;
     p.shared->in_static_block = true;
     p.shared->in_generator = false;
-    bool static_block = !is_type && !name_is_value && span_equals(name_span, "static") &&
+    // (Spelled with escapes it is the keyword all the same, TS1260: tsc's scanner)
+    char cooked_buf[16];
+    Span cooked_name = name_span;
+    bool escaped_name = span_valid(name_span) && __builtin_expect(p.shared->any_escaped_word, 0) &&
+        cook_escaped_word(&cooked_name, cooked_buf);
+    bool static_block = !is_type && !name_is_value && span_equals(cooked_name, "static") &&
         parse_block(&p, false, &ret->static_block);
+    if (static_block && escaped_name) parse_error(&p, name_span, 1260, "Keywords cannot contain escape characters.");
     p.shared->in_static_block = outer_static_block;
     p.shared->in_generator = outer_generator;
     if (static_block) {
@@ -11594,6 +11606,13 @@ static bool parse_identifier_expr(Parser* parent, Expr* ret) {
     if (!parse_identifier(&p, &name) || is_reserved_word(span_sv(name))) {
         return parse_fail(&p);
     }
+    // (Spelled with escapes it is the reserved word all the same: tsc's scanner makes `\u0065lse` ElseKeyword)
+    if (memchr(name.buf, '\\', (size_t)name.size)) {
+        cstr cooked = identifier_name_value(span_sv(name));
+        bool reserved = is_reserved_word(cstr_sv(&cooked));
+        cstr_drop(&cooked);
+        if (reserved) return parse_fail(&p);
+    }
     note_top_level_await_identifier(&p, span_sv(name));
     *ret = expr_identifier(name, (IdentifierExpr){0});
 
@@ -11616,6 +11635,10 @@ static bool last_error_starts_at(Parser* me, Span span) {
         if (is_js_syntax_code(last->ts_code) || last->grammar || is_semantic_code(last->ts_code)) continue;
         // (tsc scans the binary marker once, tttt's hops cross it again: only the first TS1490 counts)
         if (last->ts_code == 1490 && earlier_binary_error(me, i)) continue;
+        // (A merge conflict marker is trivia, which tsc's scanner reports once it scans the token after it, later than
+        // tttt's hops: one past the error's start isn't before it, `st\u0061tic` then a marker on the next line)
+        if (last->ts_code == 1185 && span_source(last->span) == span_source(span) &&
+            span_start_ptr(last->span) > span_start_ptr(span)) continue;
         // A scanner error came before the errors tttt reported at or after its token (tsc's scanner reports it when
         // the token is scanned): the latest of those is tsc's last error
         if (i == my shared->scanner_error_index && my shared->scanner_error_token && my shared->scanner_error_first <= i) {
@@ -14686,7 +14709,7 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
             expect_statement(&p, toplevel, &statement);
             list_push(vec_statement, ret, statement);
             if (p.pos == statement_start) hop_token(&p);
-        } else if (*p.pos == '\\') {
+        } else if (*p.pos == '\\' && invalid_char_size(&p, p.pos)) { // (Not a word with escapes: `\u0065lse` is TS1128)
             parse_error(&p, span_make(p.shared->source, p.pos, p.pos + 1), 1127, "Invalid character.");
             p.pos++;
         } else if (list_abort_or_skip(&p, ctx)) {
