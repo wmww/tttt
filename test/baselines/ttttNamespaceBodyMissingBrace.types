@@ -1,0 +1,16 @@
+//// [test/cases/ttttNamespaceBodyMissingBrace.ts] ////
+
+=== ttttNamespaceBodyMissingBrace.ts ===
+// A namespace body missing its `}` is tsc's parseModuleBlock: a plain TS1005, no related TS1007 pointing at its `{`
+// (mutation testing seed 20261104, contextualReturnTypeOfIIFE3)
+declare namespace app {
+>app : typeof app
+
+  var foo: {
+>foo : { bar: number; }
+
+    bar: number;
+>bar : number
+
+  };
+

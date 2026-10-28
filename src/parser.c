@@ -16860,7 +16860,8 @@ static inline bool parse_block(Parser* parent, bool toplevel, Block* ret) {
 
     // (Without its `}` it ends with its last token, tsc's finishNode at the next token's full start: `{ x in b` in a
     // for statement's initializer, the list aborted at the `in`)
-    if (!expect_closing(&p, '}', open)) unhop_trivia(&p);
+    // (A namespace body is tsc's parseModuleBlock: a plain parseExpected, no related TS1007 pointing at the `{`)
+    if (!(toplevel ? expect_char(&p, '}') : expect_closing(&p, '}', open))) unhop_trivia(&p);
     // tsc's parseBlock: `{ a } = b` is a destructuring assignment missing its parentheses, the `=` is skipped
     Parser eq = parser(&p);
     hop_whitespace(&eq);
