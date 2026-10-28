@@ -241,3 +241,9 @@ intersection's property symbol to bugs/type_core.md.
   deliberate (each caller's tsc site) or drift is unknown; one rule with a probe per caller would settle it (ref's
   duplicate scan, 2026-10-28). Settled (cor, 2026-10-28): drift. tsgo's rule (Anonymous, so not a mapped instance; members resolved and empty, or a type literal symbol without members) is now ty_is_empty_anonymous_object() alone; check.c, flow.c and relate.c's inline strict-subtype test call it. One divergence showed: `typeof v === "object"` on `Record<never, never> | number` narrowed to `object` (relate.c's variant counted the mapped instance as empty); test ttttEmptyMappedInstanceNotEmptyAnonymous. DT sweep 8595/8595, corpora unchanged. [fixed COMMIT]
 - Symbols baseline: a mapped type's property over a class getter (`Partial<Writable<D>>` with `declare class D { get id(): ... }`, accessed through `W & D`) prints `Symbol(id, ...)` where tsc prints `Symbol(D.id, ...)` (bun worker 2026-10-29, seen in ttttDeleteIntersectionPropertyOptional before it turned symbols off). [open]
+
+- monkeytype/frontend `src/ts/components/pages/settings/SearchableAutoSetting.tsx:56/59`: a spurious TS2578 (unused
+  `@ts-expect-error`) and a spurious TS2322, present on main since at least 2026-10-29 (cor2, cor3 and bun3 each saw it in
+  the sampled source sweep; tsgo reports neither). No bugs entry names it; cor2 called it "written up as won't-fix" but
+  nothing in bugs/ does. Reduce with `scripts/reduce.py --project thirdparty/sources/monkeytype/frontend --keep
+  'SearchableAutoSetting.*TS2322' --tttt-has` and fix or write up. [open]
