@@ -137,7 +137,10 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - Missing nodes and trivia (`token_full_start()`, `unhop_trivia()`): `ParserShared.last_trivia_start/end` remember only
   the last whitespace hop; `expect_expr()` moves back so the parent ends at the previous token and continues a missing
   operand with binary/assignment operators and `.` only (not `[`/`(`, nor `<` outside JSX); the symbols baseline skips ASCII whitespace forward for
-  `Symbol(unknown)` (a comment breaks it). Probed 2026-10-23, matches tsgo (`a + /*c*/ [` at the end of the file).
+  `Symbol(unknown)` (a comment breaks it). Probed 2026-10-23, matches tsgo (`a + /*c*/ [` at the end of the file). Any lookahead (tok_at's
+  child parser, a failed modifier attempt) overwrites that last hop, so a token_full_start() after one is the token
+  itself: parse_function_args_inner() records the parameter's full start before its lookaheads (2f7b2b1ad). Correct:
+  a full start kept per token position (or tok_at() restoring the hop), checked against tsgoast.sh trees.
 - Spans rebuilt by scanning text: full starts by skipping spaces backwards (TS1433, TS1385-TS1388, comments not
   skipped), `question_dot_after()`, an object literal missing `}` (`parse_object`), a bodyless accessor's TS1005,
   `json_check_value()`'s TS1328 (tsc: after a comment). A `span_from` on a parent's anchor inside a child parser before
