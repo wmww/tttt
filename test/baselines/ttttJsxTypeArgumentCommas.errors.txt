@@ -1,0 +1,55 @@
+ttttJsxTypeArgumentCommas.tsx(5,12): error TS1110: Type expected.
+ttttJsxTypeArgumentCommas.tsx(5,12): error TS2558: Expected 0 type arguments, but got 1.
+ttttJsxTypeArgumentCommas.tsx(6,12): error TS1110: Type expected.
+ttttJsxTypeArgumentCommas.tsx(6,12): error TS2558: Expected 0 type arguments, but got 2.
+ttttJsxTypeArgumentCommas.tsx(6,13): error TS1110: Type expected.
+ttttJsxTypeArgumentCommas.tsx(7,12): error TS2304: Cannot find name 'A'.
+ttttJsxTypeArgumentCommas.tsx(7,12): error TS2558: Expected 0 type arguments, but got 3.
+ttttJsxTypeArgumentCommas.tsx(7,14): error TS1110: Type expected.
+ttttJsxTypeArgumentCommas.tsx(7,15): error TS2304: Cannot find name 'B'.
+ttttJsxTypeArgumentCommas.tsx(8,9): error TS2347: Untyped function calls may not accept type arguments.
+ttttJsxTypeArgumentCommas.tsx(8,11): error TS1110: Type expected.
+ttttJsxTypeArgumentCommas.tsx(9,9): error TS2347: Untyped function calls may not accept type arguments.
+ttttJsxTypeArgumentCommas.tsx(9,11): error TS1110: Type expected.
+ttttJsxTypeArgumentCommas.tsx(9,12): error TS1110: Type expected.
+
+
+==== ttttJsxTypeArgumentCommas.tsx (14 errors) ====
+    // A JSX element's type argument list takes a comma as an element too (tsc's isListElement(TypeArguments)): a missing
+    // type, TS1110 at the comma, then the comma; a `>` after the last comma ends the list
+    declare var f: any;
+    declare namespace JSX { interface IntrinsicElements { [k: string]: any } }
+    let a = <c<,>/>;
+               ~
+!!! error TS1110: Type expected.
+               ~
+!!! error TS2558: Expected 0 type arguments, but got 1.
+    let b = <c<,,>/>;
+               ~
+!!! error TS1110: Type expected.
+               ~~
+!!! error TS2558: Expected 0 type arguments, but got 2.
+                ~
+!!! error TS1110: Type expected.
+    let d = <c<A,,B>/>;
+               ~
+!!! error TS2304: Cannot find name 'A'.
+               ~~~~
+!!! error TS2558: Expected 0 type arguments, but got 3.
+                 ~
+!!! error TS1110: Type expected.
+                  ~
+!!! error TS2304: Cannot find name 'B'.
+    let e = f<,>();
+            ~~~~~~
+!!! error TS2347: Untyped function calls may not accept type arguments.
+              ~
+!!! error TS1110: Type expected.
+    let g = f<,,>();
+            ~~~~~~~
+!!! error TS2347: Untyped function calls may not accept type arguments.
+              ~
+!!! error TS1110: Type expected.
+               ~
+!!! error TS1110: Type expected.
+    

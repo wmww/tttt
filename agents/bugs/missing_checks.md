@@ -583,17 +583,18 @@ Diagnostics-class leftovers, not fixed:
   missing name under `@declaration` (declarationsForIndirectTypeAliasReference delete-stmt), most likely the
   declaration emitter resolving the name again without a suggestion (dts_emit.md's area). [open]
 - **For-initializer DisallowIn leaks into nested constructs in tsgo** (corF 2026-10-23, bun 83-R01c,
-  test/cases/ttttForInitializerDisallowInLeak.ts, known failing). tsgo's `for (` initializer is parsed in the
-  DisallowIn context, and the flag stays set inside arrow parameters, array literals and nested function and class
-  bodies. Only these clear it:
-  - parseExpressionAllowIn: parentheses, element access, template spans, computed names, and the expressions of
-    if/while/for/return/throw/switch/case/with;
-  - argument expressions, object literal values and conditional branches;
-  - binding patterns, property and enum initializers, and nested variable declaration lists.
-  So `for (var i = function () { x in b };;)` is TS1434/TS1128 there. tttt's ExprCtx.reject_in_operator is reset by
-  every nested context, so it misses these errors. The fix is a ParserShared flag, set at the for initializer and
-  cleared (saved and restored) at those sites. A missed clearing site gives spurious errors, and only adversarial code
-  is affected. [open]
+  test/cases/ttttForInitializerDisallowInLeak.ts). tsgo's `for (` initializer is parsed in the DisallowIn context, and
+  the flag stays set inside arrow parameters, array literals and nested function and class bodies: only
+  parseExpressionAllowIn's sites, arguments, object literal values, conditional true branches, binding patterns,
+  property and enum initializers and nested variable declaration lists clear it. Now ParserShared.disallow_in, cleared
+  with allow_in_enter() at those sites; function bodies aren't deferred under it. [fixed 13c2bc9bf]
+- **A for-in/of declaration's initializer is never checked** (bun9 2026-10-28, bun 83-R01c's remaining errors). tsgo's
+  checkVariableLikeDeclaration checks it: a for-of declaration's initializer against the declaration's type, a for-in
+  one's only when the declaration is a secondary declaration of the variable (against `string`, at the name), and
+  checkExpressionCached runs then (TS7006 in an arrow initializer). `var i = ""; for (var i = [] in b) {}` is TS1189 and
+  TS2322 there, tttt has only TS1189; `for (var k = (a) => 1 of b) {}` misses TS7006. statement.c's for-each check
+  (FOR_EACH_LOOP_STATEMENT) never looks at the initializers. Only reachable after a grammar error (TS1189/TS1190) or a
+  parse error. [open]
 
 ## Lib files conflicting with each other (2026-10-23, corF: an old-tsconfig probe, `lib: ["dom", "webworker"]`)
 - **Conflicts between two lib files went unreported on the later lib's side** (tsgo reports 514 diagnostics on a

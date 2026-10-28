@@ -1,0 +1,42 @@
+//// [test/cases/ttttJsxTypeArgumentCommas.tsx] ////
+
+=== ttttJsxTypeArgumentCommas.tsx ===
+// A JSX element's type argument list takes a comma as an element too (tsc's isListElement(TypeArguments)): a missing
+// type, TS1110 at the comma, then the comma; a `>` after the last comma ends the list
+declare var f: any;
+>f : Symbol(f, Decl(ttttJsxTypeArgumentCommas.tsx, 2, 11))
+
+declare namespace JSX { interface IntrinsicElements { [k: string]: any } }
+>JSX : Symbol(JSX, Decl(ttttJsxTypeArgumentCommas.tsx, 2, 19))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(ttttJsxTypeArgumentCommas.tsx, 3, 23))
+>k : Symbol(k, Decl(ttttJsxTypeArgumentCommas.tsx, 3, 55))
+
+let a = <c<,>/>;
+>a : Symbol(a, Decl(ttttJsxTypeArgumentCommas.tsx, 4, 3))
+>c : Symbol(JSX.IntrinsicElements.__index, Decl(ttttJsxTypeArgumentCommas.tsx, 3, 53))
+> : Symbol(unknown)
+
+let b = <c<,,>/>;
+>b : Symbol(b, Decl(ttttJsxTypeArgumentCommas.tsx, 5, 3))
+>c : Symbol(JSX.IntrinsicElements.__index, Decl(ttttJsxTypeArgumentCommas.tsx, 3, 53))
+> : Symbol(unknown)
+> : Symbol(unknown)
+
+let d = <c<A,,B>/>;
+>d : Symbol(d, Decl(ttttJsxTypeArgumentCommas.tsx, 6, 3))
+>c : Symbol(JSX.IntrinsicElements.__index, Decl(ttttJsxTypeArgumentCommas.tsx, 3, 53))
+>A : Symbol(A)
+> : Symbol(unknown)
+>B : Symbol(B)
+
+let e = f<,>();
+>e : Symbol(e, Decl(ttttJsxTypeArgumentCommas.tsx, 7, 3))
+>f : Symbol(f, Decl(ttttJsxTypeArgumentCommas.tsx, 2, 11))
+> : Symbol(unknown)
+
+let g = f<,,>();
+>g : Symbol(g, Decl(ttttJsxTypeArgumentCommas.tsx, 8, 3))
+>f : Symbol(f, Decl(ttttJsxTypeArgumentCommas.tsx, 2, 11))
+> : Symbol(unknown)
+> : Symbol(unknown)
+

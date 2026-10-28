@@ -12697,7 +12697,10 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
                 }
                 Anchor type_a = anchor(&p);
                 TypeNode t;
-                if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
+                if (tok_is(next, ",")) {
+                    // (A comma is a list element too: a missing type, then the comma, `<c<,>/>`)
+                    expect_type(&p, TYPE_PRECEDENCE_NULL, &t);
+                } else if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
                     parse_error(&p, jsx_span_from_token(&p), 1110, "Type expected.");
                     break;
                 }

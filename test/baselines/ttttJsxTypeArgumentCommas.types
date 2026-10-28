@@ -1,0 +1,36 @@
+//// [test/cases/ttttJsxTypeArgumentCommas.tsx] ////
+
+=== ttttJsxTypeArgumentCommas.tsx ===
+// A JSX element's type argument list takes a comma as an element too (tsc's isListElement(TypeArguments)): a missing
+// type, TS1110 at the comma, then the comma; a `>` after the last comma ends the list
+declare var f: any;
+>f : any
+
+declare namespace JSX { interface IntrinsicElements { [k: string]: any } }
+>k : string
+
+let a = <c<,>/>;
+>a : any
+><c<,>/> : any
+>c : any
+
+let b = <c<,,>/>;
+>b : any
+><c<,,>/> : any
+>c : any
+
+let d = <c<A,,B>/>;
+>d : any
+><c<A,,B>/> : any
+>c : any
+
+let e = f<,>();
+>e : any
+>f<,>() : any
+>f : any
+
+let g = f<,,>();
+>g : any
+>f<,,>() : any
+>f : any
+
