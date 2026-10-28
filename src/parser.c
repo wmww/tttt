@@ -2803,6 +2803,11 @@ static bool parse_generic_decl_item(Parser* parent, TypeParamOwner owner, Generi
     bool name_missing = false;
     Tok t = tok_peek(&p);
     bool reserved = tok_is_word(t) && *t.start != '#' && is_reserved_word((csview){ t.start, t.end - t.start });
+    // (tsc's isIdentifier: not `await` in an await context, nor `yield` in a generator. A function's type parameters
+    // are in the context around it, tsc's parseTypeParameters before the function's own flags apply)
+    bool await_context = owner == TYPE_PARAM_OF_FUNCTION && p.shared->function_depth > 0 ? p.shared->outer_in_async :
+        p.shared->in_async || p.shared->in_static_block;
+    reserved |= (await_context && tok_is(t, "await")) || (p.shared->in_generator && tok_is(t, "yield"));
     if (reserved || !parse_identifier(&p, &name)) {
         // A type parameter starts at a modifier, or at `in` or `const` (tsc's isListElement for TypeParameters):
         // tsc's parseIdentifier then reports a reserved word (TS1359) or whatever else is there, and the name is
@@ -2810,6 +2815,8 @@ static bool parse_generic_decl_item(Parser* parent, TypeParamOwner owner, Generi
         if (!had_modifiers && !tok_is(t, "in") && !tok_is(t, "const")) return parse_fail(&p);
         expect_non_reserved_identifier(&p, &name);
         name_missing = true;
+    } else {
+        note_top_level_await_identifier(&p, span_sv(name)); // (Any Identifier node: tsc's newIdentifier)
     }
     hop_whitespace(&p);
 
@@ -3441,6 +3448,7 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
         parse_identifier_or_keyword(&p, nullptr);
         name = span_from(word);
     }
+    note_top_level_await_identifier(&p, span_sv(name)); // (Any Identifier node: tsc's newIdentifier)
     const char* end = p.pos;
 
     hop_whitespace(&p);
@@ -7487,6 +7495,13 @@ static Tristate arrow_function_tristate(Parser* p) {
         return TRISTATE_FALSE;
     }
     if (tok_is(first, "<")) {
+        // (tsc's isIdentifier() too: `<await>(x) => x` in an async function, or a module's top level reparsed in an
+        // await context, is a type assertion)
+        if ((p->shared->in_generator && tok_is(second, "yield")) ||
+            ((p->shared->in_async || p->shared->in_static_block) && tok_is(second, "await"))
+        ) {
+            return TRISTATE_FALSE;
+        }
         return tok_is_identifier(second) || tok_is(second, "const") ? TRISTATE_UNKNOWN : TRISTATE_FALSE;
     }
     return TRISTATE_UNKNOWN;
@@ -7500,7 +7515,11 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionFlags flag
     // a binary or unary operator, `b > (x: T) => x` is `b > (x` missing its `)`
     if (ctx.min_precedence >= ternary_precedence) return false;
     FunctionCtx saved = function_ctx_enter(parent, flags);
+    // (A speculative arrow function that fails leaves no `await` identifier noted: tsc's lookAhead and tryParse restore
+    // statementHasAwaitIdentifier, `({ await, a: await 1 })` isn't reparsed)
+    bool saw_await = parent->shared->saw_top_level_await;
     bool success = parse_arrow_function_inner(parent, ctx, committed, ret);
+    if (!success) parent->shared->saw_top_level_await = saw_await;
     function_ctx_leave(parent, saved);
     if (success) {
         ret->is_async = flags.is_async;
@@ -13373,7 +13392,7 @@ static bool parse_binding_element(Parser* parent, Binding* ret) {
 // tsc's isBindingIdentifier: an identifier that isn't a reserved word (`yield`/`await` are the caller's business)
 // An `await` identifier outside functions (tsc's ContainsPossibleTopLevelAwait), for the top-level await reparse
 static void note_top_level_await_identifier(Parser* p, csview name) {
-    if (name.size == 5 && p->shared->function_depth == 0 && !p->shared->in_property_name && !memcmp(name.buf, "await", 5)) {
+    if (name.size == 5 && !p->shared->in_property_name && !memcmp(name.buf, "await", 5)) {
         p->shared->saw_top_level_await = true;
     }
 }

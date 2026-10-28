@@ -1,0 +1,51 @@
+//// [test/cases/ttttAwaitTypeParameterTopLevel.ts] ////
+
+=== a.ts ===
+export {};
+const q = <await>(x: await) => x;
+>q : await
+><await>(x : await
+>(x : any
+>x : any
+>await : any
+>=> x : () => any
+>x : any
+
+=== b.ts ===
+export {};
+const q = <T, await>(x: T) => x;
+>q : T
+><T : T
+> : any
+>await : any
+>x : T
+>=> x : () => T
+>x : T
+
+=== c.ts ===
+async function f() { const q = <T, await>(x: T) => x; }
+>f : () => Promise<void>
+>q : T
+><T : T
+> : any
+>await : any
+>>(x : boolean
+> : any
+>(x : any
+>x : any
+>T : any
+>x : any
+
+=== d.ts ===
+export {};
+declare const x: any;
+>x : any
+
+({ await, a: await 1 });
+>({ await, a: await 1 }) : { await: any; a: number; }
+>{ await, a: await 1 } : { await: any; a: number; }
+>await : any
+>a : number
+>await 1 : 1
+>1 : 1
+

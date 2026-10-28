@@ -1,0 +1,35 @@
+//// [test/cases/ttttAwaitTypeParameterTopLevel.ts] ////
+
+=== a.ts ===
+export {};
+const q = <await>(x: await) => x;
+>q : Symbol(q, Decl(a.ts, 1, 5))
+>await : Symbol(await)
+>await : Symbol(await, Decl(a.ts, 1, 20))
+
+=== b.ts ===
+export {};
+const q = <T, await>(x: T) => x;
+>q : Symbol(q, Decl(b.ts, 1, 5))
+>T : Symbol(T)
+>await : Symbol(await, Decl(b.ts, 1, 13))
+>x : Symbol(x, Decl(b.ts, 1, 21))
+>T : Symbol(T)
+>x : Symbol(x, Decl(b.ts, 1, 21))
+
+=== c.ts ===
+async function f() { const q = <T, await>(x: T) => x; }
+>f : Symbol(f, Decl(c.ts, 0, 0))
+>q : Symbol(q, Decl(c.ts, 0, 26))
+>T : Symbol(T)
+>await : Symbol(await, Decl(c.ts, 0, 34))
+
+=== d.ts ===
+export {};
+declare const x: any;
+>x : Symbol(x, Decl(d.ts, 1, 13))
+
+({ await, a: await 1 });
+>await : Symbol(await, Decl(d.ts, 2, 2))
+>a : Symbol(a, Decl(d.ts, 2, 9))
+

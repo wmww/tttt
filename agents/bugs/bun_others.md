@@ -178,7 +178,7 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
   `||` chains: checkGrammarModifiers before a class's or interface's heritage clauses and a variable statement's list,
   the heritage clauses' TS1172/TS1174/TS1175 before the class's type parameters, TS1358 before a tag's type
   arguments) or never looks (import type arguments, the heritage elements past the base): 28-C10a 28-P6a 28-P6b
-  28-P6c 28-P7b 02-C21a 28-C10b 28-C11b 28-P8a 28-P8b 28-C23 56-L20 62-L12. [fixed 08b400854]
+  28-P6c 28-P7b 02-C21a 28-C10b 28-C11b 28-P8a 28-P8b 28-C23 56-L20 62-L12. [fixed 2a93a79fe]
 - Grammar errors in what tsc never checks, still open: the initializers of a function type's parameters (84-R02c:
   +TS1174/TS1172/TS1173/TS1098 in a class expression there; tsc says TS2371 only), a `for` statement's declaration
   list after TS1036 in an ambient block (28-C26d: +TS1009), 56-L09 (+TS1326 for `extends import<string>, v`: the
@@ -188,7 +188,7 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
 - Decorators followed by something other than a class: tsc's parseDeclarationWorker dispatches on the keyword after
   the decorators and modifiers without the lookahead a statement takes, and says TS1146 "Declaration expected" only
   when none matches; a class member that is only decorators is a property missing its name (TS1146): 28-P4b 32-C25
-  32-C25b 32-C25c 34-P5 57-L02b 57-L02f 61-L14. [fixed 0b8561711]
+  32-C25b 32-C25c 34-P5 57-L02b 57-L02f 61-L14. [fixed e51ced678]
 - Decorators before `export;` (57-L02c: '{' expected, an export declaration) and before `import(...)`/`import.meta`
   (84-R08c, 84-R08d: an import declaration whose module specifier is an expression, TS1141/TS1109; tttt's import
   parser has no such path), decorators in an object binding pattern (53-L16b: TS1180). tttt: TS1146 then +TS1128.
@@ -196,7 +196,7 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
 - Modifiers on an object literal's methods: tsc's checkGrammarMethod runs the whole checkGrammarModifiers first
   (TS1244 abstract, TS1024 readonly, TS1028/TS1029/TS1040...) and says TS1184 only when that passes; either ends the
   member's grammar checks (no '{' expected for a missing body); `readonly` stays a modifier of the property (TS2540,
-  TS2704): 02-C13b 28-C18a 32-C10a 32-C10c 32-C10d 53-L18. [fixed 1833da4b3]
+  TS2704): 02-C13b 28-C18a 32-C10a 32-C10c 32-C10d 53-L18. [fixed a6685537f]
 - Object literal accessors with `abstract` on one of a pair: TS2676 on both (02-C13c, missing); a class expression with
   modifiers in an expression (`@dec public class {}`, 80-R08: tsc parses them, TS1184). [open]
 - Decorators on the parameters of signatures (function and constructor types, interface members, `@await` in an
@@ -204,20 +204,25 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
   and cascades (+TS1005 +TS1109 +TS1128 +TS1131 +TS1146 +TS1434): 56-L14b 83-R20a. JavaScript `function h(export
   @dec x)`: modifiers before decorators, TS8012 (tttt TS1359): 84-R01. [open]
 - `yield` takes an operand only on the same line and is an AssignmentExpression (no `?:` or binary operator after
-  it): -TS1109/-TS1005 43-X6a 43-X6b 43-X6c 43-X6e. [fixed a92d14079]
+  it): -TS1109/-TS1005 43-X6a 43-X6b 43-X6c 43-X6e. [fixed 69c3e0a83]
 - A private name where an identifier name goes: tsc's tokenIsIdentifierOrKeyword says yes to PrivateIdentifier (it
   follows Identifier among the token kinds), so `#a` is an Identifier node in a type reference (TS2304), a JSX tag or
   attribute name, an import attribute's key, and after `asserts` parseIdentifier's TS18016; not where isStartOfType
-  is asked (an indexed access, type arguments): 43-P8e 43-X5f 56-L19 80-R01a 80-R01b 43-C13d. [fixed ee0c97bea]
+  is asked (an indexed access, type arguments): 43-P8e 43-X5f 56-L19 80-R01a 80-R01b 43-C13d. [fixed cf9b96c9c]
 - `await` at the top level of a module in a computed property name: tsc's parsePropertyName keeps an `await`
   identifier there from marking its statement for the top-level-await reparse, so it stays an identifier (TS1262 from
   the binder, a class member's computed name being outside the class, a type's too; TS2304), and `await.x` is no
-  await expression: 56-L11 93-P01b. [fixed f7a6a742d]
-- `<await>(x: await) => x` at a module's top level isn't an arrow function to tsc (74-R15d: tttt TS1262). [open]
+  await expression: 56-L11 93-P01b. [fixed 2ef4eb206]
+- `<await>(x: await) => x` and `<T, await>(x: T) => x` at a module's top level: any `await` Identifier (a type
+  parameter's, a type reference's, inside a function too) marks the statement for the await-context reparse, where
+  they start no arrow function; a failed speculative arrow function marks nothing (74-R15d). [fixed COMMIT7]
 - JSX lexing and recovery: attribute names and values (`b=>x`, `<a << />`, `<a /= />`, a comment before a value,
   backslashes in attribute strings: 43-C13e 43-C13f 43-C13g 43-C5c), `<<`/`<=` after a tag name (tsc scans one token:
   43-C4b 93-P04a 93-P04c 93-P04d 93-P04e), a merge conflict marker among the children (tsc ends the element there:
-  43-P7b 43-X5h 74-R16a 74-R16b 74-R16c), TSX generic arrows `<T,>x => x` and `</T>` in type parameter lists
+  43-P7b 43-X5h 74-R16a 74-R16b 74-R16c: the marker's ConflictMarkerTrivia token starts where the JSX text did and no
+  rule consumes it, so every expectation after the element ('</', ')', '{', a list's) is deduplicated at that one
+  position until a list's abortParsingListOrMoveToNextToken skips it and parsing goes on after the marker's line;
+  tttt continues after the marker at once: it needs a pending unconsumable token in the parser), TSX generic arrows `<T,>x => x` and `</T>` in type parameter lists
   (56-L05b 56-L06). ±TS1003 ±TS1005 ±TS1109 ±TS1128 +TS1139 +TS1145. [open]
 - Escaped keywords: `\u0065lse;` is the keyword to tsc's statement parser (TS1128, TS1135 as an argument: 82-R17c
   82-R17e); an escaped modifier before a line break or a conflict marker isn't one (tttt +TS1260: 83-R03a 93-P05);
