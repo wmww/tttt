@@ -39,7 +39,9 @@ Each one mutant:
 - interfaceExtendingOptionalChain extends-object: `interface C1 extends Object?.Bar {}` is TS2499 *and* the name
   resolved as a type reference (TS2702 'Object' only refers to a type...; TS2503/TS2694 for others): tsc's
   getTypeReferenceName takes the optional chain as an entity name (isEntityNameExpression ignores `?.`). tttt keeps
-  it as an invalid expression (HeritageClauses.invalid) without a TypeNode, so nothing resolves it. [open]
+  it as an invalid expression (HeritageClauses.invalid) without a TypeNode, so nothing resolves it. (cor7 2026-10-28:
+  tsc also takes it as the interface's base type, getInterfaceBaseTypeNodes. The fix is in parser.c's heritage element
+  parse: an optional-chain entity name becomes a type reference flagged for TS2499, kept in `types`. Mutation-only.) [open]
 - twiceNestedKeyofIndexInference add-optional: an overload's signature in TS2769 prints
   `Required<Pick<State, "d">>` in full in tsc, `Required<...>` in tttt (the elision budget of a signature in an
   overload list). [text]
