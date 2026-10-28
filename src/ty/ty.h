@@ -1469,6 +1469,12 @@ struct Checker {
     // getContextuallyTypedParameterType finds the argument's pushed contextual type)
     FunctionImpl const* annotated_context_function;
     Signature const* annotated_context_signature;
+    // The function whose parameters assign_contextual_signature_as() is assigning their contextual types, and the
+    // contextual signature before the inference fixed it: a parameter not assigned yet, read by an earlier one's
+    // initializer, is its type at its position there, not remembered (tsc's getTypeOfSymbol doesn't cache a parameter
+    // of a context-sensitive signature, isParameterOfContextSensitiveSignature; its assignment comes after)
+    FunctionImpl const* assigning_context_function;
+    Signature const* assigning_context_signature;
     // Every generic call inferring now, innermost first (OuterInference.enclosing), and the serial the last one got:
     // an object literal remembers which one its contextual type came from (KEY_LITERAL_INFERENCE)
     struct OuterInference* active_inferences;

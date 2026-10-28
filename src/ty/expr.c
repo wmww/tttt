@@ -2052,6 +2052,10 @@ static void assign_contextual_signature_as(
     bool own_type_params = vec_generic_item_size(&function->generic.items) && !function_impl_rare(function)->jsdoc_signature_type &&
         !ty_function_is_context_sensitive(function);
     u32 index = 0;
+    FunctionImpl const* outer_assigning = my assigning_context_function;
+    Signature const* outer_assigning_signature = my assigning_context_signature;
+    my assigning_context_function = function;
+    my assigning_context_signature = unfixed;
     for_each (i, vec_function_arg, &function->args) {
         bool is_this = i->initializer.binding.tag == BINDING_IDENTIFIER && span_equals(i->initializer.binding.content_span, "this");
         if (own_type_params && !is_this) continue;
@@ -2114,6 +2118,8 @@ static void assign_contextual_signature_as(
             *intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_PARAM_UNWIDENED, (u64)(uintptr_t)&i->initializer }, 2) = unwidened;
         }
     }
+    my assigning_context_function = outer_assigning;
+    my assigning_context_signature = outer_assigning_signature;
     set_contextual_return(me, function, unfixed);
 }
 

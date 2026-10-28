@@ -1,0 +1,70 @@
+//// [test/cases/ttttUnassignedContextualParameterRead.ts] ////
+
+=== ttttUnassignedContextualParameterRead.ts ===
+// An earlier parameter's default reads a later unannotated parameter of a contextually typed function (bun 99-V4
+// getTypeAtPosition__01/08, instantiateContextualSignature__01): tsc's assignContextualParameterTypes checks the
+// default before it assigns the later one, whose getTypeOfSymbol is then its type in the contextual signature before
+// the inference fixed it (`T`), not cached (isParameterOfContextSensitiveSignature); it is assigned its instantiated
+// type after. tttt typed it implicitly any (TS7006) for good. (The types baseline of the `b` in the default shows tsc's
+// later type, number, where tttt keeps the checked expression's `T`: types only)
+export {}
+declare function pair<T>(first: T, cb: (a: T, b: T) => void): void;
+>pair : <T>(first: T, cb: (a: T, b: T) => void) => void
+>first : T
+>cb : (a: T, b: T) => void
+>a : T
+>b : T
+
+pair(1, (a = b, b) => {
+>pair(1, (a = b, b) => {  const first: never = a;  const second: never = b;}) : void
+>pair : <T>(first: T, cb: (a: T, b: T) => void) => void
+>1 : 1
+>(a = b, b) => {  const first: never = a;  const second: never = b;} : (a: number | undefined, b: number) => void
+>a : number
+>b : number
+>b : number
+
+  const first: never = a;
+>first : never
+>a : number
+
+  const second: never = b;
+>second : never
+>b : number
+
+});
+declare function accept(f: (x: number) => unknown): number;
+>accept : (f: (x: number) => unknown) => number
+>f : (x: number) => unknown
+>x : number
+
+declare function use(cb: (a: number, b: string) => void): void;
+>use : (cb: (a: number, b: string) => void) => void
+>cb : (a: number, b: string) => void
+>a : number
+>b : string
+
+use(function me(a = accept(me), b) {
+>use(function me(a = accept(me), b) {  const first: never = a;  const second: never = b;  return a;}) : void
+>use : (cb: (a: number, b: string) => void) => void
+>function me(a = accept(me), b) {  const first: never = a;  const second: never = b;  return a;} : (a: number | undefined, b: string) => number
+>me : (a: number | undefined, b: string) => number
+>a : number
+>accept(me) : number
+>accept : (f: (x: number) => unknown) => number
+>me : (a: number | undefined, b: string) => number
+>b : string
+
+  const first: never = a;
+>first : never
+>a : number
+
+  const second: never = b;
+>second : never
+>b : string
+
+  return a;
+>a : number
+
+});
+

@@ -4141,6 +4141,30 @@ static void settle_parameter_context(Checker* me, InitializedBinding const* para
     ty_settle_function_context(me, function);
 }
 
+// A parameter of the function whose contextual types are being assigned, not assigned yet (an earlier parameter's
+// initializer reads it: `(a = b, b) => ...`): its type at its position in the contextual signature as it was before the
+// inference fixed it, not remembered (tsc's getTypeOfSymbol leaves a parameter of a context-sensitive signature
+// uncached, isParameterOfContextSensitiveSignature, and assignContextualParameterTypes assigns it after). Only a plain
+// name without a default or `...` (its optionality and rest type would be getTypeForVariableLikeDeclaration's)
+static Ty const* parameter_while_assigning(Checker* me, InitializedBinding const* parameter) {
+    FunctionImpl const* function = my assigning_context_function;
+    if (!function || initialized_binding_rare(parameter)->context_function != function || !my assigning_context_signature) return nullptr;
+    if (parameter->binding.tag != BINDING_IDENTIFIER || parameter->binding.has_explicit_type ||
+        initialized_binding_value(parameter)->tag != EXPR_IMPLICIT_ANY || ty_contextual_parameter_type(me, parameter)
+    ) {
+        return nullptr;
+    }
+    LazyMemo* own = lazy_type_state_peek((LazyType*)&parameter->lazy_type);
+    if (own && own->evaluation_started) return nullptr;
+    u32 at = 0;
+    for_each (i, vec_function_arg, &function->args) {
+        if (&i->initializer == parameter) return i->rest ? nullptr : ty_signature_param_type_at(me, my assigning_context_signature, at);
+        bool is_this = i->initializer.binding.tag == BINDING_IDENTIFIER && span_equals(i->initializer.binding.content_span, "this");
+        if (!is_this) at++;
+    }
+    return nullptr;
+}
+
 static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
     Binding const* parent = binding->parent;
     // A catch variable (the only root without a source) is any, or unknown under useUnknownInCatchVariables
@@ -4166,7 +4190,10 @@ static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
             }
         }
         if (binding->source->tag == LAZY_TYPE_INITIALIZED_BINDING) {
-            settle_parameter_context(me, c_container_of(binding->source, InitializedBinding, lazy_type));
+            InitializedBinding const* parameter = c_container_of(binding->source, InitializedBinding, lazy_type);
+            Ty const* unassigned = parameter_while_assigning(me, parameter);
+            if (unassigned) return unassigned;
+            settle_parameter_context(me, parameter);
         }
         return lazy_type_get(binding->source);
     }

@@ -98,13 +98,22 @@ type/typecheck walks don't reproduce; none has a cheap rule.
 - (cor4, 2026-10-28) A variable initialized by a function expression wasn't typed before its initializer was checked
   (tsc's checkVariableLikeDeclaration asks getTypeOfSymbol first), so the function's first check ran with the variable
   settled and `const h = (a = h) => 1` missed TS7022. initialized_binding_typecheck() now asks the type first for
-  EXPR_FUNCTION initializers as it did for calls. Test ttttFunctionInitializerTypedFirst. [fixed COMMIT-next]
+  EXPR_FUNCTION initializers as it did for calls. Test ttttFunctionInitializerTypedFirst. [fixed 57d47b4f8]
 - (cor4, 2026-10-28) The return annotation of a function expression isn't lowered at its first check (tsc's
   checkSignatureDeclaration checks the return type node there): `const f = (): [ReturnType<typeof f>] => 1` is TS7022
   on f and TS2322 `number` to `[any]` in tsc, TS2577 alone in tttt. Lowering it in check_function_parameters_first()
   (expr.c) fixes this but breaks ttttAliasReentersBelowCallBarrier (an arrow's `: Part` return inside a call reaches the
   alias in flight: tsc resolves it again below the call's barrier, the lowering made it circular for good): it needs
   the reentrancy of notes/reentrancy.md for a variable's type, not only the alias's. [open]
+- (cor4, 2026-10-28, bun 99-V4 getTypeAtPosition__01/08, instantiateContextualSignature__01,
+  assignContextualParameterTypes__03) An earlier parameter's default reading a later unannotated parameter of a
+  contextually typed function, `pair(1, (a = b, b) => ...)`: tsc reads b's type in the contextual signature before the
+  inference fixed it (`T`), uncached (isParameterOfContextSensitiveSignature), and assigns its instantiated type after;
+  tttt typed b any (TS7006) for good. lower.c's parameter_while_assigning() (during assign_contextual_signature_as(),
+  Checker.assigning_context_function/signature) for a plain name without default or rest. Left: the types baseline
+  of that `b` (tsc's typeWriter rechecks it, number; tttt keeps the checked expression's T), and a later parameter with
+  a default or `...` (getTypeForVariableLikeDeclaration's optionality and rest type) still goes through its lazy type.
+  Test ttttUnassignedContextualParameterRead (types component fails, that baseline). [fixed COMMIT-next]
 - (cor2, 2026-10-28, bun 99-V4) **Accessor write-type circularity**: tsc pushes an accessor's write type
   (getWriteTypeOfAccessors, TypeSystemPropertyNameWriteType) and reports a failing pop as TS2502 at the setter's name,
   and a union or intersection property asks each member's write type when it is made (createUnionOrIntersectionProperty).

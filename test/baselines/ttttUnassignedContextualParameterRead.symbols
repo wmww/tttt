@@ -1,0 +1,68 @@
+//// [test/cases/ttttUnassignedContextualParameterRead.ts] ////
+
+=== ttttUnassignedContextualParameterRead.ts ===
+// An earlier parameter's default reads a later unannotated parameter of a contextually typed function (bun 99-V4
+// getTypeAtPosition__01/08, instantiateContextualSignature__01): tsc's assignContextualParameterTypes checks the
+// default before it assigns the later one, whose getTypeOfSymbol is then its type in the contextual signature before
+// the inference fixed it (`T`), not cached (isParameterOfContextSensitiveSignature); it is assigned its instantiated
+// type after. tttt typed it implicitly any (TS7006) for good. (The types baseline of the `b` in the default shows tsc's
+// later type, number, where tttt keeps the checked expression's `T`: types only)
+export {}
+declare function pair<T>(first: T, cb: (a: T, b: T) => void): void;
+>pair : Symbol(pair, Decl(ttttUnassignedContextualParameterRead.ts, 6, 9))
+>T : Symbol(T, Decl(ttttUnassignedContextualParameterRead.ts, 7, 22))
+>first : Symbol(first, Decl(ttttUnassignedContextualParameterRead.ts, 7, 25))
+>T : Symbol(T, Decl(ttttUnassignedContextualParameterRead.ts, 7, 22))
+>cb : Symbol(cb, Decl(ttttUnassignedContextualParameterRead.ts, 7, 34))
+>a : Symbol(a, Decl(ttttUnassignedContextualParameterRead.ts, 7, 40))
+>T : Symbol(T, Decl(ttttUnassignedContextualParameterRead.ts, 7, 22))
+>b : Symbol(b, Decl(ttttUnassignedContextualParameterRead.ts, 7, 45))
+>T : Symbol(T, Decl(ttttUnassignedContextualParameterRead.ts, 7, 22))
+
+pair(1, (a = b, b) => {
+>pair : Symbol(pair, Decl(ttttUnassignedContextualParameterRead.ts, 6, 9))
+>a : Symbol(a, Decl(ttttUnassignedContextualParameterRead.ts, 8, 9))
+>b : Symbol(b, Decl(ttttUnassignedContextualParameterRead.ts, 8, 15))
+>b : Symbol(b, Decl(ttttUnassignedContextualParameterRead.ts, 8, 15))
+
+  const first: never = a;
+>first : Symbol(first, Decl(ttttUnassignedContextualParameterRead.ts, 9, 7))
+>a : Symbol(a, Decl(ttttUnassignedContextualParameterRead.ts, 8, 9))
+
+  const second: never = b;
+>second : Symbol(second, Decl(ttttUnassignedContextualParameterRead.ts, 10, 7))
+>b : Symbol(b, Decl(ttttUnassignedContextualParameterRead.ts, 8, 15))
+
+});
+declare function accept(f: (x: number) => unknown): number;
+>accept : Symbol(accept, Decl(ttttUnassignedContextualParameterRead.ts, 11, 3))
+>f : Symbol(f, Decl(ttttUnassignedContextualParameterRead.ts, 12, 24))
+>x : Symbol(x, Decl(ttttUnassignedContextualParameterRead.ts, 12, 28))
+
+declare function use(cb: (a: number, b: string) => void): void;
+>use : Symbol(use, Decl(ttttUnassignedContextualParameterRead.ts, 12, 59))
+>cb : Symbol(cb, Decl(ttttUnassignedContextualParameterRead.ts, 13, 21))
+>a : Symbol(a, Decl(ttttUnassignedContextualParameterRead.ts, 13, 26))
+>b : Symbol(b, Decl(ttttUnassignedContextualParameterRead.ts, 13, 36))
+
+use(function me(a = accept(me), b) {
+>use : Symbol(use, Decl(ttttUnassignedContextualParameterRead.ts, 12, 59))
+>me : Symbol(me, Decl(ttttUnassignedContextualParameterRead.ts, 14, 4))
+>a : Symbol(a, Decl(ttttUnassignedContextualParameterRead.ts, 14, 16))
+>accept : Symbol(accept, Decl(ttttUnassignedContextualParameterRead.ts, 11, 3))
+>me : Symbol(me, Decl(ttttUnassignedContextualParameterRead.ts, 14, 4))
+>b : Symbol(b, Decl(ttttUnassignedContextualParameterRead.ts, 14, 31))
+
+  const first: never = a;
+>first : Symbol(first, Decl(ttttUnassignedContextualParameterRead.ts, 15, 7))
+>a : Symbol(a, Decl(ttttUnassignedContextualParameterRead.ts, 14, 16))
+
+  const second: never = b;
+>second : Symbol(second, Decl(ttttUnassignedContextualParameterRead.ts, 16, 7))
+>b : Symbol(b, Decl(ttttUnassignedContextualParameterRead.ts, 14, 31))
+
+  return a;
+>a : Symbol(a, Decl(ttttUnassignedContextualParameterRead.ts, 14, 16))
+
+});
+
