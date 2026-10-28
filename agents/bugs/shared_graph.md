@@ -141,4 +141,4 @@ lazy parts (a signature instance's resolution). Default build: the macros are em
   (its word POISONed, its memos private) and no worker of the pass adopts half a function body's value; the graph is
   then dropped with the pass at the rerun. better-drizzle's pass 1422 -> 883 ms, stopped early, CPU 12.3 -> 10.4 s (best
   of 3, load 4-5); vue CPU 2.14 -> 1.97 s. What remains is the flag's own premium on the hub file before the TS2502
-  that triggers the stop (types/plugins.ts 628 ms flagged against 155 ms plain). [fixed WT-SG-STOP]
+  that triggers the stop (types/plugins.ts 628 ms flagged against 155 ms plain). [fixed 9460254b8]
