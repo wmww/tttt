@@ -1,0 +1,43 @@
+//// [test/cases/ttttUnaryOperandChecked.ts] ////
+
+=== ttttUnaryOperandChecked.ts ===
+// tsc checks the operand of `+` and `delete` even though the result type doesn't need it: an equality on a
+// loop's partial flow types reports, a self-reference is circular (bun checks-of-a-value-assigned-on-a-loop-back-edge)
+declare const more: boolean;
+>more : Symbol(more, Decl(ttttUnaryOperandChecked.ts, 2, 13))
+
+function d24() { let x: string | number = "a"; while (more) { x = +(x === 5); } }
+>d24 : Symbol(d24, Decl(ttttUnaryOperandChecked.ts, 2, 28))
+>x : Symbol(x, Decl(ttttUnaryOperandChecked.ts, 3, 20))
+>more : Symbol(more, Decl(ttttUnaryOperandChecked.ts, 2, 13))
+>x : Symbol(x, Decl(ttttUnaryOperandChecked.ts, 3, 20))
+>x : Symbol(x, Decl(ttttUnaryOperandChecked.ts, 3, 20))
+
+var a = +a;
+>a : Symbol(a, Decl(ttttUnaryOperandChecked.ts, 4, 3))
+>a : Symbol(a, Decl(ttttUnaryOperandChecked.ts, 4, 3))
+
+const b = { get v() { return +b.v; } };
+>b : Symbol(b, Decl(ttttUnaryOperandChecked.ts, 5, 5))
+>v : Symbol(v, Decl(ttttUnaryOperandChecked.ts, 5, 11))
+>b.v : Symbol(v, Decl(ttttUnaryOperandChecked.ts, 5, 11))
+>b : Symbol(b, Decl(ttttUnaryOperandChecked.ts, 5, 5))
+>v : Symbol(v, Decl(ttttUnaryOperandChecked.ts, 5, 11))
+
+const o: { x?: number } = {};
+>o : Symbol(o, Decl(ttttUnaryOperandChecked.ts, 6, 5))
+>x : Symbol(x, Decl(ttttUnaryOperandChecked.ts, 6, 10))
+
+function d25() { let x: string | number = "a"; while (more) { x = delete o[(x === 5) ? "x" : "x"] ? 1 : 2; } }
+>d25 : Symbol(d25, Decl(ttttUnaryOperandChecked.ts, 6, 29))
+>x : Symbol(x, Decl(ttttUnaryOperandChecked.ts, 7, 20))
+>more : Symbol(more, Decl(ttttUnaryOperandChecked.ts, 2, 13))
+>x : Symbol(x, Decl(ttttUnaryOperandChecked.ts, 7, 20))
+>o : Symbol(o, Decl(ttttUnaryOperandChecked.ts, 6, 5))
+>x : Symbol(x, Decl(ttttUnaryOperandChecked.ts, 7, 20))
+
+var c = { y: delete c.y };
+>c : Symbol(c, Decl(ttttUnaryOperandChecked.ts, 8, 3))
+>y : Symbol(y, Decl(ttttUnaryOperandChecked.ts, 8, 9))
+>c : Symbol(c, Decl(ttttUnaryOperandChecked.ts, 8, 3))
+

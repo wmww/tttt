@@ -17,8 +17,9 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   checks-of-a-value-assigned-on-a-loop-back-edge a2/a3): tsc reports an equality's TS2367 while control flow evaluates
   an assigned value on a loop's first-iteration types, unless CheckModeTypeOnly (getTypeOfExpression) reaches it
   (checkBinaryLikeExpression's reportOperatorErrorUnless). ty/expr.c checks equalities with ty_flow_partial_reports(),
-  Checker.type_only_root and type_only_reaches() for the propagation. Left: `+(x === 5)` (a3 d24: tttt's flow doesn't
-  evaluate a unary plus's operand). Test ttttLoopPartialEqualityChecks [fixed 528301bb9].
+  Checker.type_only_root and type_only_reaches() for the propagation. Test ttttLoopPartialEqualityChecks [fixed
+  528301bb9]. `+(x === 5)` (a3 d24): check_unary() didn't evaluate a unary plus's (or `delete`'s) operand, also
+  missing TS7022/TS7023 on `var a = +a`; test ttttUnaryOperandChecked [fixed COMMIT-next].
 - TS2490/TS2767 both ways (04-C9b, 04-C2a, 93-R19a, 99-V4 checkIteratedTypeOrElementType__01/02/06, 99-V7): tsc reports
   an iterator's method problems only from the first getIterationTypesOfIterable of a (type, cache-use) key, if it had
   an error node; flow's for-of variables and destructured elements, a destructuring assignment's rest target, a

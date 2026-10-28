@@ -3582,7 +3582,9 @@ static Ty const* check_unary(Checker* me, UnaryOpExpr const* unary) {
         }
         case UNARY_OP_VOID: return ty_intrinsic(me, TY_UNDEFINED_WIDENING);
         case UNARY_OP_TILDE: return unary_result_type(me, ty_expr_type(me, operand));
-        case UNARY_OP_DELETE: return ty_intrinsic(me, TY_BOOLEAN);
+        case UNARY_OP_DELETE:
+            ty_expr_type(me, operand); // (tsc's checkDeleteExpression checks the operand first)
+            return ty_intrinsic(me, TY_BOOLEAN);
         case UNARY_OP_AWAIT: return ty_awaited(me, ty_expr_type(me, operand));
 
         case UNARY_OP_YIELD:
@@ -3603,7 +3605,12 @@ static Ty const* check_unary(Checker* me, UnaryOpExpr const* unary) {
                 Value value = value_bigint_negated(&operand->literal); // (bigints have no -0: printed and keyed as 0)
                 return ty_fresh_literal(me, ty_literal(me, &value));
             }
-            if (unary->op == UNARY_OP_PLUS) return ty_intrinsic(me, TY_NUMBER);
+            // (the operand is checked even when `+` makes any of it a number: `x = +(x === 5)` on a loop's back edge
+            // reports the comparison, `var a = +a` is circular)
+            if (unary->op == UNARY_OP_PLUS) {
+                ty_expr_type(me, operand);
+                return ty_intrinsic(me, TY_NUMBER);
+            }
             return unary_result_type(me, ty_expr_type(me, operand));
 
         case UNARY_OP_LEFT_PLUS_PLUS:

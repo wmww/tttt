@@ -1,0 +1,28 @@
+ttttUnaryOperandChecked.ts(4,69): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+ttttUnaryOperandChecked.ts(5,5): error TS7022: 'a' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+ttttUnaryOperandChecked.ts(6,17): error TS7023: 'v' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+ttttUnaryOperandChecked.ts(8,77): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+ttttUnaryOperandChecked.ts(9,5): error TS7022: 'c' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+
+
+==== ttttUnaryOperandChecked.ts (5 errors) ====
+    // tsc checks the operand of `+` and `delete` even though the result type doesn't need it: an equality on a
+    // loop's partial flow types reports, a self-reference is circular (bun checks-of-a-value-assigned-on-a-loop-back-edge)
+    declare const more: boolean;
+    function d24() { let x: string | number = "a"; while (more) { x = +(x === 5); } }
+                                                                        ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    var a = +a;
+        ~
+!!! error TS7022: 'a' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    const b = { get v() { return +b.v; } };
+                    ~
+!!! error TS7023: 'v' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    const o: { x?: number } = {};
+    function d25() { let x: string | number = "a"; while (more) { x = delete o[(x === 5) ? "x" : "x"] ? 1 : 2; } }
+                                                                                ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    var c = { y: delete c.y };
+        ~
+!!! error TS7022: 'c' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    
