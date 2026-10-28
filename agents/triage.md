@@ -237,3 +237,8 @@ intersection's property symbol to bugs/type_core.md.
 - `const [...r] = c` with `c: C`, `type C = ["a", 1, string] | ["b", 2, number]`: tsgo prints `r` as `["a", 1, string] | ["b", 2, number]`, tttt as `C` (the rest of a tuple union keeps the alias). Found by corF 2026-10-24. [open]
 - TS5115's column on postcss-selector-parser@6.0.13's `postcss-selector-parser.d.ts:323` (vuejs/vue at 9e887079,
   bench config): tsgo column 15, tttt 28 (the same `Container`/`Diff` limit vue 3's corpus has; text only). [text]
+- Three variants of tsc's isEmptyAnonymousObjectType: ty/checker.c's exported `ty_is_empty_anonymous_object()` (empty
+  symbol, a type literal by its syntax, else members), ty/check.c's `is_empty_anonymous_object()` (not a function's
+  type, members only) and ty/flow.c's (also not a mapped instance). tsc has one rule; whether the differences are
+  deliberate (each caller's tsc site) or drift is unknown; one rule with a probe per caller would settle it (ref's
+  duplicate scan, 2026-10-28). [open]
