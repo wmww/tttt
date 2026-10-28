@@ -680,12 +680,16 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
                 }
                 if (i->target.rest && i_index + 1 < vec_object_binding_item_size(&my object)) {
                     error_ctx_grammar_error_d(errs, i->target.content_span, 2462, "A rest element must be last in a destructuring pattern.");
-                                    } else if (i->target.rest_property_name) {
+                } else if (i->target.rest_property_name) {
                     error_ctx_grammar_error_d(errs, i->target.content_span, 2566, "A rest element cannot have a property name.");
                 } else if (i->target.rest && i->target.default_value) {
                     binding_report_rest_initializer(&i->target, errs);
-                } else if (i->target.rest && !ty_object_rest_source_valid(current_checker, binding_rest_source(me, initializer))) {
-                    // (tsc's getTypeForBindingElement: isValidSpreadType of the parent)
+                }
+                // (tsc's getTypeForBindingElement: isValidSpreadType of the parent, whatever the grammar says about the
+                // element: not last, an initializer)
+                if (i->target.rest && !i->target.rest_property_name &&
+                    !ty_object_rest_source_valid(current_checker, binding_rest_source(me, initializer))
+                ) {
                     error_ctx_error_d(errs, i->target.content_span, 2700, "Rest types may only be created from object types.");
                 }
                 if (i->private_name) {

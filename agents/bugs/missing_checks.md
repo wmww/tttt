@@ -466,7 +466,10 @@ Seed 41: 10 -> 7 differing, seed 42: 13 -> 5. Left, each looked at:
   initializes (unknownSymbolOffContextualType1 swap-stmts). See "Circularity tsc finds and tttt doesn't". [open]
 - seed 42 objectRestNegative undefined-init (strictNullChecks off): `let o = undefined; var { ...m, a } = o` is TS2700
   in tsgo when the pattern has another element (the initializer isn't widened to any under the pattern's contextual
-  type), not with the rest alone; tttt reports neither and then TS2322 instead of TS2741 for `({ b, ...na } = o)`. [open]
+  type), not with the rest alone; tttt reports neither and then TS2322 instead of TS2741 for `({ b, ...na } = o)`.
+  Re-probed 2026-10-28: TS2700 now goes with TS2462/TS1186 on the element (binding.c checked it only when the grammar
+  was fine), and the rest of null or undefined alone is `{}` (lower.c object_rest_type(), tsc's getRestType filter):
+  TS2739 at the assignment. Tests ttttObjectRestNotLastNonObject, ttttObjectRestOfUndefined. [fixed PENDING]
 - seed 42 signatureCombiningRestParameters1 add-optional: a union of signatures one of which has a rest parameter of
   type `[string] | undefined` (TS2370): tsgo's combined signature reports a spread argument as TS2556, tttt combines
   the rest parameter to never and says TS2345. [open]

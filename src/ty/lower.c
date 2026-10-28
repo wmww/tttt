@@ -3598,7 +3598,8 @@ static Ty const* object_rest_type(Checker* me, Ty const* source, TyList pattern,
         if (mapped != stack) free((void*)mapped);
         return ret;
     }
-    if (source->flags & TYF_NEVER) return ty_empty_object_type(me);
+    // (Null and undefined alone are filtered out to never too: tsc's getRestType, `({ ...r } = undefined)` is `{}`)
+    if (source->flags & (TYF_NEVER | TYF_NULLABLE)) return ty_empty_object_type(me);
     if (ty_is_generic_object(me, source) || pattern_has_generic_key(me, pattern)) return generic_rest_type(me, source, pattern);
     Ty const* apparent = ty_apparent_type(me, source);
     if (apparent->kind == TY_INTERSECTION && !ty_is_generic_index(source)) return intersection_rest_type(me, apparent, pattern, symbol);

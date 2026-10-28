@@ -1,0 +1,39 @@
+ttttObjectRestNotLastNonObject.ts(4,10): error TS2462: A rest element must be last in a destructuring pattern.
+ttttObjectRestNotLastNonObject.ts(4,10): error TS2700: Rest types may only be created from object types.
+ttttObjectRestNotLastNonObject.ts(4,13): error TS2339: Property 'a' does not exist on type 'number | undefined'.
+ttttObjectRestNotLastNonObject.ts(5,10): error TS2700: Rest types may only be created from object types.
+ttttObjectRestNotLastNonObject.ts(5,12): error TS1186: A rest element cannot have an initializer.
+ttttObjectRestNotLastNonObject.ts(6,15): error TS2700: Rest types may only be created from object types.
+ttttObjectRestNotLastNonObject.ts(8,10): error TS2462: A rest element must be last in a destructuring pattern.
+ttttObjectRestNotLastNonObject.ts(8,10): error TS2700: Rest types may only be created from object types.
+ttttObjectRestNotLastNonObject.ts(8,14): error TS2339: Property 'a2' does not exist on type 'undefined'.
+
+
+==== ttttObjectRestNotLastNonObject.ts (9 errors) ====
+    // An object pattern's rest of a non-object is TS2700 whatever the grammar says about the element (not last: TS2462,
+    // an initializer: TS1186): tsc's getTypeForBindingElement, apart from checkGrammar
+    declare const u: undefined | number;
+    var { ...m, a } = u;
+             ~
+!!! error TS2462: A rest element must be last in a destructuring pattern.
+             ~
+!!! error TS2700: Rest types may only be created from object types.
+                ~
+!!! error TS2339: Property 'a' does not exist on type 'number | undefined'.
+    var { ...n = {} } = u;
+             ~
+!!! error TS2700: Rest types may only be created from object types.
+               ~
+!!! error TS1186: A rest element cannot have an initializer.
+    var { x: { ...q } } = { x: 1 };
+                  ~
+!!! error TS2700: Rest types may only be created from object types.
+    let o = undefined;
+    var { ...m2, a2 } = o;
+             ~~
+!!! error TS2462: A rest element must be last in a destructuring pattern.
+             ~~
+!!! error TS2700: Rest types may only be created from object types.
+                 ~~
+!!! error TS2339: Property 'a2' does not exist on type 'undefined'.
+    

@@ -1,0 +1,62 @@
+//// [test/cases/ttttObjectRestOfUndefined.ts] ////
+
+=== ttttObjectRestOfUndefined.ts ===
+// The rest of null or undefined alone is `{}` (tsc's getRestType filters them out to never): an assignment target
+// lacking properties is TS2739
+let o = undefined;
+>o : any
+>undefined : undefined
+
+var { ...m, a } = o;
+>m : any
+>a : any
+>o : undefined
+
+let na: { b: number; c: string };
+>na : { b: number; c: string; }
+>b : number
+>c : string
+
+let b: number;
+>b : number
+
+({ b, ...na } = o);
+>({ b, ...na } = o) : undefined
+>{ b, ...na } = o : undefined
+>{ b, ...na } : { b: number; c: string; }
+>b : number
+>na : { b: number; c: string; }
+>o : undefined
+
+declare const u: undefined;
+>u : undefined
+
+declare const nl: null;
+>nl : null
+
+var { ...n } = u;
+>n : any
+>u : undefined
+
+var { ...n2 } = nl;
+>n2 : any
+>nl : null
+
+let nb: { b: number };
+>nb : { b: number; }
+>b : number
+
+({ ...nb } = u);
+>({ ...nb } = u) : undefined
+>{ ...nb } = u : undefined
+>{ ...nb } : { b: number; }
+>nb : { b: number; }
+>u : undefined
+
+function f<T>(x: T | undefined) { const { ...r } = x; return r; }
+>f : <T>(x: T | undefined) => T
+>x : T
+>r : T
+>x : T
+>r : T
+

@@ -1,0 +1,43 @@
+ttttObjectRestOfUndefined.ts(4,10): error TS2462: A rest element must be last in a destructuring pattern.
+ttttObjectRestOfUndefined.ts(4,10): error TS2700: Rest types may only be created from object types.
+ttttObjectRestOfUndefined.ts(4,13): error TS2339: Property 'a' does not exist on type 'undefined'.
+ttttObjectRestOfUndefined.ts(7,4): error TS2339: Property 'b' does not exist on type 'undefined'.
+ttttObjectRestOfUndefined.ts(7,10): error TS2739: Type '{}' is missing the following properties from type '{ b: number; c: string; }': b, c
+ttttObjectRestOfUndefined.ts(10,10): error TS2700: Rest types may only be created from object types.
+ttttObjectRestOfUndefined.ts(11,10): error TS2700: Rest types may only be created from object types.
+ttttObjectRestOfUndefined.ts(13,7): error TS2741: Property 'b' is missing in type '{}' but required in type '{ b: number; }'.
+
+
+==== ttttObjectRestOfUndefined.ts (8 errors) ====
+    // The rest of null or undefined alone is `{}` (tsc's getRestType filters them out to never): an assignment target
+    // lacking properties is TS2739
+    let o = undefined;
+    var { ...m, a } = o;
+             ~
+!!! error TS2462: A rest element must be last in a destructuring pattern.
+             ~
+!!! error TS2700: Rest types may only be created from object types.
+                ~
+!!! error TS2339: Property 'a' does not exist on type 'undefined'.
+    let na: { b: number; c: string };
+    let b: number;
+    ({ b, ...na } = o);
+       ~
+!!! error TS2339: Property 'b' does not exist on type 'undefined'.
+             ~~
+!!! error TS2739: Type '{}' is missing the following properties from type '{ b: number; c: string; }': b, c
+    declare const u: undefined;
+    declare const nl: null;
+    var { ...n } = u;
+             ~
+!!! error TS2700: Rest types may only be created from object types.
+    var { ...n2 } = nl;
+             ~~
+!!! error TS2700: Rest types may only be created from object types.
+    let nb: { b: number };
+    ({ ...nb } = u);
+          ~~
+!!! error TS2741: Property 'b' is missing in type '{}' but required in type '{ b: number; }'.
+!!! related TS2728 ttttObjectRestOfUndefined.ts:12:11: 'b' is declared here.
+    function f<T>(x: T | undefined) { const { ...r } = x; return r; }
+    
