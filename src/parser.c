@@ -3977,13 +3977,18 @@ static bool parse_function_type_keeping_context(Parser* p, bool disallow_conditi
 static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* ret) {
     bool disallow_conditional = parent->shared->disallow_conditional;
     // (A type is outside the yield and await contexts, tsc's parseType: `@await` decorates a function type's parameter)
-    bool in_async = parent->shared->in_async, outer_in_async = parent->shared->outer_in_async;
-    bool in_generator = parent->shared->in_generator;
-    parent->shared->in_async = parent->shared->outer_in_async = parent->shared->in_generator = false;
-    bool parsed = parse_type_inner(parent, min_precedence, ret);
-    parent->shared->in_async = in_async;
-    parent->shared->outer_in_async = outer_in_async;
-    parent->shared->in_generator = in_generator;
+    bool parsed;
+    if (__builtin_expect(!(parent->shared->in_async | parent->shared->outer_in_async | parent->shared->in_generator), 1)) {
+        parsed = parse_type_inner(parent, min_precedence, ret);
+    } else {
+        bool in_async = parent->shared->in_async, outer_in_async = parent->shared->outer_in_async;
+        bool in_generator = parent->shared->in_generator;
+        parent->shared->in_async = parent->shared->outer_in_async = parent->shared->in_generator = false;
+        parsed = parse_type_inner(parent, min_precedence, ret);
+        parent->shared->in_async = in_async;
+        parent->shared->outer_in_async = outer_in_async;
+        parent->shared->in_generator = in_generator;
+    }
     parent->shared->disallow_conditional = disallow_conditional;
     if (parsed && (ret->tag == TYPE_UNION || ret->tag == TYPE_INTERSECTION)) shrink_list(vec_type, &ret->composite);
     return parsed;
