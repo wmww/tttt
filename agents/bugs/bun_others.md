@@ -491,8 +491,9 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   reserved word ends it when a statement takes it (`<A, B` then `export const x`: TS1005 ',' expected, the alias's
   type is a reference named `export`), else it is TS1139 and skipped; an interface's or type alias's `<` commits
   like a class's; in a JSX file `</` opens none (mutation testing's declarationEmitArrowFunctionNoRenaming, bun
-  56-L06's lt1). [fixed d92652247] A function declaration's list still recovers like an arrow function's
-  (speculative): `function f<T, default>() {}` is TS1005 '>' expected and more, tsc's TS1139 alone. [open]
+  56-L06's lt1). [fixed d92652247] A function declaration's list recovered like an arrow function's
+  (speculative): `function f<T, default>() {}` was TS1005 '>' expected and more, tsc's TS1139 alone; every function
+  type parameter list recovers now, outside the Parameters context. [fixed 223acc493]
 - Mutation testing (seed 20261030) also leaves: a duplicate type parameter (`<A, B extends Object A>`, TS2300) that
   tsc's appendTypeParameters counts once (getDeclaredTypeOfTypeParameter of the one merged symbol) and tttt's
   several_types.c declared_type_params() twice (spurious TS2314 for two arguments, genericContextualTypes2): low
