@@ -1521,7 +1521,8 @@ void function_impl_typecheck_body(FunctionImpl* me, ErrorCtx* errs) {
         .ambient = my ambient,
         .ambient_reported = true,
         .in_function = true,
-        // TODO: returns in async functions and generators aren't checked, the declared type wraps what's returned
+        // (An async function's or generator's declared type wraps what's returned: those are checked against
+        // unwrapped_return instead)
         .specified_return = my ret_explicit && !my is_async && !my is_generator ? &my ret :
             function_impl_setter_type(me) ? function_impl_setter_type(me) : &type_any,
         .constructed_class = my is_constructor ? function_impl_rare(me)->constructed_class : nullptr,

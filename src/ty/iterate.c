@@ -772,8 +772,8 @@ Ty const* ty_iterated_type_sending(Checker* me, u32 use, Ty const* input, Ty con
     return element;
 }
 
-// tsc prints `Iterable<T>` rather than `Iterable<T, any, any>` for these, which used to have one type parameter.
-// HACK: tsc still prints what was written if all type arguments were
+// tsc prints `Iterable<T>` rather than `Iterable<T, any, any>` for these, which used to have one type parameter (tsgo's
+// typeReferenceToTypeNode, a special case of its own), unless the reference's node writes them all
 bool ty_elides_default_type_args(Checker* me, Ty const* target) {
     if (target->declared.type_params.len != 3) return false;
     IterationState const* state = iteration_state(me);

@@ -36,7 +36,7 @@ void enum_case_drop(EnumCase* me);
 struct EnumDecl {
     Span name;
     Span full_span;
-    bool is_const; // `const enum`, TODO: nothing checks the extra restrictions on these yet
+    bool is_const; // `const enum` (its restrictions: TS2474/TS2477/TS2478 in enum_decl.c, TS2475 expr.c, TS2476 check.c)
     bool ambient; // This declaration is ambient (`declare`, in a `declare namespace` or a .d.ts), set by add_names
     VecEnumCase cases;
     Scope* namespace;

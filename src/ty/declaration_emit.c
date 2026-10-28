@@ -3399,9 +3399,6 @@ static void check_commonjs_exports(Walk* me) {
 // transformAndReplaceLatePaintedStatements), its diagnostics into a scratch ErrorCtx. The types it writes are those the
 // serialize_*() functions decide on (`type_out`): a declaration's pseudo type where it says its type, else its type.
 // The layout is tsc's printer's for declaration files: 4 spaces of indentation, one declaration or member per line.
-//
-// Not done yet (plan 64 stage 2 and on): comments, triple-slash references, import attributes, `stripInternal` beyond
-// what the walk skips, expandos, class expressions as bases (`_base` variables), JavaScript
 
 static TyDisplay emit_display(Walk* me, cstr* target) {
     // (Somewhere in the file, which names modules from there: the start when no declaration is being emitted)

@@ -8,8 +8,8 @@
 #include "statement.h"
 
 // JSX (tsc's checkJsx* family): the JSX namespace, the element type and intrinsic elements. The attributes of an
-// element are an object literal (check_jsx_attributes() in expr.c). Components, ie value tags, resolve like calls:
-// TODO(plan 22 stage 3).
+// element are an object literal (check_jsx_attributes() in expr.c). Components, ie value tags, resolve like calls
+// (resolve_call() in call.c, with ty_jsx_signature_props() for each signature's props).
 
 static Symbol const* export_with_meaning(Symbol const* container, csview name, u32 meaning) {
     Symbol const* found = symbol_for_meaning(symbol_get_export(container, name), meaning);
