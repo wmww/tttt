@@ -62,7 +62,7 @@ start (main thread, workers parked or gone) and vscode's 7-11 frees of tables pa
 (callgrind K1 within +0.2%; kernel work isn't in callgrind).
 
 ## Measured and not changed
-- **Huge first chunk on checker type arenas** (Arena.huge_first): right at the defaults. Without it faults +12-22%
+- **Huge first chunk on checker type arenas** (Arena.checker): right at the defaults. Without it faults +12-22%
   (nest 31.6k -> 38.8k, react 39.8k -> 53.3k, zod 75k -> 87k, drizzle 106k -> 124k) and sys up; it costs nest ~7 MB.
 - **Arena populate-ahead waste** (populated and huge-page-rounded minus used, all live arena chunks at exit): drizzle
   680 vs 661 MB used (3%), zod 460 vs 445, react 159 vs 143, nest 72 vs 52 (20 MB: 8 checkers' first huge chunks).

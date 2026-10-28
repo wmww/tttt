@@ -21,6 +21,13 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   size-checked debug build (a header word per block). Oracle: the suite under a build that poisons and verifies.
   Also: dropped arenas' addresses are never reused (virtual space grows by every AST a process ever parsed: the test
   harness, `-b`), `ast_owns()` assumes 47-bit user addresses, and free blocks left when a file ends are lost (3%).
+- `huge_pages_take()` (prelude.c): under THP enabled `madvise` with a synchronously compacting defrag (`madvise`, the
+  kernel's default, `defer+madvise`, `always`), madvised regions are rationed by a budget of the free 2 MB blocks
+  `/proc/buddyinfo` listed at the first call, read once: a guess at what the kernel can give without compacting, which
+  goes stale when other processes take blocks mid-run (then a fault stalls in compaction). Under `always`, or defrag
+  `defer`/`never`, no guess is needed. Correct: whatever the kernel would tell us (nothing does, short of watching
+  `compact_stall` in `/proc/vmstat`). Oracle: `compact_stall` and `thp_fault_alloc` around a vscode run on a box with
+  few free blocks.
 - `source_text_map()` (source_file.c): source text is a MAP_PRIVATE mapping of the file wrapped in a hand-built long
   `cstr` (STC's private layout: `cstr_l_set_cap`), and `source_texts_release()` drops its pages at every recycle. A
   file changed by another process mid-run is read changed, a truncated one reads as ending there (`text_sigbus()` maps
