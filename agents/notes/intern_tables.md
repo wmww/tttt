@@ -1,4 +1,4 @@
-# The intern tables at 8 bytes a slot (2026-10-29, worker intern)
+# The intern tables at 8 bytes a slot (2026-10-29, worker intern: built, step 1 below)
 
 footprint.md's structural item 2. Owner code: checker.c's `hash_words`..`intern_has`, `intern_grow`, `intern_put`;
 the readers of a table's entries (graph.c's publication, survivors.c, dupcensus.c, graph_debug.c); shared_table.c's
@@ -22,21 +22,24 @@ key compare.
 
 ## The target
 - **Slot = u64**: the high 32 bits a tag, the low 32 where the block is.
-  - tag = the hash's low 32 bits (the ones table_index() reads) with bit 0 forced to 1 (occupied: 0 stays the empty
-    slot) and bit 1 the "far" flag. Positions and probe sequences are exactly today's (table_index() reads the top
-    bits only), so every key lands in the slot it lands in today.
-  - Grow rehashes from the tag alone (sequential, no block read) for caps up to 2^30.
-  - The probe compares the 30 tag bits, then the key. 30 - log2(cap) of them are independent of the position (10 at
-    1M slots, 9 at 2M): a false tag match (a wasted block read) on about 1 compared slot in 1000.
-  - near (far bit 0): a signed 32-bit offset in words from `InternTable.base`, the table's first block: blocks within
-    ±16 GB of it, i.e. every block of a checker arena unless the process maps more than 16 GB between the two. far:
-    an index into `InternTable.far`, a vector of block pointers (never taken in practice, there so that correctness
-    doesn't depend on the address space's layout; one predictable branch).
+  - tag (high half) = the hash's low 32 bits (the ones table_index() reads) with bit 0 forced to 1 (occupied: 0 stays
+    the empty slot). Positions and probe sequences are exactly the old ones (table_index() reads the top bits only),
+    so every key lands in the slot it landed in before. The probe compares it as a u32 read of the slot's high half
+    (one compare with memory).
+  - Grow rehashes from the tag alone (sequential, no block read) for caps up to 2^31.
+  - 31 - log2(cap) tag bits are independent of the position (11 at 1M slots): a false tag match (a wasted block
+    read) on about 1 compared slot in 2000.
+  - low half, bit 0 clear: twice a signed offset in words from `InternTable.base`, the table's first block (decoded
+    by one lea, scale 4): blocks within ±8 GB of it, i.e. every block of a checker arena unless the process maps more
+    than 8 GB between the two. Bit 0 set (INTERN_FAR): twice an index into `InternTable.far`, a vector of block
+    pointers, never taken on any project here (`--time` prints it if it is), there so that correctness doesn't depend
+    on the address space's layout; a `-DTTTT_INTERN_ALL_FAR` build sends every block there (the suite and zod/drizzle
+    identical).
 - **The count moves into the block**: the hash's top 16 bits held it, the tag can't. The first key word's top 16 bits
-  carry min(count, 0xffff) in the stored block (every kind's word 0 is below 2^48: `hash_words()` checks it, a panic
-  otherwise); a count-0 key stores a placeholder word 0; a long key keeps its count word before word 0 (a short key's
-  block[1] is >= 2^48 or 0, a long key's count is below 2^48: they can't be confused). The probe compares
-  `words[0] | count << 48` first: kind and length in one compare, as exact as today's hash-then-words. Readers of a
+  carry the count (modulo 2^16) in the stored block; every key has a first word (its kind) below 2^48: `hash_words()`
+  panics otherwise (no key of the suite or the corpora breaks it). A long key keeps its count word before word 0 (a
+  short key's block[1] is >= 2^48, a long key's count is below 2^48: they can't be confused). The probe compares
+  `words[0] | count << 48` first: kind and length in one compare, as exact as the old hash-then-words. Readers of a
   block's key (block_kind(), survivors, dupcensus, the fingerprints, intern_check_fields_done()'s rehash) mask it;
   intern_key_list()'s type lists start at word 1 or later and are untouched.
 - Load factor unchanged (5/8): with doubling, 3/4 would change the capacity of none of the census tables.
@@ -64,8 +67,43 @@ so nothing new is shared between threads: TSan's view is unchanged.
   Instructions: about +2 a probe (decode the slot), less the halved grow.
 
 ## Steps
-1. The slot format above (output-identical; the gates of the brief).
-2. Probe order: only if step 1's profile shows the run's second line or false tag matches; candidates are a prefetch
-   of the block on a tag match before the key compare's branch, and comparing word 0 before the remaining words.
-3. Key-block layout (no block straddling a line): the blocks' misses are a tenth of the slots' on store, so only if
-   step 1 leaves them visible.
+1. The slot format above: built (wt-intern 9bee77cad, on d1dc1f48f's first draft). Output-identical: suite, quickgate
+   --vs-main -k, expecttypes 100%, checkerdiff -k 8 with and without TTTT_SHARED_GRAPH=1 (the flag's drizzle "K8
+   twice different" is residue C), sgcheck -k 4,8,16 on its default list (only drizzle and mikro-orm/seeder differ,
+   the known residues, at main's rates: drizzle K8 def 2/10 against main's 3/10, seeder K16 rr 2/4 both), TSan clean
+   on drizzle/effect/excalidraw/zod at T4/T8, the -DTTTT_GRAPH_CHECKS build reports the same one site as main's
+   (kind 10 in instantiate_inner) on drizzle, zod, effect, excalidraw.
+2. Probe order: not done. After step 1 the slot read (checker.c's tag compare) is still most of the probes' misses
+   (store: 0.6M LL, 3.0M D1 against the block's 0.1M / 0.8M): random lines of a table far bigger than L2. A prefetch
+   can't help a load that is needed at once; the lever left is fewer probes (the callers) or a smaller table (a higher
+   load factor, which with doubling changes none of the census tables' capacities).
+3. Key-block layout: not done, for the same reason (the block's misses are a sixth of the slot's).
+
+## Results of step 1 (this box, against main ed02bc573, release builds, K1 `--checker-memory off`)
+| | imm | store | zod | drizzle | effect |
+|---|---|---|---|---|---|
+| tables MB | 20 -> 10 | 48 -> 24 | 24.5 -> 12 | 36 -> 18 | 32 -> 16 |
+| peak RSS MB (abbench, median of 7) | 265 -> 250 | 273 -> 235 | 386 -> 370 | 454 -> 420 | 717 -> 671 |
+| minor faults | -6.0% | -14.6% | -4.2% | -7.7% | -6.7% |
+| instructions (callgrind) | +0.6% | +1.9% | +0.65% | +0.86% | +0.56% |
+| cachegrind D1 read misses | -1.3% | -6.7% | -1.9% | -1.8% | -1.0% |
+| cachegrind LL read misses (all / without intern_grow's) | -28 / -16% | -32 / -22% | -15 / -3.5% | -19 / -11% | -12 / -3.8% |
+| cachegrind stall estimate | -8.5% | -17.5% | -3.2% | -5.3% | -2.5% |
+| wall K1, interleaved median of 7, load ~2 | -2.4% | -8.9% | -1.8% | -2.8% | -0.3% |
+At the defaults (median of 7): drizzle wall -7.5%, RSS -11%; effect wall +0.4%, RSS -3.4%; excalidraw -3.4%, RSS -2.7%.
+On store the slot line's LL read misses fell 1.10M -> 0.61M (-45%), its D1 misses 3.3M -> 3.0M: this box's LL is 32
+MB and store's tables are now 24 MB; on the laptop (16 MB L3) expect less. The instructions are the probe's (the
+hash_words check, the decode, the word-0 compare: about +3 a lookup) and intern_put's (+20 a put), less intern_grow
+(-25%).
+
+## For the laptop (the stop rule's numbers)
+BASE `scripts/abbuild.sh ed02bc573 --fast`, NEW `scripts/fastbuild.sh` at the branch's head; footprint.md's protocol
+(taskset -c 2, box idle, from an empty directory, TTTT_SYNC_EXIT=1), on imm, store, zod, drizzle, effect:
+
+    perf stat -r 5 -x, -e cycles:u,instructions:u,L1-dcache-load-misses,ls_dmnd_fills_from_sys.local_ccx,ls_dmnd_fills_from_sys.dram_io_all,page-faults \
+      taskset -c 2 env TTTT_SYNC_EXIT=1 $BIN --checkers 1 --threads 1 --checker-memory off --noEmit -p $PROJECT
+
+and the attribution (`perf record -e L1-dcache-load-misses/period=5000/,ls_dmnd_fills_from_sys.local_ccx/period=500/,
+ls_dmnd_fills_from_sys.dram_io_all/period=200/` on -g builds, bucketed as footprint.md did: intern = checker.c's
+hash_words..intern_has). **Stop rule**: on store the intern-attributed L3 and DRAM fills fall by at least half and
+K1 cycles by at least 2%; else step 1 is kept only if its cycles repay its +0.6-1.9% instructions on all five.

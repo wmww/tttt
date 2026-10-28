@@ -41,7 +41,7 @@ Arena bytes by what they are (arenasites.sh, MB; struct sizes from the debug inf
 | mappers (24 + lists) | 13 | 3 | 12 | 8 | 16 |
 | mapped props' PropDecl (96) + PropDeclRare (184) | - | - | 19 | 35 | 4 |
 | TyObjectState (40, one per object type) | 10 | - | 7 | 5 | 5 |
-Outside the arena: the intern tables at 16 bytes a slot, grown at 5/8 load (types 1M slots = 16 MB everywhere here;
+Outside the arena: the intern tables at 16 bytes a slot (8 since intern_tables.md), grown at 5/8 load (types 1M slots = 16 MB everywhere here;
 store's links table 2M = 32 MB), node links, relation cache.
 
 Where the misses are (cachegrind with the host's caches: D1 48 KB, LL 32 MB; share of read misses):
@@ -89,7 +89,7 @@ effect ~911->896, vscode 5.42->5.38 GB. Wall K1, interleaved best of 5 at load 7
    everywhere (prop_type() caches in the Prop, relations and display compare props by pointer, ~850 `decl` reads).
    A step towards it: instance props without `parent` and `decl` (both derivable from the target for
    instantiate_members()'s props, but copies and mapped props break the rule): 56 -> 40 bytes, -7% of zod's arena.
-2. **Intern tables**: 8-byte slots (32-bit hash, 32-bit index into a per-table key store) would halve the tables
+2. **Intern tables** (built 2026-10-29: notes/intern_tables.md, the numbers there): 8-byte slots (32-bit hash, 32-bit index into a per-table key store) would halve the tables
    (16-48 MB here) and the probe's first line; the key block is still a second line per hit. 35-77% of LL read
    misses are in the tables (less intern_grow's model artifact). The key store must not move (callers keep slot
    pointers) and --shared-graph puts the hash before each block: a careful week.
