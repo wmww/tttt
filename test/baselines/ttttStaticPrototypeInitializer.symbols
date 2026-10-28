@@ -1,0 +1,59 @@
+//// [test/cases/ttttStaticPrototypeInitializer.ts] ////
+
+=== ttttStaticPrototypeInitializer.ts ===
+// A static field named `prototype` merges into the class's prototype property (tsc's binder), whose type is the
+// instance type with any type arguments: its initializer is checked against that, not against its annotation (bun
+// 99-V4 getTypeOfPrototypeProperty__02)
+class C { static prototype = 1; x = ""; }
+>C : Symbol(C, Decl(ttttStaticPrototypeInitializer.ts, 0, 0))
+>prototype : Symbol(C.prototype, Decl(ttttStaticPrototypeInitializer.ts, 3, 9))
+>x : Symbol(C.x, Decl(ttttStaticPrototypeInitializer.ts, 3, 31))
+
+class D { static prototype: number = 1; }
+>D : Symbol(D, Decl(ttttStaticPrototypeInitializer.ts, 3, 41))
+>prototype : Symbol(D.prototype, Decl(ttttStaticPrototypeInitializer.ts, 4, 9))
+
+class E { static prototype: E = new E(); }
+>E : Symbol(E, Decl(ttttStaticPrototypeInitializer.ts, 4, 41))
+>prototype : Symbol(E.prototype, Decl(ttttStaticPrototypeInitializer.ts, 5, 9))
+>E : Symbol(E, Decl(ttttStaticPrototypeInitializer.ts, 4, 41))
+>E : Symbol(E, Decl(ttttStaticPrototypeInitializer.ts, 4, 41))
+
+class G<T> { static prototype = { a: 1 }; t!: T; }
+>G : Symbol(G, Decl(ttttStaticPrototypeInitializer.ts, 5, 42))
+>T : Symbol(T, Decl(ttttStaticPrototypeInitializer.ts, 6, 8))
+>prototype : Symbol(G.prototype, Decl(ttttStaticPrototypeInitializer.ts, 6, 12))
+>a : Symbol(a, Decl(ttttStaticPrototypeInitializer.ts, 6, 33))
+>t : Symbol(G.t, Decl(ttttStaticPrototypeInitializer.ts, 6, 41))
+>T : Symbol(T, Decl(ttttStaticPrototypeInitializer.ts, 6, 8))
+
+class H { static prototype: string; }
+>H : Symbol(H, Decl(ttttStaticPrototypeInitializer.ts, 6, 50))
+>prototype : Symbol(H.prototype, Decl(ttttStaticPrototypeInitializer.ts, 7, 9))
+
+const c = class { static prototype = 2 };
+>c : Symbol(c, Decl(ttttStaticPrototypeInitializer.ts, 8, 5))
+>prototype : Symbol(c.prototype, Decl(ttttStaticPrototypeInitializer.ts, 8, 17))
+
+class K { static prototype: number = "s"; }
+>K : Symbol(K, Decl(ttttStaticPrototypeInitializer.ts, 8, 41))
+>prototype : Symbol(K.prototype, Decl(ttttStaticPrototypeInitializer.ts, 9, 9))
+
+class J { x = 1; static prototype: number = 1; }
+>J : Symbol(J, Decl(ttttStaticPrototypeInitializer.ts, 9, 43))
+>x : Symbol(J.x, Decl(ttttStaticPrototypeInitializer.ts, 10, 9))
+>prototype : Symbol(J.prototype, Decl(ttttStaticPrototypeInitializer.ts, 10, 16))
+
+class L { y = 1; static prototype: { y: number } = { y: 2 }; }
+>L : Symbol(L, Decl(ttttStaticPrototypeInitializer.ts, 10, 48))
+>y : Symbol(L.y, Decl(ttttStaticPrototypeInitializer.ts, 11, 9))
+>prototype : Symbol(L.prototype, Decl(ttttStaticPrototypeInitializer.ts, 11, 16))
+>y : Symbol(y, Decl(ttttStaticPrototypeInitializer.ts, 11, 36))
+>y : Symbol(y, Decl(ttttStaticPrototypeInitializer.ts, 11, 52))
+
+const probe: never = C.prototype;
+>probe : Symbol(probe, Decl(ttttStaticPrototypeInitializer.ts, 12, 5))
+>C.prototype : Symbol(C.prototype, Decl(ttttStaticPrototypeInitializer.ts, 3, 9))
+>C : Symbol(C, Decl(ttttStaticPrototypeInitializer.ts, 0, 0))
+>prototype : Symbol(C.prototype, Decl(ttttStaticPrototypeInitializer.ts, 3, 9))
+

@@ -2402,6 +2402,15 @@ static void builder_push_any_base_index(Checker* me, MembersBuilder* builder) {
         .param_name = my atoms.x }));
 }
 
+Ty const* ty_class_prototype_type(Checker* me, Symbol const* class_symbol) {
+    Ty const* instance = ty_declared_type_of(me, class_symbol);
+    if (!instance || instance->kind != TY_DECLARED || !instance->declared.type_params.len) return instance;
+    u32 len = instance->declared.type_params.len;
+    Ty const** args = arena_new_n(&my arena, Ty const*, len);
+    for (u32 i = 0; i < len; i++) args[i] = ty_intrinsic(me, TY_ANY);
+    return ty_reference(me, instance, (TyList){ .data = args, .len = len });
+}
+
 static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, Ty const* ty, ClassDecl const* class_decl) {
     Symbol const* instance_decl = class_decl->symbol;
     Ty const* instance = instance_decl ? ty_declared_type_of(me, instance_decl) : nullptr;
@@ -2413,14 +2422,7 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
     prototype->name = my atoms.prototype;
     prototype->parent = instance_decl;
     prototype->flags = PROP_STATIC | PROP_PROTOTYPE; // Not readonly: tsc's prototype symbol is a plain property
-    if (instance->declared.type_params.len) {
-        u32 len = instance->declared.type_params.len;
-        Ty const** args = arena_new_n(&my arena, Ty const*, len);
-        for (u32 i = 0; i < len; i++) args[i] = ty_intrinsic(me, TY_ANY);
-        prop_type_init(prototype, ty_reference(me, instance, (TyList){ .data = args, .len = len }));
-    } else {
-        prop_type_init(prototype, instance);
-    }
+    prop_type_init(prototype, ty_class_prototype_type(me, instance_decl));
     // (First, so that it wins over a declared `static prototype`; builder_prototype_last() moves it)
     builder_push(builder, props, prototype);
 

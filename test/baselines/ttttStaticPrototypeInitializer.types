@@ -1,0 +1,70 @@
+//// [test/cases/ttttStaticPrototypeInitializer.ts] ////
+
+=== ttttStaticPrototypeInitializer.ts ===
+// A static field named `prototype` merges into the class's prototype property (tsc's binder), whose type is the
+// instance type with any type arguments: its initializer is checked against that, not against its annotation (bun
+// 99-V4 getTypeOfPrototypeProperty__02)
+class C { static prototype = 1; x = ""; }
+>C : C
+>prototype : C
+>1 : 1
+>x : string
+>"" : ""
+
+class D { static prototype: number = 1; }
+>D : D
+>prototype : D
+>1 : 1
+
+class E { static prototype: E = new E(); }
+>E : E
+>prototype : E
+>new E() : E
+>E : typeof E
+
+class G<T> { static prototype = { a: 1 }; t!: T; }
+>G : G<T>
+>prototype : G<any>
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+>t : T
+
+class H { static prototype: string; }
+>H : H
+>prototype : H
+
+const c = class { static prototype = 2 };
+>c : typeof c
+>class { static prototype = 2 } : typeof c
+>prototype : c
+>2 : 2
+
+class K { static prototype: number = "s"; }
+>K : K
+>prototype : K
+>"s" : "s"
+
+class J { x = 1; static prototype: number = 1; }
+>J : J
+>x : number
+>1 : 1
+>prototype : J
+>1 : 1
+
+class L { y = 1; static prototype: { y: number } = { y: 2 }; }
+>L : L
+>y : number
+>1 : 1
+>prototype : L
+>y : number
+>{ y: 2 } : { y: number; }
+>y : number
+>2 : 2
+
+const probe: never = C.prototype;
+>probe : never
+>C.prototype : C
+>C : typeof C
+>prototype : C
+

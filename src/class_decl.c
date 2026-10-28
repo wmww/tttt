@@ -2806,7 +2806,19 @@ void class_decl_typecheck_members(ClassDecl* me, ErrorCtx* errs) {
                 }
                 expr_typecheck(&i->field.value, errs);
                 class_field_check_implicit_any(me, i, errs);
-                if (i->field.has_explicit_type && i->field.value.tag != EXPR_IMPLICIT_ANY) {
+                // `static prototype = v` declares the class's prototype property (tsc's binder merges it into the
+                // prototype symbol), whose type is the instance type: the initializer is checked against that, not
+                // against an annotation (tsc's checkVariableLikeDeclaration against getTypeOfSymbol)
+                bool prototype_field = i->field.is_static && !i->field.computed_key && !span_valid(class_item_private_name(i)) &&
+                    my symbol && cstr_equals(&i->field.name_string, "prototype");
+                if (prototype_field && i->field.value.tag != EXPR_IMPLICIT_ANY) {
+                    Ty const* prototype = ty_class_prototype_type(current_checker, my symbol);
+                    if (prototype) {
+                        ty_check_assignable_expr(current_checker, expr_get_type(&i->field.value), prototype, i->field.name_span,
+                            &i->field.value, errs);
+                    }
+                }
+                if (i->field.has_explicit_type && i->field.value.tag != EXPR_IMPLICIT_ANY && !prototype_field) {
                     // (Joined by accessors, it's their symbol's type: tsc's checkVariableLikeDeclaration of the symbol's
                     // valueDeclaration checks the initializer against getTypeOfSymbol)
                     Ty const* declared = i->field.joined_accessor ? class_item_get_type(i) : ty_of_node(&i->field.explicit_type);
