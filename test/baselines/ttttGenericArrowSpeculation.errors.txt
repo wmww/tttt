@@ -1,0 +1,31 @@
+ttttGenericArrowSpeculation.ts(5,1): error TS2347: Untyped function calls may not accept type arguments.
+ttttGenericArrowSpeculation.ts(5,8): error TS2304: Cannot find name 'T'.
+ttttGenericArrowSpeculation.ts(5,19): error TS1005: '?' expected.
+ttttGenericArrowSpeculation.ts(5,22): error TS1005: ',' expected.
+ttttGenericArrowSpeculation.ts(5,24): error TS2693: 'any' only refers to a type, but is being used as a value here.
+ttttGenericArrowSpeculation.ts(6,7): error TS1109: Expression expected.
+ttttGenericArrowSpeculation.ts(6,9): error TS2693: 'number' only refers to a type, but is being used as a value here.
+
+
+==== ttttGenericArrowSpeculation.ts (7 errors) ====
+    // After type parameters an arrow function is one only if `=>` or `{` follows its signature (tsc's
+    // isParenthesizedArrowFunctionExpression is Unknown after `<`): a typed parameter doesn't commit it, so these are a
+    // call with type arguments and a type assertion
+    declare const x: any, async: any; type U = 1;
+    async <T extends U>(x: any);
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2347: Untyped function calls may not accept type arguments.
+           ~
+!!! error TS2304: Cannot find name 'T'.
+                      ~
+!!! error TS1005: '?' expected.
+                         ~
+!!! error TS1005: ',' expected.
+                           ~~~
+!!! error TS2693: 'any' only refers to a type, but is being used as a value here.
+    <U>(x?: number);
+          ~
+!!! error TS1109: Expression expected.
+            ~~~~~~
+!!! error TS2693: 'number' only refers to a type, but is being used as a value here.
+    

@@ -1,0 +1,23 @@
+//// [test/cases/ttttGenericArrowSpeculation.ts] ////
+
+=== ttttGenericArrowSpeculation.ts ===
+// After type parameters an arrow function is one only if `=>` or `{` follows its signature (tsc's
+// isParenthesizedArrowFunctionExpression is Unknown after `<`): a typed parameter doesn't commit it, so these are a
+// call with type arguments and a type assertion
+declare const x: any, async: any; type U = 1;
+>x : Symbol(x, Decl(ttttGenericArrowSpeculation.ts, 3, 13))
+>async : Symbol(async, Decl(ttttGenericArrowSpeculation.ts, 3, 21))
+>U : Symbol(U, Decl(ttttGenericArrowSpeculation.ts, 3, 33))
+
+async <T extends U>(x: any);
+>async : Symbol(async, Decl(ttttGenericArrowSpeculation.ts, 3, 21))
+>T : Symbol(T)
+>U : Symbol(U, Decl(ttttGenericArrowSpeculation.ts, 3, 33))
+> : Symbol(unknown)
+> : Symbol(unknown)
+>x : Symbol(x, Decl(ttttGenericArrowSpeculation.ts, 3, 13))
+
+<U>(x?: number);
+>U : Symbol(U, Decl(ttttGenericArrowSpeculation.ts, 3, 33))
+>x : Symbol(x, Decl(ttttGenericArrowSpeculation.ts, 3, 13))
+

@@ -1,0 +1,22 @@
+//// [test/cases/ttttSpreadMissingOperand.ts] ////
+
+=== ttttSpreadMissingOperand.ts ===
+// A spread element's missing operand is reported where it is missing (tsc's parseSpreadElement), which is how
+// `(a, ...)` in an argument list recovers: the parenthesized expression ends at `...`, a spread of nothing follows
+declare function f(...args: any[]): void;
+>f : Symbol(f, Decl(ttttSpreadMissingOperand.ts, 0, 0))
+>args : Symbol(args, Decl(ttttSpreadMissingOperand.ts, 2, 19))
+
+declare const a: any;
+>a : Symbol(a, Decl(ttttSpreadMissingOperand.ts, 3, 13))
+
+f(...);
+>f : Symbol(f, Decl(ttttSpreadMissingOperand.ts, 0, 0))
+
+f(1, ...);
+>f : Symbol(f, Decl(ttttSpreadMissingOperand.ts, 0, 0))
+
+f((a, ...) => 1);
+>f : Symbol(f, Decl(ttttSpreadMissingOperand.ts, 0, 0))
+>a : Symbol(a, Decl(ttttSpreadMissingOperand.ts, 3, 13))
+

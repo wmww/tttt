@@ -7591,7 +7591,9 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
         // (A type annotation, not a JSDoc type before the parameter: `(/** @type {T} */ [...s].sort())` in JavaScript
         // is a parenthesized expression)
         Binding const* first = vec_function_arg_is_empty(&ret->args) ? nullptr : &vec_function_arg_at(&ret->args, 0)->initializer.binding;
-        is_definitely_function = committed || (first && first->has_explicit_type &&
+        // (Not after type parameters: tsc's isParenthesizedArrowFunctionExpression is Unknown after a `<`, `async
+        // <T extends U>(x: any);` is a call with type arguments)
+        is_definitely_function = committed || (first && first->has_explicit_type && *a.start != '<' &&
             span_start_ptr(binding_explicit_type_span(first)) > span_start_ptr(first->content_span));
         // (The rest of tsc's isParenthesizedArrowFunctionExpression's certain cases: `()` (then `=>`, `:` or `{`),
         // `(...`, `(a?`, `(public a`. A return type alone isn't: `(a, b): T = v` is a parenthesized expression)
@@ -8724,7 +8726,9 @@ static bool parse_expr_or_spread(Parser* parent, Expr* ret) {
     p.pos += 3;
     hop_whitespace(&p);
     Expr operand;
-    if (!expect_expr(&p, expr_ctx_null, &operand)) {
+    // (A missing operand is reported where it is and the spread element stays, tsc's parseSpreadElement: `f(...)` is
+    // TS1109 at the `)`)
+    if (!expect_expr(&p, expr_ctx_null, &operand) && !(operand.tag == EXPR_IMPLICIT_ANY && operand.missing)) {
         return parse_fail(&p);
     }
     *ret = expr_spread(span_from(a), ast_new(Expr, operand));

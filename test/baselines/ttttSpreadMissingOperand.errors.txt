@@ -1,0 +1,32 @@
+ttttSpreadMissingOperand.ts(5,6): error TS1109: Expression expected.
+ttttSpreadMissingOperand.ts(6,9): error TS1109: Expression expected.
+ttttSpreadMissingOperand.ts(7,4): error TS2695: Left side of comma operator is unused and has no side effects.
+ttttSpreadMissingOperand.ts(7,7): error TS1109: Expression expected.
+ttttSpreadMissingOperand.ts(7,10): error TS1109: Expression expected.
+ttttSpreadMissingOperand.ts(7,12): error TS1005: ';' expected.
+ttttSpreadMissingOperand.ts(7,16): error TS1005: ';' expected.
+
+
+==== ttttSpreadMissingOperand.ts (7 errors) ====
+    // A spread element's missing operand is reported where it is missing (tsc's parseSpreadElement), which is how
+    // `(a, ...)` in an argument list recovers: the parenthesized expression ends at `...`, a spread of nothing follows
+    declare function f(...args: any[]): void;
+    declare const a: any;
+    f(...);
+         ~
+!!! error TS1109: Expression expected.
+    f(1, ...);
+            ~
+!!! error TS1109: Expression expected.
+    f((a, ...) => 1);
+       ~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+          ~~~
+!!! error TS1109: Expression expected.
+             ~
+!!! error TS1109: Expression expected.
+               ~~
+!!! error TS1005: ';' expected.
+                   ~
+!!! error TS1005: ';' expected.
+    

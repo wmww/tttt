@@ -254,10 +254,16 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
 - The symbols baseline names a `default`-modified member by its written name (`I.class`), tsc by its symbol's
   (`I.default`): the harness's member naming reads the declaration's name span (ttttDefaultMemberModifier fails its
   symbols). [text]
-- Arrow and type-argument speculation: `async <T extends object>(x: T)` at EOF, `async <T extends U>(x: any);`
-  (57-L18 56-L10), `<T>(x?: number);` (74-R15e), `f((a, ...) => 1)` (83-R13a d16), `f<new>(x)`, `f<import(>(x)`,
-  `f<abstract new>(x)` (83-R01b), `@null! as typeof mk<number>|` (93-P02b), `a?..b` (92-R02b), `a?.<T>\`x\``
-  (92-R02h: type arguments after `?.`, then TS1358). [open]
+- Arrow speculation: `async <T extends object>(x: T)` at EOF, `async <T extends U>(x: any);` (57-L18 56-L10), `<T>(x?:
+  number);` (74-R15e): after type parameters tsc's isParenthesizedArrowFunctionExpression is Unknown, a typed first
+  parameter commits nothing (parse_arrow_function_inner()); `f((a, ...) => 1)` (83-R13a d16): a spread's missing
+  operand is reported where it is missing and the element stays (parse_expr_or_spread()). [fixed]
+- Type-argument speculation: `f<new>(x)`, `f<abstract new>(x)` (83-R01b: `new` in a type commits a constructor type,
+  '(' expected), `f<import(>(x)` (83-R01b j33) and `import("m" | "n")` (32-C24a): an import type's argument is a type,
+  TS1110 when missing, a string literal only the specifier when `)` or `,` follows it. [fixed]
+- `@null! as typeof mk<number>|` (93-P02b: decorators on no expression are a missing declaration the binary parsers go
+  on with), `a?..b` (92-R02b: `?.` before `.` is the token, missing its name, which ends the member expression),
+  `a?.<T>\`x\`` (92-R02h: type arguments after `?.` then a tagged template, TS1358). [fixed]
 - JSDoc parsing: `@import a-b from` (43-C8e), `{@link Map#delete}` reserved words TS1359 and `{@link Map.}` (54-L07b),
   `@augments {A<=}`/`{A<<=}` and `{<>}`/`Array<<>>` (56-L01 56-L20b), `function () {}` with `@overload` in JS
   (61-L17, TS1003 twice), `typeof a..b` (84-R04), `@import yield`/`{ A as await }` in generators and async functions
@@ -266,7 +272,7 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
   declarations with a missing name (`type )`, `interface ]`, a class member `interface? )`, `throw type { A }`:
   96-SOLID1), `export *` and `export type *` at EOF (TS1109 then 'from' expected:
   export-from-without-a-module-specifier-where-declarations-are-emitted), `export * as`/`super`/`new.` at EOF
-  (43-P9d 43-P9h 43-P9l), `(this?: any) => void` (34-P6a: one ',' expected), `import("m" | "n")` (32-C24a: TS1141),
+  (43-P9d 43-P9h 43-P9l), `(this?: any) => void` (34-P6a: one ',' expected),
   `typeof Array<<T>() => T>` (43-C4d), `(x = €) => x` (43-C14a: TS1127 only), an unterminated template at EOF
   (93-P03a 93-P03b: no ')' expected), a JS object literal method without a body (80-R09b: TS8017),
   `@dec get x(): number;` in a class (34-C16: no '{' expected). [open]
