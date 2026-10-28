@@ -1,0 +1,40 @@
+ttttCompoundNullableTarget.ts(5,1): error TS18048: 'u' is possibly 'undefined'.
+ttttCompoundNullableTarget.ts(6,1): error TS18048: 'u' is possibly 'undefined'.
+ttttCompoundNullableTarget.ts(7,1): error TS18048: 'u' is possibly 'undefined'.
+ttttCompoundNullableTarget.ts(9,1): error TS18049: 'nn' is possibly 'null' or 'undefined'.
+ttttCompoundNullableTarget.ts(11,1): error TS18048: 'un' is possibly 'undefined'.
+ttttCompoundNullableTarget.ts(13,1): error TS2322: Type 'string' is not assignable to type 'undefined'.
+ttttCompoundNullableTarget.ts(15,1): error TS18048: 'num' is possibly 'undefined'.
+
+
+==== ttttCompoundNullableTarget.ts (7 errors) ====
+    // An arithmetic compound assignment's left operand that is only null or undefined is TS18048/TS18049 and the error
+    // type from then on, its target too (tsc's checkNonNullType before checkAssignmentOperator): no TS2322. `+=` with a
+    // string operand isn't non-null checked, and is TS2322
+    declare let u: undefined;
+    u **= 2;
+    ~
+!!! error TS18048: 'u' is possibly 'undefined'.
+    u += 1;
+    ~
+!!! error TS18048: 'u' is possibly 'undefined'.
+    u -= 1;
+    ~
+!!! error TS18048: 'u' is possibly 'undefined'.
+    declare let nn: null | undefined;
+    nn *= 3;
+    ~~
+!!! error TS18049: 'nn' is possibly 'null' or 'undefined'.
+    declare let un: number | undefined;
+    un *= 3;
+    ~~
+!!! error TS18048: 'un' is possibly 'undefined'.
+    declare let us: undefined;
+    us += "a";
+    ~~
+!!! error TS2322: Type 'string' is not assignable to type 'undefined'.
+    let num = undefined;
+    num **= BigInt(2);
+    ~~~
+!!! error TS18048: 'num' is possibly 'undefined'.
+    

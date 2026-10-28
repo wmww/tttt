@@ -1,0 +1,44 @@
+//// [test/cases/ttttCompoundNullableTarget.ts] ////
+
+=== ttttCompoundNullableTarget.ts ===
+// An arithmetic compound assignment's left operand that is only null or undefined is TS18048/TS18049 and the error
+// type from then on, its target too (tsc's checkNonNullType before checkAssignmentOperator): no TS2322. `+=` with a
+// string operand isn't non-null checked, and is TS2322
+declare let u: undefined;
+>u : Symbol(u, Decl(ttttCompoundNullableTarget.ts, 3, 11))
+
+u **= 2;
+>u : Symbol(u, Decl(ttttCompoundNullableTarget.ts, 3, 11))
+
+u += 1;
+>u : Symbol(u, Decl(ttttCompoundNullableTarget.ts, 3, 11))
+
+u -= 1;
+>u : Symbol(u, Decl(ttttCompoundNullableTarget.ts, 3, 11))
+
+declare let nn: null | undefined;
+>nn : Symbol(nn, Decl(ttttCompoundNullableTarget.ts, 7, 11))
+
+nn *= 3;
+>nn : Symbol(nn, Decl(ttttCompoundNullableTarget.ts, 7, 11))
+
+declare let un: number | undefined;
+>un : Symbol(un, Decl(ttttCompoundNullableTarget.ts, 9, 11))
+
+un *= 3;
+>un : Symbol(un, Decl(ttttCompoundNullableTarget.ts, 9, 11))
+
+declare let us: undefined;
+>us : Symbol(us, Decl(ttttCompoundNullableTarget.ts, 11, 11))
+
+us += "a";
+>us : Symbol(us, Decl(ttttCompoundNullableTarget.ts, 11, 11))
+
+let num = undefined;
+>num : Symbol(num, Decl(ttttCompoundNullableTarget.ts, 13, 3))
+>undefined : Symbol(undefined)
+
+num **= BigInt(2);
+>num : Symbol(num, Decl(ttttCompoundNullableTarget.ts, 13, 3))
+>BigInt : Symbol(BigInt, Decl(lib.es2020.bigint.d.ts, --, --), Decl(lib.es2020.bigint.d.ts, --, --))
+

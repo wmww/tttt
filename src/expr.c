@@ -4216,7 +4216,23 @@ static bool binary_op_typecheck(
             // The expression's own type is what gets assigned, the right operand's for `&&=`, `||=` and `??=` (tsc's
             // checkBinaryLikeExpressionWorker: checkAssignmentOperator(rightType))
             bool logical = op == BINARY_OP_AND_AND_EQUAL || op == BINARY_OP_OR_OR_EQUAL || op == BINARY_OP_EH_EH_EQUAL;
-            if (binary_op_typecheck(left, without_assignment, right, expr, errs)) {
+            // An arithmetic operand that is only null or undefined was TS18048 & co and is the error type from then on,
+            // the assignment's target too (tsc's checkBinaryLikeExpressionWorker reassigns leftType with
+            // checkNonNullType before checkAssignmentOperator): `u **= 2` with `u: undefined` is no TS2322. `+=` checks
+            // that only when neither side is a string
+            bool error_target = false;
+            if (!logical && compiler_options()->strict_null_checks && !(left->flags & (TYF_ANY | TYF_NEVER))) {
+                Checker* checker = current_checker;
+                Ty const* non_null = ty_non_nullable(checker, left);
+                bool nullable_only = non_null != left && (non_null->flags & (TYF_NULLABLE | TYF_NEVER)) != 0;
+                if (nullable_only && op == BINARY_OP_PLUS_EQUAL) {
+                    Ty const* string = ty_intrinsic(checker, TY_STRING);
+                    nullable_only = !ty_is_related(checker, left, string, TY_RELATION_ASSIGNABLE) &&
+                        !ty_is_related(checker, right, string, TY_RELATION_ASSIGNABLE);
+                }
+                error_target = nullable_only;
+            }
+            if (binary_op_typecheck(left, without_assignment, right, expr, errs) && !error_target) {
                 binary_op_typecheck(left, BINARY_OP_EQUAL, logical ? right : expr_get_type((Expr*)expr), expr, errs);
             }
         }   break;

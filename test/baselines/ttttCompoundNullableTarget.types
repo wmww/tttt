@@ -1,0 +1,59 @@
+//// [test/cases/ttttCompoundNullableTarget.ts] ////
+
+=== ttttCompoundNullableTarget.ts ===
+// An arithmetic compound assignment's left operand that is only null or undefined is TS18048/TS18049 and the error
+// type from then on, its target too (tsc's checkNonNullType before checkAssignmentOperator): no TS2322. `+=` with a
+// string operand isn't non-null checked, and is TS2322
+declare let u: undefined;
+>u : undefined
+
+u **= 2;
+>u **= 2 : number
+>u : undefined
+>2 : 2
+
+u += 1;
+>u += 1 : any
+>u : undefined
+>1 : 1
+
+u -= 1;
+>u -= 1 : number
+>u : undefined
+>1 : 1
+
+declare let nn: null | undefined;
+>nn : null | undefined
+
+nn *= 3;
+>nn *= 3 : number
+>nn : null | undefined
+>3 : 3
+
+declare let un: number | undefined;
+>un : number | undefined
+
+un *= 3;
+>un *= 3 : number
+>un : number | undefined
+>3 : 3
+
+declare let us: undefined;
+>us : undefined
+
+us += "a";
+>us += "a" : string
+>us : undefined
+>"a" : "a"
+
+let num = undefined;
+>num : any
+>undefined : undefined
+
+num **= BigInt(2);
+>num **= BigInt(2) : bigint
+>num : undefined
+>BigInt(2) : bigint
+>BigInt : BigIntConstructor
+>2 : 2
+
