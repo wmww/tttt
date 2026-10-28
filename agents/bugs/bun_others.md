@@ -497,7 +497,7 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   [fixed 0d3156599] After a call fails at an earlier argument (`Array.from(v, ({ a }) => ...)` with `v: void`), tsc types
   the later arrow function's destructured parameter unknown and its pattern reports TS2339; without the argument
   error assignParameterType's binding-pattern fallback applies (TS2345). tttt reports neither TS2339 (arrayFrom;
-  ttttFailedCallPatternParamUnknown, known failing: where tsgo's parameter type is assigned isn't traced). [open]
+  ttttFailedCallPatternParamUnknown). tsgo never contextually checks such an argument (the first pass skips it, the failure's inference too): the element's type is asked lazily (getTypeForBindingElement from getContextuallyTypedParameterType's unknown, the deferred body check), while the parameter itself prints the pattern's type once the types writer checks the arrow. call.c marks the never-checked context-sensitive arguments of a failed call (KEY_CONTEXT_UNASSIGNED), whose pattern elements are taken from unknown (ty_parameter_pattern_unassigned()). [fixed PENDING]
 - A name right after a shorthand property's `=` (`({ x = used } = o)`, unparenthesized) is that property's child:
   not found, it is TS18004 (tsc's getCannotFindNameDiagnosticForName); and an any or unknown default removes
   undefined from the property's type like any other (tsgo's getTypeFacts gives them UnknownFacts, no IsUndefined: no

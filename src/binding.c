@@ -424,6 +424,7 @@ static bool possibly_undefined(Ty const* type) {
 Ty const* binding_element_parent_type(Binding const* me, Expr const* initializer) {
     Checker* checker = current_checker;
     Ty const* type = ty_binding_type(checker, me, (LowerCtx){ .generic = true });
+    if (ty_parameter_pattern_unassigned(checker, me)) type = ty_intrinsic(checker, TY_UNKNOWN_);
     // (Not widened: `= null` is null, not any, without strictNullChecks. tsc's getTypeForBindingElementParent)
     if (my tag == BINDING_OBJECT && !my has_explicit_type && initializer && !(type->flags & TYF_NULLABLE)) {
         Ty const* assigned = ty_expr_type(checker, initializer);

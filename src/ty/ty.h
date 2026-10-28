@@ -2462,6 +2462,9 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* decl);
 // The type of a class's `prototype`: its instance type with `any` for every type parameter (tsc's
 // getTypeOfPrototypeProperty)
 Ty const* ty_class_prototype_type(Checker* me, Symbol const* class_symbol);
+// A parameter's pattern whose contextual unknown fell back to the pattern's type, of a function a failed call never got
+// to check (KEY_CONTEXT_UNASSIGNED): its elements are taken from unknown (tsc's lazy getTypeForBindingElement)
+bool ty_parameter_pattern_unassigned(Checker* me, Binding const* pattern);
 bool ty_alias_is_circular(Checker* me, Symbol const* symbol);
 SymbolLinks* ty_symbol_links(Checker* me, Symbol const* symbol);
 Ty const* ty_namespace_type(Checker* me, struct Symbol const* symbol);

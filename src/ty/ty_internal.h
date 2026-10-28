@@ -126,6 +126,7 @@ enum {
     KEY_ALIAS_TYPE_CIRCULAR, // import alias Symbol -> itself once its TS2303 (a cycle through `export =`'s type) is reported
     KEY_SIGNATURE_DECL_CHECKED, // FunctionImpl -> non-null once its parameters were resolved at its first check (expr.c)
     KEY_CONTEXT_CHECKED, // FunctionImpl -> its contextual signature, decided by its first check (tsc's ContextChecked; expr.c's context_checked_none: it has none)
+    KEY_CONTEXT_UNASSIGNED, // FunctionImpl -> non-null: a context-sensitive argument after the argument a failed call stopped at, never contextually checked in tsc (its parameters typed lazily, no binding pattern fallback)
     KEY_IMPLEMENTATION_SIGNATURE, // Signature -> its clone with fresh type parameters (implementation_signature())
     KEY_RETURN_REPORTABLE, // FunctionImpl -> widening reportability bits decided with its return type (ty_function_decide_widening_reportable())
     KEY_FLOW_REACHABLE, // FlowNode (shared ones) -> FlowReachability + 1, see flow.c

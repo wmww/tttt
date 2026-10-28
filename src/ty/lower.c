@@ -4165,6 +4165,15 @@ static Ty const* parameter_while_assigning(Checker* me, InitializedBinding const
     return nullptr;
 }
 
+bool ty_parameter_pattern_unassigned(Checker* me, Binding const* pattern) {
+    if (pattern->parent || !binding_is_parameter(pattern) || !pattern->source || pattern->source->tag != LAZY_TYPE_INITIALIZED_BINDING) {
+        return false;
+    }
+    InitializedBinding const* parameter = c_container_of(pattern->source, InitializedBinding, lazy_type);
+    FunctionImpl const* function = initialized_binding_rare(parameter)->context_function;
+    return function && ty_link_get(me, KEY_CONTEXT_UNASSIGNED, function) && ty_contextual_parameter_is_pattern(me, pattern);
+}
+
 static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
     Binding const* parent = binding->parent;
     // A catch variable (the only root without a source) is any, or unknown under useUnknownInCatchVariables
@@ -4198,6 +4207,10 @@ static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
         return lazy_type_get(binding->source);
     }
     Ty const* object = ty_binding_type(me, parent, (LowerCtx){ .generic = true });
+    // A parameter pattern whose contextual unknown fell back to the pattern's type, of a function a failed call never
+    // got to check: its elements were typed lazily from the unknown in tsc (getTypeForBindingElement before any
+    // assignParameterType, KEY_CONTEXT_UNASSIGNED), the parameter's own type is the pattern's when it's checked later
+    if (ty_parameter_pattern_unassigned(me, parent)) object = ty_intrinsic(me, TY_UNKNOWN_);
     // An ambient parameter's pattern takes no null or undefined: it's just documentation (tsc's
     // getBindingElementTypeFromParentType)
     if (compiler_options()->strict_null_checks && parent->ambient && binding_is_parameter(parent)) {

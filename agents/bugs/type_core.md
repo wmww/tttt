@@ -282,7 +282,7 @@ passing tests).
   the target's type as contextual type (tsc: none, `{ f = x => x } = o` is TS7006, a generic `t` stays `T` in the
   message) and an any or unknown default kept undefined in the property (tsc's hasTypeFacts(IsUndefined) is false for
   them: spurious TS2322 on `({ b = x as any } = o)`), a type variable now by its base constraint. expr.c's destructuring
-  assignment check. Test ttttShorthandAssignmentDefault [fixed PENDING].
+  assignment check. Test ttttShorthandAssignmentDefault [fixed 4d6c71e9c].
 
 - (types only) ttttFlowIssueSingleQuery: the diagnostics match now (the extra flow query was removed), but `r.previous`
   on the narrowed silent `never` prints `never` where tsc prints the error type (`previous : any`, `r.previous : error`):

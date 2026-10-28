@@ -2766,6 +2766,18 @@ static Resolution resolve_with_signatures_inner(
         // then reportCallResolutionErrors), whose full check of the arguments resolves the generic calls among them:
         // one that a candidate's first check left out (SkipGenericFunctions) is still unresolved for it, and nothing is
         // inferred from it (`node({ layer: mk(1, 2) })` failing on another property infers no layer type)
+        // A context-sensitive function argument no candidate got to check (the first pass skips them, and every
+        // candidate failed on another argument) is never contextually checked in tsc (the failure's inference skips it
+        // too): its parameters are typed lazily by the failure candidate, getContextuallyTypedParameterType, without
+        // assignParameterType's fallback of an unknown to the binding pattern (KEY_CONTEXT_UNASSIGNED)
+        for (u32 i = 0; unfit_count && i < args->len; i++) {
+            Arg const* arg = &args->data[i];
+            if (arg->context_sensitive && arg->expr->tag == EXPR_FUNCTION && !arg->spread && !arg->part_of_spread &&
+                !ty_link_get(me, KEY_CONTEXT_CHECKED, arg->expr->function)
+            ) {
+                ty_link_set(me, KEY_CONTEXT_UNASSIGNED, arg->expr->function, arg->expr->function);
+            }
+        }
         FailurePick pick = {0};
         Candidate pre_inferred = {0};
         if (unfit_count && !(count > 1 && !some_generic)) {

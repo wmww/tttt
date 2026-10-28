@@ -9,7 +9,7 @@ ttttFailedCallPatternParamUnknown.ts(12,9): error TS2339: Property 'a' does not 
 
 
 ==== ttttFailedCallPatternParamUnknown.ts (4 errors) ====
-    // Known failing: after a call fails at an earlier argument, a later arrow function's destructured parameter is typed
+    // After a call fails at an earlier argument, a later arrow function's destructured parameter is typed
     // unknown by the candidate (T inferred from nothing), and its pattern reports TS2339 in tsc (mutation testing, arrayFrom);
     // without the argument error the pattern's own type replaces unknown (assignParameterType: TS2345)
     declare function h(f: (v: unknown) => void): void;
