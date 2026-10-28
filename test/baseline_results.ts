@@ -10706,19 +10706,19 @@ const baselines = {
         types: true,
     },
     'bun93-P04a': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun93-P04b': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun93-P04c': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun93-P04d': {
         errors: true,
@@ -10726,9 +10726,9 @@ const baselines = {
         types: true,
     },
     'bun93-P04e': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun93-P05': {
         errors: true,
@@ -12572,11 +12572,21 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttClassMemberCommaKeyGrammar': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttClassMembersContainedByOffsetQuirk': {
         errors: true,
         symbols: true,
         types: true,
         dts: true,
+    },
+    'ttttClassMergedInterfaceOverloads': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttClassStaticSideOwnFirst': {
         errors: true,
@@ -12686,6 +12696,11 @@ const baselines = {
         types: true,
     },
     'ttttConditionalChainManyBranches': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttConditionalComparableNeverBranch': {
         errors: true,
         symbols: true,
         types: true,
@@ -14066,6 +14081,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttFailedCallPatternParamUnknown': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttFieldAssignedOnlyNull': {
         errors: true,
         symbols: true,
@@ -14535,6 +14555,11 @@ const baselines = {
         types: true,
     },
     'ttttInstantiationExpressionConstraintThis': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttInstantiationExpressionInterface': {
         errors: true,
         symbols: true,
         types: true,
@@ -15044,6 +15069,11 @@ const baselines = {
         types: true,
     },
     'ttttJsxSpreadAndChildrenContextual': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttJsxStaleChildToken': {
         errors: true,
         symbols: true,
         types: true,
@@ -15899,6 +15929,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttRepeatedTypeParameterArity': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttRequiredTypeParamUndefinedFacts': {
         errors: true,
         symbols: true,
@@ -15998,6 +16033,16 @@ const baselines = {
         types: true,
     },
     'ttttSetterParamsFromGetter': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttShorthandAssignmentDefault': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttShorthandDefaultNotFound': {
         errors: true,
         symbols: true,
         types: true,
@@ -16180,6 +16225,11 @@ const baselines = {
         types: true,
     },
     'ttttStaticHeritageTypeVariable': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttStaticPrototypeInitializer': {
         errors: true,
         symbols: true,
         types: true,
@@ -16462,6 +16512,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttTypeParameterListReservedWord': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttTypeParameterMissingName': {
         errors: true,
         symbols: true,
@@ -16598,6 +16653,11 @@ const baselines = {
         types: true,
     },
     'ttttUnionNonPublicNoSuggestion': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUnionReadonlyIndexForName': {
         errors: true,
         symbols: true,
         types: true,
