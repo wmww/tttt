@@ -382,7 +382,8 @@ static Ty const* access_uncached(Checker* me, Ty const* object, Ty const* index,
     if (object->flags & TYF_NEVER) {
         // (Only by a key: tsc's getPropertyTypeForIndexType returns never for a string, number or symbol-like one, a
         // bigint or object key is TS2538 and the error type)
-        bool key = (index->flags & TYF_ANY) || (!(index->flags & TYF_NULLABLE) &&
+        // (never too, assignable to every kind: `never[never]` is never, solid's store setter through its base signature)
+        bool key = (index->flags & (TYF_ANY | TYF_NEVER)) || (!(index->flags & TYF_NULLABLE) &&
             (ty_key_flags(index) & (TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM | TYF_ES_SYMBOL_LIKE)));
         return key || index->kind == TY_UNION || ty_is_generic_index(index) ? object : ty_intrinsic(me, TY_ERROR);
     }

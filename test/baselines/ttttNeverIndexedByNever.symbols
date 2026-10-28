@@ -1,0 +1,90 @@
+//// [test/cases/ttttNeverIndexedByNever.ts] ////
+
+=== ttttNeverIndexedByNever.ts ===
+// origin: npm SII-Holos/synergy @ a283cf3 apps/web, ProviderConnectionFlow.tsx:503 (`setFormStore.bind(null, "value")` with
+// solid-js 1.9's SetStoreFunction): `never[never]` is never (tsc's getPropertyTypeForIndexType: never is a key of every
+// kind), not the error type, so the base signature (tsc's getBaseSignature) of a chain of key parameters keeps never
+// flip: yes
+type W<T> = Exclude<T, string | number>;
+>W : Symbol(W, Decl(ttttNeverIndexedByNever.ts, 0, 0))
+>T : Symbol(T, Decl(ttttNeverIndexedByNever.ts, 4, 7))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttNeverIndexedByNever.ts, 4, 7))
+
+type KeyOf<T> = [T] extends [never] ? never : keyof T;
+>KeyOf : Symbol(KeyOf, Decl(ttttNeverIndexedByNever.ts, 4, 40))
+>T : Symbol(T, Decl(ttttNeverIndexedByNever.ts, 5, 11))
+>T : Symbol(T, Decl(ttttNeverIndexedByNever.ts, 5, 11))
+>T : Symbol(T, Decl(ttttNeverIndexedByNever.ts, 5, 11))
+
+type Form = { value: string; other: number }
+>Form : Symbol(Form, Decl(ttttNeverIndexedByNever.ts, 5, 54))
+>value : Symbol(value, Decl(ttttNeverIndexedByNever.ts, 6, 13))
+>other : Symbol(other, Decl(ttttNeverIndexedByNever.ts, 6, 28))
+
+type A = never[never];
+>A : Symbol(A, Decl(ttttNeverIndexedByNever.ts, 6, 44))
+
+type D = W<Form["value"]>[KeyOf<W<Form["value"]>>];
+>D : Symbol(D, Decl(ttttNeverIndexedByNever.ts, 7, 22))
+>W : Symbol(W, Decl(ttttNeverIndexedByNever.ts, 0, 0))
+>Form : Symbol(Form, Decl(ttttNeverIndexedByNever.ts, 5, 54))
+>KeyOf : Symbol(KeyOf, Decl(ttttNeverIndexedByNever.ts, 4, 40))
+>W : Symbol(W, Decl(ttttNeverIndexedByNever.ts, 0, 0))
+>Form : Symbol(Form, Decl(ttttNeverIndexedByNever.ts, 5, 54))
+
+export const a: [A, D] = 1 as any as number;
+>a : Symbol(a, Decl(ttttNeverIndexedByNever.ts, 9, 12))
+>A : Symbol(A, Decl(ttttNeverIndexedByNever.ts, 6, 44))
+>D : Symbol(D, Decl(ttttNeverIndexedByNever.ts, 7, 22))
+
+interface S3<T> {
+>S3 : Symbol(S3, Decl(ttttNeverIndexedByNever.ts, 9, 44))
+>T : Symbol(T, Decl(ttttNeverIndexedByNever.ts, 10, 13))
+
+  <K1 extends KeyOf<W<T>>, K2 extends KeyOf<W<W<T>[K1]>>, K3 extends KeyOf<W<W<W<T>[K1]>[K2]>>>(k1: K1, k2: K2, k3: K3, ...rest: KeyOf<W<W<W<T>[K1]>[K2]>[K3]>[]): void;
+>K1 : Symbol(K1, Decl(ttttNeverIndexedByNever.ts, 11, 3))
+>KeyOf : Symbol(KeyOf, Decl(ttttNeverIndexedByNever.ts, 4, 40))
+>W : Symbol(W, Decl(ttttNeverIndexedByNever.ts, 0, 0))
+>T : Symbol(T, Decl(ttttNeverIndexedByNever.ts, 10, 13))
+>K2 : Symbol(K2, Decl(ttttNeverIndexedByNever.ts, 11, 26))
+>KeyOf : Symbol(KeyOf, Decl(ttttNeverIndexedByNever.ts, 4, 40))
+>W : Symbol(W, Decl(ttttNeverIndexedByNever.ts, 0, 0))
+>W : Symbol(W, Decl(ttttNeverIndexedByNever.ts, 0, 0))
+>T : Symbol(T, Decl(ttttNeverIndexedByNever.ts, 10, 13))
+>K1 : Symbol(K1, Decl(ttttNeverIndexedByNever.ts, 11, 3))
+>K3 : Symbol(K3, Decl(ttttNeverIndexedByNever.ts, 11, 57))
+>KeyOf : Symbol(KeyOf, Decl(ttttNeverIndexedByNever.ts, 4, 40))
+>W : Symbol(W, Decl(ttttNeverIndexedByNever.ts, 0, 0))
+>W : Symbol(W, Decl(ttttNeverIndexedByNever.ts, 0, 0))
+>W : Symbol(W, Decl(ttttNeverIndexedByNever.ts, 0, 0))
+>T : Symbol(T, Decl(ttttNeverIndexedByNever.ts, 10, 13))
+>K1 : Symbol(K1, Decl(ttttNeverIndexedByNever.ts, 11, 3))
+>K2 : Symbol(K2, Decl(ttttNeverIndexedByNever.ts, 11, 26))
+>k1 : Symbol(k1, Decl(ttttNeverIndexedByNever.ts, 11, 96))
+>K1 : Symbol(K1, Decl(ttttNeverIndexedByNever.ts, 11, 3))
+>k2 : Symbol(k2, Decl(ttttNeverIndexedByNever.ts, 11, 103))
+>K2 : Symbol(K2, Decl(ttttNeverIndexedByNever.ts, 11, 26))
+>k3 : Symbol(k3, Decl(ttttNeverIndexedByNever.ts, 11, 111))
+>K3 : Symbol(K3, Decl(ttttNeverIndexedByNever.ts, 11, 57))
+>rest : Symbol(rest, Decl(ttttNeverIndexedByNever.ts, 11, 119))
+>KeyOf : Symbol(KeyOf, Decl(ttttNeverIndexedByNever.ts, 4, 40))
+>W : Symbol(W, Decl(ttttNeverIndexedByNever.ts, 0, 0))
+>W : Symbol(W, Decl(ttttNeverIndexedByNever.ts, 0, 0))
+>W : Symbol(W, Decl(ttttNeverIndexedByNever.ts, 0, 0))
+>T : Symbol(T, Decl(ttttNeverIndexedByNever.ts, 10, 13))
+>K1 : Symbol(K1, Decl(ttttNeverIndexedByNever.ts, 11, 3))
+>K2 : Symbol(K2, Decl(ttttNeverIndexedByNever.ts, 11, 26))
+>K3 : Symbol(K3, Decl(ttttNeverIndexedByNever.ts, 11, 57))
+}
+declare const s3: S3<Form>;
+>s3 : Symbol(s3, Decl(ttttNeverIndexedByNever.ts, 13, 13))
+>S3 : Symbol(S3, Decl(ttttNeverIndexedByNever.ts, 9, 44))
+>Form : Symbol(Form, Decl(ttttNeverIndexedByNever.ts, 5, 54))
+
+export const g: number = s3.bind(null, "value");
+>g : Symbol(g, Decl(ttttNeverIndexedByNever.ts, 14, 12))
+>s3.bind : Symbol(CallableFunction.bind, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>s3 : Symbol(s3, Decl(ttttNeverIndexedByNever.ts, 13, 13))
+>bind : Symbol(CallableFunction.bind, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+
