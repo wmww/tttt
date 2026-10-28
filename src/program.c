@@ -129,6 +129,9 @@ typedef struct Program {
     RealpathFn realpath; // program_set_realpath()
     void* realpath_ctx;
     SymlinkCache* symlinks; // What resolutions learned about symlinked directories, for program_module_specifier()
+    // The resolver's resolutions (they live as long as it does) program_learn_symlink() has learned from, a direct-mapped
+    // cache: learning one again changes nothing, and a file can import one name 133k times (`import("@scalar/typebox")`)
+    ResolvedModule const* symlinks_learned[256];
     // Whether symlinks has the links of every emitted file's package's dependencies (program_dependency_links())
     _Atomic bool dependency_links;
     pthread_mutex_t dependency_links_lock;
@@ -883,6 +886,14 @@ static void program_learn_symlink(Program* me, ResolvedModule const* resolved) {
     }
 }
 
+// The same for a resolution of the resolver's (module_resolver_resolve_shared()), once
+static void program_learn_symlink_shared(Program* me, ResolvedModule const* shared) {
+    ResolvedModule const** slot = &my symlinks_learned[((uintptr_t)shared >> 4) % c_arraylen(my symlinks_learned)];
+    if (*slot == shared) return;
+    program_learn_symlink(me, shared);
+    *slot = shared;
+}
+
 // tsc's tryExtractTSExtension: the name ends in .d.ts, .d.mts, .d.cts, .ts, .tsx, .mts or .cts
 static bool name_has_ts_extension(csview name) {
     static const char* const extensions[] = { ".ts", ".tsx", ".mts", ".cts" };
@@ -994,7 +1005,7 @@ static void program_load_module_ref_inner(Program* me, SourceFile* source, Modul
         canonical_hint.size = cstr_size(&resolved.path);
         canonical_hint.canonical = canonical;
     }
-    program_learn_symlink(me, &resolved);
+    program_learn_symlink_shared(me, shared);
     // A referenced project's .tsx/.jsx source when this program has no --jsx: tsc's resolveExternalModule has the
     // resolution diagnostic (TS6142's) first and then finds the project reference, so the import is TS6305 for the
     // source's output, built or not, and resolves to nothing
@@ -1821,10 +1832,39 @@ static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile* fil
     Preresolved* preresolved = file->module_ref_count ? c_new(Preresolved, {
         .entries = c_new_n(PreresolvedEntry, file->module_ref_count),
     }) : nullptr;
+    // (A name the file has resolved already, in the same mode, is the same resolution and queues the same file: a
+    // generated declaration file can say `import("@scalar/typebox")` 133k times, which took nitro's loader 90 ms on one
+    // worker, the loader waiting. By name and mode: the index + 1 of its first entry)
+    u32 seen_cap = 0;
+    u32* seen = nullptr;
+    if (file->module_ref_count >= 8) {
+        seen_cap = 16;
+        while (seen_cap < 2 * file->module_ref_count) seen_cap *= 2;
+        seen = calloc(seen_cap, sizeof(u32));
+        panic_if(!seen, "out of memory");
+    }
     for (u32 i = 0; i < file->module_ref_count; i++) {
         ModuleRef const* ref = file->module_refs[i];
         if (ref->is_declaration || ref->ambient_only) continue;
         ResolutionMode mode = program_module_ref_mode(me, file, ref);
+        if (seen) {
+            u32 slot = (u32)(c_hash_n(cstr_str(&ref->path), cstr_size(&ref->path)) ^ (u32)mode * 0x9e3779b9u) & (seen_cap - 1);
+            PreresolvedEntry const* first = nullptr;
+            for (; seen[slot]; slot = (slot + 1) & (seen_cap - 1)) {
+                PreresolvedEntry const* entry = &preresolved->entries[seen[slot] - 1];
+                if (entry->mode == mode && cstr_eq(&entry->ref->path, &ref->path)) {
+                    first = entry;
+                    break;
+                }
+            }
+            if (first) {
+                preresolved->entries[preresolved->count++] = (PreresolvedEntry){
+                    .ref = ref, .mode = mode, .resolved = first->resolved, .canonical = first->canonical,
+                };
+                continue;
+            }
+            seen[slot] = preresolved->count + 1;
+        }
         ResolvedModule const* shared = module_resolver_resolve_shared(resolver, cstr_sv(&ref->path), containing, mode);
         cstr storage = cstr_null;
         csview canonical = program_canonical_view(me, cstr_sv(&shared->path), &storage);
@@ -1844,6 +1884,7 @@ static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile* fil
         else if (load) program_queue_path(me, &batch, cstr_sv(&resolved.path), false);
         if (owned) resolved_module_drop(&resolved);
     }
+    free(seen);
     if (preresolved && !preresolved->count) {
         preresolved_destroy(preresolved);
         preresolved = nullptr;
