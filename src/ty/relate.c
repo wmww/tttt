@@ -7010,8 +7010,8 @@ void ty_nesting_other(Ty const* const* stack, u32 depth) {
 }
 
 #ifdef TTTT_GRAPH_CHECKS
-// TTTT_GRAPH_CHECKS: a walk decision that went by a property or return type another worker made (published, so this
-// worker may not have resolved it itself): the order's one input that is history in principle (sharing_design.md §6)
+// TTTT_GRAPH_CHECKS: a walk decision that went by a function's return type another worker made (published, so this
+// worker may not have inferred it itself, and without that worker it might not be known here yet): the order's one input that is history in principle (sharing_design.md §6)
 static _Atomic u64 nesting_foreign_reads;
 static bool type_is_foreign(Checker* me, Ty const* t) {
     u32 block = t->id >> LAZY_TYPE_CHUNK_BITS;
@@ -7023,18 +7023,19 @@ static bool type_is_foreign(Checker* me, Ty const* t) {
     u64 n = atomic_fetch_add(&nesting_foreign_reads, 1);
     if (n >= 5) return;
     cstr a = ty_to_cstr(me, parent), b = ty_to_cstr(me, part);
-    eprintln("graph check: a deep-nesting decision read a part of '", cstr_str(&a), "' another worker made: '", cstr_str(&b), "'");
+    eprintln("graph check: a deep-nesting decision read the return type of '", cstr_str(&a), "' another worker made: '", cstr_str(&b), "'");
     c_drop(cstr, &a, &b);
 }
 #endif
 
-// Whether `part` (a property or return type as this worker knows it) is or holds `child`
-static bool made_before_part(Checker* me, Ty const* parent, Ty const* part, Ty const* child) {
+// Whether `part` (a property or return type as this worker knows it) is or holds `child`. `lazy`: a function's return
+// type, inferred when first asked for (an object literal's property types are set when it is made: no history)
+static bool made_before_part(Checker* me, Ty const* parent, Ty const* part, Ty const* child, bool lazy) {
     if (!part || (part != child && !ty_is_subterm(me, child, part))) return false;
 #ifdef TTTT_GRAPH_CHECKS
-    nesting_foreign_note(me, parent, part);
+    if (lazy) nesting_foreign_note(me, parent, part);
 #else
-    (void)parent;
+    (void)parent, (void)lazy;
 #endif
     return true;
 }
@@ -7055,12 +7056,12 @@ static bool made_before_step(Checker* me, Ty const* parent, Ty const* child) {
     Members const* members = (Members const*)SW_PTR(v);
     for (u32 i = 0; i < members->prop_count && members->lazy_props; i++) {
         Prop const* prop = members->lazy_props[i];
-        if (prop && made_before_part(me, parent, prop_type_peek(me, prop), child)) return true;
+        if (prop && made_before_part(me, parent, prop_type_peek(me, prop), child, false)) return true;
     }
     for (u32 i = 0; i < members->call_count; i++) {
         Signature const* sig = members->call[i];
         uintptr_t r = me->graph ? sw_peek(me, &sig->ret) : atomic_load_explicit(&sig->ret.v, memory_order_relaxed);
-        if (r > SW_POISON && made_before_part(me, parent, (Ty const*)SW_PTR(r), child)) return true;
+        if (r > SW_POISON && made_before_part(me, parent, (Ty const*)SW_PTR(r), child, true)) return true;
     }
     return false;
 }
