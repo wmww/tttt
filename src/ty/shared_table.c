@@ -106,7 +106,7 @@ static bool key_is(void const* const* block, u64 const* words, u32 count) {
     u64 const* key = (u64 const*)(block + 1);
     if (count >= INTERN_LONG && *key++ != count) return false;
     if (!count) return true;
-    if (key[0] != (words[0] | (u64)(count < INTERN_LONG ? count : INTERN_LONG) << 48)) return false;
+    if (key[0] != (words[0] | (u64)count << 48)) return false;
     for (u32 k = 1; k < count; k++) if (key[k] != words[k]) return false;
     return true;
 }

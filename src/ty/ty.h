@@ -45,14 +45,15 @@ static inline csview atom_sv(Atom const* me) { return me ? csview_from_n(my str,
 
 // Intern table: open addressing, keys are arrays of u64 words (a kind tag followed by ids/pointers/bits), values are
 // pointers. Used for every kind of identity in the checker (agents/notes/intern_tables.md).
-// A slot is a u64, 0 when empty: its high 32 bits the key's hash's low 32 (the ones table_index() reads, so the slot
-// says where the key goes when the table grows) with bit 0 set (occupied) and bit 1 INTERN_FAR's; its low 32 bits
-// where the key's block is: a signed offset in words from InternTable.base, or with INTERN_FAR an index into
+// A slot is a u64, 0 when empty: its high 32 bits the tag, the key's hash's low 32 (the ones table_index() reads, so
+// the slot says where the key goes when the table grows) with bit 0 set (occupied); its low 32 bits where the key's
+// block is: twice a signed offset in words from InternTable.base, or with INTERN_FAR (bit 0) twice an index into
 // InternTable.far.
 // The block (arena-allocated, never moved: callers keep pointers to it) is the value, then a long key's word count (0xffff
-// words or more), then the key's words with min(count, 0xffff) in the top 16 bits of the first (every kind's first word
-// is below 2^48; a key of no words has a 0 placeholder). With --shared-graph the full hash is in the word before it
-#define INTERN_FAR (2ull << 32)
+// words or more), then the key's words with the count (modulo 2^16) in the top 16 bits of the first (every key has a
+// first word, its kind, and it is below 2^48: hash_words() checks both). With --shared-graph the full hash is in the
+// word before the block
+#define INTERN_FAR 1ull
 typedef struct InternTable {
     u64* slots;
     u32 cap; // power of two or 0
@@ -73,12 +74,14 @@ typedef struct InternTable {
 
 // The block of an occupied slot
 static inline void const** intern_slot_block(InternTable const* table, u64 slot) {
-    if (__builtin_expect(slot & INTERN_FAR, 0)) return table->far[(u32)slot];
-    return (void const**)(table->base + (int64_t)(int32_t)(u32)slot * 8);
+    if (__builtin_expect(slot & INTERN_FAR, 0)) return table->far[(u32)slot >> 1];
+    // (Twice the offset in words: four times it in bytes, one lea)
+    return (void const**)(table->base + (int64_t)(int32_t)(u32)slot * 4);
 }
 // A block's key: its word count, and its words (the first with the count in its top 16 bits: mask it with
 // INTERN_WORD0_MASK for the word the caller gave)
 #define INTERN_WORD0_MASK 0x0000ffffffffffffull
+// (A short key's block[1] is its word 0, at least 2^48 with the count above it; a long key's is the count, below 2^48)
 static inline u32 intern_block_count(void const* const* block) {
     u64 w = ((u64 const*)block)[1];
     return w >> 48 ? (u32)(w >> 48) : (u32)w;

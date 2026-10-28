@@ -1151,6 +1151,11 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
                     checker->types.cap, ", links ", checker->links.len, " / ", checker->links.cap, ", atoms ", atom_table_len(checker->atom_table),
                     ", intersection props ", checker->intersection_props.len, " / ",
                     checker->intersection_props.cap);
+                // (Blocks out of reach of their table's base, agents/notes/intern_tables.md: expected none)
+                if (checker->types.far_len + checker->links.far_len + checker->intersection_props.far_len) {
+                    out_eprintln(out, "time: checker ", i, " intern blocks far from their table's base: types ", checker->types.far_len,
+                        ", links ", checker->links.far_len, ", intersection props ", checker->intersection_props.far_len);
+                }
                 out_eprintln(out, "time: checker ", i, " node links ", checker->node_links.len, " / ", checker->node_links.cap);
             }
 #ifdef TTTT_ARENA_SITES

@@ -195,13 +195,14 @@ void arena_drop(Arena* me) {
 #define INTERN_LONG_KEY 0xffffu
 
 // The hash with the word count in the top 16 bits (InternTable's slots keep its low 32; the shared tables all of it)
-[[gnu::cold, gnu::noinline]] static void intern_word0_panic(u64 word) {
-    panic("an intern key's first word uses its top 16 bits (the block's word count): ", word);
+[[gnu::cold, gnu::noinline]] static void intern_key_panic(u64 const* words, u32 count) {
+    if (!count) panic("an intern key of no words (keys start with their kind)");
+    panic("an intern key's first word uses its top 16 bits (the block's word count): ", words[0]);
 }
 
 static u64 hash_words(u64 const* words, u32 count) {
-    // (Every key's first word is a kind and small fields: the block keeps the count above them)
-    if (__builtin_expect(count && words[0] >> 48, 0)) intern_word0_panic(words[0]);
+    // (Every key has a first word, a kind and small fields: the block keeps the count above them)
+    if (__builtin_expect(!count, 0) || __builtin_expect(words[0] >> 48, 0)) intern_key_panic(words, count);
     // (A word at a time two operations, multiplying by an odd constant: keys differing in one word differ. Then
     // murmur3's finalizer: the product's high bits into the low ones table_index() reads)
     u64 h = 0x9e3779b97f4a7c15ull ^ count;
@@ -228,51 +229,67 @@ static u32 table_grown(u32 cap, u32 initial) {
     return cap ? cap / 2 * 3 : initial;
 }
 
-// The tag a slot of the hash has (the occupied bit set, INTERN_FAR's clear)
-static inline u64 intern_tag(u64 hash) {
-    return (u64)(((u32)hash & ~2u) | 1) << 32;
+// The tag a slot of the hash has in its high half (the occupied bit set: never 0, an empty slot's)
+static inline u32 intern_tag(u64 hash) {
+    return (u32)hash | 1;
 }
 
-// A key's first word as its block stores it
+// A slot's tag, read as the u32 it is (a compare with memory in the probe loop)
+static_assert(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__, "intern slots are read in halves");
+static inline u32 intern_slot_tag(u64 const* slot) {
+    return ((u32 const*)slot)[1];
+}
+
+// A key's first word as its block stores it: the count in the top 16 bits (a long key's modulo 2^16: its block has the
+// count before, and block[1] tells the two apart, intern_block_count())
 static inline u64 intern_word0(u64 const* words, u32 count) {
-    return (count ? words[0] : 0) | (u64)(count < INTERN_LONG_KEY ? count : INTERN_LONG_KEY) << 48;
+    return words[0] | (u64)count << 48;
 }
 
 // Probing from `start` (where the key's probe sequence starts, or a slot it has reached): the key's slot, or the empty
 // one where it would go
+// (`*found`: the found key's block, decoded once)
 __attribute__((always_inline)) static inline u64* intern_find_from(
-    InternTable const* me, u64 hash, u64 const* words, u32 count, u32 start
+    InternTable const* me, u64 hash, u64 const* words, u32 count, u32 start, void const*** found
 ) {
     bool long_key = count >= INTERN_LONG_KEY;
-    u64 tag = intern_tag(hash);
+    u32 tag = intern_tag(hash);
     u64 word0 = intern_word0(words, count);
     for (u32 i = start;; i = table_next(i, my cap)) {
         u64* slot = &my slots[i];
-        u64 s = *slot;
-        if (!s) return slot;
-        // (The tag's top bits are the position's: 30 - log2(cap) bits tell neighbours apart, a false match costs a
+        // (The tag's top bits are the position's: 31 - log2(cap) bits tell neighbours apart, a false match costs a
         // block read in about one compared slot of a thousand)
-        if (((s ^ tag) & ~(INTERN_FAR | 0xffffffffull)) != 0) continue;
-        u64 const* key = (u64 const*)(intern_slot_block(me, s) + 1);
+        u32 at = intern_slot_tag(slot);
+        if (at != tag) {
+            if (!at) return slot;
+            continue;
+        }
+        void const** block = intern_slot_block(me, *slot);
+        u64 const* key = (u64 const*)(block + 1);
         if (long_key && *key++ != count) continue;
         // (Word 0 has the kind and the count: a key of another length never gets further)
         if (key[0] != word0) continue;
         // (Keys are a few words: a loop beats memcmp()'s call)
         u32 k = 1;
         while (k < count && key[k] == words[k]) k++;
-        if (k >= count) return slot;
+        if (k >= count) {
+            *found = block;
+            return slot;
+        }
     }
 }
 
-__attribute__((always_inline)) static inline u64* intern_find(InternTable const* me, u64 hash, u64 const* words, u32 count) {
-    return my cap ? intern_find_from(me, hash, words, count, table_index(hash, my cap)) : nullptr;
+__attribute__((always_inline)) static inline u64* intern_find(
+    InternTable const* me, u64 hash, u64 const* words, u32 count, void const*** found
+) {
+    return my cap ? intern_find_from(me, hash, words, count, table_index(hash, my cap), found) : nullptr;
 }
 
 static void intern_grow(InternTable* me) {
     InternTable bigger = *me;
     bigger.cap = my cap ? my cap * 2 : 64;
-    // (Positions come from the tag's top bits; bit 1 is INTERN_FAR's)
-    panic_if(bigger.cap > (1u << 30), "an intern table of over 2^30 slots");
+    // (Positions come from the tag's top bits, bit 0 aside)
+    panic_if(bigger.cap > (1u << 31), "an intern table of over 2^31 slots");
     bigger.slots = big_table(bigger.cap, sizeof(u64));
     panic_if(!bigger.slots, "out of memory");
     for (u32 i = 0; i < my cap; i++) {
@@ -290,45 +307,44 @@ static void intern_grow(InternTable* me) {
 
 // Where a new block goes in a slot: near the table's base, else in its far list
 static u64 intern_locate(InternTable* table, void const** block) {
-    if (!table->base) table->base = (char const*)block;
-    i64 words = ((char const*)block - table->base) / 8;
-    if (__builtin_expect(words == (i32)words, 1)) return (u32)(i32)words;
+    if (__builtin_expect(!table->base, 0)) table->base = (char const*)block;
+    // (Blocks are 8-byte aligned: the shift is exact)
+    i64 words = ((i64)(uintptr_t)block - (i64)(uintptr_t)table->base) >> 3;
+#ifndef TTTT_INTERN_ALL_FAR // (A test build: every block far, for the far path's correctness)
+    if (__builtin_expect(words >= -(1ll << 30) && words < (1ll << 30), 1)) return (u32)(words * 2);
+#endif
     if (table->far_len == table->far_cap) {
         table->far_cap = table->far_cap ? table->far_cap * 2 : 64;
         table->far = realloc(table->far, sizeof(void const**) * table->far_cap);
         panic_if(!table->far, "out of memory");
     }
     table->far[table->far_len] = block;
-    return INTERN_FAR | table->far_len++;
+    return INTERN_FAR | (u64)table->far_len++ << 1;
 }
 
 // Puts a new key at `slot` (empty)
 static void const** intern_put(Checker* me, InternTable* table, u64* slot, u64 hash, u64 const* words, u32 count) {
     bool long_key = count >= INTERN_LONG_KEY;
-    // (A key of no words has a placeholder for word 0)
-    u32 stored = count ? count : 1;
     // (--shared-graph: the hash goes in the word before the block, for intern_set()'s publication)
     u64* block;
     if (__builtin_expect(table->shared != nullptr, 0)) {
         panic_if(current_checker != me, "a checker's table used off its thread");
-        block = arena_new_n(&my arena, u64, 2 + long_key + stored) + 1;
+        block = arena_new_n(&my arena, u64, 2 + long_key + count) + 1;
         block[-1] = hash;
+        // (A memo kind's entry is published once its value is there, if its computation was clean: graph_memo_flush())
+        if (my graph_memo_on) graph_memo_log_put(me, table, (void const**)block, count ? (u32)(words[0] & 255) : 0);
     } else {
-        block = arena_new_n(&my arena, u64, 1 + long_key + stored);
+        block = arena_new_n(&my arena, u64, 1 + long_key + count);
     }
 #ifdef TTTT_ARENA_SITES
-    key_kind_bytes[count ? words[0] & 255 : 0] += sizeof(u64) * (1 + long_key + stored);
+    key_kind_bytes[count ? words[0] & 255 : 0] += sizeof(u64) * (1 + long_key + count);
     key_kind_count[count ? words[0] & 255 : 0]++;
 #endif
     if (long_key) block[1] = count;
-    if (count) memcpy(block + 1 + long_key, words, sizeof(u64) * count);
+    memcpy(block + 1 + long_key, words, sizeof(u64) * count);
     block[1 + long_key] = intern_word0(words, count);
-    *slot = intern_tag(hash) | intern_locate(table, (void const**)block);
+    *slot = (u64)intern_tag(hash) << 32 | intern_locate(table, (void const**)block);
     table->len++;
-    // (A memo kind's entry is published once its value is there, if its computation was clean: graph_memo_flush())
-    if (__builtin_expect(table->shared != nullptr, 0) && my graph_memo_on) {
-        graph_memo_log_put(me, table, (void const**)block, count ? (u32)(words[0] & 255) : 0);
-    }
 #ifdef TTTT_TAINT
     // (The hooks can intern: the slot may move, not the block)
     taint_intern_put(table, hash, (void const**)block, count ? words[0] & 255 : 0);
@@ -526,7 +542,8 @@ void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 
         intern_grow(table);
     }
     u64 hash = hash_words(words, count);
-    u64* entry = intern_find(table, hash, words, count);
+    void const** hit = nullptr;
+    u64* entry = intern_find(table, hash, words, count, &hit);
     if (!*entry) {
         // (--shared-graph: an identity's slot is the shared one; a memo kind's is the checker's own, which its caller may
         // write whatever it finds there: never another checker's published value)
@@ -552,18 +569,19 @@ void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 
         return intern_put(me, table, entry, hash, words, count);
     }
 #ifdef TTTT_TAINT
-    void const** taint_block = intern_slot_block(table, *entry);
+    void const** taint_block = hit;
     taint_intern_hit(taint_block);
     return taint_block;
 #else
-    return intern_hit(table, intern_slot_block(table, *entry));
+    return intern_hit(table, hit);
 #endif
 }
 
 void const* intern_lookup(InternTable const* table, u64 const* words, u32 count, InternMiss* miss) {
     DEBUG_OWN_TABLE(table);
     u64 hash = hash_words(words, count);
-    u64* entry = intern_find(table, hash, words, count);
+    void const** hit = nullptr;
+    u64* entry = intern_find(table, hash, words, count, &hit);
     *miss = (InternMiss){ .hash = hash, .cap = table->cap, .index = entry ? (u32)(entry - table->slots) : 0 };
     if ((!entry || !*entry) && table->others) {
         void const** shared = intern_shared_find(table, hash, words, count);
@@ -573,12 +591,12 @@ void const* intern_lookup(InternTable const* table, u64 const* words, u32 count,
         if (shared) return shared[0];
     }
 #ifdef TTTT_TAINT
-    void const** taint_block = entry && *entry ? intern_slot_block(table, *entry) : nullptr;
+    void const** taint_block = entry && *entry ? hit : nullptr;
     if (taint_block) taint_intern_hit(taint_block);
     if (!taint_block || !taint_block[0]) taint_intern_miss(table, hash);
     return taint_block ? taint_block[0] : nullptr;
 #else
-    return entry && *entry ? intern_hit(table, intern_slot_block(table, *entry))[0] : nullptr;
+    return entry && *entry ? intern_hit(table, hit)[0] : nullptr;
 #endif
 }
 
@@ -591,14 +609,15 @@ void const** intern_insert(Checker* me, InternTable* table, InternMiss const* mi
         if (intern_needs_growth(table)) intern_grow(table);
         start = table_index(miss->hash, table->cap);
     }
-    u64* entry = intern_find_from(table, miss->hash, words, count, start);
+    void const** hit = nullptr;
+    u64* entry = intern_find_from(table, miss->hash, words, count, start, &hit);
     if (!*entry) return intern_put(me, table, entry, miss->hash, words, count);
 #ifdef TTTT_TAINT
-    void const** taint_block = intern_slot_block(table, *entry);
+    void const** taint_block = hit;
     taint_intern_hit(taint_block);
     return taint_block;
 #else
-    return intern_hit(table, intern_slot_block(table, *entry));
+    return intern_hit(table, hit);
 #endif
 }
 
@@ -612,7 +631,6 @@ static u64 const* intern_key_words(void const** block, u32 count) {
 u64 intern_block_hash(void const* const* block) {
     u32 count = intern_block_count(block);
     u64 const* key = intern_block_words(block, count);
-    if (!count) return hash_words(nullptr, 0);
     u64 small[16];
     u64* words = count <= c_arraylen(small) ? small : malloc(sizeof(u64) * count);
     panic_if(!words, "out of memory");
@@ -637,7 +655,7 @@ void const* intern_publish(Checker* me, InternTable* table, void const** slot) {
     static int debug = -1;
     if (debug < 0) debug = getenv("TTTT_DEBUG_INTERN_SET") != nullptr;
     if (debug) {
-        u64* own = intern_find(table, hash, intern_key_words(slot, count), count);
+        u64* own = intern_find(table, hash, intern_key_words(slot, count), count, &(void const**){nullptr});
         void const** found = shared_table_find(table->others, hash, intern_key_words(slot, count), count);
         if (!own || !*own || intern_slot_block(table, *own) != slot || found == slot) {
             eprintln("intern_set: slot of kind ", (u32)kind, own && *own ? (intern_slot_block(table, *own) == slot ? " own" : " other private") : " not private",
@@ -685,15 +703,17 @@ void const* intern_get(InternTable const* table, u64 const* words, u32 count) {
     DEBUG_OWN_TABLE(table);
 #ifdef TTTT_TAINT
     u64 hash = hash_words(words, count);
-    u64* entry = intern_find(table, hash, words, count);
-    void const** taint_block = entry && *entry ? intern_slot_block(table, *entry) : nullptr;
+    void const** hit = nullptr;
+    u64* entry = intern_find(table, hash, words, count, &hit);
+    void const** taint_block = entry && *entry ? hit : nullptr;
     if (taint_block) taint_intern_hit(taint_block);
     if (!taint_block || !taint_block[0]) taint_intern_miss(table, hash);
     return taint_block ? taint_block[0] : nullptr;
 #else
     u64 hash = hash_words(words, count);
-    u64* entry = intern_find(table, hash, words, count);
-    if (entry && *entry) return intern_hit(table, intern_slot_block(table, *entry))[0];
+    void const** hit = nullptr;
+    u64* entry = intern_find(table, hash, words, count, &hit);
+    if (entry && *entry) return intern_hit(table, hit)[0];
     void const** shared = table->others ? intern_shared_find(table, hash, words, count) : nullptr;
     return shared ? shared[0] : nullptr;
 #endif
@@ -702,13 +722,14 @@ void const* intern_get(InternTable const* table, u64 const* words, u32 count) {
 bool intern_has(InternTable const* table, u64 const* words, u32 count, void const** value) {
     DEBUG_OWN_TABLE(table);
     u64 hash = hash_words(words, count);
-    u64* entry = intern_find(table, hash, words, count);
+    void const** hit = nullptr;
+    u64* entry = intern_find(table, hash, words, count, &hit);
     if (entry && *entry) {
 #ifdef TTTT_TAINT
-        taint_intern_hit(intern_slot_block(table, *entry));
-        *value = intern_slot_block(table, *entry)[0];
+        taint_intern_hit(hit);
+        *value = hit[0];
 #else
-        *value = intern_hit(table, intern_slot_block(table, *entry))[0];
+        *value = intern_hit(table, hit)[0];
 #endif
         return true;
     }
