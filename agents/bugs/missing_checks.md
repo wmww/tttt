@@ -39,7 +39,7 @@ Each one mutant:
 - interfaceExtendingOptionalChain extends-object: `interface C1 extends Object?.Bar {}` is TS2499 *and* the name
   resolved as a type reference (TS2702; TS2503/TS2694 for others; the interface extends it): the parser makes a heritage
   `A?.B` the type reference it would be, flagged `heritage_optional_chain` (TS2499/TS2500 in the checker, value types for
-  its qualifiers in the types baseline, `(A?.B)<T>` in declaration emit). [fixed c6a331993]
+  its qualifiers in the types baseline, `(A?.B)<T>` in declaration emit). [fixed 4b4195aad]
 - twiceNestedKeyofIndexInference add-optional: an overload's signature in TS2769 prints
   `Required<Pick<State, "d">>` in full in tsc, `Required<...>` in tttt (the elision budget of a signature in an
   overload list). [text]
@@ -302,7 +302,7 @@ tsc keeps one local symbol per block for a name's exported and local declaration
 ## JSX
 - TS6229 isn't checked for union tag types or inside an overload chain: now a union tag's union signatures
   (ty_jsx_tag_arity_fits) and CallInfo.jsx_arity_unfit failing every candidate (an overloaded component is TS2769,
-  the last overload's TS6229). Test ttttJsxTagArityUnionOverloads. [fixed b3625732b]
+  the last overload's TS6229). Test ttttJsxTagArityUnionOverloads. [fixed 4c3613770]
 
 ## Messages: elaboration and printing (`scripts/errtextdiff.py`)
 - Union sources: for `Snap<...>` (a union alias) not assignable to `number`, tsc adds a line for the union's first
@@ -431,7 +431,7 @@ Seed 61: 11 -> 5 differing, seed 62: 11 -> 8 (both before the last fixes' rechec
   `{ p: null, s: null, ...f() }` (strictNullChecks off) with f's object replacing both properties is TS7005 with the
   whole type in tsgo (checkObjectLiteral passes the written members' ContainsWideningType to getSpreadType; nothing in
   the result reports TS7018). tttt took the flags of the final properties only. SpreadAcc.own_widening ->
-  OBJECT_CONTAINS_WIDENING -> TyAnonymous.spread_widening. Test ttttSpreadOverwrittenWidening. [fixed b8c82aa73] The
+  OBJECT_CONTAINS_WIDENING -> TyAnonymous.spread_widening. Test ttttSpreadOverwrittenWidening. [fixed 1faa449eb] The
   other three: unicodeLineSeparatorInMultilineComment never-const (the errors.txt rendering of a U+2028 line, harness
   text), restElementWithInitializer2 (the lazy name resolution entry below), classVarianceResolveCircularity2
   swap-stmts (missing TS7022, the circularity family). [text]
@@ -460,7 +460,7 @@ Seed 61: 11 -> 5 differing, seed 62: 11 -> 8 (both before the last fixes' rechec
 Seed 41: 10 -> 7 differing, seed 42: 13 -> 5. Left, each looked at:
 - (cor8 2026-10-28, seed 42 rerun: 4 differ) escapedIdentifiers member-typo: a missing property written with escapes
   (`o.argX\u0033`) is printed as written in TS2551/TS2339 (reportNonexistentProperty's declarationNameToString),
-  tttt printed the cooked name (report_no_property). Test ttttMissingPropertyEscapedName. [fixed a86a1b72e] The other
+  tttt printed the cooked name (report_no_property). Test ttttMissingPropertyEscapedName. [fixed ee2218c06] The other
   three are the entries below (TS2310 design, lazy name resolution, TS7022 circularity). [note]
 - **TS7034/TS7005 for an auto-typed `let x = undefined` read through `typeof x` in type parameter positions**:
   fixed for a function's (signature's) type parameters by seed 81 (they're in its flow container); a type alias's
@@ -493,7 +493,7 @@ Seed 41: 10 -> 7 differing, seed 42: 13 -> 5. Left, each looked at:
   union with ty_access (string). Now ty_indexed_or_null. Test ttttUnionSignatureNonTupleRest. Left: `f2(1, 2)` on the
   `[string] | undefined` rest alone prints `[1, number]` where tsc has `[1, 2]` (getSpreadArgumentType's contextual
   type of each argument, getIndexedAccessType(rest, i, Contextual), keeps the literals: what tsc's contextual type is
-  there wasn't traced). [fixed 48128a820]
+  there wasn't traced). [fixed da53edfc0]
 
 ## Mutation seed 2026102001 (2026-10-20, -n 3000: 5 / 1552 differ)
 Fixed: a computed key naming no property against a generic mapped contextual type, recursive-return skip with type
@@ -574,7 +574,7 @@ umd7, typeTagNoErasure, importHelpersES6: the seeds 2311/2312 entries).
   its file's export=, getSpecifierForModuleSymbol falls to IsModuleWithStringLiteralName), and an ambient module's
   `export =` likewise (`import("file1")`, its export= container is no file); tttt printed the first declaration's
   file. display_module_clone, out_symbol_name_impl. Tests ttttAugmentedExportEqualsModuleName,
-  ttttAugmentedExportEqualsAmbientName. [fixed acef2820f]
+  ttttAugmentedExportEqualsAmbientName. [fixed c6ddc2f74]
 - jsdocParamTagTypeLiteral member-typo: `@param {object[]} opts5` with children `opts5[].what`, `opts5[].whatX.bad`
   (a grandchild under a wrong middle name), `opts5[].unnest`: tsgo's parseChildParameterOrPropertyTag accepts a child
   only when its name's left is exactly the parent's, so the wrong grandchild ends `what`'s and `opts5`'s nesting both:
@@ -583,12 +583,12 @@ umd7, typeTagNoErasure, importHelpersES6: the seeds 2311/2312 entries).
 - jsdocTypeTagFunctionTypePredicate delete-stmt: TS2355 for a JSDoc `@type {(e) => e is X}` function expression
   without a return is at the `@type` tag's type (8,27) in tsgo, at its return type (8,43) in tttt: tsgo's errorNode is
   the FullSignature the reparser set; function_impl_check_end now takes jsdoc_signature_span when the return type
-  came from it. Test ttttJsdocSignatureMissingReturn. [fixed 6b52bc19d]
+  came from it. Test ttttJsdocSignatureMissingReturn. [fixed 87797caaa]
 - bigintArbirtraryIdentifier drop-as: TS2460's "exported as" name is symbolToString's, quoted when it isn't an
-  identifier (`'"0n"'`). Test ttttExportedAsStringName. [fixed 67f661581]
+  identifier (`'"0n"'`). Test ttttExportedAsStringName. [fixed 93f98625d]
 - libTypeScriptSubfileResolvingConfig ann-string-number: a spurious related TS6500 into a libReplacement's file
   (`@typescript/lib-dom`), which tsgo's IsSourceFileDefaultLibrary counts as a lib (relater.go skips the related info).
-  SourceFile.is_lib_replacement, check.c in_lib(). Test ttttLibReplacementNoRelatedInfo. [fixed HASH]
+  SourceFile.is_lib_replacement, check.c in_lib(). Test ttttLibReplacementNoRelatedInfo. [fixed 30d3f5e30]
 - Text leftovers of the seed, not looked into further: checkJsdocTypeTag6 never-const (a JS `: never` annotation next
   to `@type {() => void}`: tsgo gives the function expression the tag's signature then, `() => void`);
   declarationsForIndirectTypeAliasReference ann-string-number (TS2353 names `Hash<string>` for an empty interface
@@ -625,7 +625,7 @@ Diagnostics-class leftovers, not fixed:
 - Seen while fixing: `/** @type {} */ var w = 1` types w as any in tsgo (TS1110 there), number in tttt. The tag now
   has tsc's missing type (parse_jsdoc_type_expression), and a missing type node lowers to the error type (so `x
   satisfies <missing>` is any, TS and JSDoc), a type running into the comment's end is kept. Test ttttJsdocEmptyType.
-  [fixed 1d2a5b7aa] Left, JSDoc parser (bun's area): `/** @type {\n */` and `/** @type { */` miss tsgo's TS1110 at the
+  [fixed 8fbeb9b4d] Left, JSDoc parser (bun's area): `/** @type {\n */` and `/** @type { */` miss tsgo's TS1110 at the
   newline/whitespace token after `{` (tsgo's JSDoc scanner makes whitespace a token); `/** @type {\n * number} */` is
   `*` (JSDocAllType) then '}' expected at `number` in tsgo, number without errors in tttt (the continuation's `*`
   skipped). Text: `{ x: 1 } satisfies ;`'s types line prints `satisfies ` with a trailing space (the missing type's span
