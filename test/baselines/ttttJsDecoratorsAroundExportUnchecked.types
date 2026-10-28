@@ -1,0 +1,38 @@
+//// [test/cases/ttttJsDecoratorsAroundExportUnchecked.ts] ////
+
+=== a.js ===
+const dec = 0, dec2 = 0;
+>dec : 0
+>0 : 0
+>dec2 : 0
+>0 : 0
+
+@dec export @dec2 function f1() {}
+>dec : 0
+>dec2 : 0
+>f1 : () => void
+
+@dec export @dec2 const x2 = 1;
+>dec : 0
+>dec2 : 0
+>x2 : 1
+>1 : 1
+
+@dec export function f5() {}
+>dec : 0
+>f5 : () => void
+
+export @dec2 function f6() {}
+>dec2 : 0
+>f6 : () => void
+
+=== b.ts ===
+declare const dec: any, dec2: any;
+>dec : any
+>dec2 : any
+
+@dec export @dec2 function f1() {}
+>dec : any
+>dec2 : any
+>f1 : () => void
+

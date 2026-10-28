@@ -346,7 +346,7 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
 - A `declare class`'s static block is an ambient context (28-C26f 34-C8): TS1036, no TS18041. [fixed 467c05d5a]
 - `@dec export @dec2 function f() {}` in JavaScript (53-L17): TS1206 twice, the checker's at the `@` and
   getJSSyntacticDiagnosticsForFile's over `@dec` (not for `module "m"`/`global`, which tsgo never JS-checks).
-  [fixed COMMIT]
+  [fixed 6027d85bf]
 
 ## Not looked at, by code
 - Each paragraph below is a code and direction with the cases it mismatches in, uninvestigated: at least one open
