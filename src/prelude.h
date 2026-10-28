@@ -109,7 +109,7 @@ void big_table_free(void* table, size_t bytes);
 // which past what the front end freed is a page at a time with an mprotect() each (a non-main arena's heap has no top
 // pad), taking the mm lock for writing while every other thread's faults wait: vscode made 11k of them under the flag
 // and 41 without, its checkers blocked 1.1 s against 0.16. The pages are faulted in for writing when handed out,
-// a megabyte ahead (zeroed_table()'s reason: no zero page to copy at the first write)
+// 256 KB ahead (zeroed_table()'s reason: no zero page to copy at the first write)
 typedef struct ZeroPages {
     pthread_mutex_t lock;
     char* at;

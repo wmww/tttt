@@ -184,7 +184,7 @@ void big_table_free(void* table, size_t bytes) {
     pthread_mutex_unlock(&big_tables_lock);
 }
 
-enum { ZERO_PAGES_CHUNK = 32 << 20, ZERO_PAGES_OWN = 4 << 20, ZERO_PAGES_AHEAD = 1 << 20 };
+enum { ZERO_PAGES_CHUNK = 32 << 20, ZERO_PAGES_OWN = 4 << 20, ZERO_PAGES_AHEAD = 256 << 10 };
 
 void zero_pages_init(ZeroPages* me) {
     *me = (ZeroPages){};
@@ -220,7 +220,7 @@ void* zero_pages_alloc(ZeroPages* me, size_t bytes) {
         ret = my at;
         my at += bytes;
         if (my at > my populated) {
-            // (A megabyte ahead: a madvise() per memo page was 50k of them on vscode)
+            // (256 KB ahead: a madvise() per memo page was 50k of them on vscode; a megabyte ahead held 5-7 MB more peak RSS on zod and drizzle)
             from = (char*)((uintptr_t)my populated & ~(uintptr_t)4095);
             to = my at + ZERO_PAGES_AHEAD < my end ? my at + ZERO_PAGES_AHEAD : my end;
             my populated = to;
