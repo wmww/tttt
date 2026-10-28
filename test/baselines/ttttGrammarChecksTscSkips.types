@@ -1,0 +1,80 @@
+//// [test/cases/ttttGrammarChecksTscSkips.ts] ////
+
+=== a.ts ===
+declare class A<T = 1> {}
+>A : A<T>
+
+declare class D {}
+>D : D
+
+interface I<T = 1> {}
+declare const o: any;
+>o : any
+
+public class B1 extends A, {}
+>B1 : B1
+>A : A<1>
+
+public interface J1 extends I<1,>, {}
+class B2 extends A extends A<> {}
+>B2 : B2
+>A : A<1>
+>A : A<1>
+
+class B3<> extends A extends A {}
+>B3 : B3
+>A : A<1>
+>A : A<1>
+
+class B4 extends A, class extends D, A {} {}
+>B4 : B4
+>A : A<1>
+>class extends D, A {} : A<1>
+>D : D
+>A : D
+
+class B5 extends A, class<> {} {}
+>B5 : B5
+>A : A<1>
+>class<> {} : A<1>
+
+class B6 implements I implements (class extends D, A {}) {}
+>B6 : B6
+>(class extends D, A {}) : typeof (Anonymous class)
+>class extends D, A {} : typeof (Anonymous class)
+>D : D
+>A : D
+
+class B7 extends A<1,> {}
+>B7 : B7
+>A : A<1>
+
+class B8<> extends A<> {}
+>B8 : B8
+>A : A<1>
+
+public var v = 1,;
+>v : number
+>1 : 1
+
+o?.a<>`x`;
+>o?.a<>`x` : any
+>o?.a : any
+>o : any
+>a : any
+>`x` : "x"
+
+o?.a<1,>`x`;
+>o?.a<1,>`x` : any
+>o?.a : any
+>o : any
+>a : any
+>`x` : "x"
+
+=== b.ts ===
+export interface G<T> { a: T }
+>a : T
+
+type Q = import("./b").G<1,>;
+>Q : G<1>
+

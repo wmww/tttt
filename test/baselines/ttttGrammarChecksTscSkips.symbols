@@ -1,0 +1,79 @@
+//// [test/cases/ttttGrammarChecksTscSkips.ts] ////
+
+=== a.ts ===
+declare class A<T = 1> {}
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 16))
+
+declare class D {}
+>D : Symbol(D, Decl(a.ts, 0, 25))
+
+interface I<T = 1> {}
+>I : Symbol(I, Decl(a.ts, 1, 18))
+>T : Symbol(T, Decl(a.ts, 2, 12))
+
+declare const o: any;
+>o : Symbol(o, Decl(a.ts, 3, 13))
+
+public class B1 extends A, {}
+>B1 : Symbol(B1, Decl(a.ts, 3, 21))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+
+public interface J1 extends I<1,>, {}
+>J1 : Symbol(J1, Decl(a.ts, 4, 29))
+>I : Symbol(I, Decl(a.ts, 1, 18))
+
+class B2 extends A extends A<> {}
+>B2 : Symbol(B2, Decl(a.ts, 5, 37))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+
+class B3<> extends A extends A {}
+>B3 : Symbol(B3, Decl(a.ts, 6, 33))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+
+class B4 extends A, class extends D, A {} {}
+>B4 : Symbol(B4, Decl(a.ts, 7, 33))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>D : Symbol(D, Decl(a.ts, 0, 25))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+
+class B5 extends A, class<> {} {}
+>B5 : Symbol(B5, Decl(a.ts, 8, 44))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+
+class B6 implements I implements (class extends D, A {}) {}
+>B6 : Symbol(B6, Decl(a.ts, 9, 33))
+>I : Symbol(I, Decl(a.ts, 1, 18))
+>D : Symbol(D, Decl(a.ts, 0, 25))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+
+class B7 extends A<1,> {}
+>B7 : Symbol(B7, Decl(a.ts, 10, 59))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+
+class B8<> extends A<> {}
+>B8 : Symbol(B8, Decl(a.ts, 11, 25))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+
+public var v = 1,;
+>v : Symbol(v, Decl(a.ts, 13, 10))
+
+o?.a<>`x`;
+>o : Symbol(o, Decl(a.ts, 3, 13))
+
+o?.a<1,>`x`;
+>o : Symbol(o, Decl(a.ts, 3, 13))
+
+=== b.ts ===
+export interface G<T> { a: T }
+>G : Symbol(G, Decl(b.ts, 0, 0))
+>T : Symbol(T, Decl(b.ts, 0, 19))
+>a : Symbol(G.a, Decl(b.ts, 0, 23))
+>T : Symbol(T, Decl(b.ts, 0, 19))
+
+type Q = import("./b").G<1,>;
+>Q : Symbol(Q, Decl(b.ts, 0, 30))
+>G : Symbol(G, Decl(b.ts, 0, 0))
+

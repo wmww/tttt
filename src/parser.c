@@ -76,6 +76,12 @@ typedef struct ParserShared {
     bool decl_committed;
     // parse_modifier_list_ex() after decorators: every modifier keyword is one (tsc's parseModifiersEx), `@dec in class`
     bool modifiers_after_decorators;
+    // The modifiers of the declaration parse_decl_statement() tries next fail tsc's checkGrammarModifiers, which ends
+    // the grammar checks of the declaration's own parts (checkVariableStatement's list, a class's or interface's
+    // heritage clauses: `public class B extends A, {}` has no TS1009). The declaration parser takes it at its start
+    bool decl_modifiers_failed;
+    // The statement's decorators came before `export` (a class with its own after it: TS8038, a modifier error too)
+    bool decl_leading_decorators;
     // What kind of function the parser is currently inside, decides if `await` and `yield` are operators
     bool in_async;
     bool in_generator;
@@ -148,6 +154,9 @@ typedef struct ParserShared {
     char const* binary_marker;
     // Parsing the type arguments of `import<...>`: TS1326 replaces their own grammar errors (TS1099)
     bool import_type_args;
+    // The next type argument list parse_generic_params() parses is an import type's (`import("./a").G<1,>`), whose
+    // grammar tsc never checks (checkImportType has no checkGrammarTypeArguments): taken at its start
+    bool unchecked_type_args;
     // A word with a unicode escape was parsed (note_escaped_names()): only then do keyword probes cook words
     bool any_escaped_word;
     // The type member being parsed can't be a mapped type's `[K in T]` (tsc's isStartOfMappedType looks only at a type
@@ -888,6 +897,39 @@ static void jsdoc_error_s(Parser* me, Span span, unsigned ts_code, cstr message)
 
 static intptr_t error_mark(Parser const* me) {
     return vec_error_size(&my shared->errors);
+}
+
+// Drops the grammar errors (tsc's checker's) reported since `start`: what they're about is something tsc's checker
+// never checks (a heritage element past the first). With `code`, only the first of that code whose span starts at
+// `at`, which is returned (span_null if none): an error the caller reports itself, if at all
+static Span grammar_drop_since(Parser* me, intptr_t start, unsigned code, const char* at) {
+    VecError* errors = &my shared->errors;
+    intptr_t kept = start;
+    Span found = span_null;
+    for (intptr_t i = start; i < vec_error_size(errors); i++) {
+        Error* error = vec_error_at_mut(errors, i);
+        // (TS18012 is tsc's binder's, which every declaration goes through, checked or not)
+        bool drop = error->grammar && (!code ? error->ts_code != 18012 :
+            (!span_valid(found) && error->ts_code == code && span_start_ptr(error->span) == at));
+        if (drop) {
+            if (code) found = error->span;
+            error_drop(error);
+            my error_count--;
+        } else {
+            if (kept != i) errors->data[kept] = *error;
+            kept++;
+        }
+    }
+    errors->size = kept;
+    return found;
+}
+
+// Whether the declaration parser called now has modifiers that fail tsc's checkGrammarModifiers (see
+// ParserShared.decl_modifiers_failed)
+static bool take_decl_modifiers_failed(Parser* me) {
+    bool failed = my shared->decl_modifiers_failed;
+    my shared->decl_modifiers_failed = false;
+    return failed;
 }
 
 // Whether the declaration parser called now was committed to by decorators (see ParserShared.decl_committed)
@@ -2683,6 +2725,14 @@ static bool check_modifiers(Parser* parent, ModifierList const* me, ModifiedNode
     return reported;
 }
 
+// check_modifiers() without reporting: whether tsc's checkGrammarModifiers would complain about these on a node of
+// this kind (node: as check_modifiers() will see it, its parent_ambient included)
+static bool modifiers_would_fail(Parser* p, ModifierList const* me, ModifiedNode node, ModifiedKind kind) {
+    if (vec_spanned_modifier_is_empty(&me->spanned) || p->shared->with_body_depth) return false;
+    node.kind = kind;
+    return modifier_list_check_grammar(me, &node, nullptr);
+}
+
 static inline bool expect_binary_op(Parser* parent, BinaryOp expected) {
     Parser p = parser(parent);
     BinaryOp actual;
@@ -2879,6 +2929,8 @@ static bool parse_generic_params(Parser* parent, bool fail_on_error, VecSpannedT
     Parser p = parser(parent);
     Anchor a = anchor(&p);
     *ret = vec_spanned_type_init();
+    bool unchecked = p.shared->unchecked_type_args;
+    p.shared->unchecked_type_args = false;
 
     if (!hop_char(&p, '<')) {
         return parse_fail(&p);
@@ -2916,7 +2968,7 @@ static bool parse_generic_params(Parser* parent, bool fail_on_error, VecSpannedT
         hop_whitespace(&p);
     }
 
-    if (span_valid(trailing_comma_span) && !(p.shared->in_jsdoc && p.shared->jsdoc_unchecked)) {
+    if (span_valid(trailing_comma_span) && !(p.shared->in_jsdoc && p.shared->jsdoc_unchecked) && !unchecked) {
         grammar_error(&p, trailing_comma_span, 1009, "Trailing comma not allowed.");
     }
 
@@ -2925,7 +2977,9 @@ static bool parse_generic_params(Parser* parent, bool fail_on_error, VecSpannedT
     }
 
     // (tsc's checkGrammarTypeArguments)
-    if (vec_spanned_type_is_empty(ret) && !(p.shared->in_jsdoc && p.shared->jsdoc_unchecked) && !p.shared->import_type_args) {
+    if (vec_spanned_type_is_empty(ret) && !(p.shared->in_jsdoc && p.shared->jsdoc_unchecked) && !p.shared->import_type_args &&
+        !unchecked
+    ) {
         grammar_error(&p, span_from(a), 1099, "Type argument list cannot be empty.");
     }
     shrink_list(vec_spanned_type, ret);
@@ -3598,9 +3652,11 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
         end = p.pos;
         hop_whitespace(&p);
     }
+    p.shared->unchecked_type_args = true;
     if (p.whitespace != WHITESPACE_NEWLINE && parse_generic_params(&p, false, &identifier.generic_params)) {
         end = p.pos;
     }
+    p.shared->unchecked_type_args = false;
     p.pos = end;
 
     if (has_path) {
@@ -6468,6 +6524,15 @@ typedef struct HeritageClauses {
     // resolves in the others
     VecExpr invalid;
     VecExpr unchecked_invalid;
+    // tsc's checkGrammarClassDeclarationHeritageClauses/checkGrammarInterfaceDeclaration: none of their checks when
+    // the declaration's modifiers fail (modifiers_failed); `stopped` when they end at a complaint about the clauses
+    // (TS1172...), which ends checkGrammarClassLikeDeclaration (no TS1098 for the type parameters then)
+    bool modifiers_failed;
+    bool stopped;
+    // The base's own type argument list's grammar errors (`extends A<B,>`, `extends A<>`), which only
+    // checkGrammarHeritageClause reports, in its turn
+    Span base_args_comma;
+    Span base_args_empty;
 } HeritageClauses;
 
 // An `extends` element of a class or an interface
@@ -6507,14 +6572,30 @@ static void parse_heritage_expr(Parser* p, Expr* ret) {
 
 // An element of a heritage clause. Where a type is meant (`implements`, an interface's `extends`) an entity name is
 // parsed again as the type reference it means
+// The grammar errors of an element tsc's checker never visits (a class's `extends` elements past the base, the
+// elements of later clauses, an implemented or extended expression that isn't a name, TS2500/TS2499) are dropped
 static void parse_heritage_element(Parser* p, HeritageClauses* h, bool is_extends, bool checked, Span keyword, u32 index) {
+    intptr_t mark = error_mark(p);
     if (h->is_class && is_extends) {
         Expr e;
         parse_heritage_expr(p, &e);
         if (checked && index == 0) {
+            if (e.tag == EXPR_GENERIC_PARAMS) {
+                // The base's own list: its grammar errors are checkGrammarHeritageClause's (parse_heritage_clauses())
+                Parser q = parser(p);
+                q.pos = span_end_ptr(expr_outer_span(&e.generic_params->expr));
+                hop_whitespace(&q);
+                const char* open = q.pos;
+                parse_fail(&q);
+                const char* c = span_end_ptr(expr_outer_span(&e)) - 1;
+                while (c > open && (c[-1] == ' ' || c[-1] == '\t' || c[-1] == '\n' || c[-1] == '\r')) c--;
+                if (c > open && c[-1] == ',') h->base_args_comma = grammar_drop_since(p, mark, 1009, c - 1);
+                h->base_args_empty = grammar_drop_since(p, mark, 1099, open);
+            }
             h->base = e;
             h->base_clause = span_make(p->shared->source, span_start_ptr(keyword), p->pos);
         } else {
+            grammar_drop_since(p, mark, 0, nullptr);
             vec_expr_push(&h->unchecked_exprs, e);
         }
         return;
@@ -6539,6 +6620,7 @@ static void parse_heritage_element(Parser* p, HeritageClauses* h, bool is_extend
                 if (checked) {
                     list_push(vec_spanned_type, &h->types, spanned_type(span, t));
                 } else {
+                    grammar_drop_since(p, mark, 0, nullptr);
                     vec_type_push(&h->unchecked_types, t);
                 }
                 return;
@@ -6551,6 +6633,7 @@ static void parse_heritage_element(Parser* p, HeritageClauses* h, bool is_extend
     } else {
         parse_success(&ep);
     }
+    grammar_drop_since(p, mark, 0, nullptr);
     vec_expr_push(checked ? &h->invalid : &h->unchecked_invalid, e);
 }
 
@@ -6569,7 +6652,7 @@ static void parse_heritage_clauses(Parser* p, HeritageClauses* h) {
     if (*p->pos != 'e' && *p->pos != 'i') return;
     Tok first = tok_peek(p);
     if (!tok_is(first, "extends") && !tok_is(first, "implements")) return;
-    bool grammar_done = false;
+    bool grammar_done = h->modifiers_failed;
     bool seen_extends = false;
     bool seen_implements = false;
     bool first_extends = true;
@@ -6652,12 +6735,19 @@ static void parse_heritage_clauses(Parser* p, HeritageClauses* h) {
         } else {
             seen_implements = true;
         }
-        if (grammar_done) continue;
+        if (grammar_done) {
+            h->stopped = !h->modifiers_failed;
+            continue;
+        }
         if (span_valid(trailing_comma)) {
             grammar_error(p, trailing_comma, 1009, "Trailing comma not allowed.");
         } else if (count == 0) {
             Span at = span_make(p->shared->source, span_end_ptr(keyword), span_end_ptr(keyword));
             grammar_error(p, at, 1097, "'", keyword, "' list cannot be empty.");
+        } else if (h->is_class && is_extends && span_valid(h->base_args_comma)) {
+            grammar_error(p, h->base_args_comma, 1009, "Trailing comma not allowed.");
+        } else if (h->is_class && is_extends && span_valid(h->base_args_empty)) {
+            grammar_error(p, h->base_args_empty, 1099, "Type argument list cannot be empty.");
         }
     }
     list_leave(p, saved_clauses);
@@ -6670,6 +6760,7 @@ static bool parse_interface_decl(Parser* parent, bool committed, InterfaceDecl* 
     Anchor a = anchor(&p);
 
     bool decorated = take_decl_committed(&p);
+    bool modifiers_failed = take_decl_modifiers_failed(&p);
     if (!hop_start_if_ends_on_word_break(&p, "interface")) {
         return parse_fail(&p);
     }
@@ -6702,7 +6793,7 @@ static bool parse_interface_decl(Parser* parent, bool committed, InterfaceDecl* 
     }
     hop_whitespace(&p);
 
-    HeritageClauses heritage = { .is_class = false };
+    HeritageClauses heritage = { .is_class = false, .modifiers_failed = modifiers_failed };
     parse_heritage_clauses(&p, &heritage);
     hop_whitespace(&p);
     Interface interface;
@@ -9479,9 +9570,14 @@ static inline bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* re
 [[gnu::noinline]] static bool parse_class_decl_slow(Parser* parent, bool abstract, ClassDecl* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
+    bool modifiers_failed = take_decl_modifiers_failed(&p);
+    bool leading_decorators = p.shared->decl_leading_decorators;
+    p.shared->decl_leading_decorators = false;
 
     VecExpr decorators = {0};
     ignore parse_decorators(&p, &decorators);
+    // (Decorators both before and after `export`: TS8038, one of checkGrammarModifiers' complaints)
+    modifiers_failed |= leading_decorators && !vec_expr_is_empty(&decorators);
 
     bool is_abstract = abstract;
     // (A modifier only with what follows on its line: `abstract` then a newline is an expression statement)
@@ -9530,7 +9626,12 @@ static inline bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* re
     }
     hop_whitespace(&p);
 
+    // (checkGrammarClassLikeDeclaration: the heritage clauses' complaints first, then the type parameters' TS1098)
+    intptr_t generic_mark = error_mark(&p);
+    const char* generic_open = p.pos;
+    Span empty_generic = span_null;
     if (parse_generic_decl(&p, TYPE_PARAM_OF_CLASS, &ret->generic)) {
+        empty_generic = grammar_drop_since(&p, generic_mark, 1098, generic_open);
         hop_whitespace(&p);
         if (!generic_empty(&ret->generic)) {
             Span span = span_between(vec_generic_item_front(&ret->generic.items)->full_span,
@@ -9541,8 +9642,11 @@ static inline bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* re
         ret->generic = (Generic){0};
     }
 
-    HeritageClauses heritage = { .is_class = true, .base = expr_implicit_any_no_span };
+    HeritageClauses heritage = { .is_class = true, .base = expr_implicit_any_no_span, .modifiers_failed = modifiers_failed };
     parse_heritage_clauses(&p, &heritage);
+    if (span_valid(empty_generic) && !heritage.stopped) {
+        grammar_error(&p, empty_generic, 1098, "Type parameter list cannot be empty.");
+    }
     ret->extends = heritage.base;
     ret->extends_clause = heritage.base_clause;
     ret->implements = heritage.types;
@@ -10865,6 +10969,21 @@ static inline bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left
         bool chain = optional_template || tag_in_optional_chain(left_and_ret);
         if (chain) {
             grammar_error(&p, span_from(template_a), 1358, "Tagged template expressions are not permitted in an optional chain.");
+            // (checkTaggedTemplateExpression checks the type arguments only without TS1358: `o?.a<>\`x\`` has no
+            // TS1099. Rare, so the file's errors are searched)
+            bool generic = left_and_ret->tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(left_and_ret);
+            Parser q = parser(&p);
+            q.pos = span_end_ptr(expr_outer_span(generic ? &left_and_ret->generic_params->expr : left_and_ret));
+            hop_whitespace(&q);
+            const char* open = q.pos;
+            parse_fail(&q);
+            if (*open == '<') {
+                const char* c = template_a.start;
+                while (c > open && *c != '>') c--;
+                while (c > open && (c[-1] == ' ' || c[-1] == '\t' || c[-1] == '\n' || c[-1] == '\r')) c--;
+                if (c > open && c[-1] == ',') grammar_drop_since(&p, 0, 1009, c - 1);
+                grammar_drop_since(&p, 0, 1099, open);
+            }
         }
         *left_and_ret = expr_template(
             span_from(a),
@@ -13617,6 +13736,8 @@ static void unique_symbol_variable_check(Parser* p, Binding const* binding, bool
 
 static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, VariableStatement* ret) {
     Parser p = parser(parent);
+    // (tsc's checkVariableStatement checks the list only when the modifiers pass)
+    bool list_unchecked = take_decl_modifiers_failed(&p);
     bool using_forced = p.shared->using_forced;
     p.shared->using_forced = false;
     bool let_forced = p.shared->let_forced;
@@ -13681,7 +13802,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
                     continue;
                 }
             } else if (span_valid(comma_span)) {
-                grammar_error(&p, comma_span, 1009, "Trailing comma not allowed.");
+                if (!list_unchecked) grammar_error(&p, comma_span, 1009, "Trailing comma not allowed.");
                 p.pos = span_end_ptr(comma_span);
             } else if (vec_initialized_binding_is_empty(&ret->initializers)) {
                 if (ret->keyword == VAR_INIT_LET && !empty_for_of && !in_for && !let_forced) {
@@ -13696,7 +13817,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
                 } else {
                     Span s = span_from(end_of_keyword);
                     s.size = 0;
-                    grammar_error(&p, s, 1123, "Variable declaration list cannot be empty.");
+                    if (!list_unchecked) grammar_error(&p, s, 1123, "Variable declaration list cannot be empty.");
                 }
             } else if (list_is_terminator(PARSING_VARIABLE_DECLARATIONS, tok_peek(&p))) {
                 // After a missing `,` or a skipped token (`var v = (a): => {}` ends at the `=>`)
@@ -14928,6 +15049,17 @@ static void js_syntax_declaration(Parser* p, intptr_t mark, const char* start, c
     }
 }
 
+// parse_class_decl() for a statement's class, whose modifiers fail tsc's checkGrammarModifiers (`modifiers_failed`) or
+// whose decorators came before `export` (`leading_decorators`): see ParserShared.decl_modifiers_failed
+static bool parse_class_decl_after(Parser* p, bool abstract, bool modifiers_failed, bool leading_decorators, ClassDecl* ret) {
+    p->shared->decl_modifiers_failed = modifiers_failed;
+    p->shared->decl_leading_decorators = leading_decorators;
+    bool parsed = parse_class_decl(p, abstract, ret);
+    p->shared->decl_modifiers_failed = false;
+    p->shared->decl_leading_decorators = false;
+    return parsed;
+}
+
 static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
@@ -15054,13 +15186,17 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
     };
     bool outer_ambient = p.shared->in_ambient;
     p.shared->in_ambient |= modifiers.includes[MODIFIER_DECLARE];
+    ModifiedNode dry = modified;
+    dry.parent_ambient |= outer_ambient;
 
     // (After decorators `using` is a variable statement whatever follows: tsc's parseDeclarationWorker, reached
     // without isUsingDeclaration's lookahead, `@dec using 1` is TS1134)
     p.shared->using_forced = !vec_expr_is_empty(&decorators);
     p.shared->let_forced = vec_spanned_modifier_size(&modifiers.spanned) > 0;
+    p.shared->decl_modifiers_failed = modifiers_would_fail(&p, &modifiers, dry, MODIFIED_VARIABLE_STATEMENT);
     bool variable = decl_props.exported != DECL_EXPORTED_YES_DEFAULT &&
         parse_variable_statement(&p, expr_ctx_null, false, &parsed.variable);
+    p.shared->decl_modifiers_failed = false;
     p.shared->using_forced = false;
     p.shared->let_forced = false;
     if (variable) {
@@ -15088,7 +15224,9 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 },
             },
         };
-    } else if (parse_class_decl(&p, modifiers.includes[MODIFIER_ABSTRACT], &parsed.class)) {
+    } else if (parse_class_decl_after(&p, modifiers.includes[MODIFIER_ABSTRACT],
+        modifiers_would_fail(&p, &modifiers, dry, MODIFIED_CLASS), decorated, &parsed.class)
+    ) {
         modified.kind = MODIFIED_CLASS;
         parsed.class.full_span = span_from(a);
         if (!span_valid(parsed.class.name) && decl_props.exported != DECL_EXPORTED_YES_DEFAULT) {
@@ -15117,6 +15255,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             },
         };
     } else if ((p.shared->decl_committed = decorated,
+        p.shared->decl_modifiers_failed = modifiers_would_fail(&p, &modifiers, dry, MODIFIED_INTERFACE),
         parse_interface_decl(&p, decl_props.exported == DECL_EXPORTED_YES_DEFAULT, &parsed.interface_decl))
     ) {
         modified.kind = MODIFIED_INTERFACE;
@@ -15237,7 +15376,18 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         // Decorators and modifiers before no declaration (tsc's parseDeclarationWorker: a MissingDeclaration, TS1146
         // where its end is, before the trivia; parse_statement() keeps the decorators the same way)
         p.shared->in_ambient = outer_ambient;
-        const char* end = span_end_ptr(expr_outer_span(&vec_expr_back(&decorators)[0]));
+        // (The end of the last decorator or modifier; a decorator missing its expression, `@ ;`, ends at its `@`)
+        const char* end = nullptr;
+        for_each (i, vec_expr, &decorators) {
+            Span e = expr_outer_span(i);
+            const char* e_end = span_end_ptr(e);
+            if (!e.size) {
+                const char* c = span_start_ptr(e);
+                while (c > a.start && is_js_ascii_space(c[-1])) c--;
+                if (c > a.start && c[-1] == '@') e_end = c;
+            }
+            if (!end || e_end > end) end = e_end;
+        }
         for_each (i, vec_spanned_modifier, &modifiers.spanned) {
             if (span_end_ptr(i->span) > end) end = span_end_ptr(i->span);
         }

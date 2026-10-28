@@ -1,0 +1,65 @@
+a.ts(5,1): error TS1044: 'public' modifier cannot appear on a module or namespace element.
+a.ts(6,1): error TS1044: 'public' modifier cannot appear on a module or namespace element.
+a.ts(6,32): error TS1009: Trailing comma not allowed.
+a.ts(7,20): error TS1172: 'extends' clause already seen.
+a.ts(8,22): error TS1172: 'extends' clause already seen.
+a.ts(9,21): error TS1174: Classes can only extend a single class.
+a.ts(10,21): error TS1174: Classes can only extend a single class.
+a.ts(11,23): error TS1175: 'implements' clause already seen.
+a.ts(12,21): error TS1009: Trailing comma not allowed.
+a.ts(13,9): error TS1098: Type parameter list cannot be empty.
+a.ts(13,21): error TS1099: Type argument list cannot be empty.
+a.ts(14,1): error TS1044: 'public' modifier cannot appear on a module or namespace element.
+a.ts(15,7): error TS1358: Tagged template expressions are not permitted in an optional chain.
+a.ts(16,9): error TS1358: Tagged template expressions are not permitted in an optional chain.
+
+
+==== a.ts (14 errors) ====
+    declare class A<T = 1> {}
+    declare class D {}
+    interface I<T = 1> {}
+    declare const o: any;
+    public class B1 extends A, {}
+    ~~~~~~
+!!! error TS1044: 'public' modifier cannot appear on a module or namespace element.
+    public interface J1 extends I<1,>, {}
+    ~~~~~~
+!!! error TS1044: 'public' modifier cannot appear on a module or namespace element.
+                                   ~
+!!! error TS1009: Trailing comma not allowed.
+    class B2 extends A extends A<> {}
+                       ~~~~~~~
+!!! error TS1172: 'extends' clause already seen.
+    class B3<> extends A extends A {}
+                         ~~~~~~~
+!!! error TS1172: 'extends' clause already seen.
+    class B4 extends A, class extends D, A {} {}
+                        ~~~~~
+!!! error TS1174: Classes can only extend a single class.
+    class B5 extends A, class<> {} {}
+                        ~~~~~
+!!! error TS1174: Classes can only extend a single class.
+    class B6 implements I implements (class extends D, A {}) {}
+                          ~~~~~~~~~~
+!!! error TS1175: 'implements' clause already seen.
+    class B7 extends A<1,> {}
+                        ~
+!!! error TS1009: Trailing comma not allowed.
+    class B8<> extends A<> {}
+            ~~
+!!! error TS1098: Type parameter list cannot be empty.
+                        ~~
+!!! error TS1099: Type argument list cannot be empty.
+    public var v = 1,;
+    ~~~~~~
+!!! error TS1044: 'public' modifier cannot appear on a module or namespace element.
+    o?.a<>`x`;
+          ~~~
+!!! error TS1358: Tagged template expressions are not permitted in an optional chain.
+    o?.a<1,>`x`;
+            ~~~
+!!! error TS1358: Tagged template expressions are not permitted in an optional chain.
+==== b.ts (0 errors) ====
+    export interface G<T> { a: T }
+    type Q = import("./b").G<1,>;
+    

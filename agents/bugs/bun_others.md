@@ -175,19 +175,24 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
 The cases whose TS1xxx diagnostics differ, by mechanism (tsgo's parser is `internal/parser/parser.go`; grammar errors
 tttt's parser reports are tsgo's checker's, see `grammar_error()`).
 - Grammar errors tttt's parser reports where tsc's checker stops at an earlier grammar error of the same node (its
-  `||` chains: checkGrammarClassLikeDeclaration's heritage clauses then type parameters, checkGrammarModifiers before
-  the statement's own checks, TS1036 in an ambient block, TS1358 before the tag's type arguments) or never looks
-  (import type arguments, an ExpressionWithTypeArguments past TS1174/TS1172/TS1175, the initializers of a function
-  type's parameters): +TS1009 28-C10a 28-C26d 28-P6a 28-P6b 28-P6c 28-P7b 02-C21a, +TS1099 02-C21a 28-C10b 28-C11b
-  28-P8a 28-P8b 51-L12 56-L20, +TS1098 28-C23 84-R02c 56-L20, +TS1174/TS1172/TS1173 56-L20 62-L12 84-R02c, 56-L09
-  (TS1326 before TS1174). [open]
+  `||` chains: checkGrammarModifiers before a class's or interface's heritage clauses and a variable statement's list,
+  the heritage clauses' TS1172/TS1174/TS1175 before the class's type parameters, TS1358 before a tag's type
+  arguments) or never looks (import type arguments, the heritage elements past the base): 28-C10a 28-P6a 28-P6b
+  28-P6c 28-P7b 02-C21a 28-C10b 28-C11b 28-P8a 28-P8b 28-C23 56-L20 62-L12. [fixed COMMIT2]
+- Grammar errors in what tsc never checks, still open: the initializers of a function type's parameters (84-R02c:
+  +TS1174/TS1172/TS1173/TS1098 in a class expression there; tsc says TS2371 only), a `for` statement's declaration
+  list after TS1036 in an ambient block (28-C26d: +TS1009), 56-L09 (+TS1326 for `extends import<string>, v`: the
+  checker reports it for the base although TS1174 ends tsc's chain first, class_decl.c). 51-L12: `typeof
+  import("./m").g<>` is TS2635 for a non-generic `g` (missing), and the empty list instantiates a generic `f` to `() =>
+  void` in tsc (tttt keeps `<T>() => T`). [open]
 - Decorators followed by something other than a class: tsc's parseDeclarationWorker dispatches on the keyword after
-  the decorators and modifiers (`@dec import(...)` an import declaration, TS1141; `@dec interface class {}` an
-  interface, TS1359; `@dec export;` an export declaration, '{' expected; `@dec in class` the `in` modifier, TS1274)
-  and says TS1146 "Declaration expected" only when none matches, at the token there; a class member `@a;`/`@a }` is
-  TS1146 at the token after the decorator (tttt: TS1068 at the decorator). tttt says TS1146 at the decorator's end
-  and recovers from there (+TS1128, +TS1109): 28-P4b 32-C25 32-C25b 32-C25c 34-P5 53-L16b (TS1180 in an object
-  binding) 57-L02b 57-L02c 57-L02f 61-L14 84-R08c 84-R08d. [open]
+  the decorators and modifiers without the lookahead a statement takes, and says TS1146 "Declaration expected" only
+  when none matches; a class member that is only decorators is a property missing its name (TS1146): 28-P4b 32-C25
+  32-C25b 32-C25c 34-P5 57-L02b 57-L02f 61-L14. [fixed 0b8561711]
+- Decorators before `export;` (57-L02c: '{' expected, an export declaration) and before `import(...)`/`import.meta`
+  (84-R08c, 84-R08d: an import declaration whose module specifier is an expression, TS1141/TS1109; tttt's import
+  parser has no such path), decorators in an object binding pattern (53-L16b: TS1180). tttt: TS1146 then +TS1128.
+  [open]
 - Modifiers on an object literal's methods: tsc's checkGrammarMethod runs the whole checkGrammarModifiers first
   (TS1244 abstract, TS1024 readonly, TS1028/TS1029/TS1040...) and says TS1184 only when that passes; `readonly` stays
   a modifier of the property (TS2540 on assignments, 53-L18); a method without a body (`{ abstract e(): void }`) is
