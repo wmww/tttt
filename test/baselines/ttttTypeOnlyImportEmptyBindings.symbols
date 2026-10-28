@@ -1,0 +1,21 @@
+//// [test/cases/ttttTypeOnlyImportEmptyBindings.ts] ////
+
+=== m.ts ===
+export default class D {}
+>D : Symbol(D, Decl(m.ts, 0, 0))
+
+export const x = 1;
+>x : Symbol(x, Decl(m.ts, 1, 12))
+
+=== a.ts ===
+// `import type D, {}` has named bindings, empty ones: TS1363 (tsc's checkGrammarImportClause), which ends
+// checkImportDeclaration's checks of the clause, its __importDefault helper (TS2354) too (bun 54-L01)
+import type D1, {} from "./m";
+>D1 : Symbol(D1, Decl(a.ts, 2, 6))
+
+import type D2, { x } from "./m";
+>D2 : Symbol(D2, Decl(a.ts, 3, 6))
+>x : Symbol(x, Decl(a.ts, 3, 17))
+
+export {};
+

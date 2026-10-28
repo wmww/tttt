@@ -151,6 +151,8 @@ typedef struct PortStatement {
     // relative module (TS2439)
     bool in_ambient_module;
     bool wrong_context; // In a block or function (TS1232/TS1233): not declared, nothing resolved
+    // `{}` named bindings with nothing in them: just past the `}`, else null
+    char const* empty_braces_end;
     Span target_path_span; // Span of the path string (read the path with port_statement_target_path())
     ModuleRef* module_ref; // Made by the parser when there is a target path
     ImportAttributes* attributes; // Owned, null if there are none

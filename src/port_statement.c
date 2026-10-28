@@ -302,7 +302,9 @@ void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs
     bool unchecked = (my side_effect_only && !compiler_options()->no_unchecked_side_effect_imports) || my in_namespace;
     // (An import clause with a grammar error resolves nothing either: tsc's checkImportDeclaration skips its bindings
     // when checkGrammarImportClause reports, TS1363 or a deferred import's TS18058-TS18060)
-    if (!my jsdoc && my main.tag == PORT_IMPORT_DEFAULT && my main.type_only && vec_port_item_size(&my items)) unchecked = true;
+    if (!my jsdoc && my main.tag == PORT_IMPORT_DEFAULT && my main.type_only && (vec_port_item_size(&my items) || my empty_braces_end)) {
+        unchecked = true;
+    }
     if (phase_clause_error(me) || attribute_value_error(me)) unchecked = true;
     if (my module_ref && !unchecked && !my module_ref->file &&
         !binder_module_of_ref(scope->binder, my module_ref)
@@ -338,7 +340,9 @@ static void port_statement_check_emit_helpers(PortStatement const* me, Span span
             }
         }   break;
         case PORT_IMPORT_DEFAULT: {
-            // `import d from "m"` (tsgo's checkImportDeclaration), unless a namespace import needs __importStar
+            // `import d from "m"` (tsgo's checkImportDeclaration), unless a namespace import needs __importStar; not
+            // after checkGrammarImportClause's TS1363
+            if (my main.type_only && (vec_port_item_size(&my items) || my empty_braces_end)) break;
             bool star = false;
             for_each (i, vec_port_item, &my items) star |= i->tag == PORT_IMPORT_GATHER;
             ty_check_emit_helpers(current_checker, span, star ? EMIT_HELPER_IMPORT_STAR : EMIT_HELPER_IMPORT_DEFAULT, errs);
@@ -637,16 +641,19 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
         error_ctx_grammar_error_d(errs, span_with_semicolon(span), 1392, "An import alias cannot use 'import type'");
     }
     // tsc's checkGrammarImportClause: `import type A, { B }` (the clause, from `type` to the bindings' end)
-    if (!my jsdoc && my main.tag == PORT_IMPORT_DEFAULT && my main.type_only && vec_port_item_size(&my items) &&
-        span_valid(my keyword_span)
+    if (!my jsdoc && my main.tag == PORT_IMPORT_DEFAULT && my main.type_only &&
+        (vec_port_item_size(&my items) || my empty_braces_end) && span_valid(my keyword_span)
     ) {
         const char* start = span_end_ptr(my keyword_span);
         while (*start == ' ' || *start == '\t') start++;
-        PortItem const* last = vec_port_item_back(&my items);
-        const char* end = span_end_ptr(last->full_span);
-        if (last->tag != PORT_IMPORT_GATHER) {
-            while (*end && *end != '}') end++;
-            if (*end) end++;
+        const char* end = my empty_braces_end;
+        if (!end) {
+            PortItem const* last = vec_port_item_back(&my items);
+            end = span_end_ptr(last->full_span);
+            if (last->tag != PORT_IMPORT_GATHER) {
+                while (*end && *end != '}') end++;
+                if (*end) end++;
+            }
         }
         error_ctx_grammar_error_d(errs, span_make_in(my keyword_span, start, end), 1363,
             "A type-only import can specify a default import or named bindings, but not both.");

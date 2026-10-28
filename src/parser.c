@@ -13222,8 +13222,11 @@ static bool parse_import_item_list(Parser* parent, bool is_import, PortStatement
         expect_char(&p, ',');
     }
     list_leave(&p, saved_context);
+    char const* close = p.pos;
     expect_char(&p, '}');
     shrink_list(vec_port_item, &ret->items);
+    // (`import type D, {} from "m"`: named bindings all the same, TS1363)
+    if (vec_port_item_is_empty(&ret->items) && *close == '}') ret->empty_braces_end = close + 1;
 
     return parse_success(&p);
 }

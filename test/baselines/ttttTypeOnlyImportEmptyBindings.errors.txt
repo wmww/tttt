@@ -1,0 +1,20 @@
+a.ts(3,8): error TS1363: A type-only import can specify a default import or named bindings, but not both.
+a.ts(4,8): error TS1363: A type-only import can specify a default import or named bindings, but not both.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "commonjs", "importHelpers": true, "esModuleInterop": true } }
+==== m.ts (0 errors) ====
+    export default class D {}
+    export const x = 1;
+==== a.ts (2 errors) ====
+    // `import type D, {}` has named bindings, empty ones: TS1363 (tsc's checkGrammarImportClause), which ends
+    // checkImportDeclaration's checks of the clause, its __importDefault helper (TS2354) too (bun 54-L01)
+    import type D1, {} from "./m";
+           ~~~~~~~~~~~
+!!! error TS1363: A type-only import can specify a default import or named bindings, but not both.
+    import type D2, { x } from "./m";
+           ~~~~~~~~~~~~~~
+!!! error TS1363: A type-only import can specify a default import or named bindings, but not both.
+    export {};
+    
