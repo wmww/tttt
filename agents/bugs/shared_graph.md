@@ -67,3 +67,29 @@ After 720b23760 (2026-10-29, the default list at K 4/8/16, both deals, 2 runs, 6
 Final state on wt-sg rebased on fc64a1ea3 (2026-10-29, the default list at K 4/8/16, both deals, 2 runs, 696 runs):
 9 differ in 4 projects: drizzle 2 (K8 def, C), effect 3, folo renderer 2 (K16 def), mikro-orm seeder 2 (K16 rr).
 TSan clean at T8 on drizzle, effect, excalidraw, zod, vue (with the lazily made instance properties).
+
+## Audit: identities made of private records (2026-10-29)
+The rule (notes/shared_graph.md "Identities are published whatever their taint"): a published identity's fields must
+be a function of its key, the AST and other published identities, never of a record this worker resolved privately.
+Every constructor that publishes through intern_set()/intern_deferred()/ty_link_publish() and reads a resolved record
+(signature_resolve, sig_res, ty_members, prop types, constraints, declared types, free params, variances, clones) before
+publishing was listed (a scan of the publishing functions' bodies) and read:
+
+| kind (site) | reads | verdict |
+|---|---|---|
+| KEY_SIGNATURE_INSTANCE (infer.c ty_signature_instantiation) | the signature's SigResolved type parameters, as its mapper's sources | **was the bug**: OWN kind when the published record isn't the one held (720b23760) |
+| KEY_SIGNATURE_INSTANCE (relate.c ty_erased_signature, one-step erasure) | the target's SigResolved type parameters | same, OWN kind (720b23760) |
+| KEY_SIGNATURE_TYPE (members.c ty_signature_type) | nothing: one member, the signature (the key) | safe |
+| KEY_ANONYMOUS_INSTANCE (instantiate.c instantiate_anonymous) | ty_function_free_params() (AST: the declared type parameters a signature's annotations mention, identities by symbol) for which mapper pairs to keep; the pairs are the key | safe: the free params are a syntactic function |
+| KEY_ANONYMOUS_INSTANCE (expr.c ty_apply_type_arguments_mapper_of; instantiate.c realias/alias-body twins) | ty_members() only to decide whether to make one; fields are the key's | safe |
+| KEY_STRUCTURAL (members.c object literals) | prop types of reused props; the reused Prop is in the key | safe (a private Prop makes a private key) |
+| KEY_SYNTHETIC_PROP_PARTS, KEY_PROP_MAPPED_TYPE (members.c) | members of the parts / the mapped template | safe: part of a Prop made inside a members computation, which is published only if clean (else the Prop, and so the key, is private) |
+| KEY_KEYOF (checker.c ty_keyof), KEY_REFERENCE (ty_reference_with_this: tuple optional elements) | members only for a shortcut / argument normalization before keying | safe: the key is built from what was read |
+| KEY_MARKER, KEY_CHECK_MARKER (relate.c) | another marker's identity (intern_set's winner) as the constraint | safe |
+| KEY_RESTRICTIVE_PARAM (conditional.c) | writes a constraint init, reads nothing | safe |
+| KEY_INSTANTIATION_QUERY, KEY_CLONE_CLASS (lower.c) | the key's type / the declaration | safe |
+| KEY_CONDITIONAL, KEY_DEFERRED_REFERENCE, KEY_FUNCTION_RETURN, the plain constructors (literal, union, intersection, indexed, substitution, template, string mapping, tuple target, unique symbol), the AST/symbol roots | key components, AST, root outer params (AST) | safe |
+
+Not covered by construction: an identity whose constructor calls something that reads a private record further down
+than the scan saw (a helper). A debug check would wrap each identity constructor in a taint frame and log identities
+published after a private read; not built.
