@@ -460,7 +460,7 @@ Seed 61: 11 -> 5 differing, seed 62: 11 -> 8 (both before the last fixes' rechec
 Seed 41: 10 -> 7 differing, seed 42: 13 -> 5. Left, each looked at:
 - (cor8 2026-10-28, seed 42 rerun: 4 differ) escapedIdentifiers member-typo: a missing property written with escapes
   (`o.argX\u0033`) is printed as written in TS2551/TS2339 (reportNonexistentProperty's declarationNameToString),
-  tttt printed the cooked name (report_no_property). Test ttttMissingPropertyEscapedName. [fixed HASH] The other
+  tttt printed the cooked name (report_no_property). Test ttttMissingPropertyEscapedName. [fixed a86a1b72e] The other
   three are the entries below (TS2310 design, lazy name resolution, TS7022 circularity). [note]
 - **TS7034/TS7005 for an auto-typed `let x = undefined` read through `typeof x` in type parameter positions**:
   fixed for a function's (signature's) type parameters by seed 81 (they're in its flow container); a type alias's
@@ -565,6 +565,23 @@ never-const (harness writes no errors baseline).
   that message was later replaced by the outer chain but the node wasn't restored. tttt models the moved node only when
   the excess-property message itself is reported. [open]
 - **elaboration TS2344** (distributiveConditionalBaseConstraint drop-optional): the chain differs. [text]
+
+## Mutation seed 2810 (2026-10-28, cor8: `MUTATE_DIR=/tmp/X scripts/mutate.py -n 8000 --seed 2810 --tests multi,js`)
+27 of 8000 differ: 9 render, the rest below or known (commonJSAliasedExport/moduleExportAlias5 never-const, importTag14,
+umd7, typeTagNoErasure, importHelpersES6: the seeds 2311/2312 entries).
+- augmentExportEquals3_1/4/4_1 delete-stmt (text TS2339): an augmented `export =` printed in a message: through a
+  namespace import's clone tsc names it by the augmentation as written (`typeof import("./file1")`: the clone isn't
+  its file's export=, getSpecifierForModuleSymbol falls to IsModuleWithStringLiteralName), and an ambient module's
+  `export =` likewise (`import("file1")`, its export= container is no file); tttt printed the first declaration's
+  file. display_module_clone, out_symbol_name_impl. Tests ttttAugmentedExportEqualsModuleName,
+  ttttAugmentedExportEqualsAmbientName. [fixed HASH]
+- jsdocParamTagTypeLiteral member-typo: `@param {object[]} opts5` with children `opts5[].what`, `opts5[].whatX.bad`
+  (a grandchild under a wrong middle name), `opts5[].unnest`: tsgo's parseChildParameterOrPropertyTag accepts a child
+  only when its name's left is exactly the parent's, so the wrong grandchild ends `what`'s and `opts5`'s nesting both:
+  every later `@param` is top level (TS8032 for each, names printed without `[]`), and `opts5[0].unnest` is TS2339.
+  tttt keeps nesting and prints the names with `[]`. JSDoc parser (bun's area). [open]
+- jsdocTypeTagFunctionTypePredicate delete-stmt: TS2355 for a JSDoc `@type {(e) => e is X}` function expression
+  without a return is at the `@type` tag's type (8,27) in tsgo, at the function (8,43) in tttt. [open]
 
 ## Mutation seeds 2311/2312 leftovers (2026-10-23, `MUTATE_DIR=/tmp/X scripts/mutate.py -n 8000 --seed 2311|2312 --tests multi,js`)
 The multi-file and JS mix finds far more than the single-file one (51 and 37 against 10). Seed 2311: 51 -> 37 -> 30

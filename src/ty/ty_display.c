@@ -799,10 +799,21 @@ static void out_fully_qualified_name(Checker* me, TyDisplay d, Symbol const* sym
 static void out_symbol_name_impl(Checker* me, TyDisplay d, Symbol const* symbol, u32 meaning) {
     if (d.tracker) d.tracker->track_symbol(d.tracker, symbol, meaning);
     if (!d.enclosing && !d.fully_qualified && symbol_is_augmented_export_equals(symbol) && symbol->decl_count) {
-        // What an augmented `export =` assigns is a module to tsc's printer (see below), in a message too
+        // What an augmented `export =` assigns is a module to tsc's printer (see below), in a message too: its file's
+        // path when a file's `export =` assigns it, else (an ambient module's `export =`) the name of its first
+        // declaration that is a module with a string literal name, the augmentation (getSpecifierForModuleSymbol)
         SourceFile const* file = span_source(symbol->decls[0].full);
+        csview written = {0};
+        Symbol const* file_module = file && file->scope ? file->scope->container : nullptr;
+        if (!(file_module && file_module->is_module && file_module->module)) {
+            for (u32 i = 0; i < symbol->decl_count && !written.size; i++) {
+                if (symbol->decls[i].kind != SYMBOL_DECL_NAMESPACE) continue;
+                NamespaceDecl const* ns = symbol->decls[i].node;
+                if (ns->is_ambient_module && ns->name.size >= 2) written = csview_slice(span_sv(ns->name), 1, ns->name.size - 1);
+            }
+        }
         out_lit(d, "import(\"");
-        out(d, file ? source_file_display_path(file) : c_sv(""));
+        out(d, written.size ? written : file ? source_file_display_path(file) : c_sv(""));
         out_lit(d, "\")");
         return;
     }
@@ -1032,8 +1043,23 @@ static bool display_module_clone(Checker* me, TyDisplay d, Ty const* ty) {
         if (d.tracker) d.tracker->track_symbol(d.tracker, alias, SYMBOL_VALUE);
         out(d, alias->name);
     } else if (symbol_is_augmented_export_equals(assigned)) {
-        // (The clone's declarations include the augmentation, a module: `typeof import("m")`)
-        out_symbol_name(me, d, assigned, SYMBOL_VALUE);
+        // (The clone's declarations include the augmentation, a module: `typeof import("m")`. Being a clone, it isn't
+        // what its file's `export =` names (getFileSymbolIfFileSymbolExportEqualsContainer), so tsc's
+        // getSpecifierForModuleSymbol names it by its first declaration that is a module with a string literal name,
+        // as written: `import("./file1")`)
+        csview written = {0};
+        for (u32 i = 0; i < assigned->decl_count && !written.size; i++) {
+            if (assigned->decls[i].kind != SYMBOL_DECL_NAMESPACE) continue;
+            NamespaceDecl const* ns = assigned->decls[i].node;
+            if (ns->is_ambient_module && ns->name.size >= 2) written = csview_slice(span_sv(ns->name), 1, ns->name.size - 1);
+        }
+        if (written.size) {
+            out_lit(d, "import(\"");
+            out(d, written);
+            out_lit(d, "\")");
+        } else {
+            out_symbol_name(me, d, assigned, SYMBOL_VALUE);
+        }
     } else {
         out(d, span_sv(ty_symbol_display_name(assigned)));
     }

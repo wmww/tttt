@@ -1,0 +1,36 @@
+file2.ts(3,3): error TS2339: Property 'b' does not exist on type 'typeof import("file1")'.
+file3.ts(2,8): error TS2882: Cannot find module or type declarations for side-effect import of 'file2'.
+file3.ts(4,11): error TS2339: Property 'b' does not exist on type 'typeof import("file1")'.
+
+
+==== file1.d.ts (0 errors) ====
+    declare module "file1" {
+        function foo(): void;
+        namespace foo {
+            export var v: number;
+        }
+        export = foo;
+    }
+    
+    
+==== file2.ts (1 errors) ====
+    /// <reference path="file1.d.ts"/>
+    import x = require("file1"); 
+    x.b = 1;
+      ~
+!!! error TS2339: Property 'b' does not exist on type 'typeof import("file1")'.
+    
+    // OK - './file1' is a namespace
+    declare module "file1" {
+        interface A { a }
+    }
+    
+==== file3.ts (2 errors) ====
+    import * as x from "file1";
+    import "file2";
+           ~~~~~~~
+!!! error TS2882: Cannot find module or type declarations for side-effect import of 'file2'.
+    let a: x.A;
+    let b = x.b;
+              ~
+!!! error TS2339: Property 'b' does not exist on type 'typeof import("file1")'.

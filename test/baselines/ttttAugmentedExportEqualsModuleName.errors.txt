@@ -1,0 +1,29 @@
+file2.ts(2,3): error TS2339: Property 'b' does not exist on type 'typeof import("file1.ts")'.
+file3.ts(4,11): error TS2339: Property 'b' does not exist on type 'typeof import("./file1")'.
+
+
+==== file1.ts (0 errors) ====
+    class foo {}
+    namespace foo {
+        export var v = 1;
+    }
+    export = foo;
+    
+==== file2.ts (1 errors) ====
+    import x = require("./file1"); 
+    x.b = 1;
+      ~
+!!! error TS2339: Property 'b' does not exist on type 'typeof import("file1.ts")'.
+    
+    // OK - './file1' is a namespace
+    declare module "./file1" {
+        interface A { a }
+    }
+    
+==== file3.ts (1 errors) ====
+    import * as x from "./file1";
+    import "./file2";
+    let a: x.A;
+    let b = x.b;
+              ~
+!!! error TS2339: Property 'b' does not exist on type 'typeof import("./file1")'.
