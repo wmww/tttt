@@ -586,10 +586,12 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   unusedLocalsAndParameters add-arg and unusedTypeParametersWithUnderscore delete-stmt: TS6133/TS6196 that tsgo's
   ThisNodeHasError hides (the unusedSwitchStatement item above) [fixed d77440699]. Checker, relayed: typePredicatesOptionalChaining1
   (TS2353 for a duplicated excess property is at its first declaration in tsgo, the binder merges the two into one
-  symbol whose valueDeclaration is the first; tttt at the last: `const o: { a?: 1 } = { b: 1, a: 1, b: 2 }`) [open];
+  symbol whose valueDeclaration is the first; tttt at the last: `const o: { a?: 1 } = { b: 1, a: 1, b: 2 }`) [fixed c138b658f];
   narrowingTypeofUndefined2 (`[...arg]` of `T extends unknown[] | undefined` narrowed by `typeof arg !== 42` misses
-  TS2488 'Type 'T' must have a [Symbol.iterator]()') [open]; unknownSymbolOffContextualType1 swap-stmts (a `reduce`
-  callback whose return mentions the variable being declared: TS7022/TS7024 missing) [open];
+  TS2488 'Type 'T' must have a [Symbol.iterator]()': iterate.c's property_type read the union past undefined)
+  [fixed d9e1ac14c]; unknownSymbolOffContextualType1 swap-stmts (a `reduce`
+  callback whose return mentions the variable being declared: TS7022/TS7024 missing; compareSignaturesRelated skips
+  only void and the plain any, not an error type's) [fixed ee7976adf];
   distributiveConditionalBaseConstraint extends-object (spurious TS2344: tail recursion's fresh deferred conditional
   type, type_core.md, cor9) [design]; distributiveConditionalTypeConstraints (TS2322 elaboration: tsgo repeats the
   conditional source's line once more before `string`, text only, also seed 20261107) [text]. Harness or text: importDeclWithExportModifierInAmbientContext (TS2708 is
