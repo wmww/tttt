@@ -1,0 +1,57 @@
+ttttAwaitInComputedPropertyName.ts(7,10): error TS1262: Identifier expected. 'await' is a reserved word at the top-level of a module.
+ttttAwaitInComputedPropertyName.ts(7,10): error TS2304: Cannot find name 'await'.
+ttttAwaitInComputedPropertyName.ts(8,14): error TS1262: Identifier expected. 'await' is a reserved word at the top-level of a module.
+ttttAwaitInComputedPropertyName.ts(8,14): error TS2304: Cannot find name 'await'.
+ttttAwaitInComputedPropertyName.ts(8,26): error TS1262: Identifier expected. 'await' is a reserved word at the top-level of a module.
+ttttAwaitInComputedPropertyName.ts(8,26): error TS2304: Cannot find name 'await'.
+ttttAwaitInComputedPropertyName.ts(9,16): error TS1262: Identifier expected. 'await' is a reserved word at the top-level of a module.
+ttttAwaitInComputedPropertyName.ts(9,16): error TS2304: Cannot find name 'await'.
+ttttAwaitInComputedPropertyName.ts(9,28): error TS1262: Identifier expected. 'await' is a reserved word at the top-level of a module.
+ttttAwaitInComputedPropertyName.ts(9,28): error TS2304: Cannot find name 'await'.
+ttttAwaitInComputedPropertyName.ts(10,13): error TS1262: Identifier expected. 'await' is a reserved word at the top-level of a module.
+ttttAwaitInComputedPropertyName.ts(10,13): error TS2304: Cannot find name 'await'.
+ttttAwaitInComputedPropertyName.ts(11,12): error TS1262: Identifier expected. 'await' is a reserved word at the top-level of a module.
+ttttAwaitInComputedPropertyName.ts(11,12): error TS2304: Cannot find name 'await'.
+
+
+==== ttttAwaitInComputedPropertyName.ts (14 errors) ====
+    // At a module's top level an `await` identifier in a property name doesn't make tsc reparse its statement in an await
+    // context (parsePropertyName saves and restores statementHasAwaitIdentifier): `[await]` stays an identifier, TS1262
+    // (the binder's isInTopLevelContext: a class member's computed name is outside the class, a type's names count too)
+    // and TS2304. `await.x` isn't an await expression either (a `.` starts a number only before a digit)
+    export {};
+    declare const x: any;
+    const { [await]: a } = x;
+             ~~~~~
+!!! error TS1262: Identifier expected. 'await' is a reserved word at the top-level of a module.
+             ~~~~~
+!!! error TS2304: Cannot find name 'await'.
+    const o = { [await]: 1, [await.x]: 2 };
+                 ~~~~~
+!!! error TS1262: Identifier expected. 'await' is a reserved word at the top-level of a module.
+                 ~~~~~
+!!! error TS2304: Cannot find name 'await'.
+                             ~~~~~
+!!! error TS1262: Identifier expected. 'await' is a reserved word at the top-level of a module.
+                             ~~~~~
+!!! error TS2304: Cannot find name 'await'.
+    interface I { [await]: 1; [await.x]: 2 }
+                   ~~~~~
+!!! error TS1262: Identifier expected. 'await' is a reserved word at the top-level of a module.
+                   ~~~~~
+!!! error TS2304: Cannot find name 'await'.
+                               ~~~~~
+!!! error TS1262: Identifier expected. 'await' is a reserved word at the top-level of a module.
+                               ~~~~~
+!!! error TS2304: Cannot find name 'await'.
+    type T = { [await]: 1 };
+                ~~~~~
+!!! error TS1262: Identifier expected. 'await' is a reserved word at the top-level of a module.
+                ~~~~~
+!!! error TS2304: Cannot find name 'await'.
+    class C { [await] = 1 }
+               ~~~~~
+!!! error TS1262: Identifier expected. 'await' is a reserved word at the top-level of a module.
+               ~~~~~
+!!! error TS2304: Cannot find name 'await'.
+    

@@ -1,0 +1,47 @@
+//// [test/cases/ttttAwaitInComputedPropertyName.ts] ////
+
+=== ttttAwaitInComputedPropertyName.ts ===
+// At a module's top level an `await` identifier in a property name doesn't make tsc reparse its statement in an await
+// context (parsePropertyName saves and restores statementHasAwaitIdentifier): `[await]` stays an identifier, TS1262
+// (the binder's isInTopLevelContext: a class member's computed name is outside the class, a type's names count too)
+// and TS2304. `await.x` isn't an await expression either (a `.` starts a number only before a digit)
+export {};
+declare const x: any;
+>x : any
+
+const { [await]: a } = x;
+>await : any
+>a : any
+>x : any
+
+const o = { [await]: 1, [await.x]: 2 };
+>o : { [x: number]: number; }
+>{ [await]: 1, [await.x]: 2 } : { [x: number]: number; }
+>[await] : number
+>await : any
+>1 : 1
+>[await.x] : number
+>await.x : any
+>await : any
+>x : any
+>2 : 2
+
+interface I { [await]: 1; [await.x]: 2 }
+>[await] : 1
+>await : any
+>[await.x] : 2
+>await.x : any
+>await : any
+>x : any
+
+type T = { [await]: 1 };
+>T : T
+>[await] : 1
+>await : any
+
+class C { [await] = 1 }
+>C : C
+>[await] : number
+>await : any
+>1 : 1
+

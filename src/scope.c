@@ -730,19 +730,23 @@ void scope_check_strict_identifier(Scope const* me, Span name, bool in_type) {
     bool is_reserved = is_future_reserved_word(name);
     if (!my strict || !is_reserved) {
         // (tsc's checkContextualIdentifier: `await` and `yield` where they are operators)
-        // (Not in types: the parser has no await or yield context there)
-        bool await = !in_type && csview_equals(span_sv(name), "await"), yield = !in_type && csview_equals(span_sv(name), "yield");
+        // (Not in types: the parser has no await or yield context there. But TS1262 is about where `await` is, in a
+        // type too: `{ [await]: 1 }` at a module's top level)
+        bool await_word = csview_equals(span_sv(name), "await");
+        bool await = !in_type && await_word, yield = !in_type && csview_equals(span_sv(name), "yield");
         // The await/yield context: of the nearest function, a static block (await), nothing past a class boundary
         // (member initializers are an implicit function)
         // (A function expression's name is in its function's context as far as that is async or a generator, and in
         // the outer one otherwise)
-        bool await_context = false, yield_context = false, top_level = true;
+        // (A class member's computed name is outside the class: tsc's getThisContainer skips it, isInTopLevelContext)
+        bool await_context = false, yield_context = false, top_level = true, in_computed_name = false;
         for (Scope const* scope = me; scope; scope = scope->parent) {
             if (scope_rare(scope)->expression_name_of) {
                 await_context |= scope_rare(scope)->expression_name_of->is_async;
                 yield_context |= scope_rare(scope)->expression_name_of->is_generator;
                 continue;
             }
+            if (scope_rare(scope)->computed_name_of) in_computed_name = true;
             if (scope->kind == SCOPE_FUNCTION && scope->function) {
                 await_context |= scope->function->is_async;
                 yield_context |= scope->function->is_generator;
@@ -750,11 +754,14 @@ void scope_check_strict_identifier(Scope const* me, Span name, bool in_type) {
                 await_context = true;
             } else if (!scope_rare(scope)->this_ref.class_decl) {
                 continue;
+            } else if (in_computed_name) {
+                in_computed_name = false;
+                continue;
             }
             top_level = false;
             break;
         }
-        if (await && my file && my file->is_module && top_level && !await_context) {
+        if (await_word && my file && my file->is_module && top_level && !await_context) {
             error_ctx_error_d(binder_errs(my binder), name, 1262, "Identifier expected. '", name, "' is a reserved word at the top-level of a module.");
         } else if ((await && await_context) || (yield && yield_context)) {
             error_ctx_error_d(binder_errs(my binder), name, 1359, "Identifier expected. '", name, "' is a reserved word that cannot be used here.");

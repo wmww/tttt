@@ -102,6 +102,10 @@ typedef struct ParserShared {
     // again with the top level an await context, `top_level_await` (tsc's reparseTopLevelAwait)
     bool saw_top_level_await;
     bool top_level_await;
+    // Parsing a computed property name: an `await` identifier there doesn't make its statement one tsc reparses in an
+    // await context (tsc's parsePropertyName saves and restores statementHasAwaitIdentifier): `{ [await]: 1 }` at a
+    // module's top level is TS1262 and TS2304
+    u32 in_property_name;
     // The file's statements from the first one with an `await` identifier on (malloc'd), each with whether it has one:
     // the first pass records them, the second parses each run of statements with one as an await context, and on
     // until a statement ends where the next statement without one started (tsc's reparseTopLevelAwait)
@@ -8373,11 +8377,14 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         hop_char(&p, '[');
         hop_whitespace(&p);
         Expr key;
-        if (!parse_expr(&p, expr_ctx_null, &key)) {
+        p.shared->in_property_name++;
+        bool has_key = parse_expr(&p, expr_ctx_null, &key);
+        if (has_key) parse_computed_key_comma(&p, &key);
+        p.shared->in_property_name--;
+        if (!has_key) {
             modifier_list_drop(&modifiers);
             return parse_fail(&p);
         }
-        parse_computed_key_comma(&p, &key);
         hop_whitespace(&p);
         // (tsc's parseComputedPropertyName: `{ [s: symbol]: 1 }` is missing its `]`)
         expect_char(&p, ']');
@@ -8977,7 +8984,10 @@ static bool parse_expr_interface_member(Parser* parent, bool is_type, FunctionFl
     hop_whitespace(&p);
 
     Expr expr;
-    if (!parse_expr(&p, expr_ctx_null, &expr)) {
+    p.shared->in_property_name++;
+    bool has_key = parse_expr(&p, expr_ctx_null, &expr);
+    p.shared->in_property_name--;
+    if (!has_key) {
         return parse_fail(&p);
     }
     ret->key.expr = ast_new(Expr, expr);
@@ -9049,8 +9059,11 @@ static bool parse_class_computed_key(Parser* parent, Expr** ret) {
     p.pos++;
     hop_whitespace(&p);
     Expr key;
-    if (!parse_expr(&p, expr_ctx_null, &key)) return parse_fail(&p);
-    parse_computed_key_comma(&p, &key);
+    p.shared->in_property_name++;
+    bool has_key = parse_expr(&p, expr_ctx_null, &key);
+    if (has_key) parse_computed_key_comma(&p, &key);
+    p.shared->in_property_name--;
+    if (!has_key) return parse_fail(&p);
     hop_whitespace(&p);
     if (!hop_char(&p, ']')) {
         expr_drop(&key);
@@ -10160,8 +10173,10 @@ static bool await_is_operator(Parser* parent) {
     const char* c = next.start;
     // (tsc's isAwaitExpression: an identifier, keyword or literal on the same line. In a module's top level every
     // `await` is an operator, see ParserShared.top_level_await)
-    // (Not a template: `await \`\`` is a tagged template until a module reparses it, topLevelAwait.1)
-    return identifier_char_size(c, true) || is_number_start_char(*c) || *c == '"' || *c == '\'';
+    // (Not a template: `await \`\`` is a tagged template until a module reparses it, topLevelAwait.1. A `.` starts a
+    // number only before a digit: `await.x` is a property of `await`)
+    return identifier_char_size(c, true) || (is_number_start_char(*c) && (*c != '.' || (c[1] >= '0' && c[1] <= '9'))) ||
+        *c == '"' || *c == '\'';
 }
 
 // tsc's isYieldExpression outside a yield context: `yield` followed by an identifier, keyword or literal on the same line
@@ -13358,7 +13373,9 @@ static bool parse_binding_element(Parser* parent, Binding* ret) {
 // tsc's isBindingIdentifier: an identifier that isn't a reserved word (`yield`/`await` are the caller's business)
 // An `await` identifier outside functions (tsc's ContainsPossibleTopLevelAwait), for the top-level await reparse
 static void note_top_level_await_identifier(Parser* p, csview name) {
-    if (name.size == 5 && p->shared->function_depth == 0 && !memcmp(name.buf, "await", 5)) p->shared->saw_top_level_await = true;
+    if (name.size == 5 && p->shared->function_depth == 0 && !p->shared->in_property_name && !memcmp(name.buf, "await", 5)) {
+        p->shared->saw_top_level_await = true;
+    }
 }
 
 static bool parse_binding_identifier(Parser* parent) {
@@ -13477,7 +13494,9 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
                 p.pos++;
                 hop_whitespace(&p);
                 Expr key_expr;
+                p.shared->in_property_name++;
                 expect_expr(&p, expr_ctx_null, &key_expr);
+                p.shared->in_property_name--;
                 hop_whitespace(&p);
                 expect_char(&p, ']');
                 computed_key = ast_new(Expr, key_expr);

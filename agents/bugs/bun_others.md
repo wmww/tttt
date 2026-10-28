@@ -208,10 +208,12 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
 - A private name where an identifier name goes: tsc's tokenIsIdentifierOrKeyword says yes to PrivateIdentifier (it
   follows Identifier among the token kinds), so `#a` is an Identifier node in a type reference (TS2304), a JSX tag or
   attribute name, an import attribute's key, and after `asserts` parseIdentifier's TS18016; not where isStartOfType
-  is asked (an indexed access, type arguments): 43-P8e 43-X5f 56-L19 80-R01a 80-R01b 43-C13d. [fixed COMMIT5]
-- `await` at the top level of a module in a computed property name or a type parameter list: tsc's
-  parseIdentifier says TS1262 and the name is an identifier (TS2304), tttt TS1109; `<await>(x: await) => x` isn't
-  an arrow to tsc: 56-L11 93-P01b 74-R15d. [open]
+  is asked (an indexed access, type arguments): 43-P8e 43-X5f 56-L19 80-R01a 80-R01b 43-C13d. [fixed ee0c97bea]
+- `await` at the top level of a module in a computed property name: tsc's parsePropertyName keeps an `await`
+  identifier there from marking its statement for the top-level-await reparse, so it stays an identifier (TS1262 from
+  the binder, a class member's computed name being outside the class, a type's too; TS2304), and `await.x` is no
+  await expression: 56-L11 93-P01b. [fixed COMMIT6]
+- `<await>(x: await) => x` at a module's top level isn't an arrow function to tsc (74-R15d: tttt TS1262). [open]
 - JSX lexing and recovery: attribute names and values (`b=>x`, `<a << />`, `<a /= />`, a comment before a value,
   backslashes in attribute strings: 43-C13e 43-C13f 43-C13g 43-C5c), `<<`/`<=` after a tag name (tsc scans one token:
   43-C4b 93-P04a 93-P04c 93-P04d 93-P04e), a merge conflict marker among the children (tsc ends the element there:

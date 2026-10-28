@@ -1,0 +1,33 @@
+//// [test/cases/ttttAwaitInComputedPropertyName.ts] ////
+
+=== ttttAwaitInComputedPropertyName.ts ===
+// At a module's top level an `await` identifier in a property name doesn't make tsc reparse its statement in an await
+// context (parsePropertyName saves and restores statementHasAwaitIdentifier): `[await]` stays an identifier, TS1262
+// (the binder's isInTopLevelContext: a class member's computed name is outside the class, a type's names count too)
+// and TS2304. `await.x` isn't an await expression either (a `.` starts a number only before a digit)
+export {};
+declare const x: any;
+>x : Symbol(x, Decl(ttttAwaitInComputedPropertyName.ts, 5, 13))
+
+const { [await]: a } = x;
+>a : Symbol(a, Decl(ttttAwaitInComputedPropertyName.ts, 6, 7))
+>x : Symbol(x, Decl(ttttAwaitInComputedPropertyName.ts, 5, 13))
+
+const o = { [await]: 1, [await.x]: 2 };
+>o : Symbol(o, Decl(ttttAwaitInComputedPropertyName.ts, 7, 5))
+>[await] : Symbol([await], Decl(ttttAwaitInComputedPropertyName.ts, 7, 11))
+>[await.x] : Symbol([await.x], Decl(ttttAwaitInComputedPropertyName.ts, 7, 23))
+
+interface I { [await]: 1; [await.x]: 2 }
+>I : Symbol(I, Decl(ttttAwaitInComputedPropertyName.ts, 7, 39))
+>[await] : Symbol(I[await], Decl(ttttAwaitInComputedPropertyName.ts, 8, 13))
+>[await.x] : Symbol(I[await.x], Decl(ttttAwaitInComputedPropertyName.ts, 8, 25))
+
+type T = { [await]: 1 };
+>T : Symbol(T, Decl(ttttAwaitInComputedPropertyName.ts, 8, 40))
+>[await] : Symbol([await], Decl(ttttAwaitInComputedPropertyName.ts, 9, 10))
+
+class C { [await] = 1 }
+>C : Symbol(C, Decl(ttttAwaitInComputedPropertyName.ts, 9, 24))
+>[await] : Symbol(C[await], Decl(ttttAwaitInComputedPropertyName.ts, 10, 9))
+
