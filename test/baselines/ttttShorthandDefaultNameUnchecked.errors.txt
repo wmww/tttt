@@ -1,0 +1,24 @@
+ttttShorthandDefaultNameUnchecked.ts(3,17): error TS1312: Did you mean to use a ':'? An '=' can only follow a property name when the containing object literal is part of a destructuring pattern.
+ttttShorthandDefaultNameUnchecked.ts(5,16): error TS1312: Did you mean to use a ':'? An '=' can only follow a property name when the containing object literal is part of a destructuring pattern.
+ttttShorthandDefaultNameUnchecked.ts(6,20): error TS1312: Did you mean to use a ':'? An '=' can only follow a property name when the containing object literal is part of a destructuring pattern.
+ttttShorthandDefaultNameUnchecked.ts(8,16): error TS1312: Did you mean to use a ':'? An '=' can only follow a property name when the containing object literal is part of a destructuring pattern.
+
+
+==== ttttShorthandDefaultNameUnchecked.ts (4 errors) ====
+    // `{ x = 1 }` outside a destructuring target is TS1312 and its name means nothing (tsc's checkShorthandPropertyAssignment
+    // checks the initializer only): no TS2693 for a type, TS2708 for a namespace, TS18004 for nothing
+    const o1 = { zz = 1 };
+                    ~
+!!! error TS1312: Did you mean to use a ':'? An '=' can only follow a property name when the containing object literal is part of a destructuring pattern.
+    type T = number;
+    const o2 = { T = 1 };
+                   ~
+!!! error TS1312: Did you mean to use a ':'? An '=' can only follow a property name when the containing object literal is part of a destructuring pattern.
+    const o3 = { never = 1 };
+                       ~
+!!! error TS1312: Did you mean to use a ':'? An '=' can only follow a property name when the containing object literal is part of a destructuring pattern.
+    namespace N { export type X = 1; }
+    const o4 = { N = 1 };
+                   ~
+!!! error TS1312: Did you mean to use a ':'? An '=' can only follow a property name when the containing object literal is part of a destructuring pattern.
+    

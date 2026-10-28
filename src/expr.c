@@ -774,6 +774,9 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
     ) {
         // `export = N`, `export default N`: a name exports whatever it means (tsc's checkExportAssignment resolves it
         // with every meaning), a namespace or a type is fine. No target: it has no value type
+    } else if (my shorthand_unchecked) {
+        // `{ x = 1 }` outside a destructuring target (TS1312): tsc's checkShorthandPropertyAssignment checks only the
+        // initializer, the name means nothing (no TS2693 for a type, no TS2708 for a namespace, no TS18004)
     } else if (identifier_extends_entity(me) && entity_names_interface(names, identifier_extends_entity(me))) {
         // (tsc's checkAndReportErrorForExtendingInterface)
         error_ctx_error_d(errs, identifier_expr_name(me), 2689, "Cannot extend an interface '", expr_outer_span(identifier_extends_entity(me)),
@@ -811,7 +814,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         // (tsc's getCannotFindNameDiagnosticForName)
         error_ctx_error_d(errs, identifier_expr_name(me), 2311, "Cannot find name 'await'. Did you mean to write this in an "
             "async function?");
-    } else if (!my shorthand_unchecked) {
+    } else {
         scope_report_value_not_found(names, identifier_expr_name(me), my shorthand, errs);
     }
 }

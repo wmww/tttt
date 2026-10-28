@@ -571,14 +571,17 @@ never-const (harness writes no errors baseline).
   signature) is TS7053 in tsgo: the union has an index signature only for the key types its first member has and every
   member has exactly (getUnionIndexInfos), none here; tttt's write check took any member's applicable readonly one
   (String's) and said TS2542. ty_union_index_info (access.c) now. Test ttttUnionWriteIndexExactKeys. Left: `string |
-  T` with T constrained to a string index misses that TS7053 (generic member). [fixed HASH]
+  T` with T constrained to a string index misses that TS7053 (generic member). [fixed c84360cab]
+- reachabilityChecksNoCrash1 never-const: parser recovery turns `out: never = []` into a shorthand `never = []` in an
+  object literal; tsgo's checkShorthandPropertyAssignment checks only the initializer of such a shorthand outside a
+  destructuring target, so its name, a type keyword, is no TS2693 (nor a namespace TS2708). Test
+  ttttShorthandDefaultNameUnchecked. [fixed HASH]
 - renamingDestructuredPropertyInFunctionType3 delete-stmt: TS2304 for a computed name in a function type's parameter
   pattern is found only by tsgo's emit resolver (the harness's pre/post-emit count mismatch); tsgo's CLI reports it
   like tttt. [tsgo]
 - Not looked at: assignmentGenericLookupTypeNarrowing str-to-num (missing TS2536 `Type 'K' cannot be used to index` for
   `K extends 42` on a mapped `{[K in "foo"]: ...}`), contextualTypeWithUnionTypeIndexSignatures ann-number-string
-  (TS2322 position: tsgo elaborates into the method's return, tttt reports at the declaration), reachabilityChecksNoCrash1
-  never-const (spurious TS2693), recursiveTypeInference add-optional (TS2345 text), circularBaseTypes delete-stmt
+  (TS2322 position: tsgo elaborates into the method's return, tttt reports at the declaration), recursiveTypeInference add-optional (TS2345 text), circularBaseTypes delete-stmt
   (missing TS2310, the base cycle design), nonPrimitiveAndEmptyObject drop-optional (TS2339 names the narrowed `{}`
   in tsgo, the union in tttt), ambientExternalModuleWithRelativeExternalImportDeclaration delete-stmt (spurious TS2307
   for a relative import in an ambient module once nothing uses it). [open]

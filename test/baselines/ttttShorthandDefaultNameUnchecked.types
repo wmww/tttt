@@ -1,0 +1,35 @@
+//// [test/cases/ttttShorthandDefaultNameUnchecked.ts] ////
+
+=== ttttShorthandDefaultNameUnchecked.ts ===
+// `{ x = 1 }` outside a destructuring target is TS1312 and its name means nothing (tsc's checkShorthandPropertyAssignment
+// checks the initializer only): no TS2693 for a type, TS2708 for a namespace, TS18004 for nothing
+const o1 = { zz = 1 };
+>o1 : { zz: number; }
+>{ zz = 1 } : { zz: number; }
+>zz : any
+>1 : 1
+
+type T = number;
+>T : number
+
+const o2 = { T = 1 };
+>o2 : { T: number; }
+>{ T = 1 } : { T: number; }
+>T : any
+>1 : 1
+
+const o3 = { never = 1 };
+>o3 : { never: number; }
+>{ never = 1 } : { never: number; }
+>never : any
+>1 : 1
+
+namespace N { export type X = 1; }
+>X : 1
+
+const o4 = { N = 1 };
+>o4 : { N: number; }
+>{ N = 1 } : { N: number; }
+>N : any
+>1 : 1
+
