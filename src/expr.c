@@ -2469,7 +2469,11 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             for_each (i, vec_expr, &my array) {
                 flow->assignment_target = assignment_target;
                 if (i->tag == EXPR_TEMPLATE && i->template_->tag && !expr_is_perenthisized(i)) i->template_->array_element = true;
-                expr_lookup_names(i, names, errs);
+                // (A destructuring rest element with an initializer is TS1186 and never checked: its names resolve
+                // silently, see expr_typecheck())
+                bool unchecked = my assignment_pattern && i->tag == EXPR_SPREAD && i->spread->tag == EXPR_BINARY_OP &&
+                    i->spread->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(i->spread);
+                expr_lookup_names(i, names, unchecked ? nullptr : errs);
             }
             break;
 
