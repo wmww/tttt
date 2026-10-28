@@ -1,0 +1,101 @@
+ttttHeritageOptionalChain.ts(7,22): error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+ttttHeritageOptionalChain.ts(8,22): error TS2702: 'Object' only refers to a type, but is being used as a namespace here.
+ttttHeritageOptionalChain.ts(8,22): error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+ttttHeritageOptionalChain.ts(9,22): error TS2503: Cannot find namespace 'Nope'.
+ttttHeritageOptionalChain.ts(9,22): error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+ttttHeritageOptionalChain.ts(10,22): error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+ttttHeritageOptionalChain.ts(10,27): error TS2694: Namespace 'Foo' has no exported member 'Baz'.
+ttttHeritageOptionalChain.ts(11,22): error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+ttttHeritageOptionalChain.ts(11,22): error TS2315: Type 'Bar' is not generic.
+ttttHeritageOptionalChain.ts(12,7): error TS2720: Class 'K' incorrectly implements class 'Bar'. Did you mean to extend 'Bar' and inherit its members as a subclass?
+  Property 'x' is missing in type 'K' but required in type 'Bar'.
+ttttHeritageOptionalChain.ts(12,20): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+ttttHeritageOptionalChain.ts(13,21): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+ttttHeritageOptionalChain.ts(13,26): error TS2694: Namespace 'Foo' has no exported member 'Baz'.
+ttttHeritageOptionalChain.ts(13,31): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+ttttHeritageOptionalChain.ts(13,36): error TS18030: An optional chain cannot contain private identifiers.
+ttttHeritageOptionalChain.ts(14,31): error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+ttttHeritageOptionalChain.ts(15,22): error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+ttttHeritageOptionalChain.ts(16,22): error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+ttttHeritageOptionalChain.ts(17,22): error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+ttttHeritageOptionalChain.ts(18,7): error TS2720: Class 'K3' incorrectly implements class 'Bar'. Did you mean to extend 'Bar' and inherit its members as a subclass?
+  Property 'y' is missing in type 'K3' but required in type 'Bar'.
+ttttHeritageOptionalChain.ts(18,21): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+ttttHeritageOptionalChain.ts(20,7): error TS2322: Type 'number' is not assignable to type 'string'.
+ttttHeritageOptionalChain.ts(22,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== ttttHeritageOptionalChain.ts (23 errors) ====
+    // A heritage clause's optional chain name (`A?.B`): TS2499/TS2500, and resolved as the type reference it would be
+    // (TS2702, TS2503, TS2694; the interface extends it, its qualifiers have their values' types)
+    namespace Foo {
+        export class Bar { x = 1 }
+        export namespace N { export class Bar { y = "" } }
+    }
+    interface C1 extends Foo?.Bar {}
+                         ~~~~~~~~
+!!! error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+    interface C2 extends Object?.Bar {}
+                         ~~~~~~
+!!! error TS2702: 'Object' only refers to a type, but is being used as a namespace here.
+                         ~~~~~~~~~~~
+!!! error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+    interface C3 extends Nope?.Bar {}
+                         ~~~~
+!!! error TS2503: Cannot find namespace 'Nope'.
+                         ~~~~~~~~~
+!!! error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+    interface C4 extends Foo?.Baz {}
+                         ~~~~~~~~
+!!! error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+                              ~~~
+!!! error TS2694: Namespace 'Foo' has no exported member 'Baz'.
+    interface C5 extends Foo?.Bar<number> {}
+                         ~~~~~~~~
+!!! error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+                         ~~~~~~~~~~~~~~~~
+!!! error TS2315: Type 'Bar' is not generic.
+    class K implements Foo?.Bar {}
+          ~
+!!! error TS2720: Class 'K' incorrectly implements class 'Bar'. Did you mean to extend 'Bar' and inherit its members as a subclass?
+!!! error TS2720:   Property 'x' is missing in type 'K' but required in type 'Bar'.
+!!! related TS2728 ttttHeritageOptionalChain.ts:4:24: 'x' is declared here.
+                       ~~~~~~~~
+!!! error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+    class K2 implements Foo?.Baz, Foo?.#x {}
+                        ~~~~~~~~
+!!! error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+                             ~~~
+!!! error TS2694: Namespace 'Foo' has no exported member 'Baz'.
+                                  ~~~~~~~
+!!! error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+                                       ~~
+!!! error TS18030: An optional chain cannot contain private identifiers.
+    interface C6 extends Foo.Bar, Foo?.N.Bar {}
+                                  ~~~~~~~~~~
+!!! error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+    interface C7 extends Foo?.N.Bar {}
+                         ~~~~~~~~~~
+!!! error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+    interface C8 extends Foo.N?.Bar {}
+                         ~~~~~~~~~~
+!!! error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+    interface C9 extends Foo?.N?.Bar {}
+                         ~~~~~~~~~~~
+!!! error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+    class K3 implements Foo.N?.Bar {}
+          ~~
+!!! error TS2720: Class 'K3' incorrectly implements class 'Bar'. Did you mean to extend 'Bar' and inherit its members as a subclass?
+!!! error TS2720:   Property 'y' is missing in type 'K3' but required in type 'Bar'.
+!!! related TS2728 ttttHeritageOptionalChain.ts:5:45: 'y' is declared here.
+                        ~~~~~~~~~~
+!!! error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+    declare const c1: C1;
+    const s1: string = c1.x;
+          ~~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    declare const c7: C7;
+    const n7: number = c7.y;
+          ~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,4 +1,5 @@
 #include "interface_decl.h"
+#include "several_types.h"
 #include "ty/ty.h"
 #include "error.h"
 #include "interface_member.h"
@@ -245,10 +246,11 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
             // checkAndReportErrorForUsingTypeAsValue)
             error_ctx_error_d(errs, extends->span, 2840, "An interface cannot extend a primitive type like '", extends->span,
                 "'. It can only extend other named object types.");
-        } else if (extends->type.tag != TYPE_IDENTIFIER) {
+        } else if (extends->type.tag != TYPE_IDENTIFIER || extends->type.identifier->heritage_optional_chain) {
             error_ctx_error_d(
                 errs,
-                extends->span,
+                extends->type.tag == TYPE_IDENTIFIER ? identifier_type_heritage_expression_span(extends->type.identifier) :
+                    extends->span,
                 2499,
                 "An interface can only extend an identifier/qualified-name with optional type arguments."
             );

@@ -37,11 +37,9 @@ here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in 
 Each one mutant:
 - arrayFrom return-void: "Binding elements read before the contextual assignment" (seeds 61/62 below). [dup]
 - interfaceExtendingOptionalChain extends-object: `interface C1 extends Object?.Bar {}` is TS2499 *and* the name
-  resolved as a type reference (TS2702 'Object' only refers to a type...; TS2503/TS2694 for others): tsc's
-  getTypeReferenceName takes the optional chain as an entity name (isEntityNameExpression ignores `?.`). tttt keeps
-  it as an invalid expression (HeritageClauses.invalid) without a TypeNode, so nothing resolves it. (cor7 2026-10-28:
-  tsc also takes it as the interface's base type, getInterfaceBaseTypeNodes. The fix is in parser.c's heritage element
-  parse: an optional-chain entity name becomes a type reference flagged for TS2499, kept in `types`. Mutation-only.) [open]
+  resolved as a type reference (TS2702; TS2503/TS2694 for others; the interface extends it): the parser makes a heritage
+  `A?.B` the type reference it would be, flagged `heritage_optional_chain` (TS2499/TS2500 in the checker, value types for
+  its qualifiers in the types baseline, `(A?.B)<T>` in declaration emit). [fixed HASH]
 - twiceNestedKeyofIndexInference add-optional: an overload's signature in TS2769 prints
   `Required<Pick<State, "d">>` in full in tsc, `Required<...>` in tttt (the elision budget of a signature in an
   overload list). [text]

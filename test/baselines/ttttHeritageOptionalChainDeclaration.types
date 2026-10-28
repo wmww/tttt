@@ -1,0 +1,29 @@
+//// [test/cases/ttttHeritageOptionalChainDeclaration.ts] ////
+
+=== ttttHeritageOptionalChainDeclaration.ts ===
+// A heritage clause's `A?.B` is emitted as the parenthesized expression, each dot as written
+export namespace Foo { export class Bar<T = 1> { x = 1 } export namespace N { export class Bar {} } }
+>Foo : typeof Foo
+>Bar : Bar<T>
+>x : number
+>1 : 1
+>N : typeof N
+>Bar : Bar
+
+export interface C1 extends Foo ?. Bar<number> {}
+>Foo : typeof Foo
+
+export interface C2 extends Foo.N?.Bar, Foo?.N.Bar {}
+>Foo.N : typeof Foo.N
+>Foo : typeof Foo
+>N : typeof Foo.N
+>Foo?.N : typeof Foo.N
+>Foo : typeof Foo
+>N : typeof Foo.N
+
+export class K implements Foo?.Bar<string> { x = 2 }
+>K : K
+>Foo : typeof Foo
+>x : number
+>2 : 2
+

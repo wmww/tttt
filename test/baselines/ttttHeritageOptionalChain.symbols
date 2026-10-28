@@ -1,0 +1,114 @@
+//// [test/cases/ttttHeritageOptionalChain.ts] ////
+
+=== ttttHeritageOptionalChain.ts ===
+// A heritage clause's optional chain name (`A?.B`): TS2499/TS2500, and resolved as the type reference it would be
+// (TS2702, TS2503, TS2694; the interface extends it, its qualifiers have their values' types)
+namespace Foo {
+>Foo : Symbol(Foo, Decl(ttttHeritageOptionalChain.ts, 0, 0))
+
+    export class Bar { x = 1 }
+>Bar : Symbol(Bar, Decl(ttttHeritageOptionalChain.ts, 2, 15))
+>x : Symbol(Bar.x, Decl(ttttHeritageOptionalChain.ts, 3, 22))
+
+    export namespace N { export class Bar { y = "" } }
+>N : Symbol(N, Decl(ttttHeritageOptionalChain.ts, 3, 30))
+>Bar : Symbol(Bar, Decl(ttttHeritageOptionalChain.ts, 4, 24))
+>y : Symbol(Bar.y, Decl(ttttHeritageOptionalChain.ts, 4, 43))
+}
+interface C1 extends Foo?.Bar {}
+>C1 : Symbol(C1, Decl(ttttHeritageOptionalChain.ts, 5, 1))
+>Foo?.Bar : Symbol(Foo.Bar, Decl(ttttHeritageOptionalChain.ts, 2, 15))
+>Foo : Symbol(Foo, Decl(ttttHeritageOptionalChain.ts, 0, 0))
+>Bar : Symbol(Foo.Bar, Decl(ttttHeritageOptionalChain.ts, 2, 15))
+
+interface C2 extends Object?.Bar {}
+>C2 : Symbol(C2, Decl(ttttHeritageOptionalChain.ts, 6, 32))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+
+interface C3 extends Nope?.Bar {}
+>C3 : Symbol(C3, Decl(ttttHeritageOptionalChain.ts, 7, 35))
+
+interface C4 extends Foo?.Baz {}
+>C4 : Symbol(C4, Decl(ttttHeritageOptionalChain.ts, 8, 33))
+>Foo : Symbol(Foo, Decl(ttttHeritageOptionalChain.ts, 0, 0))
+
+interface C5 extends Foo?.Bar<number> {}
+>C5 : Symbol(C5, Decl(ttttHeritageOptionalChain.ts, 9, 32))
+>Foo?.Bar : Symbol(Foo.Bar, Decl(ttttHeritageOptionalChain.ts, 2, 15))
+>Foo : Symbol(Foo, Decl(ttttHeritageOptionalChain.ts, 0, 0))
+>Bar : Symbol(Foo.Bar, Decl(ttttHeritageOptionalChain.ts, 2, 15))
+
+class K implements Foo?.Bar {}
+>K : Symbol(K, Decl(ttttHeritageOptionalChain.ts, 10, 40))
+>Foo?.Bar : Symbol(Foo.Bar, Decl(ttttHeritageOptionalChain.ts, 2, 15))
+>Foo : Symbol(Foo, Decl(ttttHeritageOptionalChain.ts, 0, 0))
+>Bar : Symbol(Foo.Bar, Decl(ttttHeritageOptionalChain.ts, 2, 15))
+
+class K2 implements Foo?.Baz, Foo?.#x {}
+>K2 : Symbol(K2, Decl(ttttHeritageOptionalChain.ts, 11, 30))
+>Foo : Symbol(Foo, Decl(ttttHeritageOptionalChain.ts, 0, 0))
+>Foo : Symbol(Foo, Decl(ttttHeritageOptionalChain.ts, 0, 0))
+
+interface C6 extends Foo.Bar, Foo?.N.Bar {}
+>C6 : Symbol(C6, Decl(ttttHeritageOptionalChain.ts, 12, 40))
+>Foo.Bar : Symbol(Foo.Bar, Decl(ttttHeritageOptionalChain.ts, 2, 15))
+>Foo : Symbol(Foo, Decl(ttttHeritageOptionalChain.ts, 0, 0))
+>Bar : Symbol(Foo.Bar, Decl(ttttHeritageOptionalChain.ts, 2, 15))
+>Foo?.N.Bar : Symbol(Foo.N.Bar, Decl(ttttHeritageOptionalChain.ts, 4, 24))
+>Foo?.N : Symbol(Foo.N, Decl(ttttHeritageOptionalChain.ts, 3, 30))
+>Foo : Symbol(Foo, Decl(ttttHeritageOptionalChain.ts, 0, 0))
+>N : Symbol(Foo.N, Decl(ttttHeritageOptionalChain.ts, 3, 30))
+>Bar : Symbol(Foo.N.Bar, Decl(ttttHeritageOptionalChain.ts, 4, 24))
+
+interface C7 extends Foo?.N.Bar {}
+>C7 : Symbol(C7, Decl(ttttHeritageOptionalChain.ts, 13, 43))
+>Foo?.N.Bar : Symbol(Foo.N.Bar, Decl(ttttHeritageOptionalChain.ts, 4, 24))
+>Foo?.N : Symbol(Foo.N, Decl(ttttHeritageOptionalChain.ts, 3, 30))
+>Foo : Symbol(Foo, Decl(ttttHeritageOptionalChain.ts, 0, 0))
+>N : Symbol(Foo.N, Decl(ttttHeritageOptionalChain.ts, 3, 30))
+>Bar : Symbol(Foo.N.Bar, Decl(ttttHeritageOptionalChain.ts, 4, 24))
+
+interface C8 extends Foo.N?.Bar {}
+>C8 : Symbol(C8, Decl(ttttHeritageOptionalChain.ts, 14, 34))
+>Foo.N?.Bar : Symbol(Foo.N.Bar, Decl(ttttHeritageOptionalChain.ts, 4, 24))
+>Foo.N : Symbol(Foo.N, Decl(ttttHeritageOptionalChain.ts, 3, 30))
+>Foo : Symbol(Foo, Decl(ttttHeritageOptionalChain.ts, 0, 0))
+>N : Symbol(Foo.N, Decl(ttttHeritageOptionalChain.ts, 3, 30))
+>Bar : Symbol(Foo.N.Bar, Decl(ttttHeritageOptionalChain.ts, 4, 24))
+
+interface C9 extends Foo?.N?.Bar {}
+>C9 : Symbol(C9, Decl(ttttHeritageOptionalChain.ts, 15, 34))
+>Foo?.N?.Bar : Symbol(Foo.N.Bar, Decl(ttttHeritageOptionalChain.ts, 4, 24))
+>Foo?.N : Symbol(Foo.N, Decl(ttttHeritageOptionalChain.ts, 3, 30))
+>Foo : Symbol(Foo, Decl(ttttHeritageOptionalChain.ts, 0, 0))
+>N : Symbol(Foo.N, Decl(ttttHeritageOptionalChain.ts, 3, 30))
+>Bar : Symbol(Foo.N.Bar, Decl(ttttHeritageOptionalChain.ts, 4, 24))
+
+class K3 implements Foo.N?.Bar {}
+>K3 : Symbol(K3, Decl(ttttHeritageOptionalChain.ts, 16, 35))
+>Foo.N?.Bar : Symbol(Foo.N.Bar, Decl(ttttHeritageOptionalChain.ts, 4, 24))
+>Foo.N : Symbol(Foo.N, Decl(ttttHeritageOptionalChain.ts, 3, 30))
+>Foo : Symbol(Foo, Decl(ttttHeritageOptionalChain.ts, 0, 0))
+>N : Symbol(Foo.N, Decl(ttttHeritageOptionalChain.ts, 3, 30))
+>Bar : Symbol(Foo.N.Bar, Decl(ttttHeritageOptionalChain.ts, 4, 24))
+
+declare const c1: C1;
+>c1 : Symbol(c1, Decl(ttttHeritageOptionalChain.ts, 18, 13))
+>C1 : Symbol(C1, Decl(ttttHeritageOptionalChain.ts, 5, 1))
+
+const s1: string = c1.x;
+>s1 : Symbol(s1, Decl(ttttHeritageOptionalChain.ts, 19, 5))
+>c1.x : Symbol(Foo.Bar.x, Decl(ttttHeritageOptionalChain.ts, 3, 22))
+>c1 : Symbol(c1, Decl(ttttHeritageOptionalChain.ts, 18, 13))
+>x : Symbol(Foo.Bar.x, Decl(ttttHeritageOptionalChain.ts, 3, 22))
+
+declare const c7: C7;
+>c7 : Symbol(c7, Decl(ttttHeritageOptionalChain.ts, 20, 13))
+>C7 : Symbol(C7, Decl(ttttHeritageOptionalChain.ts, 13, 43))
+
+const n7: number = c7.y;
+>n7 : Symbol(n7, Decl(ttttHeritageOptionalChain.ts, 21, 5))
+>c7.y : Symbol(Foo.N.Bar.y, Decl(ttttHeritageOptionalChain.ts, 4, 43))
+>c7 : Symbol(c7, Decl(ttttHeritageOptionalChain.ts, 20, 13))
+>y : Symbol(Foo.N.Bar.y, Decl(ttttHeritageOptionalChain.ts, 4, 43))
+

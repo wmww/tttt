@@ -44,6 +44,18 @@ static inline Symbol const* shown_declaration(Symbol const* symbol, Symbol const
     return symbol && symbol->decl_count ? symbol : decl;
 }
 
+// The type tsc's writer gives the k-th qualifier of a heritage clause's `A?.B.C` (heritage_optional_chain): not an entity
+// name to tsgo's getTypeOfNode, so an expression's, the value of what the qualifier names (`A?.B` a namespace's
+// `typeof A.B`, `Object?.B` ObjectConstructor), any when it names nothing
+static Ty const* heritage_optional_chain_qualifier_type(IdentifierType const* identifier, isize k) {
+    AstSymbols const* symbols = identifier_type_namespace_symbols(identifier);
+    Symbol const* symbol = k < ast_symbols_size(symbols) ? *ast_symbols_at(symbols, k) : nullptr;
+    if (!symbol && k == 0 && identifier->rare) symbol = identifier->rare->type_as_namespace;
+    if (symbol) symbol = symbol_resolve_alias((Symbol*)symbol);
+    if (!symbol || symbol->is_placeholder || !(symbol->flags & SYMBOL_VALUE)) return ty_intrinsic(current_checker, TY_ERROR);
+    return ty_type_of_symbol(current_checker, symbol);
+}
+
 // (Not inlined: the expression walk recurses deeply, binderBinaryExpressionStress)
 __attribute__((noinline)) static VecSpan declaration_get_spans(Symbol const* me) {
     // A file's module that declarations merged into (a script's merging into a UMD global, `export as namespace`):
@@ -1134,6 +1146,10 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                     }
                     // (Of type any, whatever it names: tsgo's getTypeAtLocation of an `implements` or interface
                     // `extends` clause's qualifier, where TS 6.0 had its value's type)
+                    if (my identifier->heritage_optional_chain) {
+                        baseline_test_case_add_type(ctx, prefix, heritage_optional_chain_qualifier_type(my identifier, k));
+                        continue;
+                    }
                     ctx->any_keeps_rendering = true;
                     baseline_test_case_add_type_node(ctx, prefix, &type_any);
                 }
@@ -1152,8 +1168,17 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                 ) {
                     decl = rare->export_equals_namespace;
                 }
-                ctx->any_keeps_rendering = true; // Part of a qualified name (any in a heritage clause too, see above)
-                baseline_test_case_add_type_node(ctx, *i, &type_any);
+                // (`Object?.B`'s Object, a type tsc's resolveEntityName rejects as a namespace (TS2702), is still the
+                // expression's symbol to the writer)
+                if (!decl && index == 0 && my identifier->heritage_optional_chain && rare && rare->type_as_namespace) {
+                    decl = rare->type_as_namespace;
+                }
+                if (my identifier->heritage_optional_chain) {
+                    baseline_test_case_add_type(ctx, *i, heritage_optional_chain_qualifier_type(my identifier, index));
+                } else {
+                    ctx->any_keeps_rendering = true; // Part of a qualified name (any in a heritage clause too, see above)
+                    baseline_test_case_add_type_node(ctx, *i, &type_any);
+                }
                 // (After an unresolved name of a heritage clause, the rest are expressions of no symbol)
                 if (heritage && (!decl || heritage_unresolved)) {
                     heritage_unresolved = true;

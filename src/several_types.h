@@ -83,6 +83,9 @@ typedef struct IdentifierType {
     // The class a JavaScript `@implements` tag names (tsc's ExpressionWithTypeArguments under a JSDocImplementsTag): a
     // wrong type argument count asks for an `@extends` tag (TS8026, getTypeFromClassOrInterfaceReference)
     bool jsdoc_implements;
+    // A heritage clause's `A?.B` (an optional chain where an entity name is meant): the reference it would be, TS2499
+    // (an interface's `extends`) or TS2500 (a class's `implements`) besides
+    bool heritage_optional_chain;
 } IdentifierType;
 
 // The rare part, made on demand
@@ -96,6 +99,11 @@ static inline AstSpans const* identifier_type_namespaces(IdentifierType const* m
 }
 static inline isize identifier_type_namespace_count(IdentifierType const* me) {
     return my rare ? ast_spans_size(&my rare->namespaces) : 0;
+}
+// A heritage_optional_chain reference's expression, `A?.B` without its type arguments (where TS2499/TS2500 go)
+static inline Span identifier_type_heritage_expression_span(IdentifierType const* me) {
+    check(identifier_type_namespace_count(me));
+    return span_make(span_source(my name), span_start_ptr(*ast_spans_front(&my rare->namespaces)), span_end_ptr(my name));
 }
 static inline AstSymbols const* identifier_type_namespace_symbols(IdentifierType const* me) {
     static const AstSymbols empty = {0};

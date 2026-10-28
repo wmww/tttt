@@ -6914,6 +6914,46 @@ static bool heritage_is_entity_name(Expr const* e) {
     return e->tag == EXPR_IDENTIFIER && !e->identifier.keyword;
 }
 
+// `A?.B`, `A.B?.C<T>`: an entity name but for an optional chain's `?.`, which tsc's isEntityNameExpression ignores: its
+// checker reports it (TS2499/TS2500) and resolves it as the type reference it would be all the same (getTypeReferenceName,
+// getInterfaceBaseTypeNodes)
+static bool heritage_is_optional_chain_name(Expr const* e) {
+    if (e->tag == EXPR_GENERIC_PARAMS) e = &e->generic_params->expr;
+    bool optional = false;
+    while (e->tag == EXPR_PROPERTY && e->property->form == PROPERTY_EXPR_DOT && !expr_is_perenthisized(e) &&
+        span_sv(property_name(e->property)).size && *span_sv(property_name(e->property)).buf != '#') {
+        optional |= e->property->optional_chain;
+        e = &e->property->expr;
+    }
+    return optional && e->tag == EXPR_IDENTIFIER && !e->identifier.keyword && !expr_is_perenthisized(e);
+}
+
+// The type reference an optional chain name (heritage_is_optional_chain_name()) means, flagged for TS2499/TS2500.
+// Consumes `e`
+static TypeNode heritage_optional_chain_type(Expr* e) {
+    IdentifierType identifier = {0};
+    Expr* name = e;
+    if (e->tag == EXPR_GENERIC_PARAMS) {
+        identifier.generic_params = e->generic_params->params;
+        e->generic_params->params = (VecSpannedType){0};
+        name = &e->generic_params->expr;
+    }
+    AstSpans reversed = {0};
+    for (Expr const* n = name; n->tag == EXPR_PROPERTY; n = &n->property->expr) ast_spans_push(&reversed, property_name(n->property));
+    Span first = name->inner_span;
+    for (Expr const* n = name; n->tag == EXPR_PROPERTY; n = &n->property->expr) first = n->property->expr.inner_span;
+    AstSpans namespaces = {0};
+    ast_spans_push(&namespaces, first);
+    for (isize i = ast_spans_size(&reversed) - 1; i > 0; i--) ast_spans_push(&namespaces, reversed.data[i]);
+    identifier.name = reversed.data[0];
+    ast_spans_drop(&reversed);
+    identifier.heritage_optional_chain = true;
+    IdentifierTypeRare* rare = identifier_type_rare(&identifier);
+    rare->namespaces = namespaces;
+    expr_drop(e);
+    return type_identifier(ast_new(IdentifierType, identifier));
+}
+
 // tsc's parseExpressionWithTypeArguments. Where a type is meant (`implements`, an interface's `extends`) an entity
 // name is parsed again as the type reference it means
 // tsc's parseExpressionWithTypeArguments: a left-hand side expression and type arguments (in JavaScript too, where
@@ -6974,6 +7014,18 @@ static void parse_heritage_element(Parser* p, HeritageClauses* h, bool is_extend
     const char* start = ep.pos;
     Expr e;
     parse_heritage_expr(&ep, &e);
+    if (heritage_is_optional_chain_name(&e)) {
+        Span span = span_make(p->shared->source, start, ep.pos);
+        parse_success(&ep);
+        TypeNode t = heritage_optional_chain_type(&e);
+        if (checked) {
+            list_push(vec_spanned_type, &h->types, spanned_type(span, t));
+        } else {
+            grammar_drop_since(p, mark, 0, nullptr);
+            vec_type_push(&h->unchecked_types, t);
+        }
+        return;
+    }
     if (heritage_is_entity_name(&e)) {
         const char* end = ep.pos;
         parse_fail(&ep);

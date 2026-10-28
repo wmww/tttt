@@ -2236,6 +2236,21 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
             d.tracker->track_symbol(d.tracker, found, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE);
         }
     }
+    if (identifier->heritage_optional_chain) {
+        // A heritage clause's `A?.B` is an expression to tsc's printer, parenthesized (`(A?.B)<T>`); each dot as written
+        out_lit(d, "(");
+        AstSpans const* names = identifier_type_namespaces(identifier);
+        for_each (i, ast_spans, names) {
+            out_mapped(d, *i);
+            Span next = i_index + 1 < ast_spans_size(names) ? names->data[i_index + 1] : identifier->name;
+            bool optional = memchr(span_end_ptr(*i), '?', span_start_ptr(next) - span_end_ptr(*i)) != nullptr;
+            out(d, optional ? c_sv("?.") : c_sv("."));
+        }
+        out_mapped(d, identifier->name);
+        out_lit(d, ")");
+        display_node_args(me, d, &identifier->generic_params);
+        return;
+    }
     for_each (i, ast_spans, identifier_type_namespaces(identifier)) {
         out_mapped(d, *i);
         out_lit(d, ".");

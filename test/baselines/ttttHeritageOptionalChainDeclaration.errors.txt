@@ -1,0 +1,21 @@
+ttttHeritageOptionalChainDeclaration.ts(3,29): error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+ttttHeritageOptionalChainDeclaration.ts(4,29): error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+ttttHeritageOptionalChainDeclaration.ts(4,41): error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+ttttHeritageOptionalChainDeclaration.ts(5,27): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+
+
+==== ttttHeritageOptionalChainDeclaration.ts (4 errors) ====
+    // A heritage clause's `A?.B` is emitted as the parenthesized expression, each dot as written
+    export namespace Foo { export class Bar<T = 1> { x = 1 } export namespace N { export class Bar {} } }
+    export interface C1 extends Foo ?. Bar<number> {}
+                                ~~~~~~~~~~
+!!! error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+    export interface C2 extends Foo.N?.Bar, Foo?.N.Bar {}
+                                ~~~~~~~~~~
+!!! error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+                                            ~~~~~~~~~~
+!!! error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+    export class K implements Foo?.Bar<string> { x = 2 }
+                              ~~~~~~~~
+!!! error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+    

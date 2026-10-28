@@ -2888,6 +2888,10 @@ static void class_typecheck_implements(ClassDecl* me, ErrorCtx* errs) {
             error_ctx_error_d(errs, i->span, 2864, "A class cannot implement a primitive type like '", i->span,
                 "'. It can only implement other named object types.");
         }
+        if (i->type.tag == TYPE_IDENTIFIER && i->type.identifier->heritage_optional_chain) {
+            error_ctx_error_d(errs, identifier_type_heritage_expression_span(i->type.identifier), 2500,
+                "A class can only implement an identifier/qualified-name with optional type arguments.");
+        }
     }
     for (u32 i = 0; i < my invalid_implements_checked; i++) {
         error_ctx_error_d(errs, expr_heritage_expression_span(&my invalid_implements.data[i]), 2500,
