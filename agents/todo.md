@@ -48,6 +48,11 @@ wins first; land fast and gate in batches.
   is, and whether bun's threads build it concurrently (notes/bun_concurrency.md plus its source) or pay it once
   serially too. Verdict: can the hub be built in parallel, at what granularity, and what it would need from the
   type graph (notes/sharing_design.md has the costs already measured). Numbers: notes/bun_breadth.md "2026-10-28".
+- **Bad speculation, twice bun's** (the laptop, 2026-10-27, footprint.md "The laptop's counters"): 5-8% of cycles
+  everywhere, 2x bun's on the one-file `.d.ts` shapes (imm 110 M against 51 M cycles). Unexamined: branchy code on
+  data-dependent type kinds is the guess (tsc's flags tests, tttt's kind switches). A diagnosis: `perf record -e
+  branch-misses` on the laptop by function and line, then whether the top sites are kind dispatch, hash probing or
+  relation recursion; a general lever if it is dispatch.
 - **immutable.d.ts**: bun 0.19 s, tttt 0.38, tsgo 3.4 s; the critical path of 7 sweep projects. What bun does there
   is an unread lead (a checked `.d.ts` is the idle tail's usual shape: 188 of 300 projects have one file over 1/K).
 - **The front end's loader waits**: load+parse waits on a worker's parse 51% of the phase, resolve at 2.7 cores
