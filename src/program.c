@@ -193,7 +193,6 @@ typedef struct Program {
     bool steal_files; // While typechecking: checkers take each other's files (TTTT_NO_STEAL=1: never, to measure)
     u32 requested_checkers; // program_set_checkers()
     bool shared_graph; // program_set_shared_graph()
-    bool first_touch_stamps; // program_set_first_touch_stamps()
     struct TyGraph* graph; // Its checkers', while they share one (ty/graph.h)
     // --shared-graph on threads: the graph-wide recycle (graph_epoch_arrive()). What each share's checker holds
     // (checker_memory(), after each file), the sum's budget (UINT64_MAX: never), the barrier
@@ -307,8 +306,6 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
         .checker_memory = UINT64_MAX,
         .atoms = atom_table_new(),
         .type_directory = type_directory_new(),
-        // (TTTT_FIRST_TOUCH_STAMPS=1: --first-touch-stamps for every program, the suite's too)
-        .first_touch_stamps = getenv("TTTT_FIRST_TOUCH_STAMPS") && strcmp(getenv("TTTT_FIRST_TOUCH_STAMPS"), "0"),
         .checker_memory_cap = UINT64_MAX,
         .checker_memory_shared = UINT64_MAX,
         .memory_pool = UINT64_MAX,
@@ -5131,22 +5128,10 @@ enum { CHECKER_BYTES = 16 << 10 };
 // (1.5 MB) lose 9-23% (2026-10-21). No project of the source sweep or the corpora lies between 21 and 138 MB
 enum { SMT_CHECKER_BYTES = 4 << 20 };
 
-void program_set_first_touch_stamps(Program* me, bool stamps) {
-    my first_touch_stamps = stamps;
-}
-
-bool program_first_touch_stamps(Program const* me) {
-    return my first_touch_stamps;
-}
-
 void program_set_shared_graph(Program* me, bool shared) {
+    // (A shared graph hands out type ids in scheduling order, so deep nesting's "newer" test goes by the walk order
+    // there, not by id: ty_nesting_order(), sharing_design.md §6)
     my shared_graph = shared;
-    // (A shared graph hands out type ids in scheduling order, and deep nesting decides by "newer" types: by id, one
-    // worker's relation cache was poisoned by the schedule and measured every later variance as unreliable, plan 86 4e
-    // item 1. Stamps make "newer" this worker's history; at one checker they equal the ids)
-    // (TTTT_FIRST_TOUCH_STAMPS=0: not, to test what needs them)
-    char const* stamps = getenv("TTTT_FIRST_TOUCH_STAMPS");
-    if (shared && !(stamps && !strcmp(stamps, "0"))) my first_touch_stamps = true;
 }
 
 struct TypeDirectory* program_type_directory(Program const* me) {
@@ -7283,11 +7268,6 @@ again:
         checker_make_current(my checkers[0]);
         graph_print_disagreements(my checkers[0]);
         checker_make_current(nullptr);
-    }
-    if (my first_touch_stamps && getenv("TTTT_GRAPH_STATS")) {
-        u64 decisions = 0, disagreements = 0;
-        for (u32 c = 0; c < count; c++) decisions += my checkers[c]->stamp_decisions, disagreements += my checkers[c]->stamp_disagreements;
-        eprintln("stamps: ", decisions, " deep nesting decisions, ", disagreements, " the type ids would have made otherwise");
     }
     for (u32 c = 0; c < count; c++) drop_read_members(me, &checker_errs[c]);
     member_refs_clear(me);

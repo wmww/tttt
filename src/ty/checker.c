@@ -411,14 +411,6 @@ static bool intern_probes(InternTable const* table, u64 const* words, u32 count)
 #ifdef TTTT_DEBUG_IDS
     debug_check_type_value(table, words, count, block, "shared hit");
 #endif
-    // (--first-touch-stamps: a type of a kind with a recursion identity met first here)
-    Checker* checker = current_checker;
-    if (checker && checker->stamps && table == &checker->types && count) {
-        u64 kind = words[0] & 255;
-        if (kind == KEY_REFERENCE || kind == KEY_ANONYMOUS_INSTANCE || kind == KEY_CONDITIONAL || kind == KEY_INDEXED) {
-            ty_stamp(checker, block[0]);
-        }
-    }
     return block;
 }
 
@@ -999,7 +991,6 @@ Ty* ty_alloc(Checker* me, TyKind kind, u32 flags) {
         my next_type_id = type_directory_block(my lazy.directory);
     }
     lazy_slots_add_type(&my lazy, ret);
-    if (my stamps) ty_stamp(me, ret);
     ret->kind = kind;
     ret->height = 0;
     ret->memo = 0;
@@ -1066,10 +1057,6 @@ static Checker* checker_make(Program* program, bool join_graph) {
     {
         static _Atomic u64 height_generations;
         my height_generation = ++height_generations;
-    }
-    if (program_first_touch_stamps(program)) {
-        my stamps = zeroed_table(1u << LAZY_TYPE_DIR_BITS, sizeof(u32*));
-        panic_if(!my stamps, "out of memory");
     }
     // (--shared-graph: the graph's first checker made the intrinsics, the rest share them)
     TyGraph* graph = join_graph ? program_graph(program) : nullptr;
@@ -1209,10 +1196,6 @@ void checker_drop(Checker* me) {
     free(my cross_files);
     lazy_slots_drop(&my lazy);
     overlay_drop(me);
-    if (my stamps) {
-        for (u32 i = 0; i < (1u << LAZY_TYPE_DIR_BITS); i++) free(my stamps[i]);
-        free(my stamps);
-    }
     free(my index_atoms);
     big_table_free(my types.slots, sizeof(u64) * my types.cap);
     big_table_free(my links.slots, sizeof(u64) * my links.cap);
@@ -1232,18 +1215,6 @@ void checker_drop(Checker* me) {
     free(my call_errors);
     arena_drop(&my arena);
     free(me);
-}
-
-// --first-touch-stamps: the type's stamp in this checker, given now if it has none (Checker.stamps)
-u32 ty_stamp(Checker* me, Ty const* ty) {
-    u32** chunk = &my stamps[ty->id >> LAZY_TYPE_CHUNK_BITS];
-    if (!*chunk) {
-        *chunk = zeroed_table(1u << LAZY_TYPE_CHUNK_BITS, sizeof(u32));
-        panic_if(!*chunk, "out of memory");
-    }
-    u32* stamp = &(*chunk)[ty->id & ((1u << LAZY_TYPE_CHUNK_BITS) - 1)];
-    if (!*stamp) *stamp = ++my stamp_next;
-    return *stamp;
 }
 
 // How many types it made (its id blocks are full but the last; block 0 starts at 1)

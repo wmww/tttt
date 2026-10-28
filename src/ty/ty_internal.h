@@ -364,7 +364,14 @@ u64 ty_seeded_id(u32 id);                  // A type id as TTTT_ORDER_SEED order
 int ty_compare_ids(Ty const* a, Ty const* b); // Distinct types in (seeded) id order
 u32 ty_height(Checker const* checker, Ty const* t); // TTTT_NESTING_ORDER=content: bun's Rank height (order.c)
 bool ty_is_subterm(Checker const* checker, Ty const* inner, Ty const* outer); // TTTT_NESTING_ORDER=sub (order.c)
-void ty_nesting_other(Ty const* const* stack, u32 depth); // TTTT_NESTING_ORDER=walk: inference's other stack (relate.c)
+// The order deep nesting takes for "newer" (is_deeply_nested_as()): TTTT_NESTING_ORDER, else the ids on the plain
+// path and the walk order under --shared-graph, where ids are the schedule's (sharing_design.md §6)
+static inline NestingOrder ty_nesting_order(Checker const* me) {
+    if (__builtin_expect(debug_env.nesting_order != NESTING_DEFAULT, 0)) return (NestingOrder)debug_env.nesting_order;
+    return me->graph ? NESTING_WALK : NESTING_ID;
+}
+// The walk order's other stack for the test about to run (inference's lockstep twin; relate.c), null after it
+void ty_nesting_other(Ty const* const* stack, u32 depth);
 u32 ty_order_rank(Ty const* t);
 static inline int ty_compare(Ty const* a, Ty const* b) {
     if (a == b) return 0;

@@ -155,7 +155,7 @@ typedef struct RelationState {
     // Each stack entry's recursion identity (ty_recursion_entry()), worked out once, when a deep nesting check first needs it
     uintptr_t source_entries[MAX_RELATION_DEPTH];
     uintptr_t target_entries[MAX_RELATION_DEPTH];
-    // TTTT_NESTING_ORDER=walk: which pair each entry was pushed with (the deep-nesting audit's walk order); filled only then
+    // The walk order's push sequence of each entry (is_deeply_nested_walk()): filled only under it
     u32 source_seq[MAX_RELATION_DEPTH], target_seq[MAX_RELATION_DEPTH], push_seq;
     u32 source_entries_valid, target_entries_valid; // How many from the bottom are up to date: filled when looked at
     u32 depth;
@@ -6990,33 +6990,18 @@ static bool intersection_has_identity(Checker* me, Ty const* key, Ty const* iden
     return false;
 }
 
-// is_deeply_nested_as() by first-touch stamps (--first-touch-stamps, plan 86 stage 4c): "newer" is newer to this
-// checker. Also counts the decisions the ids would have made otherwise
-[[gnu::noinline]] static bool is_deeply_nested_stamped(
-    Checker* me, Ty const* identity, Ty const* ty, Ty const* const* stack, uintptr_t const* entries, u32 depth, u32 max
+// Whether stack entry `i` (or `ty` at i == depth) has the recursion identity `identity`
+static inline bool nesting_entry_matches(
+    Checker* me, Ty const* identity, Ty const* const* stack, uintptr_t const* entries, u32 depth, u32 i
 ) {
-    u32 count = 0, last = 0, id_count = 0, last_id = 0;
-    bool ret = false, by_id = false;
-    for (u32 i = 0; i < depth && !(ret && by_id); i++) {
-        uintptr_t entry = entries ? entries[i] : ty_recursion_entry(me, stack[i]);
-        if (entry != (uintptr_t)identity && !((entry & 1) && intersection_has_identity(me, (Ty const*)(entry & ~(uintptr_t)1), identity))) {
-            continue;
-        }
-        u32 stamp = ty_stamp(me, stack[i]);
-        if (!ret && stamp >= last && ++count >= max) ret = true;
-        last = stamp;
-        if (!by_id && stack[i]->id >= last_id && ++id_count >= max) by_id = true;
-        last_id = stack[i]->id;
-    }
-    if (!ret) ret = ty_stamp(me, ty) >= last && ++count >= max;
-    if (!by_id) by_id = ty->id >= last_id && ++id_count >= max;
-    my stamp_decisions++;
-    if (ret != by_id) my stamp_disagreements++;
-    return ret;
+    if (i == depth) return true;
+    uintptr_t entry = entries ? entries[i] : ty_recursion_entry(me, stack[i]);
+    return entry == (uintptr_t)identity || ((entry & 1) && intersection_has_identity(me, (Ty const*)(entry & ~(uintptr_t)1), identity));
 }
 
-// TTTT_NESTING_ORDER=walk: the other stack of the walk deciding now (a relation's target stack when its source is
-// tested, inference's in lockstep: seqs null, the index is the order), null outside one
+// The walk order (--shared-graph's; agents/notes/sharing_design.md §6) needs the walk's other stack: a relation's target
+// stack when its source is tested and the reverse (with each entry's push sequence), inference's lockstep twin (seqs
+// null: the index is the order). Set around each test, null outside one
 typedef struct NestingOther { Ty const* const* stack; u32 const* other_seq; u32 const* self_seq; u32 depth; } NestingOther;
 static thread_local NestingOther nesting_other;
 
@@ -7024,40 +7009,131 @@ void ty_nesting_other(Ty const* const* stack, u32 depth) {
     nesting_other = (NestingOther){ stack, nullptr, nullptr, depth };
 }
 
-// TTTT_NESTING_ORDER=chain: whether `child`, the next entry below `parent` on a stack, is a part `parent` was made
-// from: a key part (ty_is_subterm()), or for a type made from an expression (an object literal's, a function
-// expression's: not an instantiation, whose members are made after it) one of its property types or return types (or a
-// key part of one), as this worker knows them (peeks: the walk that went from one to the other resolved them)
-static bool made_before_part(Checker* me, Ty const* part, Ty const* child) {
-    return part && (part == child || ty_is_subterm(me, child, part));
+#ifdef TTTT_GRAPH_CHECKS
+// TTTT_GRAPH_CHECKS: a walk decision that went by a property or return type another worker made (published, so this
+// worker may not have resolved it itself): the order's one input that is history in principle (sharing_design.md §6)
+static _Atomic u64 nesting_foreign_reads;
+static bool type_is_foreign(Checker* me, Ty const* t) {
+    u32 block = t->id >> LAZY_TYPE_CHUNK_BITS;
+    for (u32 i = 0; i < my lazy.own_len; i++) if (my lazy.own[i] == block) return false;
+    return true;
+}
+[[gnu::cold]] static void nesting_foreign_note(Checker* me, Ty const* parent, Ty const* part) {
+    if (!my graph || !getenv("TTTT_GRAPH_CHECKS") || !type_is_foreign(me, part)) return;
+    u64 n = atomic_fetch_add(&nesting_foreign_reads, 1);
+    if (n >= 5) return;
+    cstr a = ty_to_cstr(me, parent), b = ty_to_cstr(me, part);
+    eprintln("graph check: a deep-nesting decision read a part of '", cstr_str(&a), "' another worker made: '", cstr_str(&b), "'");
+    c_drop(cstr, &a, &b);
+}
+#endif
+
+// Whether `part` (a property or return type as this worker knows it) is or holds `child`
+static bool made_before_part(Checker* me, Ty const* parent, Ty const* part, Ty const* child) {
+    if (!part || (part != child && !ty_is_subterm(me, child, part))) return false;
+#ifdef TTTT_GRAPH_CHECKS
+    nesting_foreign_note(me, parent, part);
+#else
+    (void)parent;
+#endif
+    return true;
 }
 
+// Whether `child`, the next entry below `parent` on a stack, is a part `parent` was made from: a key part
+// (ty_is_subterm()), or for a type made from an expression (an object literal's, a function expression's: not an
+// instantiation, whose members are made after it) one of its property types or return types (or a key part of one).
+// These are peeks, what this worker knows: the walk that went from one to the other resolved them, but a peek is
+// history in principle (TTTT_GRAPH_CHECKS logs a decision that read another worker's)
 static bool made_before_step(Checker* me, Ty const* parent, Ty const* child) {
     if (ty_is_subterm(me, child, parent)) return true;
     if (parent->kind != TY_ANONYMOUS || parent->anonymous.target || !(parent->anonymous.object_literal || parent->anonymous.function)) {
         return false;
     }
     TyObjectState* state = ty_object_state(parent);
-    Members const* members = state ? ty_members_peek(me, state) : nullptr;
-    if ((uintptr_t)members <= SW_POISON) return false;
-    members = (Members const*)SW_PTR((uintptr_t)members);
+    uintptr_t v = state ? (uintptr_t)ty_members_peek(me, state) : 0;
+    if (v <= SW_POISON) return false;
+    Members const* members = (Members const*)SW_PTR(v);
     for (u32 i = 0; i < members->prop_count && members->lazy_props; i++) {
         Prop const* prop = members->lazy_props[i];
-        if (prop && made_before_part(me, prop_type_peek(me, prop), child)) return true;
+        if (prop && made_before_part(me, parent, prop_type_peek(me, prop), child)) return true;
     }
     for (u32 i = 0; i < members->call_count; i++) {
         Signature const* sig = members->call[i];
-        uintptr_t v = me->graph ? sw_peek(me, &sig->ret) : atomic_load_explicit(&sig->ret.v, memory_order_relaxed);
-        if (v > SW_POISON && made_before_part(me, (Ty const*)SW_PTR(v), child)) return true;
+        uintptr_t r = me->graph ? sw_peek(me, &sig->ret) : atomic_load_explicit(&sig->ret.v, memory_order_relaxed);
+        if (r > SW_POISON && made_before_part(me, parent, (Ty const*)SW_PTR(r), child)) return true;
     }
     return false;
 }
 
-// TTTT_NESTING_ORDER (the id-order audit): "newer" by push order alone (count) or by seeded ids (seed)
+// The walk order's "b, below a on the stack (both with the identity), is newer than a": tsc's ids say whether b was
+// made after a; what every history agrees on is older when b is a key sub-term of a, when every step from a down to b
+// went into a part made before its container, or when the walk's other stack had b before a was pushed; newer
+// otherwise (made by resolving members below a). A function of the types' structure and this walk's stacks
+static bool walk_newer(Checker* me, Ty const* const* stack, Ty const* ty, u32 depth, Ty const* a, u32 a_at, Ty const* b, u32 b_at) {
+    if (a == b) return true;
+    if (ty_is_subterm(me, b, a)) return false;
+    bool chain = true;
+    for (u32 k = a_at; k < b_at && chain; k++) chain = made_before_step(me, stack[k], k + 1 < depth ? stack[k + 1] : ty);
+    if (chain) return false;
+    NestingOther const* o = &nesting_other;
+    if (o->stack) {
+        u32 a_seq = o->self_seq ? o->self_seq[a_at] : a_at;
+        for (u32 k = 0; k < o->depth; k++) {
+            if (o->stack[k] == b && (o->other_seq ? o->other_seq[k] : k) < a_seq) return false;
+        }
+    }
+    return true;
+}
+
+[[gnu::noinline]] static bool is_deeply_nested_walk(
+    Checker* me, Ty const* identity, Ty const* ty, Ty const* const* stack, uintptr_t const* entries, u32 depth, u32 max
+) {
+    // (Fewer than `max` entries with the identity, counting `ty`: no order can cut. Most decisions end here)
+    u32 matches = 1;
+    for (u32 i = 0; i < depth && matches < max; i++) matches += nesting_entry_matches(me, identity, stack, entries, depth, i);
+    if (matches < max) return false;
+    u32 count = 0, last_at = 0;
+    Ty const* last = nullptr;
+    bool ret = false;
+    for (u32 i = 0; i <= depth; i++) {
+        if (!nesting_entry_matches(me, identity, stack, entries, depth, i)) continue;
+        Ty const* t = i < depth ? stack[i] : ty;
+        if ((!last || walk_newer(me, stack, ty, depth, last, last_at, t, i)) && ++count >= max) { ret = true; break; }
+        last = t;
+        last_at = i;
+    }
+    // (TTTT_NESTING_LOG=1: each decision the ids would have made otherwise, with the stack, matching entries starred)
+    static int nesting_log = -1;
+    if (__builtin_expect(nesting_log < 0, 0)) nesting_log = getenv("TTTT_NESTING_LOG") != nullptr;
+    if (nesting_log) {
+        u32 id_count = 0, last_id = 0;
+        bool by_id = false;
+        for (u32 i = 0; i <= depth && !by_id; i++) {
+            if (!nesting_entry_matches(me, identity, stack, entries, depth, i)) continue;
+            Ty const* t = i < depth ? stack[i] : ty;
+            if (t->id >= last_id && ++id_count >= max) by_id = true;
+            last_id = t->id;
+        }
+        if (by_id != ret) {
+            log_info("nesting: walk ", ret ? "cuts" : "doesn't cut", ", ids ", by_id ? "cut" : "don't", " (max ", max, ")");
+            for (u32 i = 0; i <= depth; i++) {
+                Ty const* t = i < depth ? stack[i] : ty;
+                cstr str = ty_to_cstr(me, t);
+                log_info(nesting_entry_matches(me, identity, stack, entries, depth, i) ? "  *[" : "   [", i, "] id ", t->id, " h ",
+                    ty_height(me, t), ": ", cstr_str(&str));
+                cstr_drop(&str);
+            }
+        }
+    }
+    return ret;
+}
+
+// TTTT_NESTING_ORDER (the id-order audit): "newer" by push order alone (count), by seeded ids (seed), or by bun's
+// content order (content)
 [[gnu::noinline]] static bool is_deeply_nested_audit(
     Checker* me, Ty const* identity, Ty const* ty, Ty const* const* stack, uintptr_t const* entries, u32 depth, u32 max
 ) {
-    if (debug_env.nesting_order == 3) {
+    if (debug_env.nesting_order == NESTING_CONTENT) {
         // bun's is_at_least_as_new(): by height, equal heights by push order (the first place a type is on this
         // stack; `ty`, about to be pushed, after all unless it is there already). bun takes the first push on either
         // stack: here this stack's alone
@@ -7065,13 +7141,8 @@ static bool made_before_step(Checker* me, Ty const* parent, Ty const* child) {
         Ty const* last = nullptr;
         u32 last_height = 0, last_push = 0;
         for (u32 i = 0; i <= depth; i++) {
+            if (!nesting_entry_matches(me, identity, stack, entries, depth, i)) continue;
             Ty const* t = i < depth ? stack[i] : ty;
-            if (i < depth) {
-                uintptr_t entry = entries ? entries[i] : ty_recursion_entry(me, stack[i]);
-                if (entry != (uintptr_t)identity && !((entry & 1) && intersection_has_identity(me, (Ty const*)(entry & ~(uintptr_t)1), identity))) {
-                    continue;
-                }
-            }
             u32 push = i;
             for (u32 j = 0; j < i && j < depth; j++) if (stack[j] == t) { push = j; break; }
             u32 height = ty_height(me, t);
@@ -7083,88 +7154,11 @@ static bool made_before_step(Checker* me, Ty const* parent, Ty const* child) {
         }
         return false;
     }
-    if (debug_env.nesting_order >= 4) {
-        static int nesting_log = -1;
-        bool ret = false;
-        u32 last_i = 0;
-        // (Fewer than `max` entries with the identity, counting `ty`: no order can cut. Most decisions end here)
-        u32 matches = 1;
-        for (u32 i = 0; i < depth && matches < max; i++) {
-            uintptr_t entry = entries ? entries[i] : ty_recursion_entry(me, stack[i]);
-            if (entry == (uintptr_t)identity || ((entry & 1) && intersection_has_identity(me, (Ty const*)(entry & ~(uintptr_t)1), identity))) matches++;
-        }
-        if (matches < max) return false;
-        // The sub-term key: a type is newer than the one before it on the stack unless it is a proper sub-term of it
-        // (built before it in every history: an unwrapping descent into explicitly nested arguments). A lower type
-        // that isn't inside (webpack's Iterator<T> after Iterator<Iterable<T>>) counts, as its later creation does
-        u32 count = 0;
-        Ty const* last = nullptr;
-        for (u32 i = 0; i <= depth; i++) {
-            Ty const* t = i < depth ? stack[i] : ty;
-            if (i < depth) {
-                uintptr_t entry = entries ? entries[i] : ty_recursion_entry(me, stack[i]);
-                if (entry != (uintptr_t)identity && !((entry & 1) && intersection_has_identity(me, (Ty const*)(entry & ~(uintptr_t)1), identity))) {
-                    continue;
-                }
-            }
-            bool newer = !last || !ty_is_subterm(me, t, last);
-            if (newer && debug_env.nesting_order >= 5 && last && t != last) {
-                // (chain: older too when every step from `last` down to it went into a part made before)
-                bool chain = true;
-                for (u32 k = last_i; k < i && chain; k++) chain = made_before_step(me, stack[k], k + 1 < depth ? stack[k + 1] : ty);
-                if (chain) newer = false;
-            }
-            if (newer && debug_env.nesting_order == 6 && last && t != last && nesting_other.stack) {
-                // (walk: older too when it was on the other stack before `last` was pushed: reached earlier in this walk)
-                NestingOther const* o = &nesting_other;
-                u32 last_seq = o->self_seq ? o->self_seq[last_i] : last_i;
-                for (u32 k = 0; k < o->depth && newer; k++) {
-                    if (o->stack[k] == t && (o->other_seq ? o->other_seq[k] : k) < last_seq) newer = false;
-                }
-            }
-            if (newer && ++count >= max) { ret = true; break; }
-            last = t;
-            last_i = i;
-        }
-        // (TTTT_NESTING_LOG=1: each decision the ids would have made otherwise, with the matching entries)
-        if (__builtin_expect(nesting_log < 0, 0)) nesting_log = getenv("TTTT_NESTING_LOG") != nullptr;
-        if (nesting_log) {
-            u32 id_count = 0, last_id = 0;
-            bool by_id = false;
-            for (u32 i = 0; i <= depth && !by_id; i++) {
-                Ty const* t = i < depth ? stack[i] : ty;
-                if (i < depth) {
-                    uintptr_t entry = entries ? entries[i] : ty_recursion_entry(me, stack[i]);
-                    if (entry != (uintptr_t)identity && !((entry & 1) && intersection_has_identity(me, (Ty const*)(entry & ~(uintptr_t)1), identity))) continue;
-                }
-                if (t->id >= last_id && ++id_count >= max) by_id = true;
-                last_id = t->id;
-            }
-            if (by_id != ret) {
-                log_info("nesting: sub ", ret ? "cuts" : "doesn't cut", ", ids ", by_id ? "cut" : "don't", " (max ", max, ")");
-                for (u32 i = 0; i <= depth; i++) {
-                    Ty const* t = i < depth ? stack[i] : ty;
-                    bool match = true;
-                    if (i < depth) {
-                        uintptr_t entry = entries ? entries[i] : ty_recursion_entry(me, stack[i]);
-                        if (entry != (uintptr_t)identity && !((entry & 1) && intersection_has_identity(me, (Ty const*)(entry & ~(uintptr_t)1), identity))) match = false;
-                    }
-                    cstr str = ty_to_cstr(me, t);
-                    log_info(match ? "  *[" : "   [", i, "] id ", t->id, " h ", ty_height(me, t), ": ", cstr_str(&str));
-                    cstr_drop(&str);
-                }
-            }
-        }
-        return ret;
-    }
-    bool count_only = debug_env.nesting_order == 1;
+    bool count_only = debug_env.nesting_order == NESTING_COUNT;
     u32 count = 0;
     u64 last = 0;
     for (u32 i = 0; i < depth; i++) {
-        uintptr_t entry = entries ? entries[i] : ty_recursion_entry(me, stack[i]);
-        if (entry != (uintptr_t)identity && !((entry & 1) && intersection_has_identity(me, (Ty const*)(entry & ~(uintptr_t)1), identity))) {
-            continue;
-        }
+        if (!nesting_entry_matches(me, identity, stack, entries, depth, i)) continue;
         u64 key = count_only ? 0 : ty_seeded_id(stack[i]->id);
         if (key >= last && ++count >= max) return true;
         last = key;
@@ -7173,12 +7167,19 @@ static bool made_before_step(Checker* me, Ty const* parent, Ty const* child) {
 }
 
 // Whether `identity` is on the stack at least `max` times counting `ty` (the type about to go on it, which has it),
-// each newer than the one before. `entries` are the stack's ty_recursion_entry(), null to work them out
+// each newer than the one before: by id (tsc's rule, the plain path), or under --shared-graph, where ids are the
+// schedule's, by the walk order (ty_nesting_order()). `entries` are the stack's ty_recursion_entry(), null to work them out
 static bool is_deeply_nested_as(
     Checker* me, Ty const* identity, Ty const* ty, Ty const* const* stack, uintptr_t const* entries, u32 depth, u32 max
 ) {
-    if (my stamps) return is_deeply_nested_stamped(me, identity, ty, stack, entries, depth, max);
-    if (__builtin_expect(debug_env.nesting_order, 0)) return is_deeply_nested_audit(me, identity, ty, stack, entries, depth, max);
+    if (__builtin_expect(my graph || debug_env.nesting_order, 0)) {
+        switch (ty_nesting_order(me)) {
+            case NESTING_WALK: return is_deeply_nested_walk(me, identity, ty, stack, entries, depth, max);
+            case NESTING_COUNT: case NESTING_SEED: case NESTING_CONTENT:
+                return is_deeply_nested_audit(me, identity, ty, stack, entries, depth, max);
+            default: break;
+        }
+    }
     u32 count = 0;
     u32 last_id = 0;
     for (u32 i = 0; i < depth; i++) {
@@ -7212,16 +7213,15 @@ static bool is_deeply_nested_max(Checker* me, Ty const* ty, uintptr_t entry, Ty 
     return entry && is_deeply_nested_as(me, (Ty const*)entry, ty, stack, entries, depth, max);
 }
 
-// A deep-nesting decision cut something short: what it decides is this checker's history (by its first-touch stamps
-// under --shared-graph), so whatever depends on it is tainted (plan 86 stage 4f) and the relations concluded around it
-// are cached CACHE_DEEP
+// A deep-nesting decision cut something short: the relations concluded around it are cached CACHE_DEEP. By id under
+// --shared-graph (TTTT_NESTING_ORDER=id) what it decides is the schedule's, so whatever depends on it is tainted (plan
+// 86 stage 4f); by the walk or content order it is a function of the stacks' contents, no event by itself (a later hit
+// of what it concluded still is one, unless TTTT_DEEP_HIT_NO_TAINT=1)
 static void relation_deep_cut(Checker* me) {
     my relation_deep_seen = true;
     my deep_cuts++;
-    // (TTTT_NESTING_ORDER=content: the cut is a function of the stack's contents, not of the history's ids, so no event
-    // by itself; a later hit of what it concluded still is one, below, unless TTTT_DEEP_HIT_NO_TAINT=1)
-    if (__builtin_expect(debug_env.nesting_order >= 3, 0)) return;
-    TAINT_EVENT(TAINT_LIMIT);
+    NestingOrder order = ty_nesting_order(me);
+    if (order != NESTING_CONTENT && order != NESTING_WALK) TAINT_EVENT(TAINT_LIMIT);
 }
 
 // A relation's stacks: the entries below `depth` not up to date yet are worked out first (`valid` of them are)
@@ -7481,7 +7481,7 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     unsigned saved_expanding = st->expanding;
     bool push_source = !(st->skip_push & 1), push_target = !(st->skip_push & 2);
     st->skip_push = 0;
-    bool walk_order = __builtin_expect(debug_env.nesting_order == 6, 0);
+    bool walk_order = __builtin_expect((my graph || debug_env.nesting_order) && ty_nesting_order(me) == NESTING_WALK, 0);
     NestingOther saved_other = nesting_other;
     if (walk_order) st->push_seq++;
     if (push_source) {

@@ -1983,11 +1983,12 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         bool outer_circularity = inf->circularity;
         inf->circularity = false;
         unsigned saved_expanding = inf->expanding;
-        if (__builtin_expect(debug_env.nesting_order == 6, 0)) ty_nesting_other(inf->object_targets, inf->object_depth);
+        bool walk = __builtin_expect((me->graph || debug_env.nesting_order) && ty_nesting_order(me) == NESTING_WALK, 0);
+        if (walk) ty_nesting_other(inf->object_targets, inf->object_depth);
         if (!(inf->expanding & 1) && ty_is_deeply_nested(me, source, inf->object_sources, inf->object_depth, 2)) inf->expanding |= 1;
-        if (__builtin_expect(debug_env.nesting_order == 6, 0)) ty_nesting_other(inf->object_sources, inf->object_depth);
+        if (walk) ty_nesting_other(inf->object_sources, inf->object_depth);
         if (!(inf->expanding & 2) && ty_is_deeply_nested(me, target, inf->object_targets, inf->object_depth, 2)) inf->expanding |= 2;
-        if (__builtin_expect(debug_env.nesting_order == 6, 0)) ty_nesting_other(nullptr, 0);
+        if (walk) ty_nesting_other(nullptr, 0);
         if (inf->expanding == 3) {
             // Cut short: a circularity (tsc's InferencePriority.Circularity), which keeps the sources that led here from
             // counting as used up for a naked type parameter beside it
@@ -2187,11 +2188,12 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
             inf->circularity = false;
             unsigned saved_expanding = inf->expanding;
             // (Two of a kind already stop an inference walk, where relations take three: tsc's invokeOnce)
-            if (__builtin_expect(debug_env.nesting_order == 6, 0)) ty_nesting_other(inf->object_targets, inf->object_depth);
+            bool walk = __builtin_expect((me->graph || debug_env.nesting_order) && ty_nesting_order(me) == NESTING_WALK, 0);
+            if (walk) ty_nesting_other(inf->object_targets, inf->object_depth);
             if (!(inf->expanding & 1) && ty_is_deeply_nested(me, source, inf->object_sources, inf->object_depth, 2)) inf->expanding |= 1;
-            if (__builtin_expect(debug_env.nesting_order == 6, 0)) ty_nesting_other(inf->object_sources, inf->object_depth);
+            if (walk) ty_nesting_other(inf->object_sources, inf->object_depth);
             if (!(inf->expanding & 2) && ty_is_deeply_nested(me, target, inf->object_targets, inf->object_depth, 2)) inf->expanding |= 2;
-            if (__builtin_expect(debug_env.nesting_order == 6, 0)) ty_nesting_other(nullptr, 0);
+            if (walk) ty_nesting_other(nullptr, 0);
             if (inf->expanding != 3) {
                 inf->object_sources[inf->object_depth] = source;
                 inf->object_targets[inf->object_depth] = target;

@@ -125,9 +125,6 @@ void program_take_lib_replacement_errors(Program* me);
 void program_set_build_mode(Program* me, bool build); // Built by `-b` (the build info file, program_verify_emit_paths())
 // --shared-graph: the checkers share one type graph (plan 86 stage 4, ty/graph.h): one after another, never recycled
 void program_set_shared_graph(Program* me, bool shared);
-// --first-touch-stamps: deep nesting orders types by when each checker first met them, not by id (plan 86 stage 4c)
-void program_set_first_touch_stamps(Program* me, bool stamps);
-bool program_first_touch_stamps(Program const* me);
 struct TyGraph* program_graph(Program const* me); // Null without
 struct AtomTable* program_atoms(Program const* me); // Its checkers' atoms (ty/atom_table.h)
 struct TypeDirectory* program_type_directory(Program const* me); // Its checkers' types by id (lazy_type.h)
