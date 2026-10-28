@@ -1,0 +1,47 @@
+//// [test/cases/ttttIifeDestructuredTuple.ts] ////
+
+=== ttttIifeDestructuredTuple.ts ===
+// An immediately invoked function initializing an array pattern returns into the pattern's implied tuple type (tsc's
+// getContextualReturnType of an IIFE is the call's contextual type): its array literals are tuples, so each name gets
+// its own element (coop's networkingService fetch wrapper: `const [finalBody, extraHeaders] = (() => ...)()`)
+declare const body: string | number;
+>body : Symbol(body, Decl(ttttIifeDestructuredTuple.ts, 3, 13))
+
+declare function f(): boolean;
+>f : Symbol(f, Decl(ttttIifeDestructuredTuple.ts, 3, 36))
+
+const [finalBody, extraHeaders] = (() => {
+>finalBody : Symbol(finalBody, Decl(ttttIifeDestructuredTuple.ts, 5, 7))
+>extraHeaders : Symbol(extraHeaders, Decl(ttttIifeDestructuredTuple.ts, 5, 17))
+
+  if (f()) {
+>f : Symbol(f, Decl(ttttIifeDestructuredTuple.ts, 3, 36))
+
+    return [body, {}];
+>body : Symbol(body, Decl(ttttIifeDestructuredTuple.ts, 3, 13))
+  }
+  return [true, { a: 1 }];
+>a : Symbol(a, Decl(ttttIifeDestructuredTuple.ts, 9, 17))
+
+})();
+const x: string | number | boolean = finalBody;
+>x : Symbol(x, Decl(ttttIifeDestructuredTuple.ts, 11, 5))
+>finalBody : Symbol(finalBody, Decl(ttttIifeDestructuredTuple.ts, 5, 7))
+
+const [p, q] = (() => [body, {}])();
+>p : Symbol(p, Decl(ttttIifeDestructuredTuple.ts, 12, 7))
+>q : Symbol(q, Decl(ttttIifeDestructuredTuple.ts, 12, 9))
+>body : Symbol(body, Decl(ttttIifeDestructuredTuple.ts, 3, 13))
+
+const y: string | number = p;
+>y : Symbol(y, Decl(ttttIifeDestructuredTuple.ts, 13, 5))
+>p : Symbol(p, Decl(ttttIifeDestructuredTuple.ts, 12, 7))
+
+const [r, s] = (function () { return [1, 'a']; })();
+>r : Symbol(r, Decl(ttttIifeDestructuredTuple.ts, 14, 7))
+>s : Symbol(s, Decl(ttttIifeDestructuredTuple.ts, 14, 9))
+
+const z: number = r;
+>z : Symbol(z, Decl(ttttIifeDestructuredTuple.ts, 15, 5))
+>r : Symbol(r, Decl(ttttIifeDestructuredTuple.ts, 14, 7))
+

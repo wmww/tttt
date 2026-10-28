@@ -1,0 +1,68 @@
+//// [test/cases/ttttIifeDestructuredTuple.ts] ////
+
+=== ttttIifeDestructuredTuple.ts ===
+// An immediately invoked function initializing an array pattern returns into the pattern's implied tuple type (tsc's
+// getContextualReturnType of an IIFE is the call's contextual type): its array literals are tuples, so each name gets
+// its own element (coop's networkingService fetch wrapper: `const [finalBody, extraHeaders] = (() => ...)()`)
+declare const body: string | number;
+>body : string | number
+
+declare function f(): boolean;
+>f : () => boolean
+
+const [finalBody, extraHeaders] = (() => {
+>finalBody : string | number | boolean
+>extraHeaders : {} | { a: number; }
+>(() => {  if (f()) {    return [body, {}];  }  return [true, { a: 1 }];})() : [string | number, {}] | [boolean, { a: number; }]
+>(() => {  if (f()) {    return [body, {}];  }  return [true, { a: 1 }];}) : () => [string | number, {}] | [boolean, { a: number; }]
+>() => {  if (f()) {    return [body, {}];  }  return [true, { a: 1 }];} : () => [string | number, {}] | [boolean, { a: number; }]
+
+  if (f()) {
+>f() : boolean
+>f : () => boolean
+
+    return [body, {}];
+>[body, {}] : [string | number, {}]
+>body : string | number
+>{} : {}
+  }
+  return [true, { a: 1 }];
+>[true, { a: 1 }] : [boolean, { a: number; }]
+>true : true
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+
+})();
+const x: string | number | boolean = finalBody;
+>x : string | number | boolean
+>finalBody : string | number | boolean
+
+const [p, q] = (() => [body, {}])();
+>p : string | number
+>q : {}
+>(() => [body, {}])() : [string | number, {}]
+>(() => [body, {}]) : () => [string | number, {}]
+>() => [body, {}] : () => [string | number, {}]
+>[body, {}] : [string | number, {}]
+>body : string | number
+>{} : {}
+
+const y: string | number = p;
+>y : string | number
+>p : string | number
+
+const [r, s] = (function () { return [1, 'a']; })();
+>r : number
+>s : string
+>(function () { return [1, 'a']; })() : [number, string]
+>(function () { return [1, 'a']; }) : () => [number, string]
+>function () { return [1, 'a']; } : () => [number, string]
+>[1, 'a'] : [number, string]
+>1 : 1
+>'a' : "a"
+
+const z: number = r;
+>z : number
+>r : number
+

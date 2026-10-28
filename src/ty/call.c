@@ -3684,6 +3684,10 @@ static bool surely_no_effects(Checker* me, Signature const* sig) {
 bool ty_call_may_ask_context(Checker* me, CallExpr const* call) {
     if (call->is_extends || call->optional_chain || call->continues_chain) return true;
     if (call->callable.tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(&call->callable)) return false;
+    // An immediately invoked function's return expressions are contextually typed by the call's contextual type
+    // (tsc's getContextualReturnType): `const [a, b] = (() => [x, y])()` returns a tuple. Asked before the callee's
+    // type, which would settle its return type without that context
+    if (call->callable.tag == EXPR_FUNCTION && call->callable.function->is_iife && !call->uses_new) return true;
     Ty const* callee = ty_expr_type(me, (Expr*)&call->callable);
     if (callee->flags & TYF_ANY) return false;
     Ty const* apparent = ty_apparent_type(me, callee);
