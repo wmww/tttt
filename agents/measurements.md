@@ -171,6 +171,7 @@ numbers are those of whichever tree last ran each oracle (bugcount.py prints whi
 - 2026-10-28 2625572b5: 298 open (27 designs), 84 text-only, 38 tsgo excluded; symptoms: suite_tsc 63, suite_own 16, suite_bun 1131, bun 878, dt 0, source 5, expect 0, dts 6, flagflip 23, clidiff_text 32, unexplained_sweep 0, unexplained_sourcesweep 1, unexplained_buncases 128
 - 2026-10-28 ed02bc573: 303 open (28 designs), 84 text-only, 38 tsgo excluded; symptoms: suite_tsc 62, suite_own 17, suite_bun 1114, bun 861, dt 0, source 3, expect 0, dts 6, flagflip 23, clidiff_text 32, unexplained_sweep 0, unexplained_sourcesweep 0, unexplained_buncases 128
 - 2026-10-28 d7179288a: 314 open (29 designs), 84 text-only, 38 tsgo excluded; symptoms: suite_tsc 62, suite_own 17, suite_bun 1114, bun 861, dt 0, source 14, expect 0, dts 6, flagflip 23, clidiff_text 32, unexplained_sweep 0, unexplained_sourcesweep 0, unexplained_buncases 99
+- 2026-10-28 57220993a: 317 open (29 designs), 86 text-only, 38 tsgo excluded; symptoms: suite_tsc 62, suite_own 20, suite_bun 1025, bun 754, dt 0, source 3, expect 0, dts 6, flagflip 23, clidiff_text 32, unexplained_sweep 0, unexplained_sourcesweep 0, unexplained_buncases 69
 
 ## vscode since v1: the regression attributed (2026-10-29, worker regress; v1 438727981 against main 02ebfb96a)
 The human's laptop (24 threads, 3 runs each after a warm-up): v1 against main at ~8c9afd512.
