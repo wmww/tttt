@@ -9086,14 +9086,14 @@ const baselines = {
         types: false,
     },
     'bun60-L20a': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun60-L20b': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun60-L20c': {
         errors: true,
@@ -9201,9 +9201,9 @@ const baselines = {
         types: true,
     },
     'bun62-L04a': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun62-L06a': {
         errors: true,
@@ -10331,9 +10331,9 @@ const baselines = {
         types: false,
     },
     'bun89-R15': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun89-R18b': {
         errors: true,
@@ -12077,6 +12077,11 @@ const baselines = {
         types: true,
     },
     'ttttAccessorJoinsPropertySymbol': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttAccessorPairWrittenLate': {
         errors: true,
         symbols: true,
         types: true,
