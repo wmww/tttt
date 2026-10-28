@@ -11,7 +11,9 @@ typedef struct Arena {
     // owns the memory: arena_drop() only forgets it. ARENA_AST_DIRECT: each allocation (no chunk tails, no
     // arena_pop_last()), ARENA_AST_CHUNKED: in small chunks of it
     uint8_t ast_backed;
-    bool checker; // A checker's: its chunks are named `checker` under TTTT_VMA_NAMES (vma_name()), others `arena`
+    // Its first chunk may take a huge page too (an arena that is known to grow big: a checker's). Others take one from
+    // their second chunk on: most arenas are small, and a huge page is 2 MB zeroed at the first touch
+    bool huge_first;
 #ifdef TTTT_SURVIVORS
     struct SurvivorRec* rec; // ty/survivors.c: its allocations, recorded (a checker's arena only)
 #endif
@@ -24,6 +26,7 @@ struct ArenaChunk {
     size_t cap;
     size_t mapped; // Bytes mapped for the chunk, header included
     size_t populated; // data's pages below this offset are faulted in (arena_populate()), at most cap
+    bool huge; // madvised for huge pages (huge_pages_take())
     alignas(16) char data[];
 };
 

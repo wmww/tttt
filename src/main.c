@@ -1126,6 +1126,10 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         if (opts->time) {
             out_eprintln(out, "time: checkers: ", program_checker_count(program), " (", (i64)(program_checked_source_bytes(program) >> 10),
                 " KB of checked source, ", opts->threads, " threads)");
+            i64 budget_mb;
+            char const* huge = huge_pages_mode(&budget_mb);
+            if (budget_mb >= 0) out_eprintln(out, "time: huge pages: ", huge, " (", budget_mb, " MB of the budget left)");
+            else out_eprintln(out, "time: huge pages: ", huge);
             ProgramRerun const* rerun = program_rerun(program);
             if (rerun) {
                 out_eprintln(out, "time: rerun in one checker after a parallel pass of ", rerun->parallel_ms, " ms at ",

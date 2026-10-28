@@ -42,8 +42,8 @@ void ast_arena_absorb(AstArena* into, AstArena* from);
 // walk attaches to a node outside the bodies is undone before the drop (program.c's deferred_bodies_undo()), and a
 // list outside them it grows is copied out to malloc. A thread takes materializations out of slabs of their own, each
 // starting on a page of its own; addresses are never handed out twice, so nothing keyed by a dropped node's address can
-// meet another node. Their 2 MB chunks are given back whole (made for huge pages, since removed), once every
-// materialization in it is dropped (most go together, at a checker's recycle). A `lasting` one (made for another file than the checker's,
+// meet another node. Their 2 MB chunks may be huge pages, so a chunk is given back whole, once every materialization in
+// it is dropped (most go together, at a checker's recycle). A `lasting` one (made for another file than the checker's,
 // likely kept across recycles: program.c's checker_recycled()) would keep its chunk alive: those come from a slab of
 // small pages, given back page by page. A materialization may go on later (begin again with the same `lasting`) until
 // it's dropped

@@ -25,7 +25,7 @@
 // arenas of a few KB, populated 1 MB each: 55% of its link)
 [[gnu::noinline]] static void arena_populate(ArenaChunk* chunk) {
     uintptr_t from = ((uintptr_t)chunk->data + chunk->populated) & ~(uintptr_t)4095;
-    size_t ahead = chunk->used / 4;
+    size_t ahead = chunk->huge ? chunk->used : chunk->used / 4;
     size_t step = ahead < ((size_t)64 << 10) ? (size_t)64 << 10 : ahead > ((size_t)1 << 20) ? (size_t)1 << 20 : ahead;
     size_t to = chunk->used + step < chunk->cap ? chunk->used + step : chunk->cap;
     uintptr_t end = ((uintptr_t)chunk->data + to) & ~(uintptr_t)4095;
@@ -92,10 +92,34 @@ static void* arena_alloc_chunk(Arena* me, size_t size) {
         // Straight from mmap: the kernel's pages are zero already (calloc() would memset them), and the ones the
         // arena never reaches are never touched
         size_t mapped = sizeof(ArenaChunk) + cap;
-        void* memory = mmap(nullptr, mapped, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-        panic_if(memory == MAP_FAILED, "out of memory");
-        vma_name(memory, mapped, my checker ? "checker" : "arena");
+        // Transparent huge pages as huge_pages_take() says (prelude.h): a few hundred MB of types page faulted 4 KB at a
+        // time is a tenth of a big project's time. Not an arena's first chunk unless it says it grows big
+        // (Arena.huge_first: nest's 253 export star walks spent 12 ms of its link zeroing huge pages). Such a chunk is
+        // whole 2 MB pages, 2 MB aligned, its header included: an unaligned 8 MB + header got huge pages only on the 3 aligned blocks
+        // inside it, its ends (~2 MB a chunk) zeroed and mapped 4 KB at a time (drizzle: 40k of the checkers' 47k faults)
+        size_t const huge_page = (size_t)2 << 20;
+        size_t huge_cap = size > ARENA_CHUNK_SIZE - sizeof(ArenaChunk) ? size : ARENA_CHUNK_SIZE - sizeof(ArenaChunk);
+        size_t huge_mapped = (sizeof(ArenaChunk) + huge_cap + huge_page - 1) & ~(huge_page - 1);
+        int huge = my head || my huge_first ? huge_pages_take(huge_mapped) : HUGE_NO;
+        void* memory;
+        if (huge != HUGE_NO) {
+            mapped = huge_mapped;
+            cap = mapped - sizeof(ArenaChunk);
+            // (Never touched, the ends cut off flush nothing)
+            char* raw = mmap(nullptr, mapped + huge_page, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+            panic_if(raw == MAP_FAILED, "out of memory");
+            char* start = (char*)(((uintptr_t)raw + huge_page - 1) & ~(uintptr_t)(huge_page - 1));
+            if (start > raw) munmap(raw, (size_t)(start - raw));
+            if (start + mapped < raw + mapped + huge_page) munmap(start + mapped, (size_t)(raw + mapped + huge_page - (start + mapped)));
+            memory = start;
+            if (huge == HUGE_ADVISED) madvise(memory, mapped, MADV_HUGEPAGE);
+        } else {
+            memory = mmap(nullptr, mapped, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+            panic_if(memory == MAP_FAILED, "out of memory");
+        }
+        vma_name(memory, mapped, my huge_first ? "checker" : "arena");
         ArenaChunk* chunk = memory;
+        chunk->huge = huge != HUGE_NO;
         chunk->cap = cap;
         chunk->mapped = mapped;
         if (my head && size > ARENA_CHUNK_SIZE) {
@@ -184,10 +208,11 @@ void arena_drop(Arena* me) {
     ArenaChunk* i = my head;
     while (i) {
         ArenaChunk* next = i->next;
+        if (i->huge) huge_pages_give(i->mapped);
         munmap(i, i->mapped);
         i = next;
     }
-    *me = (Arena){ .ast_backed = ast_backed, .checker = my checker };
+    *me = (Arena){ .ast_backed = ast_backed, .huge_first = my huge_first };
 }
 
 // Intern table
@@ -1034,7 +1059,7 @@ static Checker* checker_make(Program* program, bool join_graph) {
     my binder = program_get_binder(program);
     my errs = program_errors(program);
     my atom_table = program_atoms(program);
-    my arena.checker = true;
+    my arena.huge_first = true; // (Types: tens to hundreds of MB)
     {
         typeof(my atoms)* a = &my atoms;
         static struct { size_t offset; char const* name; } const known[] = {
