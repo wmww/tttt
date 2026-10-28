@@ -354,6 +354,43 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
   getAsyncFromSyncIterationTypes' getAwaitedTypeEx, and the async-iterable fast path's) on `yield* [nc]` and
   `for await (const x of ai)` with a thenable that isn't a promise (NoCb): not in the repro. [tsgo]
 
+### 2026-10-31 (worker bun6): the unexplained TS1xxx keys
+Grammar check order (tsgo's `||` chains and early returns), ambient contexts from a `declare` modifier, and CommonJS
+files not being external modules; each with a `test/cases/tttt*.ts` repro.
+- TS1171 (a comma computed key): the checker's, after TS1166/TS1168/TS1169/TS1170, never in a destructuring target;
+  a type member's `[a, b]` parses (28-C12, 02-C10). [fixed 96c163d66, d31d2030d] Still ungated: a class member's
+  parse-time modifier errors and checkGrammarFunctionLikeDeclaration's. [open]
+- `declare` makes the node ambient: `declare export { }` in a namespace (no TS1194, 28-C33f), `declare export = x` and
+  `declare export default x` (TS1120, TS2714, no TS1203/TS1294/TS1029, ambient functions: 03-C17a, 03-C17b, 80-R04), a
+  `declare` property's initializer (TS1183, TS1040: 53-L15). [fixed d9791e4e7, 42e45e894, 2467363f3, 5aa94c064]
+- A CommonJS JavaScript file is no external module (IsExternalModule): `await` as a name (no TS1262, 30-C13),
+  `export as namespace` (TS1314, 33-C14a), top-level `await` (TS1375 unless the emit module kind contains CommonJS,
+  33-C1b). [fixed 42f9332be, 4c3cc015d]
+- Decorators: missing lib types are unknown/`{}` and the call is checked (16-C7a, 16-C7b); TS1272 takes the accessor's
+  own annotation first and keeps `(never)` (34-P4, 15-C11); a parameter's TS1206 ends its modifier checks (28-C27b); a
+  decorated class expression takes modifiers (TS1184, 80-R08). [fixed 3d6c5a455, 9f52cda0a, da5acb57f, 08e2ca6ad]
+- Imports: JSON-ness by the resolved module's declaring file and tsgo's DeclarationFileExtension (54-L02c, 54-L02d,
+  42-C8); an import merged with an exported declaration isn't type-only (04-C12); `import type D, {}` is TS1363 and no
+  helper (54-L01); a missing import type qualifier is none (TS1340, 33-P9a); `export {} from 123` in a namespace is
+  TS1141 alone (96-H2). [fixed 5eaf45ce5, a06b98885, 867f48e77, 866a7fa8e, 9baa1a290, 23fbdea9d]
+- Statements: an ambient block's first statement's TS1036 ends a for statement's checks (28-C26c, 28-C26e); a variable
+  list's TS1009/TS1123 ends checkVariableStatement's (no TS1156, 28-C25a); a misplaced `module "m"` is TS1234 alone
+  (51-L02). [fixed f107d4f8a, 4237d0447]
+- Lexical: a no-substitution template literal type has no escape errors (43-C11); escaped keywords as binding names
+  (TS1389 by the keyword) and `glob\u0061l` (no TS1260) (43-C2e, 43-C2f). [fixed 67c567e8b, 48b49bb84]
+- An anonymous function expression's error span is its assigned name (GetErrorRangeForNode: a `declare let a =
+  function () {}`'s TS1039 is at `a`). [fixed cd50dd6ad]
+- `await` in a non-async function's parameter initializer is TS1308 too (found on 78-R07). [fixed aaa73d574]
+- A signature without a body (overload, `declare function`) checks a parameter's initializer only through
+  getTypeOfParameter, which takes getQuickTypeOfExpression first (an `await` of a literal, an assertion, a call of a
+  single non-generic signature): 78-R07 (`function q(a = await 1): void;` has no TS2524/TS1308, tttt's parser says
+  TS2524 regardless) and 34-C4b (`function n(a = X.y): void;` with a type-only X: tsc's TS1361 comes from that check,
+  tttt never checks the initializer). Needs the initializer checked (errors kept) when the parameter's type is first
+  asked for, quick types aside. [open]
+- An object literal's member modifiers (TS1042) are the parser's: tsgo's checkGrammarObjectLiteralExpression returns at
+  TS1118/TS1119, after which no later member's modifier is reported (28-C24a). The modifiers' spans would have to
+  reach object_check_grammar(). [open]
+
 ## Not looked at, by code
 - Each paragraph below is a code and direction with the cases it mismatches in, uninvestigated: at least one open
   root cause each, counted here once. [open]
