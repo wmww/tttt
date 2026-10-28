@@ -6644,6 +6644,14 @@ static Ty const* invalid_generic_access_type(Checker* me, Ty const* type) {
     return type->kind == TY_INDEXED && !ty_indexed_access_index_ok(me, type) ? ty_intrinsic(me, TY_ERROR) : type;
 }
 
+// Whether an evaluation of the element access found its deferred `O[K]` invalid, the error type, before any flow type
+// replaced it: tsc reports TS2536 from every checkElementAccessExpression, so an inference pass's evaluation (the
+// argument of a generic call, not narrowed to the constraint there: getNarrowableTypeForReference skips inferential
+// checks) says it even when the final one is the constraint
+bool ty_generic_access_was_invalid(Checker* me, PropertyExpr const* access) {
+    return intern_get(&my links, (u64[]){ KEY_INVALID_GENERIC_ACCESS, (u64)(uintptr_t)access }, 2) != nullptr;
+}
+
 // `o[k]` with k generic that tsc's checkIndexedAccessIndexType rejects: the indexed access type, else null
 Ty const* ty_invalid_generic_element_access(Checker* me, PropertyExpr const* access, Ty const* object) {
     if (access->form != PROPERTY_EXPR_BRACKET) return nullptr;
@@ -6854,7 +6862,13 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (expr->property->form != PROPERTY_EXPR_DOT || !(ty_apparent_type(me, object)->flags & TYF_ANY)) {
                 ret = access_flow_type(me, expr, object, key, ret, ctx.contextual);
             }
-            if (generic_access) ret = invalid_generic_access_type(me, ret);
+            if (generic_access) {
+                Ty const* checked = invalid_generic_access_type(me, ret);
+                if (checked != ret) {
+                    *intern_slot(me, &my links, (u64[]){ KEY_INVALID_GENERIC_ACCESS, (u64)(uintptr_t)expr->property }, 2) = expr->property;
+                }
+                ret = checked;
+            }
             return propagate_optional(me, ret, expr->property->continues_chain, optional);
         }
 

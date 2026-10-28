@@ -116,6 +116,7 @@ enum {
     KEY_AWAITED_REPORTED, // Union or promise type -> non-null once an `await` checked it (call.c, check_await_operand())
     KEY_LITERAL_ANCHOR, // Object literal Expr -> ContextAnchor (expr.c)
     KEY_QUICK_CALLEE_CHECKED, // Assignment Expr -> non-null once flow checked its call's callee (flow.c, check_assigned_callee())
+    KEY_INVALID_GENERIC_ACCESS, // PropertyExpr -> non-null once an evaluation found its `O[K]` invalid (expr.c)
     KEY_FLOW_PARTIAL_NO_PROPERTY, // PropertyExpr -> non-null once a partial evaluation reported its property missing (flow.c)
     KEY_FUNCTION_ANCHOR, // FunctionImpl -> ContextAnchor (expr.c): where its contextual type comes from, if from a call argument
     KEY_INTERSECTION_PROP_CONTEXT, // Intersection id, key type id -> what a property's contextual type is, when its type variable members distribute (expr.c's intersection_prop_context)

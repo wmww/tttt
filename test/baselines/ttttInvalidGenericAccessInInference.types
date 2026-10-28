@@ -1,0 +1,70 @@
+//// [test/cases/ttttInvalidGenericAccessInInference.ts] ////
+
+=== ttttInvalidGenericAccessInInference.ts ===
+// An `O[K]` whose index isn't a key is TS2536 from tsc's checkIndexedAccessIndexType on every evaluation: as the
+// argument of a generic call, the inference pass sees the deferred access (no constraint substitution in an
+// inferential check), even though the final check, with T inferred as the error type, narrows it to the constraint
+let mappedObject: {[K in "foo"]: null | {x: string}} = {foo: {x: "hello"}};
+>mappedObject : { foo: { x: string; } | null; }
+>x : string
+>{foo: {x: "hello"}} : { foo: { x: string; }; }
+>foo : { x: string; }
+>{x: "hello"} : { x: string; }
+>x : string
+>"hello" : "hello"
+
+declare function foo<T>(x: T): null | T;
+>foo : <T>(x: T) => null | T
+>x : T
+
+declare function nf(x: any): void;
+>nf : (x: any) => void
+>x : any
+
+function bar<K extends 42>(key: K) {
+>bar : <K extends 42>(key: K) => void
+>key : K
+
+  const element = foo(mappedObject[key]);
+>element : any
+>foo(mappedObject[key]) : any
+>foo : <T>(x: T) => null | T
+>mappedObject[key] : { x: string; } | null
+>mappedObject : { foo: { x: string; } | null; }
+>key : K
+
+  if (element == null)
+>element == null : boolean
+>element : any
+
+    return;
+  const x = element.x;
+>x : any
+>element.x : any
+>element : any
+>x : any
+}
+function bar2<K extends 42>(key: K) {
+>bar2 : <K extends 42>(key: K) => void
+>key : K
+
+  nf(mappedObject[key]);
+>nf(mappedObject[key]) : void
+>nf : (x: any) => void
+>mappedObject[key] : { x: string; } | null
+>mappedObject : { foo: { x: string; } | null; }
+>key : K
+}
+function bar3<K extends 42>(key: K) {
+>bar3 : <K extends 42>(key: K) => void
+>key : K
+
+  const o = { a: mappedObject[key] };
+>o : { a: any; }
+>{ a: mappedObject[key] } : { a: any; }
+>a : any
+>mappedObject[key] : any
+>mappedObject : { foo: { x: string; } | null; }
+>key : K
+}
+

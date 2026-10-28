@@ -4678,8 +4678,9 @@ void expr_property_access_errors(Expr const* me, Ty const* expr_type, bool parti
     error_ctx_drop(&found);
     ty_check_element_implicit_any(checker, my property, expr_type, my inner_span, errs);
     if (!partial) {
-        // (Unless the flow type replaced the deferred `O[K]` by its constraint: tsc's checkIndexedAccessIndexType)
-        if (ty_expr_type(checker, me)->flags & TYF_ERROR) {
+        // (Unless the flow type replaced the deferred `O[K]` by its constraint in every evaluation, a generic call's
+        // inference pass aside: tsc's checkIndexedAccessIndexType)
+        if ((ty_expr_type(checker, me)->flags & TYF_ERROR) || ty_generic_access_was_invalid(checker, my property)) {
             ty_check_generic_element_access(checker, my property, expr_type, my inner_span, errs);
         }
         ty_check_generic_index_write(checker, my property, expr_type, my inner_span, errs);

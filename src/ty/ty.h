@@ -3386,6 +3386,7 @@ void ty_check_generic_index_write(Checker* me, struct PropertyExpr const* access
 IndexInfo const* ty_generic_write_index_info(Checker* me, struct PropertyExpr const* access, Ty const* object, Ty const* key);
 void ty_check_generic_element_access(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs);
 Ty const* ty_invalid_generic_element_access(Checker* me, PropertyExpr const* access, Ty const* object);
+bool ty_generic_access_was_invalid(Checker* me, PropertyExpr const* access);
 bool ty_indexed_access_index_ok(Checker* me, Ty const* indexed);
 bool ty_is_numeric_string_type(Checker* me, Ty const* ty); // `${number}` (tsc's numericStringType)
 void ty_check_infer_constraints(Checker* me, struct InferredType const* inferred, ErrorCtx* errs);

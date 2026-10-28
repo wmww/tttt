@@ -1,0 +1,29 @@
+ttttInvalidGenericAccessInInference.ts(9,23): error TS2536: Type 'K' cannot be used to index type '{ foo: { x: string; } | null; }'.
+ttttInvalidGenericAccessInInference.ts(18,18): error TS2536: Type 'K' cannot be used to index type '{ foo: { x: string; } | null; }'.
+
+
+==== ttttInvalidGenericAccessInInference.ts (2 errors) ====
+    // An `O[K]` whose index isn't a key is TS2536 from tsc's checkIndexedAccessIndexType on every evaluation: as the
+    // argument of a generic call, the inference pass sees the deferred access (no constraint substitution in an
+    // inferential check), even though the final check, with T inferred as the error type, narrows it to the constraint
+    let mappedObject: {[K in "foo"]: null | {x: string}} = {foo: {x: "hello"}};
+    declare function foo<T>(x: T): null | T;
+    declare function nf(x: any): void;
+    
+    function bar<K extends 42>(key: K) {
+      const element = foo(mappedObject[key]);
+                          ~~~~~~~~~~~~~~~~~
+!!! error TS2536: Type 'K' cannot be used to index type '{ foo: { x: string; } | null; }'.
+      if (element == null)
+        return;
+      const x = element.x;
+    }
+    function bar2<K extends 42>(key: K) {
+      nf(mappedObject[key]);
+    }
+    function bar3<K extends 42>(key: K) {
+      const o = { a: mappedObject[key] };
+                     ~~~~~~~~~~~~~~~~~
+!!! error TS2536: Type 'K' cannot be used to index type '{ foo: { x: string; } | null; }'.
+    }
+    
