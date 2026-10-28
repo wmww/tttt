@@ -1,0 +1,46 @@
+ttttVarianceRepeatedTypeParameter.ts(3,8): error TS2636: Type 'B<super-T>' is not assignable to type 'B<sub-T>' as implied by variance annotation.
+  Types of property 'a' are incompatible.
+    Type 'super-T' is not assignable to type 'sub-T'.
+ttttVarianceRepeatedTypeParameter.ts(3,14): error TS2636: Type 'B<super-T>' is not assignable to type 'B<sub-T>' as implied by variance annotation.
+  Types of property 'a' are incompatible.
+    Type 'super-T' is not assignable to type 'sub-T'.
+ttttVarianceRepeatedTypeParameter.ts(3,17): error TS2300: Duplicate identifier 'T'.
+ttttVarianceRepeatedTypeParameter.ts(4,13): error TS2636: Type 'I<super-T>' is not assignable to type 'I<sub-T>' as implied by variance annotation.
+  Types of property 'a' are incompatible.
+    Type 'super-T' is not assignable to type 'sub-T'.
+ttttVarianceRepeatedTypeParameter.ts(4,19): error TS2636: Type 'I<super-T>' is not assignable to type 'I<sub-T>' as implied by variance annotation.
+  Types of property 'a' are incompatible.
+    Type 'super-T' is not assignable to type 'sub-T'.
+ttttVarianceRepeatedTypeParameter.ts(4,22): error TS2300: Duplicate identifier 'T'.
+ttttVarianceRepeatedTypeParameter.ts(5,25): error TS2300: Duplicate identifier 'U'.
+
+
+==== ttttVarianceRepeatedTypeParameter.ts (7 errors) ====
+    // A repeated type parameter name is one symbol, whose type parameter is the first one: each declaration checks its
+    // variance annotation against that one (tsc's checkVarianceAnnotations), TS2636 twice (missing_checks.md)
+    type B<in T, in T> = { a: T };
+           ~~~~
+!!! error TS2636: Type 'B<super-T>' is not assignable to type 'B<sub-T>' as implied by variance annotation.
+!!! error TS2636:   Types of property 'a' are incompatible.
+!!! error TS2636:     Type 'super-T' is not assignable to type 'sub-T'.
+                 ~~~~
+!!! error TS2636: Type 'B<super-T>' is not assignable to type 'B<sub-T>' as implied by variance annotation.
+!!! error TS2636:   Types of property 'a' are incompatible.
+!!! error TS2636:     Type 'super-T' is not assignable to type 'sub-T'.
+                    ~
+!!! error TS2300: Duplicate identifier 'T'.
+    interface I<in T, in T> { a: T }
+                ~~~~
+!!! error TS2636: Type 'I<super-T>' is not assignable to type 'I<sub-T>' as implied by variance annotation.
+!!! error TS2636:   Types of property 'a' are incompatible.
+!!! error TS2636:     Type 'super-T' is not assignable to type 'sub-T'.
+                      ~~~~
+!!! error TS2636: Type 'I<super-T>' is not assignable to type 'I<sub-T>' as implied by variance annotation.
+!!! error TS2636:   Types of property 'a' are incompatible.
+!!! error TS2636:     Type 'super-T' is not assignable to type 'sub-T'.
+                         ~
+!!! error TS2300: Duplicate identifier 'T'.
+    type C<out T, in U, out U> = { a: T, b: (u: U) => void };
+                            ~
+!!! error TS2300: Duplicate identifier 'U'.
+    

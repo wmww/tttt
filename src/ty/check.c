@@ -1103,11 +1103,14 @@ void ty_check_variance_annotations(Checker* me, Symbol const* owner, Generic con
         GenericItem const* item = vec_generic_item_at(&generic->items, i);
         if (item->jsdoc) continue; // TODO: JSDoc `@template in T`
         // (Of the type parameter's symbol, tsc's getTypeParameterModifiers: a name the list repeats is one symbol)
+        // (Its type parameter is the first of the name's: each repeat checks that one again, at its own modifiers)
         unsigned modifiers = 0;
+        u32 first = i;
         for (u32 j = 0; j < (u32)vec_generic_item_size(&generic->items); j++) {
             GenericItem const* other = vec_generic_item_at(&generic->items, j);
             if (j == i || (!other->jsdoc && csview_equals_sv(span_sv(other->name), span_sv(item->name)))) {
                 modifiers |= ty_variance_modifiers(owner, j);
+                if (j < first) first = j;
             }
         }
         if (!modifiers) continue;
@@ -1122,8 +1125,8 @@ void ty_check_variance_annotations(Checker* me, Symbol const* owner, Generic con
         }
         if (modifiers == (VARIANCE_MODIFIER_IN | VARIANCE_MODIFIER_OUT)) continue;
         bool out = modifiers == VARIANCE_MODIFIER_OUT;
-        Ty const* source = ty_variance_check_instance(me, owner, i, out);
-        Ty const* target = ty_variance_check_instance(me, owner, i, !out);
+        Ty const* source = ty_variance_check_instance(me, owner, first, out);
+        Ty const* target = ty_variance_check_instance(me, owner, first, !out);
         if (!source || !target) continue;
         VecTyReportLine lines = {0};
         if (relate_explaining(me, TY_RELATION_ASSIGNABLE, source, target, 2636, &lines, errs)) continue;

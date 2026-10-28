@@ -1,0 +1,30 @@
+//// [test/cases/ttttVarianceRepeatedTypeParameter.ts] ////
+
+=== ttttVarianceRepeatedTypeParameter.ts ===
+// A repeated type parameter name is one symbol, whose type parameter is the first one: each declaration checks its
+// variance annotation against that one (tsc's checkVarianceAnnotations), TS2636 twice (missing_checks.md)
+type B<in T, in T> = { a: T };
+>B : Symbol(B, Decl(ttttVarianceRepeatedTypeParameter.ts, 0, 0))
+>T : Symbol(T, Decl(ttttVarianceRepeatedTypeParameter.ts, 2, 7), Decl(ttttVarianceRepeatedTypeParameter.ts, 2, 12))
+>T : Symbol(T, Decl(ttttVarianceRepeatedTypeParameter.ts, 2, 7), Decl(ttttVarianceRepeatedTypeParameter.ts, 2, 12))
+>a : Symbol(a, Decl(ttttVarianceRepeatedTypeParameter.ts, 2, 22))
+>T : Symbol(T, Decl(ttttVarianceRepeatedTypeParameter.ts, 2, 7), Decl(ttttVarianceRepeatedTypeParameter.ts, 2, 12))
+
+interface I<in T, in T> { a: T }
+>I : Symbol(I, Decl(ttttVarianceRepeatedTypeParameter.ts, 2, 30))
+>T : Symbol(T, Decl(ttttVarianceRepeatedTypeParameter.ts, 3, 12), Decl(ttttVarianceRepeatedTypeParameter.ts, 3, 17))
+>T : Symbol(T, Decl(ttttVarianceRepeatedTypeParameter.ts, 3, 12), Decl(ttttVarianceRepeatedTypeParameter.ts, 3, 17))
+>a : Symbol(I.a, Decl(ttttVarianceRepeatedTypeParameter.ts, 3, 25))
+>T : Symbol(T, Decl(ttttVarianceRepeatedTypeParameter.ts, 3, 12), Decl(ttttVarianceRepeatedTypeParameter.ts, 3, 17))
+
+type C<out T, in U, out U> = { a: T, b: (u: U) => void };
+>C : Symbol(C, Decl(ttttVarianceRepeatedTypeParameter.ts, 3, 32))
+>T : Symbol(T, Decl(ttttVarianceRepeatedTypeParameter.ts, 4, 7))
+>U : Symbol(U, Decl(ttttVarianceRepeatedTypeParameter.ts, 4, 13), Decl(ttttVarianceRepeatedTypeParameter.ts, 4, 19))
+>U : Symbol(U, Decl(ttttVarianceRepeatedTypeParameter.ts, 4, 13), Decl(ttttVarianceRepeatedTypeParameter.ts, 4, 19))
+>a : Symbol(a, Decl(ttttVarianceRepeatedTypeParameter.ts, 4, 30))
+>T : Symbol(T, Decl(ttttVarianceRepeatedTypeParameter.ts, 4, 7))
+>b : Symbol(b, Decl(ttttVarianceRepeatedTypeParameter.ts, 4, 36))
+>u : Symbol(u, Decl(ttttVarianceRepeatedTypeParameter.ts, 4, 41))
+>U : Symbol(U, Decl(ttttVarianceRepeatedTypeParameter.ts, 4, 13), Decl(ttttVarianceRepeatedTypeParameter.ts, 4, 19))
+

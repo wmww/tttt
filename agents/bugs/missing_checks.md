@@ -15,7 +15,7 @@ here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in 
 - **Classes**: TS2687 skips statics and method/accessor pairs (hacks.md). [open]
 - **Accessibility**: `this.x = v` in the constructor of a class merged with an interface declaring `readonly x` (tttt
   exempted any property whose parent is the class; tsc only one whose value declaration, the first, is in the class:
-  check.c readonly_assignment()). Test ttttReadonlyFromMergedInterface [fixed COMMIT-next]. Private names: TS18015.
+  check.c readonly_assignment()). Test ttttReadonlyFromMergedInterface [fixed db2e41209]. Private names: TS18015.
   [open]
 - **Declarations**: `export function g() {}` + `function g() {}` is TS2393 in tsc (one local symbol with two implementations; tttt said nothing). Test ttttExportedAndLocalFunctionDuplicate. [fixed 17d5794b5]
 - **Implicit any**: widening errors past `report_errors_from_widening` (binding.c; the tests the tsc mechanism ports named for them
@@ -28,7 +28,8 @@ here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in 
   require }` isn't type-only for TS2441; a nested
   `declare module "m"` gets TS2435 but is still bound as a global ambient module (tsc: a local namespace). [open]
 - **Variance annotations**: `type B<in T, in T> = { a: T }` misses tsgo's TS2636 at the second `in T` (the two are
-  one type parameter symbol; why only the second check fails in tsgo wasn't looked at). Probe only, no test. [open]
+  one type parameter symbol, the first's type parameter, which each declaration checks again: tttt checked the second,
+  unused, type parameter). ty_check_variance_annotations(). Test ttttVarianceRepeatedTypeParameter [fixed COMMIT-next].
 - The jsxImportSource runtime import (`jsx_runtime_module()`) reports TS2875/TS2792 and TS1479/TS1471, not the other
   resolveExternalModule diagnostics (TS7016 for a JavaScript runtime). [open]
 - `while (a) const x = 1;` still scopes x to the loop (tsc: the enclosing block; a do statement too, a for statement is a block scope container). Test ttttWhileBodyDeclarationScope. [fixed 2a4819ab1]

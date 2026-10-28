@@ -334,7 +334,7 @@ passing tests).
   `any` in tttt, TS2322 in tsc. class_decl.c's declared_field_base_type(): the base property's type without a
   constructor (static blocks), else the start of the flow of `this.x` through them (getFlowTypeOfProperty's initial
   type); the class comes from the names walk (field.ts_assigned_class_). Test ttttDeclareFieldBaseType [fixed
-  COMMIT-next].
+  34eaa8dc1].
 - Generators: no next type inferred from how `yield` results are used (tsc's getReturnTypeFromBody collects
   contextual types of yield expressions); `ty_generator_context` filters only unions. [dup]
 
