@@ -2,6 +2,7 @@
 #include "function_impl.h"
 #include "error.h"
 #include "scope.h"
+#include "unused.h"
 #include "binding.h"
 #include "ty/ty.h"
 
@@ -22,12 +23,26 @@ static bool is_type_keyword(csview name) {
 
 void callable_type_resolve_names(CallableType* me, Scope* names, ErrorCtx* errs) {
     function_impl_lookup_names(my function, false, names, errs);
-    // (tsc's reportImplicitAny: the name resolves as a type where the signature is, or is a type keyword)
+    // (tsc's reportImplicitAny: the name resolves as a type where the signature is, its own type parameters first, or
+    // is a type keyword. Resolved as a use, whatever noImplicitAny says: `(Foo) => void` uses an imported type Foo)
     for_each (i, vec_function_arg, &my function->args) {
         Binding const* binding = &i->initializer.binding;
         if (binding->tag != BINDING_IDENTIFIER || binding->has_explicit_type) continue;
         csview name = span_sv(binding->content_span);
-        i->name_is_type = is_type_keyword(name) || scope_get_type(names, name, nullptr);
+        // (Not a construct signature's: tsc asks only for call and method signatures and function types)
+        if (my function->is_constructor) {
+            i->name_is_type = is_type_keyword(name) || scope_get_type(names, name, nullptr);
+            continue;
+        }
+        Symbol* found = nullptr;
+        for_each (t, vec_generic_item, &my function->generic.items) {
+            csview type_name = span_sv(t->name);
+            if (t->owned_symbol && csview_eq(&type_name, &name)) found = t->owned_symbol;
+        }
+        Symbol const* as_found = nullptr;
+        if (!found && scope_get_type(names, name, &as_found)) found = (Symbol*)as_found;
+        i->name_is_type = is_type_keyword(name) || found;
+        if (found) unused_mark_referenced(names, found, SYMBOL_TYPE);
     }
 }
 

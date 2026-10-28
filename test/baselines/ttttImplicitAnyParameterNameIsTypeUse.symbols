@@ -1,0 +1,52 @@
+//// [test/cases/ttttImplicitAnyParameterNameIsTypeUse.ts] ////
+
+=== b.ts ===
+export interface Foo { } export interface Bar { } export interface Baz { } export interface Qux { }
+>Foo : Symbol(Foo, Decl(b.ts, 0, 0))
+>Bar : Symbol(Bar, Decl(b.ts, 0, 24))
+>Baz : Symbol(Baz, Decl(b.ts, 0, 49))
+>Qux : Symbol(Qux, Decl(b.ts, 0, 74))
+
+=== a.ts ===
+// An untyped parameter of a function type, call or method signature whose name is a type (tsc's reportImplicitAny,
+// TS7051 under noImplicitAny) resolves that name as a use either way, the signature's own type parameters first; a
+// construct signature's doesn't
+import { Foo } from "./b"; import { Bar } from "./b"; import { Baz } from "./b"; import { Qux } from "./b";
+>Foo : Symbol(Foo, Decl(a.ts, 3, 8))
+>Bar : Symbol(Bar, Decl(a.ts, 3, 35))
+>Baz : Symbol(Baz, Decl(a.ts, 3, 62))
+>Qux : Symbol(Qux, Decl(a.ts, 3, 89))
+
+export type F1 = (Foo) => void;
+>F1 : Symbol(F1, Decl(a.ts, 3, 107))
+>Foo : Symbol(Foo, Decl(a.ts, 4, 18))
+
+export interface F2 { m(Bar): void; (Baz): void; new (Qux): void }
+>F2 : Symbol(F2, Decl(a.ts, 4, 31))
+>m : Symbol(F2.m, Decl(a.ts, 5, 21))
+>Bar : Symbol(Bar, Decl(a.ts, 5, 24))
+>Baz : Symbol(Baz, Decl(a.ts, 5, 37))
+>Qux : Symbol(Qux, Decl(a.ts, 5, 54))
+
+export type F4 = <T>(T) => void;
+>F4 : Symbol(F4, Decl(a.ts, 5, 66))
+>T : Symbol(T, Decl(a.ts, 6, 18), Decl(a.ts, 6, 21))
+>T : Symbol(T, Decl(a.ts, 6, 18), Decl(a.ts, 6, 21))
+
+export type F9 = (Local) => void; type Local = 1;
+>F9 : Symbol(F9, Decl(a.ts, 6, 32))
+>Local : Symbol(Local, Decl(a.ts, 7, 18))
+>Local : Symbol(Local, Decl(a.ts, 7, 33))
+
+=== c.ts ===
+export type G1 = <T>(T) => void;
+>G1 : Symbol(G1, Decl(c.ts, 0, 0))
+>T : Symbol(T, Decl(c.ts, 0, 18), Decl(c.ts, 0, 21))
+>T : Symbol(T, Decl(c.ts, 0, 18), Decl(c.ts, 0, 21))
+
+export interface G2 { m<U>(U): void }
+>G2 : Symbol(G2, Decl(c.ts, 0, 32))
+>m : Symbol(G2.m, Decl(c.ts, 1, 21))
+>U : Symbol(U, Decl(c.ts, 1, 24), Decl(c.ts, 1, 27))
+>U : Symbol(U, Decl(c.ts, 1, 24), Decl(c.ts, 1, 27))
+

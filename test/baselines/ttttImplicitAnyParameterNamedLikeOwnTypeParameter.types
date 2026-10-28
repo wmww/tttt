@@ -1,0 +1,12 @@
+//// [test/cases/ttttImplicitAnyParameterNamedLikeOwnTypeParameter.ts] ////
+
+=== ttttImplicitAnyParameterNamedLikeOwnTypeParameter.ts ===
+// The TS7051 of a parameter named like the signature's own type parameter (tsc resolves the name from the parameter)
+export type G1 = <T>(T) => void;
+>G1 : G1
+>T : any
+
+export interface G2 { m<U>(U): void }
+>m : <U>(U: any) => void
+>U : any
+

@@ -1,0 +1,43 @@
+//// [test/cases/ttttImplicitAnyParameterNameIsTypeUse.ts] ////
+
+=== b.ts ===
+
+export interface Foo { } export interface Bar { } export interface Baz { } export interface Qux { }
+=== a.ts ===
+// An untyped parameter of a function type, call or method signature whose name is a type (tsc's reportImplicitAny,
+// TS7051 under noImplicitAny) resolves that name as a use either way, the signature's own type parameters first; a
+// construct signature's doesn't
+import { Foo } from "./b"; import { Bar } from "./b"; import { Baz } from "./b"; import { Qux } from "./b";
+>Foo : any
+>Bar : any
+>Baz : any
+>Qux : any
+
+export type F1 = (Foo) => void;
+>F1 : F1
+>Foo : any
+
+export interface F2 { m(Bar): void; (Baz): void; new (Qux): void }
+>m : (Bar: any) => void
+>Bar : any
+>Baz : any
+>Qux : any
+
+export type F4 = <T>(T) => void;
+>F4 : F4
+>T : any
+
+export type F9 = (Local) => void; type Local = 1;
+>F9 : F9
+>Local : any
+>Local : 1
+
+=== c.ts ===
+export type G1 = <T>(T) => void;
+>G1 : G1
+>T : any
+
+export interface G2 { m<U>(U): void }
+>m : <U>(U: any) => void
+>U : any
+
