@@ -217,7 +217,8 @@ typedef struct IndexedType {
 
 void indexed_type_drop(IndexedType* me);
 void indexed_type_lookup_names(IndexedType* me, Scope* names, ErrorCtx* errs);
-void indexed_type_typecheck(IndexedType const* me, ErrorCtx* errs);
+// (`node`: the type node it is)
+void indexed_type_typecheck(IndexedType const* me, TypeNode const* node, ErrorCtx* errs);
 
 // Keyof
 

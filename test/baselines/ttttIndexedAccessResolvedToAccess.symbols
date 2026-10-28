@@ -1,0 +1,71 @@
+//// [test/cases/ttttIndexedAccessResolvedToAccess.ts] ////
+
+=== ttttIndexedAccessResolvedToAccess.ts ===
+// tsc's checkIndexedAccessType checks the index of the node's type: an access that resolves to another, deferred, access
+// (`{ o: { a: 1 }[D] }["o"]` is `{ a: 1 }[D]`) has that one's TS2536 again, at the outer node (found by mutation of
+// arrayFakeFlatNoCrashInferenceDeclarations)
+type X1<D extends number> = {obj: {a: 1}[D extends 1 ? 42 : "a"]};
+>X1 : Symbol(X1, Decl(ttttIndexedAccessResolvedToAccess.ts, 0, 0))
+>D : Symbol(D, Decl(ttttIndexedAccessResolvedToAccess.ts, 3, 8))
+>obj : Symbol(obj, Decl(ttttIndexedAccessResolvedToAccess.ts, 3, 29))
+>a : Symbol(a, Decl(ttttIndexedAccessResolvedToAccess.ts, 3, 35))
+>D : Symbol(D, Decl(ttttIndexedAccessResolvedToAccess.ts, 3, 8))
+
+type X2<D extends number> = {obj: {a: 1}[D extends 1 ? 42 : "a"]}["obj"];
+>X2 : Symbol(X2, Decl(ttttIndexedAccessResolvedToAccess.ts, 3, 66))
+>D : Symbol(D, Decl(ttttIndexedAccessResolvedToAccess.ts, 4, 8))
+>obj : Symbol(obj, Decl(ttttIndexedAccessResolvedToAccess.ts, 4, 29))
+>a : Symbol(a, Decl(ttttIndexedAccessResolvedToAccess.ts, 4, 35))
+>D : Symbol(D, Decl(ttttIndexedAccessResolvedToAccess.ts, 4, 8))
+
+type X3<D extends number> = {obj: {a: 1}[D]}["obj"];
+>X3 : Symbol(X3, Decl(ttttIndexedAccessResolvedToAccess.ts, 4, 73))
+>D : Symbol(D, Decl(ttttIndexedAccessResolvedToAccess.ts, 5, 8))
+>obj : Symbol(obj, Decl(ttttIndexedAccessResolvedToAccess.ts, 5, 29))
+>a : Symbol(a, Decl(ttttIndexedAccessResolvedToAccess.ts, 5, 35))
+>D : Symbol(D, Decl(ttttIndexedAccessResolvedToAccess.ts, 5, 8))
+
+type X4<D extends number> = [{a: 1}[D]][0];
+>X4 : Symbol(X4, Decl(ttttIndexedAccessResolvedToAccess.ts, 5, 52))
+>D : Symbol(D, Decl(ttttIndexedAccessResolvedToAccess.ts, 6, 8))
+>a : Symbol(a, Decl(ttttIndexedAccessResolvedToAccess.ts, 6, 30))
+>D : Symbol(D, Decl(ttttIndexedAccessResolvedToAccess.ts, 6, 8))
+
+type X5<D extends number> = {obj: {a: 1}[D]};
+>X5 : Symbol(X5, Decl(ttttIndexedAccessResolvedToAccess.ts, 6, 43))
+>D : Symbol(D, Decl(ttttIndexedAccessResolvedToAccess.ts, 7, 8))
+>obj : Symbol(obj, Decl(ttttIndexedAccessResolvedToAccess.ts, 7, 29))
+>a : Symbol(a, Decl(ttttIndexedAccessResolvedToAccess.ts, 7, 35))
+>D : Symbol(D, Decl(ttttIndexedAccessResolvedToAccess.ts, 7, 8))
+
+type X6<T extends { o: unknown }> = T["o"];
+>X6 : Symbol(X6, Decl(ttttIndexedAccessResolvedToAccess.ts, 7, 45))
+>T : Symbol(T, Decl(ttttIndexedAccessResolvedToAccess.ts, 8, 8))
+>o : Symbol(o, Decl(ttttIndexedAccessResolvedToAccess.ts, 8, 19))
+>T : Symbol(T, Decl(ttttIndexedAccessResolvedToAccess.ts, 8, 8))
+
+type X7<D extends number> = { o: { a: 1 }[D] }["o"]["a"];
+>X7 : Symbol(X7, Decl(ttttIndexedAccessResolvedToAccess.ts, 8, 43))
+>D : Symbol(D, Decl(ttttIndexedAccessResolvedToAccess.ts, 9, 8))
+>o : Symbol(o, Decl(ttttIndexedAccessResolvedToAccess.ts, 9, 29))
+>a : Symbol(a, Decl(ttttIndexedAccessResolvedToAccess.ts, 9, 34))
+>D : Symbol(D, Decl(ttttIndexedAccessResolvedToAccess.ts, 9, 8))
+
+type X8 = { o: { a: 1 }["a"] }["o"];
+>X8 : Symbol(X8, Decl(ttttIndexedAccessResolvedToAccess.ts, 9, 57))
+>o : Symbol(o, Decl(ttttIndexedAccessResolvedToAccess.ts, 10, 11))
+>a : Symbol(a, Decl(ttttIndexedAccessResolvedToAccess.ts, 10, 16))
+
+interface I<D extends string> { o: { a: 1 }[D] }
+>I : Symbol(I, Decl(ttttIndexedAccessResolvedToAccess.ts, 10, 36))
+>D : Symbol(D, Decl(ttttIndexedAccessResolvedToAccess.ts, 11, 12))
+>o : Symbol(I.o, Decl(ttttIndexedAccessResolvedToAccess.ts, 11, 31))
+>a : Symbol(a, Decl(ttttIndexedAccessResolvedToAccess.ts, 11, 36))
+>D : Symbol(D, Decl(ttttIndexedAccessResolvedToAccess.ts, 11, 12))
+
+type X9<D extends string> = I<D>["o"];
+>X9 : Symbol(X9, Decl(ttttIndexedAccessResolvedToAccess.ts, 11, 48))
+>D : Symbol(D, Decl(ttttIndexedAccessResolvedToAccess.ts, 12, 8))
+>I : Symbol(I, Decl(ttttIndexedAccessResolvedToAccess.ts, 10, 36))
+>D : Symbol(D, Decl(ttttIndexedAccessResolvedToAccess.ts, 12, 8))
+

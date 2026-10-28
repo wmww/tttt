@@ -2547,6 +2547,14 @@ void ty_check_indexed_access_type(Checker* me, Ty const* object, Ty const* index
     }
 }
 
+void ty_check_resolved_indexed_access(Checker* me, Ty const* resolved, Ty const* object, Ty const* index, Span span, ErrorCtx* errs) {
+    if (resolved->kind != TY_INDEXED || resolved->indexed.object == object) return;
+    // (The node's own access, deferred: ty_check_indexed_access_type() said it)
+    if (ty_is_generic_index(ty_regular(me, index)) || ty_is_generic_object(me, object)) return;
+    if (ty_indexed_access_index_ok(me, resolved)) return;
+    report_invalid_generic_index(me, resolved->indexed.object, resolved->indexed.index, span, errs);
+}
+
 // `{ [k]: x } = o` and `const { [k]: x } = o`: getIndexedAccessType with the computed name as the access node, an
 // expression rather than an `O[K]` type, so only a generic key defers it; else it's about o's apparent type
 void ty_check_destructuring_indexed_access(Checker* me, Ty const* object, Ty const* index, Span index_span, ErrorCtx* errs) {

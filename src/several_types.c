@@ -855,11 +855,14 @@ void indexed_type_lookup_names(IndexedType* me, Scope* names, ErrorCtx* errs) {
     type_lookup_names(&my index, names, errs);
 }
 
-void indexed_type_typecheck(IndexedType const* me, ErrorCtx* errs) {
+void indexed_type_typecheck(IndexedType const* me, TypeNode const* node, ErrorCtx* errs) {
     CurrentNode saved = ty_enter_node(current_checker, my span); // tsc's checkSourceElement
     type_typecheck(&my interface, errs);
     type_typecheck(&my index, errs);
     ty_check_indexed_access_type(current_checker, ty_of_node(&my interface), ty_of_node(&my index), my index_span, my span, errs);
+    // (tsc's checkIndexedAccessIndexType looks at the node's type, which may be another access it resolved to:
+    // `{ o: { a: 1 }[D] }["o"]` is `{ a: 1 }[D]`, whose index is checked again, at this node)
+    ty_check_resolved_indexed_access(current_checker, ty_of_node(node), ty_of_node(&my interface), ty_of_node(&my index), my span, errs);
     ty_leave_node(current_checker, saved);
 }
 

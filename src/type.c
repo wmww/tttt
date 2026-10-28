@@ -655,7 +655,7 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
             }
             break;
 
-        case TYPE_INDEXED: indexed_type_typecheck(my indexed, errs); break;
+        case TYPE_INDEXED: indexed_type_typecheck(my indexed, me, errs); break;
         case TYPE_KEYOF: keyof_type_typecheck(my keyof, errs); break;
         case TYPE_TYPEOF: typeof_type_typecheck(my typeof_, errs); break;
 

@@ -3348,6 +3348,9 @@ Ty const* ty_compound_assignee_type(Checker* me, struct Expr const* target, Ty c
 // Around the typecheck walk of a conditional type's true branch
 // `O[K]` written as a type: the property, element or index signature it reads is there (tsc's checkIndexedAccessType)
 void ty_check_destructuring_indexed_access(Checker* me, Ty const* object, Ty const* index, Span index_span, ErrorCtx* errs);
+// An `O[K]` node whose type is another indexed access than O[K] (what accessing O resolved to): that one's index
+// checked at the node (tsc's checkIndexedAccessIndexType of getTypeFromIndexedAccessTypeNode)
+void ty_check_resolved_indexed_access(Checker* me, Ty const* resolved, Ty const* object, Ty const* index, Span span, ErrorCtx* errs);
 void ty_check_indexed_access_type(Checker* me, Ty const* object, Ty const* index, Span index_span, Span span, ErrorCtx* errs);
 // TS2536 for `o[k]` with k generic (tsc's checkIndexedAccessIndexType; the expression's type is the error type)
 // tsc's checkPropertyAccessExpressionOrQualifiedName: `t.x = v` of a generic `t` doesn't write through an index

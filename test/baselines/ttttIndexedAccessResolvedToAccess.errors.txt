@@ -1,0 +1,56 @@
+ttttIndexedAccessResolvedToAccess.ts(4,35): error TS2536: Type 'D extends 1 ? 42 : "a"' cannot be used to index type '{ a: 1; }'.
+ttttIndexedAccessResolvedToAccess.ts(5,29): error TS2536: Type 'D extends 1 ? 42 : "a"' cannot be used to index type '{ a: 1; }'.
+ttttIndexedAccessResolvedToAccess.ts(5,35): error TS2536: Type 'D extends 1 ? 42 : "a"' cannot be used to index type '{ a: 1; }'.
+ttttIndexedAccessResolvedToAccess.ts(6,29): error TS2536: Type 'D' cannot be used to index type '{ a: 1; }'.
+ttttIndexedAccessResolvedToAccess.ts(6,35): error TS2536: Type 'D' cannot be used to index type '{ a: 1; }'.
+ttttIndexedAccessResolvedToAccess.ts(7,29): error TS2536: Type 'D' cannot be used to index type '{ a: 1; }'.
+ttttIndexedAccessResolvedToAccess.ts(7,30): error TS2536: Type 'D' cannot be used to index type '{ a: 1; }'.
+ttttIndexedAccessResolvedToAccess.ts(8,35): error TS2536: Type 'D' cannot be used to index type '{ a: 1; }'.
+ttttIndexedAccessResolvedToAccess.ts(10,29): error TS2536: Type 'D' cannot be used to index type '{ a: 1; }'.
+ttttIndexedAccessResolvedToAccess.ts(10,29): error TS2536: Type '"a"' cannot be used to index type '{ a: 1; }[D]'.
+ttttIndexedAccessResolvedToAccess.ts(10,34): error TS2536: Type 'D' cannot be used to index type '{ a: 1; }'.
+ttttIndexedAccessResolvedToAccess.ts(12,36): error TS2536: Type 'D' cannot be used to index type '{ a: 1; }'.
+ttttIndexedAccessResolvedToAccess.ts(13,29): error TS2536: Type 'D' cannot be used to index type '{ a: 1; }'.
+
+
+==== ttttIndexedAccessResolvedToAccess.ts (13 errors) ====
+    // tsc's checkIndexedAccessType checks the index of the node's type: an access that resolves to another, deferred, access
+    // (`{ o: { a: 1 }[D] }["o"]` is `{ a: 1 }[D]`) has that one's TS2536 again, at the outer node (found by mutation of
+    // arrayFakeFlatNoCrashInferenceDeclarations)
+    type X1<D extends number> = {obj: {a: 1}[D extends 1 ? 42 : "a"]};
+                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2536: Type 'D extends 1 ? 42 : "a"' cannot be used to index type '{ a: 1; }'.
+    type X2<D extends number> = {obj: {a: 1}[D extends 1 ? 42 : "a"]}["obj"];
+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2536: Type 'D extends 1 ? 42 : "a"' cannot be used to index type '{ a: 1; }'.
+                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2536: Type 'D extends 1 ? 42 : "a"' cannot be used to index type '{ a: 1; }'.
+    type X3<D extends number> = {obj: {a: 1}[D]}["obj"];
+                                ~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2536: Type 'D' cannot be used to index type '{ a: 1; }'.
+                                      ~~~~~~~~~
+!!! error TS2536: Type 'D' cannot be used to index type '{ a: 1; }'.
+    type X4<D extends number> = [{a: 1}[D]][0];
+                                ~~~~~~~~~~~~~~
+!!! error TS2536: Type 'D' cannot be used to index type '{ a: 1; }'.
+                                 ~~~~~~~~~
+!!! error TS2536: Type 'D' cannot be used to index type '{ a: 1; }'.
+    type X5<D extends number> = {obj: {a: 1}[D]};
+                                      ~~~~~~~~~
+!!! error TS2536: Type 'D' cannot be used to index type '{ a: 1; }'.
+    type X6<T extends { o: unknown }> = T["o"];
+    type X7<D extends number> = { o: { a: 1 }[D] }["o"]["a"];
+                                ~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2536: Type 'D' cannot be used to index type '{ a: 1; }'.
+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2536: Type '"a"' cannot be used to index type '{ a: 1; }[D]'.
+                                     ~~~~~~~~~~~
+!!! error TS2536: Type 'D' cannot be used to index type '{ a: 1; }'.
+    type X8 = { o: { a: 1 }["a"] }["o"];
+    interface I<D extends string> { o: { a: 1 }[D] }
+                                       ~~~~~~~~~~~
+!!! error TS2536: Type 'D' cannot be used to index type '{ a: 1; }'.
+    type X9<D extends string> = I<D>["o"];
+                                ~~~~~~~~~
+!!! error TS2536: Type 'D' cannot be used to index type '{ a: 1; }'.
+    
