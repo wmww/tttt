@@ -14564,6 +14564,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttInferOutsideExtendsParseError': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttInferPredicateOnlyForPredicateTarget': {
         errors: true,
         symbols: true,
