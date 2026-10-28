@@ -11,7 +11,8 @@ Per project: one plain reference run (`--threads 1 --checkers 1`), then RUNS fla
   rr    program order round robin: file i to checker i % K (TTTT_DUP_DEAL, TTTT_NO_COSTLIEST_FIRST=1); the deal under
         which openbot/apps/auth-api's private-name race showed in every run (hub_regime.md)
 At K1 the two deals are one. A flagged run that differs is attributed: plain at the same K and deal is run once, and
-when it differs too the difference is plain tttt's (a kdiff bug, `plain too`), not the flag's.
+when it differs too the difference is plain tttt's (a kdiff bug, `plain too`), not the flag's (`plain
+exit N`/`plain signal N` when plain crashes there).
 
   scripts/sgcheck.py                        # the default list (scripts/sharedgraph/sgcheck_projects.txt), K 1,4,8,16, 3 runs
   scripts/sgcheck.py -f 'auth-api|drizzle' -n 10 -k 8
@@ -113,8 +114,9 @@ class Checker:
                             continue
                         if (k, deal) not in plain_seen:
                             plain = self.run(project, k, deal, False, deal_files[k])
-                            plain_seen[(k, deal)] = plain.status == 'ok' and (plain.code, plain.out) == ref_key
-                        verdicts.append('diff' if plain_seen[(k, deal)] else 'plain too')
+                            plain_seen[(k, deal)] = ('same' if (plain.code, plain.out) == ref_key else 'plain too') \
+                                if plain.status == 'ok' else f'plain {plain.status}'
+                        verdicts.append('diff' if plain_seen[(k, deal)] == 'same' else plain_seen[(k, deal)])
                         a, b = ref.text().splitlines(), r.text().splitlines()
                         first = next((l for l in difflib.unified_diff(a, b, lineterm='', n=0)
                                       if l[:1] in '+-' and not l.startswith(('+++', '---'))), f'exit {ref.code} -> {r.code}')

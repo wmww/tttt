@@ -6759,7 +6759,8 @@ static void deal_files(Program* me) {
     }
     // (TTTT_DUP_DEAL=PATH: the experiment's deal, a checker per checked file, one per line (ty/dupcensus.c's model))
     char const* deal_path = getenv("TTTT_DUP_DEAL");
-    FILE* deal = deal_path ? fopen(deal_path, "r") : nullptr;
+    // (Not for the one-checker rerun's single checker)
+    FILE* deal = deal_path && my checker_count > 1 ? fopen(deal_path, "r") : nullptr;
     if (deal) {
         for (u32 at = 0; at < total; at++) {
             unsigned share;
@@ -7218,7 +7219,9 @@ again:
     char const* rule = nullptr;
     bool stopped = atomic_load(&my rerun_due);
     if (stopped) rule = history_dependent_matters(me, checker_errs, count, &why);
-    if (stopped || (!limit_rerun && !my graph && !my no_rerun && program_limit_history_dependent(me) &&
+    // (--shared-graph too: what a limit or a circularity cut short is the history's there as well, better-drizzle's
+    // TS2589s. The rerun's one checker gets a fresh graph of its own, below)
+    if (stopped || (!limit_rerun && !my no_rerun && program_limit_history_dependent(me) &&
         (rule = history_dependent_matters(me, checker_errs, count, &why)))
     ) {
         // (Stopped early, the diagnostics fire a rule but for a comment directive met meanwhile: rerun all the same)
@@ -7236,6 +7239,15 @@ again:
         };
         typecheck_pass_drop(me, checker_errs, count);
         member_refs_clear(me);
+        if (my graph) {
+            // (Every checker of the graph goes with it, the retired ones too: their diagnostics went above. The checker
+            // made next then starts a graph of its own at `again`)
+            for (u32 i = 0; i < my retired_count; i++) checker_drop(my retired[i]);
+            my retired_count = 0;
+            graph_drop(my graph);
+            my graph = nullptr;
+            atomic_store(&my type_directory->reader_count, 0);
+        }
         my checker = checker_new(me);
         checker_make_current(my checker);
         atomic_store(&my history_reported, false);
