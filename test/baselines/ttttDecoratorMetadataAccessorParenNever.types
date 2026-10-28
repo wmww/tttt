@@ -1,0 +1,47 @@
+//// [test/cases/ttttDecoratorMetadataAccessorParenNever.ts] ////
+
+=== m.ts ===
+
+export interface A {}
+export interface B {}
+=== a.ts ===
+// TS1272 (tsc's markDecoratorMedataDataTypeNodeAsReferenced): a decorated accessor's type node is its own annotation,
+// else the other accessor's (getAnnotatedAccessorTypeNode), so an unannotated getter's is the setter's parameter's and
+// a setter's own comes before the getter's; a parenthesized `(never)` in a union is not elided
+// (getEntityNameForDecoratorMetadataFromTypeList looks at the member's kind): no entity name (bun 34-P4, 15-C11)
+import { A, B } from "./m";
+>A : any
+>B : any
+
+declare const dec: any;
+>dec : any
+
+const k = "x";
+>k : "x"
+>"x" : "x"
+
+class C { @dec get [k]() { return null! } set [k](v: A) {} }
+>C : C
+>dec : any
+>[k] : A
+>k : "x"
+>null! : never
+>[k] : A
+>k : "x"
+>v : A
+
+class D { @dec set y(v: A) {} get y(): B { return null! } }
+>D : D
+>dec : any
+>y : B
+>v : A
+>y : B
+>null! : never
+
+class E { @dec p!: A | (never); @dec q!: B | never; }
+>E : E
+>dec : any
+>p : A
+>dec : any
+>q : B
+

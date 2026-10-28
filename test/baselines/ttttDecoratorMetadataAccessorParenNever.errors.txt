@@ -1,0 +1,31 @@
+a.ts(8,54): error TS1272: A type referenced in a decorated signature must be imported with 'import type' or a namespace import when 'isolatedModules' and 'emitDecoratorMetadata' are enabled.
+a.ts(9,25): error TS1272: A type referenced in a decorated signature must be imported with 'import type' or a namespace import when 'isolatedModules' and 'emitDecoratorMetadata' are enabled.
+a.ts(10,42): error TS1272: A type referenced in a decorated signature must be imported with 'import type' or a namespace import when 'isolatedModules' and 'emitDecoratorMetadata' are enabled.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "isolatedModules": true, "experimentalDecorators": true, "emitDecoratorMetadata": true, "module": "esnext" } }
+==== m.ts (0 errors) ====
+    export interface A {}
+    export interface B {}
+==== a.ts (3 errors) ====
+    // TS1272 (tsc's markDecoratorMedataDataTypeNodeAsReferenced): a decorated accessor's type node is its own annotation,
+    // else the other accessor's (getAnnotatedAccessorTypeNode), so an unannotated getter's is the setter's parameter's and
+    // a setter's own comes before the getter's; a parenthesized `(never)` in a union is not elided
+    // (getEntityNameForDecoratorMetadataFromTypeList looks at the member's kind): no entity name (bun 34-P4, 15-C11)
+    import { A, B } from "./m";
+    declare const dec: any;
+    const k = "x";
+    class C { @dec get [k]() { return null! } set [k](v: A) {} }
+                                                         ~
+!!! error TS1272: A type referenced in a decorated signature must be imported with 'import type' or a namespace import when 'isolatedModules' and 'emitDecoratorMetadata' are enabled.
+!!! related TS1376 a.ts:5:10: 'A' was imported here.
+    class D { @dec set y(v: A) {} get y(): B { return null! } }
+                            ~
+!!! error TS1272: A type referenced in a decorated signature must be imported with 'import type' or a namespace import when 'isolatedModules' and 'emitDecoratorMetadata' are enabled.
+!!! related TS1376 a.ts:5:10: 'A' was imported here.
+    class E { @dec p!: A | (never); @dec q!: B | never; }
+                                             ~
+!!! error TS1272: A type referenced in a decorated signature must be imported with 'import type' or a namespace import when 'isolatedModules' and 'emitDecoratorMetadata' are enabled.
+!!! related TS1376 a.ts:5:13: 'B' was imported here.
+    

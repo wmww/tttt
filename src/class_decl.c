@@ -2222,11 +2222,12 @@ static TypeNode const* metadata_entity_type(TypeNode const* node) {
     if (node->tag != TYPE_UNION && node->tag != TYPE_INTERSECTION) return nullptr;
     // (getEntityNameForDecoratorMetadataFromTypeList: the members' common entity name, never/null/undefined aside)
     TypeNode const* common = nullptr;
+    // (A parenthesized member is none of those: `A | (never)` has no entity name)
     for_each (i, vec_type, &node->composite) {
-        if (i->tag == TYPE_NEVER) continue;
+        if (i->tag == TYPE_NEVER && !i->parenthesized) continue;
         TypeNode const* entity = metadata_entity_type(i);
         if (!entity) {
-            if (!compiler_options()->strict_null_checks && i->tag == TYPE_VALUE &&
+            if (!compiler_options()->strict_null_checks && i->tag == TYPE_VALUE && !i->parenthesized &&
                 (i->value.tag == VALUE_NULL || i->value.tag == VALUE_UNDEFINED)
             ) {
                 continue;
@@ -2530,15 +2531,19 @@ void class_decl_typecheck_members(ClassDecl* me, ErrorCtx* errs) {
             (error_ctx_find(errs, first_char, 1206) || error_ctx_find(errs, first_char, 1249));
         if (vec_expr_size(&i->decorators) && !decorators_rejected && decorator_metadata_checked()) {
             // (tsc's markDecoratorAliasReferenced)
+            // (The accessor's own annotation, else the other accessor's: getAnnotatedAccessorTypeNode of each)
             if (i->tag == CLASS_ITEM_METHOD && i->method.accessor) {
-                ClassItem const* getter = i->method.accessor == CLASS_ACCESSOR_GET ? i : ty_class_accessor_getter(current_checker, i);
-                FunctionImpl const* func = &i->method.func;
-                if (getter && getter->method.func.ret_explicit) check_decorator_metadata_type(&getter->method.func.ret, errs);
-                else if (i->method.accessor == CLASS_ACCESSOR_SET && vec_function_arg_size(&func->args) &&
-                    vec_function_arg_back(&func->args)->initializer.binding.has_explicit_type
-                ) {
-                    check_decorator_metadata_type(binding_type(&vec_function_arg_back(&func->args)->initializer.binding), errs);
-                }
+                bool is_getter = i->method.accessor == CLASS_ACCESSOR_GET;
+                ClassItem const* getter = is_getter ? i : ty_class_accessor_getter(current_checker, i);
+                ClassItem const* setter = is_getter ? ty_class_accessor_setter(current_checker, me, i) : i;
+                TypeNode const* getter_type = getter && getter->method.func.ret_explicit ? &getter->method.func.ret : nullptr;
+                FunctionImpl const* set_func = setter ? &setter->method.func : nullptr;
+                TypeNode const* setter_type = set_func && vec_function_arg_size(&set_func->args) &&
+                    vec_function_arg_back(&set_func->args)->initializer.binding.has_explicit_type ?
+                    binding_type(&vec_function_arg_back(&set_func->args)->initializer.binding) : nullptr;
+                TypeNode const* type = is_getter ? (getter_type ? getter_type : setter_type) :
+                    (setter_type ? setter_type : getter_type);
+                if (type) check_decorator_metadata_type(type, errs);
             } else if (i->tag == CLASS_ITEM_METHOD) {
                 check_decorator_metadata_signature(&i->method.func, true, errs);
             } else if (i->tag == CLASS_ITEM_FIELD && i->field.has_explicit_type) {
