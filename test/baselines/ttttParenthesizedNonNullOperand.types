@@ -1,0 +1,42 @@
+//// [test/cases/ttttParenthesizedNonNullOperand.ts] ////
+
+=== ttttParenthesizedNonNullOperand.ts ===
+// Only an identifier whose parent is the non-null assertion is assumed initialized and, narrowed to null or undefined,
+// read as its declared type (tsc's isNonNullExpression(node.Parent) in checkIdentifier and getFlowTypeOfReference):
+// `(x)!` is neither (bun 99-V4 getFlowTypeOfReference__06)
+let x: string;
+>x : string
+
+const a = x!;
+>a : string
+>x! : string
+>x : string
+
+const b = (x)!;
+>b : string
+>(x)! : string
+>(x) : string
+>x : string
+
+function f(y: string | undefined) {
+>f : (y: string | undefined) => void
+>y : string | undefined
+
+  if (y === undefined) {
+>y === undefined : boolean
+>y : string | undefined
+>undefined : undefined
+
+    const p1: never = y!;
+>p1 : never
+>y! : string
+>y : string | undefined
+
+    const p2: never = (y)!;
+>p2 : never
+>(y)! : never
+>(y) : undefined
+>y : undefined
+  }
+}
+

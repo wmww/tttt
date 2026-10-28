@@ -2024,8 +2024,9 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                         flow->read_target = true;
                         flow->nested_read_target = assignment_target != FLOW_TARGET_NONE;
                         expr_lookup_names(operand, names, errs);
-                        // `x!` says x was assigned, whatever control flow thinks
-                        if (operand->tag == EXPR_IDENTIFIER) {
+                        // `x!` says x was assigned, whatever control flow thinks (not `(x)!`: tsc asks whether the
+                        // identifier's parent is the NonNullExpression, isNonNullExpression(node.Parent))
+                        if (operand->tag == EXPR_IDENTIFIER && !expr_is_perenthisized(operand)) {
                             operand->identifier.assume_initialized = true;
                             operand->identifier.non_null_operand = true;
                         } else if (operand->tag == EXPR_PROPERTY && !operand->paren_before) {

@@ -1,0 +1,35 @@
+//// [test/cases/ttttParenthesizedNonNullOperand.ts] ////
+
+=== ttttParenthesizedNonNullOperand.ts ===
+// Only an identifier whose parent is the non-null assertion is assumed initialized and, narrowed to null or undefined,
+// read as its declared type (tsc's isNonNullExpression(node.Parent) in checkIdentifier and getFlowTypeOfReference):
+// `(x)!` is neither (bun 99-V4 getFlowTypeOfReference__06)
+let x: string;
+>x : Symbol(x, Decl(ttttParenthesizedNonNullOperand.ts, 3, 3))
+
+const a = x!;
+>a : Symbol(a, Decl(ttttParenthesizedNonNullOperand.ts, 4, 5))
+>x : Symbol(x, Decl(ttttParenthesizedNonNullOperand.ts, 3, 3))
+
+const b = (x)!;
+>b : Symbol(b, Decl(ttttParenthesizedNonNullOperand.ts, 5, 5))
+>x : Symbol(x, Decl(ttttParenthesizedNonNullOperand.ts, 3, 3))
+
+function f(y: string | undefined) {
+>f : Symbol(f, Decl(ttttParenthesizedNonNullOperand.ts, 5, 15))
+>y : Symbol(y, Decl(ttttParenthesizedNonNullOperand.ts, 6, 11))
+
+  if (y === undefined) {
+>y : Symbol(y, Decl(ttttParenthesizedNonNullOperand.ts, 6, 11))
+>undefined : Symbol(undefined)
+
+    const p1: never = y!;
+>p1 : Symbol(p1, Decl(ttttParenthesizedNonNullOperand.ts, 8, 9))
+>y : Symbol(y, Decl(ttttParenthesizedNonNullOperand.ts, 6, 11))
+
+    const p2: never = (y)!;
+>p2 : Symbol(p2, Decl(ttttParenthesizedNonNullOperand.ts, 9, 9))
+>y : Symbol(y, Decl(ttttParenthesizedNonNullOperand.ts, 6, 11))
+  }
+}
+
