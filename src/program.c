@@ -7152,7 +7152,9 @@ again:
     // (What was reported before the checkers start isn't their history's)
     atomic_store(&my history_reported, false);
     atomic_store(&my rerun_due, false);
-    my rerun_watch = count > 1 && !limit_rerun && !my graph && !my no_rerun;
+    // (--shared-graph too: a stop mid-computation is a taint event, typecheck_stopping(), so nothing half made is
+    // published; the graph goes with the pass at the rerun)
+    my rerun_watch = count > 1 && !limit_rerun && !my no_rerun;
     char const* debug_stop = getenv("TTTT_DEBUG_RERUN_STOP");
     my debug_rerun_stop = debug_stop ? (u32)strtoul(debug_stop, nullptr, 10) : 0;
     atomic_store(&my debug_rerun_stopped, 0);

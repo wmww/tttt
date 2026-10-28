@@ -123,11 +123,20 @@ struct TypecheckStop {
 extern thread_local TypecheckStop* typecheck_stop;
 // Whether the checker should drop the rest of what it is checking (statements_typecheck(), check_file()): its results
 // and diagnostics go unread
+// With --shared-graph a stop is a taint event (ty/taint.h's counter): whatever computation it cuts short in this worker
+// finishes tainted, so its word is POISONed and its memos stay private, and no other worker of the pass adopts a value
+// made of half a function body. The rest of the graph is dropped with the pass (program_typecheck()'s rerun)
+extern thread_local uint64_t graph_taint_now;
 static inline bool typecheck_stopping(void) {
     TypecheckStop* s = typecheck_stop;
     if (__builtin_expect(s == nullptr, 1)) return false;
-    if (atomic_load_explicit(s->stop, memory_order_relaxed)) return true;
-    return __builtin_expect(atomic_load_explicit(s->history, memory_order_relaxed), 0) && s->poll(s);
+    if (atomic_load_explicit(s->stop, memory_order_relaxed) ||
+        (__builtin_expect(atomic_load_explicit(s->history, memory_order_relaxed), 0) && s->poll(s))
+    ) {
+        graph_taint_now++;
+        return true;
+    }
+    return false;
 }
 // The file the thread's checker is checking (program.c's check_file()), null outside one: see Error.history_foreign
 extern thread_local struct SourceFile const* error_checking_file;
