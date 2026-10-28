@@ -1,0 +1,29 @@
+ttttReturnMapperCommonSupertype.ts(14,3): error TS2345: Argument of type '(string | H)[][]' is not assignable to parameter of type 'KV<H> | REs<string, H>'.
+  Type '(string | H)[][]' is not assignable to type 'REs<string, H>'.
+    Type '(string | H)[]' is not assignable to type 'RE<string, H>'.
+      Target requires 2 element(s) but source may have fewer.
+
+
+==== ttttReturnMapperCommonSupertype.ts (1 errors) ====
+    // origin: npm freelensapp/freelens @ 088d085 packages/core (tsconfig.bench.json), mobx 7 ObservableMap.replace(xs.map(x => [x.id, x]))
+    // flip: no
+    // The return mapper (tsc's InferenceContext.returnMapper) is a fresh inference of no priority: a common supertype in
+    // union order (H here, so the callback's array literal isn't a tuple and the argument fails), not the return type
+    // priority's union of candidates (whose tuple member made it a tuple)
+    interface KV<V = any> { [key: string]: V; }
+    type E<K = any, V = any> = [K, V];
+    type RE<K = any, V = any> = readonly [K, V];
+    type Es<K = any, V = any> = E<K, V>[];
+    type REs<K = any, V = any> = RE<K, V>[];
+    interface H { id: string; n: number }
+    declare const hs: H[];
+    declare function r(values: REs<string, H> | KV<H>): void;
+    r(hs.map((h) => [h.id, h]));
+      ~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type '(string | H)[][]' is not assignable to parameter of type 'KV<H> | REs<string, H>'.
+!!! error TS2345:   Type '(string | H)[][]' is not assignable to type 'REs<string, H>'.
+!!! error TS2345:     Type '(string | H)[]' is not assignable to type 'RE<string, H>'.
+!!! error TS2345:       Target requires 2 element(s) but source may have fewer.
+    declare function r2(values: Es<string, H> | REs<string, H> | KV<H>): void;
+    r2(hs.map((h) => [h.id, h]));
+    

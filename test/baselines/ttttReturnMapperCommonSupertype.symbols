@@ -1,0 +1,93 @@
+//// [test/cases/ttttReturnMapperCommonSupertype.ts] ////
+
+=== ttttReturnMapperCommonSupertype.ts ===
+// origin: npm freelensapp/freelens @ 088d085 packages/core (tsconfig.bench.json), mobx 7 ObservableMap.replace(xs.map(x => [x.id, x]))
+// flip: no
+// The return mapper (tsc's InferenceContext.returnMapper) is a fresh inference of no priority: a common supertype in
+// union order (H here, so the callback's array literal isn't a tuple and the argument fails), not the return type
+// priority's union of candidates (whose tuple member made it a tuple)
+interface KV<V = any> { [key: string]: V; }
+>KV : Symbol(KV, Decl(ttttReturnMapperCommonSupertype.ts, 0, 0))
+>V : Symbol(V, Decl(ttttReturnMapperCommonSupertype.ts, 5, 13))
+>key : Symbol(key, Decl(ttttReturnMapperCommonSupertype.ts, 5, 25))
+>V : Symbol(V, Decl(ttttReturnMapperCommonSupertype.ts, 5, 13))
+
+type E<K = any, V = any> = [K, V];
+>E : Symbol(E, Decl(ttttReturnMapperCommonSupertype.ts, 5, 43))
+>K : Symbol(K, Decl(ttttReturnMapperCommonSupertype.ts, 6, 7))
+>V : Symbol(V, Decl(ttttReturnMapperCommonSupertype.ts, 6, 15))
+>K : Symbol(K, Decl(ttttReturnMapperCommonSupertype.ts, 6, 7))
+>V : Symbol(V, Decl(ttttReturnMapperCommonSupertype.ts, 6, 15))
+
+type RE<K = any, V = any> = readonly [K, V];
+>RE : Symbol(RE, Decl(ttttReturnMapperCommonSupertype.ts, 6, 34))
+>K : Symbol(K, Decl(ttttReturnMapperCommonSupertype.ts, 7, 8))
+>V : Symbol(V, Decl(ttttReturnMapperCommonSupertype.ts, 7, 16))
+>K : Symbol(K, Decl(ttttReturnMapperCommonSupertype.ts, 7, 8))
+>V : Symbol(V, Decl(ttttReturnMapperCommonSupertype.ts, 7, 16))
+
+type Es<K = any, V = any> = E<K, V>[];
+>Es : Symbol(Es, Decl(ttttReturnMapperCommonSupertype.ts, 7, 44))
+>K : Symbol(K, Decl(ttttReturnMapperCommonSupertype.ts, 8, 8))
+>V : Symbol(V, Decl(ttttReturnMapperCommonSupertype.ts, 8, 16))
+>E : Symbol(E, Decl(ttttReturnMapperCommonSupertype.ts, 5, 43))
+>K : Symbol(K, Decl(ttttReturnMapperCommonSupertype.ts, 8, 8))
+>V : Symbol(V, Decl(ttttReturnMapperCommonSupertype.ts, 8, 16))
+
+type REs<K = any, V = any> = RE<K, V>[];
+>REs : Symbol(REs, Decl(ttttReturnMapperCommonSupertype.ts, 8, 38))
+>K : Symbol(K, Decl(ttttReturnMapperCommonSupertype.ts, 9, 9))
+>V : Symbol(V, Decl(ttttReturnMapperCommonSupertype.ts, 9, 17))
+>RE : Symbol(RE, Decl(ttttReturnMapperCommonSupertype.ts, 6, 34))
+>K : Symbol(K, Decl(ttttReturnMapperCommonSupertype.ts, 9, 9))
+>V : Symbol(V, Decl(ttttReturnMapperCommonSupertype.ts, 9, 17))
+
+interface H { id: string; n: number }
+>H : Symbol(H, Decl(ttttReturnMapperCommonSupertype.ts, 9, 40))
+>id : Symbol(H.id, Decl(ttttReturnMapperCommonSupertype.ts, 10, 13))
+>n : Symbol(H.n, Decl(ttttReturnMapperCommonSupertype.ts, 10, 25))
+
+declare const hs: H[];
+>hs : Symbol(hs, Decl(ttttReturnMapperCommonSupertype.ts, 11, 13))
+>H : Symbol(H, Decl(ttttReturnMapperCommonSupertype.ts, 9, 40))
+
+declare function r(values: REs<string, H> | KV<H>): void;
+>r : Symbol(r, Decl(ttttReturnMapperCommonSupertype.ts, 11, 22))
+>values : Symbol(values, Decl(ttttReturnMapperCommonSupertype.ts, 12, 19))
+>REs : Symbol(REs, Decl(ttttReturnMapperCommonSupertype.ts, 8, 38))
+>H : Symbol(H, Decl(ttttReturnMapperCommonSupertype.ts, 9, 40))
+>KV : Symbol(KV, Decl(ttttReturnMapperCommonSupertype.ts, 0, 0))
+>H : Symbol(H, Decl(ttttReturnMapperCommonSupertype.ts, 9, 40))
+
+r(hs.map((h) => [h.id, h]));
+>r : Symbol(r, Decl(ttttReturnMapperCommonSupertype.ts, 11, 22))
+>hs.map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>hs : Symbol(hs, Decl(ttttReturnMapperCommonSupertype.ts, 11, 13))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>h : Symbol(h, Decl(ttttReturnMapperCommonSupertype.ts, 13, 10))
+>h.id : Symbol(H.id, Decl(ttttReturnMapperCommonSupertype.ts, 10, 13))
+>h : Symbol(h, Decl(ttttReturnMapperCommonSupertype.ts, 13, 10))
+>id : Symbol(H.id, Decl(ttttReturnMapperCommonSupertype.ts, 10, 13))
+>h : Symbol(h, Decl(ttttReturnMapperCommonSupertype.ts, 13, 10))
+
+declare function r2(values: Es<string, H> | REs<string, H> | KV<H>): void;
+>r2 : Symbol(r2, Decl(ttttReturnMapperCommonSupertype.ts, 13, 28))
+>values : Symbol(values, Decl(ttttReturnMapperCommonSupertype.ts, 14, 20))
+>Es : Symbol(Es, Decl(ttttReturnMapperCommonSupertype.ts, 7, 44))
+>H : Symbol(H, Decl(ttttReturnMapperCommonSupertype.ts, 9, 40))
+>REs : Symbol(REs, Decl(ttttReturnMapperCommonSupertype.ts, 8, 38))
+>H : Symbol(H, Decl(ttttReturnMapperCommonSupertype.ts, 9, 40))
+>KV : Symbol(KV, Decl(ttttReturnMapperCommonSupertype.ts, 0, 0))
+>H : Symbol(H, Decl(ttttReturnMapperCommonSupertype.ts, 9, 40))
+
+r2(hs.map((h) => [h.id, h]));
+>r2 : Symbol(r2, Decl(ttttReturnMapperCommonSupertype.ts, 13, 28))
+>hs.map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>hs : Symbol(hs, Decl(ttttReturnMapperCommonSupertype.ts, 11, 13))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>h : Symbol(h, Decl(ttttReturnMapperCommonSupertype.ts, 15, 11))
+>h.id : Symbol(H.id, Decl(ttttReturnMapperCommonSupertype.ts, 10, 13))
+>h : Symbol(h, Decl(ttttReturnMapperCommonSupertype.ts, 15, 11))
+>id : Symbol(H.id, Decl(ttttReturnMapperCommonSupertype.ts, 10, 13))
+>h : Symbol(h, Decl(ttttReturnMapperCommonSupertype.ts, 15, 11))
+

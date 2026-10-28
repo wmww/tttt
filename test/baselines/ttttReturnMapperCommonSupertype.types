@@ -1,0 +1,68 @@
+//// [test/cases/ttttReturnMapperCommonSupertype.ts] ////
+
+=== ttttReturnMapperCommonSupertype.ts ===
+// origin: npm freelensapp/freelens @ 088d085 packages/core (tsconfig.bench.json), mobx 7 ObservableMap.replace(xs.map(x => [x.id, x]))
+// flip: no
+// The return mapper (tsc's InferenceContext.returnMapper) is a fresh inference of no priority: a common supertype in
+// union order (H here, so the callback's array literal isn't a tuple and the argument fails), not the return type
+// priority's union of candidates (whose tuple member made it a tuple)
+interface KV<V = any> { [key: string]: V; }
+>key : string
+
+type E<K = any, V = any> = [K, V];
+>E : E<K, V>
+
+type RE<K = any, V = any> = readonly [K, V];
+>RE : RE<K, V>
+
+type Es<K = any, V = any> = E<K, V>[];
+>Es : Es<K, V>
+
+type REs<K = any, V = any> = RE<K, V>[];
+>REs : REs<K, V>
+
+interface H { id: string; n: number }
+>id : string
+>n : number
+
+declare const hs: H[];
+>hs : H[]
+
+declare function r(values: REs<string, H> | KV<H>): void;
+>r : (values: REs<string, H> | KV<H>) => void
+>values : KV<H> | REs<string, H>
+
+r(hs.map((h) => [h.id, h]));
+>r(hs.map((h) => [h.id, h])) : void
+>r : (values: REs<string, H> | KV<H>) => void
+>hs.map((h) => [h.id, h]) : (string | H)[][]
+>hs.map : <U>(callbackfn: (value: H, index: number, array: H[]) => U, thisArg?: any) => U[]
+>hs : H[]
+>map : <U>(callbackfn: (value: H, index: number, array: H[]) => U, thisArg?: any) => U[]
+>(h) => [h.id, h] : (h: H) => (string | H)[]
+>h : H
+>[h.id, h] : (string | H)[]
+>h.id : string
+>h : H
+>id : string
+>h : H
+
+declare function r2(values: Es<string, H> | REs<string, H> | KV<H>): void;
+>r2 : (values: Es<string, H> | REs<string, H> | KV<H>) => void
+>values : Es<string, H> | KV<H> | REs<string, H>
+
+r2(hs.map((h) => [h.id, h]));
+>r2(hs.map((h) => [h.id, h])) : void
+>r2 : (values: Es<string, H> | REs<string, H> | KV<H>) => void
+>hs.map((h) => [h.id, h]) : [string, H][]
+>hs.map : <U>(callbackfn: (value: H, index: number, array: H[]) => U, thisArg?: any) => U[]
+>hs : H[]
+>map : <U>(callbackfn: (value: H, index: number, array: H[]) => U, thisArg?: any) => U[]
+>(h) => [h.id, h] : (h: H) => [string, H]
+>h : H
+>[h.id, h] : [string, H]
+>h.id : string
+>h : H
+>id : string
+>h : H
+

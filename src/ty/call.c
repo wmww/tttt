@@ -1577,11 +1577,17 @@ static TyMapper const* infer_type_arguments(
             // (its return mapper, then everything it has inferred so far, defaults for the rest), so that in
             // `new Map(xs.map(x => [x, 1]))` `[K, V]` still makes the callback return a tuple, and in
             // `layerEffect(Foo, effectGen(() => ({ fn: ... })))` AEff is what Foo said S is
-            // (The same source as the main inference just had, which nothing else has gone into yet: that one, a top-level
-            // call's in particular)
+            // (The main inference's candidates, when it had the same source, only if no parameter has more than one: those
+            // are of the return type's priority, which combines several into a union, where these are of no priority,
+            // whose common supertype is the first that takes the others in union order: `xs.map(x => [x.id, x])` for
+            // `REs<string, H> | KV<H>` infers H, not a tuple, freelens' TS2345. One candidate is the same either way:
+            // return_inference_mapper() keeps literals, so top-level widening doesn't matter. A second inference for
+            // every call costs zod 3% instructions)
             Ty const* return_source = !outer ? uninferred_contextual :
                 ty_instantiate(me, uninferred_contextual, outer_return_mapper(me, outer));
-            if (source == contextual && return_source == contextual) {
+            bool same = source == contextual && return_source == contextual;
+            for (u32 i = 0; same && i < inf.len; i++) same = inf.params[i].co_len <= 1 && !inf.params[i].contra_len;
+            if (same) {
                 return_mapper = return_inference_mapper(me, sig, &inf, nullptr);
             } else {
                 Inference return_inf;
