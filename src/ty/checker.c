@@ -388,9 +388,20 @@ static void debug_check_type_value(InternTable const* table, u64 const* words, u
 }
 #endif
 
+// --shared-graph: whether the graph's table can hold the key, so a private miss looks there: not for scratch kinds
+// (per expression, flow, inference: never published) nor the links' variances (published through their slots,
+// graph_variance_slot()). A probe is a random line of a table bigger than the caches: zod's K8 probed the shared tables
+// for scratch kinds 0.35M times, all misses (agents/notes/shared_graph.md "The premium")
+static bool intern_probes(InternTable const* table, u64 const* words, u32 count) {
+    Checker const* checker = current_checker;
+    if (!count || !checker || table == &checker->intersection_props) return true;
+    u32 kind = (u32)(words[0] & 255);
+    if (table == &checker->links && (kind == KEY_VARIANCES || kind == KEY_ALIAS_VARIANCES)) return false;
+    return graph_kind_class(kind) != GRAPH_SCRATCH;
+}
 // --shared-graph: a key the checker's own table doesn't have, in the graph's (ty/graph.h). Null if none
 [[gnu::noinline]] static void const** intern_shared_find(InternTable const* table, u64 hash, u64 const* words, u32 count) {
-    void const** block = shared_table_find(table->others, hash, words, count);
+    void const** block = intern_probes(table, words, count) ? shared_table_find(table->others, hash, words, count) : nullptr;
     if (!block) {
         // (A memo kind's computation may start here: graph_memo_log_put() takes the taint counter from then)
         graph_memo_note_miss(current_checker, table, hash, words, count);
@@ -536,6 +547,30 @@ void intern_check_fields_done(InternTable const* table, void const** slot) {
 }
 #endif
 
+// --shared-graph: an identity found in the shared table, kept in the checker's own table too (`entry`, the empty slot its
+// private probe stopped at), so the next lookup of the key hits there instead of probing the shared table again: the
+// shared probes are random lines of a big table, and 85-93% of them repeated a key the checker had found before
+// (agents/notes/shared_graph.md "The premium"). Exact: an identity's shared entry never changes once there, and the
+// slot points at the published block itself, which intern_slot() returns for an identity anyway. Never for memo kinds,
+// whose private block the caller may write. TTTT_GRAPH_NO_CACHE=1 turns it off (the A/B)
+static int graph_cache_hits = -1;
+[[gnu::cold, gnu::noinline]] static int graph_cache_hits_read(void) {
+    int on = !(getenv("TTTT_GRAPH_NO_CACHE") && *getenv("TTTT_GRAPH_NO_CACHE") == '1');
+    __atomic_store_n(&graph_cache_hits, on, __ATOMIC_RELAXED);
+    return on;
+}
+static void intern_cache_shared(InternTable const* table, u64* entry, u64 hash, void const** block) {
+#ifdef TTTT_GRAPH_CHECKS
+    return; // (Its identity_hit_note() wants every shared hit)
+#endif
+    int on = __atomic_load_n(&graph_cache_hits, __ATOMIC_RELAXED);
+    if (__builtin_expect(on < 0, 0)) on = graph_cache_hits_read();
+    if (!on || !entry || *entry || intern_needs_growth(table)) return;
+    InternTable* own = (InternTable*)table; // (The checker's own table, on its own thread: DEBUG_OWN_TABLE)
+    *entry = (u64)intern_tag(hash) << 32 | intern_locate(own, block);
+    own->len++;
+}
+
 void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 count) {
     DEBUG_OWN_TABLE(table);
     if (intern_needs_growth(table)) {
@@ -553,7 +588,10 @@ void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 
 #ifdef TTTT_GRAPH_CHECKS
                 if (graph_checks_on() > 0) shared ? identity_hit_note(hash) : identity_miss_note(hash);
 #endif
-                if (shared) return shared;
+                if (shared) {
+                    intern_cache_shared(table, entry, hash, shared);
+                    return shared;
+                }
             } else if (me->graph_memo_on) {
                 // (A memo kind another checker published: its value in a private entry of the checker's own, which the
                 // caller finds done)
@@ -577,6 +615,29 @@ void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 
 #endif
 }
 
+// intern_slot() of a key that holds an object made just now by this checker (a fresh Prop): no other checker can have
+// it, so the shared table isn't probed (--shared-graph: KEY_PROP_MAPPED_TYPE's probes were 0.76M misses of 9M on four
+// projects at K8). The entry is published as intern_slot()'s is, when its value is set
+void const** intern_slot_fresh(Checker* me, InternTable* table, u64 const* words, u32 count) {
+    DEBUG_OWN_TABLE(table);
+    if (intern_needs_growth(table)) intern_grow(table);
+    u64 hash = hash_words(words, count);
+    void const** hit = nullptr;
+    u64* entry = intern_find(table, hash, words, count, &hit);
+    if (!*entry) {
+#ifdef TTTT_GRAPH_CHECKS
+        if (table->others && graph_checks_on() > 0) identity_miss_note(hash);
+#endif
+        return intern_put(me, table, entry, hash, words, count);
+    }
+#ifdef TTTT_TAINT
+    taint_intern_hit(hit);
+    return hit;
+#else
+    return intern_hit(table, hit);
+#endif
+}
+
 void const* intern_lookup(InternTable const* table, u64 const* words, u32 count, InternMiss* miss) {
     DEBUG_OWN_TABLE(table);
     u64 hash = hash_words(words, count);
@@ -588,7 +649,10 @@ void const* intern_lookup(InternTable const* table, u64 const* words, u32 count,
 #ifdef TTTT_GRAPH_CHECKS
         if (graph_checks_on() > 0 && intern_slot_shares(table, words, count)) shared ? identity_hit_note(hash) : identity_miss_note(hash);
 #endif
-        if (shared) return shared[0];
+        if (shared) {
+            if (intern_slot_shares(table, words, count)) intern_cache_shared(table, entry, hash, shared);
+            return shared[0];
+        }
     }
 #ifdef TTTT_TAINT
     void const** taint_block = entry && *entry ? hit : nullptr;
@@ -715,7 +779,9 @@ void const* intern_get(InternTable const* table, u64 const* words, u32 count) {
     u64* entry = intern_find(table, hash, words, count, &hit);
     if (entry && *entry) return intern_hit(table, hit)[0];
     void const** shared = table->others ? intern_shared_find(table, hash, words, count) : nullptr;
-    return shared ? shared[0] : nullptr;
+    if (!shared) return nullptr;
+    if (intern_slot_shares(table, words, count)) intern_cache_shared(table, entry, hash, shared);
+    return shared[0];
 #endif
 }
 
@@ -735,6 +801,7 @@ bool intern_has(InternTable const* table, u64 const* words, u32 count, void cons
     }
     void const** shared = table->others ? intern_shared_find(table, hash, words, count) : nullptr;
     if (!shared) return false;
+    if (intern_slot_shares(table, words, count)) intern_cache_shared(table, entry, hash, shared);
     *value = __atomic_load_n(shared, __ATOMIC_ACQUIRE);
     return true;
 }
@@ -748,9 +815,21 @@ static u32 link_index(u64 key, u32 cap) {
     return table_index((key * 0x9e3779b97f4a7c15ull) >> 32, cap);
 }
 
+static inline void link_set(LinkTable* table, u32 kind, void const* subject, void const* value);
+// --shared-graph: a node link the checker's own table misses, in the graph's; a hit is kept in the checker's own table
+// (as intern_cache_shared(): the shared entry never changes; 39-61% of the node links' shared probes were hits on zod,
+// effect, drizzle and dokploy at K8). A later ty_link_set() of the key overwrites it as it would have made it
+[[gnu::noinline]] static void const* link_shared_get(Checker const* me, u32 kind, void const* subject) {
+    void const* ret = graph_link_get(my graph, kind, subject);
+    int on = __atomic_load_n(&graph_cache_hits, __ATOMIC_RELAXED);
+    if (__builtin_expect(on < 0, 0)) on = graph_cache_hits_read();
+    if (ret && on) link_set(&((Checker*)me)->node_links, kind, subject, ret);
+    return ret;
+}
+
 void const* ty_link_get(Checker const* me, u32 kind, void const* subject) {
     LinkTable const* table = &my node_links;
-    if (!table->cap) return my graph ? graph_link_get(my graph, kind, subject) : nullptr;
+    if (!table->cap) return my graph ? link_shared_get(me, kind, subject) : nullptr;
     u64 key = link_key(kind, subject);
     for (u32 i = link_index(key, table->cap);; i = table_next(i, table->cap)) {
         LinkEntry const* entry = &table->entries[i];
@@ -758,7 +837,7 @@ void const* ty_link_get(Checker const* me, u32 kind, void const* subject) {
         if (entry->key == key) survivors_hit((void const*)key, 1);
 #endif
         if (entry->key == key) return entry->value;
-        if (!entry->key) return my graph ? graph_link_get(my graph, kind, subject) : nullptr;
+        if (!entry->key) return my graph ? link_shared_get(me, kind, subject) : nullptr;
     }
 }
 

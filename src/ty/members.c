@@ -4877,7 +4877,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                 };
                 // (Part of the property: published with it, --shared-graph)
                 u64 mapped_key[2] = { KEY_PROP_MAPPED_TYPE, (u64)(uintptr_t)prop };
-                intern_set(me, &my links, intern_slot(me, &my links, mapped_key, 2), ty);
+                intern_set(me, &my links, intern_slot_fresh(me, &my links, mapped_key, 2), ty);
                 // A fresh symbol, declared where the property it comes from is (tsc's resolveMappedTypeMembers), unless
                 // the `as` clause remaps rather than filters (any key: tsc's shouldLinkPropDeclarations, see below)
                 Prop const* declared = !remapping ? from : nullptr;
