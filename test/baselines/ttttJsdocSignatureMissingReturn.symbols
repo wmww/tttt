@@ -1,0 +1,39 @@
+//// [test/cases/ttttJsdocSignatureMissingReturn.ts] ////
+
+=== a.js ===
+export default /** @type {(e: unknown) => e is string} */ (e) => {
+>e : Symbol(e, Decl(a.js, 0, 59))
+
+};
+/** @type {(e: unknown) => number} */
+export function f(e) {
+>f : Symbol(f, Decl(a.js, 1, 2))
+>e : Symbol(e, Decl(a.js, 3, 18))
+}
+/** @type {(e: unknown) => number} */
+export const g = function (e) {
+>g : Symbol(g, Decl(a.js, 6, 12))
+>e : Symbol(e, Decl(a.js, 6, 27))
+
+    if (e) return 1;
+>e : Symbol(e, Decl(a.js, 6, 27))
+
+};
+/** @type {(e: unknown) => never} */
+export const h = (e) => {
+>h : Symbol(h, Decl(a.js, 10, 12))
+>e : Symbol(e, Decl(a.js, 10, 18))
+
+};
+/** @returns {number} */
+export function k() {}
+>k : Symbol(k, Decl(a.js, 11, 2))
+
+class C {
+>C : Symbol(C, Decl(a.js, 13, 22))
+
+    /** @type {number} */
+    get x() { }
+>x : Symbol(C.x, Decl(a.js, 14, 9))
+}
+

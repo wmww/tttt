@@ -1247,6 +1247,10 @@ static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
     // What tsc reports a function-like node at: its name, the head of an arrow function, else its first token
     Span name = span_valid(my name) ? my name : function_impl_member_name(me);
     Span at = my ret_explicit ? function_impl_ret_span(me) : function_error_span(me); // (A getter's `@type` too: tsgo's reparsed Type)
+    // (A function whose return type a written `@type` signature gave: at the whole tag type, tsgo's FullSignature)
+    if (my ret_explicit && my accessor != 1 && span_valid(function_impl_rare(me)->jsdoc_signature_span)) {
+        at = function_impl_rare(me)->jsdoc_signature_span;
+    }
 
     if (my accessor == 1 && !function_impl_has_explicit_return(me)) {
         // (tsc's checkAccessorDeclaration; checkAllCodePathsInNonVoidFunctionReturnOrThrow still runs after it)

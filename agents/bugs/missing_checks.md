@@ -574,14 +574,16 @@ umd7, typeTagNoErasure, importHelpersES6: the seeds 2311/2312 entries).
   its file's export=, getSpecifierForModuleSymbol falls to IsModuleWithStringLiteralName), and an ambient module's
   `export =` likewise (`import("file1")`, its export= container is no file); tttt printed the first declaration's
   file. display_module_clone, out_symbol_name_impl. Tests ttttAugmentedExportEqualsModuleName,
-  ttttAugmentedExportEqualsAmbientName. [fixed HASH]
+  ttttAugmentedExportEqualsAmbientName. [fixed acef2820f]
 - jsdocParamTagTypeLiteral member-typo: `@param {object[]} opts5` with children `opts5[].what`, `opts5[].whatX.bad`
   (a grandchild under a wrong middle name), `opts5[].unnest`: tsgo's parseChildParameterOrPropertyTag accepts a child
   only when its name's left is exactly the parent's, so the wrong grandchild ends `what`'s and `opts5`'s nesting both:
   every later `@param` is top level (TS8032 for each, names printed without `[]`), and `opts5[0].unnest` is TS2339.
   tttt keeps nesting and prints the names with `[]`. JSDoc parser (bun's area). [open]
 - jsdocTypeTagFunctionTypePredicate delete-stmt: TS2355 for a JSDoc `@type {(e) => e is X}` function expression
-  without a return is at the `@type` tag's type (8,27) in tsgo, at the function (8,43) in tttt. [open]
+  without a return is at the `@type` tag's type (8,27) in tsgo, at its return type (8,43) in tttt: tsgo's errorNode is
+  the FullSignature the reparser set; function_impl_check_end now takes jsdoc_signature_span when the return type
+  came from it. Test ttttJsdocSignatureMissingReturn. [fixed HASH]
 
 ## Mutation seeds 2311/2312 leftovers (2026-10-23, `MUTATE_DIR=/tmp/X scripts/mutate.py -n 8000 --seed 2311|2312 --tests multi,js`)
 The multi-file and JS mix finds far more than the single-file one (51 and 37 against 10). Seed 2311: 51 -> 37 -> 30

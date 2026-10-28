@@ -1,0 +1,49 @@
+a.js(1,27): error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+a.js(3,12): error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+a.js(7,14): error TS2322: Type '(e: unknown) => 1 | undefined' is not assignable to type '(e: unknown) => number'.
+  Type 'number | undefined' is not assignable to type 'number'.
+    Type 'undefined' is not assignable to type 'number'.
+a.js(11,14): error TS2322: Type '(e: unknown) => void' is not assignable to type '(e: unknown) => never'.
+  Type 'void' is not assignable to type 'never'.
+a.js(13,15): error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+a.js(16,16): error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+a.js(17,9): error TS2378: A 'get' accessor must return a value.
+
+
+==== a.js (7 errors) ====
+    export default /** @type {(e: unknown) => e is string} */ (e) => {
+                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+    };
+    /** @type {(e: unknown) => number} */
+               ~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+    export function f(e) {
+    }
+    /** @type {(e: unknown) => number} */
+    export const g = function (e) {
+                 ~
+!!! error TS2322: Type '(e: unknown) => 1 | undefined' is not assignable to type '(e: unknown) => number'.
+!!! error TS2322:   Type 'number | undefined' is not assignable to type 'number'.
+!!! error TS2322:     Type 'undefined' is not assignable to type 'number'.
+        if (e) return 1;
+    };
+    /** @type {(e: unknown) => never} */
+    export const h = (e) => {
+                 ~
+!!! error TS2322: Type '(e: unknown) => void' is not assignable to type '(e: unknown) => never'.
+!!! error TS2322:   Type 'void' is not assignable to type 'never'.
+    };
+    /** @returns {number} */
+                  ~~~~~~
+!!! error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+    export function k() {}
+    class C {
+        /** @type {number} */
+                   ~~~~~~
+!!! error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+        get x() { }
+            ~
+!!! error TS2378: A 'get' accessor must return a value.
+    }
+    
