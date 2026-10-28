@@ -171,6 +171,76 @@ numbers are those of whichever tree last ran each oracle (bugcount.py prints whi
 - 2026-10-28 2625572b5: 298 open (27 designs), 84 text-only, 38 tsgo excluded; symptoms: suite_tsc 63, suite_own 16, suite_bun 1131, bun 878, dt 0, source 5, expect 0, dts 6, flagflip 23, clidiff_text 32, unexplained_sweep 0, unexplained_sourcesweep 1, unexplained_buncases 128
 - 2026-10-28 ed02bc573: 303 open (28 designs), 84 text-only, 38 tsgo excluded; symptoms: suite_tsc 62, suite_own 17, suite_bun 1114, bun 861, dt 0, source 3, expect 0, dts 6, flagflip 23, clidiff_text 32, unexplained_sweep 0, unexplained_sourcesweep 0, unexplained_buncases 128
 
+## vscode since v1: the regression attributed (2026-10-29, worker regress; v1 438727981 against main 02ebfb96a)
+The human's laptop (24 threads, 3 runs each after a warm-up): v1 against main at ~8c9afd512.
+
+| | v1 | main | bun |
+|---|---|---|---|
+| 1 thread wall | 12.19 s | 13.32 s (+9.3%) | 16.21 |
+| 1 thread peak RSS | 5.0 GiB | 4.7 GiB | 1.8 |
+| all cores wall | 2.02 s | 2.24 s (+11%) | 2.33 |
+| all cores CPU | 38.6 s | 38.9 s | 48.6 |
+| busy cores | 19.1 | 17.4 | 20.9 |
+
+**This box** (THP `madvise`, load 5-40 from other workers): `--fast` builds out of tree (`scripts/abbuild.sh REV --fast`),
+`TTTT_SYNC_EXIT=1`, vscode `src/tsconfig.corpus.json --noEmit`. Builds: `main+huge` = main with 4f3fa414e and 24820df46
+reverted (huge text page on, arena/AST huge pages behind `TTTT_HUGEPAGES=budget|1` as after 45397f75f), `main-a5a0` =
+main with a5a0b7100's src reverted, `both` = the two together. **K1 under load: sequential runs on one core were
+useless (+-20%, other workers on the SMT sibling); concurrent pairs on the two SMT siblings (CPUs 6 and 7, swapped
+each round, so each run's neighbour is the other side) were steady to +-1%** (per-round ratios below; 4-6 rounds each).
+
+| K1 pair (B against A) | wall A / B s | user A / B s | sys A / B s | B/A wall per round |
+|---|---|---|---|---|
+| main against v1 | 16.05 / 17.56 | 15.60 / 16.36 | 0.40 / 1.12 | **+8.8%** (+8.2..+9.9; +3.6% in a run at load 30) |
+| main+huge (`=1`) against main | 15.34 / 14.50 | 14.40 / 14.13 | 0.93 / 0.39 | **-5.4%** (twice: -5.4, -5.7) |
+| v1 against main+huge (`=1`) | 15.19 / 15.21 | 14.79 / 14.82 | 0.37 / 0.39 | **0.0%** (twice: 0.0, +0.1) |
+| main+huge text page only against main | 17.66 / 17.60 | 16.46 / 16.43 | 1.11 / 1.12 | -0.2% (the text page: nothing here) |
+| main-a5a0 against main | 16.81 / 16.69 | 15.84 / 15.67 | | -0.8% |
+| v1 against both (`budget`) | 15.41 / 15.52 | 15.00 / 15.12 | 0.40 / 0.39 | +0.5% |
+
+Defaults (16 threads, 6 interleaved rounds, load 13-20; medians; `--time` phases):
+
+| | wall s (best) | user s | sys s | RSS GB | load+parse files ms | typecheck ms |
+|---|---|---|---|---|---|---|
+| v1 | 1.59 (1.48) | 17.02 | 0.60 | 5.49 | 179 | 1174 |
+| main | 1.85 (1.75) | 17.56 | 1.21 | 5.05 | 195 | 1281 |
+| main-a5a0 | 1.85 (1.67) | 17.46 | 1.23 | 5.04 | 182 | 1236 |
+| main+huge (`=1`) | 1.56 (1.50) | 16.88 | 0.60 | 5.12 | 152 | 1203 |
+| both (`=1`) | 1.50 (1.44) | 16.71 | 0.60 | 5.11 | 164 | 1145 |
+| both (`budget`) | 1.52 (1.41) | 16.72 | 0.59 | 5.13 | 149 | 1155 |
+
+(An earlier set at load 30-40: load+parse files v1 ~360 ms, v1 with `TTTT_HUGEPAGES=0` ~500, main ~480: the front
+end's loss is the AST slabs' 4 KB faults, 59k -> 166k in that phase.)
+
+Instructions (callgrind, K1, `--fast`): **v1 66.665 G, main 68.369 G (+2.56%), main-a5a0 66.171 G**: a5a0b7100 is
++2.198 G (+3.3%), the rest of the 171 commits -0.74% together (front end and loader cheaper; the intern tables and
+lazy props move instructions both ways). Check-only node links +169k (4.5%) are ffba37893's per-function-expression
+`KEY_SIGNATURE_DECL_CHECKED` link (cheap). RSS fell 4.48 -> 4.23 GB at K1 independently of huge pages (v1 with them off
+is 4.47).
+
+**Attribution.**
+1. **Huge pages off (45397f75f, 2026-10-24) and removed (4f3fa414e)**: the whole wall loss on this box. With
+   THP `madvise` nothing gets a huge page any more: typecheck faults at K1 25k -> 800k, sys 0.38 -> 0.93 s, plus the
+   TLB misses (user +2%); at the defaults the AST's faults make the parallel parse slower and the checkers' faults
+   cost sys 0.6 -> 1.2 s. Restoring them (`TTTT_HUGEPAGES=1` or `budget` on the reverted build) gives v1's wall back
+   at K1 and at the defaults. The laptop runs THP `always` (its K1 runs fault only 3-5k times on zod/drizzle at
+   2c389b213, so its arenas still get huge pages): there this part is probably small, and df95ec2f's laptop A/B
+   (huge pages within noise) agrees.
+2. **The huge text page's removal (24820df46)**: no effect on this box (EPYC Turin VM), but the laptop measured it at
+   -4.6% wall / -3.6% cycles at K1 and -1.2% at the defaults (section "The 12-core box at 277be4bc"). The removal
+   cited df95ec2f's A/B, which compared the arena pages only (`--huge-pages`) with the text page on in both arms: the
+   text page's removal itself was never measured. Probably the laptop's largest share; unconfirmed (no laptop here).
+3. **a5a0b7100 (the return mapper's own inference when candidates would combine)**: +3.3% instructions, all in one
+   file: vs/platform/agentHost/test/node/mapSessionEvents.test.ts, 146 `fusionTestEvent<K extends SessionEventType>(...)`
+   calls whose return type `SessionEventPayload<K>` is inferred against the big SessionEvent union twice (K gets many
+   candidates, so the shortcut doesn't apply): that file 188 -> 357 ms at K1 (infer_to_union's infer_from calls
+   2.57M -> 4.77M). Only -0.8% wall at K1, but at the defaults the file is the check phase's last to finish (critical
+   path: check ends 1240 ms against ~1150 without it), which fits the laptop's busy cores 19.1 -> 17.4 at the same CPU.
+   tsc does the same second inference (tsgo's inferTypeArguments always makes the return mapper's context).
+So the laptop's +9.3% at K1 is most likely the text page (~4.6%) + a5a0b7100 (~1%: its share of instructions there
+may cost more cycles) + something small; at the defaults a5a0b7100's critical path (~0.1 s) + the text page (~1.2%).
+Leads: bugs/perf_leads.md "vscode since v1".
+
 ## The 12-core box at 2c389b213: type graph step 1 and the intern tables (2026-10-29)
 The human's laptop agent (Ryzen AI 9 HX 370; the box not idle: Firefox and other sessions, load 1-5 at K1, up to 13 at
 the defaults; a few outlier runs up to +33% on zod, medians steady to a few %). BASE 6d5e31b4c, MID c28559e09 (type

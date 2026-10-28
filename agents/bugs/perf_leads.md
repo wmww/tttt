@@ -8,6 +8,35 @@ checker's arena size and type count. Memory: `scripts/memtrack.sh -p DIR` for th
 allocating function; massif's extra-heap estimate is wrong for glibc), `scripts/arenasites.sh -p DIR` for the mmapped binder
 and checker arenas by call site.
 
+## vscode since v1 (2026-10-29, worker regress; numbers: measurements.md "vscode since v1")
+The human's laptop: main ~9% slower than v1 (438727981) at K1 and 11% at the defaults, fewer busy cores at the same
+CPU. Three causes, each recoverable on its own; the coordinator decides.
+- **Huge pages for the arenas and the AST** (off by default in 45397f75f, removed in 4f3fa414e). On a THP `madvise`
+  machine (this box) nothing gets a huge page now: vscode K1 +5.4% wall (typecheck faults 25k -> 800k, sys 0.38 ->
+  0.93 s), defaults +16% (sys 0.6 -> 1.2 s, the parallel parse slower); main with both commits reverted and
+  `TTTT_HUGEPAGES=budget` or `=1` matches v1 exactly at K1 and at the defaults (1.56 s, 1.52 with a5a0b7100 reverted too, against v1's 1.59). The
+  removal was for the stall risk (a madvised fault without a free 2 MB block compacts synchronously: kernel_time.md)
+  and on the laptop's measurement, which runs THP `always` and so got huge pages anyway. To recover without the stall:
+  madvise only when `/sys/kernel/mm/transparent_hugepage/defrag` doesn't make madvised faults compact synchronously
+  (`defer`, `never`), or MADV_HUGEPAGE + the free-block budget only for the first chunks, or ask the human whether
+  THP `madvise` machines (Ubuntu's default) matter. [open]
+- **The huge text page** (removed in 24820df46). Nothing on this box (EPYC VM, +-0.2%), but the laptop measured it at
+  -4.6% wall / -3.6% cycles at K1 and -1.2% at the defaults on 2026-10-22 (measurements.md "The 12-core box at
+  277be4bc"), and the A/B the removal cited (df95ec2f) had it on in both arms. Likely the laptop's largest share:
+  measure there (v1, main, and main with `git revert 4f3fa414e 24820df46`: conflicts only in src/prelude.h, keep both
+  sides, and CLAUDE.md) before deciding; huge_text() takes one 2 MB page and needs no budget beyond one free block. [open]
+- **a5a0b7100's second inference for the return mapper** (+2.20 G instructions, +3.3% of vscode). All in
+  vs/platform/agentHost/test/node/mapSessionEvents.test.ts (188 -> 357 ms at K1): 146 `fusionTestEvent<K>(type, data)`
+  calls whose `SessionEventPayload<K>` return type is inferred from the contextual SessionEvent union twice, since K
+  gets many candidates. It is tsc's own work (tsgo's inferTypeArguments always builds the return mapper's context),
+  and it costs only ~1% at K1, but at the defaults this file finishes last (the check phase's critical path: ~+90 ms).
+  Recoverable without changing results: when the source and target are the main inference's (`source == contextual
+  && return_source == contextual` in call.c's infer_type_arguments()), the separate inference's candidates are the
+  main one's with no priority, so derive the no-priority inferred types from `inf`'s candidate lists (common
+  supertype in union order instead of the union) rather than walking infer_from() again. Also: the file is a
+  scheduling outlier (a 350 ms file late in the deal); a cost estimate that starts big test files first would hide
+  it. [open]
+
 ## The types-ratio tail and K1 check ratios (2026-10-18 perf work)
 **date-fns/pkgs/docs 1.62 -> 0.64** (34483 -> 13679 types, tsgo 21221; worst of the perfsweep for ten passes, after
 round 2's 0.94 below had regressed unnoticed): `is_generic_operand()` and `is_string_index_signature_only()` expanded
