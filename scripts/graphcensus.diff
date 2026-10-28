@@ -1,1655 +1,756 @@
-Census counters for agents/notes/type_graph_design.md (worker graph, 2026-10-28, against 3100c2f50; never landed).
-Build it out of tree and run at K1:
+Census counters for agents/notes/type_graph_design.md (worker graph; never landed). This version (against c28559e09)
+counts instance Signatures: made by instantiate_members(), touched (read out of a call/construct array: GCS() marks,
+or resolved), resolved, return type computed. The props census of §1 was the version of this file at 6d5e31b4c (git
+show 6d5e31b4c:scripts/graphcensus.diff, against 3100c2f50); since step 1, members_prop_make()'s callgrind call count
+is the made-props number. Build out of tree and run at K1:
   B=$(scripts/abbuild.sh HEAD --patch scripts/graphcensus.diff)
-  TTTT_GRAPH_CENSUS=1 $B -p P --noEmit --checkers 1 --threads 1   # GC lines on stderr
-Counts: Props allocated, instance Props made by instantiate_members() (and this-only shared), instance Props whose
-type was computed (and equal to their target's), instance Props read out of any `props[...]` array or typed (GCM()
-marks: a lower bound of the touched ones), instance Signatures made, signatures with a target resolved.
-It will stop applying as src/ moves: redo the edits (members.c's GC() sites, ty.h's GCM()) by hand.
+  TTTT_GRAPH_CENSUS=1 $B -p P --noEmit --checkers 1 --threads 1   # a GS line on stderr
+It stops applying as src/ moves: redo the edits (members.c's gc_sig() sites, ty.h's GCS()) by hand.
 
-diff --git a/src/interface_decl.c b/src/interface_decl.c
-index ec96031..d6ca73c 100644
---- a/src/interface_decl.c
-+++ b/src/interface_decl.c
-@@ -97,13 +97,13 @@ static bool inherited_props_identical(
-     panic_if(!seen, "out of memory");
-     u32 seen_count = 0;
-     for (u32 i = 0; i < own->prop_count; i++) {
--        if (is_own_prop(own->props[i], symbol)) seen[seen_count++] = (Seen){ own->props[i], -1 };
-+        if (is_own_prop(GCM(own->props[i]), symbol)) seen[seen_count++] = (Seen){ GCM(own->props[i]), -1 };
-     }
-     bool identical = true;
-     for (u32 b = 0; b < base_count; b++) {
-         Members const* members = ty_members(checker, bases[b].with_this);
-         for (u32 i = 0; i < members->prop_count; i++) {
--            Prop const* prop = members->props[i];
-+            Prop const* prop = GCM(members->props[i]);
-             Seen const* existing = nullptr;
-             for (u32 j = 0; j < seen_count && !existing; j++) {
-                 if (seen[j].prop->name == prop->name) existing = &seen[j];
-diff --git a/src/expr.c b/src/expr.c
-index 770348a..b0a131c 100644
---- a/src/expr.c
-+++ b/src/expr.c
-@@ -3725,7 +3725,7 @@ static bool instanceof_target_ok(Checker* checker, Ty const* ty) {
-     if (members->call_count || members->construct_count) return true;
-     for (u32 i = 0; i < members->prop_count; i++) {
-         // (A well-known symbol's escaped name: `__@hasInstance@<id>`)
--        csview name = atom_sv(members->props[i]->name);
-+        csview name = atom_sv(GCM(members->props[i])->name);
-         for (isize c = 0; c + 12 <= name.size; c++) {
-             if (memcmp(name.buf + c, "@hasInstance", 12) == 0) return true;
-         }
 diff --git a/src/class_decl.c b/src/class_decl.c
-index 8e06d55..368c481 100644
+index 13cf0f508..9f58cc599 100644
 --- a/src/class_decl.c
 +++ b/src/class_decl.c
-@@ -1037,7 +1037,7 @@ static void class_check_member_overrides(ClassDecl* me, Ty const* type, Ty const
-         if (!(part_type->flags & TYF_OBJECT)) continue;
-         Members const* base_members = ty_members(checker, part_type);
-         for (u32 i = 0; i < base_members->prop_count; i++) {
--            Prop const* base_prop = base_members->props[i];
-+            Prop const* base_prop = GCM(base_members->props[i]);
-             if (base_prop->flags & PROP_STATIC) continue;
-             bool seen = false;
-             for (u32 earlier = 0; earlier < part && !seen; earlier++) {
-@@ -1187,8 +1187,8 @@ static Atom const* override_suggestion(Checker* checker, Ty const* base, Atom co
-     for (u32 i = 0; i < parts.len; i++) {
-         Members const* members = ty_members(checker, ty_apparent_type(checker, parts.data[i]));
-         for (u32 j = 0; j < members->prop_count; j++) {
--            atoms[n] = members->props[j]->name;
--            names[n++] = atom_sv(members->props[j]->name);
-+            atoms[n] = GCM(members->props[j])->name;
-+            names[n++] = atom_sv(GCM(members->props[j])->name);
-         }
+@@ -167,7 +167,7 @@ Ty const* class_item_accessor_evaluate_type(ClassItem* me) {
      }
-     isize best = spelling_suggestion(atom_sv(name), names, n);
-diff --git a/src/binding.c b/src/binding.c
-index da911a8..1119d4e 100644
---- a/src/binding.c
-+++ b/src/binding.c
-@@ -1054,7 +1054,7 @@ static bool report_widening_errors_in_type(Checker* checker, Ty const* ty, Error
-     } else if (ty->kind == TY_ANONYMOUS && ty->anonymous.object_literal) {
-         Members const* members = ty_members(checker, ty);
-         for (u32 i = 0; i < members->prop_count; i++) {
--            Prop const* prop = members->props[i];
-+            Prop const* prop = GCM(members->props[i]);
-             if (prop->decl->function) continue;
-             Ty const* t = prop_type(checker, prop);
-             if (!(t->xflags & TYX_CONTAINS_WIDENING)) continue;
-diff --git a/src/ty/expr.c b/src/ty/expr.c
-index 39a0657..06652c4 100644
---- a/src/ty/expr.c
-+++ b/src/ty/expr.c
-@@ -477,7 +477,7 @@ static Atom const* reduction_key(Checker* me, Ty const* keyed, Ty const** key_ty
-             for (u32 k = 0; k < m->prop_count && !key; k++) {
-                 // (It is only a unit type if some member's own is: a literal and its primitive are the literal,
-                 // two literals never)
--                Atom const* name = m->props[k]->name;
-+                Atom const* name = GCM(m->props[k])->name;
-                 bool unit_somewhere = false;
-                 for (u32 q = 0; q < parts.len && !unit_somewhere; q++) {
-                     if (!(parts.data[q]->flags & TYF_OBJECT)) {
-@@ -485,12 +485,12 @@ static Atom const* reduction_key(Checker* me, Ty const* keyed, Ty const** key_ty
-                         unit_somewhere = t && ty_is_unit(t);
-                         continue;
-                     }
--                    Prop const* own = q == p ? m->props[k] : ty_get_prop(me, parts.data[q], name);
-+                    Prop const* own = q == p ? GCM(m->props[k]) : ty_get_prop(me, parts.data[q], name);
-                     unit_somewhere = own && ty_is_unit(prop_type(me, own));
-                 }
-                 Ty const* t = unit_somewhere ? ty_prop_type_of(me, keyed, name) : nullptr;
-                 if (t && ty_is_unit(t)) {
--                    key = m->props[k]->name;
-+                    key = GCM(m->props[k])->name;
-                     key_type = ty_regular(me, t);
-                 }
-             }
-@@ -498,9 +498,9 @@ static Atom const* reduction_key(Checker* me, Ty const* keyed, Ty const** key_ty
-     } else if (keyed && (keyed->flags & TYF_OBJECT)) {
-         Members const* m = ty_members(me, keyed);
-         for (u32 k = 0; k < m->prop_count && !key; k++) {
--            Ty const* t = prop_type(me, m->props[k]);
-+            Ty const* t = prop_type(me, GCM(m->props[k]));
-             if (ty_is_unit(t)) {
--                key = m->props[k]->name;
-+                key = GCM(m->props[k])->name;
-                 key_type = ty_regular(me, t);
-             }
-         }
-@@ -3658,7 +3658,7 @@ static void literal_builder_index(LiteralBuilder* builder) {
-         builder->indexed = 0;
+     Members const* members = ty_members(checker, ty_function_type(checker, &my method.func));
+     if (members->call_count != 1) return ty_intrinsic(checker, TY_ANY);
+-    Signature const* sig = members->call[0];
++    Signature const* sig = GCS(members->call[0]);
+     SigResolved const* sig_rs = signature_resolve(checker, sig);
+     if (my method.accessor == CLASS_ACCESSOR_GET) {
+         // (A unit type only, like tsc's getReturnTypeFromBody without a contextual type: a union of literals stays)
+@@ -1314,7 +1314,7 @@ static void class_check_override_modifiers(ClassDecl* me, Ty const* base, ErrorC
+             // checkMembersForOverrideModifier with baseTypes [any], getBaseConstructorTypeOfClass)
+             Ty const* apparent = ty_apparent_type(checker, constructor);
+             Members const* members = (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) ? ty_members(checker, apparent) : nullptr;
+-            Ty const* constructed = members && members->construct_count ? signature_return_type(checker, members->construct[0]) : nullptr;
++            Ty const* constructed = members && members->construct_count ? signature_return_type(checker, GCS(members->construct[0])) : nullptr;
+             if (constructed && (constructed->flags & TYF_ANY) && !(constructed->flags & TYF_ERROR)) {
+                 ctx.base_any = true;
+                 ctx.base = constructed;
+@@ -1361,7 +1361,7 @@ static void class_check_override_modifiers(ClassDecl* me, Ty const* base, ErrorC
+ static bool is_mixin_constructor_type(Checker* checker, Ty const* type) {
+     Members const* members = ty_members(checker, type);
+     if (members->construct_count != 1) return false;
+-    Signature const* sig = members->construct[0];
++    Signature const* sig = GCS(members->construct[0]);
+     SigResolved const* sig_rs = signature_resolve(checker, sig);
+     if (sig_rs->type_params.len || sig_rs->param_count != 1 || !sig_rs->params[0].rest) return false;
+     Ty const* param = sig_rs->params[0].type;
+@@ -1397,7 +1397,7 @@ static void class_check_mixin(ClassDecl* me, ErrorCtx* errs) {
      }
-     for (; builder->indexed < builder->count; builder->indexed++) {
--        builder->slots[literal_builder_probe(builder, builder->props[builder->indexed].name)] = (i32)builder->indexed;
-+        builder->slots[literal_builder_probe(builder, GCM(builder->props[builder->indexed]).name)] = (i32)builder->indexed;
+     Members const* members = ty_members(checker, ty_apparent_type(checker, base_constructor));
+     bool abstract = false;
+-    for (u32 i = 0; i < members->construct_count; i++) abstract |= (members->construct[i]->flags & SIGNATURE_ABSTRACT) != 0;
++    for (u32 i = 0; i < members->construct_count; i++) abstract |= (GCS(members->construct[i])->flags & SIGNATURE_ABSTRACT) != 0;
+     if (abstract && !my is_abstract) {
+         error_ctx_error_d(errs, span, 2797, "A mixin class that extends from a type variable containing an abstract construct "
+             "signature must also be declared 'abstract'.");
+@@ -1414,7 +1414,7 @@ static void class_check_base_accessibility(ClassDecl* me, ErrorCtx* errs) {
+     // (Every construct signature, the first private one outside its class reported: tsgo 7.1's
+     // getConstructorAccessibilityError, `typeof A & typeof B`)
+     for (u32 i = 0; i < members->construct_count; i++) {
+-        Signature const* sig = members->construct[i];
++        Signature const* sig = GCS(members->construct[i]);
+         while (sig && !sig->function && sig->target) sig = sig->target;
+         FunctionImpl const* function = sig ? sig->function : nullptr;
+         if (!function || !function_impl_rare(function)->constructed_class || function_impl_rare(function)->constructor_access != ACCESS_MODIFIER_PRIVATE) continue;
+diff --git a/src/expr.c b/src/expr.c
+index 862a4a952..68b17adac 100644
+--- a/src/expr.c
++++ b/src/expr.c
+@@ -1003,7 +1003,7 @@ static void instantiation_scan_part(Checker* checker, InstantiationScan* scan, T
+     } else if (type->flags & TYF_OBJECT) {
+         Members const* members = ty_members(checker, type);
+         for (u32 i = 0; i < members->call_count + members->construct_count; i++) {
+-            Signature const* sig = i < members->call_count ? members->call[i] : members->construct[i - members->call_count];
++            Signature const* sig = i < members->call_count ? GCS(members->call[i]) : GCS(members->construct[i - members->call_count]);
+             scan->has_signatures = true;
+             SigResolved const* sig_rs = signature_resolve(checker, sig);
+             u32 min = 0;
+@@ -1059,7 +1059,7 @@ void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
+     u32 total = members->call_count + members->construct_count;
+     bool fits = false;
+     for (u32 i = 0; i < total; i++) {
+-        Signature const* each = i < members->call_count ? members->call[i] : members->construct[i - members->call_count];
++        Signature const* each = i < members->call_count ? GCS(members->call[i]) : GCS(members->construct[i - members->call_count]);
+         SigResolved const* each_res = signature_resolve(checker, each);
+         u32 min = 0;
+         for (u32 j = 0; j < each_res->type_params.len; j++) {
+@@ -1070,7 +1070,7 @@ void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
+         if (!check_type_argument_constraints(checker, me, each, errs)) break;
      }
- }
- 
-@@ -3669,7 +3669,7 @@ static ObjectLiteralProp* literal_builder_find(LiteralBuilder* builder, Atom con
-         return at >= 0 ? &builder->props[at] : nullptr;
+     if (!fits && total) {
+-        Signature const* first = members->call_count ? members->call[0] : members->construct[0];
++        Signature const* first = members->call_count ? GCS(members->call[0]) : GCS(members->construct[0]);
+         signature_resolve(checker, first);
+         check_type_argument_constraints(checker, me, first, errs);
      }
-     for (u32 i = 0; i < builder->count; i++) {
--        if (builder->props[i].name == name) return &builder->props[i];
-+        if (GCM(builder->props[i]).name == name) return &builder->props[i];
-     }
-     return nullptr;
- }
-@@ -3760,12 +3760,12 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
-             LiteralBuilder part = {0};
-             spread_props_of(me, member, partial, readonly, &part);
-             for (u32 j = 0; j < part.count; j++) {
--                ObjectLiteralProp* existing = literal_builder_find(&all, part.props[j].name);
-+                ObjectLiteralProp* existing = literal_builder_find(&all, GCM(part.props[j]).name);
-                 if (!existing) {
--                    literal_builder_add(&all, part.props[j]);
-+                    literal_builder_add(&all, GCM(part.props[j]));
-                     continue;
-                 }
--                if (!(part.props[j].flags & PROP_OPTIONAL)) {
-+                if (!(GCM(part.props[j]).flags & PROP_OPTIONAL)) {
-                     existing->flags &= ~(u32)PROP_OPTIONAL;
-                     existing->parent = nullptr;
-                 }
-@@ -3776,33 +3776,33 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
-         for (u32 j = 0; j < all.count; j++) {
-             all.props[j].parent = nullptr; // (A property of the intersection: a symbol of its own)
-             // (Several members' (a class method among them too): tsc's createUnionOrIntersectionProperty makes a Property)
--            if ((all.props[j].flags & PROP_METHOD) && object->composite.types.len <= 64) {
-+            if ((GCM(all.props[j]).flags & PROP_METHOD) && object->composite.types.len <= 64) {
-                 Prop const* having[64];
-                 u32 count = 0;
-                 for (u32 i = 0; i < object->composite.types.len; i++) {
-                     Ty const* member = ty_apparent_type(me, object->composite.types.data[i]);
-                     if (!(member->flags & (TYF_OBJECT | TYF_INTERSECTION))) continue;
--                    FoundProp found = ty_find_prop(me, member, all.props[j].name);
-+                    FoundProp found = ty_find_prop(me, member, GCM(all.props[j]).name);
-                     if (found.found && found.prop) having[count++] = found.prop;
-                 }
-                 if (count > 1 && ty_props_distinct(me, having, count)) all.props[j].flags &= ~(u32)PROP_METHOD;
-             }
--            Ty const* type = ty_access(me, object, ty_prop_name_literal(me, all.props[j].name));
-+            Ty const* type = ty_access(me, object, ty_prop_name_literal(me, GCM(all.props[j]).name));
-             // (Under exactOptionalPropertyTypes the optional property's type is the read's, missing included)
-             bool exact = compiler_options()->exact_optional_property_types && compiler_options()->strict_null_checks;
--            if (type && exact && (all.props[j].flags & PROP_OPTIONAL)) {
-+            if (type && exact && (GCM(all.props[j]).flags & PROP_OPTIONAL)) {
-                 all.props[j].type = type;
--                literal_builder_add(out, all.props[j]);
-+                literal_builder_add(out, GCM(all.props[j]));
-                 continue;
-             }
--            if (type && (all.props[j].flags & PROP_OPTIONAL) && !partial) type = ty_without_undefined(me, type);
-+            if (type && (GCM(all.props[j]).flags & PROP_OPTIONAL) && !partial) type = ty_without_undefined(me, type);
-             if (type) {
--                all.props[j].type = (all.props[j].flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks ?
-+                all.props[j].type = (GCM(all.props[j]).flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks ?
-                     optional_type(me, type) : type;
-                 // (`asserted` stays: the types baseline reuses it where it still says the same, like tsc does the
-                 // annotation of the intersection property's first declaration)
-             }
--            literal_builder_add(out, all.props[j]);
-+            literal_builder_add(out, GCM(all.props[j]));
-         }
-         // (The intersection's index signatures: one per key type, of the intersection of the members' value types, tsc's
-         // getIndexInfosOfType with resolveIntersectionTypeMembers' appendIndexInfo)
-@@ -3816,7 +3816,7 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
-     }
-     Members const* members = ty_members(me, object);
-     for (u32 j = 0; j < members->prop_count; j++) {
--        Prop const* prop = members->props[j];
-+        Prop const* prop = GCM(members->props[j]);
-         if (prop->flags & (PROP_PRIVATE | PROP_PROTECTED)) literal_builder_skip(out, prop->name);
-         if (!ty_is_spreadable_prop(me, prop)) continue;
-         if ((prop->flags & PROP_METHOD) && prop->decl->function) continue; // (a class method)
-@@ -3966,7 +3966,7 @@ static ObjectLiteralProp spread_accessor(Checker* me, ObjectLiteralProp prop, bo
- static void spread_into(Checker* me, LiteralBuilder* left, LiteralBuilder const* right, bool readonly) {
-     LiteralBuilder result = {0};
-     for (u32 i = 0; i < right->count; i++) {
--        ObjectLiteralProp spread = spread_accessor(me, right->props[i], readonly);
-+        ObjectLiteralProp spread = spread_accessor(me, GCM(right->props[i]), readonly);
-         ObjectLiteralProp const* r = &spread;
-         ObjectLiteralProp* l = literal_builder_find(left, r->name);
-         if (!l || !(r->flags & PROP_OPTIONAL)) {
-@@ -4005,9 +4005,9 @@ static void spread_into(Checker* me, LiteralBuilder* left, LiteralBuilder const*
-         literal_builder_add(&result, merged);
-     }
-     for (u32 i = 0; i < left->count; i++) {
--        if (literal_builder_skips(right, left->props[i].name)) continue;
--        if (!literal_builder_find((LiteralBuilder*)right, left->props[i].name)) {
--            literal_builder_add(&result, spread_accessor(me, left->props[i], readonly));
-+        if (literal_builder_skips(right, GCM(left->props[i]).name)) continue;
-+        if (!literal_builder_find((LiteralBuilder*)right, GCM(left->props[i]).name)) {
-+            literal_builder_add(&result, spread_accessor(me, GCM(left->props[i]), readonly));
-         }
-     }
-     // Index signatures: right's into nothing, else the keys both have (tsc's getUnionIndexInfos)
-@@ -4429,7 +4429,7 @@ static void push_missing_discriminators(
-         if (!(part->flags & TYF_OBJECT)) continue;
-         Members const* members = ty_members(me, part);
-         for (u32 i = 0; i < members->prop_count; i++) {
--            Atom const* name = members->props[i]->name;
-+            Atom const* name = GCM(members->props[i])->name;
-             if (name == skip || has(literal, me, name)) continue;
-             // A property of the union (every member has it), optional if it is in some member
-             bool in_all = true, optional = false;
-@@ -5715,7 +5715,7 @@ static Ty const* object_literal_rechecked(Checker* me, Expr const* expr, Ty cons
-     ObjectLiteralProp* props = calloc(members->prop_count ? members->prop_count : 1, sizeof(ObjectLiteralProp));
-     bool changed = false;
-     for (u32 i = 0; i < members->prop_count; i++) {
--        Prop const* prop = members->props[i];
-+        Prop const* prop = GCM(members->props[i]);
-         props[i] = (ObjectLiteralProp){ .reuse = prop };
-         ObjectExprItem const* item = prop->decl->item;
-         if (!item || item->tag != OBJECT_ITEM_PROPERTY || prop->decl->function || !prop->decl->literal_own) continue;
-@@ -6406,7 +6406,7 @@ static Ty const* object_literal_access(Checker* me, Ty const* object, Ty const*
-             part = ty_intrinsic(me, TY_UNDEFINED);
-         } else if (!part && (keys.data[i]->flags & (TYF_STRING | TYF_NUMBER))) {
-             Members const* members = ty_members(me, object);
--            for (u32 j = 0; j < members->prop_count; j++) ty_buf_push(&parts, prop_type(me, members->props[j]));
-+            for (u32 j = 0; j < members->prop_count; j++) ty_buf_push(&parts, prop_type(me, GCM(members->props[j])));
-             part = ty_intrinsic(me, TY_UNDEFINED);
-         }
-         if (!part) {
-diff --git a/src/ty/ty_display.c b/src/ty/ty_display.c
-index 925e12b..7151dbd 100644
---- a/src/ty/ty_display.c
-+++ b/src/ty/ty_display.c
-@@ -3385,7 +3385,7 @@ static bool type_prints_type(Checker* me, Ty const* ty, Ty const* target, u32 de
-             if (ty->anonymous.applies_type_args) return false;
-             Members const* members = ty_members(me, ty);
-             for (u32 i = 0; i < members->prop_count; i++) {
--                if (type_prints_type(me, prop_type(me, members->props[i]), target, depth + 1)) return true;
-+                if (type_prints_type(me, prop_type(me, GCM(members->props[i])), target, depth + 1)) return true;
-             }
-             return false;
-         }
-@@ -5232,14 +5232,14 @@ static bool prop_declared_at(Prop const* prop, ObjectExprItem const* item) {
- static Prop const* pseudo_member_prop(Members const* members, ObjectExprItem const* item, u32 hint) {
-     csview name = item->computed_key ? (csview){0} : cstr_sv(&item->name_string);
-     if (name.size) {
--        if (hint < members->prop_count && csview_equals_sv(atom_sv(members->props[hint]->name), name)) return members->props[hint];
-+        if (hint < members->prop_count && csview_equals_sv(atom_sv(GCM(members->props[hint])->name), name)) return GCM(members->props[hint]);
-         for (u32 i = 0; i < members->prop_count; i++) {
--            if (csview_equals_sv(atom_sv(members->props[i]->name), name)) return members->props[i];
-+            if (csview_equals_sv(atom_sv(GCM(members->props[i])->name), name)) return GCM(members->props[i]);
-         }
-     }
--    if (hint < members->prop_count && prop_declared_at(members->props[hint], item)) return members->props[hint];
-+    if (hint < members->prop_count && prop_declared_at(GCM(members->props[hint]), item)) return GCM(members->props[hint]);
-     for (u32 i = 0; i < members->prop_count; i++) {
--        if (prop_declared_at(members->props[i], item)) return members->props[i];
-+        if (prop_declared_at(GCM(members->props[i]), item)) return GCM(members->props[i]);
-     }
-     return nullptr;
- }
-@@ -5330,7 +5330,7 @@ static bool pseudo_equivalent(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty
-             }
-             Members const* members = ty_members(me, stripped);
-             u32 declarations = 0;
--            for (u32 i = 0; i < members->prop_count; i++) declarations += prop_declaration_count(members->props[i]);
-+            for (u32 i = 0; i < members->prop_count; i++) declarations += prop_declaration_count(GCM(members->props[i]));
-             if (declarations != pseudo->count) return false;
-             for (u32 i = 0; i < pseudo->count; i++) {
-                 PseudoMember const* member = &pseudo->members[i];
-@@ -6029,7 +6029,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
-             cut = true;
-             i = members->prop_count - 1;
-         }
--        Prop const* prop = members->props[i];
-+        Prop const* prop = GCM(members->props[i]);
-         if (d.tracker) {
-             if (d.tracker->truncated) break;
-             if (track_property(me, d, prop)) continue;
-@@ -6418,7 +6418,7 @@ static bool is_mixin_static_side(Checker* me, Ty const* ty) {
- static u32 written_prop_count(TyDisplay d, Members const* members) {
-     u32 count = members->prop_count;
-     if (!d.tracker) return count;
--    for (u32 i = 0; i < members->prop_count; i++) count -= (members->props[i]->flags & PROP_PROTOTYPE) != 0;
-+    for (u32 i = 0; i < members->prop_count; i++) count -= (GCM(members->props[i])->flags & PROP_PROTOTYPE) != 0;
-     return count;
- }
- 
-@@ -7472,7 +7472,7 @@ static bool object_literal_is_context_sensitive(Checker* me, Ty const* ty, u32 d
-     if (depth > 4) return false;
-     Members const* members = ty_members(me, ty);
-     for (u32 i = 0; i < members->prop_count; i++) {
--        Prop const* prop = members->props[i];
-+        Prop const* prop = GCM(members->props[i]);
-         if (prop->decl->function && ty_function_is_context_sensitive(prop->decl->function)) return true;
-         Ty const* type = prop_type_peek(me, prop);
-         if (!type || type->kind != TY_ANONYMOUS || type->anonymous.target) continue;
-@@ -7543,7 +7543,7 @@ Scope const* ty_report_enclosing(Checker* me, Ty const* ty) {
-     // (Where a property written in the literal is: one spread from elsewhere was written elsewhere)
-     Span at = span_null;
-     for (u32 i = 0; i < members->prop_count && !span_valid(at); i++) {
--        if (members->props[i]->decl->literal_own) at = members->props[i]->decl->name_span;
-+        if (GCM(members->props[i])->decl->literal_own) at = GCM(members->props[i])->decl->name_span;
-     }
-     // (Else where the literal is: one of spread properties only)
-     if (!span_valid(at) && ty->anonymous.literal_expr) at = ty->anonymous.literal_expr->inner_span;
-diff --git a/src/ty/ty.h b/src/ty/ty.h
-index de6b11d..689e754 100644
---- a/src/ty/ty.h
-+++ b/src/ty/ty.h
-@@ -718,6 +718,8 @@ struct Prop {
-     bool synthetic : 1;
-     // A mapped type's template: the properties that target it are the mapped type's (tsc's getTypeOfMappedSymbol)
-     bool is_template : 1;
-+    bool gc_inst : 1;
-+    bool gc_seen : 1;
-     Symbol const* parent; // the declared type it was declared in, may be null
-     Prop const* target;
-     TyMapper const* mapper;
-@@ -728,6 +730,13 @@ struct Prop {
- };
- // (Millions of instantiated ones: zod's are 86 MB at 80 bytes)
- static_assert(sizeof(Prop) == 56);
-+void gc_seen_inst(void);
-+static inline void gc_mark_any(int is_prop, void const* addr) {
-+    if (!is_prop) return;
-+    Prop* p = *(Prop* const*)addr;
-+    if (p && !p->gc_seen) { p->gc_seen = 1; if (p->gc_inst) gc_seen_inst(); }
-+}
-+#define GCM(x) __extension__ ({ __auto_type gc_v_ = (x); gc_mark_any(_Generic(gc_v_, Prop*: 1, Prop const*: 1, Prop* const: 1, Prop const* const: 1, default: 0), &gc_v_); gc_v_; })
- // The type as published, null if it isn't (not computed, in flight, or poisoned with --shared-graph)
- static inline Ty const* prop_type_known(Prop const* prop) {
-     uintptr_t v = sw_load(&prop->type);
-diff --git a/src/ty/taint.c b/src/ty/taint.c
-index d83df3b..9f7893c 100644
---- a/src/ty/taint.c
-+++ b/src/ty/taint.c
-@@ -383,7 +383,7 @@ static void complete(unsigned kind, TaintFrame frame, u64 key, void const* subje
-         u64 owner = 0;
-         for (u32 i = 0; i < members->prop_count; i++) {
-             bool inserted;
--            u64* slot = map_find(&prop_owners, (u64)(uintptr_t)members->props[i], true, true, &inserted);
-+            u64* slot = map_find(&prop_owners, (u64)(uintptr_t)GCM(members->props[i]), true, true, &inserted);
-             if (!inserted) continue;
-             if (!owner) owner = fp_ty(subject);
-             *slot = fp_mix(owner, i) | 1;
-diff --git a/src/ty/relate.c b/src/ty/relate.c
-index 7bc4ef0..78aaf27 100644
---- a/src/ty/relate.c
-+++ b/src/ty/relate.c
-@@ -964,7 +964,7 @@ static bool constraint_resolves_through(Checker* me, Ty const* ty, Ty const* sou
-         if (!(object->flags & TYF_OBJECT) || ty_is_generic_object(me, object) || !ty_is_generic_index(ty->indexed.index)) return false;
-         Members const* members = ty_members(me, object);
-         for (u32 i = 0; i < members->prop_count; i++) {
--            if (constraint_resolves_through(me, prop_type(me, members->props[i]), source, declared, depth + 1)) return true;
-+            if (constraint_resolves_through(me, prop_type(me, GCM(members->props[i])), source, declared, depth + 1)) return true;
-         }
-     }
-     return false;
-@@ -1268,7 +1268,7 @@ static bool exact_optional_unassignable_in(Checker* me, Ty const* source, Ty con
-     if (!(owner->flags & TYF_OBJECT)) return false;
-     Members const* members = ty_members(me, owner);
-     for (u32 i = 0; i < members->prop_count; i++) {
--        Prop const* target_prop = members->props[i];
-+        Prop const* target_prop = GCM(members->props[i]);
-         Ty const* target_type;
-         if (owner != target) {
-             // (A union's or an intersection's property is the combined one)
-@@ -1741,7 +1741,7 @@ static bool is_static_private_name(Checker* me, Prop const* prop);
- // require_optional)
- static bool has_unmatched_target_prop(Checker* me, Ty const* source, Members const* target_members, u32 from, bool require_optional) {
-     for (u32 i = from; i < target_members->prop_count; i++) {
--        Prop const* target_prop = target_members->props[i];
-+        Prop const* target_prop = GCM(target_members->props[i]);
-         if (target_prop->flags & PROP_PROTOTYPE) continue;
-         if ((target_prop->flags & PROP_OPTIONAL) && !require_optional) continue;
-         if (source_has_prop(me, source, target_prop->name, 0) || is_static_private_name(me, target_prop)) continue;
-@@ -2800,7 +2800,7 @@ static Ternary props_related_impl(
-         Prop const* missing_prop = nullptr;
-         u32 missing_count = 0;
-         for (u32 i = 0; i < target_members->prop_count; i++) {
--            Prop const* target_prop = target_members->props[i];
-+            Prop const* target_prop = GCM(target_members->props[i]);
-             // (Untyped: tsc's getUnmatchedProperties asks getPropertyOfType)
-             if ((target_prop->flags & PROP_OPTIONAL) || source_has_prop(me, source, target_prop->name, 0)) continue;
-             if (is_static_private_name(me, target_prop)) continue;
-@@ -2911,7 +2911,7 @@ static Ternary props_related_impl(
- 
-     Ternary result = TERNARY_TRUE;
-     for (u32 i = 0; i < target_members->prop_count; i++) {
--        Prop const* target_prop = target_members->props[i];
-+        Prop const* target_prop = GCM(target_members->props[i]);
-         if (optionals_only && !(target_prop->flags & PROP_OPTIONAL)) continue;
-         // (A class's `prototype` is what its construct signatures return: tsc's propertiesRelatedTo skips it)
-         if (target_prop->flags & PROP_PROTOTYPE) continue;
-@@ -3098,7 +3098,7 @@ static SourceProp* source_props(Checker* me, Ty const* source, Members const* so
-     for (u32 i = 0; i < parts.len; i++) {
-         Members const* members = source->kind == TY_INTERSECTION ? ty_members(me, parts.data[i]) : source_members;
-         for (u32 j = 0; j < members->prop_count; j++) {
--            Prop const* prop = members->props[j];
-+            Prop const* prop = GCM(members->props[j]);
-             SourceProp entry = { .prop = prop, .type = nullptr, .flags = prop->flags };
-             if (source->kind == TY_INTERSECTION) {
-                 bool seen = false;
-@@ -3298,7 +3298,7 @@ static bool is_numeric_prop_name(Atom const* name);
- static bool has_numeric_props(Checker* me, Ty const* ty) {
-     Members const* members = ty_members(me, ty);
-     for (u32 i = 0; i < members->prop_count; i++) {
--        if (is_numeric_prop_name(members->props[i]->name)) return true;
-+        if (is_numeric_prop_name(GCM(members->props[i])->name)) return true;
-     }
-     return false;
- }
-@@ -4191,7 +4191,7 @@ static bool could_access_optional_property(Checker* me, Ty const* object, Ty con
-     if (!index_constraint) return false;
-     Members const* members = ty_members(me, object);
-     for (u32 i = 0; i < members->prop_count; i++) {
--        Prop const* prop = members->props[i];
-+        Prop const* prop = GCM(members->props[i]);
-         if (!(prop->flags & PROP_OPTIONAL)) continue;
-         Ty const* key = ty_prop_key_literal(me, prop);
-         if (key && ty_is_related(me, key, index_constraint, TY_RELATION_ASSIGNABLE)) return true;
-@@ -4522,9 +4522,9 @@ static Ty const* apparent_mapped_type_keys(Checker* me, MappedInfo const* mapped
-         // (A generic mapped part has the properties of the lower bound of its keys, `Omit<E[T], K>` those every E[T]
-         // has: tsc's getPropertiesOfType resolves its members)
-         for (u32 i = 0; i < members->prop_count + members->index_count; i++) {
--            Ty const* key = i < members->prop_count ? ty_prop_key_literal(me, members->props[i]) :
-+            Ty const* key = i < members->prop_count ? ty_prop_key_literal(me, GCM(members->props[i])) :
-                 members->index[i - members->prop_count].key;
--            if (i < members->prop_count && (members->props[i]->flags & (PROP_PRIVATE | PROP_PROTECTED))) continue;
-+            if (i < members->prop_count && (GCM(members->props[i])->flags & (PROP_PRIVATE | PROP_PROTECTED))) continue;
-             TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &key, .len = 1 });
-             ty_buf_push(&keys, ty_instantiate(me, mapped->name_type, mapper));
-         }
-@@ -4556,8 +4556,8 @@ Ty const* ty_mapped_type_name_keys(Checker* me, MappedInfo const* mapped) {
-                 return nullptr;
-             }
-             for (u32 i = 0; i < members->prop_count; i++) {
--                if (!ty_prop_is_key(me, members->props[i])) continue;
--                ty_buf_push(&part_keys, ty_prop_key_literal(me, members->props[i]));
-+                if (!ty_prop_is_key(me, GCM(members->props[i]))) continue;
-+                ty_buf_push(&part_keys, ty_prop_key_literal(me, GCM(members->props[i])));
-             }
-             for (u32 i = 0; i < members->index_count; i++) ty_buf_push(&part_keys, members->index[i].key);
-         }
-@@ -5278,7 +5278,7 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
-         if (!(part->flags & TYF_OBJECT)) continue;
-         Members const* source_members = ty_members(me, part);
-         for (u32 i = 0; i < source_members->prop_count; i++) {
--            Prop const* prop = source_members->props[i];
-+            Prop const* prop = GCM(source_members->props[i]);
-             bool seen = false;
-             for (u32 d = 0; d < count && !seen; d++) seen = discriminants[d] == prop->name;
-             if (seen || !ty_is_discriminant_property(me, object_target, prop->name)) continue;
-@@ -5348,7 +5348,7 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
-             }
-             Members const* part_members = ty_members(me, part);
-             for (u32 i = 0; i < part_members->prop_count && result; i++) {
--                Atom const* name = part_members->props[i]->name;
-+                Atom const* name = GCM(part_members->props[i])->name;
-                 bool skip = false;
-                 for (u32 d = 0; d < count; d++) skip |= discriminants[d] == name;
-                 Ty const* name_type = ty_prop_name_literal(me, name);
-@@ -5360,7 +5360,7 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
-                 // `Omit<Node, 'shape'>` to Node while ShapeID is resolving)
-                 FoundProp source_prop = find_prop(me, apparent, name, 0);
-                 if (!source_prop.found) {
--                    u32 target_flags = part_members->props[i]->flags;
-+                    u32 target_flags = GCM(part_members->props[i])->flags;
-                     if (member->kind == TY_INTERSECTION) {
-                         FoundProp target_prop = find_prop(me, member, name, 0);
-                         if (!target_prop.found) continue;
-@@ -5557,7 +5557,7 @@ structural:;
-     if (source_members->prop_count != target_members->prop_count) return TERNARY_FALSE;
-     Ternary result = TERNARY_TRUE;
-     for (u32 i = 0; i < source_members->prop_count && result; i++) {
--        Prop const* source_prop = source_members->props[i];
-+        Prop const* source_prop = GCM(source_members->props[i]);
-         Prop const* target_prop = ty_get_prop(me, target, source_prop->name);
-         if (!target_prop) return TERNARY_FALSE;
-         result &= props_identical(me, st, source_prop, target_prop);
-@@ -5695,7 +5695,7 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
-     for (u32 m = 0; m < members.len && result; m++) {
-         Members const* member = ty_members(me, members.data[m]);
-         for (u32 i = 0; i < member->prop_count && result; i++) {
--            Atom const* name = member->props[i]->name;
-+            Atom const* name = GCM(member->props[i])->name;
-             // Each name once: at the first member that has it
-             bool seen = false;
-             for (u32 earlier = 0; earlier < m && !seen; earlier++) seen = ty_get_prop(me, members.data[earlier], name) != nullptr;
-@@ -5745,11 +5745,11 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
-                     // (tsc names the member the property is in)
-                     cstr source_str, target_str;
-                     display_pair(me, source, true, members.data[m], &source_str, &target_str);
--                    cstr prop_name = ty_prop_written_name(me, member->props[i]);
-+                    cstr prop_name = ty_prop_written_name(me, GCM(member->props[i]));
-                     report_line(st, 2741, cstr_d(
-                         "Property '", prop_name, "' is missing in type '", source_str, "' but required in type '", target_str, "'."
-                     ));
--                    report_related(st, 2728, cstr_d("'", prop_name, "' is declared here."), ty_prop_decl_span(member->props[i]));
-+                    report_related(st, 2728, cstr_d("'", prop_name, "' is declared here."), ty_prop_decl_span(GCM(member->props[i])));
-                     c_drop(cstr, &source_str, &target_str, &prop_name);
-                 }
-                 result = TERNARY_FALSE;
-@@ -7612,7 +7612,7 @@ static Ty const* discriminated_union_target(
-     }
-     bool discriminated = false;
-     for (u32 p = 0; p < prop_count; p++) {
--        Prop const* prop = props ? props[p].prop : members->props[p];
-+        Prop const* prop = props ? props[p].prop : GCM(members->props[p]);
-         if (!ty_is_discriminant_property(me, target, prop->name)) continue;
-         *discriminants = true;
-         Ty const* prop_ty = props ? props[p].type : prop_type(me, prop);
-@@ -7758,7 +7758,7 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
-             index_keys = members->index_count > 0;
-             props = malloc(sizeof(SourceProp) * (prop_count ? prop_count : 1));
-             panic_if(!props, "out of memory");
--            for (u32 p = 0; p < prop_count; p++) props[p] = (SourceProp){ .prop = members->props[p] };
-+            for (u32 p = 0; p < prop_count; p++) props[p] = (SourceProp){ .prop = GCM(members->props[p]) };
-         }
-         u32 best_count = 0;
-         // An intersection with a type variable among its members has generic keys (`keyof (undefined & T)` is
-@@ -7794,7 +7794,7 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
-                 Ty const* apparent = apparent_type(me, keyed);
-                 Members const* target_members = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty_members(me, apparent) : nullptr;
-                 for (u32 p = 0; target_members && p < target_members->prop_count; p++) {
--                    Atom const* name = target_members->props[p]->name;
-+                    Atom const* name = GCM(target_members->props[p])->name;
-                     if (!ty_get_prop(me, source, name) && ty_applicable_index_info(me, source, ty_prop_name_literal(me, name))) count++;
-                 }
-             }
-@@ -7895,7 +7895,7 @@ static void collect_prop_names(Checker* me, Ty const* ty, csview** names, u32* c
-             *names = realloc(*names, sizeof(csview) * *cap);
-             panic_if(!*names, "out of memory");
-         }
--        (*names)[(*count)++] = atom_sv(members->props[i]->name);
-+        (*names)[(*count)++] = atom_sv(GCM(members->props[i])->name);
-     }
- }
- 
-@@ -7947,7 +7947,7 @@ static bool has_excess_properties(Checker* me, RelationState* st, Ty const* sour
-     }
-     Members const* members = ty_members(me, source);
-     for (u32 i = 0; i < members->prop_count; i++) {
--        Prop const* prop = members->props[i];
-+        Prop const* prop = GCM(members->props[i]);
-         if (!prop->decl->literal_own) continue;
-         // A hyphenated JSX attribute (`data-x`) is never excess (tsc's isIgnoredJsxProperty)
-         if (is_jsx && csview_contains(atom_sv(prop->name), "-")) continue;
-@@ -8044,7 +8044,7 @@ static bool is_weak_type(Checker* me, Ty const* ty) {
-         return false;
-     }
-     for (u32 i = 0; i < members->prop_count; i++) {
--        if (!(members->props[i]->flags & PROP_OPTIONAL)) return false;
-+        if (!(GCM(members->props[i])->flags & PROP_OPTIONAL)) return false;
-     }
-     return true;
- }
-@@ -8071,8 +8071,8 @@ static bool lacks_common_properties(Checker* me, RelationState* st, Ty const* so
-         Members const* part = apparent->kind == TY_INTERSECTION ? ty_members(me, parts.data[p]) : members;
-         ret |= part->prop_count != 0;
-         for (u32 i = 0; i < part->prop_count; i++) {
--            if (is_known_property(me, target, part->props[i]->name)) return false;
--            if (is_jsx && csview_contains(atom_sv(part->props[i]->name), "-")) return false; // `data-x`
-+            if (is_known_property(me, target, GCM(part->props[i])->name)) return false;
-+            if (is_jsx && csview_contains(atom_sv(GCM(part->props[i])->name), "-")) return false; // `data-x`
-         }
-     }
-     return ret;
 diff --git a/src/ty/members.c b/src/ty/members.c
-index 283d387..a98adbd 100644
+index 5078eb201..6e0f7da90 100644
 --- a/src/ty/members.c
 +++ b/src/ty/members.c
-@@ -8,6 +8,20 @@
+@@ -8,6 +8,15 @@
  #include "enum_decl.h"
  #include "compiler_options.h"
  
-+// GRAPH CENSUS (worker graph, never committed)
 +#include <stdatomic.h>
-+static _Atomic unsigned long gc_c[16];
-+enum { GC_PROPS_ALLOC, GC_INST_PROPS, GC_INST_SHARED, GC_INST_TYPED, GC_INST_SAME, GC_INST_SIGS, GC_INST_SIG_RES, GC_INST_MEMBERS, GC_SIG_RES_ALL, GC_DECL_TYPED, GC_INST_IDX, GC_INST_SEEN };
-+void gc_seen_inst(void);
-+static void gc_print(void) {
++static _Atomic unsigned long gc_sig_c[8];
++void gc_sig(int kind) { atomic_fetch_add_explicit(&gc_sig_c[kind], 1, memory_order_relaxed); }
++static void gc_sig_print(void) {
 +    if (!getenv("TTTT_GRAPH_CENSUS")) return;
-+    static char const* n[] = {"props_alloc","inst_props","inst_props_shared_thisless","inst_props_typed","inst_props_typed_same_as_target","inst_sigs","inst_sigs_resolved","inst_members","sigs_resolved_all","declared_props_typed","inst_index_infos","inst_props_seen"};
-+    for (int i = 0; i < 12; i++) fprintf(stderr, "GC %s %lu\n", n[i], (unsigned long)gc_c[i]);
++    fprintf(stderr, "GS made %lu touched %lu resolved %lu returned %lu instance_members %lu\n", (unsigned long)gc_sig_c[0], (unsigned long)gc_sig_c[1], (unsigned long)gc_sig_c[2], (unsigned long)gc_sig_c[3], (unsigned long)gc_sig_c[4]);
 +}
-+__attribute__((constructor)) static void gc_init(void) { atexit(gc_print); }
-+#define GC(i) atomic_fetch_add_explicit(&gc_c[i], 1, memory_order_relaxed)
-+void gc_seen_inst(void) { GC(GC_INST_SEEN); }
++__attribute__((constructor)) static void gc_sig_init(void) { atexit(gc_sig_print); }
 +
  // tsc's isReadonlyAssignmentDeclaration of `Object.defineProperty(o, "x", descriptor)`: written as an object literal
  // that is syntax (expr_define_property_readonly()); any other descriptor goes by its type (checkExpressionCached):
  // without `value` readonly unless it has `set`, with one unless `writable` is there and not `false`
-@@ -85,7 +99,7 @@ static bool prop_decl_shared(PropDecl const* decl) {
- 
- // A property without a declaration of its own
- static Prop* prop_new(Checker* me) {
--    Prop* prop = arena_new(&my arena, Prop);
-+    Prop* prop = (GC(GC_PROPS_ALLOC), arena_new(&my arena, Prop));
-     prop->decl = prop_decl_none();
-     return prop;
- }
-@@ -559,7 +573,7 @@ static void builder_sort_class_members(MembersBuilder* builder, u32 own_props, S
-     bool joins = false;
-     isize_t container_full[4] = { -1, -1, -1, -1 };
-     for (u32 i = own_props; container && i < builder->props_count && !joins; i++) {
--        Prop const* prop = builder->props[i];
-+        Prop const* prop = GCM(builder->props[i]);
-         while (prop && !prop->decl->decl_span_count && prop->target) prop = prop->target;
-         if (!prop || !prop->decl->decl_span_count || !span_source(prop->decl->decl_spans[0])) continue;
-         Span d = prop->decl->decl_spans[0];
-@@ -587,7 +601,7 @@ static void builder_sort_contained_first(MembersBuilder* builder, u32 own_props,
-     u32 first = own_props, others = 0;
-     isize_t container_full[4] = { -1, -1, -1, -1 };
-     for (u32 i = own_props; i < builder->props_count; i++) {
--        Prop* prop = builder->props[i];
-+        Prop* prop = GCM(builder->props[i]);
-         Prop const* declared = prop;
-         while (declared && !declared->decl->decl_span_count && declared->target) declared = declared->target;
-         bool contained = false;
-@@ -616,7 +630,7 @@ static void builder_sort_contained_first(MembersBuilder* builder, u32 own_props,
- // (inherited ones, expandos), the synthetic `prototype`, which has no declaration, after them
- static void builder_prototype_last(MembersBuilder* builder) {
-     for (u32 i = 0; i < builder->props_count; i++) {
--        Prop* prop = builder->props[i];
-+        Prop* prop = GCM(builder->props[i]);
-         if (!(prop->flags & PROP_PROTOTYPE)) continue;
-         builder_unindex(builder);
-         memmove(builder->props + i, builder->props + i + 1, sizeof(Prop*) * (builder->props_count - i - 1));
-@@ -660,7 +674,7 @@ static Members const* builder_finish(Checker* me, MembersBuilder* builder) {
-         ret->by_name = index ? index : prop_name_index_new(me, builder->props, count);
-     } else {
-         u64 filter = 0;
--        for (u32 i = 0; i < count; i++) filter |= ty_prop_filter_bit(builder->props[i]->name);
-+        for (u32 i = 0; i < count; i++) filter |= ty_prop_filter_bit(GCM(builder->props[i])->name);
-         ret->props_filter = filter;
-     }
- #define FINISH(field, count_field, T) \
-@@ -1147,11 +1161,11 @@ static void builder_add_interface(
-             ty_buf_push(&types, i->optional ? ty_optional_prop_type(me, type) : type);
+@@ -1250,8 +1259,8 @@ static void builder_add_parts_members(Checker* me, MembersBuilder* builder, Ty c
+             builder_push(builder, props, prop);
          }
-         for (u32 j = 0; j < builder->props_count; j++) {
--            Atom const* name = builder->props[j]->name;
-+            Atom const* name = GCM(builder->props[j])->name;
-             bool symbol_name = ty_unique_symbol_of_name(me, name) != nullptr;
-             bool included = k == 0 ? !symbol_name : k == 1 ? ty_is_numeric_name(name) : symbol_name;
-             if (included) {
--                Ty const* type = prop_type(me, builder->props[j]);
-+                Ty const* type = prop_type(me, GCM(builder->props[j]));
-                 ty_buf_push(&types, type);
-             }
-         }
-@@ -1210,7 +1224,7 @@ static void builder_add_parts_members(Checker* me, MembersBuilder* builder, Ty c
-         if (!(listed->flags & TYF_OBJECT)) continue;
-         Members const* members = ty_members(me, listed);
-         for (u32 j = 0; j < members->prop_count; j++) {
--            Prop* prop = members->props[j];
-+            Prop* prop = GCM(members->props[j]);
-             if (builder_find_prop(builder, prop->name)) continue;
-             found_len = 0;
-             u32 own = 0;
-@@ -1222,7 +1236,7 @@ static void builder_add_parts_members(Checker* me, MembersBuilder* builder, Ty c
-             if (found_len > 1 && ty_props_distinct(me, found_props, found_len)) {
-                 FoundProp found = ty_find_prop(me, base, prop->name);
-                 if (!found.found) continue;
--                Prop* merged = arena_new(&my arena, Prop);
-+                Prop* merged = (GC(GC_PROPS_ALLOC), arena_new(&my arena, Prop));
-                 *merged = (Prop){
-                     .name = prop->name, .flags = found.flags, .parent = prop->parent, .target = prop,
-                     .type = { SW_VAL(found.type) }, .decl = prop_decl_none(), .synthetic = true,
-@@ -1298,25 +1312,25 @@ static void builder_add_inherited(Checker* me, MembersBuilder* builder, Ty const
-         slots = calloc(hash_cap, sizeof(u32));
-         panic_if(!slots, "out of memory");
-         for (u32 j = 0; j < own; j++) {
--            u32 h = (u32)(((uintptr_t)builder->props[j]->name >> 3) * 0x9E3779B1u) & (hash_cap - 1);
--            while (slots[h] && builder->props[slots[h] - 1]->name != builder->props[j]->name) h = (h + 1) & (hash_cap - 1);
-+            u32 h = (u32)(((uintptr_t)GCM(builder->props[j])->name >> 3) * 0x9E3779B1u) & (hash_cap - 1);
-+            while (slots[h] && builder->props[slots[h] - 1]->name != GCM(builder->props[j])->name) h = (h + 1) & (hash_cap - 1);
-             if (!slots[h]) slots[h] = j + 1;
-         }
-     }
-     for (u32 i = 0; i < members->prop_count; i++) {
-         // A static `#x` stays the base's (tsc's isStaticPrivateIdentifierProperty in addInheritedMembers)
--        if ((members->props[i]->flags & PROP_STATIC) && ty_private_name_class(me, members->props[i]->name)) continue;
--        Atom const* name = members->props[i]->name;
-+        if ((GCM(members->props[i])->flags & PROP_STATIC) && ty_private_name_class(me, GCM(members->props[i])->name)) continue;
-+        Atom const* name = GCM(members->props[i])->name;
-         Prop* derived = nullptr;
-         if (slots) {
-             u32 h = (u32)(((uintptr_t)name >> 3) * 0x9E3779B1u) & (hash_cap - 1);
-             while (slots[h] && builder->props[slots[h] - 1]->name != name) h = (h + 1) & (hash_cap - 1);
-             if (slots[h]) derived = builder->props[slots[h] - 1];
-         } else {
--            for (u32 j = 0; j < own && !derived; j++) if (builder->props[j]->name == name) derived = builder->props[j];
-+            for (u32 j = 0; j < own && !derived; j++) if (GCM(builder->props[j])->name == name) derived = GCM(builder->props[j]);
-         }
-         // (A JavaScript `this.x = v` member overrides too: tsgo's addInheritedMembers)
--        if (!derived) builder_push(builder, props, members->props[i]);
-+        if (!derived) builder_push(builder, props, GCM(members->props[i]));
-     }
+         if (props_only || union_part) continue;
+-        for (u32 j = 0; j < members->call_count; j++) builder_push(builder, call, members->call[j]);
+-        for (u32 j = 0; j < members->construct_count; j++) builder_push(builder, construct, members->construct[j]);
++        for (u32 j = 0; j < members->call_count; j++) builder_push(builder, call, GCS(members->call[j]));
++        for (u32 j = 0; j < members->construct_count; j++) builder_push(builder, construct, GCS(members->construct[j]));
+         for (u32 j = 0; j < members->index_count; j++) {
+             bool has_own = false;
+             for (u32 k = 0; k < builder->index_count; k++) has_own |= builder->index[k].key == members->index[j].key;
+@@ -1333,8 +1342,8 @@ static void builder_add_inherited(Checker* me, MembersBuilder* builder, Ty const
      free(slots);
      // Signatures of the bases come after the type's own (they're overloads of each other). An index signature is
-@@ -2037,13 +2051,13 @@ static void builder_add_computed_index_infos(Checker* me, MembersBuilder* builde
-             ty_buf_push(&types, optional ? ty_optional_prop_type(me, type) : type);
+     // inherited unless the derived type declares its own
+-    for (u32 i = 0; i < members->call_count; i++) builder_push(builder, call, members->call[i]);
+-    for (u32 i = 0; i < members->construct_count; i++) builder_push(builder, construct, members->construct[i]);
++    for (u32 i = 0; i < members->call_count; i++) builder_push(builder, call, GCS(members->call[i]));
++    for (u32 i = 0; i < members->construct_count; i++) builder_push(builder, construct, GCS(members->construct[i]));
+     for (u32 i = 0; i < members->index_count; i++) {
+         bool has_own = false;
+         for (u32 j = 0; j < builder->index_count; j++) has_own |= builder->index[j].key == members->index[i].key;
+@@ -1380,7 +1389,7 @@ bool ty_base_constructors_fit(Checker* me, Ty const* constructor, u32 count, boo
+     Members const* members = ty_members(me, constructor);
+     if (!members->construct_count) return true;
+     for (u32 i = 0; i < members->construct_count; i++) {
+-        Signature const* sig = members->construct[i];
++        Signature const* sig = GCS(members->construct[i]);
+         SigResolved const* sig_rs = signature_resolve(me, sig);
+         TyList params = sig_rs->type_params;
+         u32 min = 0;
+@@ -1531,8 +1540,8 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
+         Ty const* constructed = nullptr;
+         for (u32 i = 0; i < members->construct_count && !constructed; i++) {
+             TyMapper const* mapper;
+-            if (!base_signature_type_args(me, members->construct[i], written_args, ctx, &mapper)) continue;
+-            constructed = signature_return_type(me, members->construct[i]);
++            if (!base_signature_type_args(me, GCS(members->construct[i]), written_args, ctx, &mapper)) continue;
++            constructed = signature_return_type(me, GCS(members->construct[i]));
+             if (mapper) constructed = ty_instantiate(me, constructed, mapper);
          }
-         for (u32 j = 0; j < builder->props_count; j++) {
--            Atom const* name = builder->props[j]->name;
-+            Atom const* name = GCM(builder->props[j])->name;
-             bool symbol_name = ty_unique_symbol_of_name(me, name) != nullptr;
-             bool included = k == 0 ? !symbol_name : k == 1 ? ty_is_numeric_name(name) : symbol_name;
-             // (The static side's `prototype` too: tsc's class exports have it, "all static string indexers include the
-             // instance type")
-             if (included) {
--                Ty const* type = prop_type(me, builder->props[j]);
-+                Ty const* type = prop_type(me, GCM(builder->props[j]));
-                 ty_buf_push(&types, type);
+         if (!constructed || !is_valid_base_type(me, constructed, 0)) {
+@@ -2527,7 +2536,7 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder,
+             Expr const* extends = &class_decl->extends;
+             VecSpannedType const* written = extends->tag == EXPR_GENERIC_PARAMS ? &extends->generic_params->params : nullptr;
+             for (u32 i = 0; i < expr_members->construct_count; i++) {
+-                Signature const* base_sig = expr_members->construct[i];
++                Signature const* base_sig = GCS(expr_members->construct[i]);
+                 TyMapper const* mapper;
+                 if (!base_signature_type_args(me, base_sig, written, ctx, &mapper)) continue;
+                 Signature* sig = class_construct_signature(me, class_decl, instance);
+@@ -2542,7 +2551,7 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder,
+                 nullptr;
+             for (u32 i = 0; i < base_members->construct_count; i++) {
+                 Signature* sig = class_construct_signature(me, class_decl, instance);
+-                sig->target = base_members->construct[i];
++                sig->target = GCS(base_members->construct[i]);
+                 sig->mapper = mapper;
+                 builder_push(builder, construct, sig);
              }
-         }
-@@ -2332,7 +2346,7 @@ static void builder_add_class_items(
-     // between the two (`get x(); x: number; set x(v)`, one symbol) after them. Put back those within the class (not
-     // others: late-bound declarations come after the early ones, see resolve_declared_members())
-     for (u32 j = 0; j < builder->props_count; j++) {
--        Prop* prop = builder->props[j];
-+        Prop* prop = GCM(builder->props[j]);
-         u32 count = prop->decl->decl_span_count;
-         if (count < 3 || !(prop->flags & PROP_ACCESSOR) || prop->decl == prop_decl_none()) continue;
-         Span const* spans = prop->decl->decl_spans;
-@@ -2424,7 +2438,7 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder,
-     // exports): symbols baseline only, the type stays a type. Same for an expando assignment of a static property
-     if (instance_decl->exports) {
-         for (u32 i = 0; i < builder->props_count; i++) {
--            Prop* prop = builder->props[i];
-+            Prop* prop = GCM(builder->props[i]);
-             if (prop == prototype || !(prop->flags & PROP_STATIC)) continue;
-             Symbol const* exported = symbol_table_get(instance_decl->exports, atom_sv(prop->name));
-             // (An expando assignment `C.x = v` too, a property, which a static property joins: not a method)
-@@ -2560,9 +2574,9 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder,
-         Members const* base_members = ty_members(me, base_constructor);
-         for (u32 i = 0; i < base_members->prop_count; i++) {
-             // A static `#x` isn't inherited (tsc's addInheritedMembers: isStaticPrivateIdentifierProperty)
--            if (ty_private_name_class(me, base_members->props[i]->name)) continue;
--            if (!builder_find_prop(builder, base_members->props[i]->name)) {
--                builder_push(builder, props, base_members->props[i]);
-+            if (ty_private_name_class(me, GCM(base_members->props[i])->name)) continue;
-+            if (!builder_find_prop(builder, GCM(base_members->props[i])->name)) {
-+                builder_push(builder, props, GCM(base_members->props[i]));
-             }
-         }
-     }
-@@ -2698,7 +2712,7 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Ty co
-                 Ty const* entry = entries[i];
-                 if (entry->kind != TY_DECLARED || entry->declared.kind != TY_DECLARED_NAMESPACE) continue;
-                 Members const* members = ty_members(me, entry);
--                for (u32 j = 0; j < members->prop_count; j++) builder_push(&early, props, (Prop*)members->props[j]);
-+                for (u32 j = 0; j < members->prop_count; j++) builder_push(&early, props, (Prop*)GCM(members->props[j]));
-             }
-             set_early_members(me, state, builder_finish(me, &early));
-         }
-@@ -2714,28 +2728,28 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Ty co
-         if (!(entry->flags & TYF_OBJECT)) continue;
-         Members const* members = ty_members(me, entry);
-         for (u32 j = 0; j < members->prop_count; j++) {
--            Prop* existing = builder_find_prop(builder, members->props[j]->name);
-+            Prop* existing = builder_find_prop(builder, GCM(members->props[j])->name);
-             bool is_shared = false;
-             for (u32 k = 0; existing && k < shared.len && !is_shared; k++) is_shared = (Prop const*)(void const*)shared.data[k] == existing;
-             if (is_shared) {
--                Prop* copy = arena_new(&my arena, Prop);
-+                Prop* copy = (GC(GC_PROPS_ALLOC), arena_new(&my arena, Prop));
-                 prop_copy_into(me, copy, existing, true);
--                for (u32 k = 0; k < builder->props_count; k++) if (builder->props[k] == existing) builder->props[k] = copy;
-+                for (u32 k = 0; k < builder->props_count; k++) if (GCM(builder->props[k]) == existing) builder->props[k] = copy;
-                 existing = copy;
-             }
-             // (Unless the export is an alias, `export import X = ...`, which has no value flags of its own: the inherited
-             // static stays, tsgo's addInheritedMembers replaces a member without SymbolFlagsValue)
-             Symbol const* own_export = existing && existing->parent && existing->parent != decl ?
--                symbol_get_export(decl, atom_sv(members->props[j]->name)) : nullptr;
-+                symbol_get_export(decl, atom_sv(GCM(members->props[j])->name)) : nullptr;
-             if (own_export && (own_export->flags & SYMBOL_ALIAS) && !(own_export->flags & SYMBOL_VALUE)) continue;
--            if (existing && existing->parent && existing->parent != decl && members->props[j]->parent == decl) {
-+            if (existing && existing->parent && existing->parent != decl && GCM(members->props[j])->parent == decl) {
-                 // The symbol's own export (a JavaScript class's expando `C.x = v`) hides a static the class inherits
-                 // (tsc: the class's exports come before the base constructor's members). The props here are copies
--                prop_copy_into(me, existing, members->props[j], false); // (Its type resolved again unless known)
-+                prop_copy_into(me, existing, GCM(members->props[j]), false); // (Its type resolved again unless known)
-             } else if (existing) {
--                prop_add_shared_decl_spans(me, existing, members->props[j]->decl->decl_spans, members->props[j]->decl->decl_span_count);
-+                prop_add_shared_decl_spans(me, existing, GCM(members->props[j])->decl->decl_spans, GCM(members->props[j])->decl->decl_span_count);
-             } else {
--                Prop* prop = (Prop*)members->props[j];
-+                Prop* prop = (Prop*)GCM(members->props[j]);
-                 ty_buf_push(&shared, (Ty const*)(void const*)prop);
+@@ -2753,14 +2762,14 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Ty co
                  builder_push(builder, props, prop);
              }
-@@ -3245,7 +3259,7 @@ static bool base_is_dynamic(Checker* me, Ty const* base, u32 depth) {
- static Members const* complete_members(Checker* me, Members const* raw, Symbol const* container) {
+         }
+-        for (u32 j = 0; j < members->call_count; j++) builder_push(builder, call, members->call[j]);
+-        for (u32 j = 0; j < members->construct_count; j++) builder_push(builder, construct, members->construct[j]);
++        for (u32 j = 0; j < members->call_count; j++) builder_push(builder, call, GCS(members->call[j]));
++        for (u32 j = 0; j < members->construct_count; j++) builder_push(builder, construct, GCS(members->construct[j]));
+         for (u32 j = 0; j < members->index_count; j++) builder_push(builder, index, members->index[j]);
+         // A function declared in several places (lib.dom's `setTimeout` and @types/node's `declare global` one): each
+         // place's overloads are a group, and overload resolution tries the later groups first (reorder_candidates)
+         // (tsc's signature.declaration.parent: the block the declaration is in)
+         for (u32 j = 0; entry_count > 1 && j < members->call_count; j++) {
+-            FunctionImpl const* function = members->call[j]->function;
++            FunctionImpl const* function = GCS(members->call[j])->function;
+             if (!function || ty_decl_group(me, function)) continue;
+             void const* parent = entry;
+             u32 count = decl->decl_count;
+@@ -3216,7 +3225,7 @@ bool ty_class_base_constructors_differ(Checker* me, ClassDecl const* class_decl,
+     LowerCtx ctx = { .generic = declared && declared->kind == TY_DECLARED &&
+         (declared->declared.type_params.len || declared->declared.this_param) };
+     for (u32 i = 0; i < members->construct_count; i++) {
+-        Signature const* sig = members->construct[i];
++        Signature const* sig = GCS(members->construct[i]);
+         TyMapper const* mapper;
+         if (!base_signature_type_args(me, sig, written_args, ctx, &mapper)) continue;
+         Signature const* root = sig;
+@@ -3274,8 +3283,8 @@ static Members const* complete_members(Checker* me, Members const* raw, Symbol c
      if (!members_rare(raw)->base_count) return raw;
      MembersBuilder builder = {0};
--    for (u32 i = 0; i < raw->prop_count; i++) builder_push(&builder, props, raw->props[i]);
-+    for (u32 i = 0; i < raw->prop_count; i++) builder_push(&builder, props, GCM(raw->props[i]));
-     for (u32 i = 0; i < raw->call_count; i++) builder_push(&builder, call, raw->call[i]);
-     for (u32 i = 0; i < raw->construct_count; i++) builder_push(&builder, construct, raw->construct[i]);
+     for (u32 i = 0; i < raw->prop_count; i++) builder_push(&builder, props, members_prop(me, raw, i));
+-    for (u32 i = 0; i < raw->call_count; i++) builder_push(&builder, call, raw->call[i]);
+-    for (u32 i = 0; i < raw->construct_count; i++) builder_push(&builder, construct, raw->construct[i]);
++    for (u32 i = 0; i < raw->call_count; i++) builder_push(&builder, call, GCS(raw->call[i]));
++    for (u32 i = 0; i < raw->construct_count; i++) builder_push(&builder, construct, GCS(raw->construct[i]));
      for (u32 i = 0; i < raw->index_count; i++) builder_push(&builder, index, raw->index[i]);
-@@ -3683,7 +3697,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
-                 if (host && host != decl) {
-                     Members const* expandos = ty_members(me, ty_namespace_type(me, host));
-                     for (u32 i = 0; i < expandos->prop_count; i++) {
--                        if (!builder_find_prop(&builder, expandos->props[i]->name)) builder_push(&builder, props, expandos->props[i]);
-+                        if (!builder_find_prop(&builder, GCM(expandos->props[i])->name)) builder_push(&builder, props, GCM(expandos->props[i]));
-                     }
+     for (u32 i = 0; i < members_rare(raw)->base_count; i++) builder_add_inherited(me, &builder, members_rare(raw)->bases[i]);
+     // (tsgo's getNamedMembers: the members declared in the type first, then the inherited ones, all of them by where
+@@ -3676,8 +3685,8 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
+                 u32 calls = builder.call_count, constructs = builder.construct_count;
+                 builder_add_inherited(me, &builder, bases.data[i]);
+                 if (bases.data[i] == written_bases.data[i]) {
+-                    for (u32 j = calls; j < builder.call_count; j++) ty_buf_push(&thisless, (Ty const*)(void const*)builder.call[j]);
+-                    for (u32 j = constructs; j < builder.construct_count; j++) ty_buf_push(&thisless, (Ty const*)(void const*)builder.construct[j]);
++                    for (u32 j = calls; j < builder.call_count; j++) ty_buf_push(&thisless, (Ty const*)(void const*)GCS(builder.call[j]));
++                    for (u32 j = constructs; j < builder.construct_count; j++) ty_buf_push(&thisless, (Ty const*)(void const*)GCS(builder.construct[j]));
                  }
-                 builder_prototype_last(&builder);
-@@ -3723,7 +3737,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
-             if (ty->declared.namespace_symbol->is_global_this) {
-                 Atom const* name = checker_atom(me, c_sv("undefined"));
-                 if (!builder_find_prop(&builder, name)) {
--                    Prop* prop = arena_new(&my arena, Prop);
-+                    Prop* prop = (GC(GC_PROPS_ALLOC), arena_new(&my arena, Prop));
-                     *prop = (Prop){ .name = name, .decl = prop_decl_none() };
-                     prop_type_init(prop, ty_intrinsic(me, TY_UNDEFINED_WIDENING));
-                     builder_push(&builder, props, prop);
-@@ -3827,18 +3841,21 @@ static Members const* instantiate_members(
-         builder.props_cap = source->prop_count;
-     }
-     for (u32 i = 0; i < source->prop_count; i++) {
--        if (this_only && source->props[i]->thisless) {
--            builder_push(&builder, props, source->props[i]);
-+        if (this_only && GCM(source->props[i])->thisless) {
-+            GC(GC_INST_SHARED);
-+            builder_push(&builder, props, GCM(source->props[i]));
-             continue;
-         }
--        Prop* prop = arena_new(&my arena, Prop);
-+        GC(GC_INST_PROPS);
-+        Prop* prop = (GC(GC_PROPS_ALLOC), arena_new(&my arena, Prop));
-         *prop = (Prop){
--            .name = source->props[i]->name,
--            .flags = source->props[i]->flags,
--            .parent = source->props[i]->parent,
--            .target = source->props[i],
-+            .name = GCM(source->props[i])->name,
-+            .flags = GCM(source->props[i])->flags,
-+            .parent = GCM(source->props[i])->parent,
-+            .target = GCM(source->props[i]),
-             .mapper = mapper,
-             .decl = prop_decl_none(),
-+            .gc_inst = true,
-         };
-         builder_push(&builder, props, prop);
-     }
-@@ -3869,6 +3886,7 @@ static Members const* instantiate_members(
-                 }
-                 continue;
              }
-+            GC(GC_INST_SIGS);
-             Signature* sig = arena_new(&my arena, Signature);
-             *sig = (Signature){
-                 .flags = sigs[i]->flags, .target = sigs[i], .mapper = mapper,
-@@ -3882,7 +3900,9 @@ static Members const* instantiate_members(
-             }
-         }
-     }
-+    GC(GC_INST_MEMBERS);
-     for (u32 i = 0; i < source->index_count; i++) {
-+        GC(GC_INST_IDX);
-         IndexInfo info = source->index[i];
-         info.key = ty_instantiate(me, info.key, mapper);
-         info.value = ty_instantiate(me, info.value, mapper);
-@@ -4244,7 +4264,7 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
-     template->is_template = true;
-     MembersBuilder builder = { .mapped = mapped };
-     for (u32 i = 0; i < source->prop_count; i++) {
--        Prop const* from = source->props[i];
-+        Prop const* from = GCM(source->props[i]);
-         if (!ty_prop_is_key(me, from)) continue;
-         Ty const* key = ty_prop_key_literal(me, from);
-         TyMapper const* mapper = ty_mapper_new(
-@@ -4258,7 +4278,7 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
-         }
-         if (mapped->readonly > 0) flags |= PROP_READONLY;
-         if (mapped->readonly < 0) flags &= ~(u32)PROP_READONLY;
--        Prop* prop = arena_new(&my arena, Prop);
-+        Prop* prop = (GC(GC_PROPS_ALLOC), arena_new(&my arena, Prop));
-         // (A mapped symbol: declarations but no valueDeclaration in tsc)
-         *prop = (Prop){ .name = from->name, .flags = flags | PROP_NO_VALUE_DECLARATION, .target = template, .mapper = mapper,
-             .decl = prop_decl_none() };
-@@ -4339,7 +4359,7 @@ static Members const* expand_generic_intersection_homomorphic(Checker* me, Membe
-             if (!(source_type->flags & TYF_OBJECT)) continue;
-             Members const* source = ty_members(me, source_type);
-             for (u32 i = 0; i < source->prop_count; i++) {
--                Prop const* from = source->props[i];
-+                Prop const* from = GCM(source->props[i]);
-                 if (!ty_prop_is_key(me, from) || builder_find_prop(&builder, from->name)) continue;
-                 // Optional only if every part that has it has it optional, readonly if any has it readonly
-                 u32 flags = from->flags & (PROP_OPTIONAL | PROP_READONLY);
-@@ -4370,7 +4390,7 @@ static Members const* expand_generic_intersection_homomorphic(Checker* me, Membe
-                 TyMapper const* mapper = ty_mapper_new(
-                     me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &key, .len = 1 }
-                 );
--                Prop* prop = arena_new(&my arena, Prop);
-+                Prop* prop = (GC(GC_PROPS_ALLOC), arena_new(&my arena, Prop));
-                 // (A mapped symbol: declarations but no valueDeclaration in tsc)
-                 *prop = (Prop){ .name = from->name, .flags = flags | PROP_NO_VALUE_DECLARATION, .target = template, .mapper = mapper,
-                     .decl = prop_decl_none() };
-@@ -4689,8 +4709,8 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
-             if (!(part->flags & TYF_OBJECT)) continue;
-             Members const* source = ty_members(me, part);
-             for (u32 i = 0; i < source->prop_count + source->index_count; i++) {
--                if (i < source->prop_count && !ty_prop_is_key(me, source->props[i])) continue;
--                Ty const* key = i < source->prop_count ? ty_prop_key_literal(me, source->props[i]) :
-+                if (i < source->prop_count && !ty_prop_is_key(me, GCM(source->props[i]))) continue;
-+                Ty const* key = i < source->prop_count ? ty_prop_key_literal(me, GCM(source->props[i])) :
-                     source->index[i - source->prop_count].key;
-                 bool seen = false;
-                 for (u32 j = 0; j < key_count && !seen; j++) seen = member_keys[j] == key;
-@@ -4787,7 +4807,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
-                 }
-                 if (mapped->readonly > 0) flags |= PROP_READONLY;
-                 if (mapped->readonly < 0) flags &= ~(u32)PROP_READONLY;
--                Prop* prop = arena_new(&my arena, Prop);
-+                Prop* prop = (GC(GC_PROPS_ALLOC), arena_new(&my arena, Prop));
-                 *prop = (Prop){
-                     .name = name,
-                     .flags = flags,
-@@ -4899,7 +4919,7 @@ static ThisProps const* array_this_props(Checker* me, MembersBuilder const* buil
-     Prop const* found[256];
-     u32 count = 0;
-     for (u32 i = first; i < builder->props_count && count < c_arraylen(found); i++) {
--        Prop const* declared = builder->props[i]->target;
-+        Prop const* declared = GCM(builder->props[i])->target;
-         if (!declared) continue;
-         Ty const* type = prop_type(me, declared);
-         // (Or may: a method of an interface declared more than once (Array, in every lib) whose anonymous type has
-@@ -4928,9 +4948,9 @@ static void retarget_this_props(Checker* me, MembersBuilder* builder, u32 first,
-     if (!this_props->count) return;
-     TyMapper const* mapper = nullptr;
-     for (u32 i = first; i < builder->props_count; i++) {
--        Prop const* from = builder->props[i];
-+        Prop const* from = GCM(builder->props[i]);
-         bool mentions = false;
--        for (u32 j = 0; j < this_props->count && !mentions; j++) mentions = from->target == this_props->props[j];
-+        for (u32 j = 0; j < this_props->count && !mentions; j++) mentions = from->target == GCM(this_props->props[j]);
-         if (!mentions) continue;
-         if (!mapper) {
-             TyList params = target->declared.type_params;
-@@ -4947,7 +4967,7 @@ static void retarget_this_props(Checker* me, MembersBuilder* builder, u32 first,
-             mapper = ty_mapper_new(me, (TyList){ .data = sources, .len = params.len + 1 },
-                 (TyList){ .data = targets, .len = params.len + 1 });
-         }
--        Prop* prop = arena_new(&my arena, Prop);
-+        Prop* prop = (GC(GC_PROPS_ALLOC), arena_new(&my arena, Prop));
-         *prop = (Prop){ .name = from->name, .flags = from->flags, .parent = from->parent, .target = from->target,
-             .mapper = mapper, .decl = prop_decl_none() };
-         builder->props[i] = prop;
-@@ -5050,9 +5070,9 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
-             // (builder_add_inherited(): the own names are `length` and the elements' indices)
-             Members const* members = ty_members(me, array);
-             for (u32 i = 0; i < members->prop_count; i++) {
--                Atom const* name = members->props[i]->name;
-+                Atom const* name = GCM(members->props[i])->name;
+             builder_sort_class_members(&builder, own_props, decl); // (Inherited ones by declaration, see complete_members())
+@@ -3874,6 +3883,7 @@ static Members const* instantiate_members(
+     // (At most the source's: one allocation rather than a growing one. Without bases nothing is added past the
+     // source's, and they are the result's arrays: in the arena, as builder_finish() would copy them)
+     bool lazy = !members_rare(source)->base_count;
++    if (source->call_count + source->construct_count) gc_sig(4);
+     if (lazy) {
+         builder.arena_arrays = true;
+ #define RESERVE(field, count) \
+@@ -3951,6 +3961,7 @@ static Members const* instantiate_members(
+                 .drops_mapped_type_params = applies_type_args,
+                 .name_span = sigs[i]->name_span, .decl_span = sigs[i]->decl_span,
+             };
++            sig->gc_inst = 1; gc_sig(0);
+             if (pass) {
+                 builder_push(&builder, construct, sig);
+             } else {
+@@ -5133,8 +5144,8 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
                  if (name == length_prop->name || is_index_name_below(name, fixed)) continue;
--                builder_push(&builder, props, members->props[i]);
-+                builder_push(&builder, props, GCM(members->props[i]));
+                 builder_push(&builder, props, members_prop(me, members, i));
              }
-             for (u32 i = 0; i < members->call_count; i++) builder_push(&builder, call, members->call[i]);
-             for (u32 i = 0; i < members->construct_count; i++) builder_push(&builder, construct, members->construct[i]);
-@@ -5075,7 +5095,7 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
-         if (fixed > 10) {
-             u32 const* order = decimal_order(me, fixed);
-             for (u32 i = 0; i < fixed; i++) own[i] = builder.props[order[i]];
--            own[fixed] = builder.props[fixed]; // (`length` sorts after every digit)
-+            own[fixed] = GCM(builder.props[fixed]); // (`length` sorts after every digit)
+-            for (u32 i = 0; i < members->call_count; i++) builder_push(&builder, call, members->call[i]);
+-            for (u32 i = 0; i < members->construct_count; i++) builder_push(&builder, construct, members->construct[i]);
++            for (u32 i = 0; i < members->call_count; i++) builder_push(&builder, call, GCS(members->call[i]));
++            for (u32 i = 0; i < members->construct_count; i++) builder_push(&builder, construct, GCS(members->construct[i]));
+             for (u32 i = 0; i < members->index_count; i++) builder_push(&builder, index, members->index[i]);
          } else {
-             memcpy(own, builder.props, sizeof(Prop*) * (fixed + 1));
-         }
-@@ -5296,7 +5316,7 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
-                 if (host) {
-                     Members const* expandos = ty_members(me, ty_namespace_type(me, host));
-                     for (u32 i = 0; i < expandos->prop_count; i++) {
--                        builder_push(&builder, props, expandos->props[i]);
-+                        builder_push(&builder, props, GCM(expandos->props[i]));
-                     }
-                 }
-             } else if (ty->anonymous.overload_count) {
-@@ -5317,7 +5337,7 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
-                 // (tsc 6's getNamedMembers puts the late-bound ones back in declaration order: the members are in it
-                 // already unless there are some)
-                 bool late = false;
--                for (u32 i = 0; i < builder.props_count && !late; i++) late = name_span_is_late_bound(builder.props[i]->decl->name_span);
-+                for (u32 i = 0; i < builder.props_count && !late; i++) late = name_span_is_late_bound(GCM(builder.props[i])->decl->name_span);
-                 if (late) builder_sort_stable(&builder);
+             builder_add_inherited(me, &builder, array);
+@@ -5423,7 +5434,7 @@ bool ty_sig_param_adds_undefined(SigParam const* param) {
+ 
+ static bool is_mixin_constructor(Checker* me, Members const* members) {
+     if (members->construct_count != 1) return false;
+-    Signature const* sig = members->construct[0];
++    Signature const* sig = GCS(members->construct[0]);
+     SigResolved const* sig_rs = signature_resolve(me, sig);
+     if (sig_rs->type_params.len || sig_rs->param_count != 1 || !sig_rs->params[0].rest) return false;
+     Ty const* type = sig_rs->params[0].type;
+@@ -5484,7 +5495,7 @@ static Members const* resolve_intersection_members(Checker* me, Ty const* ty) {
+         Members const* members = parts[i];
+         if (!mixin[i]) {
+             for (u32 j = 0; j < members->construct_count; j++) {
+-                Signature* sig = members->construct[j];
++                Signature* sig = GCS(members->construct[j]);
+                 if (mixins) {
+                     // (tsc's includeMixinType: the mixins' instances, this one's in its place)
+                     Ty const** mixed = malloc(sizeof(Ty const*) * types.len);
+@@ -5507,7 +5518,7 @@ static Members const* resolve_intersection_members(Checker* me, Ty const* ty) {
+                 builder_add_signature(me, &builder, sig, true);
              }
-             return builder_finish(me, &builder);
-@@ -5549,13 +5569,13 @@ Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name) {
-         while (lo < hi) {
-             u32 mid = lo + (hi - lo) / 2;
-             Atom const* mid_name = index->names[mid];
--            if (mid_name == name) return members->props[index->order[mid]];
-+            if (mid_name == name) return GCM(members->props[index->order[mid]]);
-             if ((uintptr_t)mid_name < (uintptr_t)name) lo = mid + 1; else hi = mid;
          }
-         return nullptr;
+-        for (u32 j = 0; j < members->call_count; j++) builder_add_signature(me, &builder, members->call[j], false);
++        for (u32 j = 0; j < members->call_count; j++) builder_add_signature(me, &builder, GCS(members->call[j]), false);
+         for (u32 j = 0; j < members->index_count; j++) {
+             IndexInfo info = members->index[j];
+             bool merged = false;
+@@ -6116,13 +6127,13 @@ static Signature const* jsdoc_tag_single_signature(Checker* me, FunctionImpl con
+     Members const* members = ty_members(me, type);
+     if (members->call_count != 1 || members->construct_count || members->index_count || members->prop_count) return nullptr;
+     // (Not the function's own signature: `@type {MyClass}` on `function MyClass`, which is TS8030)
+-    for (Signature const* i = members->call[0]; i; i = sig_target(me, i)) {
++    for (Signature const* i = GCS(members->call[0]); i; i = sig_target(me, i)) {
+         if (i->function == function) {
+             *self = true;
+             return nullptr;
+         }
      }
-     for (u32 i = 0; i < members->prop_count; i++) {
--        if (members->props[i]->name == name) return members->props[i];
-+        if (GCM(members->props[i])->name == name) return GCM(members->props[i]);
-     }
-     return nullptr;
+-    return members->call[0];
++    return GCS(members->call[0]);
  }
-@@ -5740,6 +5760,10 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
-         }
-     } else if (prop->target) {
-         type = instantiated_prop_type(me, prop);
-+        GC(GC_INST_TYPED);
-+        if (!prop->gc_seen) { prop->gc_seen = 1; if (prop->gc_inst) gc_seen_inst(); }
-+        if (!prop->mapped && prop_type_known(prop->target) == type) GC(GC_INST_SAME);
-+    } else if ((GC(GC_DECL_TYPED), 0)) {
-     } else if (prop_decl_rare(prop->decl)->overload_count) {
-         type = ty_anonymous_from_overloads(me, prop_decl_rare(prop->decl)->overloads, prop_decl_rare(prop->decl)->overload_count, prop->decl->ctx);
-     } else if (prop->decl->symbol) {
-@@ -6238,6 +6262,8 @@ SigResolved const* signature_resolve_slow(Checker* me, Signature const* const_si
+ 
+ // The renamed elements (`{ a: b }`) of a parameter pattern of a signature without a body, which
+@@ -6353,6 +6364,7 @@ SigResolved const* signature_resolve_slow(Checker* me, Signature const* const_si
+     u64 taint = sw_claim_fast(me, &sig->res, &sig->res_flight);
      TAINT_BEGIN(taint_frame);
      // (Filled privately: this worker's re-entries while it is in flight read what is resolved so far through its frame)
++    if (sig->gc_inst && !sig->gc_res) { sig->gc_res = 1; gc_sig(2); if (!sig->gc_seen) { sig->gc_seen = 1; gc_sig(1); } }
      SigResolved* r = arena_new(&my arena, SigResolved);
-+    GC(GC_SIG_RES_ALL);
-+    if (sig->target) GC(GC_INST_SIG_RES);
      r->target = sig->target;
      r->mapper = sig->mapper;
-     SigResolving frame = { .sig = sig, .res = r, .outer = my sig_resolving };
-@@ -6834,9 +6860,9 @@ static void context_props(Checker* me, WideningCtx* ctx) {
-         if (!ty_is_object_literal_without_spread(me, siblings->data[i])) continue;
-         Members const* members = ty_members(me, siblings->data[i]);
-         for (u32 j = 0; j < members->prop_count; j++) {
--            Prop const* prop = members->props[j];
-+            Prop const* prop = GCM(members->props[j]);
-             u32 k = 0;
--            while (k < ctx->prop_count && ctx->props[k]->name != prop->name) k++;
-+            while (k < ctx->prop_count && GCM(ctx->props[k])->name != prop->name) k++;
-             if (k == ctx->prop_count) {
-                 ctx->props = realloc(ctx->props, sizeof(Prop const*) * (ctx->prop_count + 1));
-                 panic_if(!ctx->props, "out of memory");
-@@ -6861,7 +6887,7 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
-     u32 capacity = members->prop_count + (ctx ? ctx->prop_count : 0);
-     ObjectLiteralProp* props = calloc(capacity ? capacity : 1, sizeof(ObjectLiteralProp));
-     for (u32 i = 0; i < members->prop_count; i++) {
--        Prop const* prop = members->props[i];
-+        Prop const* prop = GCM(members->props[i]);
-         // (An accessor pair a spread kept with its write type stays itself: tsc's getWidenedProperty returns what isn't a
-         // SymbolFlags.Property as it is)
-         if (!prop->decl->function && prop_write_type(me, prop)) {
-@@ -6900,9 +6926,9 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
-     }
-     u32 count = members->prop_count;
-     for (u32 i = 0; ctx && i < ctx->prop_count; i++) {
--        Prop const* prop = ctx->props[i];
-+        Prop const* prop = GCM(ctx->props[i]);
-         bool has = false;
--        for (u32 j = 0; j < members->prop_count && !has; j++) has = members->props[j]->name == prop->name;
-+        for (u32 j = 0; j < members->prop_count && !has; j++) has = GCM(members->props[j])->name == prop->name;
-         if (has) continue;
-         // (tsc's getUndefinedProperty: undefinedOrMissingType, missing under exactOptionalPropertyTypes, an absent
-         // value which getNonMissingTypeOfSymbol drops, so `x?: never` is how it prints. A copy of the context's
-@@ -7055,7 +7081,7 @@ static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
-         ObjectLiteralProp* props = calloc(members->prop_count ? members->prop_count : 1, sizeof(ObjectLiteralProp));
-         bool changed = false;
-         for (u32 i = 0; i < members->prop_count; i++) {
--            Prop const* prop = members->props[i];
-+            Prop const* prop = GCM(members->props[i]);
-             Ty const* type = prop->decl->function ? nullptr : prop_type(me, prop);
-             Ty const* widened = type ? widen_nullable(me, type, depth + 1) : type;
-             changed |= widened != type;
-@@ -7133,7 +7159,7 @@ Ty const* ty_regular_object_literal(Checker* me, Ty const* ty) {
-     Members const* members = ty_members(me, ty);
-     ObjectLiteralProp* props = calloc(members->prop_count ? members->prop_count : 1, sizeof(ObjectLiteralProp));
-     for (u32 i = 0; i < members->prop_count; i++) {
--        Prop const* prop = members->props[i];
-+        Prop const* prop = GCM(members->props[i]);
-         props[i] = (ObjectLiteralProp){
-             .name = prop->name,
-             .flags = prop->flags,
-diff --git a/src/ty/lower.c b/src/ty/lower.c
-index 503a28c..bec679b 100644
---- a/src/ty/lower.c
-+++ b/src/ty/lower.c
-@@ -2075,7 +2075,7 @@ static u32 intersection_props(Checker* me, Ty const* ty, ObjectLiteralProp** out
-         if (!(part->flags & TYF_OBJECT)) continue;
-         Members const* members = ty_members(me, part);
-         for (u32 i = 0; i < members->prop_count; i++) {
--            Prop const* prop = members->props[i];
-+            Prop const* prop = GCM(members->props[i]);
-             bool seen = false;
-             for (u32 k = 0; k < count && !seen; k++) seen = (*out)[k].name == prop->name;
-             if (seen) continue;
-@@ -2116,7 +2116,7 @@ static Ty const* with_synthetic_default(Checker* me, Ty const* type, bool spread
-         from = malloc(sizeof(ObjectLiteralProp) * (members->prop_count + 1));
-         panic_if(!from, "out of memory");
-         for (u32 i = 0; i < members->prop_count; i++) {
--            Prop const* prop = members->props[i];
-+            Prop const* prop = GCM(members->props[i]);
-             // (A class's methods, accessors and private or protected members don't spread: tsc's getSpreadType with
-             // isSpreadableProperty, `import * as R` of an `export = class R { static bundle() }` has no `bundle`)
-             if (!ty_is_spreadable_prop(me, prop)) continue;
-@@ -2158,7 +2158,7 @@ static Ty const* module_type_clone(Checker* me, Ty const* type, ObjectLiteralKin
-     Members const* members = ty_members(me, type);
-     if (members->call_count || members->construct_count) return nullptr;
-     ObjectLiteralProp* props = arena_new_n(&my arena, ObjectLiteralProp, members->prop_count + 1);
--    for (u32 i = 0; i < members->prop_count; i++) props[i] = (ObjectLiteralProp){ .reuse = members->props[i] };
-+    for (u32 i = 0; i < members->prop_count; i++) props[i] = (ObjectLiteralProp){ .reuse = GCM(members->props[i]) };
-     return ty_object_literal(me, props, members->prop_count, members->index, members->index_count, OBJECT_SYNTHETIC | kind);
+@@ -6474,6 +6486,7 @@ static Ty const* compute_signature_return(Checker* me, Signature* sig, SigResolv
+ static Ty const* signature_return_type_in(Checker* me, Signature* sig, SigResolved const* sig_rs);
+ 
+ static __attribute__((noinline)) Ty const* signature_return_type_slow(Checker* me, Signature* sig) {
++    if (sig->gc_inst && !sig->gc_ret) { sig->gc_ret = 1; gc_sig(3); }
+     return signature_return_type_in(me, sig, signature_resolve(me, sig));
  }
  
-@@ -3474,16 +3474,16 @@ static Ty const* intersection_rest_type(Checker* me, Ty const* source, TyList pa
-     for (u32 i = 0; i < parts.len; i++) {
-         Members const* members = ty_members(me, ty_apparent_type(me, parts.data[i]));
-         for (u32 j = 0; j < members->prop_count; j++) {
--            Atom const* name = members->props[j]->name;
-+            Atom const* name = GCM(members->props[j])->name;
-             bool seen = false;
-             for (u32 k = 0; k < count && !seen; k++) seen = props[k].name == name;
--            if (seen || pattern_names(me, pattern, name, prop_has_numeric_name(members->props[j]))) continue;
-+            if (seen || pattern_names(me, pattern, name, prop_has_numeric_name(GCM(members->props[j])))) continue;
-             FoundProp found = ty_find_prop(me, source, name);
-             if (!found.found || (found.flags & (PROP_PRIVATE | PROP_PROTECTED))) continue;
-             if (found.prop && !ty_is_spreadable_prop(me, found.prop)) continue;
-             // (One member's property, not the intersection's own: the same property unless that makes it writable,
-             // tsc's getSpreadSymbol)
--            Prop const* single = members->props[j];
-+            Prop const* single = GCM(members->props[j]);
-             for (u32 k = i + 1; k < parts.len && single; k++) {
-                 if (ty_get_prop(me, ty_apparent_type(me, parts.data[k]), name)) single = nullptr;
-             }
-@@ -3538,7 +3538,7 @@ static Ty const* generic_rest_type(Checker* me, Ty const* source, TyList pattern
-     if (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
-         Members const* members = ty_members(me, apparent);
-         for (u32 i = 0; i < members->prop_count; i++) {
--            Prop const* prop = members->props[i];
-+            Prop const* prop = GCM(members->props[i]);
-             // (tsc's getLiteralTypeFromProperty of every property, in order: the creation order its union goes by)
-             if (ty_is_spreadable_prop(me, prop)) continue;
-             // (A private or protected member, or a `#x`, has no key to omit: keyof lacks it already. tsc's
-@@ -3596,7 +3596,7 @@ static Ty const* object_rest_type(Checker* me, Ty const* source, TyList pattern,
-     panic_if(!props, "out of memory");
-     u32 count = 0;
-     for (u32 i = 0; i < members->prop_count; i++) {
--        Prop const* prop = members->props[i];
-+        Prop const* prop = GCM(members->props[i]);
-         if (!ty_is_spreadable_prop(me, prop)) continue;
-         if (pattern_names(me, pattern, prop->name, prop_has_numeric_name(prop))) continue;
-         // (tsc's getSpreadSymbol: the same property unless that makes it writable)
-@@ -3637,11 +3637,11 @@ static Ty const* with_pattern_props(Checker* me, Ty const* type, Ty const* patte
-     ObjectLiteralProp* props = malloc(sizeof(ObjectLiteralProp) * (have->prop_count + implied->prop_count + 1));
-     panic_if(!props, "out of memory");
-     u32 count = 0;
--    for (u32 i = 0; i < have->prop_count; i++) props[count++] = (ObjectLiteralProp){ .reuse = have->props[i] };
-+    for (u32 i = 0; i < have->prop_count; i++) props[count++] = (ObjectLiteralProp){ .reuse = GCM(have->props[i]) };
-     bool added = false;
-     for (u32 i = 0; i < implied->prop_count; i++) {
--        if (ty_get_object_prop(me, type, implied->props[i]->name)) continue;
--        props[count++] = (ObjectLiteralProp){ .reuse = implied->props[i] };
-+        if (ty_get_object_prop(me, type, GCM(implied->props[i])->name)) continue;
-+        props[count++] = (ObjectLiteralProp){ .reuse = GCM(implied->props[i]) };
-         added = true;
+diff --git a/src/ty/relate.c b/src/ty/relate.c
+index ac62da9c8..76829eb44 100644
+--- a/src/ty/relate.c
++++ b/src/ty/relate.c
+@@ -7142,8 +7142,8 @@ static bool fails_common_properties(Checker* me, RelationState* st, Ty const* so
+             // Something callable whose result would fit
+             Ty const* apparent = ty_apparent_type(me, source);
+             Members const* members = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty_members(me, apparent) : nullptr;
+-            Signature const* sig = members && members->call_count ? members->call[0] :
+-                members && members->construct_count ? members->construct[0] : nullptr;
++            Signature const* sig = members && members->call_count ? GCS(members->call[0]) :
++                members && members->construct_count ? GCS(members->construct[0]) : nullptr;
+             if (sig && plain_related(me, st, signature_return_type(me, sig), target, false)) {
+                 report_line(st, 2560, cstr_d("Value of type '", source_str, "' has no properties in common with type '",
+                     target_str, "'. Did you mean to call it?"));
+diff --git a/src/ty/ty_display.c b/src/ty/ty_display.c
+index c552e66bc..6fac915bd 100644
+--- a/src/ty/ty_display.c
++++ b/src/ty/ty_display.c
+@@ -5901,11 +5901,11 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
      }
-     Ty const* ret = added ? ty_object_literal(me, props, count, have->index, have->index_count, OBJECT_LITERAL_FRESH) : type;
-@@ -3870,7 +3870,7 @@ Ty const* ty_pad_initializer_type(Checker* me, Ty const* type, Binding const* pa
-             if (!props) {
-                 props = malloc(sizeof(ObjectLiteralProp) * (members->prop_count + vec_object_binding_item_size(&pattern->object)));
-                 panic_if(!props, "out of memory");
--                for (u32 i = 0; i < members->prop_count; i++) props[count++] = (ObjectLiteralProp){ .reuse = members->props[i] };
-+                for (u32 i = 0; i < members->prop_count; i++) props[count++] = (ObjectLiteralProp){ .reuse = GCM(members->props[i]) };
+     bool only_signatures = !members->prop_count && !members->index_count;
+     if (only_signatures && members->call_count == 1 && !members->construct_count) {
+-        display_signature(me, d, members->call[0], " => ", false);
++        display_signature(me, d, GCS(members->call[0]), " => ", false);
+         return;
+     }
+     if (only_signatures && members->construct_count == 1 && !members->call_count) {
+-        display_signature(me, d, members->construct[0], " => ", true);
++        display_signature(me, d, GCS(members->construct[0]), " => ", true);
+         return;
+     }
+     if (only_signatures && !members->call_count && !members->construct_count) {
+@@ -5922,16 +5922,16 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
+     // Abstract construct signatures can't be members of a type literal: `(abstract new () => C) & { rest }` (tsc's
+     // createTypeNodeFromObjectType)
+     u32 abstract_count = 0;
+-    for (u32 i = 0; i < members->construct_count; i++) abstract_count += (members->construct[i]->flags & SIGNATURE_ABSTRACT) != 0;
++    for (u32 i = 0; i < members->construct_count; i++) abstract_count += (GCS(members->construct[i])->flags & SIGNATURE_ABSTRACT) != 0;
+     if (abstract_count) {
+         // (One alone is the function type: `abstract new () => C`, parenthesized where the context needs it)
+         bool rest = members->call_count + members->construct_count - abstract_count + members->index_count + written_prop_count(d, members);
+         bool alone = abstract_count == 1 && !rest;
+         for (u32 i = 0, printed = 0; i < members->construct_count; i++) {
+-            if (!(members->construct[i]->flags & SIGNATURE_ABSTRACT)) continue;
++            if (!(GCS(members->construct[i])->flags & SIGNATURE_ABSTRACT)) continue;
+             if (printed++) out_lit(d, " & ");
+             if (!alone) out_lit(d, "(");
+-            display_signature(me, d, members->construct[i], " => ", true);
++            display_signature(me, d, GCS(members->construct[i]), " => ", true);
+             if (!alone) out_lit(d, ")");
+         }
+         if (!rest) return;
+@@ -5942,19 +5942,19 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
+     d.in_object_literal = true;
+     TyDisplay sig_d = d;
+     for (u32 i = 0; i < members->call_count && members->call_count > 1 && (d.types_baseline || d.reuse_nodes) && !sig_d.sibling_mentions_mapped; i++) {
+-        Signature const* root = members->call[i];
++        Signature const* root = GCS(members->call[i]);
+         while (sig_target(me, root)) root = sig_target(me, root);
+-        sig_d.sibling_mentions_mapped = root != members->call[i] && mentions_mapped(me, members->call[i], root);
++        sig_d.sibling_mentions_mapped = root != GCS(members->call[i]) && mentions_mapped(me, GCS(members->call[i]), root);
+     }
+     for (u32 i = 0; i < members->call_count; i++) {
+         member_begin(d);
+-        display_signature(me, sig_d, members->call[i], ": ", false);
++        display_signature(me, sig_d, GCS(members->call[i]), ": ", false);
+         member_end(d);
+     }
+     for (u32 i = 0; i < members->construct_count; i++) {
+-        if (members->construct[i]->flags & SIGNATURE_ABSTRACT) continue;
++        if (GCS(members->construct[i])->flags & SIGNATURE_ABSTRACT) continue;
+         member_begin(d);
+-        display_signature(me, d, members->construct[i], ": ", true);
++        display_signature(me, d, GCS(members->construct[i]), ": ", true);
+         member_end(d);
+     }
+     for (u32 i = 0; i < members->index_count; i++) {
+@@ -6080,7 +6080,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
+                 if (csview_equals(atom_sv(prop->name), "new")) out_lit(d, "\"new\"");
+                 else display_member_name(me, d, prop);
+                 if (prop->flags & PROP_OPTIONAL) out_lit(d, "?");
+-                display_signature(me, method_d, type_members->call[j], ": ", false);
++                display_signature(me, method_d, GCS(type_members->call[j]), ": ", false);
+                 member_end_node(d, comments, ";");
              }
-             props[count++] = (ObjectLiteralProp){
-                 .name = name,
+             continue;
+@@ -6402,7 +6402,7 @@ static bool is_function_like(Checker* me, TyDisplay d, Ty const* ty) {
+     // (Not for an abstract construct signature, which is written alone where `prototype` isn't: an instantiation
+     // expression of an abstract class, `(abstract new () => C<string>) & typeof M`)
+     bool abstract_alone = members->construct_count == 1 && !members->call_count &&
+-        (members->construct[0]->flags & SIGNATURE_ABSTRACT) && !written_prop_count(d, members);
++        (GCS(members->construct[0])->flags & SIGNATURE_ABSTRACT) && !written_prop_count(d, members);
+     return (!members->prop_count || abstract_alone) && !members->index_count && !members->mapped &&
+         members->call_count + members->construct_count == 1;
+ }
+@@ -6434,7 +6434,7 @@ static bool displays_as_intersection(Checker* me, TyDisplay d, Ty const* ty) {
+     Members const* members = ty_members(me, ty);
+     if (members->mapped) return false;
+     u32 abstract_count = 0;
+-    for (u32 i = 0; i < members->construct_count; i++) abstract_count += (members->construct[i]->flags & SIGNATURE_ABSTRACT) != 0;
++    for (u32 i = 0; i < members->construct_count; i++) abstract_count += (GCS(members->construct[i])->flags & SIGNATURE_ABSTRACT) != 0;
+     return abstract_count && (abstract_count > 1 || written_prop_count(d, members) || members->index_count || members->call_count ||
+         members->construct_count > abstract_count);
+ }
+@@ -6648,7 +6648,7 @@ static bool class_literal_function_like(Checker* me, TyDisplay d, Ty const* ty)
+     }
+     Members const* members = ty_members(me, ty);
+     return !written_prop_count(d, members) && !members->index_count && members->call_count + members->construct_count == 1 &&
+-        members->construct_count && (members->construct[0]->flags & SIGNATURE_ABSTRACT);
++        members->construct_count && (GCS(members->construct[0])->flags & SIGNATURE_ABSTRACT);
+ }
+ 
+ static bool needs_parens_in_array(Checker* me, TyDisplay d, Ty const* ty) {
+diff --git a/src/ty/fingerprint.inc b/src/ty/fingerprint.inc
+index a10eb26b8..30befd846 100644
+--- a/src/ty/fingerprint.inc
++++ b/src/ty/fingerprint.inc
+@@ -388,8 +388,8 @@ static u64 fp_members(Members const* members) {
+         h = M(h, prop);
+     }
+     h = M(h, members->call_count | (u64)members->construct_count << 32);
+-    for (u32 i = 0; i < members->call_count; i++) h = M(h, fp_signature(members->call[i], 0));
+-    for (u32 i = 0; i < members->construct_count; i++) h = M(h, fp_signature(members->construct[i], 0));
++    for (u32 i = 0; i < members->call_count; i++) h = M(h, fp_signature(GCS(members->call[i]), 0));
++    for (u32 i = 0; i < members->construct_count; i++) h = M(h, fp_signature(GCS(members->construct[i]), 0));
+     h = M(h, members->index_count);
+     for (u32 i = 0; i < members->index_count; i++) {
+         h = M(h, fp_ty(members->index[i].key));
+diff --git a/src/ty/ty.h b/src/ty/ty.h
+index 942dac8d8..831b3698d 100644
+--- a/src/ty/ty.h
++++ b/src/ty/ty.h
+@@ -812,6 +812,7 @@ struct Signature {
+     // Made by ty_erased_signature() in one step from its target's target: `declared_by` is the instantiation it erases
+     // (tsc's erased signature's target, which isInstantiatedGenericParameter reads)
+     bool erased_in_one_step;
++    bool gc_inst, gc_seen, gc_res, gc_ret;
+     LowerCtx ctx;
+     // Exactly one source: a function (a declaration/expression, or a function type node, see FunctionImpl.is_type)
+     // or a target to instantiate
+@@ -832,7 +833,13 @@ struct Signature {
+     SharedWord ret; // A Ty: use signature_return_type(), sig_ret_init() for a signature being made
+     SharedWord predicate; // A TyPredicate, NONE for none: use signature_predicate(), sig_predicate_init()
+ };
+-static_assert(sizeof(Signature) == 104);
++void gc_sig(int kind);
++static inline void gc_sig_mark(int is_sig, void const* addr) {
++    if (!is_sig) return;
++    Signature* g = *(Signature* const*)addr;
++    if (g && g->gc_inst && !g->gc_seen) { g->gc_seen = 1; gc_sig(1); }
++}
++#define GCS(x) __extension__ ({ __auto_type gc_v_ = (x); gc_sig_mark(_Generic(gc_v_, Signature*: 1, Signature const*: 1, default: 0), &gc_v_); gc_v_; })
+ 
+ typedef struct SignatureRare {
+     // Construct signatures of a class: the type parameters are the class's and the return type is its instance type,
+diff --git a/src/ty/check.c b/src/ty/check.c
+index 0f0f1653c..3c9d01e47 100644
+--- a/src/ty/check.c
++++ b/src/ty/check.c
+@@ -609,7 +609,7 @@ static bool elaborate_arrow_function(Checker* me, Expr const* expr, Ty const* so
+         target_count = target_members->call_count;
+     }
+     if (!target_count) return false;
+-    Ty const* source_ret = signature_return_type(me, source_members->call[0]);
++    Ty const* source_ret = signature_return_type(me, GCS(source_members->call[0]));
+     TyBuf rets = {0};
+     for (u32 i = 0; i < target_count; i++) ty_buf_push(&rets, signature_return_type(me, target_sigs[i]));
+     Ty const* target_ret = ty_union(me, rets.data, rets.len, nullptr, (TyList){0});
+@@ -854,7 +854,7 @@ void ty_check_instanceof_has_instance(Checker* me, Ty const* left, Ty const* rig
+     if (!prop.found || !(prop.type->flags & TYF_OBJECT)) return;
+     Members const* members = ty_members(me, prop.type);
+     if (members->call_count != 1) return;
+-    Signature const* sig = members->call[0];
++    Signature const* sig = GCS(members->call[0]);
+     SigResolved const* sig_rs = signature_resolve(me, sig);
+     if (sig_rs->type_params.len) return;
+     Ty const* param = ty_contextual_signature_type_at(me, sig, 0, false);
+@@ -4610,7 +4610,7 @@ bool ty_has_call_signature_for_arity(Checker* me, Ty const* type, u32 required)
+     // (Several that fit: only if they have the same parameters, getIntersectedSignatures, which overloads don't)
+     Signature const* applicable = nullptr;
+     for (u32 i = 0; i < members->call_count; i++) {
+-        Signature const* sig = members->call[i];
++        Signature const* sig = GCS(members->call[i]);
+         SigResolved const* sig_rs = signature_resolve(me, sig);
+         bool rest = sig_rs->param_count && sig_rs->params[sig_rs->param_count - 1].rest;
+         if (!rest && sig_rs->param_count < required) continue;
+@@ -4628,8 +4628,8 @@ bool ty_has_call_signature_for_arity(Checker* me, Ty const* type, u32 required)
+ 
+ Signature const* ty_function_signature(Checker* me, FunctionImpl const* function) {
+     Members const* members = ty_members(me, ty_function_type(me, function));
+-    if (members->call_count) return members->call[0];
+-    return members->construct_count ? members->construct[0] : nullptr;
++    if (members->call_count) return GCS(members->call[0]);
++    return members->construct_count ? GCS(members->construct[0]) : nullptr;
+ }
+ 
+ void ty_check_overloads_compatible(
 diff --git a/src/ty/jsx.c b/src/ty/jsx.c
-index 67d880c..63e75da 100644
+index 496a75f23..9acb51283 100644
 --- a/src/ty/jsx.c
 +++ b/src/ty/jsx.c
-@@ -106,7 +106,7 @@ static Atom const* container_prop_name(Checker* me, JsxElement const* element, c
-     if (!container || !(container->flags & TYF_OBJECT)) return nullptr;
-     Members const* members = ty_members(me, container);
-     if (members->prop_count == 0) return my atoms.empty;
--    if (members->prop_count == 1) return members->props[0]->name;
-+    if (members->prop_count == 1) return GCM(members->props[0])->name;
-     return nullptr; // TODO: TS2608 on its declaration
+@@ -575,13 +575,13 @@ bool ty_jsx_tag_arity_fits(Checker* me, JsxElement const* element, Ty const* tag
+     u32 max_params = 0;
+     bool component_params = false;
+     for (u32 i = 0; factory_members && i < factory_members->call_count && fits; i++) {
+-        Signature const* sig = factory_members->call[i];
++        Signature const* sig = GCS(factory_members->call[i]);
+         signature_resolve(me, sig);
+         Ty const* first = ty_signature_param_type_at(me, sig, 0);
+         if (!first) continue;
+         Members const* first_members = ty_members(me, ty_apparent_type(me, first));
+         for (u32 j = 0; j < first_members->call_count; j++) {
+-            Signature const* param_sig = first_members->call[j];
++            Signature const* param_sig = GCS(first_members->call[j]);
+             signature_resolve(me, param_sig);
+             component_params = true;
+             if (ty_signature_has_rest(me, param_sig)) {
+@@ -598,8 +598,8 @@ bool ty_jsx_tag_arity_fits(Checker* me, JsxElement const* element, Ty const* tag
+     }
+     u32 min_args = UINT32_MAX;
+     for (u32 i = 0; i < tag_members->call_count; i++) {
+-        signature_resolve(me, tag_members->call[i]);
+-        if (sig_res(me, tag_members->call[i])->min_args < min_args) min_args = sig_res(me, tag_members->call[i])->min_args;
++        signature_resolve(me, GCS(tag_members->call[i]));
++        if (sig_res(me, GCS(tag_members->call[i]))->min_args < min_args) min_args = sig_res(me, GCS(tag_members->call[i]))->min_args;
+     }
+     if (min_args <= max_params) {
+         cstr_drop(&entity);
+diff --git a/src/ty/iterate.c b/src/ty/iterate.c
+index fe9dd013f..54d7594e3 100644
+--- a/src/ty/iterate.c
++++ b/src/ty/iterate.c
+@@ -202,7 +202,7 @@ static void call_signatures(Checker* me, Ty const* ty, SigList* out) {
+     Ty const* apparent = ty_apparent_type(me, ty);
+     if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return;
+     Members const* members = ty_members(me, apparent);
+-    for (u32 j = 0; j < members->call_count; j++) sig_list_push(out, members->call[j]);
++    for (u32 j = 0; j < members->call_count; j++) sig_list_push(out, GCS(members->call[j]));
  }
  
-diff --git a/src/ty/instantiate.c b/src/ty/instantiate.c
-index 170b623..9bd654b 100644
---- a/src/ty/instantiate.c
-+++ b/src/ty/instantiate.c
-@@ -552,7 +552,7 @@ static bool literal_instance_is_itself(Checker* me, Ty const* target, TyMapper c
-     Members const* members = ty_members_peek(me, state);
-     if (members->call_count || members->construct_count || members->mapped || members_rare(members)->base_count) return false;
-     for (u32 i = 0; i < members->prop_count; i++) {
--        Prop const* prop = members->props[i];
-+        Prop const* prop = GCM(members->props[i]);
-         Ty const* prop_ty = prop_type_peek(me, prop);
-         if (TAINT_IF(TAINT_PEEK, !prop_ty)) return false;
-         Ty const* write = intern_get(&my links, (u64[]){ KEY_PROP_WRITE_TYPE, (u64)(uintptr_t)prop }, 2);
-diff --git a/src/ty/infer.c b/src/ty/infer.c
-index 9b3f379..a061879 100644
---- a/src/ty/infer.c
-+++ b/src/ty/infer.c
-@@ -819,7 +819,7 @@ static bool is_partially_inferable(Checker* me, Ty const* ty, u32 depth) {
-     if (ty->kind != TY_ANONYMOUS || !(ty->flags & TYF_OBJECT)) return false;
-     Members const* members = ty_members(me, ty);
-     for (u32 i = 0; i < members->prop_count; i++) {
--        if (is_partially_inferable(me, prop_type(me, members->props[i]), depth + 1)) return true;
-+        if (is_partially_inferable(me, prop_type(me, GCM(members->props[i])), depth + 1)) return true;
+ static void sig_list_drop(SigList* me) {
+diff --git a/src/ty/helpers.c b/src/ty/helpers.c
+index 408587452..c0da70c43 100644
+--- a/src/ty/helpers.c
++++ b/src/ty/helpers.c
+@@ -48,8 +48,8 @@ static u32 helper_min_params(u32 helper) {
+ static bool has_signature_with_more_params(Checker* me, Symbol const* symbol, u32 than) {
+     Members const* members = ty_members(me, ty_type_of_symbol(me, symbol));
+     for (u32 i = 0; i < members->call_count; i++) {
+-        signature_resolve(me, members->call[i]);
+-        if (sig_res(me, members->call[i])->param_count > than) return true;
++        signature_resolve(me, GCS(members->call[i]));
++        if (sig_res(me, GCS(members->call[i]))->param_count > than) return true;
      }
      return false;
  }
-@@ -834,7 +834,7 @@ u32 ty_reverse_mapped_source_props(Checker* me, Ty const* source, Ty const* limi
-         panic_if(!*out, "out of memory");
-         u32 count = 0;
-         for (u32 i = 0; i < members->prop_count; i++) {
--            Prop const* prop = members->props[i];
-+            Prop const* prop = GCM(members->props[i]);
-             // (Numeric and unique symbol keys too: tsc's getLiteralTypeFromProperty with StringOrNumberLiteralOrUnique)
-             if (limited && !ty_is_related(me, ty_prop_key_literal(me, prop), limited, TY_RELATION_ASSIGNABLE)) continue;
-             // (Declared where the source's is: tsc's createReverseMappedType copies its declarations, which is where
-@@ -863,7 +863,7 @@ u32 ty_reverse_mapped_source_props(Checker* me, Ty const* source, Ty const* limi
-         if (!(part->flags & TYF_OBJECT)) continue;
-         Members const* members = ty_members(me, part);
-         for (u32 i = 0; i < members->prop_count; i++) {
--            Atom const* name = members->props[i]->name;
-+            Atom const* name = GCM(members->props[i])->name;
-             bool seen = false;
-             for (u32 k = 0; k < count && !seen; k++) seen = (*out)[k].name == name;
-             if (seen) continue;
-@@ -970,7 +970,7 @@ static bool infer_to_mapped(Checker* me, Inference* inf, Ty const* source, Mappe
-         }
-         Ty const** types = malloc(sizeof(Ty const*) * count);
-         panic_if(!types, "out of memory");
--        for (u32 i = 0; i < prop_count; i++) types[i] = intersected ? intersected[i].type : prop_type(me, members->props[i]);
-+        for (u32 i = 0; i < prop_count; i++) types[i] = intersected ? intersected[i].type : prop_type(me, GCM(members->props[i]));
-         for (u32 i = 0; i < members->index_count; i++) types[prop_count + i] = members->index[i].value;
-         free(intersected);
-         // (tsc's getTemplateTypeFromMappedType: a `?` mapped type's template is optional, which takes the optional
-@@ -1239,7 +1239,7 @@ static bool has_unmatched_prop(Checker* me, Ty const* source, Ty const* target,
-             Members const* members = ty_members(me, part);
-             for (u32 i = 0; i < members->prop_count; i++) {
-                 // (Required in one member is required in the intersection: its other members' copies are seen too)
--                Prop const* prop = members->props[i];
-+                Prop const* prop = GCM(members->props[i]);
-                 if (prop->flags & PROP_OPTIONAL) continue;
-                 Ty const* target_type = discriminants ? ty_find_prop(me, target, prop->name).type : nullptr;
-                 if (unmatched_prop_of(me, source, prop->name, target_type, discriminants)) return true;
-@@ -1249,7 +1249,7 @@ static bool has_unmatched_prop(Checker* me, Ty const* source, Ty const* target,
-     }
-     Members const* members = ty_members(me, target);
-     for (u32 i = 0; i < members->prop_count; i++) {
--        Prop const* target_prop = members->props[i];
-+        Prop const* target_prop = GCM(members->props[i]);
-         if (target_prop->flags & PROP_OPTIONAL) continue;
-         Ty const* target_type = discriminants ? prop_type(me, target_prop) : nullptr;
-         if (unmatched_prop_of(me, source, target_prop->name, target_type, discriminants)) return true;
-@@ -1346,7 +1346,7 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
-     }
-     if (!(ty_is_tuple(source) && ty_is_tuple(target)) && types_definitely_unrelated(me, source, target)) return;
-     for (u32 i = 0; i < target_members->prop_count; i++) {
--        Prop const* target_prop = target_members->props[i];
-+        Prop const* target_prop = GCM(target_members->props[i]);
-         FoundProp source_prop = ty_find_prop(me, source, target_prop->name);
-         if (!source_prop.found) continue;
-         // An optional property's type has its undefined, except under exactOptionalPropertyTypes (tsc's
-@@ -1388,7 +1388,7 @@ static void infer_from_signatures_and_indexes(Checker* me, Inference* inf, Ty co
-         for (u32 p = 0; p < parts.len; p++) {
-             Members const* part_members = ty_members(me, parts.data[p]);
-             for (u32 j = 0; j < part_members->prop_count; j++) {
--                Prop const* prop = part_members->props[j];
-+                Prop const* prop = GCM(part_members->props[j]);
-                 Ty const* key = ty_prop_name_literal(me, prop->name);
-                 bool applies = target_info->key->flags & TYF_STRING ? !(key->flags & TYF_ES_SYMBOL_LIKE) :
-                     ty_specific_index_applies(me, target_info, key);
-@@ -1818,10 +1818,10 @@ static void force_source_parts(Checker* me, Ty const* source, Ty const* target,
-     Members const* sources = ty_members(me, source);
-     // An index signature takes an inferable index of every property (tsc's inferFromIndexTypes, getImplicitIndexInfo)
-     if (targets->index_count && inferable_index(me, source, 0)) {
--        for (u32 i = 0; i < sources->prop_count; i++) (void)ty_prop_type_of(me, source, sources->props[i]->name);
-+        for (u32 i = 0; i < sources->prop_count; i++) (void)ty_prop_type_of(me, source, GCM(sources->props[i])->name);
-     }
-     for (u32 i = 0; i < targets->prop_count; i++) {
--        Prop const* prop = targets->props[i];
-+        Prop const* prop = GCM(targets->props[i]);
-         if (!ty_get_prop(me, source, prop->name)) continue;
-         Ty const* part = ty_prop_type_of(me, source, prop->name);
-         if (part) force_source_parts(me, part, ty_prop_type_of(me, target, prop->name), depth - 1);
-diff --git a/src/ty/graph_debug.c b/src/ty/graph_debug.c
-index 02ded2c..48f106d 100644
---- a/src/ty/graph_debug.c
-+++ b/src/ty/graph_debug.c
-@@ -349,7 +349,7 @@ void graph_fp_result(unsigned kind, void const* subject, void const* result, boo
-             if (!owner) owner = fp_ty(subject);
-             pthread_mutex_lock(&owners_lock);
-             bool inserted;
--            u64* slot = map_find(&prop_owners, (u64)(uintptr_t)members->props[i], true, true, &inserted);
-+            u64* slot = map_find(&prop_owners, (u64)(uintptr_t)GCM(members->props[i]), true, true, &inserted);
-             if (inserted) *slot = fp_mix(owner, i) | 1;
-             pthread_mutex_unlock(&owners_lock);
-         }
 diff --git a/src/ty/flow.c b/src/ty/flow.c
-index 4c26f37..d48287c 100644
+index 4bf192834..ca23e8d21 100644
 --- a/src/ty/flow.c
 +++ b/src/ty/flow.c
-@@ -2075,7 +2075,7 @@ static Atom const* key_property_uncached(Checker* me, Ty const* ty) {
-         if (!is_key_holder(member)) continue;
-         Members const* props = ty_members(me, member->flags & TYF_OBJECT ? member : ty_apparent_type(me, member));
-         for (u32 j = 0; j < props->prop_count && !name; j++) {
--            if (ty_is_unit(prop_type(me, props->props[j]))) name = props->props[j]->name;
-+            if (ty_is_unit(prop_type(me, GCM(props->props[j])))) name = GCM(props->props[j])->name;
+@@ -1021,7 +1021,7 @@ Ty const* ty_quick_expr_type(Checker* me, Expr const* expr, bool in_flow) {
+     u32 count = call->uses_new ? members->construct_count : members->call_count;
+     u32 other = call->uses_new ? members->call_count : members->construct_count;
+     if (count != 1 || other) return nullptr;
+-    Signature const* sig = call->uses_new ? members->construct[0] : members->call[0];
++    Signature const* sig = call->uses_new ? GCS(members->construct[0]) : GCS(members->call[0]);
+     // A TypeScript function declared with a return type and no type parameters of its own: that type, its parameters
+     // untyped (tsc's getSignatureFromDeclaration types none, getReturnTypeOfSignature reads the annotation). Typing them
+     // can reach back to what asks: `const active = activate(plan)` in a callback of FeaturePlan's initializer, with
+@@ -2687,7 +2687,7 @@ static Ty const* constructor_instance_type(Checker* me, Ty const* constructor, v
+         if (members->construct_count) {
+             TyBuf results = {0};
+             for (u32 i = 0; i < members->construct_count; i++) {
+-                ty_buf_push(&results, signature_return_type(me, ty_erased_signature(me, members->construct[i])));
++                ty_buf_push(&results, signature_return_type(me, ty_erased_signature(me, GCS(members->construct[i]))));
+             }
+             Ty const* ret = ty_union(me, results.data, results.len, nullptr, (TyList){0});
+             ty_buf_drop(&results);
+@@ -2722,7 +2722,7 @@ static Ty const* has_instance_predicate_type(Checker* me, Ty const* right_type,
+     if (!prop.found || !(prop.type->flags & TYF_OBJECT)) return nullptr;
+     Members const* members = ty_members(me, prop.type);
+     if (members->call_count != 1) return nullptr;
+-    Signature const* sig = members->call[0];
++    Signature const* sig = GCS(members->call[0]);
+     SigResolved const* sig_rs = signature_resolve(me, sig);
+     if (sig_rs->type_params.len) {
+         if (sig_rs->type_params.len != 1 || sig_rs->this_type != sig_rs->type_params.data[0]) return nullptr;
+diff --git a/src/ty/expr.c b/src/ty/expr.c
+index 5fbf9f8fd..1add7e36d 100644
+--- a/src/ty/expr.c
++++ b/src/ty/expr.c
+@@ -1229,7 +1229,7 @@ static Signature const* contextual_call_signature(Checker* me, Ty const* type, F
+     if (type->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
+         Members const* members = ty_members(me, type);
+         for (u32 j = 0; j < members->call_count; j++) {
+-            if (is_arity_smaller(me, members->call[j], function)) continue;
++            if (is_arity_smaller(me, GCS(members->call[j]), function)) continue;
+             if (count == cap) {
+                 cap *= 2;
+                 Signature const** grown = malloc(sizeof(Signature const*) * cap);
+@@ -1238,7 +1238,7 @@ static Signature const* contextual_call_signature(Checker* me, Ty const* type, F
+                 if (applicable != stack_buf) free(applicable);
+                 applicable = grown;
+             }
+-            applicable[count++] = members->call[j];
++            applicable[count++] = GCS(members->call[j]);
          }
      }
-     return name && map_by_key_property(me, ty, name) ? name : nullptr;
+     Signature const* ret = count == 1 ? applicable[0] : nullptr;
+@@ -2126,8 +2126,8 @@ void ty_function_apply_jsdoc_type(Checker* me, FunctionImpl const* function, Ini
+     if (ty_function_assigned_contextual_signature(me, function) || function->is_expression || !(type->flags & TYF_OBJECT)) return;
+     // (One the arity rules out as a contextual signature: more parameters than it has)
+     Members const* members = ty_members(me, type);
+-    if (members->call_count == 1 && !members->construct_count && !sig_res(me, members->call[0])->type_params.len) {
+-        assign_contextual_signature_as(me, function, type, members->call[0], evaluating, nullptr);
++    if (members->call_count == 1 && !members->construct_count && !sig_res(me, GCS(members->call[0]))->type_params.len) {
++        assign_contextual_signature_as(me, function, type, GCS(members->call[0]), evaluating, nullptr);
+     }
+ }
+ 
+@@ -4335,8 +4335,8 @@ static Ty const* spread_acc_finish(Checker* me, SpreadAcc* acc, LiteralBuilder*
+ static Signature const* single_call_signature(Checker* me, Ty const* ty) {
+     Members const* members = ty_members(me, ty);
+     if (members->call_count != 1) return nullptr;
+-    signature_resolve(me, members->call[0]);
+-    return members->call[0];
++    signature_resolve(me, GCS(members->call[0]));
++    return GCS(members->call[0]);
+ }
+ 
+ // tsc's isPossiblyDiscriminantValue: what can say which member of a union an object literal is meant to be
+diff --git a/src/ty/declaration_emit.c b/src/ty/declaration_emit.c
+index ed9dd2e13..e8bee0ce7 100644
+--- a/src/ty/declaration_emit.c
++++ b/src/ty/declaration_emit.c
+@@ -2059,7 +2059,7 @@ static void serialize_variable(Walk* me, InitializedBinding const* decl, bool is
+             // An expando function is emitted as a function declaration per call signature and a namespace of its
+             // members (tsc's declaration transform of isExpandoFunctionDeclaration): its signatures are printed
+             Members const* members = ty_members(my checker, type);
+-            for (u32 i = 0; i < members->call_count; i++) print_inferred(me, ty_signature_type(my checker, members->call[i]));
++            for (u32 i = 0; i < members->call_count; i++) print_inferred(me, ty_signature_type(my checker, GCS(members->call[i])));
+         } else if (my fell_back) {
+             print_inferred(me, type);
+         }
 diff --git a/src/ty/conditional.c b/src/ty/conditional.c
-index f883a33..da8216b 100644
+index 487ac9675..252235149 100644
 --- a/src/ty/conditional.c
 +++ b/src/ty/conditional.c
-@@ -277,7 +277,7 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
-             for (u32 i = 0; i < members->prop_count; i++) {
-                 // (An object literal getter whose return type is being inferred further up: unsure, asking would infer
-                 // it again from below the barrier, where tsc's permissive instantiation doesn't look at properties)
--                Prop const* prop = members->props[i];
-+                Prop const* prop = GCM(members->props[i]);
-                 Prop const* root = prop;
-                 while (!prop_type_peek(me, root) && root->target && !root->mapped) root = root->target;
-                 if (!prop_type_peek(me, root) && (root->flags & PROP_GETTER) && !root->target &&
-@@ -470,7 +470,7 @@ static bool object_literal_type_mentions(Checker* me, Ty const* ty, TyList* out)
-     // have been resolved inside its own circularity, and an instance resolving it again later is what gets it right:
-     // the identity instance made recursive-types.test.ts's TS2344 spurious)
-     for (u32 i = 0; i < members->prop_count; i++) {
--        Prop const* prop = members->props[i];
-+        Prop const* prop = GCM(members->props[i]);
-         // (A property type not known yet: unknown, a peek that selects between results, so an event (rule 5))
-         if (TAINT_IF(TAINT_IN_FLIGHT_OTHER, !prop_type_peek(me, prop)) || prop->target || (prop->flags & PROP_GETTER)) return false;
-     }
-@@ -710,7 +710,7 @@ static bool callable_definitely_related(Checker* me, Ty const* check_type, Ty co
-     if (!any_function) {
-         Ty const* function_type = ty_global_function_type(me);
-         for (u32 i = 0; i < source->prop_count; i++) {
--            if (ty_get_prop(me, function_type, source->props[i]->name)) return false;
-+            if (ty_get_prop(me, function_type, GCM(source->props[i])->name)) return false;
+@@ -524,7 +524,7 @@ bool ty_function_type_mentions(Checker* me, Ty const* ty, TyList* out) {
+     if (!ty->anonymous.state) return false;
+     Members const* members = ty_members(me, ty);
+     if (members->call_count != 1 || members->construct_count || members->prop_count || members->index_count || members->mapped) return false;
+-    Signature const* sig = members->call[0];
++    Signature const* sig = GCS(members->call[0]);
+     signature_resolve(me, sig);
+     if (sig_target(me, sig) || sig->function != ty->anonymous.function) return false;
+     FunctionImpl const* function = sig->function;
+@@ -690,7 +690,7 @@ static bool callable_definitely_related(Checker* me, Ty const* check_type, Ty co
+         if (target->mapped || target->prop_count || target->index_count || target->construct_count || target->call_count != 1) {
+             return false;
          }
-     }
-     return true;
-diff --git a/src/ty/checker.c b/src/ty/checker.c
-index 4a781e9..84f7b93 100644
---- a/src/ty/checker.c
-+++ b/src/ty/checker.c
-@@ -1936,7 +1936,7 @@ static Atom const* never_reduced_literal_prop(Checker* me, Ty const* const* type
-         if (!literal_object && !known_object) continue;
-         Members const* members = ty_members(me, known);
-         for (u32 p = 0; p < members->prop_count; p++) {
--            Prop const* prop = members->props[p];
-+            Prop const* prop = GCM(members->props[p]);
-             Ty const* a_type = nullptr;
-             for (u32 j = 0; j < len; j++) {
-                 Ty const* other_type = types[j];
-@@ -2023,7 +2023,7 @@ static Atom const* never_reduced_generic_literal_prop(Checker* me, Ty const* con
-         if (!root) continue;
-         Members const* members = ty_members(me, root);
-         for (u32 p = 0; p < members->prop_count; p++) {
--            Prop const* prop = members->props[p];
-+            Prop const* prop = GCM(members->props[p]);
-             Ty const* a_type = nullptr;
-             for (u32 j = 0; j < len; j++) {
-                 if (j == i) continue;
-@@ -2095,7 +2095,7 @@ static Atom const* never_reduced_prop_grouped(Checker* me, Ty const* const* type
-         if (!is_known_object_for_reduction(me, types[i])) continue;
-         Members const* members = ty_members(me, types[i]);
-         for (u32 p = 0; p < members->prop_count && holder_count < total; p++) {
--            Prop const* prop = members->props[p];
-+            Prop const* prop = GCM(members->props[p]);
-             u32 s = (u32)(((uintptr_t)prop->name >> 3) * 0x9E3779B97F4A7C15ull >> 32) & (cap - 1);
-             while (slots[s].name && slots[s].name != prop->name) s = (s + 1) & (cap - 1);
-             u32 h = holder_count++;
-@@ -2200,7 +2200,7 @@ static Atom const* never_reduced_prop_known(Checker* me, Ty const* const* types,
-         if (!is_known_object_for_reduction(me, a)) continue;
-         Members const* members = ty_members(me, a);
-         for (u32 p = 0; p < members->prop_count; p++) {
--            Prop const* prop = members->props[p];
-+            Prop const* prop = GCM(members->props[p]);
-             if (!private_name && has_conflicting_private(me, prop, types, i, len)) private_name = prop->name;
-             // (The intersection's property is required if one of them is: an optional one is that type or undefined
-             // then, `{ a: string } & Partial<{ a: never }>` is never, string & undefined)
-@@ -3852,8 +3852,8 @@ Ty const* ty_keyof_without_index_signatures(Checker* me, Ty const* operand) {
-     }
-     TyBuf parts = {0};
-     for (u32 i = 0; i < members->prop_count; i++) {
--        if (!ty_prop_is_key(me, members->props[i])) continue;
--        ty_buf_push(&parts, ty_prop_key_literal(me, members->props[i]));
-+        if (!ty_prop_is_key(me, GCM(members->props[i]))) continue;
-+        ty_buf_push(&parts, ty_prop_key_literal(me, GCM(members->props[i])));
-     }
-     Ty const* ret = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
-     ty_buf_drop(&parts);
-@@ -3873,7 +3873,7 @@ static Ty const* keyof_keyof(Checker* me) {
-         if (!(apparent[i]->flags & TYF_OBJECT)) continue;
-         Members const* members = ty_members(me, apparent[i]);
-         for (u32 j = 0; j < members->prop_count; j++) {
--            Prop const* prop = members->props[j];
-+            Prop const* prop = GCM(members->props[j]);
-             if (ty_private_name_class(me, prop->name)) continue;
-             bool common = true;
-             for (u32 k = 0; k < 3 && common; k++) {
-@@ -3998,8 +3998,8 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
-             TyBuf parts = {0};
-             u32 entries = 0; // (tsc's list of one type per property and per index info: getUnionType returns one alone as it is)
-             for (u32 i = 0; i < members->prop_count; i++) {
--                if (!ty_prop_is_key(me, members->props[i])) continue;
--                ty_buf_push(&parts, ty_prop_key_literal(me, members->props[i]));
-+                if (!ty_prop_is_key(me, GCM(members->props[i]))) continue;
-+                ty_buf_push(&parts, ty_prop_key_literal(me, GCM(members->props[i])));
-                 entries++;
-             }
-             // (An enum object's reverse mapping `[x: number]: string` is not a key: tsc's getLiteralTypeFromProperties
-@@ -4126,7 +4126,7 @@ static bool is_reducible_intersection(Checker* me, Ty const* ty) {
-         if (!is_known_object(me, a)) continue;
-         Members const* members = ty_members(me, a);
-         for (u32 p = 0; p < members->prop_count; p++) {
--            Prop const* prop = members->props[p];
-+            Prop const* prop = GCM(members->props[p]);
-             Ty const* a_type = nullptr;
-             for (u32 j = 0; j < parts.len; j++) {
-                 if (j == i || !is_known_object(me, parts.data[j])) continue;
-diff --git a/src/ty/check.c b/src/ty/check.c
-index 6235a41..80f85aa 100644
---- a/src/ty/check.c
-+++ b/src/ty/check.c
-@@ -1024,7 +1024,7 @@ static Ty const* type_without_signatures(Checker* me, Ty const* ty) {
-     if (!members->call_count && !members->construct_count) return ty;
-     ObjectLiteralProp* props = malloc(sizeof(ObjectLiteralProp) * (members->prop_count ? members->prop_count : 1));
-     panic_if(!props, "out of memory");
--    for (u32 i = 0; i < members->prop_count; i++) props[i] = (ObjectLiteralProp){ .reuse = members->props[i] };
-+    for (u32 i = 0; i < members->prop_count; i++) props[i] = (ObjectLiteralProp){ .reuse = GCM(members->props[i]) };
-     Ty const* ret = ty_object_literal(me, props, members->prop_count, nullptr, 0, OBJECT_SYNTHETIC);
-     free(props);
-     return ret;
-@@ -1624,8 +1624,8 @@ Prop const* ty_suggested_property(Checker* me, Ty const* object, csview name) {
-         panic_if(!props, "out of memory");
-         for (u32 i = 0; i < members->prop_count; i++) {
-             bool seen = false;
--            for (u32 k = 0; k < count && !seen; k++) seen = props[k]->name == members->props[i]->name;
--            if (!seen) props[count++] = members->props[i];
-+            for (u32 k = 0; k < count && !seen; k++) seen = props[k]->name == GCM(members->props[i])->name;
-+            if (!seen) props[count++] = GCM(members->props[i]);
-         }
-     }
-     if (!count) {
-@@ -2986,11 +2986,11 @@ static bool readonly_assignment(Checker* me, PropertyExpr const* access, Ty cons
-     // (One property seen through several members, `this & Derived` after `this instanceof Derived`, is that property:
-     // tsc's createUnionOrIntersectionProperty returns the single symbol all constituents have)
-     if (refs->len > 1) {
--        Prop const* first = refs->props[0];
-+        Prop const* first = GCM(refs->props[0]);
-         while (first->target) first = first->target;
-         bool same = true;
-         for (u32 i = 1; i < refs->len && same; i++) {
--            Prop const* other = refs->props[i];
-+            Prop const* other = GCM(refs->props[i]);
-             while (other->target) other = other->target;
-             same = other == first;
-         }
-@@ -2998,7 +2998,7 @@ static bool readonly_assignment(Checker* me, PropertyExpr const* access, Ty cons
-     }
-     // A class's own readonly properties can be assigned through `this` in its constructor (not in functions in there)
-     if (refs->len == 1 && is_keyword(&access->expr, KEYWORD_IDENTIFIER_THIS) && property_context(access)->in_constructor_of &&
--        !(refs->props[0]->flags & PROP_ACCESSOR) && refs->props[0]->parent == property_context(access)->in_constructor_of
-+        !(GCM(refs->props[0])->flags & PROP_ACCESSOR) && GCM(refs->props[0])->parent == property_context(access)->in_constructor_of
-     ) {
-         return false;
-     }
-@@ -3042,7 +3042,7 @@ void ty_check_delete_operand(Checker* me, Expr const* operand, ErrorCtx* errs) {
-     bool exact = compiler_options()->exact_optional_property_types;
-     if (refs.index_mask & INDEX_REF_ANY_UNKNOWN || (!exact && refs.index_mask & INDEX_REF_UNDEFINED)) return;
-     for (u32 i = 0; i < refs.len; i++) {
--        Prop const* prop = refs.props[i];
-+        Prop const* prop = GCM(refs.props[i]);
-         if (exact ? (prop->flags & PROP_OPTIONAL) : (prop->flags & PROP_OPTIONAL) && !(prop->flags & PROP_STRIP_UNDEFINED)) return;
-         Ty const* type = prop_type(me, prop);
-         if (type->flags & (TYF_ANY | TYF_UNKNOWN | TYF_NEVER)) return;
-@@ -3061,7 +3061,7 @@ static int readonly_key_member(Checker* me, PropertyExpr const* access, Ty const
-     // (A class's own readonly property through `this` in its constructor)
-     PropertyContext const* site = property_context(access);
-     if (member.len == 1 && is_keyword(&access->expr, KEYWORD_IDENTIFIER_THIS) && site->in_constructor_of &&
--        !(member.props[0]->flags & PROP_ACCESSOR) && member.props[0]->parent == site->in_constructor_of
-+        !(GCM(member.props[0])->flags & PROP_ACCESSOR) && GCM(member.props[0])->parent == site->in_constructor_of
-     ) {
-         return 0;
-     }
-@@ -3077,7 +3077,7 @@ static bool may_have_readonly_member(Checker* me, Ty const* object) {
-     Members const* members = ty_members(me, apparent);
-     if (members->call_count || members->construct_count) return true;
-     for (u32 i = 0; i < members->prop_count; i++) {
--        if (members->props[i]->flags & PROP_READONLY) return true;
-+        if (GCM(members->props[i])->flags & PROP_READONLY) return true;
-     }
-     for (u32 i = 0; i < members->index_count; i++) {
-         if (members->index[i].readonly) return true;
-@@ -3324,7 +3324,7 @@ static void synthetic_access(Checker* me, Ty const* object, Atom const* name, Sy
-             out->write |= synth_effective(&child, true);
-             out->is_static |= child.is_static;
-             for (u32 j = 0; j < child.leaves.len && out->leaves.len < c_arraylen(out->leaves.props); j++) {
--                out->leaves.props[out->leaves.len] = child.leaves.props[j];
-+                out->leaves.props[out->leaves.len] = GCM(child.leaves.props[j]);
-                 out->leaves.objects[out->leaves.len++] = child.leaves.objects[j];
-             }
-             // (Instantiations of one property with the same type are that property: tsc keeps the single one)
-@@ -3345,7 +3345,7 @@ static void synthetic_access(Checker* me, Ty const* object, Atom const* name, Sy
-         // A union's property with a private or protected member's that isn't the same declaration everywhere (tsc's
-         // hasCommonDeclaration): none if that's for reading, else written as the most restricted member's
-         bool common = out->leaves.len > 0;
--        for (u32 i = 1; i < out->leaves.len && common; i++) common = prop_root(out->leaves.props[i]) == prop_root(out->leaves.props[0]);
-+        for (u32 i = 1; i < out->leaves.len && common; i++) common = prop_root(GCM(out->leaves.props[i])) == prop_root(GCM(out->leaves.props[0]));
-         if (is_union && ((out->read | out->write) & (SYNTH_PROTECTED | SYNTH_PRIVATE)) && !common) {
-             if (out->read & (SYNTH_PROTECTED | SYNTH_PRIVATE)) {
-                 out->found = false;
-@@ -3392,7 +3392,7 @@ static void check_synthetic_access(
-     Ty const* declaring[c_arraylen(access->leaves.props)];
-     u32 count = 0;
-     for (u32 i = 0; i < access->leaves.len; i++) {
--        Prop const* prop = access->leaves.props[i];
-+        Prop const* prop = GCM(access->leaves.props[i]);
-         SyntheticAccess leaf = { .single = prop };
-         if (synth_effective(&leaf, writing) != SYNTH_PROTECTED) continue;
-         if (!prop->parent || !class_decl_of(prop->parent)) continue;
-@@ -4653,7 +4653,7 @@ void ty_check_index_constraints(
-     if (!members->index_count) return;
-     bool interface = owner && !(owner->flags & SYMBOL_CLASS);
-     for (u32 p = 0; p < members->prop_count; p++) {
--        Prop const* prop = members->props[p];
-+        Prop const* prop = GCM(members->props[p]);
-         Prop const* root = prop;
-         while (root->target) root = root->target;
-         if (span_valid(root->decl->name_span) && root->decl->name_span.buf[0] == '#') continue;
-@@ -4774,13 +4774,13 @@ void ty_check_destructured_member(
-     // `({ m } = this)` directly in m isn't a read of m (tsc's markPropertyAsReferenced with rightIsThis); a binding
-     // element always reads (checkBindingElement's isSelfTypeAccess is false)
-     FunctionImpl const* self_function = assignment && from_this && site ? site->containing_function : nullptr;
--    for (u32 i = 0; unused_enabled() && i < refs.len; i++) mark_member_referenced_in(me, refs.props[i], self_function);
-+    for (u32 i = 0; unused_enabled() && i < refs.len; i++) mark_member_referenced_in(me, GCM(refs.props[i]), self_function);
-     // tsc's checkPropertyAccessibility of a binding element or destructuring assignment property, where the pattern is
-     // (no site: at the top level)
-     if (!span_valid(span)) return;
-     AccessSite const top_level = {0};
-     for (u32 i = 0; i < refs.len; i++) {
--        if (!check_accessibility(me, site ? site : &top_level, span, from_this, false, refs.props[i], refs.objects[i],
-+        if (!check_accessibility(me, site ? site : &top_level, span, from_this, false, GCM(refs.props[i]), refs.objects[i],
-             false, errs)
-         ) {
-             return;
-@@ -4961,7 +4961,7 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
-             MemberRefs member;
-             member.len = 0;
-             if (!member_name || member_refs(me, object, member_name, &member, 0) < 0) continue;
--            for (u32 j = 0; j < member.len; j++) mark_member_referenced(me, member.props[j], access);
-+            for (u32 j = 0; j < member.len; j++) mark_member_referenced(me, GCM(member.props[j]), access);
-         }
-     }
-     if (!name || member_refs(me, object, name, &refs, 0) < 0) {
-@@ -5039,12 +5039,12 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
-         return;
-     }
-     if (unused_enabled()) {
--        for (u32 i = 0; i < refs.len; i++) mark_member_referenced(me, refs.props[i], access);
-+        for (u32 i = 0; i < refs.len; i++) mark_member_referenced(me, GCM(refs.props[i]), access);
-     }
-     if (site->initializer_context && refs.len == 1 && !(ty_apparent_type(me, object)->flags & TYF_ANY)) {
--        check_used_before_initialization(me, access, refs.props[0], errs);
-+        check_used_before_initialization(me, access, GCM(refs.props[0]), errs);
-     }
--    if (refs.len == 1 && access->form == PROPERTY_EXPR_DOT) check_class_used_before_declaration(access, refs.props[0], errs);
-+    if (refs.len == 1 && access->form == PROPERTY_EXPR_DOT) check_class_used_before_declaration(access, GCM(refs.props[0]), errs);
-     // Element access is the way around accessibility
-     bool synthetic_checked = false;
-     AccessSite synthetic_site = {
-@@ -5055,7 +5055,7 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
-     // (Only when a member's property isn't public: otherwise every reading and writing is public, nothing to check)
-     bool non_public = false;
-     for (u32 i = 0; i < refs.len && !non_public; i++) {
--        non_public = (refs.props[i]->flags & (PROP_PRIVATE | PROP_PROTECTED | PROP_SET_PRIVATE | PROP_SET_PROTECTED)) != 0;
-+        non_public = (GCM(refs.props[i])->flags & (PROP_PRIVATE | PROP_PROTECTED | PROP_SET_PRIVATE | PROP_SET_PROTECTED)) != 0;
-     }
-     if (non_public && access->form == PROPERTY_EXPR_DOT && refs.len > 1 && !is_keyword(&access->expr, KEYWORD_IDENTIFIER_SUPER)) {
-         SyntheticAccess synthetic;
-@@ -5068,7 +5068,7 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
-     }
-     Prop const* const* parts = nullptr;
-     u32 part_count = access->form == PROPERTY_EXPR_DOT && refs.len == 1 && !is_keyword(&access->expr, KEYWORD_IDENTIFIER_SUPER) ?
--        ty_synthetic_prop_parts(me, refs.props[0], &parts) : 0;
-+        ty_synthetic_prop_parts(me, GCM(refs.props[0]), &parts) : 0;
-     if (part_count > 1) {
-         // A property a class inherits from an intersection (a mixin's base): the intersection's synthetic property
-         SyntheticAccess synthetic = { .found = true, .synthetic = true };
-@@ -5093,7 +5093,7 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
-                 .initializer_context = site->initializer_context,
-             };
-             if (!check_accessibility(me, &access_site, property_key_span(access), is_keyword(&access->expr, KEYWORD_IDENTIFIER_THIS),
--                access->assignment_target, refs.props[i], refs.objects[i], is_super, errs)
-+                access->assignment_target, GCM(refs.props[i]), refs.objects[i], is_super, errs)
-             ) {
-                 break;
-             }
-@@ -5279,7 +5279,7 @@ bool ty_check_private_name_access(Checker* me, PropertyExpr const* access, Ty co
-     // A private name of the same spelling on the type is another class's
-     Prop const* other = nullptr;
-     for (u32 i = 0; i < members->prop_count && !other; i++) {
--        Prop const* prop = members->props[i];
-+        Prop const* prop = GCM(members->props[i]);
-         if (ty_private_name_class(me, prop->name) && csview_equals_sv(atom_sv(prop->name), span_sv(name))) other = prop;
-     }
-     if (!other) {
+-        Signature const* sig = target->call[0];
++        Signature const* sig = GCS(target->call[0]);
+         SigResolved const* sig_rs = signature_resolve(me, sig);
+         if (sig_rs->type_params.len || sig_rs->this_type || !(signature_return_type(me, sig)->flags & TYF_ANY)) return false;
+         if (!sig_rs->param_count || !sig_rs->params[sig_rs->param_count - 1].rest) return false;
 diff --git a/src/ty/call.c b/src/ty/call.c
-index 6b239ef..df7c9d1 100644
+index d17823d80..839ab88aa 100644
 --- a/src/ty/call.c
 +++ b/src/ty/call.c
-@@ -3770,10 +3770,10 @@ Symbol* ty_dynamic_import_module(Checker* me, CallExpr const* call, ModuleRef co
-     attributes = (ModuleAttrs){0};
-     Members const* members = with ? ty_members(me, with) : nullptr;
-     for (u32 i = 0; members && i < members->prop_count && attributes.count < c_arraylen(attributes.items); i++) {
--        Ty const* type = ty_prop_type_of(me, with, members->props[i]->name);
-+        Ty const* type = ty_prop_type_of(me, with, GCM(members->props[i])->name);
-         bool known = type && type->kind == TY_LITERAL && type->flags & TYF_STRING_LITERAL;
-         attributes.items[attributes.count++] = (ModuleAttr){
--            .name = atom_sv(members->props[i]->name), .value = known ? atom_sv(type->literal.string) : c_sv(""), .known = known,
-+            .name = atom_sv(GCM(members->props[i])->name), .value = known ? atom_sv(type->literal.string) : c_sv(""), .known = known,
-         };
+@@ -197,9 +197,9 @@ bool ty_calls_generic_function_returning_function(Checker* me, Expr const* expr)
+     if (!(callee->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false; // (getSignaturesOfType)
+     Members const* members = ty_members(me, callee);
+     for (u32 i = 0; i < members->call_count; i++) {
+-        signature_resolve(me, members->call[i]);
+-        if (!sig_res(me, members->call[i])->type_params.len) continue;
+-        Ty const* ret = signature_return_type(me, members->call[i]);
++        signature_resolve(me, GCS(members->call[i]));
++        if (!sig_res(me, GCS(members->call[i]))->type_params.len) continue;
++        Ty const* ret = signature_return_type(me, GCS(members->call[i]));
+         if ((ret->flags & TYF_OBJECT) && ty_members(me, ret)->call_count) return true;
      }
-     return binder_find_module_with(my binder, ref, &attributes);
+     return false;
+@@ -618,7 +618,7 @@ static Ty const* rest_args_tuple(Checker* me, Args const* args, u32 from, bool w
+ 
+ static Signature const* last_call_signature(Checker* me, Ty const* ty) {
+     Members const* members = ty_members(me, ty);
+-    return members->call_count ? members->call[members->call_count - 1] : nullptr;
++    return members->call_count ? GCS(members->call[members->call_count - 1]) : nullptr;
+ }
+ 
+ // What a pattern contextual type is when tsc asks for it without binding patterns (every type parameter of the call
+@@ -1035,8 +1035,8 @@ Signature const* ty_single_signature(Checker* me, Ty const* ty, bool construct,
+     if (!(ty->flags & TYF_OBJECT)) return nullptr;
+     Members const* members = ty_members(me, ty);
+     if (!allow_members && (members->prop_count || members->index_count)) return nullptr;
+-    if (construct) return members->construct_count == 1 && !members->call_count ? members->construct[0] : nullptr;
+-    return members->call_count == 1 && !members->construct_count ? members->call[0] : nullptr;
++    if (construct) return members->construct_count == 1 && !members->call_count ? GCS(members->construct[0]) : nullptr;
++    return members->call_count == 1 && !members->construct_count ? GCS(members->call[0]) : nullptr;
+ }
+ 
+ // tsc's getSingleCallSignature(getNonNullableType(ty)) (or construct): only an object type has one, and only a union can
+@@ -3082,7 +3082,7 @@ static void report_not_constructor_type(Checker* me, Ty const* callee, Span span
+         Ty const* apparent = ty_apparent_type(me, constraint);
+         if (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
+             Members const* members = ty_members(me, apparent);
+-            if (members->construct_count) returned = signature_return_type(me, members->construct[0]);
++            if (members->construct_count) returned = signature_return_type(me, GCS(members->construct[0]));
+         }
+     }
+     cstr name = ty_to_cstr(me, callee), returned_str = ty_to_cstr(me, returned);
+@@ -3631,7 +3631,7 @@ static CallEffects union_call_effects(Checker* me, Ty const* callee) {
+         if (!(member->flags & (TYF_OBJECT | TYF_INTERSECTION))) goto fail;
+         Members const* members = ty_members(me, member);
+         if (members->call_count != 1) goto fail;
+-        Signature const* sig = members->call[0];
++        Signature const* sig = GCS(members->call[0]);
+         SigResolved const* sig_rs = signature_resolve(me, sig);
+         if (sig_rs->type_params.len) goto fail;
+         TyPredicate const* predicate = signature_predicate(me, sig);
+@@ -3743,15 +3743,15 @@ CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call)
+     Members const* members = ty_members(me, apparent);
+     if (!members->call_count) return none;
+     bool all_none = true;
+-    for (u32 i = 0; i < members->call_count && all_none; i++) all_none = surely_no_effects(me, members->call[i]);
++    for (u32 i = 0; i < members->call_count && all_none; i++) all_none = surely_no_effects(me, GCS(members->call[i]));
+     if (all_none) return none;
+     Candidate chosen = {0};
+-    signature_resolve(me, members->call[0]);
+-    if (members->call_count == 1 && !sig_res(me, members->call[0])->type_params.len) {
+-        chosen.sig = members->call[0];
++    signature_resolve(me, GCS(members->call[0]));
++    if (members->call_count == 1 && !sig_res(me, GCS(members->call[0]))->type_params.len) {
++        chosen.sig = GCS(members->call[0]);
+     } else {
+         bool some = false;
+-        for (u32 i = 0; i < members->call_count && !some; i++) some = has_predicate_or_declared_never(me, members->call[i]);
++        for (u32 i = 0; i < members->call_count && !some; i++) some = has_predicate_or_declared_never(me, GCS(members->call[i]));
+         if (!some) return none;
+         resolve_into(me, callee, call, nullptr, nullptr, span_null, nullptr, &chosen, nullptr);
+     }
+@@ -4508,7 +4508,7 @@ void ty_check_decorator(Checker* me, Expr const* decorator, DecoratorSite site,
+         Members const* members = ty_members(me, apparent);
+         bool uncalled = members->call_count > 0;
+         for (u32 i = 0; i < members->call_count && uncalled; i++) {
+-            Signature const* s = members->call[i];
++            Signature const* s = GCS(members->call[i]);
+             SigResolved const* s_res = signature_resolve(me, s);
+             // (signatureHasRestParameter: any rest parameter, a tuple's too)
+             bool has_rest = s_res->param_count && s_res->params[s_res->param_count - 1].rest;

@@ -142,6 +142,30 @@ writes 56 B per source prop; its loop disappears), its conversion is mechanical 
 `members_prop()` is the seam steps 2-3 change behind. Its census is a lower bound of what step 3 takes on zod
 (touched 23%), little on imm (touched 73%: imm needs steps 3-4).
 
+**Step 1 as landed** (ac1f53116, fc64a1ea3, c28559e09; K1, release, this box): instance Props made on first use /
+instance Props: imm 208k / 290k (72%), store 92k / 92k, zod 266k / 1.30M (20%), drizzle 469k / 964k (49%), effect
+307k / 582k (53%) (callgrind calls of members_prop_make()). Arena imm -1.8%, zod -20.4%, drizzle -9.2%, effect -4.5%,
+store 0; peak RSS zod -12.2%, drizzle -5.0%; minor faults zod -12.5%, drizzle -5.1%; cachegrind LL write misses zod
+-15%, drizzle -6%; instructions after c28559e09 drizzle -0.2%, zod -0.9%, effect ~+0.1% against 6d5e31b4c. What still
+makes them: ty_get_prop() callers that read the type (most), props_related_impl, resolve_tuple_members (a tuple's
+members are its array instance's props: effect 78k), infer_from_objects: step 3's handle, not more accessors. The
+unmade slot is the source prop's pointer with the low bit set; the mask in ty_get_prop()'s scan costs ~8M
+instructions on drizzle. Tried and dropped: re-reading the slot on a hit instead of keeping a copy (+0.02..0.04%); a
+Members-level "all made" flag has no free bits and would cost the same load and test on the indexed path.
+
+**The signature census for step 4** (instance Signatures made by instantiate_members(), K1, counter build of
+c28559e09; touched = read out of a call/construct array or resolved):
+| | imm | store | zod | drizzle | effect |
+|---|---|---|---|---|---|
+| instance Members with signatures | 220k | 0.9k | 98k | 72k | 87k |
+| instance Signatures made | 248k | 1.4k | 107k | 75k | 88k |
+| resolved (signature_resolve(): SigResolved + params made) | 243k (98%) | 1.3k (97%) | 88k (82%) | 66k (87%) | 80k (90%) |
+| return type computed | 225k (91%) | 1.1k (81%) | 82k (77%) | 59k (78%) | 72k (82%) |
+So instance signatures are nearly all used: making them lazily like props would save 2-18% of 104 B each (imm ~0.5 MB).
+Step 4's bytes are in their size, not their count: a thin per-instance record (the three words, flags, the view)
+instead of a 104-byte copy, and SigResolved's target/mapper copies; imm's 33 MB of SigResolved and parameters are
+per-instance content that only lazily instantiated parameter types (bun's) would shrink.
+
 **Expected gains, honestly.** The cycles the bytes can buy are bounded by the memory-bound share (laptop top-down:
 imm 31%, store 43%, the corpora 25%) times the part of it that is graph bytes (imm: 74% of L1D misses, 57% of DRAM
 fills fresh memory). Guesses to be measured, K1 cycles: step 1 zod -2..-4%, drizzle -1..-2%, imm and effect ~-1%;
