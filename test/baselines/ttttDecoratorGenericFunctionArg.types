@@ -1,0 +1,48 @@
+//// [test/cases/ttttDecoratorGenericFunctionArg.ts] ////
+
+=== ttttDecoratorGenericFunctionArg.ts ===
+declare function mdec<A extends any[], R>(m: (...a: A) => R, ctx: ClassMethodDecoratorContext): (...a: A) => R;
+>mdec : <A extends any[], R>(m: (...a: A) => R, ctx: ClassMethodDecoratorContext) => (...a: A) => R
+>m : (...a: A) => R
+>a : A
+>ctx : ClassMethodDecoratorContext<unknown, (this: unknown, ...args: any) => any>
+>a : A
+
+class D { @mdec m<T>(x: T): T[] { return [x]; } }
+>D : D
+>mdec : <A extends any[], R>(m: (...a: A) => R, ctx: ClassMethodDecoratorContext) => (...a: A) => R
+>m : <T>(x: T) => T[]
+>x : T
+>[x] : T[]
+>x : T
+
+declare function cdec<A extends any[], R>(c: new (...a: A) => R, ctx: ClassDecoratorContext): new (...a: A) => R;
+>cdec : <A extends any[], R>(c: new (...a: A) => R, ctx: ClassDecoratorContext) => new (...a: A) => R
+>c : new (...a: A) => R
+>a : A
+>ctx : ClassDecoratorContext<abstract new (...args: any) => any>
+>a : A
+
+@cdec class C<T> { constructor(public x: T) {} }
+>cdec : <A extends any[], R>(c: new (...a: A) => R, ctx: ClassDecoratorContext) => new (...a: A) => R
+>C : C<T>
+>x : T
+
+declare function plain<A extends any[], R>(m: (...a: A) => R, ctx: number): (...a: A) => R;
+>plain : <A extends any[], R>(m: (...a: A) => R, ctx: number) => (...a: A) => R
+>m : (...a: A) => R
+>a : A
+>ctx : number
+>a : A
+
+declare function g<T>(x: T): T[];
+>g : <T>(x: T) => T[]
+>x : T
+
+const r = plain(g, 1);
+>r : <T>(x: T) => T[]
+>plain(g, 1) : <T>(x: T) => T[]
+>plain : <A extends any[], R>(m: (...a: A) => R, ctx: number) => (...a: A) => R
+>g : <T>(x: T) => T[]
+>1 : 1
+

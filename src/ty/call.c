@@ -1672,7 +1672,9 @@ static TyMapper const* infer_type_arguments(
         self.fixing = false;
         my outer_inference = nullptr;
         Signature const* contextual = nullptr;
-        arg->generic_function = !arg->spread && !arg->part_of_spread &&
+        // (A decorator's synthetic argument too, the decorated method: tsc's checkExpression instantiates a synthetic
+        // expression's single generic call signature like any other)
+        arg->generic_function = !arg->spread && (!arg->part_of_spread || args->decorator_arity) &&
             generic_function_argument(me, arg->type, literal_arg_context(me, shape_type_at(&shape, i), return_mapper), &contextual);
         if (arg->generic_function) {
             any_sensitive = true;

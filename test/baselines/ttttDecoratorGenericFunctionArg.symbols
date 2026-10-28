@@ -1,0 +1,73 @@
+//// [test/cases/ttttDecoratorGenericFunctionArg.ts] ////
+
+=== ttttDecoratorGenericFunctionArg.ts ===
+declare function mdec<A extends any[], R>(m: (...a: A) => R, ctx: ClassMethodDecoratorContext): (...a: A) => R;
+>mdec : Symbol(mdec, Decl(ttttDecoratorGenericFunctionArg.ts, 0, 0))
+>A : Symbol(A, Decl(ttttDecoratorGenericFunctionArg.ts, 0, 22))
+>R : Symbol(R, Decl(ttttDecoratorGenericFunctionArg.ts, 0, 38))
+>m : Symbol(m, Decl(ttttDecoratorGenericFunctionArg.ts, 0, 42))
+>a : Symbol(a, Decl(ttttDecoratorGenericFunctionArg.ts, 0, 46))
+>A : Symbol(A, Decl(ttttDecoratorGenericFunctionArg.ts, 0, 22))
+>R : Symbol(R, Decl(ttttDecoratorGenericFunctionArg.ts, 0, 38))
+>ctx : Symbol(ctx, Decl(ttttDecoratorGenericFunctionArg.ts, 0, 60))
+>ClassMethodDecoratorContext : Symbol(ClassMethodDecoratorContext, Decl(lib.decorators.d.ts, --, --))
+>a : Symbol(a, Decl(ttttDecoratorGenericFunctionArg.ts, 0, 97))
+>A : Symbol(A, Decl(ttttDecoratorGenericFunctionArg.ts, 0, 22))
+>R : Symbol(R, Decl(ttttDecoratorGenericFunctionArg.ts, 0, 38))
+
+class D { @mdec m<T>(x: T): T[] { return [x]; } }
+>D : Symbol(D, Decl(ttttDecoratorGenericFunctionArg.ts, 0, 111))
+>mdec : Symbol(mdec, Decl(ttttDecoratorGenericFunctionArg.ts, 0, 0))
+>m : Symbol(D.m, Decl(ttttDecoratorGenericFunctionArg.ts, 1, 9))
+>T : Symbol(T, Decl(ttttDecoratorGenericFunctionArg.ts, 1, 18))
+>x : Symbol(x, Decl(ttttDecoratorGenericFunctionArg.ts, 1, 21))
+>T : Symbol(T, Decl(ttttDecoratorGenericFunctionArg.ts, 1, 18))
+>T : Symbol(T, Decl(ttttDecoratorGenericFunctionArg.ts, 1, 18))
+>x : Symbol(x, Decl(ttttDecoratorGenericFunctionArg.ts, 1, 21))
+
+declare function cdec<A extends any[], R>(c: new (...a: A) => R, ctx: ClassDecoratorContext): new (...a: A) => R;
+>cdec : Symbol(cdec, Decl(ttttDecoratorGenericFunctionArg.ts, 1, 49))
+>A : Symbol(A, Decl(ttttDecoratorGenericFunctionArg.ts, 2, 22))
+>R : Symbol(R, Decl(ttttDecoratorGenericFunctionArg.ts, 2, 38))
+>c : Symbol(c, Decl(ttttDecoratorGenericFunctionArg.ts, 2, 42))
+>a : Symbol(a, Decl(ttttDecoratorGenericFunctionArg.ts, 2, 50))
+>A : Symbol(A, Decl(ttttDecoratorGenericFunctionArg.ts, 2, 22))
+>R : Symbol(R, Decl(ttttDecoratorGenericFunctionArg.ts, 2, 38))
+>ctx : Symbol(ctx, Decl(ttttDecoratorGenericFunctionArg.ts, 2, 64))
+>ClassDecoratorContext : Symbol(ClassDecoratorContext, Decl(lib.decorators.d.ts, --, --))
+>a : Symbol(a, Decl(ttttDecoratorGenericFunctionArg.ts, 2, 99))
+>A : Symbol(A, Decl(ttttDecoratorGenericFunctionArg.ts, 2, 22))
+>R : Symbol(R, Decl(ttttDecoratorGenericFunctionArg.ts, 2, 38))
+
+@cdec class C<T> { constructor(public x: T) {} }
+>cdec : Symbol(cdec, Decl(ttttDecoratorGenericFunctionArg.ts, 1, 49))
+>C : Symbol(C, Decl(ttttDecoratorGenericFunctionArg.ts, 2, 113))
+>T : Symbol(T, Decl(ttttDecoratorGenericFunctionArg.ts, 3, 14))
+>x : Symbol(C.x, Decl(ttttDecoratorGenericFunctionArg.ts, 3, 31))
+>T : Symbol(T, Decl(ttttDecoratorGenericFunctionArg.ts, 3, 14))
+
+declare function plain<A extends any[], R>(m: (...a: A) => R, ctx: number): (...a: A) => R;
+>plain : Symbol(plain, Decl(ttttDecoratorGenericFunctionArg.ts, 3, 48))
+>A : Symbol(A, Decl(ttttDecoratorGenericFunctionArg.ts, 4, 23))
+>R : Symbol(R, Decl(ttttDecoratorGenericFunctionArg.ts, 4, 39))
+>m : Symbol(m, Decl(ttttDecoratorGenericFunctionArg.ts, 4, 43))
+>a : Symbol(a, Decl(ttttDecoratorGenericFunctionArg.ts, 4, 47))
+>A : Symbol(A, Decl(ttttDecoratorGenericFunctionArg.ts, 4, 23))
+>R : Symbol(R, Decl(ttttDecoratorGenericFunctionArg.ts, 4, 39))
+>ctx : Symbol(ctx, Decl(ttttDecoratorGenericFunctionArg.ts, 4, 61))
+>a : Symbol(a, Decl(ttttDecoratorGenericFunctionArg.ts, 4, 77))
+>A : Symbol(A, Decl(ttttDecoratorGenericFunctionArg.ts, 4, 23))
+>R : Symbol(R, Decl(ttttDecoratorGenericFunctionArg.ts, 4, 39))
+
+declare function g<T>(x: T): T[];
+>g : Symbol(g, Decl(ttttDecoratorGenericFunctionArg.ts, 4, 91))
+>T : Symbol(T, Decl(ttttDecoratorGenericFunctionArg.ts, 5, 19))
+>x : Symbol(x, Decl(ttttDecoratorGenericFunctionArg.ts, 5, 22))
+>T : Symbol(T, Decl(ttttDecoratorGenericFunctionArg.ts, 5, 19))
+>T : Symbol(T, Decl(ttttDecoratorGenericFunctionArg.ts, 5, 19))
+
+const r = plain(g, 1);
+>r : Symbol(r, Decl(ttttDecoratorGenericFunctionArg.ts, 6, 5))
+>plain : Symbol(plain, Decl(ttttDecoratorGenericFunctionArg.ts, 3, 48))
+>g : Symbol(g, Decl(ttttDecoratorGenericFunctionArg.ts, 4, 91))
+
