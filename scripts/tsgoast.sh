@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Where tsgo's parser puts the nodes and errors for a file: its parse tree (kind, [pos,end), text; trivia included in
-# pos as in tsgo) and its parse diagnostics, through `go test -overlay` (scripts/tsgoast_test.go mapped into
+# pos as in tsgo; a node tsgo flags ThisNodeHasError says so) and its parse diagnostics, through `go test -overlay` (scripts/tsgoast_test.go mapped into
 # internal/parser; the shared checkout is never written). The script kind follows the extension (.ts/.tsx/.js/.jsx).
 #   scripts/tsgoast.sh FILE.tsx      # ~10 s the first time (compiles), ~2 s after
 #   scripts/tsgoast.sh --check       # only compile it (scripts/overlaycheck.sh)

@@ -537,10 +537,10 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
 - Mutation seeds 20261102 and 20261103 (bun9, `--syntax`, 2000 each: 4 and 7 errors-component differences). Fixed:
   a parameter list missing its `)` ends at its last token (TS7020's underline, 3a927304f), a mapped type's extra
   members aren't checked (TS7008, 02a144d6b), an anonymous function expression's error span is its first token and
-  yield*'s TS2488 uses it (46c70b16d). Left: [open] unusedSwitchStatement (`default?:`): tsgo's reportUnused skips a
+  yield*'s TS2488 uses it (46c70b16d). Left: unusedSwitchStatement (`default?:`): tsgo's reportUnused skips a
   declaration whose subtree has a node with ThisNodeHasError (the first node finished after any parse error, here the
   identifier `z` of the `let z` after the TS1129), so no TS6133 there; tttt has no notion of that flag (a spurious
-  TS6133 under noUnusedLocals in files with parse errors). [design] (below, ttttUnusedUnderParseError) recursiveTypeRelations: `reduce<C>(cb)` missing its
+  TS6133 under noUnusedLocals in files with parse errors). [fixed (bun11: below)] recursiveTypeRelations: `reduce<C>(cb)` missing its
   initial value is TS2345 on the callback in tsgo, TS2554 in tttt (overload error choice, checker). [open]
   recursiveTypeInferenceReturnTypeConstraint (missing TS2615), isolatedDeclarationErrorsObjects (missing TS9009),
   noImplicitAnyUnionNormalizedObjectLiteral1 (missing TS7005: [fixed 1faa449eb], cor8's seed 62), esDecorators-contextualTypes.2 (TS7053 elaboration: a union index's is its first member's, ttttIndexUnionElaboration, [fixed 0928d2e68] cor8),
@@ -568,9 +568,9 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   resolved (a43889a36), the end of the file ends a type or class member (3aca4984e), a for-of's expression is no comma
   expression (f6fc11235), a computed name missing its expression is TS1109 and the member goes on (9daf04676), an
   object literal method's TS18016 is a grammar error (4a3ee8051), a bodiless function expression's or object literal
-  method's renamings are TS7031 and a function expression's body is required (c142ccd3c). Left: [open]
+  method's renamings are TS7031 and a function expression's body is required (c142ccd3c). Left:
   unusedLocalsAndParameters add-arg and unusedTypeParametersWithUnderscore delete-stmt: TS6133/TS6196 that tsgo's
-  ThisNodeHasError hides (the unusedSwitchStatement item above). Checker, relayed: typePredicatesOptionalChaining1
+  ThisNodeHasError hides (the unusedSwitchStatement item above) [fixed (bun11)]. Checker, relayed: typePredicatesOptionalChaining1
   (TS2353 for a duplicated excess property is at its first declaration in tsgo, the binder merges the two into one
   symbol whose valueDeclaration is the first; tttt at the last: `const o: { a?: 1 } = { b: 1, a: 1, b: 2 }`) [open];
   narrowingTypeofUndefined2 (`[...arg]` of `T extends unknown[] | undefined` narrowed by `typeof arg !== 42` misses
@@ -580,30 +580,27 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   (TS2322 elaboration), unlooked at [open]. Harness or text: importDeclWithExportModifierInAmbientContext (TS2708 is
   tsgo's emit resolver's, the pre/post-emit count line), escapedIdentifiers (TS2551 prints the name's escapes as
   written, `argX\u0033`), four `render`.
-- **Unused checks under a parse error (tsgo's ThisNodeHasError), design** (bun10 2026-10-28; known failing
-  ttttUnusedUnderParseError; mutants unusedSwitchStatement, unusedLocalsAndParameters add-arg,
-  unusedTypeParametersWithUnderscore delete-stmt). tsgo: parseErrorAtRange sets hasParseError on every attempt (a
-  deduplicated one too); finishNode puts NodeFlagsThisNodeHasError on the next node finished and clears it; the binder
-  ORs it up into ThisNodeOrAnySubNodesHasError; reportUnused (only it, in the checker) drops a diagnostic whose
-  location has that flag. The locations: a VariableDeclaration or Parameter (binding elements walk up to it), the
-  declaration owning a type parameter list (the whole class or function: `class C<U> {` missing its `}` hides U, the
-  error at the end of the file being before the class finishes), a class member, an import declaration, a local
-  function/class/enum/... declaration. Observed: an error after a declaration finished doesn't hide it (`let y = 1 2`
-  still reports y, a method's `(a, 1)` still reports a), one inside does (`let x = (1 +)`), and one before it with
-  only skipped tokens in between does too (`default?:` then `let z`: the first node finished after the TS1129 is `z`).
-  Plan: (1) parser: ParserShared.error_pending set by every parse error attempt (parse_error_inner, deduplicated ones
-  included; not grammar_error, JS-only or JSDoc errors, which aren't tsc parse errors); parse_success() (tttt's
-  finishNode choke point: every node-producing parse function ends there) with error_pending set and the child having
-  consumed something records the child's [start, end) in the parser's error-node list and clears it. The list rolls
-  back with the parser like its errors (a failed speculative child drops its records and restores pending: tsgo's
-  mark/rewind saves hasParseError). Kept per SourceFile, sorted by start (usually empty: one load and a branch per
-  parse_success on the common path). (2) checker: every unused report (unused.c and the type-parameter/member/import
-  ones, TS6133/TS6138/TS6192/TS6196/TS6198/TS6199/TS6205) asks file_has_error_node_in(file, location span), the
-  location being tsc's node above, which tttt must name per report (the variable declaration's binding plus
-  initializer, the owner's full span for type parameters). Risks: tttt's parse_success granularity isn't tsc's node
-  granularity (a hop-consumed token makes no node, so the first recorded node may be a larger one starting earlier:
-  then it doesn't fit inside D and D is reported; check against tsgoast.sh trees on the mutants), and lookahead child
-  parsers that succeed without being a node. Cost: a branch per parse_success, nest's callgrind to confirm. [design]
+- **Unused checks under a parse error (tsgo's ThisNodeHasError)** (bun10 design, bun11 build; ttttUnusedUnderParseError,
+  ttttUnusedUnderParseErrorShapes, ttttUnusedUnderParseErrorImports; mutants unusedSwitchStatement,
+  unusedLocalsAndParameters add-arg, unusedTypeParametersWithUnderscore delete-stmt). tsgo: parseErrorAtRange sets
+  hasParseError on every attempt (a deduplicated one too); finishNode puts NodeFlagsThisNodeHasError on the next node
+  finished and clears it; the binder ORs it up; reportUnused drops a diagnostic whose location has it. tttt
+  (parser.c note_error_attempt()/note_error_node()/note_missing_node()): ParserShared.error_pending, set by every
+  parse_error attempt (not grammar, JS-only or JSDoc errors: JSDoc children always fail, which undoes theirs), taken by
+  the next parse_success() of a child that consumed a token, recorded as [first token, last token end); TS1109,
+  TS1110 and TS1003 take it at once as a node of no width at the token's full start (tsgo's createMissingNode). Every
+  change goes into a log (ParserShared.error_nodes) that a failed child truncates (Parser.error_nodes counts its
+  entries, added to the parent with error_count in one word). unused.c's report() takes tsgo's location (the variable
+  declaration or parameter for its binding elements, the list for TS6199, the declaration statement, the class member,
+  the import clause or specifier, the owner of type parameters, the infer type) and asks
+  source_file_error_node_within(). 15 probe shapes match tsgo (2026-10-28); cost a load and a branch per parse_success
+  (nest +0.35%, zod +0.09%, drizzle +0.08% instructions). Granularity: a tttt child that isn't a tsgo node (a
+  wrapper, a succeeding lookahead) records a slightly different span than tsgo's node; none seen in the probes.
+  [fixed (bun11, this commit)]
+- A class field's or enum member's missing initializer (`private x = ;`, `x: U = ;`, `enum E { A = }`): tsgo has an
+  initializer (a missing expression: no TS7008, no TS2564, `> : any` in the types baseline); tttt's
+  EXPR_IMPLICIT_ANY with `missing` reads as none at ~15 `field.value.tag == EXPR_IMPLICIT_ANY` sites (class_decl.c,
+  scope.c) and the types walk skips it. [open]
 - After a parameter's modifiers a reserved word is TS1359 (parseBindingIdentifier), not TS1003: `declare function`
   where a parameter was expected (seed 20261101, contextualParamTypeVsNestedReturnTypeInference4;
   ttttParameterModifierReservedName). [fixed 56abcd061]

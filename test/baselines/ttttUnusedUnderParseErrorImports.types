@@ -1,0 +1,28 @@
+//// [test/cases/ttttUnusedUnderParseErrorImports.ts] ////
+
+=== ttttUnusedUnderParseErrorImports.ts ===
+// tsgo's reportUnused location for imports is the import clause (TS6192) or the specifier, for type parameters their
+// declaration: a parse error after the clause (its module specifier) doesn't hide the clause's names
+import { a, b as } from "m";
+>a : any
+>b : any
+> : any
+
+import x, { y } from ;
+>x : any
+>y : any
+> : any
+
+import * as ns from "n"
+>ns : any
+
+export type A<T, U> = { x: };
+>A : A<T, U>
+>x : any
+
+export type B<V> = V extends Array<infer W ? 1 : 2;
+>B : B<V>
+
+type Q<R> = R;
+>Q : R
+

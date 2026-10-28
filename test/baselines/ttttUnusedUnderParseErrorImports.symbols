@@ -1,0 +1,35 @@
+//// [test/cases/ttttUnusedUnderParseErrorImports.ts] ////
+
+=== ttttUnusedUnderParseErrorImports.ts ===
+// tsgo's reportUnused location for imports is the import clause (TS6192) or the specifier, for type parameters their
+// declaration: a parse error after the clause (its module specifier) doesn't hide the clause's names
+import { a, b as } from "m";
+>a : Symbol(a, Decl(ttttUnusedUnderParseErrorImports.ts, 2, 8))
+> : Symbol((Missing), Decl(ttttUnusedUnderParseErrorImports.ts, 2, 11))
+
+import x, { y } from ;
+>x : Symbol(x, Decl(ttttUnusedUnderParseErrorImports.ts, 3, 6))
+>y : Symbol(y, Decl(ttttUnusedUnderParseErrorImports.ts, 3, 11))
+
+import * as ns from "n"
+>ns : Symbol(ns, Decl(ttttUnusedUnderParseErrorImports.ts, 4, 6))
+
+export type A<T, U> = { x: };
+>A : Symbol(A, Decl(ttttUnusedUnderParseErrorImports.ts, 4, 23))
+>T : Symbol(T, Decl(ttttUnusedUnderParseErrorImports.ts, 5, 14))
+>U : Symbol(U, Decl(ttttUnusedUnderParseErrorImports.ts, 5, 16))
+>x : Symbol(x, Decl(ttttUnusedUnderParseErrorImports.ts, 5, 23))
+> : Symbol(a)
+
+export type B<V> = V extends Array<infer W ? 1 : 2;
+>B : Symbol(B, Decl(ttttUnusedUnderParseErrorImports.ts, 5, 29))
+>V : Symbol(V, Decl(ttttUnusedUnderParseErrorImports.ts, 6, 14))
+>V : Symbol(V, Decl(ttttUnusedUnderParseErrorImports.ts, 6, 14))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>W : Symbol(W, Decl(ttttUnusedUnderParseErrorImports.ts, 6, 40))
+
+type Q<R> = R;
+>Q : Symbol(Q, Decl(ttttUnusedUnderParseErrorImports.ts, 6, 51))
+>R : Symbol(R, Decl(ttttUnusedUnderParseErrorImports.ts, 7, 7))
+>R : Symbol(R, Decl(ttttUnusedUnderParseErrorImports.ts, 7, 7))
+

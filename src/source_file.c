@@ -196,7 +196,7 @@ void source_file_drop(SourceFile* me) {
     free(my comments);
     free(my expando_containers);
     free(my unused);
-    free(my parse_error_starts);
+    free(my error_nodes);
     free(my commonjs_candidates);
     if (my content_mapped) content_mapped_free(my content_mapped);
     if (my deferred_bodies) {
@@ -217,12 +217,10 @@ void source_file_drop(SourceFile* me) {
 
 // tsc's containsParseError: whether a parse error starts in the node's text or right after it (a missing `,` or `}` is
 // reported at the next token, which its node ends before)
-bool source_file_parse_error_within(Span node) {
-    SourceFile const* file = span_source(node);
-    if (!file || !file->has_parse_errors || !span_valid(node)) return false;
-    for (u32 i = 0; i < file->parse_error_count; i++) {
-        char const* at = file->parse_error_starts[i];
-        if (at >= span_start_ptr(node) && at <= span_end_ptr(node)) return true;
+bool source_file_error_node_within(SourceFile const* file, char const* start, char const* end) {
+    if (!file || !start) return false;
+    for (u32 i = 0; i < file->error_node_count; i++) {
+        if (file->error_nodes[2 * i] >= start && file->error_nodes[2 * i + 1] <= end) return true;
     }
     return false;
 }

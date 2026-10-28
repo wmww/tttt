@@ -195,10 +195,10 @@ typedef struct SourceFile {
     // The parser reported something (tsc's hasParseDiagnostics): grammar errors aren't reported then, see
     // error_ctx_grammar_error_d()
     bool has_parse_errors;
-    // Where those parse errors start (in no order), for tsc's containsParseError of a node (a node whose parsing
-    // reported one): source_file_parse_error_within()
-    char const** parse_error_starts;
-    u32 parse_error_count;
+    // tsgo's ThisNodeHasError: the nodes the parser finished first after a parse error, each [start, end) from its
+    // first token to the end of its last, in the order finished (pairs of pointers): source_file_error_node_within()
+    char const** error_nodes;
+    u32 error_node_count;
     // A .js/.jsx/.mjs/.cjs file: only part of a program with `allowJs`
     bool is_js;
     // Its resolve walk reads what another file's walk writes, so it runs after the parallel ones (plan 45,
@@ -477,7 +477,9 @@ void source_texts_release(void);
 void source_texts_drop(void);
 // Before the process writes over the file at path: a mapping of it gets its own copy at the same address
 void source_text_detach(csview path);
-bool source_file_parse_error_within(Span node);
+// Whether a node the parser finished first after a parse error is inside [start, end) (tsgo's
+// ThisNodeOrAnySubNodesHasError of the node there, which its reportUnused checks)
+bool source_file_error_node_within(SourceFile const* file, char const* start, char const* end);
 // Takes path
 ModuleRef* source_file_add_module_ref(SourceFile* me, cstr path, Span span);
 // Appends a ModuleRef made elsewhere (a chunked parse's, parse_file_chunked()), which the file owns from now on

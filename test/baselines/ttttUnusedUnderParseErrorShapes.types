@@ -1,0 +1,235 @@
+//// [test/cases/ttttUnusedUnderParseErrorShapes.ts] ////
+
+=== ttttUnusedUnderParseErrorShapes.ts ===
+// tsgo's reportUnused skips a declaration with a node in it that its parser finished first after a parse error
+// (ThisNodeHasError): a missing expression, type or name is such a node, so is the next node after skipped tokens;
+// an error after a declaration finished doesn't hide it (agents/bugs/bun_others.md)
+export function p01_f() {
+>p01_f : () => void
+
+    let a = 1;
+>a : number
+>1 : 1
+
+    let b = (1 +);
+>b : any
+>(1 +) : any
+>1 + : any
+>1 : 1
+> : any
+
+    let c = 2;
+>c : number
+>2 : 2
+}
+export class p02_C {
+>p02_C : p02_C
+
+    private x = (1 +);
+>x : any
+>(1 +) : any
+>1 + : any
+>1 : 1
+> : any
+
+    private y = 1;
+>y : number
+>1 : 1
+
+    private z() {}
+>z : () => void
+}
+export function p05_h(a, b: , c) {}
+>p05_h : (a: any, b: any, c: any) => void
+>a : any
+>b : any
+>c : any
+
+export function p05_h2(d: string, e = ) {}
+>p05_h2 : (d: string, e?: any) => void
+>d : string
+>e : any
+> : any
+
+export function p06_g() {
+>p06_g : () => void
+
+    let q = 1;; )
+>q : number
+>1 : 1
+
+    let r = 2;
+>r : number
+>2 : 2
+
+    let s = 3;
+>s : number
+>3 : 3
+}
+export function p07_outer() {
+>p07_outer : () => void
+
+    )
+    function inner() {}
+>inner : () => void
+
+    function inner2() {}
+>inner2 : () => void
+}
+declare const o: any;
+>o : any
+
+export function p08_d() {
+>p08_d : () => void
+
+    const { a, b: } = o;
+>a : any
+>b : any
+> : any
+>o : any
+
+    const [c, , e] = o;
+>c : any
+>e : any
+>o : any
+}
+export const p09_f = (a, b) => { let z = ; let w = 1; };
+>p09_f : (a: any, b: any) => void
+>(a, b) => { let z = ; let w = 1; } : (a: any, b: any) => void
+>a : any
+>b : any
+>z : any
+> : any
+>w : number
+>1 : 1
+
+export const p09_g = (m: number, ) => { let v = 1; };
+>p09_g : (m: number) => void
+>(m: number, ) => { let v = 1; } : (m: number) => void
+>m : number
+>v : number
+>1 : 1
+
+export function p10_k() {
+>p10_k : () => void
+
+    enum E { A = (1 +) }
+>E : E
+>A : E.A
+>(1 +) : any
+>1 + : any
+>1 : 1
+> : any
+
+    namespace N { }
+    interface I { x: }
+>x : any
+
+    type T = ;
+>T : any
+
+    class K { }
+>K : K
+}
+export class p11_D<T, U> {
+>p11_D : p11_D<T, U>
+
+    x: U = (1 +);
+>x : U
+>(1 +) : any
+>1 + : any
+>1 : 1
+> : any
+}
+export class p11_D2<T> { m<V>(a: ) {} }
+>p11_D2 : p11_D2<T>
+>m : <V>(a: any) => void
+>a : any
+
+export function p12_m() {
+>p12_m : () => void
+
+    for (const v of ) {}
+>v : any
+> : any
+
+    for (const w in {}) { let u = }
+>w : string
+>{} : {}
+>u : any
+> : any
+}
+export function p13_s() {
+>p13_s : () => void
+
+    let s1 = "abc
+>s1 : string
+>"abc : "abc"
+
+    let s2 = 2;
+>s2 : number
+>2 : 2
+
+    let n = 1n2;
+>n : bigint
+>1n : 1n
+>2 : 2
+
+    let t = 3;
+>t : number
+>3 : 3
+}
+export function p14_u() {
+>p14_u : () => void
+
+    let a = 1 2;
+>a : number
+>1 : 1
+>2 : 2
+
+    let b = [1, 2;
+>b : number[]
+>[1, 2 : number[]
+>1 : 1
+>2 : 2
+
+    let c = 3
+>c : number
+>3 : 3
+
+    let d = {x: 1 y: 2};
+>d : { x: number; y: number; }
+>{x: 1 y: 2} : { x: number; y: number; }
+>x : number
+>1 : 1
+>y : number
+>2 : 2
+
+    let e = 5;
+>e : number
+>5 : 5
+}
+export function p15_v() {
+>p15_v : () => void
+
+    switch (1) {
+>1 : 1
+
+        case 1 let z = 1;
+>1 : 1
+>z : number
+>1 : 1
+
+        default?:
+            let y = 2;
+>y : number
+>2 : 2
+    }
+    try { } catch (err { }
+>err : unknown
+
+    let after = 1;
+>after : number
+>1 : 1
+}
+

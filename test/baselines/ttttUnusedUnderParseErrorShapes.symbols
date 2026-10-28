@@ -1,0 +1,194 @@
+//// [test/cases/ttttUnusedUnderParseErrorShapes.ts] ////
+
+=== ttttUnusedUnderParseErrorShapes.ts ===
+// tsgo's reportUnused skips a declaration with a node in it that its parser finished first after a parse error
+// (ThisNodeHasError): a missing expression, type or name is such a node, so is the next node after skipped tokens;
+// an error after a declaration finished doesn't hide it (agents/bugs/bun_others.md)
+export function p01_f() {
+>p01_f : Symbol(p01_f, Decl(ttttUnusedUnderParseErrorShapes.ts, 0, 0))
+
+    let a = 1;
+>a : Symbol(a, Decl(ttttUnusedUnderParseErrorShapes.ts, 4, 7))
+
+    let b = (1 +);
+>b : Symbol(b, Decl(ttttUnusedUnderParseErrorShapes.ts, 5, 7))
+
+    let c = 2;
+>c : Symbol(c, Decl(ttttUnusedUnderParseErrorShapes.ts, 6, 7))
+}
+export class p02_C {
+>p02_C : Symbol(p02_C, Decl(ttttUnusedUnderParseErrorShapes.ts, 7, 1))
+
+    private x = (1 +);
+>x : Symbol(p02_C.x, Decl(ttttUnusedUnderParseErrorShapes.ts, 8, 20))
+
+    private y = 1;
+>y : Symbol(p02_C.y, Decl(ttttUnusedUnderParseErrorShapes.ts, 9, 22))
+
+    private z() {}
+>z : Symbol(p02_C.z, Decl(ttttUnusedUnderParseErrorShapes.ts, 10, 18))
+}
+export function p05_h(a, b: , c) {}
+>p05_h : Symbol(p05_h, Decl(ttttUnusedUnderParseErrorShapes.ts, 12, 1))
+>a : Symbol(a, Decl(ttttUnusedUnderParseErrorShapes.ts, 13, 22))
+>b : Symbol(b, Decl(ttttUnusedUnderParseErrorShapes.ts, 13, 24))
+> : Symbol(unknown)
+>c : Symbol(c, Decl(ttttUnusedUnderParseErrorShapes.ts, 13, 29))
+
+export function p05_h2(d: string, e = ) {}
+>p05_h2 : Symbol(p05_h2, Decl(ttttUnusedUnderParseErrorShapes.ts, 13, 35))
+>d : Symbol(d, Decl(ttttUnusedUnderParseErrorShapes.ts, 14, 23))
+>e : Symbol(e, Decl(ttttUnusedUnderParseErrorShapes.ts, 14, 33))
+
+export function p06_g() {
+>p06_g : Symbol(p06_g, Decl(ttttUnusedUnderParseErrorShapes.ts, 14, 42))
+
+    let q = 1;; )
+>q : Symbol(q, Decl(ttttUnusedUnderParseErrorShapes.ts, 16, 7))
+
+    let r = 2;
+>r : Symbol(r, Decl(ttttUnusedUnderParseErrorShapes.ts, 17, 7))
+
+    let s = 3;
+>s : Symbol(s, Decl(ttttUnusedUnderParseErrorShapes.ts, 18, 7))
+}
+export function p07_outer() {
+>p07_outer : Symbol(p07_outer, Decl(ttttUnusedUnderParseErrorShapes.ts, 19, 1))
+
+    )
+    function inner() {}
+>inner : Symbol(inner, Decl(ttttUnusedUnderParseErrorShapes.ts, 21, 5))
+
+    function inner2() {}
+>inner2 : Symbol(inner2, Decl(ttttUnusedUnderParseErrorShapes.ts, 22, 23))
+}
+declare const o: any;
+>o : Symbol(o, Decl(ttttUnusedUnderParseErrorShapes.ts, 25, 13))
+
+export function p08_d() {
+>p08_d : Symbol(p08_d, Decl(ttttUnusedUnderParseErrorShapes.ts, 25, 21))
+
+    const { a, b: } = o;
+>a : Symbol(a, Decl(ttttUnusedUnderParseErrorShapes.ts, 27, 11))
+> : Symbol((Missing), Decl(ttttUnusedUnderParseErrorShapes.ts, 27, 14))
+>o : Symbol(o, Decl(ttttUnusedUnderParseErrorShapes.ts, 25, 13))
+
+    const [c, , e] = o;
+>c : Symbol(c, Decl(ttttUnusedUnderParseErrorShapes.ts, 28, 11))
+>e : Symbol(e, Decl(ttttUnusedUnderParseErrorShapes.ts, 28, 15))
+>o : Symbol(o, Decl(ttttUnusedUnderParseErrorShapes.ts, 25, 13))
+}
+export const p09_f = (a, b) => { let z = ; let w = 1; };
+>p09_f : Symbol(p09_f, Decl(ttttUnusedUnderParseErrorShapes.ts, 30, 12))
+>a : Symbol(a, Decl(ttttUnusedUnderParseErrorShapes.ts, 30, 22))
+>b : Symbol(b, Decl(ttttUnusedUnderParseErrorShapes.ts, 30, 24))
+>z : Symbol(z, Decl(ttttUnusedUnderParseErrorShapes.ts, 30, 36))
+>w : Symbol(w, Decl(ttttUnusedUnderParseErrorShapes.ts, 30, 46))
+
+export const p09_g = (m: number, ) => { let v = 1; };
+>p09_g : Symbol(p09_g, Decl(ttttUnusedUnderParseErrorShapes.ts, 31, 12))
+>m : Symbol(m, Decl(ttttUnusedUnderParseErrorShapes.ts, 31, 22))
+>v : Symbol(v, Decl(ttttUnusedUnderParseErrorShapes.ts, 31, 43))
+
+export function p10_k() {
+>p10_k : Symbol(p10_k, Decl(ttttUnusedUnderParseErrorShapes.ts, 31, 53))
+
+    enum E { A = (1 +) }
+>E : Symbol(E, Decl(ttttUnusedUnderParseErrorShapes.ts, 32, 25))
+>A : Symbol(E.A, Decl(ttttUnusedUnderParseErrorShapes.ts, 33, 12))
+
+    namespace N { }
+>N : Symbol(N, Decl(ttttUnusedUnderParseErrorShapes.ts, 33, 24))
+
+    interface I { x: }
+>I : Symbol(I, Decl(ttttUnusedUnderParseErrorShapes.ts, 34, 19))
+>x : Symbol(I.x, Decl(ttttUnusedUnderParseErrorShapes.ts, 35, 17))
+> : Symbol(unknown)
+
+    type T = ;
+>T : Symbol(T, Decl(ttttUnusedUnderParseErrorShapes.ts, 35, 22))
+> : Symbol(unknown)
+
+    class K { }
+>K : Symbol(K, Decl(ttttUnusedUnderParseErrorShapes.ts, 36, 14))
+}
+export class p11_D<T, U> {
+>p11_D : Symbol(p11_D, Decl(ttttUnusedUnderParseErrorShapes.ts, 38, 1))
+>T : Symbol(T, Decl(ttttUnusedUnderParseErrorShapes.ts, 39, 19))
+>U : Symbol(U, Decl(ttttUnusedUnderParseErrorShapes.ts, 39, 21))
+
+    x: U = (1 +);
+>x : Symbol(p11_D.x, Decl(ttttUnusedUnderParseErrorShapes.ts, 39, 26))
+>U : Symbol(U, Decl(ttttUnusedUnderParseErrorShapes.ts, 39, 21))
+}
+export class p11_D2<T> { m<V>(a: ) {} }
+>p11_D2 : Symbol(p11_D2, Decl(ttttUnusedUnderParseErrorShapes.ts, 41, 1))
+>T : Symbol(T, Decl(ttttUnusedUnderParseErrorShapes.ts, 42, 20))
+>m : Symbol(p11_D2.m, Decl(ttttUnusedUnderParseErrorShapes.ts, 42, 24))
+>V : Symbol(V, Decl(ttttUnusedUnderParseErrorShapes.ts, 42, 27))
+>a : Symbol(a, Decl(ttttUnusedUnderParseErrorShapes.ts, 42, 30))
+> : Symbol(unknown)
+
+export function p12_m() {
+>p12_m : Symbol(p12_m, Decl(ttttUnusedUnderParseErrorShapes.ts, 42, 39))
+
+    for (const v of ) {}
+>v : Symbol(v, Decl(ttttUnusedUnderParseErrorShapes.ts, 44, 14))
+
+    for (const w in {}) { let u = }
+>w : Symbol(w, Decl(ttttUnusedUnderParseErrorShapes.ts, 45, 14))
+>u : Symbol(u, Decl(ttttUnusedUnderParseErrorShapes.ts, 45, 29))
+}
+export function p13_s() {
+>p13_s : Symbol(p13_s, Decl(ttttUnusedUnderParseErrorShapes.ts, 46, 1))
+
+    let s1 = "abc
+>s1 : Symbol(s1, Decl(ttttUnusedUnderParseErrorShapes.ts, 48, 7))
+
+    let s2 = 2;
+>s2 : Symbol(s2, Decl(ttttUnusedUnderParseErrorShapes.ts, 49, 7))
+
+    let n = 1n2;
+>n : Symbol(n, Decl(ttttUnusedUnderParseErrorShapes.ts, 50, 7))
+
+    let t = 3;
+>t : Symbol(t, Decl(ttttUnusedUnderParseErrorShapes.ts, 51, 7))
+}
+export function p14_u() {
+>p14_u : Symbol(p14_u, Decl(ttttUnusedUnderParseErrorShapes.ts, 52, 1))
+
+    let a = 1 2;
+>a : Symbol(a, Decl(ttttUnusedUnderParseErrorShapes.ts, 54, 7))
+
+    let b = [1, 2;
+>b : Symbol(b, Decl(ttttUnusedUnderParseErrorShapes.ts, 55, 7))
+
+    let c = 3
+>c : Symbol(c, Decl(ttttUnusedUnderParseErrorShapes.ts, 56, 7))
+
+    let d = {x: 1 y: 2};
+>d : Symbol(d, Decl(ttttUnusedUnderParseErrorShapes.ts, 57, 7))
+>x : Symbol(x, Decl(ttttUnusedUnderParseErrorShapes.ts, 57, 13))
+>y : Symbol(y, Decl(ttttUnusedUnderParseErrorShapes.ts, 57, 17))
+
+    let e = 5;
+>e : Symbol(e, Decl(ttttUnusedUnderParseErrorShapes.ts, 58, 7))
+}
+export function p15_v() {
+>p15_v : Symbol(p15_v, Decl(ttttUnusedUnderParseErrorShapes.ts, 59, 1))
+
+    switch (1) {
+        case 1 let z = 1;
+>z : Symbol(z, Decl(ttttUnusedUnderParseErrorShapes.ts, 62, 18))
+
+        default?:
+            let y = 2;
+>y : Symbol(y, Decl(ttttUnusedUnderParseErrorShapes.ts, 64, 15))
+    }
+    try { } catch (err { }
+>err : Symbol(err, Decl(ttttUnusedUnderParseErrorShapes.ts, 66, 19))
+
+    let after = 1;
+>after : Symbol(after, Decl(ttttUnusedUnderParseErrorShapes.ts, 67, 7))
+}
+

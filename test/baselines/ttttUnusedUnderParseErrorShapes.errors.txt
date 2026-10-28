@@ -1,0 +1,238 @@
+ttttUnusedUnderParseErrorShapes.ts(5,9): error TS6133: 'a' is declared but its value is never read.
+ttttUnusedUnderParseErrorShapes.ts(6,17): error TS1109: Expression expected.
+ttttUnusedUnderParseErrorShapes.ts(7,9): error TS6133: 'c' is declared but its value is never read.
+ttttUnusedUnderParseErrorShapes.ts(10,21): error TS1109: Expression expected.
+ttttUnusedUnderParseErrorShapes.ts(11,13): error TS6133: 'y' is declared but its value is never read.
+ttttUnusedUnderParseErrorShapes.ts(12,13): error TS6133: 'z' is declared but its value is never read.
+ttttUnusedUnderParseErrorShapes.ts(14,23): error TS6133: 'a' is declared but its value is never read.
+ttttUnusedUnderParseErrorShapes.ts(14,23): error TS7006: Parameter 'a' implicitly has an 'any' type.
+ttttUnusedUnderParseErrorShapes.ts(14,29): error TS1110: Type expected.
+ttttUnusedUnderParseErrorShapes.ts(14,31): error TS6133: 'c' is declared but its value is never read.
+ttttUnusedUnderParseErrorShapes.ts(14,31): error TS7006: Parameter 'c' implicitly has an 'any' type.
+ttttUnusedUnderParseErrorShapes.ts(15,24): error TS6133: 'd' is declared but its value is never read.
+ttttUnusedUnderParseErrorShapes.ts(15,39): error TS1109: Expression expected.
+ttttUnusedUnderParseErrorShapes.ts(17,9): error TS6133: 'q' is declared but its value is never read.
+ttttUnusedUnderParseErrorShapes.ts(17,17): error TS1128: Declaration or statement expected.
+ttttUnusedUnderParseErrorShapes.ts(19,9): error TS6133: 's' is declared but its value is never read.
+ttttUnusedUnderParseErrorShapes.ts(22,5): error TS1128: Declaration or statement expected.
+ttttUnusedUnderParseErrorShapes.ts(24,14): error TS6133: 'inner2' is declared but its value is never read.
+ttttUnusedUnderParseErrorShapes.ts(28,19): error TS1003: Identifier expected.
+ttttUnusedUnderParseErrorShapes.ts(29,11): error TS6198: All destructured elements are unused.
+ttttUnusedUnderParseErrorShapes.ts(31,23): error TS6133: 'a' is declared but its value is never read.
+ttttUnusedUnderParseErrorShapes.ts(31,23): error TS7006: Parameter 'a' implicitly has an 'any' type.
+ttttUnusedUnderParseErrorShapes.ts(31,26): error TS6133: 'b' is declared but its value is never read.
+ttttUnusedUnderParseErrorShapes.ts(31,26): error TS7006: Parameter 'b' implicitly has an 'any' type.
+ttttUnusedUnderParseErrorShapes.ts(31,42): error TS1109: Expression expected.
+ttttUnusedUnderParseErrorShapes.ts(31,48): error TS6133: 'w' is declared but its value is never read.
+ttttUnusedUnderParseErrorShapes.ts(32,23): error TS6133: 'm' is declared but its value is never read.
+ttttUnusedUnderParseErrorShapes.ts(32,45): error TS6133: 'v' is declared but its value is never read.
+ttttUnusedUnderParseErrorShapes.ts(34,22): error TS1109: Expression expected.
+ttttUnusedUnderParseErrorShapes.ts(35,15): error TS6133: 'N' is declared but its value is never read.
+ttttUnusedUnderParseErrorShapes.ts(36,22): error TS1110: Type expected.
+ttttUnusedUnderParseErrorShapes.ts(37,14): error TS1110: Type expected.
+ttttUnusedUnderParseErrorShapes.ts(38,11): error TS6196: 'K' is declared but never used.
+ttttUnusedUnderParseErrorShapes.ts(41,16): error TS1109: Expression expected.
+ttttUnusedUnderParseErrorShapes.ts(43,34): error TS1110: Type expected.
+ttttUnusedUnderParseErrorShapes.ts(45,16): error TS6133: 'v' is declared but its value is never read.
+ttttUnusedUnderParseErrorShapes.ts(45,21): error TS1109: Expression expected.
+ttttUnusedUnderParseErrorShapes.ts(46,16): error TS6133: 'w' is declared but its value is never read.
+ttttUnusedUnderParseErrorShapes.ts(46,35): error TS1109: Expression expected.
+ttttUnusedUnderParseErrorShapes.ts(49,18): error TS1002: Unterminated string literal.
+ttttUnusedUnderParseErrorShapes.ts(50,9): error TS6133: 's2' is declared but its value is never read.
+ttttUnusedUnderParseErrorShapes.ts(51,9): error TS6133: 'n' is declared but its value is never read.
+ttttUnusedUnderParseErrorShapes.ts(51,15): error TS1005: ',' expected.
+ttttUnusedUnderParseErrorShapes.ts(52,9): error TS6133: 't' is declared but its value is never read.
+ttttUnusedUnderParseErrorShapes.ts(55,9): error TS6133: 'a' is declared but its value is never read.
+ttttUnusedUnderParseErrorShapes.ts(55,15): error TS1005: ',' expected.
+ttttUnusedUnderParseErrorShapes.ts(56,18): error TS1005: ',' expected.
+ttttUnusedUnderParseErrorShapes.ts(57,9): error TS6133: 'c' is declared but its value is never read.
+ttttUnusedUnderParseErrorShapes.ts(58,19): error TS1005: ',' expected.
+ttttUnusedUnderParseErrorShapes.ts(59,9): error TS6133: 'e' is declared but its value is never read.
+ttttUnusedUnderParseErrorShapes.ts(63,16): error TS1005: ':' expected.
+ttttUnusedUnderParseErrorShapes.ts(64,16): error TS1005: ':' expected.
+ttttUnusedUnderParseErrorShapes.ts(64,17): error TS1129: Statement expected.
+ttttUnusedUnderParseErrorShapes.ts(67,24): error TS1005: ')' expected.
+ttttUnusedUnderParseErrorShapes.ts(68,9): error TS6133: 'after' is declared but its value is never read.
+
+
+==== ttttUnusedUnderParseErrorShapes.ts (55 errors) ====
+    // tsgo's reportUnused skips a declaration with a node in it that its parser finished first after a parse error
+    // (ThisNodeHasError): a missing expression, type or name is such a node, so is the next node after skipped tokens;
+    // an error after a declaration finished doesn't hide it (agents/bugs/bun_others.md)
+    export function p01_f() {
+        let a = 1;
+            ~
+!!! error TS6133: 'a' is declared but its value is never read.
+        let b = (1 +);
+                    ~
+!!! error TS1109: Expression expected.
+        let c = 2;
+            ~
+!!! error TS6133: 'c' is declared but its value is never read.
+    }
+    export class p02_C {
+        private x = (1 +);
+                        ~
+!!! error TS1109: Expression expected.
+        private y = 1;
+                ~
+!!! error TS6133: 'y' is declared but its value is never read.
+        private z() {}
+                ~
+!!! error TS6133: 'z' is declared but its value is never read.
+    }
+    export function p05_h(a, b: , c) {}
+                          ~
+!!! error TS6133: 'a' is declared but its value is never read.
+                          ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                                ~
+!!! error TS1110: Type expected.
+                                  ~
+!!! error TS6133: 'c' is declared but its value is never read.
+                                  ~
+!!! error TS7006: Parameter 'c' implicitly has an 'any' type.
+    export function p05_h2(d: string, e = ) {}
+                           ~
+!!! error TS6133: 'd' is declared but its value is never read.
+                                          ~
+!!! error TS1109: Expression expected.
+    export function p06_g() {
+        let q = 1;; )
+            ~
+!!! error TS6133: 'q' is declared but its value is never read.
+                    ~
+!!! error TS1128: Declaration or statement expected.
+        let r = 2;
+        let s = 3;
+            ~
+!!! error TS6133: 's' is declared but its value is never read.
+    }
+    export function p07_outer() {
+        )
+        ~
+!!! error TS1128: Declaration or statement expected.
+        function inner() {}
+        function inner2() {}
+                 ~~~~~~
+!!! error TS6133: 'inner2' is declared but its value is never read.
+    }
+    declare const o: any;
+    export function p08_d() {
+        const { a, b: } = o;
+                      ~
+!!! error TS1003: Identifier expected.
+        const [c, , e] = o;
+              ~~~~~~~~
+!!! error TS6198: All destructured elements are unused.
+    }
+    export const p09_f = (a, b) => { let z = ; let w = 1; };
+                          ~
+!!! error TS6133: 'a' is declared but its value is never read.
+                          ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                             ~
+!!! error TS6133: 'b' is declared but its value is never read.
+                             ~
+!!! error TS7006: Parameter 'b' implicitly has an 'any' type.
+                                             ~
+!!! error TS1109: Expression expected.
+                                                   ~
+!!! error TS6133: 'w' is declared but its value is never read.
+    export const p09_g = (m: number, ) => { let v = 1; };
+                          ~
+!!! error TS6133: 'm' is declared but its value is never read.
+                                                ~
+!!! error TS6133: 'v' is declared but its value is never read.
+    export function p10_k() {
+        enum E { A = (1 +) }
+                         ~
+!!! error TS1109: Expression expected.
+        namespace N { }
+                  ~
+!!! error TS6133: 'N' is declared but its value is never read.
+        interface I { x: }
+                         ~
+!!! error TS1110: Type expected.
+        type T = ;
+                 ~
+!!! error TS1110: Type expected.
+        class K { }
+              ~
+!!! error TS6196: 'K' is declared but never used.
+    }
+    export class p11_D<T, U> {
+        x: U = (1 +);
+                   ~
+!!! error TS1109: Expression expected.
+    }
+    export class p11_D2<T> { m<V>(a: ) {} }
+                                     ~
+!!! error TS1110: Type expected.
+    export function p12_m() {
+        for (const v of ) {}
+                   ~
+!!! error TS6133: 'v' is declared but its value is never read.
+                        ~
+!!! error TS1109: Expression expected.
+        for (const w in {}) { let u = }
+                   ~
+!!! error TS6133: 'w' is declared but its value is never read.
+                                      ~
+!!! error TS1109: Expression expected.
+    }
+    export function p13_s() {
+        let s1 = "abc
+                     
+!!! error TS1002: Unterminated string literal.
+        let s2 = 2;
+            ~~
+!!! error TS6133: 's2' is declared but its value is never read.
+        let n = 1n2;
+            ~
+!!! error TS6133: 'n' is declared but its value is never read.
+                  ~
+!!! error TS1005: ',' expected.
+        let t = 3;
+            ~
+!!! error TS6133: 't' is declared but its value is never read.
+    }
+    export function p14_u() {
+        let a = 1 2;
+            ~
+!!! error TS6133: 'a' is declared but its value is never read.
+                  ~
+!!! error TS1005: ',' expected.
+        let b = [1, 2;
+                     ~
+!!! error TS1005: ',' expected.
+        let c = 3
+            ~
+!!! error TS6133: 'c' is declared but its value is never read.
+        let d = {x: 1 y: 2};
+                      ~
+!!! error TS1005: ',' expected.
+        let e = 5;
+            ~
+!!! error TS6133: 'e' is declared but its value is never read.
+    }
+    export function p15_v() {
+        switch (1) {
+            case 1 let z = 1;
+                   ~~~
+!!! error TS1005: ':' expected.
+            default?:
+                   ~
+!!! error TS1005: ':' expected.
+                    ~
+!!! error TS1129: Statement expected.
+                let y = 2;
+        }
+        try { } catch (err { }
+                           ~
+!!! error TS1005: ')' expected.
+        let after = 1;
+            ~~~~~
+!!! error TS6133: 'after' is declared but its value is never read.
+    }
+    

@@ -208,6 +208,14 @@ typedef struct ParserShared {
     const char* last_trivia_start;
     const char* last_trivia_end;
     u32 errors_attempted; // Every parse_error() call, the ones dropped too (a position that already has one)
+    // A parse error was reported (or deduplicated) since the last node finished: tsgo's hasParseError, which its
+    // finishNode moves onto the node as ThisNodeHasError (note_error_node())
+    bool error_pending;
+    // What changed error_pending, in order (malloc'd), so that a failed child undoes it like tsgo's rewind: an entry
+    // without a start set it, an entry with one is a node that took it, from its first token to the end of its last
+    // (SourceFile.error_nodes). Parser.error_nodes counts each parser's entries
+    struct ErrorNode* error_nodes;
+    u32 error_node_count, error_node_cap;
     // The parse errors of JSDoc comments (tsc's jsDocDiagnostics): kept whether or not the attempt that parsed the
     // comment succeeds (a comment is parsed by every attempt that parses its host), deduplicated at the end, and only
     // reported in checked JavaScript
@@ -253,6 +261,7 @@ void parser_shared_drop(ParserShared* me) {
     vec_error_drop(&my errors);
     vec_error_drop(&my jsdoc_errors);
     free(my await_statements);
+    free(my error_nodes);
 }
 
 typedef struct ExprCtx {
@@ -282,7 +291,15 @@ typedef struct Parser {
     WhitespaceType whitespace; // the type of whitespace detected in the most recent call to hop_whitespace()
     const char* whitespace_end; // the end of the most recent whitespace (whitespace type is retained if same as pos)
     uint8_t fail_cache_flag;
-    uint16_t error_count; // Number of errors added to this parser, includes children only after they succeed
+    // One word, so a child's success adds both counts at once (parse_success())
+    union {
+        struct {
+            uint16_t error_count; // Number of errors added to this parser, includes children only after they succeed
+            // Of ParserShared.error_nodes, the entries this parser added (children's once they succeed)
+            uint16_t error_nodes;
+        };
+        uint32_t error_state;
+    };
 #ifdef DEBUG_BUILD
     bool has_panding_child;
 #endif
@@ -683,7 +700,7 @@ static inline Parser parser(Parser* parent) {
         .pos = parent->pos,
         .whitespace = parent->whitespace,
         .whitespace_end = parent->whitespace_end,
-        .error_count = 0,
+        .error_state = 0,
     };
 }
 
@@ -699,17 +716,80 @@ static inline void allow_in_leave(Parser* me, bool saved) {
     my shared->disallow_in = saved;
 }
 
+static void note_error_node(Parser* me);
+static void note_missing_node(Parser* me, const char* at);
+static void push_error_node(Parser* me, const char* start, const char* end);
+
 /// Must not be used on the root parser, always returns true, drops parser
 static inline bool parse_success(Parser* me) {
 #ifdef DEBUG_BUILD
     check(my parent->has_panding_child);
     my parent->has_panding_child = false;
 #endif
+    if (__builtin_expect(my shared->error_pending, 0)) note_error_node(me);
     my parent->pos = my pos;
     my parent->whitespace = my whitespace;
     my parent->whitespace_end = my whitespace_end;
-    my parent->error_count += my error_count;
+    my parent->error_state += my error_state; // (error_count and error_nodes)
     return true;
+}
+
+typedef struct ErrorNode {
+    const char* start;
+    const char* end;
+} ErrorNode;
+
+// A child that finishes with a parse error pending (ParserShared.error_pending) and consumed a token is the node tsgo's
+// finishNode flags ThisNodeHasError: recorded from its first token to the end of its last (trivia skipped both ways),
+// and the error is no longer pending. A child that consumed nothing (an absent optional part) isn't a node: the error
+// stays pending for the next one. tttt's children are mostly tsgo's nodes; where one isn't (a wrapper around a node,
+// a lookahead that succeeds), what is recorded is a little larger or smaller than tsgo's node: unused.c only asks
+// whether one is inside a declaration (source_file_error_node_within())
+__attribute__((noinline, cold)) static void note_error_node(Parser* me) {
+    const char* start = my parent->pos;
+    const char* end = my pos;
+    while (start < end) {
+        if (*start == ' ' || *start == '\t' || *start == '\n' || *start == '\r' || *start == '\v' || *start == '\f') {
+            start++;
+        } else if (start[0] == '/' && start[1] == '/') {
+            while (start < end && *start != '\n') start++;
+        } else if (start[0] == '/' && start[1] == '*') {
+            const char* close = start + 2;
+            while (close + 1 < end && !(close[0] == '*' && close[1] == '/')) close++;
+            if (close + 1 >= end) break; // (Not a comment that ends here: a regex, say)
+            start = close + 2;
+        } else {
+            break;
+        }
+    }
+    if (start >= end) return;
+    while (end > start && (end[-1] == ' ' || end[-1] == '\t' || end[-1] == '\n' || end[-1] == '\r')) end--;
+    push_error_node(me, start, end);
+}
+
+static void push_error_node(Parser* me, const char* start, const char* end) {
+    ParserShared* shared = my shared;
+    if (shared->error_node_count == shared->error_node_cap) {
+        shared->error_node_cap = shared->error_node_cap ? shared->error_node_cap * 2 : 16;
+        shared->error_nodes = realloc(shared->error_nodes, sizeof(ErrorNode) * shared->error_node_cap);
+        panic_if(!shared->error_nodes, "out of memory");
+    }
+    shared->error_nodes[shared->error_node_count++] = (ErrorNode){ start, end };
+    shared->error_pending = !start;
+    my error_nodes++;
+}
+
+// A parse error attempt: pending now (an entry when it wasn't, which a failed child takes back)
+static inline void note_error_attempt(Parser* me) {
+    if (!my shared->error_pending) push_error_node(me, nullptr, nullptr);
+}
+
+// A missing node at `at` (an error's start): of no width at the end of the token before it (whitespace skipped back)
+__attribute__((noinline, cold)) static void note_missing_node(Parser* me, const char* at) {
+    const char* file_start = cstr_str(&my shared->source->contents);
+    if (at < file_start || at > file_start + cstr_size(&my shared->source->contents)) return;
+    while (at > file_start && (at[-1] == ' ' || at[-1] == '\t' || at[-1] == '\n' || at[-1] == '\r')) at--;
+    push_error_node(me, at, at);
 }
 
 /// Must not be used on the root parser, always returns false, drops parser
@@ -718,12 +798,20 @@ static inline bool parse_fail(Parser* me) {
     check(my parent->has_panding_child);
     my parent->has_panding_child = false;
 #endif
-    if (my error_count) {
-        vec_error_erase_n(
-            &my shared->errors,
-            vec_error_size(&my shared->errors) - my error_count,
-            my error_count
-        );
+    if (__builtin_expect(my error_state, 0)) {
+        if (my error_count) {
+            vec_error_erase_n(
+                &my shared->errors,
+                vec_error_size(&my shared->errors) - my error_count,
+                my error_count
+            );
+        }
+        if (my error_nodes) {
+            // (Pending as before the first change undone: a node took it, an attempt set it)
+            ParserShared* shared = my shared;
+            shared->error_node_count -= my error_nodes;
+            shared->error_pending = shared->error_nodes[shared->error_node_count].start != nullptr;
+        }
     }
     if (my fail_cache_flag &&
         my shared->fail_cache_start &&
@@ -802,6 +890,11 @@ static bool is_semantic_code(unsigned code) {
 // token starts with is TS1127, which tsc's scanner reports before the parser gets to say anything there
 static Error* parse_error_inner(Parser* me, Span span, unsigned ts_code, cstr message, bool in_literal) {
     my shared->errors_attempted++;
+    // (Any attempt, a deduplicated one too: tsgo's parseErrorAtRange sets hasParseError either way)
+    note_error_attempt(me);
+    // What is expected there is missing: tsgo's createMissingNode finishes a node of no width at the token's full start
+    // right away, which takes the flag
+    if ((ts_code == 1109 || ts_code == 1110 || ts_code == 1003) && span_source(span)) note_missing_node(me, span_start_ptr(span));
     int invalid = span_source(span) && !in_literal ? invalid_char_size(me, span_start_ptr(span)) : 0;
     if (invalid && ts_code != 1127) {
         cstr_drop(&message);
@@ -17403,9 +17496,9 @@ static bool parse_file_chunked(SourceFile* source) {
     source->has_commonjs = saw_commonjs;
     source->has_jsx = saw_jsx;
     source->has_parse_errors = false;
-    free(source->parse_error_starts);
-    source->parse_error_starts = nullptr;
-    source->parse_error_count = 0;
+    free(source->error_nodes);
+    source->error_nodes = nullptr;
+    source->error_node_count = 0;
     return true;
 }
 
@@ -17572,14 +17665,30 @@ static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_a
     source->has_commonjs = shared.saw_commonjs;
     source->has_jsx = shared.saw_jsx;
     source->has_parse_errors = false;
-    free(source->parse_error_starts);
-    source->parse_error_starts = nullptr;
-    source->parse_error_count = 0;
+    free(source->error_nodes);
+    source->error_nodes = nullptr;
+    source->error_node_count = 0;
     for_each (i, vec_error, &shared.errors) {
         if (i->grammar || i->js_syntax || is_js_syntax_code(i->ts_code) || i->phase != ERROR_PHASE_PARSE) continue;
         source->has_parse_errors = true;
-        source->parse_error_starts = realloc(source->parse_error_starts, sizeof(char const*) * (source->parse_error_count + 1));
-        source->parse_error_starts[source->parse_error_count++] = span_start_ptr(i->span);
+    }
+    u32 kept = 0;
+    for (u32 i = 0; i < shared.error_node_count; i++) {
+        if (shared.error_nodes[i].start) shared.error_nodes[kept++] = shared.error_nodes[i];
+    }
+    if (kept) {
+        static_assert(sizeof(ErrorNode) == 2 * sizeof(char const*));
+        source->error_nodes = (char const**)shared.error_nodes;
+        source->error_node_count = kept;
+        shared.error_nodes = nullptr;
+        static int debug = -1;
+        if (debug < 0) debug = getenv("TTTT_DEBUG_ERROR_NODES") != nullptr;
+        for (u32 i = 0; debug && i < source->error_node_count; i++) {
+            char const* start = source->error_nodes[2 * i];
+            char const* end = source->error_nodes[2 * i + 1];
+            fprintf(stderr, "error node %s [%d,%d) %.*s\n", cstr_str(&source->canonical_path), (int)(start - cstr_str(&source->contents)),
+                (int)(end - cstr_str(&source->contents)), (int)(end - start < 60 ? end - start : 60), start);
+        }
     }
     // (A JavaScript `@typedef` without a name too: tsgo's reparser reports it among the file's parse diagnostics,
     // checkNonIdentifierName, not its jsdocDiagnostics, so the file's grammar errors are dropped like for any other)

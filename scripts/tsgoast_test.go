@@ -35,7 +35,11 @@ func TestTtttAst(t *testing.T) {
 		if n.Pos() >= 0 && n.End() <= len(text) && n.Pos() <= n.End() {
 			s = text[n.Pos():n.End()]
 		}
-		fmt.Printf("%s%v [%d,%d) %q\n", strings.Repeat("  ", depth), n.Kind, n.Pos(), n.End(), s)
+		flag := ""
+		if n.Flags&ast.NodeFlagsThisNodeHasError != 0 {
+			flag = " ThisNodeHasError"
+		}
+		fmt.Printf("%s%v [%d,%d) %q%s\n", strings.Repeat("  ", depth), n.Kind, n.Pos(), n.End(), s, flag)
 		n.ForEachChild(func(c *ast.Node) bool { return visit(c, depth+1) })
 		return false
 	}

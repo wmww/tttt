@@ -94,18 +94,21 @@ static bool is_unused(Symbol const* symbol) {
     return symbol && symbol->is_local && !symbol->referenced;
 }
 
-static Error* report(Reporter const* r, bool parameter, Span at, unsigned code, cstr message) {
-    // (Not about a declaration whose parsing reported an error: tsc's checkSourceFileWorker skips a containing node
-    // that containsParseError. The diagnostic's own node stands in for the containing one)
-    if (!(parameter ? r->parameters : r->locals) || source_file_parse_error_within(at)) {
+// `location`: tsgo's node reportUnused is given (the declaration, a variable's or parameter's for its binding
+// elements, the owner of type parameters), skipped when a node the parser flagged ThisNodeHasError is inside it (a
+// parse error right before it or inside it: source_file_error_node_within())
+static Error* report(Reporter const* r, bool parameter, Span location, Span at, unsigned code, cstr message) {
+    if (!(parameter ? r->parameters : r->locals) || (span_valid(location) &&
+        source_file_error_node_within(span_source(location), span_start_ptr(location), span_end_ptr(location)))
+    ) {
         cstr_drop(&message);
         return nullptr;
     }
     return error_ctx_error_s(r->errs, at, code, message);
 }
 
-static Error* report_never_read(Reporter const* r, bool parameter, Span at, Span name) {
-    return report(r, parameter, at, 6133, cstr_d("'", name, "' is declared but its value is never read."));
+static Error* report_never_read(Reporter const* r, bool parameter, Span location, Span at, Span name) {
+    return report(r, parameter, location, at, 6133, cstr_d("'", name, "' is declared but its value is never read."));
 }
 
 // A private member this checker saw no read of in a file checked no later than this one: reported, unless another
@@ -147,14 +150,15 @@ static bool binding_unreferenced(Binding const* me, bool excused, bool before_re
     return is_unused(my symbol) && !before_rest && !(excused && starts_with_underscore(my content_span));
 }
 
-static void report_binding(Reporter const* r, Binding const* me, bool excused, bool before_rest, bool parameter);
+static void report_binding(Reporter const* r, Binding const* me, bool excused, bool before_rest, bool parameter, Span root);
 
 // tsc's reportUnusedBindingElements: all of a pattern's elements (of several) at once, else each
-static void report_pattern(Reporter const* r, Binding const* pattern, bool parameter) {
+// `root`: the variable declaration or parameter the pattern is of (tsgo's reportUnusedVariable location)
+static void report_pattern(Reporter const* r, Binding const* pattern, bool parameter, Span root) {
     u32 count = pattern->tag == BINDING_OBJECT ? (u32)vec_object_binding_item_size(&pattern->object) :
         (u32)vec_binding_size(&pattern->array);
     if (count > 1 && pattern_unreferenced(pattern)) {
-        report(r, parameter, pattern->content_span, 6198, cstr_from("All destructured elements are unused."));
+        report(r, parameter, root, pattern->content_span, 6198, cstr_from("All destructured elements are unused."));
         return;
     }
     if (pattern->tag == BINDING_OBJECT) {
@@ -162,20 +166,35 @@ static void report_pattern(Reporter const* r, Binding const* pattern, bool param
         bool rest_last = vec_object_binding_item_size(items) && vec_object_binding_item_back(items)->target.rest;
         for_each (i, vec_object_binding_item, items) {
             bool renamed = !span_eq(i->source_span, i->target.content_span);
-            report_binding(r, &i->target, renamed, rest_last && !i->target.rest, parameter);
+            report_binding(r, &i->target, renamed, rest_last && !i->target.rest, parameter, root);
         }
     } else {
-        for_each (i, vec_binding, &pattern->array) report_binding(r, i, true, false, parameter);
+        for_each (i, vec_binding, &pattern->array) report_binding(r, i, true, false, parameter, root);
     }
 }
 
 // tsc's reportUnusedVariableDeclarations of one declaration
-static void report_binding(Reporter const* r, Binding const* me, bool excused, bool before_rest, bool parameter) {
+static void report_binding(Reporter const* r, Binding const* me, bool excused, bool before_rest, bool parameter, Span root) {
     if (my tag == BINDING_ARRAY || my tag == BINDING_OBJECT) {
-        report_pattern(r, me, parameter);
+        report_pattern(r, me, parameter, root);
     } else if (my tag == BINDING_IDENTIFIER && binding_unreferenced(me, excused, before_rest)) {
-        report_never_read(r, parameter, my content_span, my content_span);
+        report_never_read(r, parameter, root, my content_span, my content_span);
     }
+}
+
+// A variable declaration's node: its name to the end of its type or initializer
+static Span declaration_extent(InitializedBinding const* me) {
+    Span span = my binding.content_span;
+    if (!span_valid(span)) return span;
+    char const* end = span_end_ptr(span);
+    Span type = binding_explicit_type_span(&my binding);
+    if (span_valid(type) && span_source(type) == span_source(span) && span_end_ptr(type) > end) end = span_end_ptr(type);
+    Expr const* value = initialized_binding_value(me);
+    Span value_span = value ? expr_outer_span(value) : span_null;
+    if (span_valid(value_span) && span_source(value_span) == span_source(span) && span_end_ptr(value_span) > end) {
+        end = span_end_ptr(value_span);
+    }
+    return span_make_in(span, span_start_ptr(span), end);
 }
 
 // tsc's reportUnusedVariables: `list_span` is where "All variables are unused" goes
@@ -185,10 +204,12 @@ static void report_variables(Reporter const* r, VariableStatement const* me, Spa
     bool all = true;
     for_each (i, vec_initialized_binding, &my initializers) all &= binding_unreferenced(&i->binding, excused, false);
     if (all && vec_initialized_binding_size(&my initializers) > 1) {
-        report(r, false, list_span, 6199, cstr_from("All variables are unused."));
+        report(r, false, list_span, list_span, 6199, cstr_from("All variables are unused."));
         return;
     }
-    for_each (i, vec_initialized_binding, &my initializers) report_binding(r, &i->binding, excused, false, false);
+    for_each (i, vec_initialized_binding, &my initializers) {
+        report_binding(r, &i->binding, excused, false, false, declaration_extent(i));
+    }
 }
 
 // tsc's rangeOfTypeParameters: from the character before the list (`<`, the space before a JSDoc list's first
@@ -239,7 +260,8 @@ static bool type_parameter_is_unused(GenericItem const* me, Symbol const* owner,
 
 // tsc's checkUnusedTypeParameters: of every declaration (a class or interface's merged declarations, `owner`, share
 // their type parameters: one used in any of them is used), the whole list when it has several and none is used
-static void report_type_parameters(Reporter const* r, Generic const* generic, Symbol const* owner) {
+// `location`: the declaration they are of
+static void report_type_parameters(Reporter const* r, Generic const* generic, Symbol const* owner, Span location) {
     if (generic_empty(generic)) return;
     // (Not when the declarations are in several files: tsc's allDeclarationsInSameSourceFile)
     for (u32 i = 1; owner && i < owner->decl_count; i++) {
@@ -252,25 +274,25 @@ static void report_type_parameters(Reporter const* r, Generic const* generic, Sy
     if (!unused_count) return;
     isize count = vec_generic_item_size(&generic->items);
     if (count > 1 && unused_count == (u32)count) {
-        report(r, true, type_parameters_range(generic), 6205, cstr_from("All type parameters are unused."));
+        report(r, true, location, type_parameters_range(generic), 6205, cstr_from("All type parameters are unused."));
         return;
     }
     for_each (i, vec_generic_item, &generic->items) {
         if (type_parameter_is_unused(i, owner, i_index)) {
-            report(r, true, i->name, 6196, cstr_d("'", i->name, "' is declared but never used."));
+            report(r, true, location, i->name, 6196, cstr_d("'", i->name, "' is declared but never used."));
         }
     }
 }
 
 static void report_function(Reporter const* r, FunctionImpl const* me) {
-    report_type_parameters(r, &my generic, nullptr);
+    report_type_parameters(r, &my generic, nullptr, my full_span);
     if (!my has_body || my is_type) return;
     for_each (i, vec_function_arg, &my args) {
         Binding const* binding = &i->initializer.binding;
         // (A property only in a constructor: elsewhere it's a parameter, TS2369, tsc's isParameterPropertyDeclaration)
         if (i->is_parameter_property && my is_constructor) continue;
         if (binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
-        report_binding(r, binding, true, false, true);
+        report_binding(r, binding, true, false, true, i->span);
     }
 }
 
@@ -286,12 +308,12 @@ static bool merged_with_export(Symbol const* symbol) {
     return exported && exported != symbol;
 }
 
-static void report_declaration(Reporter const* r, Symbol const* symbol, Span name, bool is_type) {
+static void report_declaration(Reporter const* r, Symbol const* symbol, Span location, Span name, bool is_type) {
     if (!is_unused(symbol) || merged_with_export(symbol)) return;
     if (is_type) {
-        report(r, false, name, 6196, cstr_d("'", name, "' is declared but never used."));
+        report(r, false, location, name, 6196, cstr_d("'", name, "' is declared but never used."));
     } else {
-        report_never_read(r, false, name, name);
+        report_never_read(r, false, location, name, name);
     }
 }
 
@@ -301,14 +323,23 @@ static void report_imports(Reporter const* r, PortStatement const* me, Span stat
     u32 unused_count = 0;
     u32 count = 0;
     PortItem const* main = &my main;
+    // The import clause (tsgo's location of TS6192): its first name to its last, and the `}` after it
+    char const* clause_start = nullptr;
+    char const* clause_end = nullptr;
     for (isize i = -1; i < vec_port_item_size(&my items); i++) {
         PortItem const* item = i < 0 ? main : vec_port_item_at(&my items, i);
         if (item->tag == PORT_NOOP || port_item_is_export(item) || item->export_import) continue;
+        // (The main item's full span is the statement's: its name is its node)
+        Span extent = item == main ? item->decl_name : item->full_span;
+        if (span_valid(extent) && span_source(extent) == span_source(statement_span)) {
+            if (!clause_start || span_start_ptr(extent) < clause_start) clause_start = span_start_ptr(extent);
+            if (!clause_end || span_end_ptr(extent) > clause_end) clause_end = span_end_ptr(extent);
+        }
         count++;
         if (item->duplicate || !is_unused(item->symbol)) continue;
         // `import x = N.y` and `import x = require("m")` aren't grouped, and underscores don't excuse them
         if (item->tag == PORT_IMPORT_ALIAS || item->is_require) {
-            report_never_read(r, false, item->decl_name, item->decl_name);
+            report_never_read(r, false, statement_span, item->decl_name, item->decl_name);
             count--;
             continue;
         }
@@ -318,13 +349,24 @@ static void report_imports(Reporter const* r, PortStatement const* me, Span stat
     }
     if (!unused_count) return;
     if (count > 1 && unused_count == count) {
-        report(r, false, statement_span, 6192, cstr_from("All imports in import declaration are unused."));
+        Span clause = span_null;
+        if (clause_start) {
+            char const* end = clause_end;
+            while (*end == ' ' || *end == '\t' || *end == '\n' || *end == '\r' || *end == ',') end++;
+            if (*end == '}') clause_end = end + 1;
+            char const* file_start = cstr_str(&span_source(statement_span)->contents);
+            char const* start = clause_start;
+            while (start > file_start && (start[-1] == ' ' || start[-1] == '\t' || start[-1] == '\n' || start[-1] == '\r')) start--;
+            if (start > file_start && start[-1] == '{') clause_start = start - 1;
+            clause = span_make_in(statement_span, clause_start, clause_end);
+        }
+        report(r, false, clause, statement_span, 6192, cstr_from("All imports in import declaration are unused."));
         return;
     }
     for (u32 i = 0; i < unused_count; i++) {
         // An `import type` clause's names are type declarations (tsc's isTypeDeclaration), not its namespace import:
         // `import type * as N` and an inline `{ type A }` are 6133
-        report_declaration(r, unused[i]->symbol, unused[i]->decl_name,
+        report_declaration(r, unused[i]->symbol, unused[i]->full_span, unused[i]->decl_name,
             main->type_only && unused[i]->tag != PORT_IMPORT_GATHER);
     }
 }
@@ -343,23 +385,23 @@ static void report_statement(Reporter const* r, Statement const* me) {
             break;
         }
         case STATEMENT_DECL_FUNCTION:
-            report_declaration(r, my decl.function.impl->symbol, my decl.function.impl->name, false);
+            report_declaration(r, my decl.function.impl->symbol, my span, my decl.function.impl->name, false);
             break;
         case STATEMENT_DECL_CLASS:
-            report_declaration(r, my decl.class->symbol, my decl.class->name, true);
+            report_declaration(r, my decl.class->symbol, my span, my decl.class->name, true);
             break;
         case STATEMENT_DECL_INTERFACE:
-            report_declaration(r, my decl.interface->symbol, my decl.interface->name, true);
+            report_declaration(r, my decl.interface->symbol, my span, my decl.interface->name, true);
             break;
         case STATEMENT_DECL_TYPE:
-            report_declaration(r, my decl.type->symbol, my decl.type->name, true);
+            report_declaration(r, my decl.type->symbol, my span, my decl.type->name, true);
             break;
         case STATEMENT_DECL_ENUM:
-            report_declaration(r, my decl.enum_->symbol, my decl.enum_->name, true);
+            report_declaration(r, my decl.enum_->symbol, my span, my decl.enum_->name, true);
             break;
         case STATEMENT_DECL_NAMESPACE:
             if (!my decl.namespace->is_global && !my decl.namespace->is_ambient_module) {
-                report_declaration(r, my decl.namespace->symbol, my decl.namespace->name, false);
+                report_declaration(r, my decl.namespace->symbol, my span, my decl.namespace->name, false);
             }
             break;
         case STATEMENT_IMPORT_EXPORT:
@@ -464,14 +506,14 @@ static void report_class_members(Reporter const* r, ClassDecl const* me) {
                 // An accessor pair is reported on the getter
                 if (i->tag == CLASS_ITEM_METHOD && i->method.accessor == CLASS_ACCESSOR_SET && ty_class_accessor_getter(checker, i)) break;
                 if (ty_member_referenced_order(checker, i->span) <= r->order) break;
-                unread_member(r, report_never_read(r, false, name, name), i->span);
+                unread_member(r, report_never_read(r, false, i->span, name, name), i->span);
             }   break;
             case CLASS_ITEM_CONSTRUCTOR:
                 for_each (arg, vec_function_arg, &i->constructor.func.args) {
                     if (!arg->is_parameter_property || arg->access != ACCESS_MODIFIER_PRIVATE) continue;
                     if (ty_member_referenced_order(checker, arg->span) <= r->order) continue;
                     Span name = arg->initializer.binding.content_span;
-                    unread_member(r, report(r, false, name, 6138, cstr_d("Property '", name, "' is declared but its value is never read.")), arg->span);
+                    unread_member(r, report(r, false, arg->span, name, 6138, cstr_d("Property '", name, "' is declared but its value is never read.")), arg->span);
                 }
                 break;
             default:
@@ -496,19 +538,22 @@ void unused_report(SourceFile const* file, ErrorCtx* errs, u32 order) {
             case UNUSED_CLASS: {
                 ClassDecl const* decl = candidate->node;
                 report_class_members(&r, decl);
-                report_type_parameters(&r, &decl->generic, decl->symbol);
+                report_type_parameters(&r, &decl->generic, decl->symbol, decl->full_span);
             }   break;
             case UNUSED_INTERFACE: {
                 InterfaceDecl const* decl = candidate->node;
-                report_type_parameters(&r, &decl->generic, decl->symbol);
+                report_type_parameters(&r, &decl->generic, decl->symbol, decl->full_span);
             }   break;
-            case UNUSED_TYPE_ALIAS: report_type_parameters(&r, &((TypeDecl const*)candidate->node)->generic, nullptr); break;
+            case UNUSED_TYPE_ALIAS: {
+                TypeDecl const* decl = candidate->node;
+                report_type_parameters(&r, &decl->generic, nullptr, decl->full_span);
+            }   break;
             case UNUSED_INFER: {
                 InferredType const* infer = candidate->node;
                 if (infer->owned_symbol && !(infer->owned_symbol->referenced & SYMBOL_TYPE_PARAMETER) &&
                     !starts_with_underscore(infer->name)
                 ) {
-                    report(&r, true, infer->name, 6196, cstr_d("'", infer->name, "' is declared but never used."));
+                    report(&r, true, infer->full_span, infer->name, 6196, cstr_d("'", infer->name, "' is declared but never used."));
                 }
             }   break;
         }

@@ -141,6 +141,11 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   child parser, a failed modifier attempt) overwrites that last hop, so a token_full_start() after one is the token
   itself: parse_function_args_inner() records the parameter's full start before its lookaheads (2f7b2b1ad). Correct:
   a full start kept per token position (or tok_at() restoring the hop), checked against tsgoast.sh trees.
+- ThisNodeHasError positions (`note_error_node()`, `note_missing_node()`, unused.c `report_imports()`): a flagged node's
+  span is found by skipping whitespace and comments forward from the child's start (and whitespace back from its end);
+  a missing node's full start by skipping whitespace (not comments) back; the import clause by scanning for the `{`
+  before its first name and the `}` after its last. Correct: real token full starts (the token_full_start item above)
+  and a clause span from the parser. Oracle: the ttttUnusedUnderParseError tests, tsgoast.sh (prints ThisNodeHasError).
 - Spans rebuilt by scanning text: full starts by skipping spaces backwards (TS1433, TS1385-TS1388, comments not
   skipped), `question_dot_after()`, an object literal missing `}` (`parse_object`), a bodyless accessor's TS1005,
   `json_check_value()`'s TS1328 (tsc: after a comment). A `span_from` on a parent's anchor inside a child parser before

@@ -1,0 +1,42 @@
+ttttUnusedUnderParseErrorImports.ts(3,18): error TS1003: Identifier expected.
+ttttUnusedUnderParseErrorImports.ts(3,25): error TS2307: Cannot find module 'm' or its corresponding type declarations.
+ttttUnusedUnderParseErrorImports.ts(4,1): error TS6192: All imports in import declaration are unused.
+ttttUnusedUnderParseErrorImports.ts(4,22): error TS1109: Expression expected.
+ttttUnusedUnderParseErrorImports.ts(5,13): error TS6133: 'ns' is declared but its value is never read.
+ttttUnusedUnderParseErrorImports.ts(5,21): error TS2307: Cannot find module 'n' or its corresponding type declarations.
+ttttUnusedUnderParseErrorImports.ts(6,28): error TS1110: Type expected.
+ttttUnusedUnderParseErrorImports.ts(7,42): error TS6196: 'W' is declared but never used.
+ttttUnusedUnderParseErrorImports.ts(7,44): error TS1005: '>' expected.
+ttttUnusedUnderParseErrorImports.ts(8,6): error TS6196: 'Q' is declared but never used.
+
+
+==== ttttUnusedUnderParseErrorImports.ts (10 errors) ====
+    // tsgo's reportUnused location for imports is the import clause (TS6192) or the specifier, for type parameters their
+    // declaration: a parse error after the clause (its module specifier) doesn't hide the clause's names
+    import { a, b as } from "m";
+                     ~
+!!! error TS1003: Identifier expected.
+                            ~~~
+!!! error TS2307: Cannot find module 'm' or its corresponding type declarations.
+    import x, { y } from ;
+    ~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS6192: All imports in import declaration are unused.
+                         ~
+!!! error TS1109: Expression expected.
+    import * as ns from "n"
+                ~~
+!!! error TS6133: 'ns' is declared but its value is never read.
+                        ~~~
+!!! error TS2307: Cannot find module 'n' or its corresponding type declarations.
+    export type A<T, U> = { x: };
+                               ~
+!!! error TS1110: Type expected.
+    export type B<V> = V extends Array<infer W ? 1 : 2;
+                                             ~
+!!! error TS6196: 'W' is declared but never used.
+                                               ~
+!!! error TS1005: '>' expected.
+    type Q<R> = R;
+         ~
+!!! error TS6196: 'Q' is declared but never used.
+    
