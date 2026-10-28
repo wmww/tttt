@@ -1,0 +1,25 @@
+ttttAmbientPatternImplicitAny.ts(3,25): error TS7031: Binding element 'g' implicitly has an 'any' type.
+ttttAmbientPatternImplicitAny.ts(3,30): error TS7031: Binding element 's' implicitly has an 'any' type.
+ttttAmbientPatternImplicitAny.ts(4,14): error TS7031: Binding element 'h' implicitly has an 'any' type.
+ttttAmbientPatternImplicitAny.ts(5,15): error TS7031: Binding element 't' implicitly has an 'any' type.
+ttttAmbientPatternImplicitAny.ts(6,57): error TS7031: Binding element 'v' implicitly has an 'any' type.
+
+
+==== ttttAmbientPatternImplicitAny.ts (5 errors) ====
+    // An ambient destructuring declaration without an initializer is no grammar error (TS1182 is not for ambient ones),
+    // but its elements are typed by the pattern alone: TS7031 for each (tsc's getWidenedTypeForVariableLikeDeclaration)
+    declare const { r: { f: g }, s };
+                            ~
+!!! error TS7031: Binding element 'g' implicitly has an 'any' type.
+                                 ~
+!!! error TS7031: Binding element 's' implicitly has an 'any' type.
+    declare let [h];
+                 ~
+!!! error TS7031: Binding element 'h' implicitly has an 'any' type.
+    declare var { t };
+                  ~
+!!! error TS7031: Binding element 't' implicitly has an 'any' type.
+    declare namespace N { const { u }: { u: number }; let { v }; }
+                                                            ~
+!!! error TS7031: Binding element 'v' implicitly has an 'any' type.
+    

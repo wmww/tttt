@@ -1,0 +1,23 @@
+//// [test/cases/ttttAmbientPatternImplicitAny.ts] ////
+
+=== ttttAmbientPatternImplicitAny.ts ===
+// An ambient destructuring declaration without an initializer is no grammar error (TS1182 is not for ambient ones),
+// but its elements are typed by the pattern alone: TS7031 for each (tsc's getWidenedTypeForVariableLikeDeclaration)
+declare const { r: { f: g }, s };
+>r : any
+>f : any
+>g : any
+>s : any
+
+declare let [h];
+>h : any
+
+declare var { t };
+>t : any
+
+declare namespace N { const { u }: { u: number }; let { v }; }
+>N : typeof N
+>u : number
+>u : number
+>v : any
+

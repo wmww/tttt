@@ -166,6 +166,13 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, bool exp
             error_ctx_error_d(errs, i->binding.content_span, 7005, "Variable '", i->binding.content_span,
                 "' implicitly has an 'any' type.");
         }
+        if (initialized_binding_value(i)->tag == EXPR_IMPLICIT_ANY && declared && !i->binding.has_explicit_type &&
+            (i->binding.tag == BINDING_ARRAY || i->binding.tag == BINDING_OBJECT) && compiler_options()->no_implicit_any
+        ) {
+            // An ambient pattern without an initializer is fine to the grammar, but its type is still only the
+            // pattern's (`declare const { a };`: TS7031)
+            binding_add_implicit_any_type_errors(&i->binding, span_null, false, errs);
+        }
         if (initialized_binding_value(i)->tag == EXPR_IMPLICIT_ANY && !declared &&
             (i->binding.tag == BINDING_ARRAY || i->binding.tag == BINDING_OBJECT) &&
             my keyword != VAR_INIT_USING && my keyword != VAR_INIT_AWAIT_USING // (TS1492 instead, variable_statement_check_using())

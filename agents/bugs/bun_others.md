@@ -523,10 +523,13 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   infiniteConstraints2 (missing TS2589), noInferCommonPropertyCheck1 (TS2345 text), arrayFrom again (above), and on
   `--syntax` es6ModuleInternalNamedImports2 (+TS2303), declarationEmitOptionalMethod (+TS1200, fixed: missing_checks.md),
   conditionalPromptInference (-TS2300), destructuringObjectBindingPatternAndAssignment4 (TS1005 text x2), and
-  contextualParamTypeVsNestedReturnTypeInference1: in a type literal broken by a missing `}>`, `g(Foo, h(function ()
-  {` is tsc's method `g` whose list aborts at `(`, then a call signature `(function` whose list reports TS1390 and
-  aborts at `function` (a type member start), TS7020; tttt drops that call signature (no TS7020/TS1390/TS7031 x2).
-  [open]
+  contextualParamTypeVsNestedReturnTypeInference1 (below). [open]
+- contextualParamTypeVsNestedReturnTypeInference1 (seed 20261101): in a type literal broken by a missing `}>`, `g(Foo,
+  h(function () {` is tsc's method `g` whose list aborts at `(`, then a call signature `(function` whose list reports
+  TS1390 and aborts at `function` (a type member start), TS7020; tttt dropped that call signature (a type's call
+  signature now commits at its `(`, ttttTypeLiteralCallSignatureAbort) [fixed 5baf47b39], and missed TS7031 for an
+  ambient destructuring declaration without an initializer (`declare const { a };`, ttttAmbientPatternImplicitAny)
+  [fixed in the commit after 5baf47b39]
 - After a parameter's modifiers a reserved word is TS1359 (parseBindingIdentifier), not TS1003: `declare function`
   where a parameter was expected (seed 20261101, contextualParamTypeVsNestedReturnTypeInference4;
   ttttParameterModifierReservedName). [fixed 56abcd061]
