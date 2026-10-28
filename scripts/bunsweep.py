@@ -20,7 +20,7 @@ bun: `npm pack @oven/bun-linux-x64@canary` into a scratch dir, `package/bin/bun`
 recorded per project); about 4-8 s per project. Results in /tmp/bunsweep-TREE.json. tttt is fast/tttt
 (scripts/fastbuild.sh --measured) unless --bin, copied at the start (tttt_run.frozen).
 """
-import argparse, concurrent.futures, json, os, re, resource, signal, statistics, subprocess, sys, tempfile, time
+import argparse, collections, concurrent.futures, json, os, re, resource, signal, statistics, subprocess, sys, tempfile, time
 
 import perfsweep, sourcesweep, tttt_run
 
@@ -62,9 +62,16 @@ def run(cmd, cwd, timeout, limit, env=None):
     return (out[0] if out else b'').decode(errors='replace'), status, wall, usage.ru_maxrss, usage.ru_utime, usage.ru_stime
 
 
+def physical(cwd, p):
+    """The project's path without symlinks: a worktree's thirdparty/sources is a link, and a project named through it
+    has its root files at the link's path while workspace packages resolve (realpath) to the checkout's, so they load
+    twice (arktype: 0.2 s of checking became 54 s, a spurious TS2589 and a rerun, on both sides)"""
+    return os.path.realpath(os.path.join(cwd, p))
+
+
 def run_tttt(tttt, project, single, timeout, mem_gb):
     cwd, p = perfsweep.project_args(project)
-    cmd = [tttt, '-p', os.path.join(cwd, p), '--noEmit', '--pretty', 'false', '--time',
+    cmd = [tttt, '-p', physical(cwd, p), '--noEmit', '--pretty', 'false', '--time',
            *(['--threads', '1', '--checkers', '1'] if single else [])]
     env = {**os.environ, 'TTTT_SYNC_EXIT': '1', 'TTTT_FILE_TIMES': '1'}
     text, status, wall, rss, user, sys_ = run(cmd, cwd, timeout, tttt_run.limit_bytes(mem_gb, tttt_run.threads_of(cmd)), env)
@@ -96,7 +103,7 @@ def run_bun(bun, project, single, timeout, mem_gb):
     # (From an empty directory: a package.json "check" script would make `bun check` run that instead)
     with tempfile.TemporaryDirectory(prefix='bunsweep-') as tmp:
         build_info = ['--tsBuildInfoFile', os.path.join(tmp, 'x.tsbuildinfo')] if incremental(cwd, p) else []
-        text, status, wall, rss, user, sys_ = run([bun, 'check', '-p', os.path.join(cwd, p), '--noEmit', '--pretty',
+        text, status, wall, rss, user, sys_ = run([bun, 'check', '-p', physical(cwd, p), '--noEmit', '--pretty',
                                                    'false', '--timing', *(['--threads=1'] if single else []), *build_info],
                                                   tmp, timeout, mem_gb << 30)
     m = re.search(r'(\d+) files loaded in ([\d.]+)ms, (\d+) checked in ([\d.]+)ms', text)
@@ -143,7 +150,8 @@ def summarize(project, r):
          'check_mt': check(mt), 'check_st': check(st),
          'check_cpu_mt': med([x['phase_cpu'].get('typecheck', 0) for x in mt]),
          'file_cpu_mt': med([x['file_cpu_ms'] for x in mt]), 'file_cpu_st': med([x['file_cpu_ms'] for x in st]),
-         'tail': med([x['phases'].get('typecheck', 0) - min(x['checker_ms']) if x['checker_ms'] else 0 for x in mt]),
+         # (The checkers' average idle time in the typecheck phase: behind the costliest file, the critical path)
+         'tail': med([x['phases'].get('typecheck', 0) - statistics.mean(x['checker_ms']) if x['checker_ms'] else 0 for x in mt]),
          'top_mt': mt[0]['top_files'][:1], 'top_st': st[0]['top_files'][:1],
          'rerun': next((x['rerun'] for x in mt if x['rerun']), None),
          'recycles': max(x['recycles'] for x in mt), 'checkers': mt[0]['checkers'], 'threads': mt[0]['threads'],
@@ -151,7 +159,30 @@ def summarize(project, r):
          'bun_load_st': med([x['load_ms'] for x in b1]), 'bun_check_st': med([x['check_ms'] for x in b1]),
          'files': b[0]['files']}
     s['rest_mt'] = s['mt'] * 1000 - s['front_mt'] - s['check_mt']
+    s['rest_st'] = s['st'] * 1000 - s['front_st'] - s['check_st']
+    s['rerun_ms'] = med([x['rerun'][0] for x in mt if x['rerun']])
     return s
+
+
+def accounting(s):
+    """Where tttt's parallel speed-up goes, in ms of MT wall against the ideal ST / K (K: the physical cores, half
+    the default threads): the front end's excess over its ST time / K; a rerun's whole typecheck (its parallel pass and a K1 check);
+    else the typecheck's idle tail (the checkers' average idle time: behind the costliest file, the critical path)
+    and the excess of their average busy time over ST's typecheck / K (duplicated work across checkers, SMT,
+    contention); the remainder (start-up, output, exit)"""
+    # (The physical cores: tttt's default threads are the logical ones, 2 per core with SMT)
+    k = max(s['threads'] // 2, 1)
+    ideal = s['st'] * 1000 / k
+    front = s['front_mt'] - s['front_st'] / k
+    if s['rerun']:
+        rerun, tail, dup = s['check_mt'] - s['check_st'] / k, 0, 0
+    else:
+        rerun = 0
+        tail = s['tail']
+        dup = s['check_mt'] - tail - s['check_st'] / k
+    rest = s['rest_mt'] - s['rest_st'] / k
+    return {'k': k, 'ideal': ideal, 'loss': s['mt'] * 1000 - ideal, 'front': front, 'dup': dup, 'tail': tail,
+            'rerun': rerun, 'rest': rest}
 
 
 def report(results, k):
@@ -181,7 +212,7 @@ def report(results, k):
     print(f'  front end ST / MT: {dist(fr)}; typecheck ST / MT (over 20 ms): {dist(ch)}')
     print(f'  reruns at MT: {sum(1 for s in rows if s["rerun"])}; recycles at MT: {sum(1 for s in rows if s["recycles"])}')
     print(f'\nthe {k} worst tttt scalers (ms; scal = ST / MT wall; front/check = MT phases with cores busy, the ST phase '
-          f'after the slash; dup = per-file check CPU MT / ST; tail = MT typecheck after the first checker finished):')
+          f'after the slash; dup = per-file check CPU MT / ST; tail = MT typecheck the checkers idled on average):')
     print(f'  {"project":40} {"tST":>6} {"tMT":>6} {"scal":>5} {"bST":>6} {"bMT":>6} {"bscal":>5} {"t/b":>5} '
           f'{"front":>11} {"fcor":>4} {"check":>11} {"ccor":>4} {"dup":>4} {"tail":>5} {"rest":>4} {"sys":>5} {"K":>2}')
     for s in sorted(rows, key=lambda s: s['st'] / s['mt'])[:k]:
@@ -192,6 +223,24 @@ def report(results, k):
               f'{s["file_cpu_mt"] / s["file_cpu_st"] if s["file_cpu_st"] else 0:4.1f} {s["tail"]:5.0f} {s["rest_mt"]:4.0f} '
               f'{s["mt_sys"] * 1000:5.0f} {s["checkers"]:2}'
               f'{" rerun " + s["rerun"][2] if s["rerun"] else ""}{" recycled" if s["recycles"] else ""}')
+    print(f'\nwhere the speed-up goes, the {k} worst scalers (ms of MT wall over the ideal ST / K; a rerun counts its whole '
+          f'typecheck; dup = the typecheck\'s excess before its idle tail):')
+    print(f'  {"project":40} {"tMT":>6} {"ideal":>6} {"K":>2} {"loss":>6} {"front":>6} {"dup":>6} {"tail":>6} {"rerun":>6} '
+          f'{"rest":>5}  dominant')
+    for s in sorted(rows, key=lambda s: s['st'] / s['mt'])[:k]:
+        a = accounting(s)
+        parts = {n: a[n] for n in ('front', 'dup', 'tail', 'rerun', 'rest')}
+        print(f'  {s["project"][:40]:40} {s["mt"] * 1000:6.0f} {a["ideal"]:6.0f} {a["k"]:2} {a["loss"]:6.0f} '
+              f'{a["front"]:6.0f} {a["dup"]:6.0f} {a["tail"]:6.0f} {a["rerun"]:6.0f} {a["rest"]:5.0f}  '
+              f'{max(parts, key=parts.get)}')
+    sums = {n: sum(accounting(s)[n] for s in rows) for n in ('loss', 'front', 'dup', 'tail', 'rerun', 'rest')}
+    print('  all projects, summed: ' + ', '.join(f'{n} {v / 1000:.1f} s' for n, v in sums.items()))
+    dom = collections.Counter()
+    for s in rows:
+        a = accounting(s)
+        parts = {n: a[n] for n in ('front', 'dup', 'tail', 'rerun', 'rest')}
+        dom[max(parts, key=parts.get)] += 1
+    print('  dominant bucket per project: ' + ', '.join(f'{n} {c}' for n, c in dom.most_common()))
     print(f'\nthe {k} worst against bun at both defaults:')
     print(f'  {"project":40} {"t/b":>5} {"tMT":>6} {"bMT":>6} {"front":>6} {"bload":>6} {"check":>6} {"bchk":>6} {"scal":>5} {"bscal":>5}')
     for s in sorted(rows, key=lambda s: -s['mt'] / s['bun'])[:k]:
