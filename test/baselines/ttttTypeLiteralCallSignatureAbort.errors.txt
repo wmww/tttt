@@ -1,0 +1,35 @@
+ttttTypeLiteralCallSignatureAbort.ts(5,3): error TS7020: Call signature, which lacks return-type annotation, implicitly has an 'any' return type.
+ttttTypeLiteralCallSignatureAbort.ts(5,4): error TS1390: 'function' is not allowed as a parameter name.
+ttttTypeLiteralCallSignatureAbort.ts(5,4): error TS7010: 'function', which lacks return-type annotation, implicitly has an 'any' return type.
+ttttTypeLiteralCallSignatureAbort.ts(7,12): error TS7020: Call signature, which lacks return-type annotation, implicitly has an 'any' return type.
+ttttTypeLiteralCallSignatureAbort.ts(7,13): error TS1390: 'class' is not allowed as a parameter name.
+ttttTypeLiteralCallSignatureAbort.ts(7,26): error TS1005: ';' expected.
+ttttTypeLiteralCallSignatureAbort.ts(7,27): error TS1131: Property or signature expected.
+ttttTypeLiteralCallSignatureAbort.ts(7,29): error TS7008: Member 'void' implicitly has an 'any' type.
+
+
+==== ttttTypeLiteralCallSignatureAbort.ts (8 errors) ====
+    // A type member's `(` commits it to a call signature (tsc's parseSignatureMember): its parameter list reports TS1390 and
+    // aborts at a reserved word that starts a type member, and the call signature stands (TS7020), then a method
+    // (mutation testing seed 20261101, contextualParamTypeVsNestedReturnTypeInference1)
+    declare const x: {
+      (function ()
+      ~
+!!! error TS7020: Call signature, which lacks return-type annotation, implicitly has an 'any' return type.
+       ~~~~~~~~
+!!! error TS1390: 'function' is not allowed as a parameter name.
+       ~~~~~~~~~~~
+!!! error TS7010: 'function', which lacks return-type annotation, implicitly has an 'any' return type.
+    };
+    type T = { (class: number): void };
+               ~
+!!! error TS7020: Call signature, which lacks return-type annotation, implicitly has an 'any' return type.
+                ~~~~~
+!!! error TS1390: 'class' is not allowed as a parameter name.
+                             ~
+!!! error TS1005: ';' expected.
+                              ~
+!!! error TS1131: Property or signature expected.
+                                ~~~~
+!!! error TS7008: Member 'void' implicitly has an 'any' type.
+    

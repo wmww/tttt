@@ -8137,7 +8137,9 @@ static bool parse_signature_args(Parser* p, bool is_type, FunctionImpl* ret) {
     p->shared->outer_in_async = in_async;
     p->shared->in_async = false;
     p->shared->type_member_args = true;
-    bool parsed = parse_function_args(p, true, false, true, false, ret);
+    // (A type member's `(` or `<` commits it to a signature: tsc's parseSignatureMember, its parameter list recovers,
+    // `{ (function () }` is a call signature whose list aborts at `function`, then a method)
+    bool parsed = parse_function_args(p, true, false, true, true, ret);
     p->shared->type_member_args = false;
     p->shared->in_async = in_async;
     p->shared->outer_in_async = outer_in_async;
