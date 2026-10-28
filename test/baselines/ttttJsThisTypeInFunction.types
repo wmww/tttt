@@ -1,0 +1,43 @@
+//// [test/cases/ttttJsThisTypeInFunction.ts] ////
+
+=== a.js ===
+/** @param {this} x */
+function F(x) {
+>F : (x: this) => void
+>x : any
+
+    /** @type {this} */
+    const self = x;
+>self : any
+>x : any
+
+    this.a = self;
+>this.a = self : any
+>this.a : any
+>this : any
+>a : any
+>self : any
+}
+/** @returns {this} */
+F.prototype.m = function () { return this; };
+>F.prototype.m = function () { return this; } : () => this
+>F.prototype.m : any
+>F.prototype : any
+>F : (x: this) => void
+>prototype : any
+>m : any
+>function () { return this; } : () => this
+>this : any
+
+const o = {
+>o : { n(y: this): any; }
+>{    /** @param {this} y */    n(y) { return y; },} : { n(y: this): any; }
+
+    /** @param {this} y */
+    n(y) { return y; },
+>n : (y: this) => any
+>y : any
+>y : any
+
+};
+

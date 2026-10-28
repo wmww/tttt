@@ -1,0 +1,33 @@
+//// [test/cases/ttttJsThisTypeInFunction.ts] ////
+
+=== a.js ===
+/** @param {this} x */
+function F(x) {
+>F : Symbol(F, Decl(a.js, 0, 0))
+>x : Symbol(x, Decl(a.js, 1, 11))
+
+    /** @type {this} */
+    const self = x;
+>self : Symbol(self, Decl(a.js, 3, 9))
+>x : Symbol(x, Decl(a.js, 1, 11))
+
+    this.a = self;
+>self : Symbol(self, Decl(a.js, 3, 9))
+}
+/** @returns {this} */
+F.prototype.m = function () { return this; };
+>F.prototype : Symbol(Function.prototype, Decl(lib.es5.d.ts, --, --))
+>F : Symbol(F, Decl(a.js, 0, 0))
+>prototype : Symbol(Function.prototype, Decl(lib.es5.d.ts, --, --))
+
+const o = {
+>o : Symbol(o, Decl(a.js, 8, 5))
+
+    /** @param {this} y */
+    n(y) { return y; },
+>n : Symbol(n, Decl(a.js, 8, 11))
+>y : Symbol(y, Decl(a.js, 10, 6))
+>y : Symbol(y, Decl(a.js, 10, 6))
+
+};
+

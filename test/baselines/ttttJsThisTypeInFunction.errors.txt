@@ -1,0 +1,31 @@
+a.js(1,13): error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+a.js(3,16): error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+a.js(5,5): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+a.js(7,15): error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+a.js(10,17): error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+
+
+==== a.js (5 errors) ====
+    /** @param {this} x */
+                ~~~~
+!!! error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+    function F(x) {
+        /** @type {this} */
+                   ~~~~
+!!! error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+        const self = x;
+        this.a = self;
+        ~~~~
+!!! error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+    }
+    /** @returns {this} */
+                  ~~~~
+!!! error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+    F.prototype.m = function () { return this; };
+    const o = {
+        /** @param {this} y */
+                    ~~~~
+!!! error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+        n(y) { return y; },
+    };
+    

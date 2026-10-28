@@ -414,26 +414,6 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
             }
             my target = this_ref.symbol;
             if (this_ref.interface) this_ref.interface->contains_this = true;
-            if (names->file && names->file->is_js && this_ref.kind != THIS_CLASS_INSTANCE && this_ref.kind != THIS_INTERFACE) {
-                ThisRef value = scope_get_this(names, false);
-                if (value.kind == THIS_ANY) {
-                    identifier_type_rare(me)->this_function = value.function;
-                    // (Arrow functions between don't count: tsc's getThisContainer skips them)
-                    bool in_signature = false;
-                    for (Scope const* s = names; s; s = s->parent) {
-                        if (s->kind != SCOPE_FUNCTION) {
-                            in_signature |= s->parameters || s->return_type;
-                            continue;
-                        }
-                        if (s->function != value.function) {
-                            in_signature = false;
-                            continue;
-                        }
-                        identifier_type_rare(me)->this_in_signature = in_signature;
-                        break;
-                    }
-                }
-            }
         }
     } else {
         my target = scope_get_type(names, span_sv(my name), &my symbol);

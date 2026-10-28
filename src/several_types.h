@@ -12,12 +12,6 @@
 typedef struct IdentifierTypeRare {
     AstSpans namespaces;
     AstSymbols namespace_symbols; // What each of the namespaces resolved to (maybe an alias), shorter on failure
-    // A JavaScript `this` type outside a class: the function whose `this` it is, a constructor function or a method of
-    // its prototype makes it the class's `this` (tsc's getThisType: isJSConstructor, getClassNameFromPrototypeMethod)
-    struct FunctionImpl const* this_function;
-    // ... written in that function's parameters or return type, not its body: tsc's getThisType then takes only a method
-    // of a prototype (`F.prototype.m = function`), not a constructor function (isNodeDescendantOf(node, container.body))
-    bool this_in_signature;
     // `import("./a").A.B<T>`: names are looked up in the module's exports instead of the scope. `name` is null for a
     // bare `import("./a")`. With import_typeof it is a value (`typeof import("./a").x`)
     ModuleRef* import_ref;
@@ -112,9 +106,6 @@ static inline TypeNode const* identifier_type_import_argument(IdentifierType con
 }
 static inline ModuleRef* identifier_type_import_ref(IdentifierType const* me) {
     return my rare ? my rare->import_ref : nullptr;
-}
-static inline struct FunctionImpl const* identifier_type_this_function(IdentifierType const* me) {
-    return my rare ? my rare->this_function : nullptr;
 }
 
 typedef enum JsDocIntrinsic {
