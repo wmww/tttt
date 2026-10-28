@@ -1,0 +1,55 @@
+//// [test/cases/ttttContextualIntersectionWithConditional.ts] ////
+
+=== ttttContextualIntersectionWithConditional.ts ===
+// origin: npm vvedantb/eva @ fd387003e apps/web (tsconfig.json), src/lib/components/ChangelogDialog.tsx:37 (convex/react useMutation(...).withOptimisticUpdate)
+// flip: yes
+// A contextual intersection of a type parameter and a conditional type: the conditional's apparent union (no call
+// signatures in common) contributes none, the type parameter's constraint gives the signature (tsc's per-member
+// getSignaturesOfType of an intersection)
+interface Store { get(n: string): number }
+>get : (n: string) => number
+>n : string
+
+type OptimisticUpdate<Args> = (localStore: Store, args: Args) => void;
+>OptimisticUpdate : OptimisticUpdate<Args>
+>localStore : Store
+>args : Args
+
+interface M<A> {
+  withOptimisticUpdate<T extends OptimisticUpdate<A>>(u: T & (ReturnType<T> extends Promise<any> ? "must be sync" : {})): M<A>;
+>withOptimisticUpdate : <T extends OptimisticUpdate<A>>(u: T & (ReturnType<T> extends Promise<any> ? "must be sync" : {})) => M<A>
+>u : T & (ReturnType<T> extends Promise<any> ? "must be sync" : {})
+}
+declare const m: M<{ id: string }>;
+>m : M<{ id: string; }>
+>id : string
+
+m.withOptimisticUpdate((localStore) => { localStore.get("x"); });
+>m.withOptimisticUpdate((localStore) => { localStore.get("x"); }) : M<{ id: string; }>
+>m.withOptimisticUpdate : <T extends OptimisticUpdate<{ id: string; }>>(u: T & (ReturnType<T> extends Promise<any> ? "must be sync" : {})) => M<{ id: string; }>
+>m : M<{ id: string; }>
+>withOptimisticUpdate : <T extends OptimisticUpdate<{ id: string; }>>(u: T & (ReturnType<T> extends Promise<any> ? "must be sync" : {})) => M<{ id: string; }>
+>(localStore) => { localStore.get("x"); } : (localStore: Store) => void
+>localStore : Store
+>localStore.get("x") : number
+>localStore.get : (n: string) => number
+>localStore : Store
+>get : (n: string) => number
+>"x" : "x"
+
+m.withOptimisticUpdate((localStore, args) => { localStore.get(args.id); });
+>m.withOptimisticUpdate((localStore, args) => { localStore.get(args.id); }) : M<{ id: string; }>
+>m.withOptimisticUpdate : <T extends OptimisticUpdate<{ id: string; }>>(u: T & (ReturnType<T> extends Promise<any> ? "must be sync" : {})) => M<{ id: string; }>
+>m : M<{ id: string; }>
+>withOptimisticUpdate : <T extends OptimisticUpdate<{ id: string; }>>(u: T & (ReturnType<T> extends Promise<any> ? "must be sync" : {})) => M<{ id: string; }>
+>(localStore, args) => { localStore.get(args.id); } : (localStore: Store, args: { id: string; }) => void
+>localStore : Store
+>args : { id: string; }
+>localStore.get(args.id) : number
+>localStore.get : (n: string) => number
+>localStore : Store
+>get : (n: string) => number
+>args.id : string
+>args : { id: string; }
+>id : string
+

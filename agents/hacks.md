@@ -250,6 +250,12 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   2026-10-24 and regressed ttttAugmentationCloneChain's symbols and types (which symbol the harness names, local twins
   of module exports): it needs the harness's twin logic and the display's container search reworked with it.
 
+- `contextual_signature()` (ty/expr.c) of an intersection with type variables builds the intersection of its members'
+  apparent types and takes that's signatures, where tsc's getSignaturesOfType of the intersection concatenates each
+  member's. Only a conditional member whose apparent type is a union without common call signatures is dropped
+  first (convex's withOptimisticUpdate, ttttContextualIntersectionWithConditional); an indexed access's apparent union
+  still distributes (intersectionOfTypeVariableHasApparentSignatures passes that way). Correct: per-member signatures.
+
 ## Control flow and narrowing (`flow.c`, `ty/flow.c`)
 - `without_unit()` (ty/flow.c): the `!==`-a-unit filter of a union is memoized per (union, unit), KEY_FLOW_NOT_UNIT.
   This assumes is_not_unit_comparable_to's answers never change, but they come from comparability relations and base

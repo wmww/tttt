@@ -1303,6 +1303,36 @@ static Signature const* contextual_signature(Checker* me, Ty const* contextual, 
     // An intersection's signatures are its members', a type variable's those of its constraint (tsc's
     // getSignaturesOfType of each member through getReducedApparentType)
     if (contextual->kind == TY_INTERSECTION && (contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+        // (Each member's apparent type on its own: one that is a union without call signatures in common, a conditional
+        // type's `"must be sync" | {}`, contributes none, rather than distributing the intersection over it. convex's
+        // `withOptimisticUpdate<T extends OptimisticUpdate<A>>(u: T & (ReturnType<T> extends Promise<any> ? "..." : {}))`)
+        TyList types = contextual->composite.types;
+        Ty const** kept = malloc(sizeof(Ty const*) * types.len);
+        panic_if(!kept, "out of memory");
+        u32 kept_count = 0;
+        bool dropped = false;
+        for (u32 i = 0; i < types.len; i++) {
+            Ty const* apparent = apparent_contextual_type(me, types.data[i]);
+            // (A conditional type's: a union written as a member is distributed over when the intersection is made, and
+            // other type variables' apparent unions keep the distribution, `T["children"] & ({} | undefined)`,
+            // intersectionOfTypeVariableHasApparentSignatures)
+            if (apparent->kind == TY_UNION && types.data[i]->kind == TY_CONDITIONAL && !(apparent->flags & TYF_BOOLEAN)) {
+                u32 count = 0;
+                ty_union_signatures(me, apparent->composite.types, false, &count);
+                if (!count) {
+                    dropped = true;
+                    continue;
+                }
+            }
+            kept[kept_count++] = apparent;
+        }
+        if (dropped) {
+            contextual = kept_count == 1 ? kept[0] : kept_count ? ty_intersection(me, kept, kept_count, nullptr, (TyList){0}) : nullptr;
+            free(kept);
+            if (!contextual) return nullptr;
+            return contextual_signature(me, contextual, function, depth + 1);
+        }
+        free(kept);
         contextual = apparent_contextual_type(me, contextual);
         if (!(contextual->flags & (TYF_OBJECT | TYF_INTERSECTION))) return nullptr;
     }
