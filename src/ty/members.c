@@ -4085,6 +4085,7 @@ static void union_members(Ty const* const* ty_ref, Ty const* const** out, u32* c
 }
 
 static Members const* expand_generic_intersection_homomorphic(Checker* me, Members const* members, TyList parts);
+static bool intersection_has_generic_part(Checker* me, Ty const* intersection);
 static Prop const* modifiers_prop(Checker* me, Ty const* modifiers, Atom const* name, u32* flags);
 
 // A reference whose type arguments aren't generic, only its this-argument: `T extends I` with an interface I that has a
@@ -4145,8 +4146,11 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
     // (Of a constraint that's an intersection, `T extends Node & { x: X }`, the properties of its parts; of a deferred
     // conditional type's, `Extract<{ a: A }, { t: T }>`'s `{ t: T } & { a: A }` or `A | B`, the properties every
     // member of the union has, whatever their genericity: tsc's getPropertiesOfType of the apparent modifiers type)
+    // (Nor a part that only may contain type variables: an interface whose base is a mapped type, `interface P extends
+    // Partial<M>`, is flagged so, freelens' `Readonly<Props>` with `Props extends P & Deps`)
     if (apparent != mapped->modifiers_type && apparent->kind == TY_INTERSECTION &&
-        (mapped->modifiers_type->flags & TYF_DEFERRED || !(apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES))) {
+        (mapped->modifiers_type->flags & TYF_DEFERRED || !(apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) ||
+            !intersection_has_generic_part(me, apparent))) {
         return expand_generic_intersection_homomorphic(me, members, apparent->composite.types);
     }
     if (apparent != mapped->modifiers_type && apparent->kind == TY_UNION) {

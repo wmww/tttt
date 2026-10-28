@@ -1,0 +1,86 @@
+//// [test/cases/ttttMappedOverIntersectionWithMappedBase.ts] ////
+
+=== ttttMappedOverIntersectionWithMappedBase.ts ===
+// origin: npm freelensapp/freelens @ 088d085 packages/core (tsconfig.bench.json), src/renderer/components/network-port-forwards/port-forward-menu.tsx
+// flip: no
+// A homomorphic mapped type over a type parameter constrained to an intersection has the properties of every part,
+// an interface whose base is a mapped type (Partial<M>) among them
+interface MenuProps { open(): void; id?: string }
+>MenuProps : Symbol(MenuProps, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 0, 0))
+>open : Symbol(MenuProps.open, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 4, 21))
+>id : Symbol(MenuProps.id, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 4, 35))
+
+interface MAP extends Partial<MenuProps> { toolbar?: boolean }
+>MAP : Symbol(MAP, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 4, 49))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>MenuProps : Symbol(MenuProps, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 0, 0))
+>toolbar : Symbol(MAP.toolbar, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 5, 42))
+
+interface MAP2 extends MenuProps { toolbar?: boolean }
+>MAP2 : Symbol(MAP2, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 5, 62))
+>MenuProps : Symbol(MenuProps, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 0, 0))
+>toolbar : Symbol(MAP2.toolbar, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 6, 34))
+
+interface Deps { store: number }
+>Deps : Symbol(Deps, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 6, 54))
+>store : Symbol(Deps.store, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 7, 16))
+
+function f1<Props extends MAP & Deps>(p: Readonly<Props>) { return p.store; }
+>f1 : Symbol(f1, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 7, 32))
+>Props : Symbol(Props, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 8, 12))
+>MAP : Symbol(MAP, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 4, 49))
+>Deps : Symbol(Deps, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 6, 54))
+>p : Symbol(p, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 8, 38))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Props : Symbol(Props, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 8, 12))
+>p.store : Symbol(store, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 7, 16))
+>p : Symbol(p, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 8, 38))
+>store : Symbol(store, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 7, 16))
+
+function f2<Props extends MAP2 & Deps>(p: Readonly<Props>) { return p.store; }
+>f2 : Symbol(f2, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 8, 77))
+>Props : Symbol(Props, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 9, 12))
+>MAP2 : Symbol(MAP2, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 5, 62))
+>Deps : Symbol(Deps, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 6, 54))
+>p : Symbol(p, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 9, 39))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Props : Symbol(Props, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 9, 12))
+>p.store : Symbol(store, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 7, 16))
+>p : Symbol(p, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 9, 39))
+>store : Symbol(store, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 7, 16))
+
+function f3<Props extends Deps & MAP>(p: Readonly<Props>) { return p.store; }
+>f3 : Symbol(f3, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 9, 78))
+>Props : Symbol(Props, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 10, 12))
+>Deps : Symbol(Deps, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 6, 54))
+>MAP : Symbol(MAP, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 4, 49))
+>p : Symbol(p, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 10, 38))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Props : Symbol(Props, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 10, 12))
+>p.store : Symbol(store, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 7, 16))
+>p : Symbol(p, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 10, 38))
+>store : Symbol(store, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 7, 16))
+
+function f4<Props extends MAP>(p: Readonly<Props>) { return p.toolbar; }
+>f4 : Symbol(f4, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 10, 77))
+>Props : Symbol(Props, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 11, 12))
+>MAP : Symbol(MAP, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 4, 49))
+>p : Symbol(p, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 11, 31))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Props : Symbol(Props, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 11, 12))
+>p.toolbar : Symbol(toolbar, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 5, 42))
+>p : Symbol(p, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 11, 31))
+>toolbar : Symbol(toolbar, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 5, 42))
+
+function f5<Props extends MAP & Deps>(p: Readonly<Props>) { return p.toolbar; }
+>f5 : Symbol(f5, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 11, 72))
+>Props : Symbol(Props, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 12, 12))
+>MAP : Symbol(MAP, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 4, 49))
+>Deps : Symbol(Deps, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 6, 54))
+>p : Symbol(p, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 12, 38))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Props : Symbol(Props, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 12, 12))
+>p.toolbar : Symbol(toolbar, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 5, 42))
+>p : Symbol(p, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 12, 38))
+>toolbar : Symbol(toolbar, Decl(ttttMappedOverIntersectionWithMappedBase.ts, 5, 42))
+

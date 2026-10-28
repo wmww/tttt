@@ -1,0 +1,55 @@
+//// [test/cases/ttttMappedOverIntersectionWithMappedBase.ts] ////
+
+=== ttttMappedOverIntersectionWithMappedBase.ts ===
+// origin: npm freelensapp/freelens @ 088d085 packages/core (tsconfig.bench.json), src/renderer/components/network-port-forwards/port-forward-menu.tsx
+// flip: no
+// A homomorphic mapped type over a type parameter constrained to an intersection has the properties of every part,
+// an interface whose base is a mapped type (Partial<M>) among them
+interface MenuProps { open(): void; id?: string }
+>open : () => void
+>id : string | undefined
+
+interface MAP extends Partial<MenuProps> { toolbar?: boolean }
+>toolbar : boolean | undefined
+
+interface MAP2 extends MenuProps { toolbar?: boolean }
+>toolbar : boolean | undefined
+
+interface Deps { store: number }
+>store : number
+
+function f1<Props extends MAP & Deps>(p: Readonly<Props>) { return p.store; }
+>f1 : <Props extends MAP & Deps>(p: Readonly<Props>) => Props["store"]
+>p : Readonly<Props>
+>p.store : Props["store"]
+>p : Readonly<Props>
+>store : Props["store"]
+
+function f2<Props extends MAP2 & Deps>(p: Readonly<Props>) { return p.store; }
+>f2 : <Props extends MAP2 & Deps>(p: Readonly<Props>) => Props["store"]
+>p : Readonly<Props>
+>p.store : Props["store"]
+>p : Readonly<Props>
+>store : Props["store"]
+
+function f3<Props extends Deps & MAP>(p: Readonly<Props>) { return p.store; }
+>f3 : <Props extends Deps & MAP>(p: Readonly<Props>) => Props["store"]
+>p : Readonly<Props>
+>p.store : Props["store"]
+>p : Readonly<Props>
+>store : Props["store"]
+
+function f4<Props extends MAP>(p: Readonly<Props>) { return p.toolbar; }
+>f4 : <Props extends MAP>(p: Readonly<Props>) => Props["toolbar"] | undefined
+>p : Readonly<Props>
+>p.toolbar : Props["toolbar"] | undefined
+>p : Readonly<Props>
+>toolbar : Props["toolbar"] | undefined
+
+function f5<Props extends MAP & Deps>(p: Readonly<Props>) { return p.toolbar; }
+>f5 : <Props extends MAP & Deps>(p: Readonly<Props>) => Props["toolbar"] | undefined
+>p : Readonly<Props>
+>p.toolbar : Props["toolbar"] | undefined
+>p : Readonly<Props>
+>toolbar : Props["toolbar"] | undefined
+
