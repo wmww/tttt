@@ -95,6 +95,13 @@ measured wins first; land fast and gate in batches.
 6. **Re-pin to 7.1.0 stable** when it ships.
 
 ## Decisions (each with its reason; the narrative is in git history of this file)
+- **The threading speedup and the leaner type graph that enables it are the priority** (the human, 2026-10-29, after
+  the laptop's counters: footprint.md "The laptop's counters"). Order: the shared-members design (notes/
+  type_graph_design.md, in progress), its stages landed output-identical and measured on the laptop's `.d.ts`
+  shapes (immutable.d.ts, store.d.ts: the whole single-threaded gap there is memory stalls; the corpora, where tttt
+  already runs half bun's instructions and cycles, won't show much), the shared graph made correct at every K and
+  deal (its auth-api residue first), then its premium re-measured and the default decided. Other tracks (bun cases,
+  the loader) finish their current item and yield workers; the box is kept quiet for measurements when asked.
 - **Keep the parked shared graph and the TTTT_TAINT prototype** (2026-10-28, the human) until tttt either uses the
   shared graph, is confident in a different multithreading strategy, or understands why it can't get multithreading
   gains near bun's. The long-term wish is a clean tree of only code and tooling in use, no disabled features; the
