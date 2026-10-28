@@ -152,8 +152,7 @@ enum {
     KEY_INITIALIZER_UNDEFINED, // InitializedBinding (a parameter) -> initializer_undefined_yes/_no (tsc's InitializerIsUndefinedComputed, expr.c)
     KEY_ELEMENT_WIDENED_ANY, // binding element -> its type before widening, when that widens to any
     KEY_ARRAY_THIS_PROPS, // Array/ReadonlyArray target -> ThisProps, its members that mention `this` (members.c)
-    KEY_TUPLE_NAME_ORDER, // (array type's target, prop count) -> u32 indices of a tuple's inherited props in name order (members.c)
-    KEY_INDEX_NAME_ORDER, // element count -> u32 indices in the order of their index atoms (members.c)
+    KEY_TUPLE_NAME_INDEX, // (array type's target, element count, prop count) -> a tuple's likely PropNameIndex (members.c tuple_name_index())
     KEY_DECIMAL_ORDER, // element count -> u32 indices in the order of their decimal strings (members.c)
     KEY_YIELD_WIDENED_ANY, // generator FunctionImpl -> its yield type before widening, when that widens to any
     KEY_ITERATOR_REPORTED, // iterable Ty (+ async) -> non-null once its iterator's method problems were reported

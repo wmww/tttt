@@ -202,7 +202,7 @@ tttt's shape differs from tsgo's: it is lazy per declaration (each `Expr`, `Bind
 | `getTypeOfPropertyOfType` (checker.go) | `ty/flow.c` `ty_prop_type_of`; `ty/members.c` `prop_type` |  |
 | `getTypeOfSymbol (property)` (checker.go) | `ty/members.c` `prop_type`; `ty/members.c` `prop_write_type` | property types are lazy on the `Prop` |
 | `createUnionOrIntersectionProperty` (checker.go) | `ty/relate.c` `find_prop_in`; `ty/access.c` `access_uncached` | synthesized per query, not a cached symbol |
-| `getNamedMembers` (checker.go) | `ty/members.c` `sort_props_by_name`; `ty/members.c` `builder_finish` |  |
+| `getNamedMembers` (checker.go) | `ty/members.c` `prop_name_index_new`; `ty/members.c` `builder_finish` |  |
 | `getApparentType` (checker.go) | `ty/relate.c` `apparent_type`; `ty/relate.c` `ty_apparent_type`; `ty/relate.c` `apparent_type_inner` |  |
 | `getBaseConstraintOfType` (checker.go) | `ty/relate.c` `ty_base_constraint`; `ty/relate.c` `resolved_base_constraint` |  |
 | `getResolvedBaseConstraint` (checker.go) | `ty/relate.c` `resolved_base_constraint`; `ty/relate.c` `compute_resolved_base_constraint` | computeBaseConstraint is `compute_base_constraint` |

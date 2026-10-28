@@ -122,10 +122,10 @@ def main():
     os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
     if a.run:
         binary = a.bin or subprocess.run(['scripts/fastbuild.sh', '--measured'], capture_output=True, text=True, check=True).stdout.strip()
-        out = a.o or f'/tmp/cgrank.{a.run}.out'
+        out = a.o or f'/tmp/cgrank.{os.path.basename(os.path.dirname(a.run)) if a.run not in CORPORA else a.run}.out'
         subprocess.run(['valgrind', '--tool=cachegrind', '--cache-sim=yes', f'--cachegrind-out-file={out}', binary,
                         '--checkers', '1', '--threads', '1', '-q', '--keep-going', '--noEmit', '-p',
-                        os.path.realpath(CORPORA[a.run])], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        os.path.realpath(CORPORA.get(a.run, a.run))], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         print(f'({out})')
         a.out = out
     if not a.out:

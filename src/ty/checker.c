@@ -953,7 +953,6 @@ void checker_drop(Checker* me) {
         free(my stamps);
     }
     free(my index_atoms);
-    free(my index_atoms_by_name);
     big_table_free(my types.entries, sizeof(InternEntry) * my types.cap);
     big_table_free(my links.entries, sizeof(LinkEntry) * my links.cap);
     big_table_free(my node_links.entries, sizeof(LinkEntry) * my node_links.cap);

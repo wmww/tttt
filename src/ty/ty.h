@@ -895,8 +895,9 @@ struct Members {
     u32 prop_count;
     u32 call_count;
     union {
-        // More than 8 props: sorted by name atom address, for lookup (null in a partial table: early members)
-        Prop* const* props_by_name;
+        // More than 8 props: their names sorted for lookup (null in a partial table: early members), shared by every
+        // Members whose props have the same names in the same order (an instantiation's and its source's)
+        struct PropNameIndex const* by_name;
         // At most 8: a bit per name (ty_prop_filter_bit()), 0 if not computed, for the lookups that miss (most of a
         // small table's: an object's lookups of Object's and Function's members, union members without it)
         u64 props_filter;
@@ -912,6 +913,14 @@ struct Members {
     // Arena-allocated, null if all of it is: read through members_rare() (there are a million Members on vscode)
     struct MembersRare const* rare;
 };
+
+// The names of a Members' props sorted by atom address (a name twice in its order in `props`), and where in `props`
+// each one is: what ty_get_prop() searches. Immutable. The names stay in one array that every instantiation of a type
+// shares (the lookup reads no Prop until it has found it); members.c's builder_name_index()
+typedef struct PropNameIndex {
+    u32 const* order; // order[k]: the index in props of names[k]
+    Atom const* names[];
+} PropNameIndex;
 
 static inline u64 ty_prop_filter_bit(Atom const* name) {
     return 1ull << (((uintptr_t)name * 0x9E3779B97F4A7C15ull) >> 58);
@@ -949,11 +958,6 @@ typedef struct MembersRare {
     // bases led back to it. Set before the members are published; while they are in flight, in the MembersClaim
     uint8_t base_cycle;
     bool recursive_bases;
-    // Members of more than 8 properties with distinct names that were instantiated (members_by_name_order()): the
-    // index in props of each of props_by_name, which an instantiation's props (the same names in the same order) take.
-    // A cache written after the members are published: first wins (a CAS), members.c's by_name_order_none when a name
-    // is there twice
-    u32 const* by_name_order;
 } MembersRare;
 
 // A conditional root's outer type parameters and alias (Ty.conditional.outer, root_aliased: published after the root)
@@ -1255,8 +1259,6 @@ struct Checker {
     } atoms;
     struct Atom const** index_atoms; // ty_index_atom(): "0", "1"... by index
     u32 index_atoms_len;
-    u32* index_atoms_by_name; // 0..index_atoms_by_name_len-1 in the order of their atoms' addresses (members.c)
-    u32 index_atoms_by_name_len;
     struct AtomTable* atom_table; // The program's (ty/atom_table.h): every checker's atoms are the same
     InternTable types;  // literals, unions, intersections, references, deferred, instantiated anonymous, tuple targets
     InternTable intersection_props; // (intersection id, property name) -> FoundProp, see find_prop()

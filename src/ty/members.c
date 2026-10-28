@@ -211,10 +211,10 @@ typedef struct MembersBuilder {
     MappedInfo const* mapped;
     TyDeclGroup const* decl_group; // The interface declaration being added (overload order, see reorder_candidates)
     // Members whose props have the same names in the same order as these will (an instantiation's source): their
-    // props_by_name gives the order without sorting
+    // name index is these members' too, without sorting
     Members const* same_names;
-    // `props` in name order already, if known (tuples, see tuple_props_by_name())
-    Prop** props_by_name;
+    // Another index the props' names likely fit (tuples: one per arity, see tuple_name_index()); null if none
+    PropNameIndex const* name_index_hint;
     // Only the members a class names syntactically, not the computed (late-bound) ones: see early_static_members()
     bool skip_computed;
     // Only the late-bound members, after the early-bound ones of every declaration were added (tsc's
@@ -274,45 +274,74 @@ static Prop* builder_find_prop(MembersBuilder* me, Atom const* name) {
     return at >= 0 ? my props[at] : nullptr;
 }
 
-static int prop_cmp_name(void const* a, void const* b) {
-    uintptr_t a_name = (uintptr_t)(*(Prop* const*)a)->name;
-    uintptr_t b_name = (uintptr_t)(*(Prop* const*)b)->name;
-    return a_name < b_name ? -1 : a_name > b_name;
+typedef struct NameIndexPair {
+    uintptr_t name;
+    u32 index;
+} NameIndexPair;
+
+static inline bool name_index_pair_less(NameIndexPair x, NameIndexPair y) {
+    return x.name != y.name ? x.name < y.name : x.index < y.index;
 }
 
-// Sorts props by name (atom address) like qsort() with prop_cmp_name(), without its indirect calls: big tuples (200+
-// elements on type-fest, each instance sorted) made that 8% of the corpus
-static void sort_props_by_name(Prop** props, u32 len) {
-    // Stable (a name twice keeps its order, like qsort()'s merge sort): insertion sorted runs of 16, then merged
+// Sorts (name, index) pairs by name and then index, i.e. props by name (atom address) stably, without qsort()'s
+// indirect calls: big tuples (200+ elements on type-fest) made that 8% of the corpus. Insertion sorted runs of 16, then
+// merged
+static void sort_name_index_pairs(NameIndexPair* pairs, u32 len) {
     enum { RUN = 16 };
     for (u32 start = 0; start < len; start += RUN) {
         u32 end = start + RUN < len ? start + RUN : len;
         for (u32 i = start + 1; i < end; i++) {
-            Prop* p = props[i];
+            NameIndexPair p = pairs[i];
             u32 j = i;
-            for (; j > start && (uintptr_t)props[j - 1]->name > (uintptr_t)p->name; j--) props[j] = props[j - 1];
-            props[j] = p;
+            for (; j > start && name_index_pair_less(p, pairs[j - 1]); j--) pairs[j] = pairs[j - 1];
+            pairs[j] = p;
         }
     }
     if (len <= RUN) return;
-    Prop** tmp = malloc(sizeof(Prop*) * len);
+    NameIndexPair* tmp = malloc(sizeof(NameIndexPair) * len);
     panic_if(!tmp, "out of memory");
-    Prop** src = props;
-    Prop** dst = tmp;
+    NameIndexPair* src = pairs;
+    NameIndexPair* dst = tmp;
     for (u32 width = RUN; width < len; width *= 2) {
         for (u32 lo = 0; lo < len; lo += 2 * width) {
             u32 mid = lo + width < len ? lo + width : len, hi = lo + 2 * width < len ? lo + 2 * width : len;
             u32 i = lo, j = mid, k = lo;
-            while (i < mid && j < hi) dst[k++] = (uintptr_t)src[j]->name < (uintptr_t)src[i]->name ? src[j++] : src[i++];
+            while (i < mid && j < hi) dst[k++] = name_index_pair_less(src[j], src[i]) ? src[j++] : src[i++];
             while (i < mid) dst[k++] = src[i++];
             while (j < hi) dst[k++] = src[j++];
         }
-        Prop** t = src;
+        NameIndexPair* t = src;
         src = dst;
         dst = t;
     }
-    if (src != props) memcpy(props, src, sizeof(Prop*) * len);
+    if (src != pairs) memcpy(pairs, src, sizeof(NameIndexPair) * len);
     free(tmp);
+}
+
+// A new name index of `count` props
+static PropNameIndex const* prop_name_index_new(Checker* me, Prop* const* props, u32 count) {
+    NameIndexPair stack[64];
+    NameIndexPair* pairs = count <= c_arraylen(stack) ? stack : malloc(sizeof(NameIndexPair) * count);
+    panic_if(!pairs, "out of memory");
+    for (u32 i = 0; i < count; i++) pairs[i] = (NameIndexPair){ (uintptr_t)props[i]->name, i };
+    sort_name_index_pairs(pairs, count);
+    PropNameIndex* ret = arena_alloc(&my arena, sizeof(PropNameIndex) + sizeof(Atom const*) * count);
+    u32* order = arena_new_n(&my arena, u32, count);
+    for (u32 k = 0; k < count; k++) {
+        ret->names[k] = (Atom const*)pairs[k].name;
+        order[k] = pairs[k].index;
+    }
+    ret->order = order;
+    if (pairs != stack) free(pairs);
+    return ret;
+}
+
+// Whether `index` (made for some `count` props) is that of `props`: their names are its creator's, in the same order
+static bool prop_name_index_fits(PropNameIndex const* index, Prop* const* props, u32 count) {
+    for (u32 k = 0; k < count; k++) {
+        if (props[index->order[k]]->name != index->names[k]) return false;
+    }
+    return true;
 }
 
 // A member named by a computed name that isn't a string or numeric literal (`[Symbol.iterator]`, `[k]`): tsc's binder
@@ -562,64 +591,23 @@ static MembersRare* members_rare_published(Checker* me, Members const* members) 
     return (MembersRare*)expected;
 }
 
-static u32 const by_name_order_none[1]; // MembersRare.by_name_order computed: a name is there twice
-
-// MembersRare.by_name_order, null when a name is there twice
-static u32 const* members_by_name_order(Checker* me, Members const* members) {
-    u32 const* known = __atomic_load_n(&members_rare(members)->by_name_order, __ATOMIC_ACQUIRE);
-    if (known) return known == by_name_order_none ? nullptr : known;
-    u32* order = arena_new_n(&my arena, u32, members->prop_count);
-    bool* taken = calloc(members->prop_count, sizeof(bool));
-    panic_if(!taken, "out of memory");
-    bool placed = true;
-    // Each prop goes where its name is in the sorted table
-    for (u32 i = 0; i < members->prop_count && placed; i++) {
-        uintptr_t name = (uintptr_t)members->props[i]->name;
-        u32 low = 0, high = members->prop_count;
-        while (low < high) {
-            u32 mid = low + (high - low) / 2;
-            if ((uintptr_t)members->props_by_name[mid]->name < name) low = mid + 1;
-            else high = mid;
-        }
-        placed = low < members->prop_count && members->props_by_name[low]->name == members->props[i]->name && !taken[low];
-        if (placed) {
-            taken[low] = true;
-            order[low] = i;
-        }
-    }
-    free(taken);
-    // (A pure function of the members: whoever's lands first, it's the same)
-    MembersRare* mut = members_rare_published(me, members);
-    u32 const* expected = nullptr;
-    u32 const* mine = placed ? order : by_name_order_none;
-    if (!__atomic_compare_exchange_n(&mut->by_name_order, &expected, mine, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE)) mine = expected;
-    return mine == by_name_order_none ? nullptr : mine;
-}
-
 static Members const* builder_finish(Checker* me, MembersBuilder* builder) {
     builder_unindex(builder);
     Members* ret = arena_new(&my arena, Members);
-    if (builder->props_count > 8 && builder->props_by_name) {
-        ret->props_by_name = builder->props_by_name;
-    } else if (builder->props_count > 8) {
-        Prop** sorted = arena_new_n(&my arena, Prop*, builder->props_count);
+    u32 count = builder->props_count;
+    if (count > 8) {
+        // (An instantiation's props have its source's names, in its order: the source's index, which each lookup in any
+        // of them then reads, warm)
         Members const* same = builder->same_names;
-        bool placed = same && same->prop_count == builder->props_count && same->props_by_name;
-        // Each prop goes where its name is in the source's sorted table (unless a name is there twice)
-        u32 const* order = placed ? members_by_name_order(me, same) : nullptr;
-        placed = order;
-        for (u32 k = 0; k < builder->props_count && placed; k++) {
-            sorted[k] = builder->props[order[k]];
-            placed = sorted[k]->name == same->props_by_name[k]->name;
+        PropNameIndex const* index = same && same->prop_count == count ? same->by_name : nullptr;
+        if (index && !prop_name_index_fits(index, builder->props, count)) index = nullptr;
+        if (!index && builder->name_index_hint && prop_name_index_fits(builder->name_index_hint, builder->props, count)) {
+            index = builder->name_index_hint;
         }
-        if (!placed) {
-            memcpy(sorted, builder->props, sizeof(Prop*) * builder->props_count);
-            sort_props_by_name(sorted, builder->props_count);
-        }
-        ret->props_by_name = sorted;
+        ret->by_name = index ? index : prop_name_index_new(me, builder->props, count);
     } else {
         u64 filter = 0;
-        for (u32 i = 0; i < builder->props_count; i++) filter |= ty_prop_filter_bit(builder->props[i]->name);
+        for (u32 i = 0; i < count; i++) filter |= ty_prop_filter_bit(builder->props[i]->name);
         ret->props_filter = filter;
     }
 #define FINISH(field, count_field, T) \
@@ -4958,97 +4946,16 @@ static bool is_index_name_below(Atom const* name, u32 count) {
     return value < count;
 }
 
-typedef struct NameIndexPair {
-    uintptr_t name;
-    u32 index;
-} NameIndexPair;
-
-static int name_index_pair_cmp(void const* a, void const* b) {
-    NameIndexPair const* x = a;
-    NameIndexPair const* y = b;
-    if (x->name != y->name) return x->name < y->name ? -1 : 1;
-    return x->index < y->index ? -1 : x->index > y->index;
-}
-
-// Indices 0..count-1 in the order their names are in (sorted by address, as props_by_name is), remembered by `key`
-static u32 const* name_order(Checker* me, u64 const* key, u32 key_len, Atom const* const* names, u32 count) {
-    u32 const* found = intern_get(&my links, key, key_len);
+// The name index a tuple's props likely have: one per arity and array type (its elements' names, `length` and the array
+// type's, in the order resolve_tuple_members() puts them), made from the first tuple that has them (builder_finish()
+// checks that they fit)
+static PropNameIndex const* tuple_name_index(Checker* me, Ty const* array_target, u32 fixed, Prop* const* props, u32 count) {
+    u64 key[4] = { KEY_TUPLE_NAME_INDEX, (u64)(uintptr_t)array_target, fixed, count };
+    PropNameIndex const* found = intern_get(&my links, key, 4);
     if (found) return found;
-    NameIndexPair* pairs = malloc(sizeof(NameIndexPair) * (count ? count : 1));
-    panic_if(!pairs, "out of memory");
-    for (u32 i = 0; i < count; i++) pairs[i] = (NameIndexPair){ (uintptr_t)names[i], i };
-    qsort(pairs, count, sizeof(NameIndexPair), name_index_pair_cmp);
-    u32* order = arena_new_n(&my arena, u32, count);
-    for (u32 i = 0; i < count; i++) order[i] = pairs[i].index;
-    free(pairs);
-    *intern_slot(me, &my links, key, key_len) = order;
-    return order;
-}
-
-// A tuple instance's props_by_name without sorting them (thousands of big tuples on type-fest, each its own target): a
-// merge of its elements' (in the order of the index atoms, remembered per count), its array's (whose names are the
-// same for every Array or ReadonlyArray, remembered per target) and `length`. Null when a name is there twice
-static Prop** tuple_props_by_name(Checker* me, Prop* elements, u32 fixed, Prop* const* inherited, u32 inherited_count,
-    Ty const* array_target, Prop* length
-) {
-    if (fixed > 4096) return nullptr; // (ty_index_atom() remembers no more)
-    u64 index_key[2] = { KEY_INDEX_NAME_ORDER, fixed };
-    u32 const* by_index = intern_get(&my links, index_key, 2);
-    if (!by_index) {
-        // (Filtered from the order of every index atom so far, sorted again when it grows: one sort per doubling)
-        if (my index_atoms_by_name_len < fixed) {
-            u32 len = my index_atoms_by_name_len * 2 > fixed ? my index_atoms_by_name_len * 2 : fixed;
-            if (len > 4096) len = 4096;
-            NameIndexPair* pairs = malloc(sizeof(NameIndexPair) * len);
-            panic_if(!pairs, "out of memory");
-            for (u32 i = 0; i < len; i++) pairs[i] = (NameIndexPair){ (uintptr_t)ty_index_atom(me, i), i };
-            qsort(pairs, len, sizeof(NameIndexPair), name_index_pair_cmp);
-            my index_atoms_by_name = realloc(my index_atoms_by_name, sizeof(u32) * len);
-            panic_if(!my index_atoms_by_name, "out of memory");
-            for (u32 i = 0; i < len; i++) my index_atoms_by_name[i] = pairs[i].index;
-            my index_atoms_by_name_len = len;
-            free(pairs);
-        }
-        u32* order = arena_new_n(&my arena, u32, fixed);
-        u32 at = 0;
-        for (u32 i = 0; i < my index_atoms_by_name_len && at < fixed; i++) {
-            if (my index_atoms_by_name[i] < fixed) order[at++] = my index_atoms_by_name[i];
-        }
-        *intern_slot(me, &my links, index_key, 2) = order;
-        by_index = order;
-    }
-    u64 inherited_key[3] = { KEY_TUPLE_NAME_ORDER, (u64)(uintptr_t)array_target, inherited_count };
-    u32 const* by_inherited = intern_get(&my links, inherited_key, 3);
-    if (!by_inherited) {
-        Atom const** names = malloc(sizeof(Atom const*) * (inherited_count ? inherited_count : 1));
-        panic_if(!names, "out of memory");
-        for (u32 i = 0; i < inherited_count; i++) names[i] = inherited[i]->name;
-        by_inherited = name_order(me, inherited_key, 3, names, inherited_count);
-        free(names);
-    }
-    u32 total = fixed + inherited_count + 1;
-    Prop** sorted = arena_new_n(&my arena, Prop*, total);
-    u32 i = 0, j = 0, at = 0;
-    bool length_placed = false;
-    while (at < total) {
-        Prop* next = nullptr;
-        Prop* a = i < fixed ? &elements[by_index[i]] : nullptr;
-        Prop* b = j < inherited_count ? inherited[by_inherited[j]] : nullptr;
-        if (a && (!b || (uintptr_t)a->name < (uintptr_t)b->name)) next = a;
-        else next = b;
-        if (!length_placed && (!next || (uintptr_t)length->name < (uintptr_t)next->name)) {
-            next = length;
-            length_placed = true;
-        } else if (next == a) {
-            i++;
-        } else {
-            j++;
-        }
-        // (A name twice, or the orders don't hold: sort them after all)
-        if (at && (uintptr_t)sorted[at - 1]->name >= (uintptr_t)next->name) return nullptr;
-        sorted[at++] = next;
-    }
-    return sorted;
+    PropNameIndex const* index = prop_name_index_new(me, props, count);
+    *intern_slot(me, &my links, key, 4) = index;
+    return index;
 }
 
 static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
@@ -5137,9 +5044,7 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
         if (own != stack) free(own);
     }
     if (array && array->kind == TY_REFERENCE && builder.props_count > 8 && builder.props_count > fixed + 1) {
-        u32 inherited = builder.props_count - (fixed + 1);
-        builder.props_by_name = tuple_props_by_name(me, element_props, fixed, builder.props, inherited,
-            array->reference.target, length_prop);
+        builder.name_index_hint = tuple_name_index(me, array->reference.target, fixed, builder.props, builder.props_count);
     }
     return builder_finish(me, &builder);
 }
@@ -5596,12 +5501,13 @@ Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name) {
     if (members->prop_count <= 8) {
         u64 filter = members->props_filter;
         if (filter && !(filter & ty_prop_filter_bit(name))) return nullptr;
-    } else if (members->props_by_name) {
+    } else if (members->by_name) {
+        PropNameIndex const* index = members->by_name;
         u32 lo = 0, hi = members->prop_count;
         while (lo < hi) {
             u32 mid = lo + (hi - lo) / 2;
-            Atom const* mid_name = members->props_by_name[mid]->name;
-            if (mid_name == name) return members->props_by_name[mid];
+            Atom const* mid_name = index->names[mid];
+            if (mid_name == name) return members->props[index->order[mid]];
             if ((uintptr_t)mid_name < (uintptr_t)name) lo = mid + 1; else hi = mid;
         }
         return nullptr;
