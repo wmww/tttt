@@ -6018,6 +6018,11 @@ static void jsdoc_import_statement(Parser* parent, JsDocTag const* tag, const ch
     bool clause = false;
     const char* word_end = c;
     while (word_end < end && is_identifier_char(*word_end)) word_end++;
+    // (The JSDoc scanner's identifier, the first token after the tag name, takes `-` too: `@import a-b from "m"` is a
+    // default import named `a-b`, tsc's scanJSDocToken)
+    if (word_end > c && !(*c >= '0' && *c <= '9')) {
+        while (word_end < end && (is_identifier_char(*word_end) || *word_end == '-')) word_end++;
+    }
     // (A reserved word isn't a default import's name: `@import import { A } from "m"` has no clause)
     bool name = word_end > c && !(*c >= '0' && *c <= '9') && !is_reserved_word(csview_from_range(c, word_end));
     if (c < end && (name || *c == '{' || *c == '*')) {
@@ -6032,7 +6037,7 @@ static void jsdoc_import_statement(Parser* parent, JsDocTag const* tag, const ch
                 while (c < end && is_identifier_char(*c)) c++;
             }
         } else {
-            while (c < end && is_identifier_char(*c)) c++;
+            c = word_end;
             const char* comma = jsdoc_skip_space(c, end);
             if (comma < end && *comma == ',') clause = false; // `x, { y }`: left to the statement parser
         }
@@ -12971,6 +12976,14 @@ static bool parse_import_item_list(Parser* parent, bool is_import, PortStatement
 }
 
 // Parses what comes after the import keyword in `import a = require("b")` and `import a = b.c`
+// In a JSDoc `@import`, the name after the tag is the JSDoc scanner's token, which takes `-` too (tsc's
+// scanJSDocToken): `@import a-b from "m"` is a default import named `a-b`. See jsdoc_import_statement()
+static void jsdoc_extend_dashed_name(Parser* p, Span* name) {
+    if (!p->shared->in_jsdoc || *p->pos != '-') return;
+    while (p->pos < p->shared->jsdoc_end && (is_identifier_char(*p->pos) || *p->pos == '-')) p->pos++;
+    *name = span_make_in(*name, span_start_ptr(*name), p->pos);
+}
+
 static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStatement* statement) {
     Parser p = parser(parent);
 
@@ -12980,6 +12993,7 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
     if (!parse_identifier(&p, &name) || is_reserved_word(span_sv(name))) {
         return parse_fail(&p);
     }
+    jsdoc_extend_dashed_name(&p, &name);
     hop_whitespace(&p);
     // (The name's text: an escaped `typ\u0065` is `type` too, tsc's identifier.Text())
     bool named_type = span_equals(name, "type");
@@ -13361,6 +13375,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         statement.main.not_top_level = p.shared->statement_parent != MODIFIED_IN_SOURCE_FILE;
         a = statement_start; // (the statement declares the alias, `export` included)
     } else if (!is_export && tok_is_identifier(tok_peek(&p)) && parse_identifier(&p, &statement.main.decl_name)) {
+        jsdoc_extend_dashed_name(&p, &statement.main.decl_name);
         hop_whitespace(&p);
         statement.main.tag = PORT_IMPORT_DEFAULT;
 

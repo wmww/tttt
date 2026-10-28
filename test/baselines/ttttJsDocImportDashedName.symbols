@@ -1,0 +1,11 @@
+//// [test/cases/ttttJsDocImportDashedName.ts] ////
+
+=== p.ts ===
+export interface Foo {}
+>Foo : Symbol(Foo, Decl(p.ts, 0, 0))
+
+=== a.js ===
+
+/** @import a-b from "./p" */
+/** @import c-d, { Foo } from "./p" */
+

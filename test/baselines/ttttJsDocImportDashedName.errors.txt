@@ -1,0 +1,14 @@
+a.js(1,13): error TS1192: Module '"p"' has no default export.
+a.js(2,13): error TS1192: Module '"p"' has no default export.
+
+
+==== p.ts (0 errors) ====
+    export interface Foo {}
+==== a.js (2 errors) ====
+    /** @import a-b from "./p" */
+                ~~~
+!!! error TS1192: Module '"p"' has no default export.
+    /** @import c-d, { Foo } from "./p" */
+                ~~~
+!!! error TS1192: Module '"p"' has no default export.
+    
