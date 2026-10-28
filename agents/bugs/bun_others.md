@@ -283,7 +283,7 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
   overloaded type, tttt's too), but tttt's missing-name symbol is one for every script file of the program (two
   files' nameless functions say TS2393 in the harness, tsc's merge per file). [open] An `export default function ()
   {}` with an `@overload` and no `@returns` gets TS7011 at the tag (function_impl_check_jsdoc_overloads()).
-  [fixed COMMIT]
+  [fixed 9426d16a8]
 - tsc's TS2314 on `@augments {A<=}` underlines `A<` (the node ends with its missing `>`), tttt's `A`
   (identifier_type_span() reconstructs the end from the text). [text]
 - `@type {yield}` in a generator (92-R03b): a JSDoc type's name isn't a strict-mode identifier (checkStrictModeIdentifier
@@ -342,6 +342,11 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
   after a leading modifier error), `export @a default class` in a namespace is TS1319 at `default` (the `default`
   after decorators is a modifier the checks see), and an `export as namespace`'s decorators are the binder's TS1184
   alone. [fixed cee1ecc5d]
+- `[-0]` as a computed name is "-0" to the TS1117 check (28-P2a 28-P2b). [fixed 2b8f64377]
+- A `declare class`'s static block is an ambient context (28-C26f 34-C8): TS1036, no TS18041. [fixed 467c05d5a]
+- `@dec export @dec2 function f() {}` in JavaScript (53-L17): TS1206 twice, the checker's at the `@` and
+  getJSSyntacticDiagnosticsForFile's over `@dec` (not for `module "m"`/`global`, which tsgo never JS-checks).
+  [fixed COMMIT]
 
 ## Not looked at, by code
 - Each paragraph below is a code and direction with the cases it mismatches in, uninvestigated: at least one open

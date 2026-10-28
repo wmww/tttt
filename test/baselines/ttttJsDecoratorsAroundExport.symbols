@@ -1,0 +1,46 @@
+//// [test/cases/ttttJsDecoratorsAroundExport.ts] ////
+
+=== a.js ===
+const dec = 0, dec2 = 0;
+>dec : Symbol(dec, Decl(a.js, 0, 5))
+>dec2 : Symbol(dec2, Decl(a.js, 0, 14))
+
+@dec export @dec2 function f1() {}
+>dec : Symbol(dec, Decl(a.js, 0, 5))
+>dec2 : Symbol(dec2, Decl(a.js, 0, 14))
+>f1 : Symbol(f1, Decl(a.js, 0, 24))
+
+@dec export @dec2 const x2 = 1;
+>dec : Symbol(dec, Decl(a.js, 0, 5))
+>dec2 : Symbol(dec2, Decl(a.js, 0, 14))
+>x2 : Symbol(x2, Decl(a.js, 2, 23))
+
+@dec export function f5() {}
+>dec : Symbol(dec, Decl(a.js, 0, 5))
+>f5 : Symbol(f5, Decl(a.js, 2, 31))
+
+export @dec2 function f6() {}
+>dec2 : Symbol(dec2, Decl(a.js, 0, 14))
+>f6 : Symbol(f6, Decl(a.js, 3, 28))
+
+=== b.ts ===
+declare const dec: any, dec2: any;
+>dec : Symbol(dec, Decl(b.ts, 0, 13))
+>dec2 : Symbol(dec2, Decl(b.ts, 0, 23))
+
+@dec export @dec2 function f1() {}
+>dec : Symbol(dec, Decl(b.ts, 0, 13))
+>dec2 : Symbol(dec2, Decl(b.ts, 0, 23))
+>f1 : Symbol(f1, Decl(b.ts, 0, 34))
+
+=== c.js ===
+function dec2() {}
+>dec2 : Symbol(dec2, Decl(c.js, 0, 0))
+
+@dec2 declare module "zz" {}
+>dec2 : Symbol(dec2, Decl(c.js, 0, 0))
+>"zz" : Symbol("zz", Decl(c.js, 0, 18))
+
+/** @type {number} */ const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(c.js, 2, 27))
+

@@ -16015,6 +16015,17 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             // (tsc's grammarErrorOnFirstToken: the `@`)
             grammar_error(&p, span_make(p.shared->source, decorators_span.buf, decorators_span.buf + 1), 1206,
                 "Decorators are not valid here.");
+            // (And in JavaScript, checked or not, tsgo's getJSSyntacticDiagnosticsForFile: over the first decorator, a
+            // diagnostic of its own next to the checker's at the `@`. Not on `module "m"` or `global`, which tsgo's
+            // parseAmbientExternalModuleDeclaration never gives checkJSSyntax)
+            bool external_module = ret->tag == STATEMENT_DECL_NAMESPACE &&
+                (ret->decl.namespace->is_ambient_module || ret->decl.namespace->is_global);
+            if (reports_js_syntax(&p) && !external_module) {
+                Span first = span_make(p.shared->source, decorators_span.buf,
+                    span_end_ptr(expr_outer_span(vec_expr_at(&decorators, 0))));
+                add_error_to_parser(&p, (Error){ .message = cstr_from("Decorators are not valid here."), .span = first,
+                    .ts_code = 1206, .phase = ERROR_PHASE_PARSE, .js_syntax = true });
+            }
             if (statement_declares_name(ret->tag) && !ret->decl.props.invalid_decorators) {
                 ret->decl.props.invalid_decorators = ast_new(VecExpr, decorators);
             } else {

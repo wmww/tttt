@@ -1,0 +1,49 @@
+a.js(2,1): error TS1206: Decorators are not valid here.
+a.js(2,1): error TS1206: Decorators are not valid here.
+a.js(3,1): error TS1206: Decorators are not valid here.
+a.js(3,1): error TS1206: Decorators are not valid here.
+a.js(4,1): error TS1206: Decorators are not valid here.
+a.js(4,1): error TS1206: Decorators are not valid here.
+a.js(5,8): error TS1206: Decorators are not valid here.
+a.js(5,8): error TS1206: Decorators are not valid here.
+b.ts(2,1): error TS1206: Decorators are not valid here.
+c.js(2,1): error TS1206: Decorators are not valid here.
+c.js(3,29): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== a.js (8 errors) ====
+    const dec = 0, dec2 = 0;
+    @dec export @dec2 function f1() {}
+    ~
+!!! error TS1206: Decorators are not valid here.
+    ~~~~
+!!! error TS1206: Decorators are not valid here.
+    @dec export @dec2 const x2 = 1;
+    ~
+!!! error TS1206: Decorators are not valid here.
+    ~~~~
+!!! error TS1206: Decorators are not valid here.
+    @dec export function f5() {}
+    ~
+!!! error TS1206: Decorators are not valid here.
+    ~~~~
+!!! error TS1206: Decorators are not valid here.
+    export @dec2 function f6() {}
+           ~
+!!! error TS1206: Decorators are not valid here.
+           ~~~~~
+!!! error TS1206: Decorators are not valid here.
+==== b.ts (1 errors) ====
+    declare const dec: any, dec2: any;
+    @dec export @dec2 function f1() {}
+    ~
+!!! error TS1206: Decorators are not valid here.
+==== c.js (2 errors) ====
+    function dec2() {}
+    @dec2 declare module "zz" {}
+    ~
+!!! error TS1206: Decorators are not valid here.
+    /** @type {number} */ const sentinel = "";
+                                ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

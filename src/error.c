@@ -487,6 +487,14 @@ static intptr_t insertion_index_in(VecError const* errors, Error const* error) {
                 }
                 // Allow multiple typechecking errors for the same span
                 return i - 1;
+            } else if (error->phase == ERROR_PHASE_PARSE && vec_error_at(errors, i - 1)->ts_code == error->ts_code &&
+                error_is_js_syntax(error) != error_is_js_syntax(vec_error_at(errors, i - 1)) &&
+                vec_error_at(errors, i - 1)->span.size != error->span.size
+            ) {
+                // A JavaScript file's syntax error and the checker's grammar error of the same code at one start but
+                // over other spans (`@dec export @dec2 function f() {}`'s TS1206 at the `@` and over `@dec`): two
+                // diagnostics to tsc's sortAndDeduplicateDiagnostics, the shorter first
+                return vec_error_at(errors, i - 1)->span.size < error->span.size ? i : i - 1;
             } else if (error->phase == ERROR_PHASE_PARSE && vec_error_at(errors, i - 1)->ts_code != error->ts_code &&
                 (error_is_js_syntax(error) != error_is_js_syntax(vec_error_at(errors, i - 1)) ||
                     error->grammar || vec_error_at(errors, i - 1)->grammar ||
