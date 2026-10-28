@@ -1,0 +1,112 @@
+//// [test/cases/ttttJsxGenericChildSignatureView.tsx] ////
+
+=== ttttJsxGenericChildSignatureView.tsx ===
+// origin: npm firecmsco/firecms @ c5764a3b packages/firecms_core (tsconfig.bench.json), src/form/PropertyFieldBinding.tsx:102 (formex Field)
+// flip: no
+// A generic component's function child takes its contextual signature from the view the call's inference gives it
+// (C's default through the non-fixing mapper picks the conditional's false branch), as an attribute does
+declare namespace JSX {
+>JSX : Symbol(JSX, Decl(ttttJsxGenericChildSignatureView.tsx, 0, 0))
+
+  interface Element {}
+>Element : Symbol(Element, Decl(ttttJsxGenericChildSignatureView.tsx, 4, 23))
+
+  interface IntrinsicElements { div: { children?: any } }
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(ttttJsxGenericChildSignatureView.tsx, 5, 22))
+>div : Symbol(IntrinsicElements.div, Decl(ttttJsxGenericChildSignatureView.tsx, 6, 31))
+>children : Symbol(children, Decl(ttttJsxGenericChildSignatureView.tsx, 6, 38))
+
+  interface ElementChildrenAttribute { children: {} }
+>ElementChildrenAttribute : Symbol(ElementChildrenAttribute, Decl(ttttJsxGenericChildSignatureView.tsx, 6, 57))
+>children : Symbol(ElementChildrenAttribute.children, Decl(ttttJsxGenericChildSignatureView.tsx, 7, 38))
+}
+type ElementType = keyof JSX.IntrinsicElements | ((props: any) => JSX.Element | null);
+>ElementType : Symbol(ElementType, Decl(ttttJsxGenericChildSignatureView.tsx, 8, 1))
+>JSX : Symbol(JSX, Decl(ttttJsxGenericChildSignatureView.tsx, 0, 0))
+>IntrinsicElements : Symbol(JSX.IntrinsicElements, Decl(ttttJsxGenericChildSignatureView.tsx, 5, 22))
+>props : Symbol(props, Decl(ttttJsxGenericChildSignatureView.tsx, 9, 51))
+>JSX : Symbol(JSX, Decl(ttttJsxGenericChildSignatureView.tsx, 0, 0))
+>Element : Symbol(JSX.Element, Decl(ttttJsxGenericChildSignatureView.tsx, 4, 23))
+
+type CP<C> = C extends (p: infer P) => any ? P : {};
+>CP : Symbol(CP, Decl(ttttJsxGenericChildSignatureView.tsx, 9, 86))
+>C : Symbol(C, Decl(ttttJsxGenericChildSignatureView.tsx, 10, 8))
+>C : Symbol(C, Decl(ttttJsxGenericChildSignatureView.tsx, 10, 8))
+>p : Symbol(p, Decl(ttttJsxGenericChildSignatureView.tsx, 10, 24))
+>P : Symbol(P, Decl(ttttJsxGenericChildSignatureView.tsx, 10, 32))
+>P : Symbol(P, Decl(ttttJsxGenericChildSignatureView.tsx, 10, 32))
+
+interface FProps<V> { field: { value: V }; form: { values: any } }
+>FProps : Symbol(FProps, Decl(ttttJsxGenericChildSignatureView.tsx, 10, 52))
+>V : Symbol(V, Decl(ttttJsxGenericChildSignatureView.tsx, 11, 17))
+>field : Symbol(FProps.field, Decl(ttttJsxGenericChildSignatureView.tsx, 11, 21))
+>value : Symbol(value, Decl(ttttJsxGenericChildSignatureView.tsx, 11, 30))
+>V : Symbol(V, Decl(ttttJsxGenericChildSignatureView.tsx, 11, 17))
+>form : Symbol(FProps.form, Decl(ttttJsxGenericChildSignatureView.tsx, 11, 42))
+>values : Symbol(values, Decl(ttttJsxGenericChildSignatureView.tsx, 11, 50))
+
+interface FieldConfig<Value, C extends ElementType | undefined = undefined> {
+>FieldConfig : Symbol(FieldConfig, Decl(ttttJsxGenericChildSignatureView.tsx, 11, 66))
+>Value : Symbol(Value, Decl(ttttJsxGenericChildSignatureView.tsx, 12, 22))
+>C : Symbol(C, Decl(ttttJsxGenericChildSignatureView.tsx, 12, 28))
+>ElementType : Symbol(ElementType, Decl(ttttJsxGenericChildSignatureView.tsx, 8, 1))
+
+    as?: C | string;
+>as : Symbol(FieldConfig.as, Decl(ttttJsxGenericChildSignatureView.tsx, 12, 77))
+>C : Symbol(C, Decl(ttttJsxGenericChildSignatureView.tsx, 12, 28))
+
+    children?: ((props: FProps<Value>) => JSX.Element) | string;
+>children : Symbol(FieldConfig.children, Decl(ttttJsxGenericChildSignatureView.tsx, 13, 20))
+>props : Symbol(props, Decl(ttttJsxGenericChildSignatureView.tsx, 14, 17))
+>FProps : Symbol(FProps, Decl(ttttJsxGenericChildSignatureView.tsx, 10, 52))
+>Value : Symbol(Value, Decl(ttttJsxGenericChildSignatureView.tsx, 12, 22))
+>JSX : Symbol(JSX, Decl(ttttJsxGenericChildSignatureView.tsx, 0, 0))
+>Element : Symbol(JSX.Element, Decl(ttttJsxGenericChildSignatureView.tsx, 4, 23))
+
+    name: string;
+>name : Symbol(FieldConfig.name, Decl(ttttJsxGenericChildSignatureView.tsx, 14, 64))
+}
+type FieldProps<T, C extends ElementType | undefined> = { as?: C } & (C extends ElementType ? (CP<C> & FieldConfig<T, C>) : FieldConfig<T, C>);
+>FieldProps : Symbol(FieldProps, Decl(ttttJsxGenericChildSignatureView.tsx, 16, 1))
+>T : Symbol(T, Decl(ttttJsxGenericChildSignatureView.tsx, 17, 16))
+>C : Symbol(C, Decl(ttttJsxGenericChildSignatureView.tsx, 17, 18))
+>ElementType : Symbol(ElementType, Decl(ttttJsxGenericChildSignatureView.tsx, 8, 1))
+>as : Symbol(as, Decl(ttttJsxGenericChildSignatureView.tsx, 17, 57))
+>C : Symbol(C, Decl(ttttJsxGenericChildSignatureView.tsx, 17, 18))
+>C : Symbol(C, Decl(ttttJsxGenericChildSignatureView.tsx, 17, 18))
+>ElementType : Symbol(ElementType, Decl(ttttJsxGenericChildSignatureView.tsx, 8, 1))
+>CP : Symbol(CP, Decl(ttttJsxGenericChildSignatureView.tsx, 9, 86))
+>C : Symbol(C, Decl(ttttJsxGenericChildSignatureView.tsx, 17, 18))
+>FieldConfig : Symbol(FieldConfig, Decl(ttttJsxGenericChildSignatureView.tsx, 11, 66))
+>T : Symbol(T, Decl(ttttJsxGenericChildSignatureView.tsx, 17, 16))
+>C : Symbol(C, Decl(ttttJsxGenericChildSignatureView.tsx, 17, 18))
+>FieldConfig : Symbol(FieldConfig, Decl(ttttJsxGenericChildSignatureView.tsx, 11, 66))
+>T : Symbol(T, Decl(ttttJsxGenericChildSignatureView.tsx, 17, 16))
+>C : Symbol(C, Decl(ttttJsxGenericChildSignatureView.tsx, 17, 18))
+
+declare function Field<T, C extends ElementType | undefined = undefined>(p: FieldProps<T, C>): JSX.Element;
+>Field : Symbol(Field, Decl(ttttJsxGenericChildSignatureView.tsx, 17, 143))
+>T : Symbol(T, Decl(ttttJsxGenericChildSignatureView.tsx, 18, 23))
+>C : Symbol(C, Decl(ttttJsxGenericChildSignatureView.tsx, 18, 25))
+>ElementType : Symbol(ElementType, Decl(ttttJsxGenericChildSignatureView.tsx, 8, 1))
+>p : Symbol(p, Decl(ttttJsxGenericChildSignatureView.tsx, 18, 73))
+>FieldProps : Symbol(FieldProps, Decl(ttttJsxGenericChildSignatureView.tsx, 16, 1))
+>T : Symbol(T, Decl(ttttJsxGenericChildSignatureView.tsx, 18, 23))
+>C : Symbol(C, Decl(ttttJsxGenericChildSignatureView.tsx, 18, 25))
+>JSX : Symbol(JSX, Decl(ttttJsxGenericChildSignatureView.tsx, 0, 0))
+>Element : Symbol(JSX.Element, Decl(ttttJsxGenericChildSignatureView.tsx, 4, 23))
+
+const x = <Field name="a">{(fieldProps) => <div>{fieldProps.form.values}</div>}</Field>;
+>x : Symbol(x, Decl(ttttJsxGenericChildSignatureView.tsx, 19, 5))
+>Field : Symbol(Field, Decl(ttttJsxGenericChildSignatureView.tsx, 17, 143))
+>name : Symbol(name, Decl(ttttJsxGenericChildSignatureView.tsx, 19, 16))
+>fieldProps : Symbol(fieldProps, Decl(ttttJsxGenericChildSignatureView.tsx, 19, 28))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(ttttJsxGenericChildSignatureView.tsx, 6, 31))
+>fieldProps.form.values : Symbol(values, Decl(ttttJsxGenericChildSignatureView.tsx, 11, 50))
+>fieldProps.form : Symbol(FProps.form, Decl(ttttJsxGenericChildSignatureView.tsx, 11, 42))
+>fieldProps : Symbol(fieldProps, Decl(ttttJsxGenericChildSignatureView.tsx, 19, 28))
+>form : Symbol(FProps.form, Decl(ttttJsxGenericChildSignatureView.tsx, 11, 42))
+>values : Symbol(values, Decl(ttttJsxGenericChildSignatureView.tsx, 11, 50))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(ttttJsxGenericChildSignatureView.tsx, 6, 31))
+>Field : Symbol(Field, Decl(ttttJsxGenericChildSignatureView.tsx, 17, 143))
+

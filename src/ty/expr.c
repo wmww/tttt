@@ -5500,9 +5500,14 @@ bool ty_jsx_child_is_semantic(JsxChild const* child) {
 }
 
 // The type of a child (tsc's checkJsxChildren)
-static Ty const* check_jsx_child(Checker* me, JsxChild const* child, Ty const* contextual, bool skip_sensitive) {
+// (`sig_contextual`, `sig_absent`: the view a contextual signature sees while a call infers, as for an attribute)
+static Ty const* check_jsx_child(Checker* me, JsxChild const* child, Ty const* contextual, Ty const* sig_contextual, bool sig_absent,
+    bool skip_sensitive
+) {
     if (child->tag == JSX_CHILD_TEXT) return ty_intrinsic(me, TY_STRING);
-    return check_for_mutable_location(me, &child->expr, (ExprCtx){ .contextual = contextual, .skip_sensitive = skip_sensitive });
+    return check_for_mutable_location(me, &child->expr, (ExprCtx){
+        .contextual = contextual, .sig_contextual = sig_contextual, .sig_absent = sig_absent, .skip_sensitive = skip_sensitive,
+    });
 }
 
 // The attributes of an element as an object literal (tsc's createJsxAttributesTypeFromAttributesProperty), with the
@@ -5584,11 +5589,19 @@ static Ty const* check_jsx_attributes(Checker* me, Expr const* expr, ExprCtx ctx
         Atom const* children_name = ty_jsx_children_prop_name(me, element);
         Ty const* children_context = ctx.contextual && children_name && atom_sv(children_name).size ?
             contextual_named_prop_type(me, ctx.contextual, children_name) : nullptr;
+        // (While a call infers, the children's view for a contextual signature too, like an attribute's: a generic
+        // component's `{(props) => ...}` child, firecms' Field<T, C> whose props are a conditional type over C)
+        Ty const* children_sig_context = ctx.sig_contextual && children_name && atom_sv(children_name).size ?
+            contextual_named_prop_type(me, ctx.sig_contextual, children_name) : nullptr;
+        bool children_sig_absent = ctx.sig_absent || (ctx.sig_contextual && !children_sig_context);
         TyBuf types = {0};
         u32 index = 0;
         for_each (i, vec_jsx_child, &element->children) {
             if (!ty_jsx_child_is_semantic(i)) continue;
-            ty_buf_push(&types, check_jsx_child(me, i, jsx_child_context(me, children_context, index++, child_count), ctx.skip_sensitive));
+            Ty const* sig_context = children_sig_context ? jsx_child_context(me, children_sig_context, index, child_count) : nullptr;
+            ty_buf_push(&types, check_jsx_child(me, i, jsx_child_context(me, children_context, index, child_count), sig_context,
+                children_sig_absent || (children_sig_context && !sig_context), ctx.skip_sensitive));
+            index++;
         }
         if (!spread.any && children_name && atom_sv(children_name).size) {
             Ty const* type = types.data[0];

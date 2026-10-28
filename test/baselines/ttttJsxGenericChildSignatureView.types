@@ -1,0 +1,70 @@
+//// [test/cases/ttttJsxGenericChildSignatureView.tsx] ////
+
+=== ttttJsxGenericChildSignatureView.tsx ===
+// origin: npm firecmsco/firecms @ c5764a3b packages/firecms_core (tsconfig.bench.json), src/form/PropertyFieldBinding.tsx:102 (formex Field)
+// flip: no
+// A generic component's function child takes its contextual signature from the view the call's inference gives it
+// (C's default through the non-fixing mapper picks the conditional's false branch), as an attribute does
+declare namespace JSX {
+  interface Element {}
+  interface IntrinsicElements { div: { children?: any } }
+>div : { children?: any; }
+>children : any
+
+  interface ElementChildrenAttribute { children: {} }
+>children : {}
+}
+type ElementType = keyof JSX.IntrinsicElements | ((props: any) => JSX.Element | null);
+>ElementType : ElementType
+>JSX : any
+>props : any
+>JSX : any
+
+type CP<C> = C extends (p: infer P) => any ? P : {};
+>CP : CP<C>
+>p : P
+
+interface FProps<V> { field: { value: V }; form: { values: any } }
+>field : { value: V; }
+>value : V
+>form : { values: any; }
+>values : any
+
+interface FieldConfig<Value, C extends ElementType | undefined = undefined> {
+    as?: C | string;
+>as : string | C | undefined
+
+    children?: ((props: FProps<Value>) => JSX.Element) | string;
+>children : string | ((props: FProps<Value>) => JSX.Element) | undefined
+>props : FProps<Value>
+>JSX : any
+
+    name: string;
+>name : string
+}
+type FieldProps<T, C extends ElementType | undefined> = { as?: C } & (C extends ElementType ? (CP<C> & FieldConfig<T, C>) : FieldConfig<T, C>);
+>FieldProps : FieldProps<T, C>
+>as : C | undefined
+
+declare function Field<T, C extends ElementType | undefined = undefined>(p: FieldProps<T, C>): JSX.Element;
+>Field : <T, C extends ElementType | undefined = undefined>(p: FieldProps<T, C>) => JSX.Element
+>p : FieldProps<T, C>
+>JSX : any
+
+const x = <Field name="a">{(fieldProps) => <div>{fieldProps.form.values}</div>}</Field>;
+>x : JSX.Element
+><Field name="a">{(fieldProps) => <div>{fieldProps.form.values}</div>}</Field> : JSX.Element
+>Field : <T, C extends ElementType | undefined = undefined>(p: FieldProps<T, C>) => JSX.Element
+>name : string
+>(fieldProps) => <div>{fieldProps.form.values}</div> : (fieldProps: FProps<unknown>) => JSX.Element
+>fieldProps : FProps<unknown>
+><div>{fieldProps.form.values}</div> : JSX.Element
+>div : any
+>fieldProps.form.values : any
+>fieldProps.form : { values: any; }
+>fieldProps : FProps<unknown>
+>form : { values: any; }
+>values : any
+>div : any
+>Field : <T, C extends ElementType | undefined = undefined>(p: FieldProps<T, C>) => JSX.Element
+
