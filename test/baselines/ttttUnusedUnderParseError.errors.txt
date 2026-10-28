@@ -1,0 +1,55 @@
+ttttUnusedUnderParseError.ts(6,12): error TS1005: ':' expected.
+ttttUnusedUnderParseError.ts(6,13): error TS1129: Statement expected.
+ttttUnusedUnderParseError.ts(10,12): error TS6133: 'a' is declared but its value is never read.
+ttttUnusedUnderParseError.ts(10,12): error TS7006: Parameter 'a' implicitly has an 'any' type.
+ttttUnusedUnderParseError.ts(10,14): error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+ttttUnusedUnderParseError.ts(10,15): error TS1003: Identifier expected.
+ttttUnusedUnderParseError.ts(14,17): error TS1109: Expression expected.
+ttttUnusedUnderParseError.ts(15,9): error TS6133: 'y' is declared but its value is never read.
+ttttUnusedUnderParseError.ts(15,15): error TS1005: ',' expected.
+ttttUnusedUnderParseError.ts(18,18): error TS6196: 'W' is declared but never used.
+ttttUnusedUnderParseError.ts(19,1): error TS1005: '}' expected.
+
+
+==== ttttUnusedUnderParseError.ts (11 errors) ====
+    // tsgo's reportUnused skips a declaration whose subtree holds a node finished right after a parse error
+    // (ThisNodeHasError, propagated by the binder as ThisNodeOrAnySubNodesHasError): the switch's `let z` after the
+    // skipped `?:`, the class whose `}` is missing (its type parameter U), the method whose parameter is `1`, the variable
+    // whose initializer has an error. Known failing (agents/bugs/bun_others.md, the unusedSwitchStatement item)
+    switch (1) {
+        default?:
+               ~
+!!! error TS1005: ':' expected.
+                ~
+!!! error TS1129: Statement expected.
+            let z = 2;
+    }
+    var E = class {
+        method(a, 1) {
+               ~
+!!! error TS6133: 'a' is declared but its value is never read.
+               ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                 
+!!! error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+                  ~
+!!! error TS1003: Identifier expected.
+        }
+    }
+    function f() {
+        let x = (1 +);
+                    ~
+!!! error TS1109: Expression expected.
+        let y = 1 2;
+            ~
+!!! error TS6133: 'y' is declared but its value is never read.
+                  ~
+!!! error TS1005: ',' expected.
+    }
+    class C<_T, U> {
+        public m<_V, W>() { }
+                     ~
+!!! error TS6196: 'W' is declared but never used.
+    
+    
+!!! error TS1005: '}' expected.

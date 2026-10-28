@@ -1,0 +1,46 @@
+//// [test/cases/ttttUnusedUnderParseError.ts] ////
+
+=== ttttUnusedUnderParseError.ts ===
+// tsgo's reportUnused skips a declaration whose subtree holds a node finished right after a parse error
+// (ThisNodeHasError, propagated by the binder as ThisNodeOrAnySubNodesHasError): the switch's `let z` after the
+// skipped `?:`, the class whose `}` is missing (its type parameter U), the method whose parameter is `1`, the variable
+// whose initializer has an error. Known failing (agents/bugs/bun_others.md, the unusedSwitchStatement item)
+switch (1) {
+>1 : 1
+
+    default?:
+        let z = 2;
+>z : number
+>2 : 2
+}
+var E = class {
+>E : typeof E
+>class {    method(a, 1) {    }} : typeof E
+
+    method(a, 1) {
+>method : (a: any, : any) => void
+>a : any
+> : any
+    }
+}
+function f() {
+>f : () => void
+
+    let x = (1 +);
+>x : any
+>(1 +) : any
+>1 + : any
+>1 : 1
+> : any
+
+    let y = 1 2;
+>y : number
+>1 : 1
+>2 : 2
+}
+class C<_T, U> {
+>C : C<_T, U>
+
+    public m<_V, W>() { }
+>m : <_V, W>() => void
+

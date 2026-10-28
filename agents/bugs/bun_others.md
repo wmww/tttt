@@ -540,7 +540,7 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   yield*'s TS2488 uses it (46c70b16d). Left: [open] unusedSwitchStatement (`default?:`): tsgo's reportUnused skips a
   declaration whose subtree has a node with ThisNodeHasError (the first node finished after any parse error, here the
   identifier `z` of the `let z` after the TS1129), so no TS6133 there; tttt has no notion of that flag (a spurious
-  TS6133 under noUnusedLocals in files with parse errors). [open] recursiveTypeRelations: `reduce<C>(cb)` missing its
+  TS6133 under noUnusedLocals in files with parse errors). [design] (below, ttttUnusedUnderParseError) recursiveTypeRelations: `reduce<C>(cb)` missing its
   initial value is TS2345 on the callback in tsgo, TS2554 in tttt (overload error choice, checker). [open]
   recursiveTypeInferenceReturnTypeConstraint (missing TS2615), isolatedDeclarationErrorsObjects (missing TS9009),
   noImplicitAnyUnionNormalizedObjectLiteral1 (missing TS7005: [fixed 1faa449eb], cor8's seed 62), esDecorators-contextualTypes.2 (TS7053 elaboration: a union index's is its first member's, ttttIndexUnionElaboration, [fixed 0928d2e68] cor8),
@@ -580,6 +580,30 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   (TS2322 elaboration), unlooked at [open]. Harness or text: importDeclWithExportModifierInAmbientContext (TS2708 is
   tsgo's emit resolver's, the pre/post-emit count line), escapedIdentifiers (TS2551 prints the name's escapes as
   written, `argX\u0033`), four `render`.
+- **Unused checks under a parse error (tsgo's ThisNodeHasError), design** (bun10 2026-10-28; known failing
+  ttttUnusedUnderParseError; mutants unusedSwitchStatement, unusedLocalsAndParameters add-arg,
+  unusedTypeParametersWithUnderscore delete-stmt). tsgo: parseErrorAtRange sets hasParseError on every attempt (a
+  deduplicated one too); finishNode puts NodeFlagsThisNodeHasError on the next node finished and clears it; the binder
+  ORs it up into ThisNodeOrAnySubNodesHasError; reportUnused (only it, in the checker) drops a diagnostic whose
+  location has that flag. The locations: a VariableDeclaration or Parameter (binding elements walk up to it), the
+  declaration owning a type parameter list (the whole class or function: `class C<U> {` missing its `}` hides U, the
+  error at the end of the file being before the class finishes), a class member, an import declaration, a local
+  function/class/enum/... declaration. Observed: an error after a declaration finished doesn't hide it (`let y = 1 2`
+  still reports y, a method's `(a, 1)` still reports a), one inside does (`let x = (1 +)`), and one before it with
+  only skipped tokens in between does too (`default?:` then `let z`: the first node finished after the TS1129 is `z`).
+  Plan: (1) parser: ParserShared.error_pending set by every parse error attempt (parse_error_inner, deduplicated ones
+  included; not grammar_error, JS-only or JSDoc errors, which aren't tsc parse errors); parse_success() (tttt's
+  finishNode choke point: every node-producing parse function ends there) with error_pending set and the child having
+  consumed something records the child's [start, end) in the parser's error-node list and clears it. The list rolls
+  back with the parser like its errors (a failed speculative child drops its records and restores pending: tsgo's
+  mark/rewind saves hasParseError). Kept per SourceFile, sorted by start (usually empty: one load and a branch per
+  parse_success on the common path). (2) checker: every unused report (unused.c and the type-parameter/member/import
+  ones, TS6133/TS6138/TS6192/TS6196/TS6198/TS6199/TS6205) asks file_has_error_node_in(file, location span), the
+  location being tsc's node above, which tttt must name per report (the variable declaration's binding plus
+  initializer, the owner's full span for type parameters). Risks: tttt's parse_success granularity isn't tsc's node
+  granularity (a hop-consumed token makes no node, so the first recorded node may be a larger one starting earlier:
+  then it doesn't fit inside D and D is reported; check against tsgoast.sh trees on the mutants), and lookahead child
+  parsers that succeed without being a node. Cost: a branch per parse_success, nest's callgrind to confirm. [design]
 - After a parameter's modifiers a reserved word is TS1359 (parseBindingIdentifier), not TS1003: `declare function`
   where a parameter was expected (seed 20261101, contextualParamTypeVsNestedReturnTypeInference4;
   ttttParameterModifierReservedName). [fixed 56abcd061]

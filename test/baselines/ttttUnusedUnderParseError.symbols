@@ -1,0 +1,40 @@
+//// [test/cases/ttttUnusedUnderParseError.ts] ////
+
+=== ttttUnusedUnderParseError.ts ===
+// tsgo's reportUnused skips a declaration whose subtree holds a node finished right after a parse error
+// (ThisNodeHasError, propagated by the binder as ThisNodeOrAnySubNodesHasError): the switch's `let z` after the
+// skipped `?:`, the class whose `}` is missing (its type parameter U), the method whose parameter is `1`, the variable
+// whose initializer has an error. Known failing (agents/bugs/bun_others.md, the unusedSwitchStatement item)
+switch (1) {
+    default?:
+        let z = 2;
+>z : Symbol(z, Decl(ttttUnusedUnderParseError.ts, 6, 11))
+}
+var E = class {
+>E : Symbol(E, Decl(ttttUnusedUnderParseError.ts, 8, 3))
+
+    method(a, 1) {
+>method : Symbol(E.method, Decl(ttttUnusedUnderParseError.ts, 8, 15))
+>a : Symbol(a, Decl(ttttUnusedUnderParseError.ts, 9, 11))
+> : Symbol((Missing), Decl(ttttUnusedUnderParseError.ts, 9, 13))
+    }
+}
+function f() {
+>f : Symbol(f, Decl(ttttUnusedUnderParseError.ts, 11, 1))
+
+    let x = (1 +);
+>x : Symbol(x, Decl(ttttUnusedUnderParseError.ts, 13, 7))
+
+    let y = 1 2;
+>y : Symbol(y, Decl(ttttUnusedUnderParseError.ts, 14, 7))
+}
+class C<_T, U> {
+>C : Symbol(C, Decl(ttttUnusedUnderParseError.ts, 15, 1))
+>_T : Symbol(_T, Decl(ttttUnusedUnderParseError.ts, 16, 8))
+>U : Symbol(U, Decl(ttttUnusedUnderParseError.ts, 16, 11))
+
+    public m<_V, W>() { }
+>m : Symbol(C.m, Decl(ttttUnusedUnderParseError.ts, 16, 16))
+>_V : Symbol(_V, Decl(ttttUnusedUnderParseError.ts, 17, 13))
+>W : Symbol(W, Decl(ttttUnusedUnderParseError.ts, 17, 16))
+
