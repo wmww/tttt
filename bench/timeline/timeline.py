@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """bench/timeline/timeline.c's output as a per-phase table: wall, the main thread's CPU, its run-queue wait and its
 blocked time, the other threads' CPU and parallelism, and the top functions of each side.
-timeline.py TIMELINE_OUT [--top N] [--phase SUBSTRING] [--inclusive]"""
+timeline.py TIMELINE_OUT [--top N] [--phase SUBSTRING] [--inclusive] [--blocked]
+--blocked (with TIMELINE_ALL=1): the other threads' blocked time per phase (each one's span less its run and run-queue
+time, summed) and their samples blocked in a system call or a futex (S or D, a libc leaf), by the leaf and the first
+three of our frames: which lock or mm call the threads sleep in"""
 import argparse, bisect, collections, os, subprocess
 
 ap = argparse.ArgumentParser()
@@ -10,6 +13,7 @@ ap.add_argument('--top', type=int, default=6)
 ap.add_argument('--phase', help='only phases whose name contains this')
 ap.add_argument('--inclusive', action='store_true', help='rank functions anywhere on the stack, not leaves')
 ap.add_argument('--skip', action='append', default=[], help='leaf-rank the first frame not matching these (e.g. malloc)')
+ap.add_argument('--blocked', action='store_true', help='blocked time and blocked stacks of the other threads (TIMELINE_ALL=1)')
 ap.add_argument('--state', help='only samples in these states (R running, S sleeping, D disk/uninterruptible); default R', default='R')
 args = ap.parse_args()
 
@@ -107,3 +111,19 @@ for (a, _), (b, nm) in zip(phases, phases[1:]):
                 c[f] += 1
         if n:
             print(f'   {side:6} {n:5d} samples: ' + ', '.join(f'{f} {100 * k / n:.0f}%' for f, k in c.most_common(args.top)))
+    if args.blocked:
+        span_blocked = 0.0
+        for tid in stats:
+            if tid == pid: continue
+            rs = [x for x in stats[tid] if a <= x[0] <= b]
+            if len(rs) < 2: continue
+            span_blocked += max(0.0, (rs[-1][0] - rs[0][0] - (rs[-1][1] - rs[0][1]) - (rs[-1][2] - rs[0][2])) / 1e6)
+        c = collections.Counter()
+        for ns, tid, state, st in samples:
+            if not (a <= ns < b) or tid == pid or state not in 'SD': continue
+            names = [name(x if i == 0 else x - 1) for i, x in enumerate(st)]
+            if not names or '@' not in names[0]: continue
+            ours = [f for f in names[:12] if '@' not in f][:3]
+            c[f"{state} {names[0].split('@')[0]} < {' < '.join(ours)}"] += 1
+        print(f'   others blocked {span_blocked:.1f} ms (summed); blocked samples by leaf < caller chain:')
+        for k, v in c.most_common(args.top): print(f'     {v:5d} {k}')

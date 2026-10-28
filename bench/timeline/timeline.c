@@ -5,6 +5,8 @@
 // (TIMELINE_ALL=1: every thread, also blocked ones, each sample with its state)
 // TIMELINE_OUT (default timeline.out) with /proc/self/maps; bench/timeline/timeline.py turns it into a per-phase table.
 // Build: gcc -O2 -shared -fPIC -pthread -o /tmp/timeline.so bench/timeline/timeline.c
+// Profile release/tttt, not fast/tttt: backtrace() in the handler crashes now and then (SIGSEGV in libgcc's
+// _Unwind_Backtrace) when the signal lands in BOLT's split code (2 of 3 runs on effect at T16, 2026-10-29)
 #define _GNU_SOURCE
 #include <dirent.h>
 #include <stdbool.h>
