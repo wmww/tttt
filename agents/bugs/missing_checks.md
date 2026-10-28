@@ -94,11 +94,11 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   the second (both wrong before and after: tsc has TS2683 there). Test ttttFunctionExpressionDefaultsAtFirstCheck. [fixed ffba37893]
 - (cor4, 2026-10-28, bun 99-V4 checkReturnStatement__01/02) Return statements were checked against the annotation as
   lowered after a circular signature return (`[any]`), not against tsc's getReturnTypeOfSignature result (any, TS2577):
-  a spurious TS2322. KEY_RETURN_ANNOTATION_CIRCULAR. Test ttttReturnCheckedAgainstCircularAnnotation. [fixed 12c213d21]
+  a spurious TS2322. KEY_RETURN_ANNOTATION_CIRCULAR. Test ttttReturnCheckedAgainstCircularAnnotation. [fixed c85d7abec]
 - (cor4, 2026-10-28) A variable initialized by a function expression wasn't typed before its initializer was checked
   (tsc's checkVariableLikeDeclaration asks getTypeOfSymbol first), so the function's first check ran with the variable
   settled and `const h = (a = h) => 1` missed TS7022. initialized_binding_typecheck() now asks the type first for
-  EXPR_FUNCTION initializers as it did for calls. Test ttttFunctionInitializerTypedFirst. [fixed 57d47b4f8]
+  EXPR_FUNCTION initializers as it did for calls. Test ttttFunctionInitializerTypedFirst. [fixed d184f6f2c]
 - (cor4, 2026-10-28) The return annotation of a function expression isn't lowered at its first check (tsc's
   checkSignatureDeclaration checks the return type node there): `const f = (): [ReturnType<typeof f>] => 1` is TS7022
   on f and TS2322 `number` to `[any]` in tsc, TS2577 alone in tttt. Lowering it in check_function_parameters_first()
@@ -113,7 +113,7 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   Checker.assigning_context_function/signature) for a plain name without default or rest. Left: the types baseline
   of that `b` (tsc's typeWriter rechecks it, number; tttt keeps the checked expression's T), and a later parameter with
   a default or `...` (getTypeForVariableLikeDeclaration's optionality and rest type) still goes through its lazy type.
-  Test ttttUnassignedContextualParameterRead (types component fails, that baseline). [fixed COMMIT-next]
+  Test ttttUnassignedContextualParameterRead (types component fails, that baseline). [fixed e71e1789a]
 - (cor2, 2026-10-28, bun 99-V4) **Accessor write-type circularity**: tsc pushes an accessor's write type
   (getWriteTypeOfAccessors, TypeSystemPropertyNameWriteType) and reports a failing pop as TS2502 at the setter's name,
   and a union or intersection property asks each member's write type when it is made (createUnionOrIntersectionProperty).
