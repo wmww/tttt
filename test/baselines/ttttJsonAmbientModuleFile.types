@@ -1,0 +1,51 @@
+//// [test/cases/ttttJsonAmbientModuleFile.ts] ////
+
+=== amb.d.json.ts ===
+declare module "z" { const v: { amb: number }; export default v; }
+>"z" : typeof import("z")
+>v : { amb: number; }
+>amb : number
+>v : { amb: number; }
+
+=== amb.d.ts ===
+declare module "x.json" { const v: { amb: number }; export default v; }
+>"x.json" : typeof import("x.json")
+>v : { amb: number; }
+>amb : number
+>v : { amb: number; }
+
+=== typed.d.json.ts ===
+declare const v: { k: number };
+>v : { k: number; }
+>k : number
+
+export default v;
+>v : { k: number; }
+
+=== a.mts ===
+import t1 from "z";
+>t1 : typeof t1
+
+import { default as t2 } from "z";
+>default : typeof t1
+>t2 : typeof t1
+
+t1.amb; t2.amb;
+>t1.amb : any
+>t1 : typeof t1
+>amb : any
+>t2.amb : any
+>t2 : typeof t1
+>amb : any
+
+import t3 from "x.json";
+>t3 : { amb: number; }
+
+t3.amb; t3.k;
+>t3.amb : number
+>t3 : { amb: number; }
+>amb : number
+>t3.k : any
+>t3 : { amb: number; }
+>k : any
+

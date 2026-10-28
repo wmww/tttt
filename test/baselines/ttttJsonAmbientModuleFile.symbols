@@ -1,0 +1,45 @@
+//// [test/cases/ttttJsonAmbientModuleFile.ts] ////
+
+=== amb.d.json.ts ===
+declare module "z" { const v: { amb: number }; export default v; }
+>"z" : Symbol("z", Decl(amb.d.json.ts, 0, 0))
+>v : Symbol(v, Decl(amb.d.json.ts, 0, 26))
+>amb : Symbol(amb, Decl(amb.d.json.ts, 0, 31))
+>v : Symbol(v, Decl(amb.d.json.ts, 0, 26))
+
+=== amb.d.ts ===
+declare module "x.json" { const v: { amb: number }; export default v; }
+>"x.json" : Symbol("x.json", Decl(amb.d.ts, 0, 0))
+>v : Symbol(v, Decl(amb.d.ts, 0, 31))
+>amb : Symbol(amb, Decl(amb.d.ts, 0, 36))
+>v : Symbol(v, Decl(amb.d.ts, 0, 31))
+
+=== typed.d.json.ts ===
+declare const v: { k: number };
+>v : Symbol(v, Decl(typed.d.json.ts, 0, 13))
+>k : Symbol(k, Decl(typed.d.json.ts, 0, 18))
+
+export default v;
+>v : Symbol(v, Decl(typed.d.json.ts, 0, 13))
+
+=== a.mts ===
+import t1 from "z";
+>t1 : Symbol(t1, Decl(a.mts, 0, 6))
+
+import { default as t2 } from "z";
+>default : Symbol(t1, Decl(amb.d.json.ts, 0, 0))
+>t2 : Symbol(t2, Decl(a.mts, 1, 8))
+
+t1.amb; t2.amb;
+>t1 : Symbol(t1, Decl(a.mts, 0, 6))
+>t2 : Symbol(t2, Decl(a.mts, 1, 8))
+
+import t3 from "x.json";
+>t3 : Symbol(t3, Decl(a.mts, 3, 6))
+
+t3.amb; t3.k;
+>t3.amb : Symbol(amb, Decl(amb.d.ts, 0, 36))
+>t3 : Symbol(t3, Decl(a.mts, 3, 6))
+>amb : Symbol(amb, Decl(amb.d.ts, 0, 36))
+>t3 : Symbol(t3, Decl(a.mts, 3, 6))
+

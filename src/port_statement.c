@@ -434,9 +434,12 @@ static bool imports_json_as_esm(PortStatement const* me) {
     ModuleKind module = compiler_options()->module;
     if (module < MODULE_KIND_NODE16 || module > MODULE_KIND_NODENEXT || my is_import_require || !my module_ref) return false;
     SourceFile const* from = span_source(my keyword_span);
-    SourceFile const* target = my module_ref->file;
-    if (!from || !from->is_esm || !target) return false;
-    return target->is_json || csview_ends_with(cstr_sv(&target->canonical_path), ".d.json.ts");
+    // (The module the import resolved to: an ambient one is its declaration's file, and wins over a file a non-relative
+    // name resolves to)
+    SourceFile const* target = my module_ref->module_state == ALIAS_DONE ? module_declaring_file(my module_ref->module) :
+        my module_ref->file;
+    if (!from || !from->is_esm) return false;
+    return source_file_is_json_like(target);
 }
 
 static char const* node_module_kind_name(ModuleKind kind) {

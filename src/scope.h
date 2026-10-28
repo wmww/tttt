@@ -888,6 +888,11 @@ bool binder_has_attributed_patterns(Binder const* me);
 // What importing the module gives: the target of its `export =` if it has one (the `export =` itself when the
 // module's types made it a namespace, bind_type_exports()), else itself
 Symbol* module_export_equals(Symbol* module);
+// The file a module symbol is: a module file, else where an ambient module is first declared (tsc's
+// GetSourceFileOfModule). Null for none
+SourceFile const* module_declaring_file(Symbol const* module);
+// The file is a JSON module to Node.js: a .json file or a .d.json.ts declaration (tsc's isOnlyImportableAsDefault)
+bool source_file_is_json_like(SourceFile const* file);
 // How tsc names a module in a message: an ambient module by its declared name, a file by the specifier it was
 // imported with (TS2305, ref may be null otherwise) or by its path without the extension. With the quotes
 cstr module_name_for_error(Symbol const* module, ModuleRef const* ref, bool by_specifier);

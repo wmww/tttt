@@ -2910,6 +2910,16 @@ Symbol* binder_module_of_ref(Binder const* me, ModuleRef* ref) {
     return ref->module;
 }
 
+SourceFile const* module_declaring_file(Symbol const* module) {
+    if (!module || !module->is_module) return nullptr;
+    if (module->module->file) return module->module->file;
+    return module->decl_count ? span_source(module->decls[0].name) : nullptr;
+}
+
+bool source_file_is_json_like(SourceFile const* file) {
+    return file && (file->is_json || csview_ends_with(cstr_sv(&file->canonical_path), ".d.json.ts"));
+}
+
 Symbol* module_export_equals(Symbol* module) {
     if (!module || !module->is_module) return module;
     if (symbol_rare(module)->export_equals_clone) return symbol_rare(module)->export_equals_clone;
@@ -3664,9 +3674,10 @@ static Symbol* resolve_default_target(PortItem* item, Symbol* module, Symbol* as
         item->source_symbol = dot_exports;
         return resolve_if_pure_alias(dot_exports);
     }
-    bool default_only = file && importer && module_kind >= MODULE_KIND_NODE16 && module_kind <= MODULE_KIND_NODENEXT &&
+    // (An ambient module's file is where it is declared: `declare module "m"` in a .d.json.ts is JSON too)
+    bool default_only = importer && module_kind >= MODULE_KIND_NODE16 && module_kind <= MODULE_KIND_NODENEXT &&
         !item->is_require && source_file_emit_module_kind(importer) == MODULE_KIND_ESNEXT &&
-        (file->is_json || csview_ends_with(cstr_sv(&file->canonical_path), ".d.json.ts"));
+        source_file_is_json_like(module_declaring_file(module));
     if (default_only || can_have_synthetic_default(item, module, file)) {
         // A synthetic default overrides a real `default` export (as emitted without `__esModule`). (`{ default as d }`
         // names the `export=` symbol itself)
