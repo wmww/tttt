@@ -562,6 +562,23 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   initializer resolves silently (712fb465d), a namespace body's missing `}` has no TS1007 (161cda90c). Left: [open]
   circularInlineMappedGenericTupleTypeNoCrash: TS2464's underline on a broken computed name `[P in keyof Elements]`
   in an object literal is one character shorter than tsgo's (render only).
+- Mutation seeds 20261105 and 20261106 (bun10, `--syntax`, 2000 each: 8 and 15 errors-component differences; 20261104
+  without `--syntax`: 0). Fixed: a `]` ends a parameter list (fb750f459), a misplaced `import x = N` (TS1232) isn't
+  resolved (a43889a36), the end of the file ends a type or class member (3aca4984e), a for-of's expression is no comma
+  expression (f6fc11235), a computed name missing its expression is TS1109 and the member goes on (9daf04676), an
+  object literal method's TS18016 is a grammar error (4a3ee8051), a bodiless function expression's or object literal
+  method's renamings are TS7031 and a function expression's body is required (c142ccd3c). Left: [open]
+  unusedLocalsAndParameters add-arg and unusedTypeParametersWithUnderscore delete-stmt: TS6133/TS6196 that tsgo's
+  ThisNodeHasError hides (the unusedSwitchStatement item above). Checker, relayed: typePredicatesOptionalChaining1
+  (TS2353 for a duplicated excess property is at its first declaration in tsgo, the binder merges the two into one
+  symbol whose valueDeclaration is the first; tttt at the last: `const o: { a?: 1 } = { b: 1, a: 1, b: 2 }`) [open];
+  narrowingTypeofUndefined2 (`[...arg]` of `T extends unknown[] | undefined` narrowed by `typeof arg !== 42` misses
+  TS2488 'Type 'T' must have a [Symbol.iterator]()') [open]; unknownSymbolOffContextualType1 swap-stmts (a `reduce`
+  callback whose return mentions the variable being declared: TS7022/TS7024 missing) [open];
+  distributiveConditionalBaseConstraint extends-object (spurious TS2344), distributiveConditionalTypeConstraints
+  (TS2322 elaboration), unlooked at [open]. Harness or text: importDeclWithExportModifierInAmbientContext (TS2708 is
+  tsgo's emit resolver's, the pre/post-emit count line), escapedIdentifiers (TS2551 prints the name's escapes as
+  written, `argX\u0033`), four `render`.
 - After a parameter's modifiers a reserved word is TS1359 (parseBindingIdentifier), not TS1003: `declare function`
   where a parameter was expected (seed 20261101, contextualParamTypeVsNestedReturnTypeInference4;
   ttttParameterModifierReservedName). [fixed 56abcd061]
