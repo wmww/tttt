@@ -1,0 +1,18 @@
+//// [test/cases/ttttInferOutsideExtendsParseError.ts] ////
+
+=== ttttInferOutsideExtendsParseError.ts ===
+// An `infer` outside a conditional's extends clause is tsgo's grammar error (TS1338, grammarErrorOnNode): not
+// reported in a file with parse errors (mutation seed 20261107, contextualReturnArrayPatternCallback)
+type ArrayElement<Input> = Input extends Object (infer Value)[] ? Value : unknown;
+>ArrayElement : Symbol(ArrayElement, Decl(ttttInferOutsideExtendsParseError.ts, 0, 0))
+>Input : Symbol(Input, Decl(ttttInferOutsideExtendsParseError.ts, 2, 18))
+>Input : Symbol(Input, Decl(ttttInferOutsideExtendsParseError.ts, 2, 18))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>Value : Symbol(Value, Decl(ttttInferOutsideExtendsParseError.ts, 2, 54))
+>Value : Symbol(Value)
+
+type Outside<T> = (infer U)[];
+>Outside : Symbol(Outside, Decl(ttttInferOutsideExtendsParseError.ts, 2, 82))
+>T : Symbol(T, Decl(ttttInferOutsideExtendsParseError.ts, 3, 13))
+>U : Symbol(U, Decl(ttttInferOutsideExtendsParseError.ts, 3, 24))
+

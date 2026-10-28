@@ -1,0 +1,23 @@
+ttttInferOutsideExtendsParseError.ts(3,49): error TS1005: '?' expected.
+ttttInferOutsideExtendsParseError.ts(3,65): error TS1005: ':' expected.
+ttttInferOutsideExtendsParseError.ts(3,67): error TS2304: Cannot find name 'Value'.
+ttttInferOutsideExtendsParseError.ts(3,73): error TS1005: ';' expected.
+ttttInferOutsideExtendsParseError.ts(3,75): error TS2693: 'unknown' only refers to a type, but is being used as a value here.
+
+
+==== ttttInferOutsideExtendsParseError.ts (5 errors) ====
+    // An `infer` outside a conditional's extends clause is tsgo's grammar error (TS1338, grammarErrorOnNode): not
+    // reported in a file with parse errors (mutation seed 20261107, contextualReturnArrayPatternCallback)
+    type ArrayElement<Input> = Input extends Object (infer Value)[] ? Value : unknown;
+                                                    ~
+!!! error TS1005: '?' expected.
+                                                                    ~
+!!! error TS1005: ':' expected.
+                                                                      ~~~~~
+!!! error TS2304: Cannot find name 'Value'.
+                                                                            ~
+!!! error TS1005: ';' expected.
+                                                                              ~~~~~~~
+!!! error TS2693: 'unknown' only refers to a type, but is being used as a value here.
+    type Outside<T> = (infer U)[];
+    

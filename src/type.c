@@ -384,7 +384,7 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
         // (`infer X extends C`: C is resolved where the extends type is)
         case TYPE_INFERRED:
             if (!my inferred->owned_symbol) {
-                error_ctx_error_d(errs, my inferred->full_span, 1338, "'infer' declarations are only permitted in the 'extends' clause of a conditional type.");
+                error_ctx_grammar_error_d(errs, my inferred->full_span, 1338, "'infer' declarations are only permitted in the 'extends' clause of a conditional type.");
             }
             type_lookup_names(&my inferred->extends, names, errs);
             break;
