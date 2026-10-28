@@ -3032,15 +3032,6 @@ static BinaryOp without_assignment(BinaryOp op) {
     }
 }
 
-// Some member of `ty` has one of the flags (tsc's maybeTypeOfKind)
-static bool maybe_of_kind(Ty const* ty, u32 kind) {
-    if (ty->flags & kind) return true;
-    if (ty->kind != TY_UNION && ty->kind != TY_INTERSECTION) return false;
-    for (u32 i = 0; i < ty->composite.types.len; i++) {
-        if (maybe_of_kind(ty->composite.types.data[i], kind)) return true;
-    }
-    return false;
-}
 
 static bool is_bigint_like(Checker* me, Ty const* ty) {
     return (ty->flags & (TYF_BIGINT | TYF_BIGINT_LITERAL)) || extends_strict_nulls(me, ty, TY_BIGINT);
@@ -3053,7 +3044,7 @@ static Ty const* arithmetic_result(Checker* me, Ty const* left, Ty const* right)
     u32 any_or_unknown = TYF_ANY | TYF_UNKNOWN;
     u32 bigint_like = TYF_BIGINT | TYF_BIGINT_LITERAL;
     if (((left->flags & any_or_unknown) && (right->flags & any_or_unknown)) ||
-        !(maybe_of_kind(left, bigint_like) || maybe_of_kind(right, bigint_like))
+        !(ty_maybe_type_of_kind(left, bigint_like) || ty_maybe_type_of_kind(right, bigint_like))
     ) {
         return ty_intrinsic(me, TY_NUMBER);
     }
@@ -3503,8 +3494,8 @@ static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx c
 
 // tsc's getUnaryResultType: -, ~, ++ and -- of a bigint are a bigint
 static Ty const* unary_result_type(Checker* me, Ty const* operand) {
-    if (!maybe_of_kind(operand, TYF_BIGINT | TYF_BIGINT_LITERAL)) return ty_intrinsic(me, TY_NUMBER);
-    if ((operand->flags & (TYF_ANY | TYF_UNKNOWN)) || maybe_of_kind(operand, TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM)) {
+    if (!ty_maybe_type_of_kind(operand, TYF_BIGINT | TYF_BIGINT_LITERAL)) return ty_intrinsic(me, TY_NUMBER);
+    if ((operand->flags & (TYF_ANY | TYF_UNKNOWN)) || ty_maybe_type_of_kind(operand, TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM)) {
         Ty const* parts[2] = { ty_intrinsic(me, TY_NUMBER), ty_intrinsic(me, TY_BIGINT) };
         return ty_union(me, parts, 2, nullptr, (TyList){0});
     }

@@ -408,7 +408,7 @@ static Ty const* mapped_over_array_or_tuple(
         // `?` adds undefined unless it may be undefined or void already, `-?` takes it out of an element that was
         // optional (tsc's instantiateMappedTypeTemplate: an unresolved element's union is the error type, checked
         // below); the tuple adds it to every optional one (createNormalizedTupleType's addOptionality)
-        if (mapped->optional > 0 && compiler_options()->strict_null_checks && !ty_maybe_undefined_or_void(element)) {
+        if (mapped->optional > 0 && compiler_options()->strict_null_checks && !ty_maybe_type_of_kind(element, TYF_UNDEFINED | TYF_VOID)) {
             element = ty_optional_prop_type(me, element);
         } else if (mapped->optional < 0 && (flags[i] & TUPLE_ELEMENT_OPTIONAL) && compiler_options()->strict_null_checks) {
             element = remove_missing_or_undefined(me, element);

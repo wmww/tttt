@@ -2096,7 +2096,8 @@ Ty const* ty_optional_param_type(Checker* me, Ty const* type); // infer.c
 // What the position of `param` takes: an optional one's type with undefined (tsc's getTypeOfParameter) // infer.c
 Ty const* ty_sig_param_declared_type(Checker* me, SigParam const* param); // infer.c, without its optionality's undefined
 Ty const* ty_sig_param_symbol_type(Checker* me, SigParam const* param); // infer.c, tsc's getTypeOfSymbol
-bool ty_maybe_undefined_or_void(Ty const* type); // members.c, tsc's maybeTypeOfKind(type, Undefined | Void)
+// tsc's maybeTypeOfKind: `type` or a member of it, through unions and intersections, has one of `flags` (members.c)
+bool ty_maybe_type_of_kind(Ty const* type, u32 flags);
 Ty const* ty_signature_params_tuple(Checker* me, Signature const* sig, u32 from, TyMapper const* mapper); // infer.c
 u32 ty_min_argument_count(Checker* me, Signature const* sig); // relate.c: tsc's getMinArgumentCount, less trailing void
 Signature const* ty_combine_intersection_signatures(Checker* me, Signature const* left, Signature const* right);

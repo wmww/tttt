@@ -1164,19 +1164,10 @@ static bool pattern_declares(Binding const* pattern, Span name) {
     return false;
 }
 
-// tsc's maybeTypeOfKind(type, Void): through unions and intersections, `void & { brand: void }` (tsc's __String) too
-static bool ty_maybe_void(Ty const* type) {
-    if (type->flags & TYF_VOID) return true;
-    if (type->kind != TY_UNION && type->kind != TY_INTERSECTION) return false;
-    for (u32 i = 0; i < type->composite.types.len; i++) {
-        if (ty_maybe_void(type->composite.types.data[i])) return true;
-    }
-    return false;
-}
-
+// (maybeTypeOfKind(type, Void) reaches `void & { brand: void }`, tsc's __String, too)
 bool function_impl_return_void_any_or_undefined(FunctionImpl const* me, Ty const* return_type) {
     Ty const* unwrapped = ty_unwrap_return_type(current_checker, me, return_type);
-    return unwrapped && (ty_maybe_void(unwrapped) || unwrapped->flags & (TYF_ANY | TYF_UNDEFINED));
+    return unwrapped && (ty_maybe_type_of_kind(unwrapped, TYF_VOID) || unwrapped->flags & (TYF_ANY | TYF_UNDEFINED));
 }
 
 // tsc: checkAllCodePathsInNonVoidFunctionReturnOrThrow(). Only when it is certain that control can fall off the end
@@ -1199,11 +1190,11 @@ static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
         // (tsc's unwrapReturnType: an async function's is what it awaits to, error if that's nothing)
         type = ty_unwrapped_return_type(checker, me);
         if (!type && my is_async && !my is_generator) type = ty_intrinsic(checker, TY_ANY);
-        if (type && (ty_maybe_void(type) || type->flags & (TYF_ANY | TYF_UNDEFINED))) return;
+        if (type && (ty_maybe_type_of_kind(type, TYF_VOID) || type->flags & (TYF_ANY | TYF_UNDEFINED))) return;
     } else if (my accessor == 1 && function_impl_setter_type(me)) {
         // A getter's is its setter's parameter annotation (tsc's getReturnTypeFromAnnotation: getAnnotatedAccessorType)
         type = ty_from_node(checker, function_impl_setter_type(me), (LowerCtx){ .generic = true });
-        if (ty_maybe_void(type) || type->flags & (TYF_ANY | TYF_UNDEFINED)) return;
+        if (ty_maybe_type_of_kind(type, TYF_VOID) || type->flags & (TYF_ANY | TYF_UNDEFINED)) return;
     } else if (function_impl_rare(me)->jsdoc_signature_type && !my is_generator) {
         // A JSDoc `@type` signature's return type is the function's (tsc's getReturnTypeFromAnnotation). An async
         // function's is what it awaits to (unwrapReturnType)
@@ -1212,7 +1203,7 @@ static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
             type = ty_unwrap_return_type(checker, me, type);
             if (!type) type = ty_intrinsic(checker, TY_ANY);
         }
-        if (type && (ty_maybe_void(type) || type->flags & (TYF_ANY | TYF_UNDEFINED))) return;
+        if (type && (ty_maybe_type_of_kind(type, TYF_VOID) || type->flags & (TYF_ANY | TYF_UNDEFINED))) return;
         // (At the whole tag type: tsgo's errorNode is the function's FullSignature)
         if (span_valid(function_impl_rare(me)->jsdoc_signature_span)) at = function_impl_rare(me)->jsdoc_signature_span;
     }

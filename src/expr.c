@@ -3611,16 +3611,12 @@ static bool assignable_to_kind(Ty const* ty, u32 kind, bool strict) {
 
 // tsc's maybeTypeOfKind (`constraint`: of a type parameter, its constraint)
 static bool maybe_kind(Ty const* ty, u32 kind, bool constraint) {
-    if (ty->flags & kind) return true;
-    bool found = false;
-    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
-        for (u32 i = 0; i < ty->composite.types.len && !found; i++) found = maybe_kind(ty->composite.types.data[i], kind, false);
-    }
-    if (found || !constraint) return found;
+    if (ty_maybe_type_of_kind(ty, kind)) return true;
+    if (!constraint) return false;
     // (tsc's maybeTypeOfKindConsideringBaseConstraint: the base constraint of the whole type, `keyof T & string` is a
     // string)
     Ty const* base = ty_base_constraint(current_checker, ty);
-    return base && base != ty && maybe_kind(base, kind, false);
+    return base && base != ty && ty_maybe_type_of_kind(base, kind);
 }
 
 // tsc's getBaseTypeOfLiteralTypeForComparison: enum and number literals are numbers, string-likes strings

@@ -1828,12 +1828,7 @@ static Ty const* narrow_directly_related(Checker* me, Ty const* t, void const* a
 
 // Some member of `ty` is instantiable (tsc's maybeTypeOfKind(t, TypeFlags.Instantiable))
 static bool maybe_instantiable(Ty const* ty) {
-    if (ty->flags & (TYF_TYPE_PARAM | TYF_DEFERRED | TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) return true;
-    if (ty->kind != TY_UNION && ty->kind != TY_INTERSECTION) return false;
-    for (u32 i = 0; i < ty->composite.types.len; i++) {
-        if (maybe_instantiable(ty->composite.types.data[i])) return true;
-    }
-    return false;
+    return ty_maybe_type_of_kind(ty, TYF_TYPE_PARAM | TYF_DEFERRED | TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING);
 }
 
 // A generic member (`T`, `T & {}`) whose constraint the candidate member fits is both

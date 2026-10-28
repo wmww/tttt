@@ -5660,11 +5660,11 @@ static bool setter_is_annotated(FunctionImpl const* setter) {
     return vec_function_arg_size(&setter->args) && vec_function_arg_at(&setter->args, 0)->initializer.binding.has_explicit_type;
 }
 
-bool ty_maybe_undefined_or_void(Ty const* type) {
-    if (type->flags & (TYF_UNDEFINED | TYF_VOID)) return true;
+bool ty_maybe_type_of_kind(Ty const* type, u32 flags) {
+    if (type->flags & flags) return true;
     if (type->kind != TY_UNION && type->kind != TY_INTERSECTION) return false;
     for (u32 i = 0; i < type->composite.types.len; i++) {
-        if (ty_maybe_undefined_or_void(type->composite.types.data[i])) return true;
+        if (ty_maybe_type_of_kind(type->composite.types.data[i], flags)) return true;
     }
     return false;
 }
@@ -5676,7 +5676,7 @@ static Ty const* instantiated_prop_type(Checker* me, Prop const* prop) {
     // A mapped type's property: optional ones get undefined unless the template's type may be undefined or void
     // already (tsc's getTypeOfMappedSymbol). An instantiation of another property has it from its target
     if (prop->target->is_template && (prop->flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks &&
-        !ty_maybe_undefined_or_void(type)
+        !ty_maybe_type_of_kind(type, TYF_UNDEFINED | TYF_VOID)
     ) {
         return ty_optional_prop_type(me, type);
     }
