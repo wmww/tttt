@@ -224,6 +224,8 @@ static void collect_args(Checker* me, CallInfo const* info, Args* out) {
         Ty const* type = strings ? ty_declared_type_of(me, strings) : ty_empty_object_type(me);
         args_push(out, (Arg){ .expr = info->tagged_template, .type = type, .part_of_spread = true });
         out->incomplete = info->tagged_template->template_->incomplete;
+    } else if (call) {
+        out->incomplete = call->args_incomplete; // (A call missing its `)`, tsc's hasCorrectArity)
     }
     for_each (i, vec_expr, &call->args) {
         if (i->tag == EXPR_SPREAD) {

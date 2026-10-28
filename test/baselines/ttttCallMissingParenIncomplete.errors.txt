@@ -1,0 +1,37 @@
+ttttCallMissingParenIncomplete.ts(10,1): error TS1005: ',' expected.
+ttttCallMissingParenIncomplete.ts(13,1): error TS1005: ',' expected.
+ttttCallMissingParenIncomplete.ts(15,7): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type 'boolean' is not assignable to parameter of type 'string'.
+ttttCallMissingParenIncomplete.ts(16,1): error TS1005: ',' expected.
+
+
+==== ttttCallMissingParenIncomplete.ts (4 errors) ====
+    // A call or `new` missing its `)` is incomplete (tsc's hasCorrectArity: the argument list ends where the call does):
+    // too few arguments are fine, so overload resolution goes on to the argument types (mutation seed 20261103,
+    // recursiveTypeRelations: `reduce<C>(cb` cut off at a `}` is TS2345 on the callback, not TS2554)
+    declare function f(a: number, b: number): void;
+    declare class C { constructor(a: number, b: number) }
+    declare function g(a: number, b: number): void;
+    declare function g(a: string): void;
+    function h() {
+        f(1
+    }
+    ~
+!!! error TS1005: ',' expected.
+    function i() {
+        new C(1
+    }
+    ~
+!!! error TS1005: ',' expected.
+    function j() {
+        g(true
+          ~~~~
+!!! error TS2769: No overload matches this call.
+!!! error TS2769:   The last overload gave the following error.
+!!! error TS2769:     Argument of type 'boolean' is not assignable to parameter of type 'string'.
+!!! related TS2771 ttttCallMissingParenIncomplete.ts:7:18: The last overload is declared here.
+    }
+    ~
+!!! error TS1005: ',' expected.
+    

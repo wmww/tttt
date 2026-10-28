@@ -10466,14 +10466,15 @@ static inline bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* re
     return parse_success(&p);
 }
 
-[[gnu::noinline]] static bool parse_call_args_slow(Parser* parent, VecExpr* args);
+[[gnu::noinline]] static bool parse_call_args_slow(Parser* parent, VecExpr* args, bool* incomplete);
 // (The quick test inlined where it is called, the rest not: PGO inlined whole parse functions behind it)
-static inline bool parse_call_args(Parser* parent, VecExpr* args) {
-    if (*parent->pos != '(') GATE_FAIL(parse_call_args(&v_, args));
-    return parse_call_args_slow(parent, args);
+// incomplete: the `)` is missing (tsc's callIsIncomplete, the argument list ending where the call does)
+static inline bool parse_call_args(Parser* parent, VecExpr* args, bool* incomplete) {
+    if (*parent->pos != '(') GATE_FAIL(parse_call_args(&v_, args, incomplete));
+    return parse_call_args_slow(parent, args, incomplete);
 }
 
-[[gnu::noinline]] static bool parse_call_args_slow(Parser* parent, VecExpr* args) {
+[[gnu::noinline]] static bool parse_call_args_slow(Parser* parent, VecExpr* args, bool* incomplete) {
     Parser p = parser(parent);
 
     if (!hop_start(&p, "(")) {
@@ -10511,7 +10512,8 @@ static inline bool parse_call_args(Parser* parent, VecExpr* args) {
     }
     allow_in_leave(&p, saved_in);
     list_leave(&p, saved_context);
-    if (!expect_char(&p, ')')) {
+    *incomplete = !expect_char(&p, ')');
+    if (*incomplete) {
         // The call ends with its last token, not the whitespace after it
         const char* open = parent->pos;
         while (p.pos > open + 1 && is_js_ascii_space(p.pos[-1])) p.pos--;
@@ -11650,13 +11652,15 @@ static inline bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left
         expected_token_error(&p, "(");
         parsed.args = (VecExpr){0};
     }
-    if (!ctx.entity_name && new_keyword_precedence > ctx.min_precedence && (missing_call_args || parse_call_args(&p, &parsed.args))) {
+    bool args_incomplete = missing_call_args;
+    if (!ctx.entity_name && new_keyword_precedence > ctx.min_precedence && (missing_call_args || parse_call_args(&p, &parsed.args, &args_incomplete))) {
         mark_chain_continues(left_and_ret, true, optional_chain);
         *left_and_ret = expr_call(
             span_from(a),
             ast_new(CallExpr, {
                 .uses_new = false,
                 .optional_chain = optional_chain,
+                .args_incomplete = args_incomplete,
                 .callable = *left_and_ret,
                 .args = parsed.args,
             })
@@ -13110,7 +13114,9 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         // arguments wherever it is)
         Parser args_p = parser(&p);
         hop_whitespace(&args_p);
-        if (*args_p.pos == '(' && parse_call_args(&args_p, &call.args)) {
+        bool incomplete = false;
+        if (*args_p.pos == '(' && parse_call_args(&args_p, &call.args, &incomplete)) {
+            call.args_incomplete = incomplete;
             parse_success(&args_p);
         } else {
             parse_fail(&args_p);

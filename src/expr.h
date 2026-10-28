@@ -826,6 +826,8 @@ typedef struct CallExpr {
     // The whole expression of an expression statement (tsc's isExpressionStatement(node.parent)): its effects are read
     // through the callee's declared type, getEffectsSignature's getTypeOfDottedName, also from a condition node
     bool is_statement;
+    // The `)` is missing (tsc's callIsIncomplete: too few arguments are fine, hasCorrectArity)
+    bool args_incomplete;
     CallRare* rare; // Owned, null when all of it is
     Expr callable;
     // PERF: types of each argument should be cached

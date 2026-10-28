@@ -1,0 +1,50 @@
+//// [test/cases/ttttCallMissingParenIncomplete.ts] ////
+
+=== ttttCallMissingParenIncomplete.ts ===
+// A call or `new` missing its `)` is incomplete (tsc's hasCorrectArity: the argument list ends where the call does):
+// too few arguments are fine, so overload resolution goes on to the argument types (mutation seed 20261103,
+// recursiveTypeRelations: `reduce<C>(cb` cut off at a `}` is TS2345 on the callback, not TS2554)
+declare function f(a: number, b: number): void;
+>f : (a: number, b: number) => void
+>a : number
+>b : number
+
+declare class C { constructor(a: number, b: number) }
+>C : C
+>a : number
+>b : number
+
+declare function g(a: number, b: number): void;
+>g : { (a: number, b: number): void; (a: string): void; }
+>a : number
+>b : number
+
+declare function g(a: string): void;
+>g : { (a: number, b: number): void; (a: string): void; }
+>a : string
+
+function h() {
+>h : () => void
+
+    f(1
+>f(1 : void
+>f : (a: number, b: number) => void
+>1 : 1
+}
+function i() {
+>i : () => void
+
+    new C(1
+>new C(1 : C
+>C : typeof C
+>1 : 1
+}
+function j() {
+>j : () => void
+
+    g(true
+>g(true : void
+>g : { (a: number, b: number): void; (a: string): void; }
+>true : true
+}
+

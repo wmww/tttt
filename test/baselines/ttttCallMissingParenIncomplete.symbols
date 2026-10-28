@@ -1,0 +1,44 @@
+//// [test/cases/ttttCallMissingParenIncomplete.ts] ////
+
+=== ttttCallMissingParenIncomplete.ts ===
+// A call or `new` missing its `)` is incomplete (tsc's hasCorrectArity: the argument list ends where the call does):
+// too few arguments are fine, so overload resolution goes on to the argument types (mutation seed 20261103,
+// recursiveTypeRelations: `reduce<C>(cb` cut off at a `}` is TS2345 on the callback, not TS2554)
+declare function f(a: number, b: number): void;
+>f : Symbol(f, Decl(ttttCallMissingParenIncomplete.ts, 0, 0))
+>a : Symbol(a, Decl(ttttCallMissingParenIncomplete.ts, 3, 19))
+>b : Symbol(b, Decl(ttttCallMissingParenIncomplete.ts, 3, 29))
+
+declare class C { constructor(a: number, b: number) }
+>C : Symbol(C, Decl(ttttCallMissingParenIncomplete.ts, 3, 47))
+>a : Symbol(a, Decl(ttttCallMissingParenIncomplete.ts, 4, 30))
+>b : Symbol(b, Decl(ttttCallMissingParenIncomplete.ts, 4, 40))
+
+declare function g(a: number, b: number): void;
+>g : Symbol(g, Decl(ttttCallMissingParenIncomplete.ts, 4, 53), Decl(ttttCallMissingParenIncomplete.ts, 5, 47))
+>a : Symbol(a, Decl(ttttCallMissingParenIncomplete.ts, 5, 19))
+>b : Symbol(b, Decl(ttttCallMissingParenIncomplete.ts, 5, 29))
+
+declare function g(a: string): void;
+>g : Symbol(g, Decl(ttttCallMissingParenIncomplete.ts, 4, 53), Decl(ttttCallMissingParenIncomplete.ts, 5, 47))
+>a : Symbol(a, Decl(ttttCallMissingParenIncomplete.ts, 6, 19))
+
+function h() {
+>h : Symbol(h, Decl(ttttCallMissingParenIncomplete.ts, 6, 36))
+
+    f(1
+>f : Symbol(f, Decl(ttttCallMissingParenIncomplete.ts, 0, 0))
+}
+function i() {
+>i : Symbol(i, Decl(ttttCallMissingParenIncomplete.ts, 9, 1))
+
+    new C(1
+>C : Symbol(C, Decl(ttttCallMissingParenIncomplete.ts, 3, 47))
+}
+function j() {
+>j : Symbol(j, Decl(ttttCallMissingParenIncomplete.ts, 12, 1))
+
+    g(true
+>g : Symbol(g, Decl(ttttCallMissingParenIncomplete.ts, 4, 53), Decl(ttttCallMissingParenIncomplete.ts, 5, 47))
+}
+
