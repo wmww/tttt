@@ -1550,6 +1550,23 @@ static bool prop_has_explicit_type(Prop const* prop) {
     return prop->decl->node || prop->decl->function || prop_decl_rare(prop->decl)->overload_count;
 }
 
+// An intersection's property that members declare separately: tsc's createUnionOrIntersectionProperty gives the synthetic
+// symbol no value declaration (hasNonUniformValueDeclaration), so it has no explicit type (getExplicitTypeOfSymbol):
+// `both.check(x)` with `both: P & Q`, each declaring `check`, is TS2775
+static bool intersection_prop_non_uniform(Checker* me, Ty const* intersection, Atom const* name) {
+    PropDecl const* first = nullptr;
+    for (u32 i = 0; i < intersection->composite.types.len; i++) {
+        Ty const* member = ty_apparent_type(me, intersection->composite.types.data[i]);
+        if (!(member->flags & TYF_OBJECT)) continue;
+        Prop const* prop = ty_get_prop(me, member, name);
+        if (!prop) continue;
+        while (prop->target) prop = prop->target;
+        if (!first) first = prop->decl;
+        else if (prop->decl != first) return true;
+    }
+    return false;
+}
+
 // tsc's getTypeOfDottedName(): the type of the callee of a call statement from declarations alone, without control
 // flow analysis (which is in the middle of asking). Null: some name on the way has no explicit type, and the call is
 // taken to have no effect (tsc reports TS2775/TS2776 for an assertion like that)
@@ -1651,6 +1668,7 @@ static Ty const* type_of_dotted_name_resolving(Checker* me, Expr const* expr, Re
     if (!(object->flags & TYF_OBJECT) && object->kind != TY_INTERSECTION) return nullptr;
     Prop const* prop = object->kind == TY_INTERSECTION ? ty_property_of_type(me, object, name) : ty_get_prop(me, object, name);
     if (!prop || !prop_has_explicit_type(prop)) return nullptr;
+    if (object->kind == TY_INTERSECTION && intersection_prop_non_uniform(me, object, name)) return nullptr;
     // (An optional one has undefined in its type, an optional method's too: tsc's getTypeOfSymbol. Not callable then)
     if (!explicit_resolving_enter(prop)) return nullptr;
     Ty const* ret = prop_type(me, prop);
@@ -1685,8 +1703,10 @@ static Span dotted_name_declaration(Checker* me, Expr const* expr) {
     object = ty_apparent_type(me, object);
     if (!(object->flags & TYF_OBJECT) && object->kind != TY_INTERSECTION) return span_null;
     Prop const* prop = object->kind == TY_INTERSECTION ? ty_property_of_type(me, object, name) : ty_get_prop(me, object, name);
-    // (A mapped type's property has no value declaration in tsc: no related span)
+    // (A mapped type's property has no value declaration in tsc: no related span. Nor an intersection's that members
+    // declare separately, see intersection_prop_non_uniform())
     for (Prop const* p = prop; p; p = p->target) if (p->mapped) return span_null;
+    if (object->kind == TY_INTERSECTION && intersection_prop_non_uniform(me, object, name)) return span_null;
     while (prop && prop->target && !span_valid(prop->decl->name_span)) prop = prop->target;
     return prop ? prop->decl->name_span : span_null;
 }

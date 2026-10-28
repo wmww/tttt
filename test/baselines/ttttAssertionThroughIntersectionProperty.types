@@ -1,0 +1,59 @@
+//// [test/cases/ttttAssertionThroughIntersectionProperty.ts] ////
+
+=== ttttAssertionThroughIntersectionProperty.ts ===
+// An assertion called through an intersection's property that two members declare (each with an annotation) has no
+// explicit type: tsc's synthetic property has no value declaration (createUnionOrIntersectionProperty,
+// hasNonUniformValueDeclaration), TS2775 and no narrowing (bun 99-V4 isReachableFlowNode_getExplicitTypeOfSymbol__08).
+// Two instantiations of one declaration share it: explicit
+interface P { check: (v: unknown) => asserts v is string; p: 1 }
+>check : (v: unknown) => asserts v is string
+>v : unknown
+>p : 1
+
+interface Q { check: (v: unknown) => asserts v is string; q: 1 }
+>check : (v: unknown) => asserts v is string
+>v : unknown
+>q : 1
+
+declare const both: P & Q;
+>both : P & Q
+
+function f(x: string | number) {
+>f : (x: string | number) => void
+>x : string | number
+
+    both.check(x);
+>both.check(x) : void
+>both.check : ((v: unknown) => asserts v is string) & ((v: unknown) => asserts v is string)
+>both : P & Q
+>check : ((v: unknown) => asserts v is string) & ((v: unknown) => asserts v is string)
+>x : string | number
+
+    const probe: never = x;
+>probe : never
+>x : string | number
+}
+interface G<T> { check: (v: unknown) => asserts v is string; t: T[] }
+>check : (v: unknown) => asserts v is string
+>v : unknown
+>t : T[]
+
+declare const same: G<1> & G<2>;
+>same : G<1> & G<2>
+
+function g(x: string | number) {
+>g : (x: string | number) => void
+>x : string | number
+
+    same.check(x);
+>same.check(x) : void
+>same.check : (v: unknown) => asserts v is string
+>same : G<1> & G<2>
+>check : (v: unknown) => asserts v is string
+>x : string | number
+
+    const probe: never = x;
+>probe : never
+>x : string
+}
+

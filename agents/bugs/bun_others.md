@@ -7,12 +7,18 @@ is usually `const sentinel: number = ""`. Show one with `scripts/buncases.py --l
 what was looked at, by root cause; the second lists the rest by code, uninvestigated, with a first instance each.
 
 ## Looked at, by root cause
+- TS2775 through an intersection's property two members declare (99-V4 isReachableFlowNode_getExplicitTypeOfSymbol__08,
+  `both.check(x)` with `both: P & Q`): tsc's synthetic property has no value declaration, so no explicit type and no
+  related TS2782. flow.c's intersection_prop_non_uniform(). Left: the same through a mapped type over the
+  intersection (60-L16b's `Id<{ a: A } & { a: A }>`: the mapped property's syntheticOrigin is the non-uniform one) and
+  60-L16a's key-remapped mapped type (`as` clause: tsc's property has no syntheticOrigin, spurious TS2775 in tttt).
+  Test ttttAssertionThroughIntersectionProperty [fixed COMMIT-next].
 - Missing TS2367 on a loop's partial types (99-V4 getTypeOfExpression__01/02, getAssignedType__05/06,
   checks-of-a-value-assigned-on-a-loop-back-edge a2/a3): tsc reports an equality's TS2367 while control flow evaluates
   an assigned value on a loop's first-iteration types, unless CheckModeTypeOnly (getTypeOfExpression) reaches it
   (checkBinaryLikeExpression's reportOperatorErrorUnless). ty/expr.c checks equalities with ty_flow_partial_reports(),
   Checker.type_only_root and type_only_reaches() for the propagation. Left: `+(x === 5)` (a3 d24: tttt's flow doesn't
-  evaluate a unary plus's operand). Test ttttLoopPartialEqualityChecks [fixed COMMIT-next].
+  evaluate a unary plus's operand). Test ttttLoopPartialEqualityChecks [fixed 528301bb9].
 - TS2490/TS2767 both ways (04-C9b, 04-C2a, 93-R19a, 99-V4 checkIteratedTypeOrElementType__01/02/06, 99-V7): tsc reports
   an iterator's method problems only from the first getIterationTypesOfIterable of a (type, cache-use) key, if it had
   an error node; flow's for-of variables and destructured elements, a destructuring assignment's rest target, a

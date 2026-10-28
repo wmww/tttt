@@ -1,0 +1,18 @@
+// @strict: true
+// An assertion called through an intersection's property that two members declare (each with an annotation) has no
+// explicit type: tsc's synthetic property has no value declaration (createUnionOrIntersectionProperty,
+// hasNonUniformValueDeclaration), TS2775 and no narrowing (bun 99-V4 isReachableFlowNode_getExplicitTypeOfSymbol__08).
+// Two instantiations of one declaration share it: explicit
+interface P { check: (v: unknown) => asserts v is string; p: 1 }
+interface Q { check: (v: unknown) => asserts v is string; q: 1 }
+declare const both: P & Q;
+function f(x: string | number) {
+    both.check(x);
+    const probe: never = x;
+}
+interface G<T> { check: (v: unknown) => asserts v is string; t: T[] }
+declare const same: G<1> & G<2>;
+function g(x: string | number) {
+    same.check(x);
+    const probe: never = x;
+}
