@@ -185,5 +185,6 @@ time (vscode 43 CPU s vs 14 single): sharing costs it too, it just has more core
 `TTTT_GRAPH_STATS=1`, `TTTT_GRAPH_WORK=1` (cycles per word computation by outcome), `TTTT_GRAPH_LEAD=1` /
 `TTTT_GRAPH_NO_LEAD=1`, `TTTT_GRAPH_SHARE_RELATIONS=0`, `TTTT_GRAPH_BUDGET_MB` (graph-wide recycle, default 800),
 `TTTT_DEBUG_PUBLISH` (debug build: a publication referencing a private range aborts), `scripts/sgcheck.py` (the gate:
-flagged against plain K1 at K 1/4/8/16 with two deals), `scripts/sharedgraph/` (20-run
+flagged against plain K1 at K 1/4/8/16 with two deals), a `-DTTTT_GRAPH_CHECKS` build with `TTTT_GRAPH_CHECKS=1` (identities published or
+found after a taint event in their constructor: bugs/shared_graph.md), `scripts/sharedgraph/` (20-run
 tables, seeds, fingerprint-at-publish, TSan, the recheck), `scripts/taintstats.sh`, `scripts/kdiff.py` with the flag.

@@ -106,3 +106,27 @@ publishing was listed (a scan of the publishing functions' bodies) and read:
 Not covered by construction: an identity whose constructor calls something that reads a private record further down
 than the scan saw (a helper). A debug check would wrap each identity constructor in a taint frame and log identities
 published after a private read; not built.
+
+### The debug check (TTTT_GRAPH_CHECKS, a `-DTTTT_GRAPH_CHECKS` build)
+`meson setup B --buildtype release -Dc_args='-g -DTTTT_GRAPH_CHECKS'`, then `TTTT_GRAPH_CHECKS=1` (=2 panics) with the
+flag: every identity lookup records the worker's taint counter; publishing an identity after a taint event since its
+miss is reported (`graph check: identity of kind K published ...`, the address for `addr2line -f -i -e B/tttt`). The
+constructors that read resolved records open a frame (GRAPH_CHECK_FRAME() in ty_signature_instantiation,
+ty_erased_signature, instantiate_anonymous, ty_apply_type_arguments_mapper_of) and bind their own lookup to it
+(GRAPH_CHECK_BIND()): the window starts at the frame, and a *hit* on another worker's published identity after a taint
+event since the frame is reported too (`found`): the reader's side, which is how folo's bug happened (the instance was
+published clean; the reader held its own resolution). GRAPH_CHECK_FIELDS_DONE() moves the window past an identity's own
+lazy parts (a signature instance's resolution). Default build: the macros are empty, checker.c's hooks compiled out
+(instructions drizzle/zod +0.01%).
+- With 720b23760 reverted locally it fires on folo: `found` at ty_signature_instantiation (infer.c). Today, on sgcheck's
+  list at K8 both deals (116 runs), two sites report:
+  - **instantiate_anonymous (instantiate.c), KEY_ANONYMOUS_INSTANCE published**, in 106 of 116 runs: the window from
+    the miss to the publication includes instantiating the target's alias arguments (a nested instantiation that meets
+    a taint event) and literal_instance_is_itself() (reads the literal's members). The alias arguments are part of the
+    published value, so a history-dependent nested result would be published with it; no output shows it (the census
+    is clean outside residue C). Over-approximate or a display-level residue: not resolved. [note]
+  - **ty_erased_signature (relate.c), `found` after a peek** (nest platform-fastify and microservices tests, 4 runs):
+    the one-step erasure is chosen when `sig` isn't resolved yet in this worker (a done-ness peek), and it shares its
+    key (sig, any...) with ty_signature_instantiation(sig, anys), which the resolved path makes. So which object a
+    worker gets for that key depends on whether some worker had resolved `sig` (history, also at K1, but the flag
+    publishes the other path's). A distinct key for the one-step erasure removes the sharing, not the peek. [note]

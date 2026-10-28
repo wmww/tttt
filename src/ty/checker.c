@@ -383,6 +383,106 @@ static inline void debug_own_table(InternTable const* table) {
 
 // The returned slot is null if the key is new. It is in the key's arena block, so it stays valid (callers that intern
 // while computing the value look it up again all the same, from when the slots were in the table).
+#ifdef TTTT_GRAPH_CHECKS
+// TTTT_GRAPH_CHECKS=1 (--shared-graph only; =2 panics): an identity is published whatever its taint, so what it is
+// made of must not be private to this worker (notes/shared_graph.md, bugs/shared_graph.md's audit). Each identity
+// key's lookup miss records the worker's taint counter; publishing that key after a taint event (a private, in-flight
+// or cut-short read meanwhile) is reported with its kind and the constructor's address (relative to the binary:
+// `addr2line -f -e tttt 0x...`). The window starts at the constructor's GRAPH_CHECK_FRAME() where it has one (what it
+// read before its lookup counts), else at the miss. Over-approximate: a taint event inside a nested computation the
+// identity doesn't depend on reports too. A -DTTTT_GRAPH_CHECKS build only
+static int graph_checks = -1;
+[[gnu::cold]] static int graph_checks_read(void) {
+    char const* e = getenv("TTTT_GRAPH_CHECKS");
+    int on = e && *e ? atoi(e) : 0;
+    __atomic_store_n(&graph_checks, on, __ATOMIC_RELAXED);
+    return on;
+}
+static inline int graph_checks_on(void) {
+    int on = __atomic_load_n(&graph_checks, __ATOMIC_RELAXED);
+    return on < 0 ? graph_checks_read() : on;
+}
+typedef struct IdentityMiss { u64 hash; u64 taint; } IdentityMiss;
+static thread_local IdentityMiss identity_misses[1024];
+// The open identity frames' taint counters at their start (GRAPH_CHECK_FRAME(), ty.h): a miss inside one is known from
+// there, what the constructor read before its lookup included
+static thread_local u64 identity_frames[64];
+static thread_local u32 identity_frame_len;
+static thread_local u64 identity_last;
+u32 graph_check_frame_push(void) {
+    if (identity_frame_len < c_arraylen(identity_frames)) identity_frames[identity_frame_len] = graph_taint_now;
+    identity_last = 0;
+    return identity_frame_len++;
+}
+void graph_check_frame_pop(u32 const* at) {
+    identity_frame_len = *at;
+}
+// The last identity lookup (0: none since the innermost frame opened): its key's hash, and whether it found another
+// worker's published entry
+static thread_local bool identity_last_hit;
+[[gnu::noinline, gnu::cold]] static void identity_miss_note(u64 hash) {
+    identity_misses[hash & 1023] = (IdentityMiss){ hash, graph_taint_now };
+    identity_last = hash;
+    identity_last_hit = false;
+}
+[[gnu::noinline, gnu::cold]] static void identity_hit_note(u64 hash) {
+    identity_last = hash;
+    identity_last_hit = true;
+}
+static void identity_report(u64 kind, void const* site, char const* what);
+// The innermost frame's constructor's own key was looked up just now: a miss's window starts at the frame's start; a
+// hit after a taint event since then is reported too (a published identity read as if this worker's private record
+// were the one it was made of: the reader's side of the same mistake, folo's renderer's)
+void graph_check_bind(void) {
+    if (!identity_frame_len || identity_frame_len > c_arraylen(identity_frames) || !identity_last) return;
+    u64 from = identity_frames[identity_frame_len - 1];
+    if (identity_last_hit) {
+        if (from != graph_taint_now) identity_report(0, __builtin_return_address(0), "found");
+        return;
+    }
+    IdentityMiss* m = &identity_misses[identity_last & 1023];
+    if (m->hash == identity_last) m->taint = from;
+}
+static struct { _Atomic uintptr_t site; _Atomic u64 count; } identity_reports[256];
+[[gnu::noinline, gnu::cold]] static void identity_publish_check(u64 const* words, u32 count, u64 kind, void const* site) {
+    u64 hash = hash_words(words, count);
+    IdentityMiss* m = &identity_misses[hash & 1023];
+    if (m->hash != hash) return; // (Its miss went unrecorded or was overwritten: nothing known)
+    m->hash = 0;
+    if (m->taint == graph_taint_now) return;
+    identity_report(kind, site, "published");
+}
+
+static void identity_report(u64 kind, void const* site, char const* what) {
+    extern char __executable_start;
+    uintptr_t at = (uintptr_t)site - (uintptr_t)&__executable_start;
+    for (u32 i = 0; i < c_arraylen(identity_reports); i++) {
+        uintptr_t seen = atomic_load(&identity_reports[i].site);
+        if (!seen && atomic_compare_exchange_strong(&identity_reports[i].site, &seen, at)) {
+            char hex[32];
+            snprintf(hex, sizeof(hex), "0x%lx", (unsigned long)at);
+            eprintln("graph check: identity of kind ", (u32)kind, " ", what, " after a taint event since its lookup, at ", hex);
+            break;
+        }
+        if (seen == at) break;
+    }
+    panic_if(graph_checks_on() > 1, "TTTT_GRAPH_CHECKS=2: an identity made of a private read (kind ", (u32)kind, ")");
+}
+
+static u64 const* intern_key_words(void const** block, u32 count);
+// TTTT_GRAPH_CHECKS: the identity at `slot` is made (its fields set); what runs before it is published belongs to the
+// identity's own lazily computed parts (a signature instance's resolution: shared words, checked on their own)
+void intern_check_fields_done(InternTable const* table, void const** slot) {
+    if (!table->others || graph_checks_on() <= 0) return;
+    u64 hash = ((u64 const*)slot)[-1];
+    u32 count = (u32)(hash >> 48);
+    if (count == INTERN_LONG_KEY) count = (u32)((u64 const*)slot)[1];
+    u64 key_hash = hash_words(intern_key_words(slot, count), count);
+    IdentityMiss* m = &identity_misses[key_hash & 1023];
+    if (m->hash == key_hash) m->taint = graph_taint_now;
+}
+#endif
+
 void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 count) {
     DEBUG_OWN_TABLE(table);
     if (intern_needs_growth(table)) {
@@ -396,6 +496,9 @@ void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 
         if (__builtin_expect(table->others != nullptr, 0)) {
             if (intern_slot_shares(table, words, count)) {
                 void const** shared = intern_shared_find(table, hash, words, count);
+#ifdef TTTT_GRAPH_CHECKS
+                if (graph_checks_on() > 0) shared ? identity_hit_note(hash) : identity_miss_note(hash);
+#endif
                 if (shared) return shared;
             } else if (me->graph_memo_on) {
                 // (A memo kind another checker published: its value in a private entry of the checker's own, which the
@@ -427,6 +530,9 @@ void const* intern_lookup(InternTable const* table, u64 const* words, u32 count,
     *miss = (InternMiss){ .hash = hash, .cap = table->cap, .index = entry ? (u32)(entry - table->entries) : 0 };
     if ((!entry || !entry->hash) && table->others) {
         void const** shared = intern_shared_find(table, hash, words, count);
+#ifdef TTTT_GRAPH_CHECKS
+        if (graph_checks_on() > 0 && intern_slot_shares(table, words, count)) shared ? identity_hit_note(hash) : identity_miss_note(hash);
+#endif
         if (shared) return shared[0];
     }
 #ifdef TTTT_TAINT
@@ -488,6 +594,9 @@ void const* intern_publish(Checker* me, InternTable* table, void const** slot) {
         }
     }
     if (table == &my intersection_props || graph_kind_class((u32)kind) != GRAPH_IDENTITY) return *slot;
+#ifdef TTTT_GRAPH_CHECKS
+    if (graph_checks_on() > 0) identity_publish_check(intern_key_words(slot, count), count, kind, __builtin_return_address(0));
+#endif
 #ifdef TTTT_DEBUG_IDS
     debug_check_type_value(table, intern_key_words(slot, count), count, slot, "publish");
     if (!*slot) panic("intern_publish: a null value of kind ", (u32)kind);

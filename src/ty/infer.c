@@ -510,6 +510,7 @@ static void infer_from_signatures(Checker* me, Inference* inf, Signature const* 
 // Signature instantiation
 
 Signature const* ty_signature_instantiation(Checker* me, Signature const* sig, TyList args) {
+    GRAPH_CHECK_FRAME();
     SigResolved const* sig_rs = signature_resolve(me, sig);
     check(args.len == sig_rs->type_params.len);
     u64 stack_key[18];
@@ -525,6 +526,7 @@ Signature const* ty_signature_instantiation(Checker* me, Signature const* sig, T
     for (u32 i = 0; i < args.len; i++) key[2 + i] = args.data[i]->id;
     void const** slot = intern_slot(me, &my links, key, key_len);
     if (key != stack_key) free(key);
+    GRAPH_CHECK_BIND();
     if (*slot) return *slot;
     Ty const** targets = arena_new_n(&my arena, Ty const*, args.len ? args.len : 1);
     memcpy(targets, args.data, sizeof(Ty const*) * args.len);
@@ -540,6 +542,8 @@ Signature const* ty_signature_instantiation(Checker* me, Signature const* sig, T
     *slot = ret;
     signature_resolve(me, ret); // (Without type parameters, see signature_resolve_slow())
     *slot = nullptr;
+    // (Its resolution, just computed, is its own shared word: not what the instance is made of)
+    GRAPH_CHECK_FIELDS_DONE(&my links, slot);
     return intern_set(me, &my links, slot, ret);
 }
 

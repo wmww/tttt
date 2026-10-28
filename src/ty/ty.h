@@ -1683,6 +1683,25 @@ void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 
 // Sets a new entry's value (`*slot = value`): with --shared-graph an identity is published at once, and the value is
 // then whichever checker's came first (plan 86 4d). Constructors set their result through this and return what it gives
 void const* intern_publish(Checker* me, InternTable* table, void const** slot);
+// TTTT_GRAPH_CHECKS (a -DTTTT_GRAPH_CHECKS build, checker.c): an identity constructor that reads resolved records opens
+// a frame (GRAPH_CHECK_FRAME() at its start) and binds its own key's lookup miss to it (GRAPH_CHECK_BIND() right after
+// the miss): publishing that identity after a taint event since the frame's start is reported (other identities: since
+// their miss);
+// intern_check_fields_done(): the identity at `slot` has its fields, what runs before it is published is its own lazy
+// parts (a signature instance's resolution). Nothing in other builds
+#ifdef TTTT_GRAPH_CHECKS
+u32 graph_check_frame_push(void);
+void graph_check_bind(void);
+void graph_check_frame_pop(u32 const* at);
+void intern_check_fields_done(InternTable const* table, void const** slot);
+#define GRAPH_CHECK_FRAME() __attribute__((__cleanup__(graph_check_frame_pop))) u32 graph_check_frame_ = graph_check_frame_push(); (void)graph_check_frame_
+#define GRAPH_CHECK_FIELDS_DONE(table, slot) intern_check_fields_done(table, slot)
+#define GRAPH_CHECK_BIND() graph_check_bind()
+#else
+#define GRAPH_CHECK_FRAME() ((void)0)
+#define GRAPH_CHECK_FIELDS_DONE(table, slot) ((void)0)
+#define GRAPH_CHECK_BIND() ((void)0)
+#endif
 // (With the flag a slot can be another checker's published entry already, found in the shared table after the
 // constructor's lookup missed: it keeps its value, which is the winner)
 static inline void const* intern_set(Checker* me, InternTable* table, void const** slot, void const* value) {

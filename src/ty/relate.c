@@ -2297,6 +2297,7 @@ static unsigned signature_return_code(Checker* me, Signature const* source, Sign
 
 // tsc's getErasedSignature: every type parameter is any
 Signature const* ty_erased_signature(Checker* me, Signature const* sig) {
+    GRAPH_CHECK_FRAME();
     // An instantiation not resolved yet is erased in one step from its target, its mapper with the target's type
     // parameters any (tsc's getErasedSignature of an instantiated signature, whose parameters are lazily typed): resolving
     // it first instantiates every parameter type with clones of the type parameters, evaluating the conditional types in
@@ -2325,6 +2326,7 @@ Signature const* ty_erased_signature(Checker* me, Signature const* sig) {
             for (u32 i = 0; i < own; i++) key[2 + i] = any->id;
             void const** slot = intern_slot(me, &my links, key, key_len);
             if (key != stack_key) free(key);
+            GRAPH_CHECK_BIND();
             if (*slot) return *slot;
             TyMapper const* outer = unresolved_mapper;
             Ty const** sources = arena_new_n(&my arena, Ty const*, outer->len + own);
@@ -2355,6 +2357,8 @@ Signature const* ty_erased_signature(Checker* me, Signature const* sig) {
             *slot = ret;
             signature_resolve(me, ret); // (Without type parameters, see signature_resolve_slow())
             *slot = nullptr;
+            // (Its resolution, just computed, is its own shared word: not what the instance is made of)
+            GRAPH_CHECK_FIELDS_DONE(&my links, slot);
             return intern_set(me, &my links, slot, ret);
         }
     }

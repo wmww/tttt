@@ -611,6 +611,7 @@ static bool merged_overloads_free_params(Checker* me, Symbol const* symbol, TyLi
 }
 
 static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const* mapper) {
+    GRAPH_CHECK_FRAME();
     if (ty->anonymous.applies_type_args) {
         // An instantiation expression whose type arguments mention the type parameters: `typeof C<O>` in `type R<O>`
         // is `typeof C<string>` for R<string>. An object type that may mention them too (a function type: whose free
@@ -780,6 +781,7 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
         InternMiss miss;
         ret = intern_lookup(&my types, key, count, &miss);
         if (!ret) {
+            GRAPH_CHECK_BIND();
             TyMapper const* composed = ty_mapper_new(
                 me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len }
             );

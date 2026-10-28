@@ -5859,6 +5859,7 @@ Ty const* ty_apply_type_arguments_mapper(Checker* me, Ty const* ty, TyMapper con
 // type, keyed by the node's outer type parameters (getObjectTypeInstantiation of an InstantiationExpressionType), so
 // it's a type of its own, not the one the expression `f<number>` has
 Ty const* ty_apply_type_arguments_mapper_of(Checker* me, Ty const* ty, TyMapper const* mapper, Ty const* query) {
+    GRAPH_CHECK_FRAME();
     Members const* members = ty_members(me, ty);
     if (!members->call_count && !members->construct_count) return ty;
     u32 count = 3 + mapper->len * 2;
@@ -5875,6 +5876,7 @@ Ty const* ty_apply_type_arguments_mapper_of(Checker* me, Ty const* ty, TyMapper 
     }
     Ty const* ret = intern_get(&my types, key, count);
     if (!ret) {
+        GRAPH_CHECK_BIND();
         Ty* fresh = ty_alloc(me, TY_ANONYMOUS, flags);
         fresh->anonymous.target = ty;
         fresh->anonymous.mapper = mapper;
