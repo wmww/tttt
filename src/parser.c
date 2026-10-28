@@ -15834,6 +15834,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         (p.shared->decl_committed = decorated, parse_namespace(&p, &parsed.namespace_decl))
     ) {
         modified.kind = MODIFIED_MODULE;
+        parsed.namespace_decl.modifiers_failed = modifiers_would_fail(&p, &modifiers, dry, MODIFIED_MODULE);
         parsed.namespace_decl.full_span = span_from(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_NAMESPACE,

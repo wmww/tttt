@@ -1,0 +1,25 @@
+ttttAmbientThrowLineBreak.ts(1,23): error TS1036: Statements are not allowed in ambient contexts.
+ttttAmbientThrowLineBreak.ts(3,38): error TS1036: Statements are not allowed in ambient contexts.
+ttttAmbientThrowLineBreak.ts(6,10): error TS1142: Line break not permitted here.
+ttttAmbientThrowLineBreak.ts(9,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== ttttAmbientThrowLineBreak.ts (4 errors) ====
+    declare namespace A { throw
+                          ~~~~~
+!!! error TS1036: Statements are not allowed in ambient contexts.
+     1; }
+    declare namespace B { let x: number; throw
+                                         ~~~~~
+!!! error TS1036: Statements are not allowed in ambient contexts.
+     1; }
+    function f() {
+        throw
+             
+!!! error TS1142: Line break not permitted here.
+        1;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

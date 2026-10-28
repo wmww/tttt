@@ -1,0 +1,13 @@
+//// [test/cases/ttttQuotedModuleModifierError.ts] ////
+
+=== ttttQuotedModuleModifierError.ts ===
+public module "x" { }
+>"x" : typeof import("x")
+
+abstract module "z" { }
+>"z" : typeof import("z")
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

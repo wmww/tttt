@@ -802,7 +802,7 @@ void namespace_decl_typecheck(NamespaceDecl* me, bool declared, ErrorCtx* errs) 
     }
     Symbol const* counterpart = own && !declared ? same_block_counterpart(my symbol, own) : nullptr;
     // (tsc's checkModuleDeclarationDiagnostics)
-    if (!declared && my is_ambient_module) {
+    if (!declared && my is_ambient_module && !my modifiers_failed) {
         error_ctx_grammar_error_d(errs, my name, 1035, "Only ambient modules can use quoted names.");
     }
     if (my module_keyword && !my is_ambient_module && !my is_global && !my misplaced && !my jsdoc) {
@@ -1903,6 +1903,14 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
         }   break;
 
         case STATEMENT_THROW_EXPR: {
+            if (my expr.tag == EXPR_IMPLICIT_ANY && span_valid(my expr.inner_span) && !my expr.inner_span.size &&
+                span_valid(my span) && !ambient_reported_at(me, names)
+            ) {
+                // tsc's checkThrowStatement: `throw` then a line break (the parser's missing expression), right after
+                // the keyword. Not when it is the statement checkGrammarStatementInAmbientContext reports (TS1036)
+                char const* at = span_start_ptr(my span) + strlen("throw");
+                error_ctx_grammar_error_d(errs, span_make_in(my span, at, at), 1142, "Line break not permitted here.");
+            }
             uintptr_t outer_root = flow->context_root;
             flow->context_root = context_root_make(&my expr, CONTEXT_ROOT_EXPR);
             expr_lookup_names(&my expr, names, errs);
@@ -3030,14 +3038,6 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             break;
 
         case STATEMENT_THROW_EXPR:
-            if (my expr.tag == EXPR_IMPLICIT_ANY && span_valid(my expr.inner_span) && !my expr.inner_span.size &&
-                span_valid(my span)
-            ) {
-                // tsc's checkThrowStatement: `throw` then a line break (the parser's missing expression), right after
-                // the keyword
-                char const* at = span_start_ptr(my span) + strlen("throw");
-                error_ctx_grammar_error_d(errs, span_make_in(my span, at, at), 1142, "Line break not permitted here.");
-            }
             expr_typecheck(&my expr, errs);
             break;
 

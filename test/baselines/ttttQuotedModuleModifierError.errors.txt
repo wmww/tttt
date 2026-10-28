@@ -1,0 +1,16 @@
+ttttQuotedModuleModifierError.ts(1,1): error TS1044: 'public' modifier cannot appear on a module or namespace element.
+ttttQuotedModuleModifierError.ts(2,1): error TS1242: 'abstract' modifier can only appear on a class, method, or property declaration.
+ttttQuotedModuleModifierError.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== ttttQuotedModuleModifierError.ts (3 errors) ====
+    public module "x" { }
+    ~~~~~~
+!!! error TS1044: 'public' modifier cannot appear on a module or namespace element.
+    abstract module "z" { }
+    ~~~~~~~~
+!!! error TS1242: 'abstract' modifier can only appear on a class, method, or property declaration.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,30 @@
+//// [test/cases/ttttAmbientThrowLineBreak.ts] ////
+
+=== ttttAmbientThrowLineBreak.ts ===
+declare namespace A { throw
+>A : typeof A
+
+ 1; }
+> : any
+>1 : 1
+
+declare namespace B { let x: number; throw
+>B : typeof B
+>x : number
+
+ 1; }
+> : any
+>1 : 1
+
+function f() {
+>f : () => void
+
+    throw
+    1;
+> : any
+>1 : 1
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

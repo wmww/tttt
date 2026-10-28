@@ -1,0 +1,12 @@
+//// [test/cases/ttttQuotedModuleModifierError.ts] ////
+
+=== ttttQuotedModuleModifierError.ts ===
+public module "x" { }
+>"x" : Symbol("x", Decl(ttttQuotedModuleModifierError.ts, 0, 0))
+
+abstract module "z" { }
+>"z" : Symbol("z", Decl(ttttQuotedModuleModifierError.ts, 0, 21))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(ttttQuotedModuleModifierError.ts, 2, 5))
+
