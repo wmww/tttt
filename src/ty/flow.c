@@ -156,6 +156,19 @@ static Ty const* narrow_type(FlowQuery* q, Ty const* type, Expr const* expr, boo
 static bool is_type_subset_of(Ty const* source, Ty const* target);
 static bool query_subset_of(FlowQuery* q, Ty const* source, Ty const* target);
 
+// The name of `new.target` (the identifier after the dot: the parser takes any, TS17012)
+static csview meta_property_name(Expr const* expr) {
+    csview text = span_sv(expr->inner_span);
+    isize dot = text.size;
+    while (dot > 0 && text.buf[dot - 1] != '.') dot--;
+    csview name = csview_from_n(text.buf + dot, text.size - dot);
+    while (name.size && (name.buf[0] == ' ' || name.buf[0] == '\t' || name.buf[0] == '\n' || name.buf[0] == '\r')) {
+        name.buf++;
+        name.size--;
+    }
+    return name;
+}
+
 static bool is_matching_reference(Checker* me, Expr const* source, Expr const* target);
 static bool query_matches(FlowQuery* q, Expr const* target);
 static Expr const* reference_candidate(Expr const* expr);
@@ -787,7 +800,11 @@ static bool is_matching_reference(Checker* me, Expr const* source, Expr const* t
     switch (source->tag) {
         case EXPR_IDENTIFIER:
             if (source->identifier.keyword || target->identifier.keyword) {
-                // (`import` is only ever a reference as the object of `import.meta`)
+                // (`import` is only ever a reference as the object of `import.meta`. `new.target` and `new.targetX`,
+                // TS17012, are other references: tsc's isMatchingReference compares a MetaProperty's name too)
+                if (source->identifier.keyword == KEYWORD_IDENTIFIER_NEW_TARGET && target->identifier.keyword == KEYWORD_IDENTIFIER_NEW_TARGET) {
+                    return csview_equals_sv(meta_property_name(source), meta_property_name(target));
+                }
                 return source->identifier.keyword == target->identifier.keyword;
             }
             return source->identifier.target && source->identifier.target == target->identifier.target;

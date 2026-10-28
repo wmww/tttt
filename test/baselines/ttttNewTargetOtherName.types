@@ -1,0 +1,39 @@
+//// [test/cases/ttttNewTargetOtherName.ts] ////
+
+=== ttttNewTargetOtherName.ts ===
+// `new.targetX` (TS17012) is another reference than `new.target`: a narrowing of new.target.marked doesn't apply
+// to it (tsc's isMatchingReference compares a MetaProperty's name)
+
+function foo(x: true) { }
+>foo : (x: true) => void
+>x : true
+>true : true
+
+function f() {
+>f : { (): void; marked: boolean; }
+
+  if (new.target.marked === true) {
+>new.target.marked === true : boolean
+>new.target.marked : boolean
+>new.target : { (): void; marked: boolean; }
+>target : { (): void; marked: boolean; }
+>marked : boolean
+>true : true
+
+    foo(new.targetX.marked);
+>foo(new.targetX.marked) : void
+>foo : (x: true) => void
+>new.targetX.marked : boolean
+>new.targetX : { (): void; marked: boolean; }
+>targetX : { (): void; marked: boolean; }
+>marked : boolean
+  }
+}
+
+f.marked = true;
+>f.marked = true : true
+>f.marked : boolean
+>f : { (): void; marked: boolean; }
+>marked : boolean
+>true : true
+

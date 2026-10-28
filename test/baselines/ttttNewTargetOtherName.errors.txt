@@ -1,0 +1,22 @@
+ttttNewTargetOtherName.ts(8,9): error TS2345: Argument of type 'boolean' is not assignable to parameter of type 'true'.
+ttttNewTargetOtherName.ts(8,13): error TS17012: 'targetX' is not a valid meta-property for keyword 'new'. Did you mean 'target'?
+
+
+==== ttttNewTargetOtherName.ts (2 errors) ====
+    // `new.targetX` (TS17012) is another reference than `new.target`: a narrowing of new.target.marked doesn't apply
+    // to it (tsc's isMatchingReference compares a MetaProperty's name)
+    
+    function foo(x: true) { }
+    
+    function f() {
+      if (new.target.marked === true) {
+        foo(new.targetX.marked);
+            ~~~~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type 'boolean' is not assignable to parameter of type 'true'.
+                ~~~~~~~
+!!! error TS17012: 'targetX' is not a valid meta-property for keyword 'new'. Did you mean 'target'?
+      }
+    }
+    
+    f.marked = true;
+    

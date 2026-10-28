@@ -1,0 +1,32 @@
+//// [test/cases/ttttNewTargetOtherName.ts] ////
+
+=== ttttNewTargetOtherName.ts ===
+// `new.targetX` (TS17012) is another reference than `new.target`: a narrowing of new.target.marked doesn't apply
+// to it (tsc's isMatchingReference compares a MetaProperty's name)
+
+function foo(x: true) { }
+>foo : Symbol(foo, Decl(ttttNewTargetOtherName.ts, 0, 0))
+>x : Symbol(x, Decl(ttttNewTargetOtherName.ts, 3, 13))
+
+function f() {
+>f : Symbol(f, Decl(ttttNewTargetOtherName.ts, 3, 25))
+
+  if (new.target.marked === true) {
+>new.target.marked : Symbol(f.marked, Decl(ttttNewTargetOtherName.ts, 9, 1))
+>new.target : Symbol(f, Decl(ttttNewTargetOtherName.ts, 3, 25))
+>target : Symbol(f, Decl(ttttNewTargetOtherName.ts, 3, 25))
+>marked : Symbol(f.marked, Decl(ttttNewTargetOtherName.ts, 9, 1))
+
+    foo(new.targetX.marked);
+>foo : Symbol(foo, Decl(ttttNewTargetOtherName.ts, 0, 0))
+>new.targetX.marked : Symbol(f.marked, Decl(ttttNewTargetOtherName.ts, 9, 1))
+>new.targetX : Symbol(f, Decl(ttttNewTargetOtherName.ts, 3, 25))
+>marked : Symbol(f.marked, Decl(ttttNewTargetOtherName.ts, 9, 1))
+  }
+}
+
+f.marked = true;
+>f.marked : Symbol(f.marked, Decl(ttttNewTargetOtherName.ts, 9, 1))
+>f : Symbol(f, Decl(ttttNewTargetOtherName.ts, 3, 25))
+>marked : Symbol(f.marked, Decl(ttttNewTargetOtherName.ts, 9, 1))
+
