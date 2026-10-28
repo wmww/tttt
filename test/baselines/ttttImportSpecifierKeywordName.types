@@ -1,0 +1,29 @@
+//// [test/cases/ttttImportSpecifierKeywordName.ts] ////
+
+=== b.ts ===
+export interface A { a: 1 }
+>a : 1
+
+=== c.ts ===
+function k() {
+>k : () => void
+
+    import { A as while } from "./b";
+>A : any
+>while : any
+}
+async function m() {
+>m : () => Promise<void>
+
+    import { A as await } from "./b";
+>A : any
+>await : any
+}
+function* l() {
+>l : () => Generator<never, void, unknown>
+
+    import { A as yield } from "./b";
+>A : any
+>yield : any
+}
+

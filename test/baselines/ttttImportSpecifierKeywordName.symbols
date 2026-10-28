@@ -1,0 +1,27 @@
+//// [test/cases/ttttImportSpecifierKeywordName.ts] ////
+
+=== b.ts ===
+export interface A { a: 1 }
+>A : Symbol(A, Decl(b.ts, 0, 0))
+>a : Symbol(A.a, Decl(b.ts, 0, 20))
+
+=== c.ts ===
+function k() {
+>k : Symbol(k, Decl(c.ts, 0, 0))
+
+    import { A as while } from "./b";
+>while : Symbol(while, Decl(c.ts, 1, 12))
+}
+async function m() {
+>m : Symbol(m, Decl(c.ts, 2, 1))
+
+    import { A as await } from "./b";
+>await : Symbol(await, Decl(c.ts, 4, 12))
+}
+function* l() {
+>l : Symbol(l, Decl(c.ts, 5, 1))
+
+    import { A as yield } from "./b";
+>yield : Symbol(yield, Decl(c.ts, 7, 12))
+}
+

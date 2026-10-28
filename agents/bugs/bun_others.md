@@ -273,6 +273,9 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
   again, on the character before it), `@import { A as await }` in an async function (92-R03d: a JSDoc import in a
   function is misplaced, TS1473, its module never resolved to a file, TS2307; `await`/`yield` there are no names,
   TS1003). [fixed]
+- `import { A as while }` (and `as await` in an async function, `as yield` in a generator): TS1003 matches, but tsc's
+  symbols baseline has no symbol for the imported name `A` of such a specifier, tttt's shows the export it names
+  (ttttImportSpecifierKeywordName, known failing). [open]
 - A function declaration missing its name (`function () {}`, JS, ttttJsDocOverloadMissingName's neighbours): tsc's
   TS7010 calls it `(Missing)` (tttt ''), two of them in a file merge into one symbol (tsc's types baseline shows
   one overloaded type), an `export default function () {}` with an `@overload` gets TS7011 at the tag. [open]

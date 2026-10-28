@@ -31,19 +31,4 @@ function h() {
 import { A } from "./b";
 >A : any
 }
-=== c.ts ===
-async function k() {
->k : () => Promise<void>
-
-    import { A as await } from "./b";
->A : any
->await : any
-}
-function* l() {
->l : () => Generator<never, void, unknown>
-
-    import { A as yield } from "./b";
->A : any
->yield : any
-}
 

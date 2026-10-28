@@ -31,17 +31,4 @@ function h() {
 import { A } from "./b";
 >A : Symbol(A, Decl(a.js, 13, 8))
 }
-=== c.ts ===
-async function k() {
->k : Symbol(k, Decl(c.ts, 0, 0))
-
-    import { A as await } from "./b";
->await : Symbol(await, Decl(c.ts, 1, 12))
-}
-function* l() {
->l : Symbol(l, Decl(c.ts, 2, 1))
-
-    import { A as yield } from "./b";
->yield : Symbol(yield, Decl(c.ts, 4, 12))
-}
 
