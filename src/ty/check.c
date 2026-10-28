@@ -804,8 +804,10 @@ static Error* report_explained_with_head(
     // (TS2678 is checkTypeComparableTo without a head message: a more specific line, a missing property, stands in
     // for it like for TS2322)
     bool default_head = ts_code == 2678 && natural && !natural->related && natural->ts_code != 2678;
-    if (natural && (span_valid(natural->span) || natural->replaces_head || default_head ||
-        (natural->missing_head && !keep_natural_head))
+    // (keep_natural_head: the head is tsc's containing message chain, which stays on top of a weak type error too:
+    // checkTypePredicate's TS2677 over TS2559)
+    if (natural && (span_valid(natural->span) || default_head ||
+        ((natural->replaces_head || natural->missing_head) && !keep_natural_head))
     ) {
         // An error that knows exactly where it is (an excess property) replaces the head
         cstr_drop(&head);

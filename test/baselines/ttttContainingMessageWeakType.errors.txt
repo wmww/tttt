@@ -1,0 +1,24 @@
+ttttContainingMessageWeakType.ts(6,24): error TS2416: Property 'p' in type 'D' is not assignable to the same property in base type 'Base'.
+  Type 'B' has no properties in common with type 'A'.
+ttttContainingMessageWeakType.ts(6,24): error TS2612: Property 'p' will overwrite the base property in 'Base'. If this is intentional, add an initializer. Otherwise, add a 'declare' modifier or remove the redundant declaration.
+ttttContainingMessageWeakType.ts(7,24): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'B' has no properties in common with type 'A'.
+
+
+==== ttttContainingMessageWeakType.ts (3 errors) ====
+    // A containing message chain (checkTypePredicate's TS2677, a member override's TS2416) stays on top of a weak type
+    // error (TS2559), which only replaces a head message (mutation testing seed 20261102, typeGuardFunctionErrors)
+    class A { a?: number }
+    class B { b!: number }
+    class Base { p!: A }
+    class D extends Base { p!: B }
+                           ~
+!!! error TS2416: Property 'p' in type 'D' is not assignable to the same property in base type 'Base'.
+!!! error TS2416:   Type 'B' has no properties in common with type 'A'.
+                           ~
+!!! error TS2612: Property 'p' will overwrite the base property in 'Base'. If this is intentional, add an initializer. Otherwise, add a 'declare' modifier or remove the redundant declaration.
+    function g(x: A): x is B { return true; }
+                           ~
+!!! error TS2677: A type predicate's type must be assignable to its parameter's type.
+!!! error TS2677:   Type 'B' has no properties in common with type 'A'.
+    
