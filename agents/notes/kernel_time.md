@@ -104,6 +104,34 @@ on the rest of the machine:
     faults 3.6x but wall and user cycles stayed within noise on drizzle and vscode (measurements.md "The 12-core box at
     df95ec2f"), so the machinery wasn't worth its stall risk and code. Everything is on 4 KB pages, prefaulted with
     MADV_POPULATE_WRITE as before.
+  - **Back 2026-10-29, chosen by the kernel's THP configuration** (prelude.c huge_mode_init(), worker rehuge): the
+    laptop that measured "within noise" runs THP `always`, where the arenas got huge pages with or without the
+    madvise; on a THP `madvise` box (this one, Ubuntu's default) the removal cost vscode +5.4% at K1 and +16% at the
+    defaults (measurements.md "vscode since v1"). The stall comes only from the madvise under a defrag that compacts
+    madvised faults synchronously (transhuge.rst: `always` every THP fault, `madvise` and `defer+madvise` madvised
+    regions; `defer` only wakes kswapd/kcompactd, `never` nothing). So, read once from
+    /sys/kernel/mm/transparent_hugepage (hugepages-2048kB/enabled first unless `inherit`; PMD size must be 2 MB):
+    enabled `always` -> regions mapped 2 MB aligned, never madvised (the fault takes a free block or falls back to
+    4 KB, no compaction); `madvise` + defrag `defer`/`never` -> aligned and madvised; `madvise` + another defrag ->
+    madvised while the startup budget of free order >= 9 blocks lasts (read once: no 20 ms re-reads), the rest 4 KB;
+    `never` -> 4 KB. `--time` prints the mode; TTTT_HUGEPAGES=0|1|aligned|budget|auto for A/B.
+    This box (madvise/madvise: the budget, ~7-9 GB free in 2 MB blocks), the same `--fast` build with
+    TTTT_HUGEPAGES=0 against the default, K1 on SMT siblings 6/7 swapped per round (6-10 rounds, load 3-10), and
+    defaults interleaved (8-12 rounds, load 2-10), medians:
+
+    | | K1 wall 0 -> auto | K1 sys | K1 faults | defaults wall | defaults sys | defaults faults | RSS (defaults) |
+    |---|---|---|---|---|---|---|---|
+    | vscode | 15.04 -> 14.21 s (-5.5%) | 0.94 -> 0.38 | 1034k -> 79k | 1.50 -> 1.27 s (-15.6%) | 1.23 -> 0.61 | 1238k -> 186k | 5.05 -> 5.12 GB |
+    | drizzle | 1.02 -> 0.95 (-6.9%) | 0.10 -> 0.04 | 105k -> 13k | 0.23 -> 0.19 (-17%) | 0.19 -> 0.09 | 194k -> 45k | 0.78 -> 0.79 |
+    | zod | 0.80 -> 0.74 (-7.5%) | 0.08 -> 0.03 | 92k -> 11k | 0.15 -> 0.13 (-13%) | 0.12 -> 0.08 | 135k -> 44k | 0.55 -> 0.55 |
+    | effect | 1.77 -> 1.64 (-7.4%) | 0.16 -> 0.06 | 168k -> 16k | 0.26 -> 0.21 (-16%) | 0.21 -> 0.12 | 207k -> 66k | 0.84 -> 0.86 |
+    | nest | 0.21 -> 0.20 | 0.04 -> 0.03 | 32k -> 12k | 0.05 -> 0.05 | 0.07 -> 0.07 | 40k -> 32k | 0.17 -> 0.18 |
+
+    /proc/vmstat around a defaults vscode run: compact_stall +0, thp_fault_alloc +2.1k, thp_fault_fallback +0. Not
+    measured: a box with few free 2 MB blocks under THP madvise/madvise, where the budget is what stands between a run
+    and the stall (the budget is the 2026-10-24 one minus its re-reads; hacks.md's huge_pages_take() entry); the laptop
+    (THP `always`: now aligned arena chunks without the madvise; v1 had them aligned and madvised within the budget,
+    main since 45397f75f unaligned, so only an unaligned chunk's aligned interior was huge there).
 - **The memory pool** (program_set_memory_pool()): a checker recycles once the process's resident set passes
   startup's resident set + 80% of MemAvailable. With other jobs holding memory at startup, openclaw root (22.8 GB peak)
   got an 18.5 GB pool, recycled 15-16 times and ran ~15% slower, while 40 GB was available by then. Now, past the pool,
