@@ -1,0 +1,47 @@
+//// [test/cases/ttttAssertionCallArityError.ts] ////
+
+=== ttttAssertionCallArityError.ts ===
+// An assertion call with an arity error resolves to its candidate all the same (tsc's getCandidateForOverloadFailure):
+// TS2775 besides TS2554 when the callee has no explicit type (missing_checks.md, assertionTypePredicates2 add-arg).
+// Not modelled: several overloads, whose failure candidate is tsc's union signature with the first one's predicate
+declare function isString(x: unknown): asserts x is string;
+>isString : (x: unknown) => asserts x is string
+>x : unknown
+
+const f = (x: unknown): asserts x is string => {};
+>f : (x: unknown) => asserts x is string
+>(x: unknown): asserts x is string => {} : (x: unknown) => asserts x is string
+>x : unknown
+
+const obj = { g: f };
+>obj : { g: (x: unknown) => asserts x is string; }
+>{ g: f } : { g: (x: unknown) => asserts x is string; }
+>g : (x: unknown) => asserts x is string
+>f : (x: unknown) => asserts x is string
+
+function t(v: unknown) {
+>t : (v: unknown) => void
+>v : unknown
+
+  isString(v, 1);
+>isString(v, 1) : void
+>isString : (x: unknown) => asserts x is string
+>v : unknown
+>1 : 1
+
+  obj.g(v, 2);
+>obj.g(v, 2) : void
+>obj.g : (x: unknown) => asserts x is string
+>obj : { g: (x: unknown) => asserts x is string; }
+>g : (x: unknown) => asserts x is string
+>v : string
+>2 : 2
+
+  obj.g(v);
+>obj.g(v) : void
+>obj.g : (x: unknown) => asserts x is string
+>obj : { g: (x: unknown) => asserts x is string; }
+>g : (x: unknown) => asserts x is string
+>v : string
+}
+

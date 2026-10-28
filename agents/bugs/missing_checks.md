@@ -541,7 +541,11 @@ after the second batch, seed 2312: 37 -> 28. What is left is mostly text, render
 Diagnostics-class leftovers, not fixed:
 - missing TS2339 on `module.exports.funky = ...` after `module.exports = donkey` with `donkey: never`
   (commonJSAliasedExport never-const; moduleExportAlias5 likewise). [open]
-- missing TS2775 only when the asserting call also has an arity error (assertionTypePredicates2 add-arg). [open]
+- missing TS2775 only when the asserting call also has an arity error (assertionTypePredicates2 add-arg): the
+  assertion check read only a fitting resolution, tsc's resolvedSignature is the failure candidate then
+  (ty_call_failure_signature()). Test ttttAssertionCallArityError [fixed COMMIT-next]. Left: several overloads, whose
+  failure candidate is createUnionOfSignaturesForOverloadFailure's (the first overload's declaration, so its
+  predicate, and the intersection of the returns), which tttt doesn't keep as the call's failure_sig. [open]
 - TS2303 around an unresolved UMD `export = Thing` + `export as namespace Foo` (umd7): whether tsc sees the cycle
   depends on check order (the spelling suggestion for Thing resolves Foo, in flight, only if no file used Foo first);
   tttt resolves aliases eagerly at link and always reports it. Its position is fixed. [open]

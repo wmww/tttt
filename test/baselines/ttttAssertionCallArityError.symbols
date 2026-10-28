@@ -1,0 +1,42 @@
+//// [test/cases/ttttAssertionCallArityError.ts] ////
+
+=== ttttAssertionCallArityError.ts ===
+// An assertion call with an arity error resolves to its candidate all the same (tsc's getCandidateForOverloadFailure):
+// TS2775 besides TS2554 when the callee has no explicit type (missing_checks.md, assertionTypePredicates2 add-arg).
+// Not modelled: several overloads, whose failure candidate is tsc's union signature with the first one's predicate
+declare function isString(x: unknown): asserts x is string;
+>isString : Symbol(isString, Decl(ttttAssertionCallArityError.ts, 0, 0))
+>x : Symbol(x, Decl(ttttAssertionCallArityError.ts, 3, 26))
+>x : Symbol(x, Decl(ttttAssertionCallArityError.ts, 3, 26))
+
+const f = (x: unknown): asserts x is string => {};
+>f : Symbol(f, Decl(ttttAssertionCallArityError.ts, 4, 5))
+>x : Symbol(x, Decl(ttttAssertionCallArityError.ts, 4, 11))
+>x : Symbol(x, Decl(ttttAssertionCallArityError.ts, 4, 11))
+
+const obj = { g: f };
+>obj : Symbol(obj, Decl(ttttAssertionCallArityError.ts, 5, 5))
+>g : Symbol(g, Decl(ttttAssertionCallArityError.ts, 5, 13))
+>f : Symbol(f, Decl(ttttAssertionCallArityError.ts, 4, 5))
+
+function t(v: unknown) {
+>t : Symbol(t, Decl(ttttAssertionCallArityError.ts, 5, 21))
+>v : Symbol(v, Decl(ttttAssertionCallArityError.ts, 6, 11))
+
+  isString(v, 1);
+>isString : Symbol(isString, Decl(ttttAssertionCallArityError.ts, 0, 0))
+>v : Symbol(v, Decl(ttttAssertionCallArityError.ts, 6, 11))
+
+  obj.g(v, 2);
+>obj.g : Symbol(g, Decl(ttttAssertionCallArityError.ts, 5, 13))
+>obj : Symbol(obj, Decl(ttttAssertionCallArityError.ts, 5, 5))
+>g : Symbol(g, Decl(ttttAssertionCallArityError.ts, 5, 13))
+>v : Symbol(v, Decl(ttttAssertionCallArityError.ts, 6, 11))
+
+  obj.g(v);
+>obj.g : Symbol(g, Decl(ttttAssertionCallArityError.ts, 5, 13))
+>obj : Symbol(obj, Decl(ttttAssertionCallArityError.ts, 5, 5))
+>g : Symbol(g, Decl(ttttAssertionCallArityError.ts, 5, 13))
+>v : Symbol(v, Decl(ttttAssertionCallArityError.ts, 6, 11))
+}
+

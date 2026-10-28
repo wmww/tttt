@@ -1,0 +1,29 @@
+ttttAssertionCallArityError.ts(8,15): error TS2554: Expected 1 arguments, but got 2.
+ttttAssertionCallArityError.ts(9,3): error TS2775: Assertions require every name in the call target to be declared with an explicit type annotation.
+ttttAssertionCallArityError.ts(9,12): error TS2554: Expected 1 arguments, but got 2.
+ttttAssertionCallArityError.ts(10,3): error TS2775: Assertions require every name in the call target to be declared with an explicit type annotation.
+
+
+==== ttttAssertionCallArityError.ts (4 errors) ====
+    // An assertion call with an arity error resolves to its candidate all the same (tsc's getCandidateForOverloadFailure):
+    // TS2775 besides TS2554 when the callee has no explicit type (missing_checks.md, assertionTypePredicates2 add-arg).
+    // Not modelled: several overloads, whose failure candidate is tsc's union signature with the first one's predicate
+    declare function isString(x: unknown): asserts x is string;
+    const f = (x: unknown): asserts x is string => {};
+    const obj = { g: f };
+    function t(v: unknown) {
+      isString(v, 1);
+                  ~
+!!! error TS2554: Expected 1 arguments, but got 2.
+      obj.g(v, 2);
+      ~~~~~
+!!! error TS2775: Assertions require every name in the call target to be declared with an explicit type annotation.
+!!! related TS2782 ttttAssertionCallArityError.ts:6:7: 'obj' needs an explicit type annotation.
+               ~
+!!! error TS2554: Expected 1 arguments, but got 2.
+      obj.g(v);
+      ~~~~~
+!!! error TS2775: Assertions require every name in the call target to be declared with an explicit type annotation.
+!!! related TS2782 ttttAssertionCallArityError.ts:6:7: 'obj' needs an explicit type annotation.
+    }
+    

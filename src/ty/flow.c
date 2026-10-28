@@ -1737,7 +1737,9 @@ void ty_check_assertion_call_statement(Checker* me, Expr const* expr, ErrorCtx* 
     // (Nor in an optional chain, `checker?.assert(x)`: the call's type is `void | undefined` there, tsc's returnType
     // is no void)
     if (expr->tag != EXPR_CALL || expr_is_optional_chain(expr) || expr->call->uses_new) return;
+    // (A call that fit no signature has the candidate for the failure: `assert(x, extra)` is TS2554 and TS2775)
     Signature const* sig = ty_call_resolved_signature(me, expr->call);
+    if (!sig) sig = ty_call_failure_signature(me, expr->call);
     if (!sig || !signature_predicate(me, sig) || !(signature_return_type(me, sig)->flags & TYF_VOID)) return;
     Expr const* callee = &expr->call->callable;
     if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;

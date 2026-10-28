@@ -3933,6 +3933,14 @@ Signature const* ty_call_resolved_signature(Checker* me, CallExpr const* call) {
     return resolution && !resolution->in_flight ? resolution->sig : nullptr;
 }
 
+// The candidate a call that fit none resolved to all the same (tsc's getCandidateForOverloadFailure, its
+// resolvedSignature then), null if it fit one or has none
+Signature const* ty_call_failure_signature(Checker* me, CallExpr const* call) {
+    CallResolution const* resolution = ty_link_get(me, KEY_CALL_RESOLUTION, call);
+    if (!resolution || resolution->in_flight || resolution->sig || !resolution->rare) return nullptr;
+    return resolution->rare->failure_sig;
+}
+
 bool ty_call_resolution_in_flight(Checker* me, CallExpr const* call) {
     CallResolution const* resolution = ty_link_get(me, KEY_CALL_RESOLUTION, call);
     return resolution && resolution->in_flight;
