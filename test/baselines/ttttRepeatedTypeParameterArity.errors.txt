@@ -1,0 +1,61 @@
+ttttRepeatedTypeParameterArity.ts(4,18): error TS2300: Duplicate identifier 'T'.
+ttttRepeatedTypeParameterArity.ts(5,16): error TS2300: Duplicate identifier 'K'.
+ttttRepeatedTypeParameterArity.ts(6,12): error TS2300: Duplicate identifier 'U'.
+ttttRepeatedTypeParameterArity.ts(7,23): error TS2300: Duplicate identifier 'V'.
+ttttRepeatedTypeParameterArity.ts(9,19): error TS2314: Generic type 'Rep<T>' requires 1 type argument(s).
+ttttRepeatedTypeParameterArity.ts(12,19): error TS2314: Generic type 'Al' requires 1 type argument(s).
+ttttRepeatedTypeParameterArity.ts(13,7): error TS2322: Type 'string' is not assignable to type 'never'.
+ttttRepeatedTypeParameterArity.ts(14,7): error TS2322: Type 'boolean' is not assignable to type 'never'.
+ttttRepeatedTypeParameterArity.ts(15,7): error TS2322: Type 'number' is not assignable to type 'never'.
+ttttRepeatedTypeParameterArity.ts(16,7): error TS2322: Type '1' is not assignable to type 'never'.
+ttttRepeatedTypeParameterArity.ts(17,7): error TS2322: Type 'string' is not assignable to type 'never'.
+ttttRepeatedTypeParameterArity.ts(18,7): error TS2322: Type 'string' is not assignable to type 'never'.
+ttttRepeatedTypeParameterArity.ts(18,21): error TS2558: Expected 1 type arguments, but got 2.
+
+
+==== ttttRepeatedTypeParameterArity.ts (13 errors) ====
+    // A type parameter name repeated in one list is one type parameter (tsc's binder merges the declarations into one
+    // symbol; TS2300 aside): `interface Rep<T, T>` takes one type argument (several_types.c declared_type_params(), bun
+    // 99-V4 getDeclaredTypeOfClassOrInterface__05)
+    interface Rep<T, T> { value: T; }
+                     ~
+!!! error TS2300: Duplicate identifier 'T'.
+    class Twice<K, K> { key!: K; }
+                   ~
+!!! error TS2300: Duplicate identifier 'K'.
+    type Al<U, U> = { u: U };
+               ~
+!!! error TS2300: Duplicate identifier 'U'.
+    declare function f<V, V>(v: V): V;
+                          ~
+!!! error TS2300: Duplicate identifier 'V'.
+    declare const r1: Rep<string>;
+    declare const r2: Rep<string, number>;
+                      ~~~~~~~~~~~~~~~~~~~
+!!! error TS2314: Generic type 'Rep<T>' requires 1 type argument(s).
+    declare const t1: Twice<boolean>;
+    declare const a1: Al<number>;
+    declare const a2: Al<number, string>;
+                      ~~~~~~~~~~~~~~~~~~
+!!! error TS2314: Generic type 'Al' requires 1 type argument(s).
+    const x1: never = r1.value;
+          ~~
+!!! error TS2322: Type 'string' is not assignable to type 'never'.
+    const x2: never = t1.key;
+          ~~
+!!! error TS2322: Type 'boolean' is not assignable to type 'never'.
+    const x3: never = a1.u;
+          ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+    const x4: never = f(1);
+          ~~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+    const x5: never = f<string>("");
+          ~~
+!!! error TS2322: Type 'string' is not assignable to type 'never'.
+    const x6: never = f<string, number>("");
+          ~~
+!!! error TS2322: Type 'string' is not assignable to type 'never'.
+                        ~~~~~~~~~~~~~~
+!!! error TS2558: Expected 1 type arguments, but got 2.
+    

@@ -12,25 +12,21 @@ here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in 
 - **Decorators**: TS2449 for a class used in the decorators of its own methods' parameters (tsc counts them; tttt's
   check only knows class and member decorators). In tsgo it comes from the emit resolver only (`m(@dec(C.s) x)`: the
   suite's TS-1 pre/post-emit count note), so it shows in baselines, not on the CLI. [tsgo]
-- **Classes**: TS2687 skips statics and method/accessor pairs (hacks.md). [open]
 - A class method merged with an interface's method signature of its name is one symbol in tsc, whose overload flag
   agreement covers both (checkFunctionOrConstructorSymbol: the signature makes it overloaded): `interface I { m():
   void } class I { private m() {} }` is TS2385 at the class's `m` (TS2386/TS2512 likewise, and the signatures are
   overloads the implementation must fit, TS2394): class_check_overload_agreement() and class_check_overloads() take the
   same-file interfaces' signatures (class_merged_signatures()), interface_check_overload_optionality() leaves those
-  names to the class. Across files each side still checks alone. Test ttttClassMergedInterfaceOverloads. [fixed PENDING]
+  names to the class. Across files each side still checks alone. Test ttttClassMergedInterfaceOverloads. [fixed de70b8e89]
 - **Accessibility**: `this.x = v` in the constructor of a class merged with an interface declaring `readonly x` (tttt
   exempted any property whose parent is the class; tsc only one whose value declaration, the first, is in the class:
-  check.c readonly_assignment()). Test ttttReadonlyFromMergedInterface [fixed db2e41209]. Private names: TS18015.
-  [open]
+  check.c readonly_assignment()). Test ttttReadonlyFromMergedInterface [fixed db2e41209].
 - **Declarations**: `export function g() {}` + `function g() {}` is TS2393 in tsc (one local symbol with two implementations; tttt said nothing). Test ttttExportedAndLocalFunctionDuplicate. [fixed 17d5794b5]
 - **Target-gated**: TS2705 comes only from an inferred return type's demand (tsc's createPromiseReturnType), and tttt
   infers more eagerly than tsc, so the two can disagree. [open]
 - **Variance annotations**: `type B<in T, in T> = { a: T }` misses tsgo's TS2636 at the second `in T` (the two are
   one type parameter symbol, the first's type parameter, which each declaration checks again: tttt checked the second,
   unused, type parameter). ty_check_variance_annotations(). Test ttttVarianceRepeatedTypeParameter [fixed e814fb8b6].
-- The jsxImportSource runtime import (`jsx_runtime_module()`) reports TS2875/TS2792 and TS1479/TS1471, not the other
-  resolveExternalModule diagnostics (TS7016 for a JavaScript runtime). [open]
 - `while (a) const x = 1;` still scopes x to the loop (tsc: the enclosing block; a do statement too, a for statement is a block scope container). Test ttttWhileBodyDeclarationScope. [fixed 2a4819ab1]
 - Known-failing tests of hacks.md's audit (2026-10-23; each hack's entry there has the mechanism):
   - ttttHackJsdocUniqueSymbolLet: a JSDoc `@type {unique symbol}` on a `let` misses TS1332. [fixed e04477695]

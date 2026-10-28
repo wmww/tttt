@@ -1,0 +1,72 @@
+//// [test/cases/ttttRepeatedTypeParameterArity.ts] ////
+
+=== ttttRepeatedTypeParameterArity.ts ===
+// A type parameter name repeated in one list is one type parameter (tsc's binder merges the declarations into one
+// symbol; TS2300 aside): `interface Rep<T, T>` takes one type argument (several_types.c declared_type_params(), bun
+// 99-V4 getDeclaredTypeOfClassOrInterface__05)
+interface Rep<T, T> { value: T; }
+>value : T
+
+class Twice<K, K> { key!: K; }
+>Twice : Twice<K>
+>key : K
+
+type Al<U, U> = { u: U };
+>Al : Al<U>
+>u : U
+
+declare function f<V, V>(v: V): V;
+>f : <V>(v: V) => V
+>v : V
+
+declare const r1: Rep<string>;
+>r1 : Rep<string>
+
+declare const r2: Rep<string, number>;
+>r2 : any
+
+declare const t1: Twice<boolean>;
+>t1 : Twice<boolean>
+
+declare const a1: Al<number>;
+>a1 : Al<number>
+
+declare const a2: Al<number, string>;
+>a2 : any
+
+const x1: never = r1.value;
+>x1 : never
+>r1.value : string
+>r1 : Rep<string>
+>value : string
+
+const x2: never = t1.key;
+>x2 : never
+>t1.key : boolean
+>t1 : Twice<boolean>
+>key : boolean
+
+const x3: never = a1.u;
+>x3 : never
+>a1.u : number
+>a1 : Al<number>
+>u : number
+
+const x4: never = f(1);
+>x4 : never
+>f(1) : 1
+>f : <V>(v: V) => V
+>1 : 1
+
+const x5: never = f<string>("");
+>x5 : never
+>f<string>("") : string
+>f : <V>(v: V) => V
+>"" : ""
+
+const x6: never = f<string, number>("");
+>x6 : never
+>f<string, number>("") : string
+>f : <V>(v: V) => V
+>"" : ""
+

@@ -36,6 +36,10 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   the function's (tsc's isInParameterInitializerBeforeContainingFunction: any, TS2683; ttttThisInParameterDefault)
   [fixed d29fc4186]; `(o.x) = function () { this }` gets no contextual `this` from `o`, the target is parenthesized
   (ttttThisOfParenthesizedAssignmentTarget) [fixed e67c8711e].
+- Spurious TS2314 on a class, interface or alias with a repeated type parameter name (99-V4
+  getDeclaredTypeOfClassOrInterface__05, `interface Rep<T, T>` referenced as `Rep<string>`): the repeats are one type
+  parameter symbol in tsc, so one type argument; several_types.c's declared_type_params() counted the items (the type's
+  own parameter list already deduplicated). Test ttttRepeatedTypeParameterArity [fixed PENDING].
 - Control flow of loops with `finally` and back edges after a never-returning call or a `break` in a narrowing:
   73-R01e and 73-R01f (TS2339 both ways on `x.foo` in `do { try {} finally { x.foo } } while (true)` after `fail()`),
   73-R03a (an evolving `let x = []` narrowed by `Array.isArray` in a for loop's incrementor: tttt says TS2339 on never

@@ -549,10 +549,24 @@ static bool declared_type_params(Symbol const* symbol, u32* min, MergedTypeParam
             }
         }
     }
+    // A name repeated in one list is one type parameter (tsc's binder merges them into one symbol, TS2300 aside):
+    // `interface I<T, T>` takes one type argument
+    for (u32 i = 1; i < out->count && !merges; i++) {
+        for (u32 j = 0; j < i && !merges; j++) {
+            merges = name_equals(span_sv(vec_generic_item_at(&first->items, i)->name), span_sv(vec_generic_item_at(&first->items, j)->name));
+        }
+    }
     if (!memo) __atomic_store_n(&((Symbol*)symbol)->type_params_merge, merges ? 2 : 1, __ATOMIC_RELAXED);
     if (merges) {
         out->merged = true;
-        for (u32 i = 0; i < out->count; i++) out->items[i] = vec_generic_item_at(&first->items, i);
+        u32 first_count = out->count;
+        out->count = 0;
+        for (u32 i = 0; i < first_count; i++) {
+            GenericItem const* item = vec_generic_item_at(&first->items, i);
+            bool known = false;
+            for (u32 k = 0; k < out->count && !known; k++) known = name_equals(span_sv(out->items[k]->name), span_sv(item->name));
+            if (!known) out->items[out->count++] = item;
+        }
         for (u32 d = first_d + 1; d < symbol->decl_count; d++) {
             if (symbol->decls[d].kind != SYMBOL_DECL_CLASS && symbol->decls[d].kind != SYMBOL_DECL_INTERFACE) continue;
             for_each (i, vec_generic_item, &decl_generic(symbol, d)->items) {

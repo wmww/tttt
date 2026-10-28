@@ -1,0 +1,85 @@
+//// [test/cases/ttttRepeatedTypeParameterArity.ts] ////
+
+=== ttttRepeatedTypeParameterArity.ts ===
+// A type parameter name repeated in one list is one type parameter (tsc's binder merges the declarations into one
+// symbol; TS2300 aside): `interface Rep<T, T>` takes one type argument (several_types.c declared_type_params(), bun
+// 99-V4 getDeclaredTypeOfClassOrInterface__05)
+interface Rep<T, T> { value: T; }
+>Rep : Symbol(Rep, Decl(ttttRepeatedTypeParameterArity.ts, 0, 0))
+>T : Symbol(T, Decl(ttttRepeatedTypeParameterArity.ts, 3, 14), Decl(ttttRepeatedTypeParameterArity.ts, 3, 16))
+>T : Symbol(T, Decl(ttttRepeatedTypeParameterArity.ts, 3, 14), Decl(ttttRepeatedTypeParameterArity.ts, 3, 16))
+>value : Symbol(Rep.value, Decl(ttttRepeatedTypeParameterArity.ts, 3, 21))
+>T : Symbol(T, Decl(ttttRepeatedTypeParameterArity.ts, 3, 14), Decl(ttttRepeatedTypeParameterArity.ts, 3, 16))
+
+class Twice<K, K> { key!: K; }
+>Twice : Symbol(Twice, Decl(ttttRepeatedTypeParameterArity.ts, 3, 33))
+>K : Symbol(K, Decl(ttttRepeatedTypeParameterArity.ts, 4, 12), Decl(ttttRepeatedTypeParameterArity.ts, 4, 14))
+>K : Symbol(K, Decl(ttttRepeatedTypeParameterArity.ts, 4, 12), Decl(ttttRepeatedTypeParameterArity.ts, 4, 14))
+>key : Symbol(Twice.key, Decl(ttttRepeatedTypeParameterArity.ts, 4, 19))
+>K : Symbol(K, Decl(ttttRepeatedTypeParameterArity.ts, 4, 12), Decl(ttttRepeatedTypeParameterArity.ts, 4, 14))
+
+type Al<U, U> = { u: U };
+>Al : Symbol(Al, Decl(ttttRepeatedTypeParameterArity.ts, 4, 30))
+>U : Symbol(U, Decl(ttttRepeatedTypeParameterArity.ts, 5, 8), Decl(ttttRepeatedTypeParameterArity.ts, 5, 10))
+>U : Symbol(U, Decl(ttttRepeatedTypeParameterArity.ts, 5, 8), Decl(ttttRepeatedTypeParameterArity.ts, 5, 10))
+>u : Symbol(u, Decl(ttttRepeatedTypeParameterArity.ts, 5, 17))
+>U : Symbol(U, Decl(ttttRepeatedTypeParameterArity.ts, 5, 8), Decl(ttttRepeatedTypeParameterArity.ts, 5, 10))
+
+declare function f<V, V>(v: V): V;
+>f : Symbol(f, Decl(ttttRepeatedTypeParameterArity.ts, 5, 25))
+>V : Symbol(V, Decl(ttttRepeatedTypeParameterArity.ts, 6, 19), Decl(ttttRepeatedTypeParameterArity.ts, 6, 21))
+>V : Symbol(V, Decl(ttttRepeatedTypeParameterArity.ts, 6, 19), Decl(ttttRepeatedTypeParameterArity.ts, 6, 21))
+>v : Symbol(v, Decl(ttttRepeatedTypeParameterArity.ts, 6, 25))
+>V : Symbol(V, Decl(ttttRepeatedTypeParameterArity.ts, 6, 19), Decl(ttttRepeatedTypeParameterArity.ts, 6, 21))
+>V : Symbol(V, Decl(ttttRepeatedTypeParameterArity.ts, 6, 19), Decl(ttttRepeatedTypeParameterArity.ts, 6, 21))
+
+declare const r1: Rep<string>;
+>r1 : Symbol(r1, Decl(ttttRepeatedTypeParameterArity.ts, 7, 13))
+>Rep : Symbol(Rep, Decl(ttttRepeatedTypeParameterArity.ts, 0, 0))
+
+declare const r2: Rep<string, number>;
+>r2 : Symbol(r2, Decl(ttttRepeatedTypeParameterArity.ts, 8, 13))
+>Rep : Symbol(Rep, Decl(ttttRepeatedTypeParameterArity.ts, 0, 0))
+
+declare const t1: Twice<boolean>;
+>t1 : Symbol(t1, Decl(ttttRepeatedTypeParameterArity.ts, 9, 13))
+>Twice : Symbol(Twice, Decl(ttttRepeatedTypeParameterArity.ts, 3, 33))
+
+declare const a1: Al<number>;
+>a1 : Symbol(a1, Decl(ttttRepeatedTypeParameterArity.ts, 10, 13))
+>Al : Symbol(Al, Decl(ttttRepeatedTypeParameterArity.ts, 4, 30))
+
+declare const a2: Al<number, string>;
+>a2 : Symbol(a2, Decl(ttttRepeatedTypeParameterArity.ts, 11, 13))
+>Al : Symbol(Al, Decl(ttttRepeatedTypeParameterArity.ts, 4, 30))
+
+const x1: never = r1.value;
+>x1 : Symbol(x1, Decl(ttttRepeatedTypeParameterArity.ts, 12, 5))
+>r1.value : Symbol(Rep.value, Decl(ttttRepeatedTypeParameterArity.ts, 3, 21))
+>r1 : Symbol(r1, Decl(ttttRepeatedTypeParameterArity.ts, 7, 13))
+>value : Symbol(Rep.value, Decl(ttttRepeatedTypeParameterArity.ts, 3, 21))
+
+const x2: never = t1.key;
+>x2 : Symbol(x2, Decl(ttttRepeatedTypeParameterArity.ts, 13, 5))
+>t1.key : Symbol(Twice.key, Decl(ttttRepeatedTypeParameterArity.ts, 4, 19))
+>t1 : Symbol(t1, Decl(ttttRepeatedTypeParameterArity.ts, 9, 13))
+>key : Symbol(Twice.key, Decl(ttttRepeatedTypeParameterArity.ts, 4, 19))
+
+const x3: never = a1.u;
+>x3 : Symbol(x3, Decl(ttttRepeatedTypeParameterArity.ts, 14, 5))
+>a1.u : Symbol(u, Decl(ttttRepeatedTypeParameterArity.ts, 5, 17))
+>a1 : Symbol(a1, Decl(ttttRepeatedTypeParameterArity.ts, 10, 13))
+>u : Symbol(u, Decl(ttttRepeatedTypeParameterArity.ts, 5, 17))
+
+const x4: never = f(1);
+>x4 : Symbol(x4, Decl(ttttRepeatedTypeParameterArity.ts, 15, 5))
+>f : Symbol(f, Decl(ttttRepeatedTypeParameterArity.ts, 5, 25))
+
+const x5: never = f<string>("");
+>x5 : Symbol(x5, Decl(ttttRepeatedTypeParameterArity.ts, 16, 5))
+>f : Symbol(f, Decl(ttttRepeatedTypeParameterArity.ts, 5, 25))
+
+const x6: never = f<string, number>("");
+>x6 : Symbol(x6, Decl(ttttRepeatedTypeParameterArity.ts, 17, 5))
+>f : Symbol(f, Decl(ttttRepeatedTypeParameterArity.ts, 5, 25))
+
