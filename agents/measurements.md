@@ -169,6 +169,7 @@ numbers are those of whichever tree last ran each oracle (bugcount.py prints whi
 - 2026-10-24 f8d57e9b9: 294 open (23 designs), 81 text-only, 38 tsgo excluded; symptoms: suite_tsc 63, suite_own 13, suite_bun 1135, bun 886, dt 0, source 7, expect 0, dts 6, flagflip 20, clidiff_text 22, unexplained_sweep 0, unexplained_sourcesweep 1, unexplained_buncases 129
 - 2026-10-24 45397f75f: 309 open (27 designs), 82 text-only, 38 tsgo excluded; symptoms: suite_tsc 67, suite_own 15, suite_bun 1133, bun 879, dt 0, source 3, expect 0, dts 6, flagflip 23, clidiff_text 34, unexplained_sweep 0, unexplained_sourcesweep 0, unexplained_buncases 129
 - 2026-10-28 2625572b5: 298 open (27 designs), 84 text-only, 38 tsgo excluded; symptoms: suite_tsc 63, suite_own 16, suite_bun 1131, bun 878, dt 0, source 5, expect 0, dts 6, flagflip 23, clidiff_text 32, unexplained_sweep 0, unexplained_sourcesweep 1, unexplained_buncases 128
+- 2026-10-28 ed02bc573: 303 open (28 designs), 84 text-only, 38 tsgo excluded; symptoms: suite_tsc 62, suite_own 17, suite_bun 1114, bun 861, dt 0, source 3, expect 0, dts 6, flagflip 23, clidiff_text 32, unexplained_sweep 0, unexplained_sourcesweep 0, unexplained_buncases 128
 
 ## The 12-core box at df95ec2f: `--huge-pages` off (default) vs on, kernel profile (2026-10-27)
 Run by an agent on the human's laptop (Ryzen AI 9 HX 370, 24 threads, kernel 7.2.11-zen1, THP `always`, defrag
