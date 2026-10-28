@@ -735,8 +735,6 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   (`ty_intersection_apparent_unaliased`) because `ty_apparent_type()` keeps an intersection's alias where tsc's
   getApparentTypeOfIntersectionType makes it anew when a member changes. Other messages printing an apparent
   intersection may show the alias tsc doesn't. Correct: apparent type without the alias (mind relation caches).
-- `ty_check_destructured_member` HACK (`from_this`): `({ m } = this)` inside method m isn't a read of private m;
-  "inside" is by position, so a function nested in m counts as m.
 
 ## JavaScript and JSDoc (bugs/js.md)
 - `IdentifierType.jsdoc_unchecked` (`identifier_type_check_arity()`): tsc only *resolves* `@returns`/`@throws`/`@augments`

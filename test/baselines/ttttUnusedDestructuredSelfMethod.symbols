@@ -1,0 +1,72 @@
+//// [test/cases/ttttUnusedDestructuredSelfMethod.ts] ////
+
+=== ttttUnusedDestructuredSelfMethod.ts ===
+// A private method destructured from `this` by an assignment directly in itself isn't a read of it (tsc's
+// markPropertyAsReferenced: the nearest function-like ancestor is the method; o), but in an arrow function nested in it
+// (p) it is, and a binding element always reads (m, n). Was by position: a function nested in m counted as m
+class A {
+>A : Symbol(A, Decl(ttttUnusedDestructuredSelfMethod.ts, 0, 0))
+
+    private m() {
+>m : Symbol(A.m, Decl(ttttUnusedDestructuredSelfMethod.ts, 3, 9))
+
+        const { m } = this;
+>m : Symbol(m, Decl(ttttUnusedDestructuredSelfMethod.ts, 5, 15))
+>this : Symbol(A, Decl(ttttUnusedDestructuredSelfMethod.ts, 0, 0))
+
+        return m;
+>m : Symbol(m, Decl(ttttUnusedDestructuredSelfMethod.ts, 5, 15))
+    }
+    private n() {
+>n : Symbol(A.n, Decl(ttttUnusedDestructuredSelfMethod.ts, 7, 5))
+
+        const f = () => {
+>f : Symbol(f, Decl(ttttUnusedDestructuredSelfMethod.ts, 9, 13))
+
+            const { n } = this;
+>n : Symbol(n, Decl(ttttUnusedDestructuredSelfMethod.ts, 10, 19))
+>this : Symbol(A, Decl(ttttUnusedDestructuredSelfMethod.ts, 0, 0))
+
+            return n;
+>n : Symbol(n, Decl(ttttUnusedDestructuredSelfMethod.ts, 10, 19))
+
+        };
+        return f;
+>f : Symbol(f, Decl(ttttUnusedDestructuredSelfMethod.ts, 9, 13))
+    }
+    private o() {
+>o : Symbol(A.o, Decl(ttttUnusedDestructuredSelfMethod.ts, 14, 5))
+
+        let o: unknown;
+>o : Symbol(o, Decl(ttttUnusedDestructuredSelfMethod.ts, 16, 11))
+
+        ({ o } = this);
+>o : Symbol(o, Decl(ttttUnusedDestructuredSelfMethod.ts, 17, 10))
+>this : Symbol(A, Decl(ttttUnusedDestructuredSelfMethod.ts, 0, 0))
+
+        return o;
+>o : Symbol(o, Decl(ttttUnusedDestructuredSelfMethod.ts, 16, 11))
+    }
+    private p() {
+>p : Symbol(A.p, Decl(ttttUnusedDestructuredSelfMethod.ts, 19, 5))
+
+        const f = () => {
+>f : Symbol(f, Decl(ttttUnusedDestructuredSelfMethod.ts, 21, 13))
+
+            let p: unknown;
+>p : Symbol(p, Decl(ttttUnusedDestructuredSelfMethod.ts, 22, 15))
+
+            ({ p } = this);
+>p : Symbol(p, Decl(ttttUnusedDestructuredSelfMethod.ts, 23, 14))
+>this : Symbol(A, Decl(ttttUnusedDestructuredSelfMethod.ts, 0, 0))
+
+            return p;
+>p : Symbol(p, Decl(ttttUnusedDestructuredSelfMethod.ts, 22, 15))
+
+        };
+        return f;
+>f : Symbol(f, Decl(ttttUnusedDestructuredSelfMethod.ts, 21, 13))
+    }
+}
+export {};
+

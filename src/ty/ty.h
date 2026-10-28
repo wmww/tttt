@@ -1585,8 +1585,10 @@ bool ty_first_check(Checker* me, void const* node);
 // TS2341 at span when it is private outside its class. `from_this`: an assignment from `this`, which doesn't read the
 // method it is in
 typedef struct AccessSite AccessSite; // expr.h
+// `assignment`: a destructuring assignment's property (else a binding element)
 void ty_check_destructured_member(
-    Checker* me, Ty const* object, Ty const* key, Span span, bool from_this, AccessSite const* site, ErrorCtx* errs
+    Checker* me, Ty const* object, Ty const* key, Span span, bool from_this, bool assignment, AccessSite const* site,
+    ErrorCtx* errs
 );
 Atom const* checker_atom(Checker* me, csview sv);
 u32 checker_type_count(Checker const* me); // How many types it made (tttt --time)

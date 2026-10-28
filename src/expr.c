@@ -2727,7 +2727,7 @@ static void assignment_target_typecheck_of(
                         Value name = { .tag = VALUE_STRING, .string = i->name_string };
                         property = ty_destructured_assignment_flow_type(checker, i, reference, name, i->name_span, property);
                     }
-                    ty_check_destructured_member(checker, source, key, i->name_span, from_this, site, errs);
+                    ty_check_destructured_member(checker, source, key, i->name_span, from_this, true, site, errs);
                     // What the source lacks is TS2339, on the source as it is: null and undefined too (tsc's
                     // checkObjectLiteralDestructuringPropertyAssignment). An object literal source may lack a property
                     // that has a default (AccessFlags.AllowMissing)
@@ -2748,7 +2748,7 @@ static void assignment_target_typecheck_of(
                     if (!(has_default && source->kind == TY_ANONYMOUS && source->anonymous.object_literal)) {
                         ty_check_destructuring_indexed_access(checker, source, key, key_span, errs);
                     }
-                    ty_check_destructured_member(checker, source, key, i->name_span, from_this, site, errs);
+                    ty_check_destructured_member(checker, source, key, i->name_span, from_this, true, site, errs);
                     property = ty_access_reading(checker, source, key);
                 }
                 if (i->tag == OBJECT_ITEM_SPREAD && i_index + 1 < vec_object_expr_item_size(&target->object)) {

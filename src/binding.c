@@ -715,15 +715,15 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
                     if (parent && !i->target.rest) {
                         ty_check_destructured_member(current_checker, parent, ty_regular(current_checker,
                             expr_get_type(i->computed_key)), span_valid(i->source_span) ? i->source_span : expr_outer_span(i->computed_key),
-                            from_this, my access_site, errs);
+                            from_this, false, my access_site, errs);
                     }
                 } else if (!i->target.rest && !i->private_name && (i->source.tag == VALUE_STRING || i->source.tag == VALUE_NUMBER)) {
                     Ty const* type = parent ? parent : unused_enabled() ?
                         ty_binding_type(current_checker, me, (LowerCtx){ .generic = true }) : nullptr;
                     if (type) {
                         ty_check_destructured_member(current_checker, type, ty_literal(current_checker, &i->source),
-                            span_valid(i->source_span) ? i->source_span : i->target.content_span, from_this, my access_site,
-                            errs);
+                            span_valid(i->source_span) ? i->source_span : i->target.content_span, from_this, false,
+                            my access_site, errs);
                     }
                 }
                 if (i->target.rest && compiler_options()->target < SCRIPT_TARGET_ES2018 && !my ambient) {

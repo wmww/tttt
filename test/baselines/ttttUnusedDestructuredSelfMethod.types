@@ -1,0 +1,80 @@
+//// [test/cases/ttttUnusedDestructuredSelfMethod.ts] ////
+
+=== ttttUnusedDestructuredSelfMethod.ts ===
+// A private method destructured from `this` by an assignment directly in itself isn't a read of it (tsc's
+// markPropertyAsReferenced: the nearest function-like ancestor is the method; o), but in an arrow function nested in it
+// (p) it is, and a binding element always reads (m, n). Was by position: a function nested in m counted as m
+class A {
+>A : A
+
+    private m() {
+>m : () => any
+
+        const { m } = this;
+>m : () => any
+>this : this
+
+        return m;
+>m : () => any
+    }
+    private n() {
+>n : () => () => any
+
+        const f = () => {
+>f : () => () => any
+>() => {            const { n } = this;            return n;        } : () => () => any
+
+            const { n } = this;
+>n : () => () => any
+>this : this
+
+            return n;
+>n : () => () => any
+
+        };
+        return f;
+>f : () => () => any
+    }
+    private o() {
+>o : () => unknown
+
+        let o: unknown;
+>o : unknown
+
+        ({ o } = this);
+>({ o } = this) : this
+>{ o } = this : this
+>{ o } : { o: unknown; }
+>o : unknown
+>this : this
+
+        return o;
+>o : unknown
+    }
+    private p() {
+>p : () => () => unknown
+
+        const f = () => {
+>f : () => unknown
+>() => {            let p: unknown;            ({ p } = this);            return p;        } : () => unknown
+
+            let p: unknown;
+>p : unknown
+
+            ({ p } = this);
+>({ p } = this) : this
+>{ p } = this : this
+>{ p } : { p: unknown; }
+>p : unknown
+>this : this
+
+            return p;
+>p : unknown
+
+        };
+        return f;
+>f : () => unknown
+    }
+}
+export {};
+

@@ -4746,48 +4746,47 @@ void ty_check_index_constraints(
 }
 
 // tsc's markPropertyAsReferenced: a private member is read, unless the access only writes it or is its own body
-// reading it through `this` (`this.m()` in m). `access` is null for a destructuring, which always reads
-static void mark_member_referenced(Checker* me, Prop const* prop, PropertyExpr const* access) {
+// reading it through `this` (`this.m()` in m): `self_function` is the innermost function around a self type access
+// (tsc's isSelfTypeAccess and the FunctionLikeDeclaration ancestor), null for any other
+static void mark_member_referenced_in(Checker* me, Prop const* prop, FunctionImpl const* self_function) {
     while (prop->target) prop = prop->target;
     bool private_name = span_valid(prop->decl->name_span) && prop->decl->name_span.buf[0] == '#';
     if (!(prop->flags & PROP_PRIVATE) && !private_name) return;
-    // (An auto accessor has a setter too: tsc's binder gives `accessor x` SymbolFlags.Accessor, blocksuite's
-    // `private accessor _x` only written)
-    if (access && access->assignment_target == FLOW_TARGET_DEFINITE && !access->read_target && !(prop->flags & PROP_ACCESSOR) &&
-        !prop_decl_rare(prop->decl)->class_auto_accessor) {
-        return;
-    }
-    Expr const* object = access ? &access->expr : nullptr;
-    bool self_type = object && (is_keyword(object, KEYWORD_IDENTIFIER_THIS) ||
-        (object->tag == EXPR_IDENTIFIER && prop->parent && object->identifier.target == prop->parent));
-    FunctionImpl const* function = access ? property_context(access)->containing_function : nullptr;
-    char const* at = function ? span_start_ptr(function_impl_member_name(function)) : nullptr;
-    for (u32 i = 0; self_type && at && i < prop->decl->decl_span_count; i++) {
+    char const* at = self_function ? span_start_ptr(function_impl_member_name(self_function)) : nullptr;
+    for (u32 i = 0; at && i < prop->decl->decl_span_count; i++) {
         if (at >= span_start_ptr(prop->decl->decl_spans[i]) && at < span_end_ptr(prop->decl->decl_spans[i])) return;
     }
     for (u32 i = 0; i < prop->decl->decl_span_count; i++) ty_mark_member_referenced(me, prop->decl->decl_spans[i]);
 }
 
+static void mark_member_referenced(Checker* me, Prop const* prop, PropertyExpr const* access) {
+    Prop const* root = prop;
+    while (root->target) root = root->target;
+    // (An auto accessor has a setter too: tsc's binder gives `accessor x` SymbolFlags.Accessor, blocksuite's
+    // `private accessor _x` only written)
+    if (access->assignment_target == FLOW_TARGET_DEFINITE && !access->read_target && !(root->flags & PROP_ACCESSOR) &&
+        !prop_decl_rare(root->decl)->class_auto_accessor) {
+        return;
+    }
+    Expr const* object = &access->expr;
+    bool self_type = is_keyword(object, KEYWORD_IDENTIFIER_THIS) ||
+        (object->tag == EXPR_IDENTIFIER && root->parent && object->identifier.target == root->parent);
+    mark_member_referenced_in(me, prop, self_type ? property_context(access)->containing_function : nullptr);
+}
+
 void ty_check_destructured_member(
-    Checker* me, Ty const* object, Ty const* key, Span span, bool from_this, AccessSite const* site, ErrorCtx* errs
+    Checker* me, Ty const* object, Ty const* key, Span span, bool from_this, bool assignment, AccessSite const* site,
+    ErrorCtx* errs
 ) {
     if (object->flags & TYF_ANY) return;
     Atom const* name = ty_literal_name(me, key);
     MemberRefs refs;
     refs.len = 0;
     if (!name || member_refs(me, object, name, &refs, 0) < 0) return;
-    for (u32 i = 0; unused_enabled() && i < refs.len; i++) {
-        // `({ m } = this)` in m itself isn't a read of m (tsc's markPropertyAsReferenced with rightIsThis). HACK: by
-        // position, a function nested in m counts as m
-        Prop const* prop = refs.props[i];
-        while (prop->target) prop = prop->target;
-        bool self = false;
-        for (u32 d = 0; from_this && span_valid(span) && (prop->flags & PROP_METHOD) && d < prop->decl->decl_span_count; d++) {
-            Span decl = prop->decl->decl_spans[d];
-            self |= span_source(decl) == span_source(span) && span_contains_span(decl, span);
-        }
-        if (!self) mark_member_referenced(me, refs.props[i], nullptr);
-    }
+    // `({ m } = this)` directly in m isn't a read of m (tsc's markPropertyAsReferenced with rightIsThis); a binding
+    // element always reads (checkBindingElement's isSelfTypeAccess is false)
+    FunctionImpl const* self_function = assignment && from_this && site ? site->containing_function : nullptr;
+    for (u32 i = 0; unused_enabled() && i < refs.len; i++) mark_member_referenced_in(me, refs.props[i], self_function);
     // tsc's checkPropertyAccessibility of a binding element or destructuring assignment property, where the pattern is
     // (no site: at the top level)
     if (!span_valid(span)) return;
