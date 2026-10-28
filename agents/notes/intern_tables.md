@@ -107,3 +107,10 @@ and the attribution (`perf record -e L1-dcache-load-misses/period=5000/,ls_dmnd_
 ls_dmnd_fills_from_sys.dram_io_all/period=200/` on -g builds, bucketed as footprint.md did: intern = checker.c's
 hash_words..intern_has). **Stop rule**: on store the intern-attributed L3 and DRAM fills fall by at least half and
 K1 cycles by at least 2%; else step 1 is kept only if its cycles repay its +0.6-1.9% instructions on all five.
+
+## The laptop's verdict (2026-10-29): kept
+measurements.md "The 12-core box at 2c389b213": cycles -1.1..-5.6% on all five shapes against instructions +0.7..+2.5%,
+DRAM fills -4..-19%, RSS -3.7..-13.2%; the first clause of the stop rule missed (store's L3 fills -2.0%), the second
+held. **Open**: +20-26% page faults on zod and drizzle (~4.0k -> 4.8k a run) while RSS falls: unexplained (a table
+grown at another moment than the arena's populate batches? the key store's chunks?), small in absolute terms.
+

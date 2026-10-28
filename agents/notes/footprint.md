@@ -161,3 +161,10 @@ three quarters of them in the type graph and only 8-10% in the tables, and 57% o
 The intern tables (item 2) are the second lever, worth about a quarter of the memory stall on store-like shapes
 (~200 M of store's 874 M memory-bound cycles, ~10% of its time; less elsewhere) and 6-10% of imm's. Bad speculation
 (twice bun's on the one-file shapes, 5-8% of cycles everywhere) is unexamined.
+
+## After (2026-10-29)
+Both levers were built and measured on the laptop: measurements.md "The 12-core box at 2c389b213". The shared
+members' first step (lazily made instance props, notes/type_graph_design.md) bought memory (zod RSS -12%) but not
+cycles, and its next steps are stopped; the 8-byte intern slots (notes/intern_tables.md) cut cycles 1-6% on all five
+shapes and are kept.
+

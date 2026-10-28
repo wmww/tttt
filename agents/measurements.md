@@ -171,6 +171,54 @@ numbers are those of whichever tree last ran each oracle (bugcount.py prints whi
 - 2026-10-28 2625572b5: 298 open (27 designs), 84 text-only, 38 tsgo excluded; symptoms: suite_tsc 63, suite_own 16, suite_bun 1131, bun 878, dt 0, source 5, expect 0, dts 6, flagflip 23, clidiff_text 32, unexplained_sweep 0, unexplained_sourcesweep 1, unexplained_buncases 128
 - 2026-10-28 ed02bc573: 303 open (28 designs), 84 text-only, 38 tsgo excluded; symptoms: suite_tsc 62, suite_own 17, suite_bun 1114, bun 861, dt 0, source 3, expect 0, dts 6, flagflip 23, clidiff_text 32, unexplained_sweep 0, unexplained_sourcesweep 0, unexplained_buncases 128
 
+## The 12-core box at 2c389b213: type graph step 1 and the intern tables (2026-10-29)
+The human's laptop agent (Ryzen AI 9 HX 370; the box not idle: Firefox and other sessions, load 1-5 at K1, up to 13 at
+the defaults; a few outlier runs up to +33% on zod, medians steady to a few %). BASE 6d5e31b4c, MID c28559e09 (type
+graph step 1: lazily made instance props, notes/type_graph_design.md), NEW 2c389b213 (MID + 8-byte intern slots,
+notes/intern_tables.md), all `--fast` (PGO + BOLT); output byte-identical across the three on every project. imm and
+store as in notes/footprint.md. K1: `taskset -c 2`, `--checkers 1 --threads 1`, medians of 5 interleaved runs, % against
+BASE; DRAM fill = `ls_dmnd_fills_from_sys.dram_io_all`, L3 fill = `.local_ccx`.
+
+| | cycles M | instr M | L1D miss M | L3 fill M | DRAM fill M | faults | RSS MB |
+|---|---|---|---|---|---|---|---|
+| imm base | 1147 | 2376 | 49.3 | 4.9 | 2.0 | 2995 | 278 |
+| imm mid | 1144 (-0.3) | 2356 (-0.8) | 49.7 (+0.8) | 4.7 (-4.2) | 1.9 (-5.3) | 3012 | 272 |
+| imm new | 1107 (-3.5) | 2373 (-0.1) | 48.5 (-1.6) | 4.6 (-6.8) | 1.6 (-19.5) | 3303 | 256 |
+| store base | 2035 | 3050 | 45.3 | 4.1 | 4.1 | 3393 | 278 |
+| store mid | 2049 (+0.7) | 3040 (-0.3) | 45.1 (-0.4) | 4.1 (-1.2) | 4.1 (+1.1) | 3214 | 278 |
+| store new | 1934 (-4.9) | 3115 (+2.1) | 40.7 (-10.2) | 4.0 (-3.2) | 3.3 (-18.1) | 3241 | 242 |
+| zod base | 2306 | 3435 | 67.5 | 6.7 | 4.1 | 3971 | 446 |
+| zod mid | 2270 (-1.6) | 3391 (-1.3) | 63.1 (-6.4) | 6.5 (-2.8) | 3.8 (-7.6) | 4035 (+1.6) | 392 (-12.2) |
+| zod new | 2237 (-3.0) | 3426 (-0.2) | 61.6 (-8.7) | 6.4 (-4.9) | 3.5 (-15.7) | 4846 | 377 |
+| drizzle base | 2897 | 4261 | 77.9 | 7.8 | 5.0 | 3827 | 484 |
+| drizzle mid | 2901 (+0.1) | 4255 (-0.2) | 76.4 (-2.0) | 7.7 (-0.7) | 4.8 (-4.8) | 3856 | 459 |
+| drizzle new | 2846 (-1.8) | 4307 (+1.1) | 73.8 (-5.3) | 7.8 (+0.3) | 4.5 (-10.7) | 4862 | 425 |
+| effect base | 4816 | 6923 | 138.3 | 13.1 | 7.9 | 4894 | 675 |
+| effect mid | 4845 (+0.6) | 6902 (-0.3) | 137.3 (-0.7) | 13.2 (+0.8) | 8.0 (+1.2) | 4908 | 661 |
+| effect new | 4789 (-0.6) | 6962 (+0.6) | 135.1 (-2.3) | 13.8 (+5.1) | 7.7 (-2.9) | 4867 | 612 |
+
+MID -> NEW (cycles / instructions / L3 fills / DRAM fills / RSS): imm -3.2 / +0.7 / -2.6 / -15.0 / -5.8%; store -5.6 /
++2.5 / -2.0 / -19.0 / -13.2%; zod -1.5 / +1.1 / -2.1 / -8.7 / -3.7%; drizzle -1.9 / +1.2 / +1.0 / -6.2 / -7.4%; effect
+-1.1 / +0.9 / +4.3 / -4.0 / -7.5%.
+
+Defaults (no taskset, 10 interleaved runs, BASE -> NEW): drizzle cycles 6224 -> 5885 M (-5.5%), instructions 8103 ->
+8081 M, RSS 1121 -> 978 MB (-12.7%), wall about -5% (timed without perf stat: base 0.22-0.25 s, mid 0.22-0.23, new
+0.21-0.23); vscode cycles 82676 -> 80531 M (-2.6%), instructions 71577 -> 71727 M, RSS 5502 -> 5220 MB (-5.1%), wall
+1.92 -> 1.95 s (noise). Attribution on store (`perf record -e ls_dmnd_fills_from_sys.local_ccx`, by symbol): the
+intern share of L3 fills 10.4% on MID (intern_composite_ex 5.1, intern_slot 3.3, intern_put 1.6, intern_grow 0.5),
+7.6% on NEW (intern_slot 5.7, intern_composite_ex 1.0, intern_put 0.9); elsewhere on NEW ty_alloc 5.0%, ty_realias
+3.6%.
+
+Verdicts by the stop rules:
+- **Type graph step 1 (BASE -> MID) misses its bars; step 2 is not started.** zod: cycles -1.6% (bar -1%: passes), DRAM
+  fills -7.6% and faults +1.6% (bar -10.2% each: miss); drizzle cycles +0.1% (bar -4.6%); effect's instruction cost
+  doesn't show (instructions -0.3%, cycles +0.6%). Faults are only ~3-5k a run on this box and don't track memory;
+  RSS does (zod -12.2%, drizzle -5.2%). Step 1 stays landed as a memory win; why the fills fell less than the arena:
+  notes/type_graph_design.md §4.
+- **Intern tables (MID -> NEW) kept.** The first clause misses (store's L3 fills -2.0%, DRAM fills -19%, not halved),
+  the second holds: cycles fall on all five (-1.1..-5.6%) against instructions +0.7..+2.5%. Open: NEW has +20-26% page
+  faults on zod and drizzle (~4.0k -> 4.8k), small in absolute terms, RSS still falls (notes/intern_tables.md).
+
 ## The 12-core box at df95ec2f: `--huge-pages` off (default) vs on, kernel profile (2026-10-27)
 Run by an agent on the human's laptop (Ryzen AI 9 HX 370, 24 threads, kernel 7.2.11-zen1, THP `always`, defrag
 `defer+madvise`, desktop load 1.3-2). fast/tttt (copied out), `TTTT_SYNC_EXIT=1`, one warm-up each, then 5

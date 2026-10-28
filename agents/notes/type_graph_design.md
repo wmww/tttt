@@ -129,7 +129,7 @@ and page faults on imm, store, zod, drizzle, effect (footprint.md's protocol).
 | step | what | days | arena saved: imm / store / zod / drizzle / effect | risk |
 |---|---|---|---|---|
 | 1 | **Lazily materialized instance Props**: instantiate_members() reserves the props array and writes nothing into it; `members_prop(m, i)` materializes the slot's Prop on first access (identical contents; CAS with the graph). `Members.props` renamed: ~330 reads converted, compile-enforced | 2-3 | <= 4.4 MB (2%) / 0 / 56 MB (21%) / 20 MB (7%) / 12 MB (4%) | low: no computation moves; allocation order of Props changes (addresses as intern keys: not observable, sg2's audit) |
-| 2 | **PropRef everywhere**, with `at == 0` always: the handle type through the ~120 functions and ~15 fields, accessors for every field read, FoundProp.prop, the keys. Pure refactor | 6-9 | 0 (+8 B per stored handle: small counts) | instructions (16-byte handle): budget +0.5% on drizzle/zod |
+| 2 | **Not started: stop rule, 2026-10-29** (below). **PropRef everywhere**, with `at == 0` always: the handle type through the ~120 functions and ~15 fields, accessors for every field read, FoundProp.prop, the keys. Pure refactor | 6-9 | 0 (+8 B per stored handle: small counts) | instructions (16-byte handle): budget +0.5% on drizzle/zod |
 | 3 | **Views for instance props**: shared props array + slot array, `at != 0` | 3-5 | (with 1) 16 MB (7%) / 5 MB (4%) / 73 MB (28%) / 54 MB (20%) / 33 MB (11%) | the decl/target semantics (accessors make them identical); this-only identity; prop_type_slow's reentry rules |
 | 4 | **Signature views** (SigRef, 3 slot words per signature; SigResolved 64 -> 48) | 6-10 | +20+5 MB (11%) / 0 / +9+2 (4%) / +6+1 (3%) / +7+2 (3%) | Signature identity (32 compares, 5 keys); resolution re-entry (sig_resolving frames by slot) |
 | 5 | Shorter Members header for views, drop root walks for view props, PropDecl reads off the declared prop directly | 3-5 | small | none new |
@@ -165,6 +165,33 @@ So instance signatures are nearly all used: making them lazily like props would 
 Step 4's bytes are in their size, not their count: a thin per-instance record (the three words, flags, the view)
 instead of a 104-byte copy, and SigResolved's target/mapper copies; imm's 33 MB of SigResolved and parameters are
 per-instance content that only lazily instantiated parameter types (bun's) would shrink.
+
+**The laptop's verdict on step 1 (2026-10-29; measurements.md "The 12-core box at 2c389b213")**: it misses its bars,
+so step 2 is not started. zod: cycles -1.6% (bar -1%), DRAM fills -7.6% and faults +1.6% (bars -10.2%); drizzle cycles
++0.1% (bar -4.6%); effect cycles +0.6%. It bought memory, not cycles: RSS zod -12.2%, drizzle -5.2%, imm -2%.
+
+**Why the fills fell less than the arena (my reading)**: the bytes step 1 saved were written once and never read.
+zod's 54 MB less arena is ~1.04M instance Props that are now never made; before, instantiate_members() bump-allocated
+and wrote each one in a sequential loop and nothing read 77-80% of them again. Such a byte costs one sequential write
+stream (prefetched, one fill per line, and the line written whole) plus its share of kernel zeroing, which the
+populate batches make per page, not per object (faults are 3-5k a run: they don't track bytes at all). What stalls
+the checker is the other kind of miss, random reads in the graph, and those come from the objects that are read: the
+made props, Ty, Members, signatures, all still there. cachegrind said so already (zod: LL write misses -15%, LL read
+misses -3.3%, D1 read misses -6%), and the laptop agrees (DRAM fills -7.6%, cycles -1.6%). So the saving was mostly
+virtual for the CPU, and the bars were mis-set: "fills fall by half the arena share" assumed a saved byte costs what
+the average byte costs, while these were the cheapest bytes in the arena. The census predicted the shape ("touched
+23%") but the bar didn't use it.
+
+**What that means for steps 2-4**: what is left of the instance Props is the touched part, read-hot: zod 266k (15
+MB), drizzle 469k (26 MB), effect 307k (17 MB), imm 208k (12 MB), plus 8 B a slot. Step 3 would replace each with a
+slot word in the view and reads of the shared source prop: one line per read either way (the slot's instead of the
+instance Prop's), the source being hotter, so a few percent fewer read misses at best. The earlier guesses (steps 1-3
+zod -4..-7% cycles, drizzle -3..-5%) are not supported by step 1's result; a fair expectation for steps 2-3 is cycles
+-0..-2% and RSS another -5..-10%, for 9-14 days of work, most of it step 2's conversion. Step 4 is the one part aimed at
+read-hot bytes at scale (imm's 248k instance signatures, 82-98% resolved: ~20 MB of 104-byte copies read on every
+call), and the one shape (imm) where bun leads; it sits behind step 2's handle too. So: steps 2-4 are a memory project
+(the defaults' RSS, 2.4x bun's on the hub projects), not a speed one; take them only for memory, and with bars built
+from read misses (cachegrind D1/LL read misses, the laptop's L1D misses) rather than arena bytes.
 
 **Expected gains, honestly.** The cycles the bytes can buy are bounded by the memory-bound share (laptop top-down:
 imm 31%, store 43%, the corpora 25%) times the part of it that is graph bytes (imm: 74% of L1D misses, 57% of DRAM
