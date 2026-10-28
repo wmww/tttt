@@ -63,6 +63,9 @@ passing tests).
   readonly input: ...; readonly kind: "action"; }` (types baseline only; openclaw's plugin-sdk/feature-plugin.test.ts).
   [open]
 
+- (types only) ttttNonNullOperandNotInferential: the diagnostics match; `mapping[k]` inside `mapping[k]!` in a generic
+  call's argument prints `M[keyof S]` where tsc prints its constraint `string | number | undefined` (the non-null
+  operand is checked without the inferential check mode, getNarrowableTypeForReference substitutes the constraint). [open]
 ## Relations, instantiation, reduction
 - (cor, 2026-10-28) An interface whose base is a mapped type carries TYF_COULD_CONTAIN_TYPE_VARIABLES where tsc's
   couldContainTypeVariables is false (a non-generic interface reference has no type arguments): `interface MenuProps
@@ -247,6 +250,9 @@ passing tests).
   ComputedNames guards): only look the table up when a late-bound accessor's key could name the written one. Rare in
   real code (no oracle shows it). [open]
 
+- (types only) ttttTypeofFunctionExpressionInFakeScope: a named function expression's `typeof somefn` prints as
+  `typeof x` in tsc (the variable it initializes), and `typeof w[]` needs parentheses, `(typeof w)[]`: the printer's
+  typeof-of-a-function-expression naming and array element precedence. [text]
 ## Narrowing and flow
 - **Destructured references and widening** (from the destructured-references work; tsc's getNarrowedTypeOfSymbol re-reads a binding element of
   a `const` (for-of/for-in `const` too) or never-assigned parameter pattern of >= 2 elements from the *unwidened*
@@ -266,6 +272,9 @@ passing tests).
   checkDestructuringAssignment; hacks.md "Destructuring assignments"). The `{ a = dflt }` default of a shorthand
   assignment pattern is resolved but not checked (`ObjectExprItem.shorthand_default`). [open]
 
+- (types only) ttttFlowIssueSingleQuery: the diagnostics match now (the extra flow query was removed), but `r.previous`
+  on the narrowed silent `never` prints `never` where tsc prints the error type (`previous : any`, `r.previous : error`):
+  tsc's property access on a silent never returns errorType without a diagnostic. [open]
 ## Corpus cells (flagflip) left after triage 2026-10-07 (each re-checked that day)
 - (Fixed 2026-10-07, vscode now 0: TS2322 at stateToProgressAdapter.test.ts:1956. Mechanism, for similar cases: the
   arrow's return type inference asks whether its end is reachable; the reachability walk meets `assert.deepStrictEqual(
