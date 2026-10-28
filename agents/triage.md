@@ -257,9 +257,6 @@ intersection's property symbol to bugs/type_core.md.
   overload's is replayed at a fixed point, function_impl_check_compared_initializers(); the ambient one would need
   the stashed initializer errors replayed whenever any checker first types the parameter, possibly from another file:
   a cross-file, history-dependent diagnostic, for code that is already TS2371. Left.) [open]
-- (cor6, 2026-10-28) Symbols baseline: a union member's property reached through another member's template literal
-  index signature (`v.b` with `{ b: 1 } | { readonly [k: `b${string}`]: 1 }`) has no symbol in tttt's harness, tsc
-  prints the union property's (errors match: ttttUnionReadonlyIndexForName left it out). [open]
 
 - Harness: a long `-f 'a|b|c|...'` regex makes `baseline_tests` abort with "stack smashing detected" instead of matching
   nothing (cor7, 2026-10-31; `-f @file` works). A fixed-size buffer in the filter's parsing; CLAUDE.md already warns that

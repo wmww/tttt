@@ -1,0 +1,38 @@
+//// [test/cases/ttttUnionTemplateIndexSymbol.ts] ////
+
+=== ttttUnionTemplateIndexSymbol.ts ===
+// A union property where a member has no property but a template literal index signature for the name: the
+// harness prints the union property's symbol (tsc's createUnionOrIntersectionProperty, getApplicableIndexInfoForName)
+declare const v: { b: 1 } | { readonly [k: `b${string}`]: 1 };
+>v : Symbol(v, Decl(ttttUnionTemplateIndexSymbol.ts, 2, 13))
+>b : Symbol(b, Decl(ttttUnionTemplateIndexSymbol.ts, 2, 18))
+>k : Symbol(k, Decl(ttttUnionTemplateIndexSymbol.ts, 2, 40))
+
+const x = v.b;
+>x : Symbol(x, Decl(ttttUnionTemplateIndexSymbol.ts, 3, 5))
+>v.b : Symbol(b, Decl(ttttUnionTemplateIndexSymbol.ts, 2, 18))
+>v : Symbol(v, Decl(ttttUnionTemplateIndexSymbol.ts, 2, 13))
+>b : Symbol(b, Decl(ttttUnionTemplateIndexSymbol.ts, 2, 18))
+
+declare const w: { b: 1 } | { [k: string]: 2 };
+>w : Symbol(w, Decl(ttttUnionTemplateIndexSymbol.ts, 4, 13))
+>b : Symbol(b, Decl(ttttUnionTemplateIndexSymbol.ts, 4, 18))
+>k : Symbol(k, Decl(ttttUnionTemplateIndexSymbol.ts, 4, 31))
+
+const y = w.b;
+>y : Symbol(y, Decl(ttttUnionTemplateIndexSymbol.ts, 5, 5))
+>w.b : Symbol(b, Decl(ttttUnionTemplateIndexSymbol.ts, 4, 18))
+>w : Symbol(w, Decl(ttttUnionTemplateIndexSymbol.ts, 4, 13))
+>b : Symbol(b, Decl(ttttUnionTemplateIndexSymbol.ts, 4, 18))
+
+declare const u: { b: 1 } | { [k: `b${string}`]: 1 };
+>u : Symbol(u, Decl(ttttUnionTemplateIndexSymbol.ts, 6, 13))
+>b : Symbol(b, Decl(ttttUnionTemplateIndexSymbol.ts, 6, 18))
+>k : Symbol(k, Decl(ttttUnionTemplateIndexSymbol.ts, 6, 31))
+
+const z = u.b;
+>z : Symbol(z, Decl(ttttUnionTemplateIndexSymbol.ts, 7, 5))
+>u.b : Symbol(b, Decl(ttttUnionTemplateIndexSymbol.ts, 6, 18))
+>u : Symbol(u, Decl(ttttUnionTemplateIndexSymbol.ts, 6, 13))
+>b : Symbol(b, Decl(ttttUnionTemplateIndexSymbol.ts, 6, 18))
+

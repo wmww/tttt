@@ -1,0 +1,38 @@
+//// [test/cases/ttttUnionTemplateIndexSymbol.ts] ////
+
+=== ttttUnionTemplateIndexSymbol.ts ===
+// A union property where a member has no property but a template literal index signature for the name: the
+// harness prints the union property's symbol (tsc's createUnionOrIntersectionProperty, getApplicableIndexInfoForName)
+declare const v: { b: 1 } | { readonly [k: `b${string}`]: 1 };
+>v : { b: 1; } | { readonly [k: `b${string}`]: 1; }
+>b : 1
+>k : `b${string}`
+
+const x = v.b;
+>x : 1
+>v.b : 1
+>v : { b: 1; } | { readonly [k: `b${string}`]: 1; }
+>b : 1
+
+declare const w: { b: 1 } | { [k: string]: 2 };
+>w : { b: 1; } | { [k: string]: 2; }
+>b : 1
+>k : string
+
+const y = w.b;
+>y : 1 | 2
+>w.b : 1 | 2
+>w : { b: 1; } | { [k: string]: 2; }
+>b : 1 | 2
+
+declare const u: { b: 1 } | { [k: `b${string}`]: 1 };
+>u : { b: 1; } | { [k: `b${string}`]: 1; }
+>b : 1
+>k : `b${string}`
+
+const z = u.b;
+>z : 1
+>u.b : 1
+>u : { b: 1; } | { [k: `b${string}`]: 1; }
+>b : 1
+
