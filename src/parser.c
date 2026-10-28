@@ -3729,8 +3729,11 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
         hop_whitespace(&p);
     }
     p.shared->unchecked_type_args = true;
+    char const* args_open = p.pos;
     if (p.whitespace != WHITESPACE_NEWLINE && parse_generic_params(&p, false, &identifier.generic_params)) {
         end = p.pos;
+        rare.import_type_args = true;
+        rare.import_type_args_open = args_open;
     }
     p.shared->unchecked_type_args = false;
     p.pos = end;

@@ -762,6 +762,11 @@ typedef struct GenericParamsExpr {
     bool heritage;
 } GenericParamsExpr;
 
+// tsc's getInstantiationExpressionType's TS2635 alone: the type (a union member, or `callee` itself) whose signatures
+// take no `written` type arguments (an empty list, an import type's, takes any generic one), null if there is none
+struct Checker;
+Ty const* instantiation_error_type(struct Checker* checker, Ty const* callee, u32 written);
+
 // A heritage clause element's expression, without its type arguments (tsc's ExpressionWithTypeArguments.Expression,
 // where TS2499/TS2500 are)
 static inline Span expr_heritage_expression_span(Expr const* me) {

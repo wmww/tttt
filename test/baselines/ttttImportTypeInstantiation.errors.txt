@@ -1,0 +1,30 @@
+a.ts(2,41): error TS2635: Type '(x: number) => number' has no signatures for which the type argument list is applicable.
+a.ts(3,41): error TS2635: Type '1' has no signatures for which the type argument list is applicable.
+a.ts(4,39): error TS2635: Type 'typeof import("m")' has no signatures for which the type argument list is applicable.
+a.ts(6,41): error TS2635: Type '(x: number) => number' has no signatures for which the type argument list is applicable.
+a.ts(7,41): error TS2635: Type '1' has no signatures for which the type argument list is applicable.
+
+
+==== m.ts (0 errors) ====
+    export function f<T>(x: T): T { return x; }
+    export function g(x: number): number { return x; }
+    export const v = 1;
+==== a.ts (5 errors) ====
+    export type A1 = typeof import("./m").f<>;
+    export type A2 = typeof import("./m").g<>;
+                                            
+!!! error TS2635: Type '(x: number) => number' has no signatures for which the type argument list is applicable.
+    export type A3 = typeof import("./m").v<>;
+                                            
+!!! error TS2635: Type '1' has no signatures for which the type argument list is applicable.
+    export type A4 = typeof import("./m")<>;
+                                          
+!!! error TS2635: Type 'typeof import("m")' has no signatures for which the type argument list is applicable.
+    export type B1 = typeof import("./m").f<string>;
+    export type B2 = typeof import("./m").g<string>;
+                                            ~~~~~~
+!!! error TS2635: Type '(x: number) => number' has no signatures for which the type argument list is applicable.
+    export type B3 = typeof import("./m").v<string>;
+                                            ~~~~~~
+!!! error TS2635: Type '1' has no signatures for which the type argument list is applicable.
+    

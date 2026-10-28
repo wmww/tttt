@@ -1,0 +1,45 @@
+//// [test/cases/ttttImportTypeInstantiation.ts] ////
+
+=== m.ts ===
+export function f<T>(x: T): T { return x; }
+>f : <T>(x: T) => T
+>x : T
+>x : T
+
+export function g(x: number): number { return x; }
+>g : (x: number) => number
+>x : number
+>x : number
+
+export const v = 1;
+>v : 1
+>1 : 1
+
+=== a.ts ===
+export type A1 = typeof import("./m").f<>;
+>A1 : (x: unknown) => unknown
+>f : any
+
+export type A2 = typeof import("./m").g<>;
+>A2 : {}
+>g : any
+
+export type A3 = typeof import("./m").v<>;
+>A3 : 1
+>v : any
+
+export type A4 = typeof import("./m")<>;
+>A4 : typeof import("./m")
+
+export type B1 = typeof import("./m").f<string>;
+>B1 : (x: string) => string
+>f : any
+
+export type B2 = typeof import("./m").g<string>;
+>B2 : {}
+>g : any
+
+export type B3 = typeof import("./m").v<string>;
+>B3 : 1
+>v : any
+

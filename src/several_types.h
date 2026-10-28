@@ -23,6 +23,9 @@ typedef struct IdentifierTypeRare {
     // `target`, not exports. -1 if all are exports
     int import_prop_start;
     bool import_typeof;
+    // `typeof import("./a").f<...>` has a type argument list, maybe empty: an instantiation expression (TS2635)
+    bool import_type_args;
+    char const* import_type_args_open; // Its `<`
     // A bare `import("./m")` of a CommonJS module whose `module.exports =` has the module's types merged in: tsc's
     // reference is to the `export=` alias itself, not a class: the target's declared type, no type arguments (TS2315)
     bool import_export_equals_alias;

@@ -1010,7 +1010,8 @@ static void instantiation_scan_part(Checker* checker, InstantiationScan* scan, T
             for (u32 j = 0; j < sig_rs->type_params.len; j++) {
                 if (!ty_param_default(checker, sig_rs->type_params.data[j])) min = j + 1;
             }
-            if (sig_rs->type_params.len && scan->written >= min && scan->written <= sig_rs->type_params.len) {
+            // (An empty list, an import type's, takes any generic one: tsc's hasCorrectTypeArgumentArity)
+            if (sig_rs->type_params.len && (!scan->written || (scan->written >= min && scan->written <= sig_rs->type_params.len))) {
                 scan->has_applicable = true;
                 if (scan->expr) check_type_argument_constraints(checker, scan->expr, sig, scan->errs);
             }
@@ -1029,6 +1030,13 @@ static void instantiation_scan_type(Checker* checker, InstantiationScan* scan, T
     if (scan->has_signatures && !scan->has_applicable && !scan->non_applicable) scan->non_applicable = type;
     scan->has_signatures = outer_has;
     scan->has_applicable = outer_applicable;
+}
+
+Ty const* instantiation_error_type(Checker* checker, Ty const* callee, u32 written) {
+    if (callee == ty_intrinsic(checker, TY_ERROR)) return nullptr;
+    InstantiationScan scan = { .written = written };
+    instantiation_scan_type(checker, &scan, callee, 0);
+    return scan.some_applicable ? scan.non_applicable : callee;
 }
 
 void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {

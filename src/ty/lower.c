@@ -814,8 +814,20 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
             // `typeof import("./m").f<A>`: an instantiation expression (tsc's resolveImportSymbolType,
             // getInstantiationExpressionType)
             u32 arg_count = (u32)vec_spanned_type_size(&identifier->generic_params);
-            if (identifier_type_import_typeof(identifier) && arg_count) {
-                Ty const** args = malloc(sizeof(Ty const*) * arg_count);
+            if (identifier_type_import_typeof(identifier) && identifier->rare->import_type_args) {
+                // (TS2635 over the arguments, right after the `<` for an empty list)
+                Ty const* error_type = instantiation_error_type(me, ret, arg_count);
+                if (error_type) {
+                    char const* open = identifier->rare->import_type_args_open;
+                    Span at = arg_count ? span_between(vec_spanned_type_at(&identifier->generic_params, 0)->span,
+                        vec_spanned_type_back(&identifier->generic_params)->span) : span_make(span_source(identifier->rare->import_span), open + 1, open + 1);
+                    ty_error_at(me, at, 2635, cstr_d("Type '", error_type, "' has no signatures for which the type argument list is applicable."));
+                }
+            }
+            // (An empty list too: its signatures instantiated without arguments, `<T>(x: T) => T` is `(x: unknown) =>
+            // unknown`)
+            if (identifier_type_import_typeof(identifier) && identifier->rare->import_type_args) {
+                Ty const** args = malloc(sizeof(Ty const*) * (arg_count ? arg_count : 1));
                 panic_if(!args, "out of memory");
                 for (u32 i = 0; i < arg_count; i++) args[i] = ty_from_node(me, &vec_spanned_type_at(&identifier->generic_params, i)->type, ctx);
                 ret = ty_apply_type_arguments(me, ret, (TyList){ .data = args, .len = arg_count });
