@@ -618,7 +618,6 @@ typedef struct PropDeclRare {
     // write type. See prop_write_type()
     FunctionImpl const* setter;
     Span setter_param; // A type member accessor pair's setter parameter name (to print a divergent pair)
-    Span setter_name; // A type member accessor pair's setter name, when write_node is its annotation (TS2502)
     struct MappedInfo const* template_of; // The template of this mapped type, as a property its properties instantiate
     // Types baseline only: a mapped type's property is declared where the property it maps is (tsc's mapped symbol's
     // declarations), whose annotation is reused when it says the same

@@ -917,17 +917,13 @@ static void builder_add_interface_member(
                             if (prop_decl_rare(existing->decl)->getter_body) prop_decl_rare_mut(me, existing->decl)->getter_body = nullptr;
                         } else if (typed) {
                             prop_decl_rare_mut(me, existing->decl)->write_node = &i->type;
-                            prop_decl_rare_mut(me, existing->decl)->setter_name = i->key.span;
                         }
                         if (i->accessor) prop_decl_rare_mut(me, existing->decl)->setter_param = i->accessor->setter_param;
                     } else {
                         TypeNode const* setter_type = existing->decl->node;
                         bool setter_typed = setter_type && (setter_type->tag != TYPE_ANY || setter_type->parsed);
                         if (typed) {
-                            if (setter_typed) {
-                                prop_decl_rare_mut(me, existing->decl)->write_node = setter_type;
-                                prop_decl_rare_mut(me, existing->decl)->setter_name = existing->decl->name_span;
-                            }
+                            if (setter_typed) prop_decl_rare_mut(me, existing->decl)->write_node = setter_type;
                             existing->decl->node = &i->type;
                         } else if (!setter_typed) {
                             existing->decl->node = &i->type;
@@ -5835,6 +5831,27 @@ TypeNode const* prop_decl_asserted_slow(PropDecl const* decl) {
     return v == PROP_ASSERTED_DROPPED ? nullptr : decl->asserted;
 }
 
+// A type member accessor pair's setter name, where its write type's circularity is reported (TS2502). HACK (hacks.md):
+// PropDeclRare has no room for it (its size is asserted), so it is read off the source before the setter's parameter
+// name (`set x(v: T)`); else the property's name, which is the setter's when it was declared first
+static Span type_member_setter_name(Prop const* prop) {
+    Span param = prop_decl_rare(prop->decl)->setter_param;
+    SourceFile const* file = span_source(param);
+    if (file && span_valid(param)) {
+        char const* start = cstr_str(&file->contents);
+        char const* p = span_start_ptr(param);
+        while (p > start && isspace((unsigned char)p[-1])) p--;
+        if (p > start && p[-1] == '(') {
+            p--;
+            while (p > start && isspace((unsigned char)p[-1])) p--;
+            char const* end = p;
+            while (p > start && (isalnum((unsigned char)p[-1]) || p[-1] == '_' || p[-1] == '$')) p--;
+            if (p < end) return span_make_in(param, p, end);
+        }
+    }
+    return prop->decl->name_span;
+}
+
 void prop_write_type_slow_touch(Checker* me, Prop const* prop) {
     Prop const* root = prop;
     while (root->target && !root->mapped) root = root->target;
@@ -5875,7 +5892,8 @@ Ty const* prop_write_type(Checker* me, Prop const* const_prop) {
     if (resolving && ty_resolving_pop(me)) {
         // (At the setter's name, tsc's error(setter, ...))
         Span at = rare->setter ? function_impl_member_name(rare->setter) :
-            rare->class_setter ? c_container_of(rare->class_setter, ClassItem, method.func)->method.name_span : rare->setter_name;
+            rare->class_setter ? c_container_of(rare->class_setter, ClassItem, method.func)->method.name_span :
+            type_member_setter_name(prop);
         if (span_valid(at)) {
             cstr name = ty_prop_written_name(me, prop);
             ty_error_at(me, at, 2502, cstr_d("'", name, "' is referenced directly or indirectly in its own type annotation."));

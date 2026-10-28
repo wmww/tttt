@@ -868,3 +868,6 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   files (unchecked since tttt emits declarations), `-b`'s tsbuildinfo `contentMapperIdentities`.
 - `node_in_mapped_file()` (ty_display.c, declaration maps): a reused TypeNode doesn't know its file; found from one of
   its spans, a keyword by comparing the text at its offset. Correct: TypeNodes knowing their file. Shown by: dtsdiff.py.
+- `type_member_setter_name()` (ty/members.c): a type member accessor pair's setter name, for prop_write_type()'s TS2502,
+  is read back off the source text before the setter's parameter name, because PropDeclRare's size is asserted (foot's
+  872b2e626) and has no room for a Span. A computed setter name falls back to the property's name span.
