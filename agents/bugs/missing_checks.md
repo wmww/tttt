@@ -582,9 +582,9 @@ never-const (harness writes no errors baseline).
 - assignmentGenericLookupTypeNarrowing str-to-num: `foo(mappedObject[key])` with `K extends 42` is TS2536 from the
   generic call's inference pass (no constraint substitution in an inferential check); the final check's type is the
   constraint. The walk now also reports an access any evaluation found invalid (KEY_INVALID_GENERIC_ACCESS). Test
-  ttttInvalidGenericAccessInInference. [fixed c3ffa3e8f]
+  ttttInvalidGenericAccessInInference. [fixed 7c3143bad]
 - contextualTypeWithUnionTypeIndexSignatures ann-number-string: findMostOverlappyType keys `{ 1: x }` by the number
-  literal 1, which a number index overlaps; tttt used the string "1". Test ttttOverlappyNumericKeys. [fixed fdd3692e3]
+  literal 1, which a number index overlaps; tttt used the string "1". Test ttttOverlappyNumericKeys. [fixed b94e705f5]
 - Not looked at: recursiveTypeInference add-optional (TS2345 text), circularBaseTypes delete-stmt
   (missing TS2310, the base cycle design), nonPrimitiveAndEmptyObject drop-optional (TS2339 names the narrowed `{}`
   in tsgo, the union in tttt). [open]
@@ -592,7 +592,7 @@ never-const (harness writes no errors baseline).
   require("./Sub"); }` with m2 unused is only TS2439 in tsgo: the program doesn't resolve a relative name in an ambient
   module (collectExternalModuleReferences) and checkExternalImportOrExportDeclaration returns after TS2439, so TS2307
   comes only from resolving the alias on a use. Imports now go by PortItem.resolve_on_use (the namespace TS1147
-  mechanism: reported on a use, in the import's own file). Test ttttAmbientRelativeImportOnUse. [fixed 5788a6941]
+  mechanism: reported on a use, in the import's own file). Test ttttAmbientRelativeImportOnUse. [fixed 7c86d14e6]
 - Left from it: a re-export of a relative name in an ambient module (`export { b } from "./x"`, `export *`) is TS2307
   in tsgo only when something resolves the module's exports (checkExternalModuleExports' hasExportedMembersOfKind
   under an `export =`, an importer); tttt reports it eagerly (binder_link resolves every alias). Rare: needs a kept

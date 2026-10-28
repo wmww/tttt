@@ -590,8 +590,9 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   narrowingTypeofUndefined2 (`[...arg]` of `T extends unknown[] | undefined` narrowed by `typeof arg !== 42` misses
   TS2488 'Type 'T' must have a [Symbol.iterator]()') [open]; unknownSymbolOffContextualType1 swap-stmts (a `reduce`
   callback whose return mentions the variable being declared: TS7022/TS7024 missing) [open];
-  distributiveConditionalBaseConstraint extends-object (spurious TS2344), distributiveConditionalTypeConstraints
-  (TS2322 elaboration), unlooked at [open]. Harness or text: importDeclWithExportModifierInAmbientContext (TS2708 is
+  distributiveConditionalBaseConstraint extends-object (spurious TS2344: tail recursion's fresh deferred conditional
+  type, type_core.md, cor9) [design]; distributiveConditionalTypeConstraints (TS2322 elaboration: tsgo repeats the
+  conditional source's line once more before `string`, text only, also seed 20261107) [text]. Harness or text: importDeclWithExportModifierInAmbientContext (TS2708 is
   tsgo's emit resolver's, the pre/post-emit count line), escapedIdentifiers (TS2551 prints the name's escapes as
   written, `argX\u0033`), four `render`.
 - **Unused checks under a parse error (tsgo's ThisNodeHasError)** (bun10 design, bun11 build; ttttUnusedUnderParseError,
