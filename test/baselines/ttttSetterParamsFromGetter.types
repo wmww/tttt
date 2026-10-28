@@ -1,0 +1,38 @@
+//// [test/cases/ttttSetterParamsFromGetter.ts] ////
+
+=== ttttSetterParamsFromGetter.ts ===
+// Every unannotated parameter of a setter with a getter has the getter's type (tsc's getTypeForVariableLikeDeclaration),
+// a second, malformed one too: no TS7006 (found by mutating propertyOverridesAccessors2, `set x(value, 1)`)
+class Base {
+>Base : Base
+
+    get x() { return 2; }
+>x : number
+>2 : 2
+
+    set x(value, 1) { }
+>x : number
+>value : number
+> : number
+}
+class B2 {
+>B2 : B2
+
+    set y(value, 1) { }
+>y : any
+>value : any
+> : any
+}
+class B3 {
+>B3 : B3
+
+    get z(): string { return ""; }
+>z : string
+>"" : ""
+
+    set z(a, b) { }
+>z : string
+>a : string
+>b : string
+}
+

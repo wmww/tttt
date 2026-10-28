@@ -1,0 +1,32 @@
+ttttSetterParamsFromGetter.ts(5,18): error TS1003: Identifier expected.
+ttttSetterParamsFromGetter.ts(8,9): error TS7032: Property 'y' implicitly has type 'any', because its set accessor lacks a parameter type annotation.
+ttttSetterParamsFromGetter.ts(8,11): error TS7006: Parameter 'value' implicitly has an 'any' type.
+ttttSetterParamsFromGetter.ts(8,17): error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+ttttSetterParamsFromGetter.ts(8,18): error TS1003: Identifier expected.
+
+
+==== ttttSetterParamsFromGetter.ts (5 errors) ====
+    // Every unannotated parameter of a setter with a getter has the getter's type (tsc's getTypeForVariableLikeDeclaration),
+    // a second, malformed one too: no TS7006 (found by mutating propertyOverridesAccessors2, `set x(value, 1)`)
+    class Base {
+        get x() { return 2; }
+        set x(value, 1) { }
+                     ~
+!!! error TS1003: Identifier expected.
+    }
+    class B2 {
+        set y(value, 1) { }
+            ~
+!!! error TS7032: Property 'y' implicitly has type 'any', because its set accessor lacks a parameter type annotation.
+              ~~~~~
+!!! error TS7006: Parameter 'value' implicitly has an 'any' type.
+                    
+!!! error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+                     ~
+!!! error TS1003: Identifier expected.
+    }
+    class B3 {
+        get z(): string { return ""; }
+        set z(a, b) { }
+    }
+    

@@ -733,6 +733,9 @@ void function_impl_pair_setter(FunctionImpl* setter, FunctionImpl* getter, Expr 
     if (setter_this && !(vec_function_arg_size(&getter->args) && is_this_parameter(vec_function_arg_at(&getter->args, 0)))) {
         function_impl_rare_mut(getter)->paired_this = setter_this;
     }
+    // (Every unannotated parameter of the setter has the getter's type, tsc's getTypeForVariableLikeDeclaration, a
+    // second one too, `set x(value, 1)`; the first one's annotation is the getter's type)
+    bool first = true;
     for_each (i, vec_function_arg, &setter->args) {
         bool is_this = i->initializer.binding.tag == BINDING_IDENTIFIER && span_equals(i->initializer.binding.content_span, "this");
         if (is_this) continue;
@@ -741,11 +744,11 @@ void function_impl_pair_setter(FunctionImpl* setter, FunctionImpl* getter, Expr 
             rare->getter = getter;
             rare->getter_key = key;
         }
-        else if (!getter->ret_explicit) {
+        else if (first && !getter->ret_explicit) {
             function_impl_rare_mut(getter)->setter_type = binding_type(&i->initializer.binding);
             function_impl_rare_mut(getter)->setter_key = key;
         }
-        return;
+        first = false;
     }
 }
 

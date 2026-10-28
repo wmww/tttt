@@ -1,0 +1,36 @@
+//// [test/cases/ttttSetterParamsFromGetter.ts] ////
+
+=== ttttSetterParamsFromGetter.ts ===
+// Every unannotated parameter of a setter with a getter has the getter's type (tsc's getTypeForVariableLikeDeclaration),
+// a second, malformed one too: no TS7006 (found by mutating propertyOverridesAccessors2, `set x(value, 1)`)
+class Base {
+>Base : Symbol(Base, Decl(ttttSetterParamsFromGetter.ts, 0, 0))
+
+    get x() { return 2; }
+>x : Symbol(Base.x, Decl(ttttSetterParamsFromGetter.ts, 2, 12), Decl(ttttSetterParamsFromGetter.ts, 3, 25))
+
+    set x(value, 1) { }
+>x : Symbol(Base.x, Decl(ttttSetterParamsFromGetter.ts, 2, 12), Decl(ttttSetterParamsFromGetter.ts, 3, 25))
+>value : Symbol(value, Decl(ttttSetterParamsFromGetter.ts, 4, 10))
+> : Symbol((Missing), Decl(ttttSetterParamsFromGetter.ts, 4, 16))
+}
+class B2 {
+>B2 : Symbol(B2, Decl(ttttSetterParamsFromGetter.ts, 5, 1))
+
+    set y(value, 1) { }
+>y : Symbol(B2.y, Decl(ttttSetterParamsFromGetter.ts, 6, 10))
+>value : Symbol(value, Decl(ttttSetterParamsFromGetter.ts, 7, 10))
+> : Symbol((Missing), Decl(ttttSetterParamsFromGetter.ts, 7, 16))
+}
+class B3 {
+>B3 : Symbol(B3, Decl(ttttSetterParamsFromGetter.ts, 8, 1))
+
+    get z(): string { return ""; }
+>z : Symbol(B3.z, Decl(ttttSetterParamsFromGetter.ts, 9, 10), Decl(ttttSetterParamsFromGetter.ts, 10, 34))
+
+    set z(a, b) { }
+>z : Symbol(B3.z, Decl(ttttSetterParamsFromGetter.ts, 9, 10), Decl(ttttSetterParamsFromGetter.ts, 10, 34))
+>a : Symbol(a, Decl(ttttSetterParamsFromGetter.ts, 11, 10))
+>b : Symbol(b, Decl(ttttSetterParamsFromGetter.ts, 11, 12))
+}
+
