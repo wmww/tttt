@@ -114,6 +114,31 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   of that `b` (tsc's typeWriter rechecks it, number; tttt keeps the checked expression's T), and a later parameter with
   a default or `...` (getTypeForVariableLikeDeclaration's optionality and rest type) still goes through its lazy type.
   Test ttttUnassignedContextualParameterRead (types component fails, that baseline). [fixed e71e1789a]
+- (cor4, 2026-10-30, bun 99-V4 checkVariableLikeDeclaration__01, getTypeFromBindingPattern__04/05) A default in an
+  unannotated variable pattern reading a sibling through an IIFE, `const [a, b = (() => a)()] = [2]`: tsc checks the
+  elements first (checkVariableLikeDeclaration -> checkBindingElement -> getTypeOfSymbol(a)), so a's type is in flight
+  while the initializer is checked with the pattern as contextual type, whose defaults are evaluated
+  (getTypeFromBindingElement): a is circular there, any (TS7011 on the arrow, TS7005 on a local copying it); tttt checks
+  the initializer first and reports TS2454 on `a`. Asking the first name's type first in initialized_binding_typecheck()
+  (as it does for annotated patterns under strictNullChecks) fixes the three but broke ttttIifeDestructuredTuple (the
+  root pattern's lazy type doesn't give an IIFE initializer the pattern as its return context, the check path does)
+  and bun82-R02 (spurious TS7022 on `const [m, n] = [mode, 1]` in a loop that narrows on m): the lazy root type has to
+  agree with the checked initializer first. [open]
+- (cor4, 2026-10-30, bun 99-V4 getBaseTypes__03, getDeclaredTypeOfClassOrInterface__01/02) Interface base cycles:
+  tsc's getBaseTypes pushes ResolvedBaseTypes per type and, re-entered, returns the bases appended so far;
+  resolveBaseTypesOfInterface drops a base only if hasBaseType sees the type through those (partial) lists. So with
+  `interface A extends X, B` and `interface B extends A` checked A first, A keeps [X] and B keeps [A] (b.x, b.a exist);
+  the result depends on which type is asked first. tttt's has_base_type() (members.c) walks the extends clauses
+  syntactically and drops every base that leads back, so B has no members (spurious TS2339) and TS2430 is missing. A
+  fix: a memoized, resolution-ordered base list per class/interface (partial while in flight) that members.c's base
+  loop and has_base_type() both read, with TS2310 where tsc reports it; order-dependent like tsc's, so kdiff it. [open]
+- (cor4, 2026-10-30, bun 99-V4 getTypeOfInstantiatedSymbol__01/04/05, +TS2347) A generic class getter returning the
+  same getter of another instantiation (`get a() { return bs.a }` in `Box<T>`): tsc's in-flight read of the target
+  accessor is errorType (getTypeOfAccessors' failing push), which getTypeOfInstantiatedSymbol instantiates and keeps,
+  so `bs.a<boolean>()` is no untyped call (no TS2347) while `bn.a` (computed after, any) is. tttt's prop_type() gives
+  TY_CIRCULAR both for the in-flight read and as the target's final value (the getter's circular return), so
+  instantiated_prop_type() can't tell them apart: mapping CIRCULAR to the error type there drops both TS2347s. Needs
+  the in-flight read to return something distinct (or the final value any). [open]
 - (cor2, 2026-10-28, bun 99-V4) **Accessor write-type circularity**: tsc pushes an accessor's write type
   (getWriteTypeOfAccessors, TypeSystemPropertyNameWriteType) and reports a failing pop as TS2502 at the setter's name,
   and a union or intersection property asks each member's write type when it is made (createUnionOrIntersectionProperty).

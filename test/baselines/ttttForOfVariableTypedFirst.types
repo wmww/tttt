@@ -1,0 +1,42 @@
+//// [test/cases/ttttForOfVariableTypedFirst.ts] ////
+
+=== ttttForOfVariableTypedFirst.ts ===
+// A for-of's declared variable is typed before its expression is checked (tsc's checkForOfStatement checks the
+// declaration list first): with an evolving array the loop's back edge pushes the variable, which is circular then
+// (bun 99-V4 checkForOfStatement__05: TS7022 on entry, any)
+export {}
+declare function more(): boolean;
+>more : () => boolean
+
+const queue = [];
+>queue : any[]
+>[] : never[]
+
+queue.push(1);
+>queue.push(1) : number
+>queue.push : (...items: any[]) => number
+>queue : any[]
+>push : (...items: any[]) => number
+>1 : 1
+
+while (more()) {
+>more() : boolean
+>more : () => boolean
+
+    for (const entry of queue) {
+>entry : any
+>queue : any[]
+
+        queue.push(entry);
+>queue.push(entry) : number
+>queue.push : (...items: any[]) => number
+>queue : any[]
+>push : (...items: any[]) => number
+>entry : any
+
+        const probe: never = entry;
+>probe : never
+>entry : any
+    }
+}
+

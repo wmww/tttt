@@ -1,0 +1,37 @@
+//// [test/cases/ttttForOfVariableTypedFirst.ts] ////
+
+=== ttttForOfVariableTypedFirst.ts ===
+// A for-of's declared variable is typed before its expression is checked (tsc's checkForOfStatement checks the
+// declaration list first): with an evolving array the loop's back edge pushes the variable, which is circular then
+// (bun 99-V4 checkForOfStatement__05: TS7022 on entry, any)
+export {}
+declare function more(): boolean;
+>more : Symbol(more, Decl(ttttForOfVariableTypedFirst.ts, 3, 9))
+
+const queue = [];
+>queue : Symbol(queue, Decl(ttttForOfVariableTypedFirst.ts, 5, 5))
+
+queue.push(1);
+>queue.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>queue : Symbol(queue, Decl(ttttForOfVariableTypedFirst.ts, 5, 5))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+
+while (more()) {
+>more : Symbol(more, Decl(ttttForOfVariableTypedFirst.ts, 3, 9))
+
+    for (const entry of queue) {
+>entry : Symbol(entry, Decl(ttttForOfVariableTypedFirst.ts, 8, 14))
+>queue : Symbol(queue, Decl(ttttForOfVariableTypedFirst.ts, 5, 5))
+
+        queue.push(entry);
+>queue.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>queue : Symbol(queue, Decl(ttttForOfVariableTypedFirst.ts, 5, 5))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>entry : Symbol(entry, Decl(ttttForOfVariableTypedFirst.ts, 8, 14))
+
+        const probe: never = entry;
+>probe : Symbol(probe, Decl(ttttForOfVariableTypedFirst.ts, 10, 13))
+>entry : Symbol(entry, Decl(ttttForOfVariableTypedFirst.ts, 8, 14))
+    }
+}
+

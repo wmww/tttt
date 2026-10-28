@@ -2875,6 +2875,17 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
 
         case STATEMENT_FOR_EACH_LOOP: {
             Checker* checker = current_checker;
+            // The declared variable's type first (tsc's checkForOfStatement checks the declaration list before the
+            // expression): a loop whose back edge reads the variable is circular there, `for (const e of queue)
+            // queue.push(e)` with an evolving `queue` (TS7022)
+            if (my for_each_loop->keyword == FOR_EACH_LOOP_OF && my for_each_loop->variable.tag == FOR_EACH_LOOP_STATEMENT &&
+                vec_initialized_binding_size(&my for_each_loop->variable.statement.initializers) == 1
+            ) {
+                // (A name only: a pattern's computed names are checked before its elements, see
+                // binding_check_computed_names_first())
+                Binding const* name = &my for_each_loop->variable.statement.initializers.data->binding;
+                if (name->tag == BINDING_IDENTIFIER && name->symbol) ty_type_of_symbol(checker, name->symbol);
+            }
             Ty const* iterable_type = ty_expr_type(checker, &my for_each_loop->iterable);
 
             // (`for await` in an async function below ES2018 needs __asyncValues, tsc's ForAwaitOfIncludes)
