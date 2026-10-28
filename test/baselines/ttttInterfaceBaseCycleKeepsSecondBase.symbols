@@ -1,0 +1,29 @@
+//// [test/cases/ttttInterfaceBaseCycleKeepsSecondBase.ts] ////
+
+=== ttttInterfaceBaseCycleKeepsSecondBase.ts ===
+// Known failing (agents/bugs/bun_others.md): in a cycle of interfaces tsc drops the base of the one whose getBaseTypes
+// started first and keeps the other's (J1's base J0 is kept: j1.x0 is fine); tttt drops both
+interface J0 extends J1 { x0: 1 }
+>J0 : Symbol(J0, Decl(ttttInterfaceBaseCycleKeepsSecondBase.ts, 0, 0))
+>J1 : Symbol(J1, Decl(ttttInterfaceBaseCycleKeepsSecondBase.ts, 2, 33))
+>x0 : Symbol(J0.x0, Decl(ttttInterfaceBaseCycleKeepsSecondBase.ts, 2, 25))
+
+interface J1 extends J0 { x1: 1 }
+>J1 : Symbol(J1, Decl(ttttInterfaceBaseCycleKeepsSecondBase.ts, 2, 33))
+>J0 : Symbol(J0, Decl(ttttInterfaceBaseCycleKeepsSecondBase.ts, 0, 0))
+>x1 : Symbol(J1.x1, Decl(ttttInterfaceBaseCycleKeepsSecondBase.ts, 3, 25))
+
+declare const j0: J0
+>j0 : Symbol(j0, Decl(ttttInterfaceBaseCycleKeepsSecondBase.ts, 4, 13))
+>J0 : Symbol(J0, Decl(ttttInterfaceBaseCycleKeepsSecondBase.ts, 0, 0))
+
+declare const j1: J1
+>j1 : Symbol(j1, Decl(ttttInterfaceBaseCycleKeepsSecondBase.ts, 5, 13))
+>J1 : Symbol(J1, Decl(ttttInterfaceBaseCycleKeepsSecondBase.ts, 2, 33))
+
+j0.x1; j1.x0
+>j0 : Symbol(j0, Decl(ttttInterfaceBaseCycleKeepsSecondBase.ts, 4, 13))
+>j1.x0 : Symbol(J0.x0, Decl(ttttInterfaceBaseCycleKeepsSecondBase.ts, 2, 25))
+>j1 : Symbol(j1, Decl(ttttInterfaceBaseCycleKeepsSecondBase.ts, 5, 13))
+>x0 : Symbol(J0.x0, Decl(ttttInterfaceBaseCycleKeepsSecondBase.ts, 2, 25))
+

@@ -1,0 +1,20 @@
+ttttInterfaceBaseCycleKeepsSecondBase.ts(3,11): error TS2310: Type 'J0' recursively references itself as a base type.
+ttttInterfaceBaseCycleKeepsSecondBase.ts(4,11): error TS2310: Type 'J1' recursively references itself as a base type.
+ttttInterfaceBaseCycleKeepsSecondBase.ts(7,4): error TS2339: Property 'x1' does not exist on type 'J0'.
+
+
+==== ttttInterfaceBaseCycleKeepsSecondBase.ts (3 errors) ====
+    // Known failing (agents/bugs/bun_others.md): in a cycle of interfaces tsc drops the base of the one whose getBaseTypes
+    // started first and keeps the other's (J1's base J0 is kept: j1.x0 is fine); tttt drops both
+    interface J0 extends J1 { x0: 1 }
+              ~~
+!!! error TS2310: Type 'J0' recursively references itself as a base type.
+    interface J1 extends J0 { x1: 1 }
+              ~~
+!!! error TS2310: Type 'J1' recursively references itself as a base type.
+    declare const j0: J0
+    declare const j1: J1
+    j0.x1; j1.x0
+       ~~
+!!! error TS2339: Property 'x1' does not exist on type 'J0'.
+    

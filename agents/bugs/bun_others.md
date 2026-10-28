@@ -102,6 +102,41 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   - 88-R04a +TS2488 in a libReplacement file that skipDefaultLibCheck should skip: binder_modules.md. [dup]
   - 83-R01c +TS2488 (`for (var i = [...x in b];;)`): tsgo's for-initializer DisallowIn: missing_checks.md. [dup]
 
+### 2026-10-29 (worker bun)
+- TS2509 for every base constructor return type that isn't a valid base (a union, primitive, unknown, a type parameter
+  without an object constraint, a generic mapped type), not only an intersection reduced to never: 99-V1's 184
+  missing TS2509. [fixed 471f9879f]
+- TS2842 spurious where the renaming's name is also a type parameter of the signature that the signature mentions
+  (tsc merges the two into one symbol: 99-U1, 99-U2, 126 diagnostics); missing for a rest element with a property
+  name, `{ ...a: b }` (28-P10b, 28-P11, 52-L01). [fixed 564bf1e64]
+- TS2310 missing for an interface whose base is an intersection leading back to it (`interface K extends N`,
+  `type N = K & {...}`): 10-C21. [fixed d6f1b8564]
+- TS2310 missing where tsc's base resolution itself asks for the interface's members: 13-C1a/b/c
+  (`interface D extends Partial<D>`: instantiating the homomorphic mapped type computes getIndexType(D) eagerly,
+  which resolves D's members, which needs D's bases, in flight), 14-P2 (`interface A extends Cond<A>`: the
+  conditional type is resolved eagerly against A). tttt keeps `keyof D` and the conditional deferred and sees no
+  cycle. The resolution-order family (members.c's RESOLVING_BASE_CONSTRAINT handles one shape). 62-L13a and 89-R14
+  are TS2506/TS7022 circularities (cor3's family). [open]
+- In a cycle of interfaces tsc keeps the base of the one resolved second (J0 extends J1 extends J0: J1's base J0
+  stays, `j1.x0` is fine); tttt drops both (TS2339 spurious). test/cases/ttttInterfaceBaseCycleKeepsSecondBase.ts,
+  known failing. [open]
+- 99-V3's 56 missing TS2339 (`take({ first = 1 })` contextually typed by `(value: unknown) => void`): tsc's binding
+  element defaults referencing the pattern's own parameter type are TS7022 circular and any; the lazy parameter typing
+  of agents/notes/reentrancy.md (cor3's). [dup]
+- TS6133 missing for a parameter property outside a constructor (04-C6, 32-C11: still a parameter to tsc's unused
+  check) and spurious use from a parameter decorator tsc never checks (04-C4, no experimentalDecorators). [fixed
+  ccffc8cee]
+- TS6133 spurious for an import only an untyped signature parameter names (`(Foo) => void`, 31-SC6): tsc's
+  reportImplicitAny resolves the parameter's name as a type use (TS7051), the signature's type parameters first.
+  [fixed 9cafcc7cf]
+- JSDoc `{@link}` uses (agents/hacks.md `unused_mark_jsdoc_links()`, a text scan of the whole file): tsgo resolves a
+  link only in the comment text of a JSDoc (and of its tags) attached to a node its checkSourceElement visits
+  (EagerJSDoc). Not a use in tsgo: `@throws {@link Foo}` (a type expression, 43-P4a), an escaped name
+  `{@link Foo\u0046}` (43-C8c), JSDoc on a named tuple member (54-L08) or on an expression statement (80-R17a,
+  80-R17b), `@typedef`/`@callback` tags' property/param descriptions in a TS file (54-L06), member names after `#`
+  that are keywords (54-L07a: `a#delete` and `c#default` use, `b#foo`, `d#of`, `e.delete` don't). Needs the links
+  resolved from parsed, attached JSDoc. [open]
+
 ## Not looked at, by code
 - Each paragraph below is a code and direction with the cases it mismatches in, uninvestigated: at least one open
   root cause each, counted here once. [open]
