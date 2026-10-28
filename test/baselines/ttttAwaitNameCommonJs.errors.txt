@@ -1,0 +1,12 @@
+g.js(1,7): error TS1262: Identifier expected. 'await' is a reserved word at the top-level of a module.
+
+
+==== f.js (0 errors) ====
+    const await = 1;
+    exports.x = 1;
+==== g.js (1 errors) ====
+    const await = 1;
+          ~~~~~
+!!! error TS1262: Identifier expected. 'await' is a reserved word at the top-level of a module.
+    export const y = 1;
+    

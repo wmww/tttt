@@ -1,0 +1,18 @@
+//// [test/cases/ttttAwaitNameCommonJs.ts] ////
+
+=== f.js ===
+const await = 1;
+>await : Symbol(await, Decl(f.js, 0, 5))
+
+exports.x = 1;
+>exports.x : Symbol(x, Decl(f.js, 0, 16))
+>exports : Symbol(exports, Decl(f.js, 0, 0))
+>x : Symbol(x, Decl(f.js, 0, 16))
+
+=== g.js ===
+const await = 1;
+>await : Symbol(await, Decl(g.js, 0, 5))
+
+export const y = 1;
+>y : Symbol(y, Decl(g.js, 1, 12))
+

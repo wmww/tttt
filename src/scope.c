@@ -761,7 +761,8 @@ void scope_check_strict_identifier(Scope const* me, Span name, bool in_type) {
             top_level = false;
             break;
         }
-        if (await_word && my file && my file->is_module && top_level && !await_context) {
+        // (tsc's binder asks IsExternalModule: an ES module, not a CommonJS one, whose `await` is any identifier)
+        if (await_word && my file && my file->is_module && !my file->is_commonjs && top_level && !await_context) {
             error_ctx_error_d(binder_errs(my binder), name, 1262, "Identifier expected. '", name, "' is a reserved word at the top-level of a module.");
         } else if ((await && await_context) || (yield && yield_context)) {
             error_ctx_error_d(binder_errs(my binder), name, 1359, "Identifier expected. '", name, "' is a reserved word that cannot be used here.");

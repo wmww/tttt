@@ -1,0 +1,23 @@
+//// [test/cases/ttttAwaitNameCommonJs.ts] ////
+
+=== f.js ===
+const await = 1;
+>await : 1
+>1 : 1
+
+exports.x = 1;
+>exports.x = 1 : 1
+>exports.x : 1
+>exports : typeof import("./f")
+>x : 1
+>1 : 1
+
+=== g.js ===
+const await = 1;
+>await : 1
+>1 : 1
+
+export const y = 1;
+>y : 1
+>1 : 1
+
