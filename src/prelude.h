@@ -78,23 +78,6 @@ static inline double wall_ms(void) {
     timespec_get(&now, TIME_UTC);
     return (double)now.tv_sec * 1e3 + (double)now.tv_nsec / 1e6;
 }
-// Transparent huge pages for the big regions (arena chunks: a checker's from its first, others' from their second; the AST slabs' 2 MB steps,
-// big tables): HUGE_NO, plain 4 KB pages; HUGE_ALIGNED, map it 2 MB aligned (the kernel's THP `always` gives it huge
-// pages at the fault, from free 2 MB blocks, without compacting); HUGE_ADVISED, aligned and madvise(MADV_HUGEPAGE)d.
-// On 4 KB pages vscode's checkers fault ~800k times (sys 1.2 s of 1.85 at the defaults, K1 +5.4%). The danger is the
-// madvise: under THP defrag `madvise` (the kernel's default), `defer+madvise` or `always`, a madvised fault that finds
-// no free 2 MB block compacts memory synchronously (forced past the free blocks, openclaw went 7 -> 35 s, vscode 1.6
-// -> 5.3 s: agents/notes/kernel_time.md). So the mode is read once from /sys/kernel/mm/transparent_hugepage:
-// enabled `always` -> HUGE_ALIGNED (no madvise needed); `madvise` with defrag `defer` or `never` (madvised faults
-// never compact synchronously) -> HUGE_ADVISED; `madvise` with another defrag -> HUGE_ADVISED while a budget lasts:
-// the free blocks of order >= 9 /proc/buddyinfo lists at the first call, less what was taken and not given back
-// (huge_pages_give()), else HUGE_NO; `never` or unreadable -> HUGE_NO. TTTT_HUGEPAGES=0|1|aligned|budget|auto overrides it
-// (none, every region advised, aligned only, the budget, the default) for A/B
-enum { HUGE_NO, HUGE_ALIGNED, HUGE_ADVISED };
-int huge_pages_take(size_t bytes);
-// The mode huge_pages_take() chose (`none`, `aligned`, `advised` or `budget`) and, under `budget`, what is left of it
-// in MB (else -1): for --time
-char const* huge_pages_mode(i64* budget_mb);
 // The process's resident set, bytes (/proc/self/statm; 0 if unreadable). A read of an fd kept open: cheap enough per file
 u64 process_resident_bytes(void);
 // The memory the system could give the process now, bytes: /proc/meminfo's MemAvailable, and when it runs in cgroups
@@ -104,8 +87,6 @@ u64 memory_available_bytes(void);
 // Under TTTT_VMA_NAMES, names an anonymous mapping `[anon:tttt-NAME]` in /proc/PID/smaps (PR_SET_VMA_ANON_NAME), for
 // RSS attribution by kind (scripts/rsstimeline.py); a no-op otherwise
 void vma_name(void* addr, size_t len, char const* name);
-// A region of `bytes` that huge_pages_take() allowed is unmapped: its blocks are free again (the budget's)
-void huge_pages_give(size_t bytes);
 
 // calloc() for tables that are probed (read) before they are written: fresh pages calloc() gets from the kernel are
 // mapped to the shared zero page on the first read, and the first write then copies it, which flushes the TLB of every
@@ -118,8 +99,7 @@ static inline void* zeroed_table(size_t count, size_t size) {
 }
 
 // zeroed_table() for a checker's growing hash tables (intern, link and relation tables, which double), freed only
-// with big_table_free(p, bytes). A table of 2 MB or more is pages of its own, huge pages as huge_pages_take()
-// says, and its free keeps them for the next table of its size (re-zeroed) rather than unmapping them: glibc's
+// with big_table_free(p, bytes). A table of 2 MB or more is pages of its own, and its free keeps them for the next table of its size (re-zeroed) rather than unmapping them: glibc's
 // pages are faulted 4 KB at a time, and a munmap() is a TLB shootdown on every thread
 void* big_table(size_t count, size_t size);
 void big_table_free(void* table, size_t bytes);

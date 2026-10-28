@@ -142,110 +142,6 @@ void vma_name(void* addr, size_t len, char const* name) {
     prctl(0x53564d41, 0, (unsigned long)addr, len, (unsigned long)full);
 }
 
-// huge_pages_take()'s policy, chosen once from the kernel's THP configuration (or TTTT_HUGEPAGES)
-typedef enum { HUGE_MODE_NONE, HUGE_MODE_ALIGN, HUGE_MODE_ADVISE, HUGE_MODE_BUDGET } HugeMode;
-static HugeMode huge_mode;
-static atomic_llong huge_page_budget;
-static pthread_once_t huge_mode_once = PTHREAD_ONCE_INIT;
-
-// The free memory in blocks of 2 MB and more, -1 if unknown
-static long long free_huge_block_bytes(void) {
-    FILE* file = fopen("/proc/buddyinfo", "r");
-    if (!file) return -1;
-    long long bytes = 0;
-    char line[512];
-    while (fgets(line, sizeof(line), file)) {
-        // "Node 0, zone   Normal 104016 78420 ..." : the count of free blocks of each order, from 4 KB up
-        char const* counts = strstr(line, "zone");
-        if (!counts) continue;
-        counts += 4;
-        while (*counts == ' ') counts++;
-        while (*counts && *counts != ' ') counts++;
-        for (int order = 0; order <= 20; order++) {
-            char* end;
-            long long count = strtoll(counts, &end, 10);
-            if (end == counts) break;
-            counts = end;
-            if (order >= 9) bytes += count << (order + 12);
-        }
-    }
-    fclose(file);
-    return bytes;
-}
-
-// The selected word of a THP setting under /sys/kernel/mm/transparent_hugepage ("always [madvise] never": madvise),
-// or of a plain value (hpage_pmd_size); false if unreadable
-static bool thp_setting(char const* name, char* out, size_t cap) {
-    char path[128];
-    snprintf(path, sizeof(path), "/sys/kernel/mm/transparent_hugepage/%s", name);
-    FILE* file = fopen(path, "r");
-    if (!file) return false;
-    char line[256];
-    bool got = fgets(line, sizeof(line), file) != nullptr;
-    fclose(file);
-    if (!got) return false;
-    char const* from = strchr(line, '[');
-    from = from ? from + 1 : line;
-    size_t len = strcspn(from, "] \n");
-    if (!len || len >= cap) return false;
-    memcpy(out, from, len);
-    out[len] = 0;
-    return true;
-}
-
-static void huge_mode_init(void) {
-    char const* env = getenv("TTTT_HUGEPAGES");
-    if (env && strcmp(env, "auto") != 0) {
-        huge_mode = !strcmp(env, "0") ? HUGE_MODE_NONE : !strcmp(env, "budget") ? HUGE_MODE_BUDGET :
-            !strcmp(env, "aligned") ? HUGE_MODE_ALIGN : HUGE_MODE_ADVISE;
-    } else {
-        char enabled[32], defrag[32], pmd[32];
-        // (Since kernel 6.8 the 2 MB size has a setting of its own, which overrides the global one unless `inherit`)
-        bool known = (thp_setting("hugepages-2048kB/enabled", enabled, sizeof(enabled)) && strcmp(enabled, "inherit"))
-            || thp_setting("enabled", enabled, sizeof(enabled));
-        // (The page that matters is 2 MB: x86-64's PMD size; a kernel with another one is left alone)
-        if (!known || !thp_setting("hpage_pmd_size", pmd, sizeof(pmd)) || strcmp(pmd, "2097152")) {
-            huge_mode = HUGE_MODE_NONE;
-        } else if (!strcmp(enabled, "always")) {
-            huge_mode = HUGE_MODE_ALIGN;
-        } else if (!strcmp(enabled, "madvise")) {
-            if (!thp_setting("defrag", defrag, sizeof(defrag))) strcpy(defrag, "madvise");
-            huge_mode = !strcmp(defrag, "defer") || !strcmp(defrag, "never") ? HUGE_MODE_ADVISE : HUGE_MODE_BUDGET;
-        } else {
-            huge_mode = HUGE_MODE_NONE;
-        }
-    }
-    if (huge_mode == HUGE_MODE_BUDGET) {
-        long long bytes = free_huge_block_bytes();
-        if (bytes > 0) atomic_store(&huge_page_budget, bytes);
-    }
-}
-
-int huge_pages_take(size_t bytes) {
-    pthread_once(&huge_mode_once, huge_mode_init);
-    switch (huge_mode) {
-    case HUGE_MODE_NONE: return HUGE_NO;
-    case HUGE_MODE_ALIGN: return HUGE_ALIGNED;
-    case HUGE_MODE_ADVISE: return HUGE_ADVISED;
-    case HUGE_MODE_BUDGET:
-        if (atomic_fetch_sub(&huge_page_budget, (long long)bytes) >= (long long)bytes) return HUGE_ADVISED;
-        atomic_fetch_add(&huge_page_budget, (long long)bytes);
-        return HUGE_NO;
-    }
-    impossible;
-}
-
-char const* huge_pages_mode(i64* budget_mb) {
-    pthread_once(&huge_mode_once, huge_mode_init);
-    *budget_mb = huge_mode == HUGE_MODE_BUDGET ? (i64)(atomic_load(&huge_page_budget) >> 20) : -1;
-    static char const* const names[] = { "none", "aligned", "advised", "budget" };
-    return names[huge_mode];
-}
-
-void huge_pages_give(size_t bytes) {
-    if (huge_mode == HUGE_MODE_BUDGET) atomic_fetch_add(&huge_page_budget, (long long)bytes);
-}
-
 // Big tables by size class (log2 of the pages' bytes, from 2 MB): what big_table_free() kept
 enum { BIG_TABLE_MIN_SHIFT = 21 };
 static pthread_mutex_t big_tables_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -267,16 +163,9 @@ void* big_table(size_t count, size_t size) {
     if (ret) big_tables_free[shift] = *(void**)ret;
     pthread_mutex_unlock(&big_tables_lock);
     if (ret) return memset(ret, 0, bytes);
-    // (2 MB aligned when it may be huge pages: map 2 MB more and cut the ends off)
-    int huge = huge_pages_take(mapped);
-    size_t align = huge ? (size_t)1 << BIG_TABLE_MIN_SHIFT : 0;
-    char* raw = mmap(nullptr, mapped + align, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    panic_if(raw == MAP_FAILED, "out of memory");
-    char* start = huge ? (char*)(((uintptr_t)raw + align - 1) & ~(uintptr_t)(align - 1)) : raw;
-    if (start > raw) munmap(raw, (size_t)(start - raw));
-    if (start + mapped < raw + mapped + align) munmap(start + mapped, (size_t)(raw + mapped + align - (start + mapped)));
+    char* start = mmap(nullptr, mapped, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    panic_if(start == MAP_FAILED, "out of memory");
     vma_name(start, mapped, "table");
-    if (huge == HUGE_ADVISED) madvise(start, mapped, MADV_HUGEPAGE);
     // (Written before read: no zero page to copy)
     madvise(start, bytes, MADV_POPULATE_WRITE);
     return start;
