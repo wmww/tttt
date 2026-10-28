@@ -10,6 +10,7 @@
 #   variancetrace    scripts/variancetrace.py --check (patched relater.go)
 #   tsgotrace        scripts/tsgotrace.py --check (patched ast/diagnostic.go, the hooks)
 #   reltrace         scripts/reltrace.py --check (patched relater.go)
+#   tsgoast          scripts/tsgoast.sh --check (scripts/tsgoast_test.go in internal/parser)
 #
 #   scripts/overlaycheck.sh          # ~2-4 min cold (each overlay recompiles internal/checker), logs in /tmp/overlaycheck-*
 set -uo pipefail
@@ -49,5 +50,6 @@ one reentrytrace scripts/reentrytrace.py --check
 one variancetrace scripts/variancetrace.py --check
 one tsgotrace scripts/tsgotrace.py --check
 one reltrace scripts/reltrace.py --check
+one tsgoast scripts/tsgoast.sh --check
 if test "$FAILED" = 0; then rm -rf "$LOG"; echo "overlaycheck: OK"; else echo "overlaycheck: BROKEN (logs: $LOG)"; fi
 exit "$FAILED"

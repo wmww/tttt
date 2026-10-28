@@ -3,6 +3,8 @@ When tttt and tsgo disagree and the mechanism isn't obvious from tsgo's Go sourc
 hooks from the correctness workers cor and cor2 (2026-10-22); `scripts/variancetrace.py`, `scripts/reentrytrace.py` and
 `scripts/reltrace.py` automate three such builds, and `scripts/tsgotrace.py CODE TARGET [--funcs f,g]` the most common one (the stack of every
 diagnostic with a code, `TSGO_DIAG_STACK` below, plus a stack at named functions) without writing any Go.
+`scripts/tsgoast.sh FILE` (scripts/tsgoast_test.go mapped into internal/parser) prints tsgo's parse tree and parse
+diagnostics: where a parser rule puts nodes and errors, read off rather than fitted from baselines.
 `scripts/overlaycheck.sh` compiles every overlay: run it after a re-pin (patches match tsgo's text exactly and rot).
 
 ## Relations, side by side: reltrace.py
