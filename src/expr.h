@@ -825,6 +825,7 @@ typedef struct TemplateExpr {
     AstCStrs texts; // Untagged: the cooked texts around the substitutions
     bool is_tag; // The tag of a tagged template (`\`a${b}\`\`c\``): tsc doesn't evaluate it to a literal
     bool array_element; // Tagged, an element of an array literal (unparenthesized): TS2796 if the tag isn't callable
+    bool optional_chain; // Tagged, its tag part of an optional chain (tsc's NodeFlags.OptionalChain): TS1358
 } TemplateExpr;
 
 // Object

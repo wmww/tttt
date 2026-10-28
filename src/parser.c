@@ -10619,6 +10619,28 @@ static void mark_chain_continues(Expr* object, bool is_call, bool optional) {
 }
 
 [[gnu::noinline]] static bool parse_expr_right_side_slow(Parser* parent, ExprCtx ctx, Expr* left_and_ret);
+// Whether a tagged template's tag is part of an optional chain (tsc's NodeFlags.OptionalChain, which property accesses,
+// calls and tagged templates after a `?.` carry until parentheses or a `!` end the chain)
+static bool tag_in_optional_chain(Expr const* e) {
+    for (u32 depth = 0; depth < 256; depth++) {
+        if (expr_is_perenthisized(e)) return false;
+        if (e->tag == EXPR_GENERIC_PARAMS) {
+            e = &e->generic_params->expr;
+        } else if (e->tag == EXPR_TEMPLATE && e->template_->tag) {
+            return e->template_->optional_chain;
+        } else if (e->tag == EXPR_PROPERTY) {
+            if (e->property->optional_chain) return true;
+            e = &e->property->expr;
+        } else if (e->tag == EXPR_CALL && !e->call->uses_new) {
+            if (e->call->optional_chain) return true;
+            e = &e->call->callable;
+        } else {
+            return false;
+        }
+    }
+    return false;
+}
+
 // (The quick test inlined where it is called, the rest not: PGO inlined whole parse functions behind it)
 static inline bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_ret) {
     // (The common end of an expression, right after it: no child parser. With trivia before it the child below hops
@@ -10816,8 +10838,10 @@ static inline bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left
             parse_string_or_tagged(&p, &plain_string, false);
             ast_cstr_seal(&plain_string);
         }
-        // (tsc's checkGrammarTaggedTemplateChain: grammarErrorOnNode of the whole template)
-        if (optional_template) {
+        // (tsc's checkGrammarTaggedTemplateChain: grammarErrorOnNode of the whole template. parseTaggedTemplateRest flags
+        // the tagged template as part of a chain whose tag is: `o?.a\`x\``, `o?.a\`x\`.b\`y\``)
+        bool chain = optional_template || tag_in_optional_chain(left_and_ret);
+        if (chain) {
             grammar_error(&p, span_from(template_a), 1358, "Tagged template expressions are not permitted in an optional chain.");
         }
         *left_and_ret = expr_template(
@@ -10828,6 +10852,7 @@ static inline bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left
                 .substitutions = parsed.args,
                 .plain_string = plain_string,
                 .incomplete = p.pos - 1 <= template_a.start || p.pos[-1] != '`',
+                .optional_chain = chain,
             })
         );
         return parse_success(&p);

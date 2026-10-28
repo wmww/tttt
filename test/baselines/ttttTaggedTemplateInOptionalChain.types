@@ -1,0 +1,107 @@
+//// [test/cases/ttttTaggedTemplateInOptionalChain.ts] ////
+
+=== ttttTaggedTemplateInOptionalChain.ts ===
+// TS1358 for every tagged template whose tag is part of an optional chain (tsc's parseTaggedTemplateRest flags it
+// OptionalChain), until parentheses or a `!` end the chain
+declare const o: any;
+>o : any
+
+o?.a`x`;
+>o?.a`x` : any
+>o?.a : any
+>o : any
+>a : any
+>`x` : "x"
+
+o?.a`x``y`;
+>o?.a`x``y` : any
+>o?.a`x` : any
+>o?.a : any
+>o : any
+>a : any
+>`x` : "x"
+>`y` : "y"
+
+o?.a`x`.b`y`;
+>o?.a`x`.b`y` : any
+>o?.a`x`.b : any
+>o?.a`x` : any
+>o?.a : any
+>o : any
+>a : any
+>`x` : "x"
+>b : any
+>`y` : "y"
+
+o?.a`x${1}``y${2}`;
+>o?.a`x${1}``y${2}` : any
+>o?.a`x${1}` : any
+>o?.a : any
+>o : any
+>a : any
+>`x${1}` : string
+>1 : 1
+>`y${2}` : string
+>2 : 2
+
+o?.a`x`()`y`;
+>o?.a`x`()`y` : any
+>o?.a`x`() : any
+>o?.a`x` : any
+>o?.a : any
+>o : any
+>a : any
+>`x` : "x"
+>`y` : "y"
+
+o?.a`x`[0]`y`;
+>o?.a`x`[0]`y` : any
+>o?.a`x`[0] : any
+>o?.a`x` : any
+>o?.a : any
+>o : any
+>a : any
+>`x` : "x"
+>0 : 0
+>`y` : "y"
+
+o?.a`x`!`y`;
+>o?.a`x`!`y` : any
+>o?.a`x`! : any
+>o?.a`x` : any
+>o?.a : any
+>o : any
+>a : any
+>`x` : "x"
+>`y` : "y"
+
+(o?.a`x`)`y`;
+>(o?.a`x`)`y` : any
+>(o?.a`x`) : any
+>o?.a`x` : any
+>o?.a : any
+>o : any
+>a : any
+>`x` : "x"
+>`y` : "y"
+
+o?.a`x`.b.c;
+>o?.a`x`.b.c : any
+>o?.a`x`.b : any
+>o?.a`x` : any
+>o?.a : any
+>o : any
+>a : any
+>`x` : "x"
+>b : any
+>c : any
+
+o?.a<string>`x``y`;
+>o?.a<string>`x``y` : any
+>o?.a<string>`x` : any
+>o?.a : any
+>o : any
+>a : any
+>`x` : "x"
+>`y` : "y"
+

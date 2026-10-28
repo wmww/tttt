@@ -1,0 +1,38 @@
+//// [test/cases/ttttTaggedTemplateInOptionalChain.ts] ////
+
+=== ttttTaggedTemplateInOptionalChain.ts ===
+// TS1358 for every tagged template whose tag is part of an optional chain (tsc's parseTaggedTemplateRest flags it
+// OptionalChain), until parentheses or a `!` end the chain
+declare const o: any;
+>o : Symbol(o, Decl(ttttTaggedTemplateInOptionalChain.ts, 2, 13))
+
+o?.a`x`;
+>o : Symbol(o, Decl(ttttTaggedTemplateInOptionalChain.ts, 2, 13))
+
+o?.a`x``y`;
+>o : Symbol(o, Decl(ttttTaggedTemplateInOptionalChain.ts, 2, 13))
+
+o?.a`x`.b`y`;
+>o : Symbol(o, Decl(ttttTaggedTemplateInOptionalChain.ts, 2, 13))
+
+o?.a`x${1}``y${2}`;
+>o : Symbol(o, Decl(ttttTaggedTemplateInOptionalChain.ts, 2, 13))
+
+o?.a`x`()`y`;
+>o : Symbol(o, Decl(ttttTaggedTemplateInOptionalChain.ts, 2, 13))
+
+o?.a`x`[0]`y`;
+>o : Symbol(o, Decl(ttttTaggedTemplateInOptionalChain.ts, 2, 13))
+
+o?.a`x`!`y`;
+>o : Symbol(o, Decl(ttttTaggedTemplateInOptionalChain.ts, 2, 13))
+
+(o?.a`x`)`y`;
+>o : Symbol(o, Decl(ttttTaggedTemplateInOptionalChain.ts, 2, 13))
+
+o?.a`x`.b.c;
+>o : Symbol(o, Decl(ttttTaggedTemplateInOptionalChain.ts, 2, 13))
+
+o?.a<string>`x``y`;
+>o : Symbol(o, Decl(ttttTaggedTemplateInOptionalChain.ts, 2, 13))
+

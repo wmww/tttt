@@ -1,0 +1,65 @@
+ttttTaggedTemplateInOptionalChain.ts(4,5): error TS1358: Tagged template expressions are not permitted in an optional chain.
+ttttTaggedTemplateInOptionalChain.ts(5,5): error TS1358: Tagged template expressions are not permitted in an optional chain.
+ttttTaggedTemplateInOptionalChain.ts(5,8): error TS1358: Tagged template expressions are not permitted in an optional chain.
+ttttTaggedTemplateInOptionalChain.ts(6,5): error TS1358: Tagged template expressions are not permitted in an optional chain.
+ttttTaggedTemplateInOptionalChain.ts(6,10): error TS1358: Tagged template expressions are not permitted in an optional chain.
+ttttTaggedTemplateInOptionalChain.ts(7,5): error TS1358: Tagged template expressions are not permitted in an optional chain.
+ttttTaggedTemplateInOptionalChain.ts(7,12): error TS1358: Tagged template expressions are not permitted in an optional chain.
+ttttTaggedTemplateInOptionalChain.ts(8,5): error TS1358: Tagged template expressions are not permitted in an optional chain.
+ttttTaggedTemplateInOptionalChain.ts(8,10): error TS1358: Tagged template expressions are not permitted in an optional chain.
+ttttTaggedTemplateInOptionalChain.ts(9,5): error TS1358: Tagged template expressions are not permitted in an optional chain.
+ttttTaggedTemplateInOptionalChain.ts(9,11): error TS1358: Tagged template expressions are not permitted in an optional chain.
+ttttTaggedTemplateInOptionalChain.ts(10,5): error TS1358: Tagged template expressions are not permitted in an optional chain.
+ttttTaggedTemplateInOptionalChain.ts(11,6): error TS1358: Tagged template expressions are not permitted in an optional chain.
+ttttTaggedTemplateInOptionalChain.ts(12,5): error TS1358: Tagged template expressions are not permitted in an optional chain.
+ttttTaggedTemplateInOptionalChain.ts(13,13): error TS1358: Tagged template expressions are not permitted in an optional chain.
+ttttTaggedTemplateInOptionalChain.ts(13,16): error TS1358: Tagged template expressions are not permitted in an optional chain.
+
+
+==== ttttTaggedTemplateInOptionalChain.ts (16 errors) ====
+    // TS1358 for every tagged template whose tag is part of an optional chain (tsc's parseTaggedTemplateRest flags it
+    // OptionalChain), until parentheses or a `!` end the chain
+    declare const o: any;
+    o?.a`x`;
+        ~~~
+!!! error TS1358: Tagged template expressions are not permitted in an optional chain.
+    o?.a`x``y`;
+        ~~~
+!!! error TS1358: Tagged template expressions are not permitted in an optional chain.
+           ~~~
+!!! error TS1358: Tagged template expressions are not permitted in an optional chain.
+    o?.a`x`.b`y`;
+        ~~~
+!!! error TS1358: Tagged template expressions are not permitted in an optional chain.
+             ~~~
+!!! error TS1358: Tagged template expressions are not permitted in an optional chain.
+    o?.a`x${1}``y${2}`;
+        ~~~~~~~
+!!! error TS1358: Tagged template expressions are not permitted in an optional chain.
+               ~~~~~~~
+!!! error TS1358: Tagged template expressions are not permitted in an optional chain.
+    o?.a`x`()`y`;
+        ~~~
+!!! error TS1358: Tagged template expressions are not permitted in an optional chain.
+             ~~~
+!!! error TS1358: Tagged template expressions are not permitted in an optional chain.
+    o?.a`x`[0]`y`;
+        ~~~
+!!! error TS1358: Tagged template expressions are not permitted in an optional chain.
+              ~~~
+!!! error TS1358: Tagged template expressions are not permitted in an optional chain.
+    o?.a`x`!`y`;
+        ~~~
+!!! error TS1358: Tagged template expressions are not permitted in an optional chain.
+    (o?.a`x`)`y`;
+         ~~~
+!!! error TS1358: Tagged template expressions are not permitted in an optional chain.
+    o?.a`x`.b.c;
+        ~~~
+!!! error TS1358: Tagged template expressions are not permitted in an optional chain.
+    o?.a<string>`x``y`;
+                ~~~
+!!! error TS1358: Tagged template expressions are not permitted in an optional chain.
+                   ~~~
+!!! error TS1358: Tagged template expressions are not permitted in an optional chain.
+    
