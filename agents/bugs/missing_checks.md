@@ -29,7 +29,7 @@ here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in 
   one type parameter symbol; why only the second check fails in tsgo wasn't looked at). Probe only, no test. [open]
 - The jsxImportSource runtime import (`jsx_runtime_module()`) reports TS2875/TS2792 and TS1479/TS1471, not the other
   resolveExternalModule diagnostics (TS7016 for a JavaScript runtime). [open]
-- `while (a) const x = 1;` still scopes x to the loop (tsc: the enclosing block; a do statement too, a for statement is a block scope container). Test ttttWhileBodyDeclarationScope. [fixed in the commit that flips this]
+- `while (a) const x = 1;` still scopes x to the loop (tsc: the enclosing block; a do statement too, a for statement is a block scope container). Test ttttWhileBodyDeclarationScope. [fixed 672143404]
 - Known-failing tests of hacks.md's audit (2026-10-23; each hack's entry there has the mechanism):
   - ttttHackJsdocUniqueSymbolLet: a JSDoc `@type {unique symbol}` on a `let` misses TS1332. [fixed e04477695]
   - ttttHackAugmentationAliasConflict: `export { x as y }` in a module augmentation misses TS2323/TS2484. [open]
