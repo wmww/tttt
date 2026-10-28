@@ -97,6 +97,31 @@ end's split", "The 12-core box at efb91998", "The config glob next to the load p
   malloc_trim(0) before checking (83f9d7f6d: -4 / -3 MB). Declined: a checker arena's first chunk on 4 KB pages (the
   arenas are each checker's repeated work, not start-up slack: nest -4 MB, react +2, sys up), and smaller text read
   chunks (no gain).
+- 2026-10-28 (fe, timelines of nitro and faker): three serial costs, each found as the main thread's or one worker's
+  samples while the rest of the pool idled. (1) A generated declaration file that imports one name over and over
+  (@scalar/workspace-store's openapi-document.d.ts, 6.2 MB: `import("@scalar/typebox")` 133,248 times, schema.d.ts
+  21,914) cost the worker that parsed it 89 ms of resolve/canonicalize/queue per ref while the loader waited in
+  load_pool_take(), then 48 ms of the loader's per-ref work: program_load_ahead_from() now resolves a (name, mode) once
+  per file, the loader learns symlinks once per resolver resolution (program_learn_symlink_shared()) and, without the
+  pool's resolutions (--threads 1), memoizes its own (Program.ref_memo). nitro load+parse 110 -> 55 ms. (2) That file
+  was also walked on one thread (56 ms): statement_walks_alone() refused plain imports and exports; they walk alone now
+  (the walk of a port statement only reports on its module_ref into the chunk's errors). (3) chunked_walk_pair()
+  scanned one slot per program file for each merged-generic declaration pair: faker 22.5k pairs x 4.2k files, 563 M
+  instructions on the main thread at the start of every threaded run's parallel walk (lib.dom.d.ts is always chunked):
+  faker resolve names 71 -> 29 ms. Measure the loader's waits with TTTT_LOAD_POOL_WAITS=1 (each wait over 2 ms and
+  its file) and the walk with TTTT_RESOLVE_TIMES=1 ("walked N ms FILE" for the slowest files, the chunked count).
+  Note for measuring: run from the project's directory (or its repo's, as the sweeps do). From elsewhere every path is
+  `../..`-relative, program_canonical_view() needs storage, the canonical hint is lost and the loader's per-ref work
+  roughly doubles (nitro load+parse 200 ms from /tmp/wt-fe against 110 from its directory).
+- **The front end against thread count** (2026-10-28, fe, release builds at 6215d2b72 vs e0281d1f4, best of 3, box at
+  load 13-22: shares are rough, the laptop must retake them). Where tttt's lead over bun erodes most from ST to MT
+  (bunsweep-300: bun1/ttttST over bunMT/ttttMT; the worst 8 are one-checker reruns), the front end (config, libs,
+  load+parse, resolve names) speeds up only 2.5-3.5x from --threads 1 to 16 while the check scales further, so its share
+  of the phases grows: T1 / T4 / T16 front ms (share) after these commits: nuxt 400/182/126 (37/37/37%), comp
+  1755/895/665 (28/35/35%), comp/apps/app 841/430/325 (28/33/35%), parabol/packages/client 355/118/100 (29/28/33%),
+  nest/integration/security 129/49/45 (28/24/28%), openscience 584/233/197 (14/18/24%), dokploy 560/222/184
+  (21/18/17%), openbot auth-api 301/132/94, kebo 283/142/95 (17/9/8%), monkeytype/backend 117/50/40 (31/16/14%). On the
+  bunsweep data the front end is a median 26% of MT wall over the 300, 18% over the 50 worst-eroding.
 
 ## Measured and not built
 - **Import pre-scan** (tsc's preProcessFile, so workers queue a file's children before its full parse): ~35% of the

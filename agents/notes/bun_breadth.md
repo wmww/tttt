@@ -1,5 +1,33 @@
 # tttt vs bun at breadth
 
+## 2026-10-28 (worker fe): the checked `.d.ts` in the idle tail is tsc's work; bun's lead there is per-instruction
+Of the 300 projects' costliest-file excess over K1/8 (summed per project, the bunsweep JSON), 6.2 s is a `.d.ts` on
+101 projects (immutable.d.ts 2.9 s, lib.dom.d.ts 1.4 s, solid-js's store.d.ts 1.1 s, @babel/types 0.4 s, type-fest's
+merge-deep 0.3 s) and 10.5 s a `.ts` on 135. One-file projects of immutable.d.ts (immutable-js/type-definitions) and
+store.d.ts (solid-js 1.9.15, lib es2022+dom), quiet box, `--threads 1`:
+- **What the time is**: immutable.d.ts 3.1 G instructions (release), 98% under interface_decl_typecheck ->
+  ty_check_heritage (tsc's checkTypeAssignableTo(typeWithThis, baseWithThis) of every interface against its bases), of
+  it ~93% in compare_signatures of generic methods -> ty_instantiate_signature_in_context_of (947 calls, ~3 M
+  instructions each: inferring from List<M>'s return type into another collection walks every member of both,
+  infer_from_objects, ~2.1 M infer_from calls) and the variance measurements it starts. store.d.ts 4.0 G, 88% in
+  ty_check_type_reference_constraints -> base constraints -> ty_simplified/instantiate_mapped. Both are tsc's checks.
+  tsgo: immutable 563k types / 2.7 s check (tttt 448k types), store 680k types / 1.07 s (tttt 581k).
+- **bun does the same checks** (src/sema/check/errors_heritage.rs: check_interface_heritage ->
+  unrelated_with_this_argument, try_is_type_related_to; its source is github.com/oven-sh/bun src/sema/, Rust), no
+  laziness for declaration files, no skipLibCheck on either side. Instructions at `--threads 1` (callgrind): immutable
+  bun 2.34 G against fast/tttt 2.59 G; store **bun 4.88 G against tttt 3.31 G**. Wall: immutable bun 0.19 s / tttt
+  0.30 s, store bun 0.37-0.41 / tttt 0.47-0.48. So bun runs ~1.6-2x the instructions per second there: cachegrind
+  has tttt at 2.5x bun's D1 misses on immutable (34 M / 13 M) and 6x its LL misses (5.3 M / 0.9 M; store 3.6 M / 0.7 M
+  LL read misses), with peak RSS 284 MB against 69 MB (arena 227 MB for 448k types: instantiated members, resolved
+  signatures, cloned type parameters, mappers). tttt's LL read misses sit in the intern tables (intern_grow 36-42% in
+  cachegrind's model, but timed directly it is 3-5% of the typecheck: the model doesn't see page zeroing) and the
+  relation cache. I1 misses are not it (bun has more).
+- **Verdict**: no `.d.ts`-specific cost that tsc semantics don't require; the tail is the checker's per-instruction
+  speed and data footprint, general to all checking (the perf track's: the laptop's counters on these two one-file
+  projects would split cycles into data stalls vs the rest). bun's infer.rs has one walk memo tttt lacks
+  (infer_from_type_arguments_once: within one inference, a type-argument walk that changed nothing is not repeated,
+  after 256 infer_types calls); not measured on these files.
+
 ## 2026-10-28 (worker perf): each side's own scaling, and where tttt's goes
 `scripts/bunsweep.py` (the driver this note asked for): the 300 source-sweep projects tsgo checks slowest, four runs
 interleaved per round (tttt defaults = K8 on this 16-vCPU / 8-core box, tttt `--threads 1 --checkers 1`, bun defaults,
