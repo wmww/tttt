@@ -1,0 +1,89 @@
+//// [test/cases/ttttWriteTypeMergedAndIndexed.ts] ////
+
+=== merged.ts ===
+export {}
+class C {
+>C : C
+
+  get x(): string { return "" }
+>x : string
+>"" : ""
+
+  set x(v: string | number) {}
+>x : string
+>v : string | number
+}
+interface C { x: string }
+>x : string
+
+declare const c: C;
+>c : C
+
+c.x = 1;
+>c.x = 1 : 1
+>c.x : string
+>c : C
+>x : string
+>1 : 1
+
+interface D { y: string }
+>y : string
+
+class D {
+>D : D
+
+  get y(): string { return "" }
+>y : string
+>"" : ""
+
+  set y(v: string | number) {}
+>y : string
+>v : string | number
+}
+declare const d: D;
+>d : D
+
+d.y = 1;
+>d.y = 1 : 1
+>d.y : string
+>d : D
+>y : string
+>1 : 1
+
+=== indexed.ts ===
+export {}
+class A {
+>A : A
+
+  get x(): string { return "" }
+>x : string
+>"" : ""
+
+  set x(v: string | number) {}
+>x : string
+>v : string | number
+}
+declare const u: A | { [k: string]: boolean };
+>u : A | { [k: string]: boolean; }
+>k : string
+
+const read: never = u.x;
+>read : never
+>u.x : string | boolean
+>u : A | { [k: string]: boolean; }
+>x : string | boolean
+
+u.x = 1;
+>u.x = 1 : 1
+>u.x : string | number
+>u : A | { [k: string]: boolean; }
+>x : string | number
+>1 : 1
+
+u.x = true;
+>u.x = true : true
+>u.x : string | number
+>u : A | { [k: string]: boolean; }
+>x : string | number
+>true : true
+

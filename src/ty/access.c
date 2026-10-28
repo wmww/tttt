@@ -697,6 +697,12 @@ Ty const* ty_access_write_type(Checker* me, Ty const* object, Ty const* index) {
         bool divergent = false, complete = true;
         for (u32 i = 0; i < members.len && complete; i++) {
             if (members.data[i]->flags & TYF_NULLABLE) continue;
+            // (A member that only has an index signature for it isn't one of the write types: tsc's
+            // createUnionOrIntersectionProperty adds its value type to the read types alone)
+            if (!reads_own_prop(me, members.data[i], ty_regular(me, index))) {
+                if (!ty_access(me, members.data[i], index)) complete = false;
+                continue;
+            }
             Ty const* write = ty_access_write_type(me, members.data[i], index);
             divergent |= write != nullptr;
             if (!write) write = ty_access(me, members.data[i], index);

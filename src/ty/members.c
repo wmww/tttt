@@ -992,6 +992,8 @@ static void builder_add_interface_member(
                         // A property after a class accessor of its name (a merged class) joins its symbol, which stays
                         // what it was: only a declaration more. (After a method it conflicts: a symbol of its own, TS2300)
                         { u32 n = span_valid(i->declaration); prop_add_shared_decl_spans(me, existing, &i->declaration, n); }
+                        // (But a SymbolFlags.Property now: written as it is read, tsc's getWriteTypeOfSymbol)
+                        if (prop_decl_rare(existing->decl)->write_node) prop_decl_rare_mut(me, existing->decl)->write_node = nullptr;
                     } else {
                         break;
                     }
@@ -2159,6 +2161,8 @@ static void builder_add_class_items(
                             !it.item->field.computed_key && !i->method.computed_key && !it.item->field.is_auto_accessor &&
                             cstr_eq(&it.item->field.name_string, &i->method.name_string);
                     }
+                    // (So after a merged interface's property signature it joined)
+                    has_field |= joined && prop == joined;
                     if (has_getter && !has_field) prop_decl_rare_mut(me, prop->decl)->write_node = setter_type; // Writes go by the setter's parameter type
                     break;
                 }

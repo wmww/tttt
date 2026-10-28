@@ -1,0 +1,83 @@
+//// [test/cases/ttttWriteTypeMergedAndIndexed.ts] ////
+
+=== merged.ts ===
+export {}
+class C {
+>C : Symbol(C, Decl(merged.ts, 0, 9), Decl(merged.ts, 4, 1))
+
+  get x(): string { return "" }
+>x : Symbol(C.x, Decl(merged.ts, 1, 9), Decl(merged.ts, 2, 31), Decl(merged.ts, 5, 13))
+
+  set x(v: string | number) {}
+>x : Symbol(C.x, Decl(merged.ts, 1, 9), Decl(merged.ts, 2, 31), Decl(merged.ts, 5, 13))
+>v : Symbol(v, Decl(merged.ts, 3, 8))
+}
+interface C { x: string }
+>C : Symbol(C, Decl(merged.ts, 0, 9), Decl(merged.ts, 4, 1))
+>x : Symbol(C.x, Decl(merged.ts, 1, 9), Decl(merged.ts, 2, 31), Decl(merged.ts, 5, 13))
+
+declare const c: C;
+>c : Symbol(c, Decl(merged.ts, 6, 13))
+>C : Symbol(C, Decl(merged.ts, 0, 9), Decl(merged.ts, 4, 1))
+
+c.x = 1;
+>c.x : Symbol(C.x, Decl(merged.ts, 1, 9), Decl(merged.ts, 2, 31), Decl(merged.ts, 5, 13))
+>c : Symbol(c, Decl(merged.ts, 6, 13))
+>x : Symbol(C.x, Decl(merged.ts, 1, 9), Decl(merged.ts, 2, 31), Decl(merged.ts, 5, 13))
+
+interface D { y: string }
+>D : Symbol(D, Decl(merged.ts, 7, 8), Decl(merged.ts, 8, 25))
+>y : Symbol(D.y, Decl(merged.ts, 8, 13), Decl(merged.ts, 9, 9), Decl(merged.ts, 10, 31))
+
+class D {
+>D : Symbol(D, Decl(merged.ts, 7, 8), Decl(merged.ts, 8, 25))
+
+  get y(): string { return "" }
+>y : Symbol(D.y, Decl(merged.ts, 8, 13), Decl(merged.ts, 9, 9), Decl(merged.ts, 10, 31))
+
+  set y(v: string | number) {}
+>y : Symbol(D.y, Decl(merged.ts, 8, 13), Decl(merged.ts, 9, 9), Decl(merged.ts, 10, 31))
+>v : Symbol(v, Decl(merged.ts, 11, 8))
+}
+declare const d: D;
+>d : Symbol(d, Decl(merged.ts, 13, 13))
+>D : Symbol(D, Decl(merged.ts, 7, 8), Decl(merged.ts, 8, 25))
+
+d.y = 1;
+>d.y : Symbol(D.y, Decl(merged.ts, 8, 13), Decl(merged.ts, 9, 9), Decl(merged.ts, 10, 31))
+>d : Symbol(d, Decl(merged.ts, 13, 13))
+>y : Symbol(D.y, Decl(merged.ts, 8, 13), Decl(merged.ts, 9, 9), Decl(merged.ts, 10, 31))
+
+=== indexed.ts ===
+export {}
+class A {
+>A : Symbol(A, Decl(indexed.ts, 0, 9))
+
+  get x(): string { return "" }
+>x : Symbol(A.x, Decl(indexed.ts, 1, 9), Decl(indexed.ts, 2, 31))
+
+  set x(v: string | number) {}
+>x : Symbol(A.x, Decl(indexed.ts, 1, 9), Decl(indexed.ts, 2, 31))
+>v : Symbol(v, Decl(indexed.ts, 3, 8))
+}
+declare const u: A | { [k: string]: boolean };
+>u : Symbol(u, Decl(indexed.ts, 5, 13))
+>A : Symbol(A, Decl(indexed.ts, 0, 9))
+>k : Symbol(k, Decl(indexed.ts, 5, 24))
+
+const read: never = u.x;
+>read : Symbol(read, Decl(indexed.ts, 6, 5))
+>u.x : Symbol(A.x, Decl(indexed.ts, 1, 9), Decl(indexed.ts, 2, 31))
+>u : Symbol(u, Decl(indexed.ts, 5, 13))
+>x : Symbol(A.x, Decl(indexed.ts, 1, 9), Decl(indexed.ts, 2, 31))
+
+u.x = 1;
+>u.x : Symbol(A.x, Decl(indexed.ts, 1, 9), Decl(indexed.ts, 2, 31))
+>u : Symbol(u, Decl(indexed.ts, 5, 13))
+>x : Symbol(A.x, Decl(indexed.ts, 1, 9), Decl(indexed.ts, 2, 31))
+
+u.x = true;
+>u.x : Symbol(A.x, Decl(indexed.ts, 1, 9), Decl(indexed.ts, 2, 31))
+>u : Symbol(u, Decl(indexed.ts, 5, 13))
+>x : Symbol(A.x, Decl(indexed.ts, 1, 9), Decl(indexed.ts, 2, 31))
+
