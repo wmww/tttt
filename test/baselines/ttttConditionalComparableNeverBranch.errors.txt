@@ -1,0 +1,28 @@
+ttttConditionalComparableNeverBranch.ts(8,16): error TS2352: Conversion of type 'null' to type 'A' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+ttttConditionalComparableNeverBranch.ts(9,16): error TS2352: Conversion of type 'null' to type 'B' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+ttttConditionalComparableNeverBranch.ts(10,16): error TS2352: Conversion of type 'null' to type 'One' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+ttttConditionalComparableNeverBranch.ts(11,16): error TS2352: Conversion of type 'null' to type 'C' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+
+
+==== ttttConditionalComparableNeverBranch.ts (4 errors) ====
+    // A conditional source is comparable through the union of its branches, where a never branch is no member: `null as
+    // (T extends number ? string : never)` is TS2352 (mutation testing, simplifyingConditionalWithInteriorConditionalIsRelated)
+    function f<T>() {
+        type One = T extends string ? string : string;
+        type A = T extends number ? One : never;
+        type B = T extends number ? string : never;
+        type C = T extends number ? One : string;
+        const x1 = null as A;
+                   ~~~~~~~~~
+!!! error TS2352: Conversion of type 'null' to type 'A' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+        const x2 = null as B;
+                   ~~~~~~~~~
+!!! error TS2352: Conversion of type 'null' to type 'B' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+        const x3 = null as One;
+                   ~~~~~~~~~~~
+!!! error TS2352: Conversion of type 'null' to type 'One' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+        const x4 = null as C;
+                   ~~~~~~~~~
+!!! error TS2352: Conversion of type 'null' to type 'C' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+    }
+    

@@ -1,0 +1,61 @@
+//// [test/cases/ttttFailedCallPatternParamUnknown.ts] ////
+
+=== ttttFailedCallPatternParamUnknown.ts ===
+// Known failing: after a call fails at an earlier argument, a later arrow function's destructured parameter is typed
+// unknown by the candidate (T inferred from nothing), and its pattern reports TS2339 in tsc (mutation testing, arrayFrom);
+// without the argument error the pattern's own type replaces unknown (assignParameterType: TS2345)
+declare function h(f: (v: unknown) => void): void;
+>h : (f: (v: unknown) => void) => void
+>f : (v: unknown) => void
+>v : unknown
+
+h(({ a }) => a);
+>h(({ a }) => a) : void
+>h : (f: (v: unknown) => void) => void
+>({ a }) => a : ({ a }: { a: any; }) => any
+>a : any
+>a : any
+
+declare function k<T>(x: T[], f: (v: T) => void): void;
+>k : <T>(x: T[], f: (v: T) => void) => void
+>x : T[]
+>f : (v: T) => void
+>v : T
+
+k([], ({ a }) => a);
+>k([], ({ a }) => a) : void
+>k : <T>(x: T[], f: (v: T) => void) => void
+>[] : never[]
+>({ a }) => a : ({ a }: never) => never
+>a : never
+>a : never
+
+declare function m<T>(f: (v: T) => void): void;
+>m : <T>(f: (v: T) => void) => void
+>f : (v: T) => void
+>v : T
+
+m(({ a }) => a);
+>m(({ a }) => a) : void
+>m : <T>(f: (v: T) => void) => void
+>({ a }) => a : ({ a }: { a: any; }) => any
+>a : any
+>a : any
+
+declare const v: void;
+>v : void
+
+declare function g<T>(x: ArrayLike<T>, f: (v: T) => void): void;
+>g : <T>(x: ArrayLike<T>, f: (v: T) => void) => void
+>x : ArrayLike<T>
+>f : (v: T) => void
+>v : T
+
+g(v, ({ a }) => a);
+>g(v, ({ a }) => a) : void
+>g : <T>(x: ArrayLike<T>, f: (v: T) => void) => void
+>v : void
+>({ a }) => a : ({ a }: { a: any; }) => any
+>a : any
+>a : any
+

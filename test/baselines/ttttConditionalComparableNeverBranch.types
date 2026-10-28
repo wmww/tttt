@@ -1,0 +1,37 @@
+//// [test/cases/ttttConditionalComparableNeverBranch.ts] ////
+
+=== ttttConditionalComparableNeverBranch.ts ===
+// A conditional source is comparable through the union of its branches, where a never branch is no member: `null as
+// (T extends number ? string : never)` is TS2352 (mutation testing, simplifyingConditionalWithInteriorConditionalIsRelated)
+function f<T>() {
+>f : <T>() => void
+
+    type One = T extends string ? string : string;
+>One : T extends string ? string : string
+
+    type A = T extends number ? One : never;
+>A : T extends number ? T extends string ? string : string : never
+
+    type B = T extends number ? string : never;
+>B : T extends number ? string : never
+
+    type C = T extends number ? One : string;
+>C : T extends number ? T extends string ? string : string : string
+
+    const x1 = null as A;
+>x1 : T extends number ? T extends string ? string : string : never
+>null as A : T extends number ? T extends string ? string : string : never
+
+    const x2 = null as B;
+>x2 : T extends number ? string : never
+>null as B : T extends number ? string : never
+
+    const x3 = null as One;
+>x3 : T extends string ? string : string
+>null as One : T extends string ? string : string
+
+    const x4 = null as C;
+>x4 : T extends number ? T extends string ? string : string : string
+>null as C : T extends number ? T extends string ? string : string : string
+}
+

@@ -1,0 +1,61 @@
+//// [test/cases/ttttFailedCallPatternParamUnknown.ts] ////
+
+=== ttttFailedCallPatternParamUnknown.ts ===
+// Known failing: after a call fails at an earlier argument, a later arrow function's destructured parameter is typed
+// unknown by the candidate (T inferred from nothing), and its pattern reports TS2339 in tsc (mutation testing, arrayFrom);
+// without the argument error the pattern's own type replaces unknown (assignParameterType: TS2345)
+declare function h(f: (v: unknown) => void): void;
+>h : Symbol(h, Decl(ttttFailedCallPatternParamUnknown.ts, 0, 0))
+>f : Symbol(f, Decl(ttttFailedCallPatternParamUnknown.ts, 3, 19))
+>v : Symbol(v, Decl(ttttFailedCallPatternParamUnknown.ts, 3, 23))
+
+h(({ a }) => a);
+>h : Symbol(h, Decl(ttttFailedCallPatternParamUnknown.ts, 0, 0))
+>a : Symbol(a, Decl(ttttFailedCallPatternParamUnknown.ts, 4, 4))
+>a : Symbol(a, Decl(ttttFailedCallPatternParamUnknown.ts, 4, 4))
+
+declare function k<T>(x: T[], f: (v: T) => void): void;
+>k : Symbol(k, Decl(ttttFailedCallPatternParamUnknown.ts, 4, 16))
+>T : Symbol(T, Decl(ttttFailedCallPatternParamUnknown.ts, 5, 19))
+>x : Symbol(x, Decl(ttttFailedCallPatternParamUnknown.ts, 5, 22))
+>T : Symbol(T, Decl(ttttFailedCallPatternParamUnknown.ts, 5, 19))
+>f : Symbol(f, Decl(ttttFailedCallPatternParamUnknown.ts, 5, 29))
+>v : Symbol(v, Decl(ttttFailedCallPatternParamUnknown.ts, 5, 34))
+>T : Symbol(T, Decl(ttttFailedCallPatternParamUnknown.ts, 5, 19))
+
+k([], ({ a }) => a);
+>k : Symbol(k, Decl(ttttFailedCallPatternParamUnknown.ts, 4, 16))
+>a : Symbol(a, Decl(ttttFailedCallPatternParamUnknown.ts, 6, 8))
+>a : Symbol(a, Decl(ttttFailedCallPatternParamUnknown.ts, 6, 8))
+
+declare function m<T>(f: (v: T) => void): void;
+>m : Symbol(m, Decl(ttttFailedCallPatternParamUnknown.ts, 6, 20))
+>T : Symbol(T, Decl(ttttFailedCallPatternParamUnknown.ts, 7, 19))
+>f : Symbol(f, Decl(ttttFailedCallPatternParamUnknown.ts, 7, 22))
+>v : Symbol(v, Decl(ttttFailedCallPatternParamUnknown.ts, 7, 26))
+>T : Symbol(T, Decl(ttttFailedCallPatternParamUnknown.ts, 7, 19))
+
+m(({ a }) => a);
+>m : Symbol(m, Decl(ttttFailedCallPatternParamUnknown.ts, 6, 20))
+>a : Symbol(a, Decl(ttttFailedCallPatternParamUnknown.ts, 8, 4))
+>a : Symbol(a, Decl(ttttFailedCallPatternParamUnknown.ts, 8, 4))
+
+declare const v: void;
+>v : Symbol(v, Decl(ttttFailedCallPatternParamUnknown.ts, 9, 13))
+
+declare function g<T>(x: ArrayLike<T>, f: (v: T) => void): void;
+>g : Symbol(g, Decl(ttttFailedCallPatternParamUnknown.ts, 9, 22))
+>T : Symbol(T, Decl(ttttFailedCallPatternParamUnknown.ts, 10, 19))
+>x : Symbol(x, Decl(ttttFailedCallPatternParamUnknown.ts, 10, 22))
+>ArrayLike : Symbol(ArrayLike, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttFailedCallPatternParamUnknown.ts, 10, 19))
+>f : Symbol(f, Decl(ttttFailedCallPatternParamUnknown.ts, 10, 38))
+>v : Symbol(v, Decl(ttttFailedCallPatternParamUnknown.ts, 10, 43))
+>T : Symbol(T, Decl(ttttFailedCallPatternParamUnknown.ts, 10, 19))
+
+g(v, ({ a }) => a);
+>g : Symbol(g, Decl(ttttFailedCallPatternParamUnknown.ts, 9, 22))
+>v : Symbol(v, Decl(ttttFailedCallPatternParamUnknown.ts, 9, 13))
+>a : Symbol(a, Decl(ttttFailedCallPatternParamUnknown.ts, 11, 7))
+>a : Symbol(a, Decl(ttttFailedCallPatternParamUnknown.ts, 11, 7))
+

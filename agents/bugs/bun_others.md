@@ -388,7 +388,7 @@ Grammar check order (tsgo's `||` chains and early returns), ambient contexts fro
 files not being external modules; each with a `test/cases/tttt*.ts` repro.
 - TS1171 (a comma computed key): the checker's, after TS1166/TS1168/TS1169/TS1170, never in a destructuring target;
   a type member's `[a, b]` parses (28-C12, 02-C10). [fixed 96c163d66, d31d2030d] A class member's parse-time
-  modifier errors and checkGrammarFunctionLikeDeclaration's gate it too (next bullet). [fixed bun8-3]
+  modifier errors and checkGrammarFunctionLikeDeclaration's gate it too (next bullet). [fixed d108a3cf1]
 - `declare` makes the node ambient: `declare export { }` in a namespace (no TS1194, 28-C33f), `declare export = x` and
   `declare export default x` (TS1120, TS2714, no TS1203/TS1294/TS1029, ambient functions: 03-C17a, 03-C17b, 80-R04), a
   `declare` property's initializer (TS1183, TS1040: 53-L15). [fixed d9791e4e7, 42e45e894, 2467363f3, 5aa94c064]
@@ -468,7 +468,7 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   reserved word ends it when a statement takes it (`<A, B` then `export const x`: TS1005 ',' expected, the alias's
   type is a reference named `export`), else it is TS1139 and skipped; an interface's or type alias's `<` commits
   like a class's; in a JSX file `</` opens none (mutation testing's declarationEmitArrowFunctionNoRenaming, bun
-  56-L06's lt1). [fixed bun8-2] A function declaration's list still recovers like an arrow function's
+  56-L06's lt1). [fixed d92652247] A function declaration's list still recovers like an arrow function's
   (speculative): `function f<T, default>() {}` is TS1005 '>' expected and more, tsc's TS1139 alone. [open]
 - Mutation testing (seed 20261030) also leaves: a duplicate type parameter (`<A, B extends Object A>`, TS2300) that
   tsc's appendTypeParameters counts once (getDeclaredTypeOfTypeParameter of the one merged symbol) and tttt's
@@ -476,13 +476,21 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   value, only with a parse error. [open] discriminantPropertyInference's TS2842 x2 is the harness's post-emit count
   (tsc's pre-emit diagnostics have them too: the CLI reports them). [tsgo] errorInfoForRelatedIndexTypes...'s TS6053
   is mutate.py's harness (a `/.lib/react16.d.ts` reference it doesn't serve). [text]
+- Mutation testing, seed 20261031 (2000 mutants, 4 errors-component differences, 2 render): a conditional source is
+  comparable through the union of its branches, where a never branch is no member (`null as (T extends number ?
+  string : never)` is TS2352; conditional_source_related() took never's relation for the comparable relation's
+  "some member": simplifyingConditionalWithInteriorConditionalIsRelated, ttttConditionalComparableNeverBranch).
+  [fixed bun8-4] After a call fails at an earlier argument (`Array.from(v, ({ a }) => ...)` with `v: void`), tsc types
+  the later arrow function's destructured parameter unknown and its pattern reports TS2339; without the argument
+  error assignParameterType's binding-pattern fallback applies (TS2345). tttt reports neither TS2339 (arrayFrom;
+  ttttFailedCallPatternParamUnknown, known failing: where tsgo's parameter type is assigned isn't traced). [open]
 - Class member TS1171/TS1166/TS1168 after the member's own modifier or signature grammar errors (tsgo's
   checkGrammarModifiers || checkGrammarProperty/Method/Accessor chains: TS1028, TS1029, TS1030, TS1031, TS1244...,
   then a method's or accessor's parameter list, `use strict` parameters, accessor and generator checks): the parser
   records check_modifiers()'s verdict on the member (ClassItem.modifiers_reported), class_computed_key_typecheck()
   asks function_impl_member_grammar_fails() (the signature checks into scratch) before reporting (no bun case;
   ttttClassMemberCommaKeyGrammar). An empty type parameter list (TS1098, the parser's) doesn't gate it yet,
-  nor does tttt gate its own `use strict` TS1346 by the earlier checks. [fixed bun8-3]
+  nor does tttt gate its own `use strict` TS1346 by the earlier checks. [fixed d108a3cf1]
 
 ## Not looked at, by code
 - Each paragraph below is a code and direction with the cases it mismatches in, uninvestigated: at least one open

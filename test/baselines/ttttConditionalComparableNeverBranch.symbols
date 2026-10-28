@@ -1,0 +1,44 @@
+//// [test/cases/ttttConditionalComparableNeverBranch.ts] ////
+
+=== ttttConditionalComparableNeverBranch.ts ===
+// A conditional source is comparable through the union of its branches, where a never branch is no member: `null as
+// (T extends number ? string : never)` is TS2352 (mutation testing, simplifyingConditionalWithInteriorConditionalIsRelated)
+function f<T>() {
+>f : Symbol(f, Decl(ttttConditionalComparableNeverBranch.ts, 0, 0))
+>T : Symbol(T, Decl(ttttConditionalComparableNeverBranch.ts, 2, 11))
+
+    type One = T extends string ? string : string;
+>One : Symbol(One, Decl(ttttConditionalComparableNeverBranch.ts, 2, 17))
+>T : Symbol(T, Decl(ttttConditionalComparableNeverBranch.ts, 2, 11))
+
+    type A = T extends number ? One : never;
+>A : Symbol(A, Decl(ttttConditionalComparableNeverBranch.ts, 3, 50))
+>T : Symbol(T, Decl(ttttConditionalComparableNeverBranch.ts, 2, 11))
+>One : Symbol(One, Decl(ttttConditionalComparableNeverBranch.ts, 2, 17))
+
+    type B = T extends number ? string : never;
+>B : Symbol(B, Decl(ttttConditionalComparableNeverBranch.ts, 4, 44))
+>T : Symbol(T, Decl(ttttConditionalComparableNeverBranch.ts, 2, 11))
+
+    type C = T extends number ? One : string;
+>C : Symbol(C, Decl(ttttConditionalComparableNeverBranch.ts, 5, 47))
+>T : Symbol(T, Decl(ttttConditionalComparableNeverBranch.ts, 2, 11))
+>One : Symbol(One, Decl(ttttConditionalComparableNeverBranch.ts, 2, 17))
+
+    const x1 = null as A;
+>x1 : Symbol(x1, Decl(ttttConditionalComparableNeverBranch.ts, 7, 9))
+>A : Symbol(A, Decl(ttttConditionalComparableNeverBranch.ts, 3, 50))
+
+    const x2 = null as B;
+>x2 : Symbol(x2, Decl(ttttConditionalComparableNeverBranch.ts, 8, 9))
+>B : Symbol(B, Decl(ttttConditionalComparableNeverBranch.ts, 4, 44))
+
+    const x3 = null as One;
+>x3 : Symbol(x3, Decl(ttttConditionalComparableNeverBranch.ts, 9, 9))
+>One : Symbol(One, Decl(ttttConditionalComparableNeverBranch.ts, 2, 17))
+
+    const x4 = null as C;
+>x4 : Symbol(x4, Decl(ttttConditionalComparableNeverBranch.ts, 10, 9))
+>C : Symbol(C, Decl(ttttConditionalComparableNeverBranch.ts, 5, 47))
+}
+

@@ -6004,6 +6004,10 @@ static Ternary conditional_source_related(Checker* me, RelationState* st, Ty con
     // each one otherwise. In the order of their union, by id: tsc relates getUnionType([trueConstraint,
     // falseConstraint]) member by member, and stops at the first that fails)
     bool some = st->relation == TY_RELATION_COMPARABLE;
+    // (A never branch is no member of the union, which some other member must relate for the comparable relation:
+    // `null as (T extends number ? string : never)` is TS2352)
+    if (some && (true_branch->flags & TYF_NEVER) && !(false_branch->flags & TYF_NEVER)) true_branch = false_branch;
+    else if (some && (false_branch->flags & TYF_NEVER) && !(true_branch->flags & TYF_NEVER)) false_branch = true_branch;
     Ty const* first = false_branch == true_branch || ty_compare_ids(false_branch, true_branch) < 0 ? false_branch : true_branch;
     Ty const* second = first == true_branch ? false_branch : true_branch;
     Ternary related = is_related_to_side(me, st, first, target, false, 2);
