@@ -544,7 +544,10 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   initial value is TS2345 on the callback in tsgo, TS2554 in tttt (overload error choice, checker). [open]
   recursiveTypeInferenceReturnTypeConstraint (missing TS2615), isolatedDeclarationErrorsObjects (missing TS9009),
   noImplicitAnyUnionNormalizedObjectLiteral1 (missing TS7005), esDecorators-contextualTypes.2 (TS7053 elaboration),
-  typeGuardFunctionErrors (TS2677's head missing: TS2559 alone): unlooked at, checker. Seed 20261031's
+  unlooked at, checker; typeGuardFunctionErrors (TS2677's containing message lost to TS2559's weak type head)
+  [fixed 67fdf26b2]. Seed 20261103's errors component: noImplicitAnyUnionNormalizedObjectLiteral1 (missing TS7005
+  when a spread's function returns `undefined | {...}` without strictNullChecks) and isolatedDeclarationErrorsObjects
+  (missing TS9009) [open], checker. Seed 20261031's
   inferFromAnnotatedReturn1 is now text-only (`computation: {}` in tsgo's TS2365 type, an arrow's type printed
   mid-inference as `{}`), its contextualTypesNegatedTypeLikeConstraintInGenericMappedType2 fixed (c6c305d83).
 - After a parameter's modifiers a reserved word is TS1359 (parseBindingIdentifier), not TS1003: `declare function`
