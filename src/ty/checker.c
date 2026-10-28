@@ -2277,7 +2277,12 @@ Ty const* ty_reduced_slow(Checker* me, Ty const* ty) {
     Ty const* ret = changed ? ty_union(me, reduced, types.len, nullptr, (TyList){0}) : ty;
     if (reduced != stack_buf) free(reduced);
     *intern_slot(me, &my links, key, 2) = ret;
-    if (ret != ty && ret->kind == TY_UNION) *intern_slot(me, &my links, (u64[]){ KEY_REDUCED_UNION, ret->id }, 2) = ret;
+    // (The reduced union is its own reduction. Only into an empty entry: one already there may be a block this checker
+    // published (--shared-graph publishes memo blocks by address), which other checkers read: TSan, excalidraw T4)
+    if (ret != ty && ret->kind == TY_UNION) {
+        void const** own = intern_slot(me, &my links, (u64[]){ KEY_REDUCED_UNION, ret->id }, 2);
+        if (!*own) *own = ret;
+    }
     return ret;
 }
 
