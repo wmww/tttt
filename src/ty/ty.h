@@ -1505,9 +1505,12 @@ struct Checker {
     u32 generic_relation_keys; // How many generic_relation_key()s were made (relate.c)
     u32 variance_depth; // Variances are being measured, which is only reliable while the marker types are compared
     // The declared types and aliases whose variances are being measured, outermost first (tsgo's varianceStack): a
-    // circularity restarts from its smallest symbol (relate.c, measured_variances())
-    struct VarianceClaim* variance_stack[64];
-    u32 variance_stack_len;
+    // circularity restarts from its smallest symbol (relate.c, measured_variances()) on a stack of its own above the
+    // frames it sets aside (from variance_stack_base, at most VARIANCE_STACK_SEGMENT of them each)
+    struct VarianceClaim* variance_stack[128];
+    u32 variance_stack_len, variance_stack_base;
+    u64 variance_frame_clock; // Counts the measurements started (relate.c, Variances.serial)
+    struct DeepStamps* deep_stamps; // --shared-graph: when CACHE_DEEP pairs were concluded inside a measurement, per relation (relate.c)
     // The checker's in-flight records of the kinds that push no Resolving entry, innermost first, per kind (see
     // ty_claim_push()): what a lazy field another worker could read must not hold while it is computed. Every variance
     // measurement in flight is one (CLAIM_VARIANCES, relate.c's get_variances()), those a restart set aside from
@@ -2502,6 +2505,7 @@ Ty const* ty_report_target(Checker* me, Ty const* source, Ty const* target); // 
 Ty const* ty_single_base_for_non_augmenting_subtype(Checker* me, Ty const* ty);
 void ty_display_pair_cstr(Checker* me, Ty const* a, Ty const* b, cstr* a_out, cstr* b_out);
 void relation_cache_drop(RelationCache* me);
+void ty_deep_stamps_drop(Checker* me); // (relate.c)
 // conditional.c
 // Null while the conditional type has to stay deferred. `mapper`: what instantiated the conditional type (the constraints
 // of its `infer X extends C` are the root's)

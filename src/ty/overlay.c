@@ -15,9 +15,16 @@ void graph_taint_bump(void) {
     if (checker && checker->memo_taint && checker->memo_taint->pending_len) graph_memo_sweep(checker);
 }
 #ifdef TTTT_TAINT_SITES
-typedef struct TaintSite { char const* file; int line; int reason; } TaintSite;
+typedef struct TaintSite { char const* file; int line; int reason; int internal; int detail; } TaintSite;
 static thread_local TaintSite* taint_sites;
 static thread_local u64 taint_sites_cap;
+static thread_local int taint_next_internal, taint_next_detail;
+void graph_taint_internal_next(int frames) {
+    taint_next_internal = frames;
+}
+void graph_taint_detail_next(int detail) {
+    taint_next_detail = detail;
+}
 void graph_taint_bump_at(int reason, char const* file, int line) {
     u64 at = graph_taint_now;
     if (at >= taint_sites_cap) {
@@ -28,14 +35,25 @@ void graph_taint_bump_at(int reason, char const* file, int line) {
         memset(taint_sites + taint_sites_cap, 0, (cap - taint_sites_cap) * sizeof(TaintSite));
         taint_sites_cap = cap;
     }
-    taint_sites[at] = (TaintSite){ file, line, reason };
+    taint_sites[at] = (TaintSite){ file, line, reason, taint_next_internal, taint_next_detail };
+    taint_next_internal = taint_next_detail = 0;
+    // (TTTT_TAINT_LOG=1: every event as it happens, `TE checker variance_depth site`)
+    static int log_on = -1;
+    if (log_on < 0) log_on = getenv("TTTT_TAINT_LOG") != nullptr;
+    if (log_on) {
+        Checker* checker = current_checker;
+        fprintf(stderr, "TE %u %u %s\n", checker ? checker->census_id : 0u, checker ? checker->variance_depth : 0u, graph_taint_site(at));
+    }
     graph_taint_bump();
 }
 char const* graph_taint_site(u64 at) {
     static thread_local char buf[256];
     if (at >= taint_sites_cap || !taint_sites[at].file) return "-";
     char const* f = strrchr(taint_sites[at].file, '/');
-    snprintf(buf, sizeof buf, "%s:%d:%d", f ? f + 1 : taint_sites[at].file, taint_sites[at].line, taint_sites[at].reason);
+    char detail[16] = "";
+    if (taint_sites[at].detail) snprintf(detail, sizeof detail, ":k%d", taint_sites[at].detail - 1);
+    snprintf(buf, sizeof buf, "%s:%d:%d%s%s", f ? f + 1 : taint_sites[at].file, taint_sites[at].line, taint_sites[at].reason,
+        detail, taint_sites[at].internal ? ":i" : "");
     return buf;
 }
 #endif

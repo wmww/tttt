@@ -229,6 +229,7 @@ void graph_release(TyGraph* me, Checker* checker) {
     free(checker->graph_relation_buf);
     memo_taint_drop(checker);
     free(checker->graph_variance_claims);
+    ty_deep_stamps_drop(checker);
     checker->graph_variance_claims = nullptr;
     checker->graph_variance_claims_len = checker->graph_variance_claims_cap = 0;
     checker->graph_memo_log = nullptr;
@@ -468,64 +469,95 @@ void graph_variance_claimed(Checker* checker, VarianceSlot* slot) {
     checker->graph_variance_claims[checker->graph_variance_claims_len++] = slot;
 }
 
-static _Atomic u64 variance_published, variance_adopted, variance_differ, variance_private, variance_poisoned, variance_groups, variance_groups_tainted;
+static _Atomic u64 variance_published, variance_adopted, variance_differ, variance_private, variance_poisoned, variance_groups, variance_groups_tainted,
+    variance_unpoisoned;
 
 static void memo_taint_mark(Checker* checker, void const* const* block);
 
-bool graph_variances_publish(
-    Checker* checker, void const** (*block_of)(Checker* checker, VarianceSlot const* slot), bool (*equal)(void const* a, void const* b), bool clean
+// One claimed slot published from the checker's values `block[0]` (clean) or poisoned: whether its values are the
+// published ones now
+static bool variance_publish_slot(
+    Checker* checker, VarianceSlot* slot, void const** block, bool clean, bool (*equal)(void const* a, void const* b)
 ) {
-    bool all_published = true;
+    void const* mine = block[0];
+    uintptr_t seen = SW_EMPTY;
+    bool won = atomic_compare_exchange_strong_explicit(&slot->value.v, &seen, clean ? (uintptr_t)mine : (uintptr_t)SW_POISON, memory_order_release, memory_order_acquire);
+    // (A clean frame's values are the subject's, whoever measures them cleanly: they replace a poison, which only
+    // said that some worker's measurement was its history's)
+    if (!won && clean && seen == SW_POISON) {
+        won = atomic_compare_exchange_strong_explicit(&slot->value.v, &seen, (uintptr_t)mine, memory_order_release, memory_order_acquire);
+        if (won) GRAPH_STAT_ADD(&variance_unpoisoned, 1, memory_order_relaxed);
+    }
+    if (won) {
+        if (clean) {
+            GRAPH_STAT_ADD(&variance_published, 1, memory_order_relaxed);
+#ifdef TTTT_GRAPH_FINGERPRINT
+            if (!slot->alias) graph_fp_result(TK_VARIANCES, slot->subject, mine, false);
+#endif
+            return true;
+        }
+        GRAPH_STAT_ADD(&variance_poisoned, 1, memory_order_relaxed);
+    } else if (clean && seen != SW_POISON && equal((void const*)seen, mine)) {
+        // (Pure data: the winner's from now on, nothing told the two apart)
+        GRAPH_STAT_ADD(&variance_adopted, 1, memory_order_relaxed);
+        block[0] = (void const*)seen;
+        return true;
+    } else if (!clean || seen == SW_POISON) {
+        GRAPH_STAT_ADD(&variance_private, 1, memory_order_relaxed);
+    } else {
+        GRAPH_STAT_ADD(&variance_differ, 1, memory_order_relaxed);
+        // (Two clean groups that disagree: something either read escaped the rule)
+        if (getenv("TTTT_GRAPH_STATS")) {
+            cstr name = slot->alias ? cstr_from("(an alias)") : ty_to_cstr(checker, slot->subject);
+            unsigned char const* x = (unsigned char const*)mine;
+            unsigned char const* y = (unsigned char const*)seen;
+            // (Variances: u32 len, bool pending, bool clean, u64 serial, the data from byte 16)
+            cstr xs = cstr_init(), ys = cstr_init();
+            for (u32 j = 0; j < *(u32 const*)x && j < 16; j++) {
+                cstr_append_fmt(&xs, " %u", x[16 + j]);
+                cstr_append_fmt(&ys, " %u", y[16 + j]);
+            }
+            eprintln("graph: variances of ", name, " differ from the published ones (worker ", (u32)checker->graph_worker, "):", xs, " vs", ys);
+            c_drop(cstr, &xs, &ys);
+            cstr_drop(&name);
+        }
+    }
+    // Its own from now on: private-first lookups keep finding it, and reading it is a taint event
+    memo_taint_mark(checker, (void const* const*)block);
+    return false;
+}
+
+bool graph_variance_publish_early(Checker* checker, VarianceSlot* slot, void const** block, bool (*equal)(void const* a, void const* b)) {
+    for (u32 i = checker->graph_variance_claims_len; i-- > 1;) {
+        if (checker->graph_variance_claims[i] != slot) continue;
+        checker->graph_variance_claims[i] = nullptr;
+        return variance_publish_slot(checker, slot, block, true, equal);
+    }
+    return false;
+}
+
+bool graph_variances_publish(
+    Checker* checker, void const** (*block_of)(Checker* checker, VarianceSlot const* slot), bool (*equal)(void const* a, void const* b),
+    bool (*clean_of)(void const* values)
+) {
+    bool outer_kept = false;
     GRAPH_STAT_ADD(&variance_groups, 1, memory_order_relaxed);
-    if (!clean) GRAPH_STAT_ADD(&variance_groups_tainted, 1, memory_order_relaxed);
     for (u32 i = 0; i < checker->graph_variance_claims_len; i++) {
         VarianceSlot* slot = checker->graph_variance_claims[i];
+        // (Published at its frame's end already)
+        if (!slot) continue;
         void const** block = block_of(checker, slot);
         void const* mine = block ? block[0] : nullptr;
         // (Not measured after all: a restart of another subject's measurement finished first and this one's never
         // ran. Left empty for whoever measures it)
         if (!mine) continue;
-        uintptr_t seen = SW_EMPTY;
-        if (atomic_compare_exchange_strong_explicit(&slot->value.v, &seen, clean ? (uintptr_t)mine : (uintptr_t)SW_POISON, memory_order_release, memory_order_acquire)) {
-            if (clean) {
-                GRAPH_STAT_ADD(&variance_published, 1, memory_order_relaxed);
-#ifdef TTTT_GRAPH_FINGERPRINT
-                if (!slot->alias) graph_fp_result(TK_VARIANCES, slot->subject, mine, false);
-#endif
-                continue;
-            }
-            GRAPH_STAT_ADD(&variance_poisoned, 1, memory_order_relaxed);
-        } else if (clean && seen != SW_POISON && equal((void const*)seen, mine)) {
-            // (Pure data: the winner's from now on, nothing told the two apart)
-            GRAPH_STAT_ADD(&variance_adopted, 1, memory_order_relaxed);
-            block[0] = (void const*)seen;
-            continue;
-        } else if (!clean || seen == SW_POISON) {
-            GRAPH_STAT_ADD(&variance_private, 1, memory_order_relaxed);
-        } else {
-            GRAPH_STAT_ADD(&variance_differ, 1, memory_order_relaxed);
-            // (Two clean groups that disagree: something either read escaped the rule)
-            if (getenv("TTTT_GRAPH_STATS")) {
-                cstr name = slot->alias ? cstr_from("(an alias)") : ty_to_cstr(checker, slot->subject);
-                unsigned char const* x = (unsigned char const*)mine;
-                unsigned char const* y = (unsigned char const*)seen;
-                // (Variances: u32 len, bool pending, the data from byte 5)
-                cstr xs = cstr_init(), ys = cstr_init();
-                for (u32 i = 0; i < *(u32 const*)x && i < 16; i++) {
-                    cstr_append_fmt(&xs, " %u", x[5 + i]);
-                    cstr_append_fmt(&ys, " %u", y[5 + i]);
-                }
-                eprintln("graph: variances of ", name, " differ from the published ones (worker ", (u32)checker->graph_worker, "):", xs, " vs", ys);
-                c_drop(cstr, &xs, &ys);
-                cstr_drop(&name);
-            }
-        }
-        // Its own from now on: private-first lookups keep finding it, and reading it is a taint event
-        memo_taint_mark(checker, (void const* const*)block);
-        all_published = false;
+        bool clean = clean_of(mine);
+        if (!i && !clean) GRAPH_STAT_ADD(&variance_groups_tainted, 1, memory_order_relaxed);
+        bool kept = variance_publish_slot(checker, slot, block, clean, equal);
+        if (!i) outer_kept = kept;
     }
     checker->graph_variance_claims_len = 0;
-    return all_published;
+    return outer_kept;
 }
 
 static void publish_declaration_memo(TyGraph* me, Checker* checker, u32 slot) {
@@ -787,6 +819,12 @@ void graph_link_tainted(Checker* checker, u64 key) {
 void graph_memo_hit_slow(struct MemoTaint const* t, uintptr_t key) {
     if (memo_taint_has(t, key)) {
         GRAPH_STAT_ADD(&memo_stat_hits, 1, memory_order_relaxed);
+#ifdef TTTT_TAINT_SITES
+        // (The kind: a node link memo's key holds it in its top byte, an intern block in its first key word's low byte,
+        // after the key's length when it is long)
+        u64 const* block = (u64 const*)key;
+        graph_taint_detail_next(1 + (int)(key >> 56 ? (key >> 56) - 1 : block[1] >> 48 ? block[1] & 255 : block[2] & 255));
+#endif
         TAINT_EVENT(TAINT_READ_TAINTED);
     }
 }
@@ -1012,7 +1050,7 @@ void graph_print_stats(TyGraph const* me) {
     eprintln("graph: deep-nesting cuts ", deep, " (taint events, plan 86 stage 4f)");
     eprintln("graph: variance groups ", (u64)variance_groups, " (tainted ", (u64)variance_groups_tainted, "), slots published ",
         (u64)variance_published, ", adopted ", (u64)variance_adopted, ", differing ", (u64)variance_differ, ", poisoned ",
-        (u64)variance_poisoned, ", tainted after another's ", (u64)variance_private);
+        (u64)variance_poisoned, ", unpoisoned ", (u64)variance_unpoisoned, ", tainted after another's ", (u64)variance_private);
     eprintln("graph: memo entries clean ", (u64)memo_stat_clean, ", tainted ", (u64)memo_stat_tainted, " (by a pushed-out miss ",
         (u64)memo_stat_floor, "), tainted hits ", (u64)memo_stat_hits);
     overlay_print_stats((Checker* const*)my workers + 1, my checkers < 63 ? my checkers : 63);

@@ -129,7 +129,10 @@ extern thread_local uint64_t graph_taint_now;
 #ifdef TTTT_TAINT_SITES
 // (sg2's audit build, -DTTTT_TAINT_SITES: every event's site logged by its counter value, graph_taint_site())
 [[gnu::cold, gnu::noinline]] void graph_taint_bump_at(int reason, char const* file, int line);
-char const* graph_taint_site(uint64_t at); // "file:line:reason" of the event that bumped the counter from `at`
+char const* graph_taint_site(uint64_t at); // "file:line:reason" of the event that bumped the counter from `at` (":i" if
+// internal to the outermost variance frame in flight)
+void graph_taint_internal_next(int frames); // The next event is internal to that many variance frames (relate.c)
+void graph_taint_detail_next(int detail); // The next event's detail + 1 (a tainted memo hit's KEY_ kind: graph.c)
 #define TAINT_EVENT(reason) graph_taint_bump_at(reason, __FILE__, __LINE__)
 #define TAINT_IF(reason, condition) ((reason) == TAINT_PEEK ? (condition) : (condition) ? (graph_taint_bump_at(reason, __FILE__, __LINE__), true) : false)
 #else

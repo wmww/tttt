@@ -258,6 +258,67 @@ static void relation_cache_put(RelationCache* me, u64 key, unsigned value) {
     my values[i] = (unsigned char)value;
 }
 
+// --shared-graph: when each CACHE_DEEP pair concluded inside a variance measurement's frame was concluded (the frame
+// clock then, Checker.variance_frame_clock): a hit of it is internal to the frames in flight since before then, which
+// it is a function of (frame_internal()). One per relation cache, keyed by the pair's cache key (never 0)
+typedef struct DeepStamps {
+    u64* keys; // 0 empty
+    u64* stamps;
+    u32 cap, len;
+} DeepStamps;
+
+static u32 deep_stamp_index(DeepStamps const* t, u64 k) {
+    u32 mask = t->cap - 1;
+    u32 i = (u32)((k * 0x9e3779b97f4a7c15ull) >> 32) & mask;
+    while (t->keys[i] && t->keys[i] != k) i = (i + 1) & mask;
+    return i;
+}
+
+[[gnu::cold, gnu::noinline]] static void deep_stamp_put(Checker* me, RelationCache const* cache, u64 key) {
+    if (!my deep_stamps) my deep_stamps = calloc(TY_RELATION_COUNT, sizeof(DeepStamps));
+    panic_if(!my deep_stamps, "out of memory");
+    DeepStamps* t = &my deep_stamps[cache - my relations];
+    if ((t->len + 1) * 2 > t->cap) {
+        DeepStamps bigger = { .cap = t->cap ? t->cap * 2 : 1024 };
+        bigger.keys = calloc(bigger.cap, sizeof(u64));
+        bigger.stamps = malloc(bigger.cap * sizeof(u64));
+        panic_if(!bigger.keys || !bigger.stamps, "out of memory");
+        for (u32 i = 0; i < t->cap; i++) {
+            if (!t->keys[i]) continue;
+            u32 j = deep_stamp_index(&bigger, t->keys[i]);
+            bigger.keys[j] = t->keys[i];
+            bigger.stamps[j] = t->stamps[i];
+            bigger.len++;
+        }
+        free(t->keys);
+        free(t->stamps);
+        *t = bigger;
+    }
+    u32 i = deep_stamp_index(t, key);
+    if (!t->keys[i]) {
+        t->keys[i] = key;
+        t->len++;
+    }
+    t->stamps[i] = my variance_frame_clock;
+}
+
+static inline void relation_cache_put_deep(Checker* me, RelationCache* cache, u64 key, unsigned value) {
+    relation_cache_put(cache, key, value);
+    if (__builtin_expect((value & CACHE_DEEP) && my variance_stack_len && my graph, 0)) deep_stamp_put(me, cache, key);
+}
+
+void ty_deep_stamps_drop(Checker* me) {
+    if (!my deep_stamps) return;
+    for (u32 r = 0; r < TY_RELATION_COUNT; r++) {
+        free(my deep_stamps[r].keys);
+        free(my deep_stamps[r].stamps);
+    }
+    free(my deep_stamps);
+    my deep_stamps = nullptr;
+}
+
+static void deep_hit_frames(Checker* me, RelationCache const* cache, u64 key);
+
 static u64 relation_key(Ty const* source, Ty const* target) {
     return (u64)source->id << 32 | target->id; // ids start at 1, so a key is never 0
 }
@@ -3470,6 +3531,10 @@ typedef struct Variances {
     // --shared-graph on threads: measured by this checker's group in progress, not published yet (a read of it is
     // internal to the group, a taint event for anything else: plan 86 stage 4f's variance groups)
     bool pending;
+    // Its measurement's frame read nothing but published clean values and what the frame made itself (its own claim,
+    // values measured inside it): a function of the subject, publishable alone (measure_variances())
+    bool clean;
+    u64 serial; // Its frame's start (Checker.variance_frame_clock): what a frame in flight began before was made inside it
     unsigned char data[];
 } Variances;
 
@@ -3482,9 +3547,16 @@ typedef struct VarianceClaim {
     u32 len;
     // Met again while being measured (tsgo's empty variances): Ternary Unknown from then on, no more restarts
     bool circular;
-    bool in_group; // --shared-graph on threads: its slot was empty, it is published with the outermost measurement's group
+    bool in_group; // --shared-graph on threads: its slot was empty or poisoned, it is published with the outermost measurement's group
     Variances const* done; // Set by the first measurement of it to finish (a restart's may be first)
+    // Its measurement's frame (measure_variances()): its start on the frame clock and the taint counter, and how many
+    // events since were internal to it (frame_internal())
+    u64 frame_serial, frame_taint, frame_internal;
+    struct VarianceSlot* slot; // --shared-graph on threads: its slot if in_group
 } VarianceClaim;
+
+// (How deep tsgo's varianceStack goes in a measurement and in each restart: Checker.variance_stack)
+#define VARIANCE_STACK_SEGMENT 64
 
 static VarianceClaim* variance_claim_of(Checker* me, Ty const* declared, Symbol const* alias) {
     Claim* claim = ty_claim_find(me, CLAIM_VARIANCES, declared ? (void const*)declared : (void const*)alias, !declared);
@@ -3634,10 +3706,12 @@ static VarianceSubject subject_of_claim(Checker* me, VarianceClaim const* claim)
 }
 
 // The claim's measurement is done: the links get it
-static Variances const* publish_variances(Checker* me, VarianceClaim* claim, unsigned char const* data) {
+static Variances const* publish_variances(Checker* me, VarianceClaim* claim, unsigned char const* data, bool clean) {
     Variances* variances = arena_alloc(&my arena, sizeof(Variances) + claim->len);
     variances->len = claim->len;
     variances->pending = claim->in_group;
+    variances->clean = clean;
+    variances->serial = claim->frame_serial;
     memcpy(variances->data, data, claim->len);
     u64 key[2] = { claim->declared ? KEY_VARIANCES : KEY_ALIAS_VARIANCES,
         claim->declared ? claim->declared->id : (u64)(uintptr_t)claim->alias };
@@ -3645,6 +3719,8 @@ static Variances const* publish_variances(Checker* me, VarianceClaim* claim, uns
     claim->done = variances;
     return variances;
 }
+
+static void publish_frame_early(Checker* me, VarianceClaim* claim);
 
 // Measures the claim's variances (tsgo's getVariancesWorker), unless a restart (see measured_variances()) gets there
 // first
@@ -3654,12 +3730,16 @@ static void measure_variances(Checker* me, VarianceSubject subject, VarianceClai
     // (The outermost measurement is a resolution barrier, tsgo's resolutionStart: an alias in flight around it isn't a
     // cycle when the measurement reaches it, it is resolved again: an alias whose conditional type relates a class
     // whose methods name a generic type constrained by that alias, apollo-client's Cache.Implementation)
-    bool outermost = !my variance_stack_len;
+    bool outermost = my variance_stack_len == my variance_stack_base;
     if (outermost) ty_barrier_push(me, BARRIER_VARIANCE);
-    bool pushed = my variance_stack_len < c_arraylen(my variance_stack);
+    bool pushed = my variance_stack_len - my variance_stack_base < VARIANCE_STACK_SEGMENT;
     if (pushed) {
         my variance_stack[my variance_stack_len++] = claim;
     }
+    // (Its frame: the events internal to it are counted on its claim while it is on the stack, frame_internal())
+    claim->frame_serial = ++my variance_frame_clock;
+    claim->frame_taint = graph_taint_now;
+    claim->frame_internal = 0;
     unsigned char measured[claim->len ? claim->len : 1];
     if (debug_env.debug_variance) {
         Symbol const* sym = subject_symbol(subject);
@@ -3707,7 +3787,14 @@ static void measure_variances(Checker* me, VarianceSubject subject, VarianceClai
     my variance_depth--;
     my variance_reports = saved_reports;
     if (claim->done) return;
-    Variances const* variances = publish_variances(me, claim, measured);
+    // Clean: every taint event in the frame was internal to it (a read of a claim measured inside it, its own included,
+    // or of values measured inside it or clean ones). By induction a clean frame read nothing outside it but published
+    // clean values and hash-consed identities, so whoever measures the subject cleanly measures the same
+    bool clean = pushed && graph_taint_now - claim->frame_taint == claim->frame_internal;
+    Variances const* variances = publish_variances(me, claim, measured, clean);
+    // (--shared-graph: a nested clean frame's values are final, published now rather than with its group, for the
+    // workers measuring the same group meanwhile)
+    if (clean && claim->slot && my variance_depth) publish_frame_early(me, claim);
     // (--shared-graph: the outermost measurement's end publishes what it measured, as one group, graph_memo_flush())
     if (__builtin_expect(my graph_memo_on, 0) && !my variance_depth && graph_batch != 1) graph_memo_flush(me);
     if (debug_env.dump_variances) {
@@ -3726,7 +3813,7 @@ static Variances const* measured_variances(Checker* me, VarianceClaim* claim) {
     if (claim->circular) return nullptr;
     VarianceSubject subject = subject_of_claim(me, claim);
     i32 index = -1;
-    for (u32 i = 0; i < my variance_stack_len && index < 0; i++) {
+    for (u32 i = my variance_stack_base; i < my variance_stack_len && index < 0; i++) {
         if (my variance_stack[i] == claim) index = (i32)i;
     }
     if (index < 0) {
@@ -3748,14 +3835,22 @@ static Variances const* measured_variances(Checker* me, VarianceClaim* claim) {
         vlog("VAR circular w%u %.*s restart=%.*s\n", (unsigned)my graph_worker, (int)sym->name.size, sym->name.buf, (int)restart->name.size, restart->name.buf);
     }
     if (min > (u32)index) {
-        u32 saved_len = my variance_stack_len;
-        typeof(my variance_stack) saved;
-        memcpy(saved, my variance_stack, sizeof(saved[0]) * saved_len);
-        my variance_stack_len = 0;
-        VarianceClaim* restarted = saved[min];
-        if (!restarted->done) measure_variances(me, subject_of_claim(me, restarted), restarted);
-        memcpy(my variance_stack, saved, sizeof(saved[0]) * saved_len);
+        // (The frames set aside stay below the restart's stack: what the restart does is inside them, frame_internal())
+        VarianceClaim* restarted = my variance_stack[min];
+        u32 saved_len = my variance_stack_len, saved_base = my variance_stack_base;
+        if (saved_len + VARIANCE_STACK_SEGMENT <= c_arraylen(my variance_stack)) {
+            my variance_stack_base = saved_len;
+            if (!restarted->done) measure_variances(me, subject_of_claim(me, restarted), restarted);
+        } else {
+            // (No room: set aside by copy, out of frame_internal()'s sight)
+            VarianceClaim* saved[c_arraylen(my variance_stack)];
+            memcpy(saved, my variance_stack, sizeof(saved[0]) * saved_len);
+            my variance_stack_len = my variance_stack_base = 0;
+            if (!restarted->done) measure_variances(me, subject_of_claim(me, restarted), restarted);
+            memcpy(my variance_stack, saved, sizeof(saved[0]) * saved_len);
+        }
         my variance_stack_len = saved_len;
+        my variance_stack_base = saved_base;
     }
     if (claim->done) return claim->done;
     claim->circular = true;
@@ -3772,31 +3867,89 @@ static void const** variance_slot_block(Checker* me, VarianceSlot const* slot) {
     return block;
 }
 
+static bool variances_equal(void const* a, void const* b);
+static void publish_frame_early(Checker* me, VarianceClaim* claim) {
+    u64 key[2] = { claim->declared ? KEY_VARIANCES : KEY_ALIAS_VARIANCES,
+        claim->declared ? claim->declared->id : (u64)(uintptr_t)claim->alias };
+    void const** block = intern_slot(me, &my links, key, 2);
+    if (graph_variance_publish_early(me, claim->slot, block, variances_equal)) {
+        ((Variances*)block[0])->pending = false;
+        claim->done = block[0];
+    }
+}
+
+static bool variances_clean(void const* values) {
+    return ((Variances const*)values)->clean;
+}
+
 static bool variances_equal(void const* a, void const* b) {
     Variances const* x = a;
     Variances const* y = b;
     return x->len == y->len && !memcmp(x->data, y->data, x->len);
 }
 
-// A read of variances: one of this checker's group in progress (not published yet) is internal to the group's
-// measurement and a taint event for anything else (plan 86 stage 4f)
+// A taint event about to happen is internal to the frames of variance_stack[0..last] (measure_variances())
+static void frame_internal(Checker* me, i32 last) {
+    for (i32 i = 0; i <= last && i < (i32)my variance_stack_len; i++) my variance_stack[i]->frame_internal++;
+#ifdef TTTT_TAINT_SITES
+    graph_taint_internal_next(last + 1);
+#endif
+}
+
+// A CACHE_DEEP hit (a taint event about to happen): internal to the frames in flight since before the pair was concluded
+[[gnu::cold, gnu::noinline]] static void deep_hit_frames(Checker* me, RelationCache const* cache, u64 key) {
+    if (!my deep_stamps || !my variance_stack_len) return;
+    DeepStamps const* t = &my deep_stamps[cache - my relations];
+    if (!t->cap) return;
+    u32 i = deep_stamp_index(t, key);
+    if (!t->keys[i]) return;
+    u64 stamp = t->stamps[i];
+    i32 last = -1;
+    while (last + 1 < (i32)my variance_stack_len && my variance_stack[last + 1]->frame_serial <= stamp) last++;
+    frame_internal(me, last);
+}
+
+
+// A read of variances: one of this checker's group in progress (not published yet) is a taint event, internal to the
+// frames it was measured inside, and to every frame if its own was clean (plan 86 stage 4f)
+[[gnu::cold, gnu::noinline]] static void pending_variances_read(Checker* me, Variances const* variances) {
+    my variance_internal_events++;
+    i32 last = -1;
+    while (last + 1 < (i32)my variance_stack_len && (variances->clean || my variance_stack[last + 1]->frame_serial < variances->serial)) last++;
+    frame_internal(me, last);
+    TAINT_EVENT(TAINT_READ_TAINTED);
+}
 static inline void variances_read(Checker* me, Variances const* variances) {
-    if (__builtin_expect(variances->pending, 0)) {
-        my variance_internal_events++;
-        TAINT_EVENT(TAINT_READ_TAINTED);
-    }
+    if (__builtin_expect(variances->pending, 0)) pending_variances_read(me, variances);
 }
 
 // A claim in flight read: internal to the group if it is the measurement running now reading its own subject (always
 // Ternary Unknown, wherever it was entered from); any other is a taint event that taints the group too (an enclosing
 // measurement's subject: what a nested measurement then gets depends on where it was entered, drizzle's View measured
 // inside another one came out unreliable)
-static void variance_claim_read(Checker* me, VarianceClaim const* claim) {
-    if (my variance_stack_len && my variance_stack[my variance_stack_len - 1] == claim) {
+// Either way it is internal to the frames from the claim's outwards: what they measure is entered at their subjects.
+// A claim a restart set aside (measured_variances()) is answered by its values if they are done (internal to the frames
+// they were measured inside, or to all if clean), else, when `measures`, by measuring it afresh inside the frames in
+// flight (internal to them); its being in flight alone (circular, or asked for done-ness) is outside state
+static void variance_claim_read(Checker* me, VarianceClaim const* claim, bool measures) {
+    if (my variance_stack_len > my variance_stack_base && my variance_stack[my variance_stack_len - 1] == claim) {
         my variance_internal_events++;
+        frame_internal(me, (i32)my variance_stack_len - 1);
         TAINT_EVENT(TAINT_IN_FLIGHT_OTHER); // (Separate sites for the audit build's census, TTTT_TAINT_SITES: internal)
         return;
     }
+    i32 i = (i32)my variance_stack_len - 1;
+    while (i >= 0 && my variance_stack[i] != claim) i--;
+    if (i < (i32)my variance_stack_base) {
+        // (Set aside, or out of sight)
+        if (claim->done) {
+            Variances const* done = claim->done;
+            while (i + 1 < (i32)my variance_stack_len && (done->clean || my variance_stack[i + 1]->frame_serial < done->serial)) i++;
+        } else if (measures && !claim->circular) {
+            i = (i32)my variance_stack_len - 1;
+        }
+    }
+    if (i >= 0) frame_internal(me, i);
     TAINT_EVENT(TAINT_IN_FLIGHT_OTHER); // (an enclosing measurement's claim)
 }
 
@@ -3852,35 +4005,28 @@ static Variances const* claim_and_measure(Checker* me, VarianceSubject subject) 
             *intern_slot(me, &my links, key, 2) = shared;
             return shared;
         }
-        if (v == SW_EMPTY) {
-            graph_variance_claimed(me, slot);
-            in_group = true;
-        }
+        // (Poisoned: claimed again, its values replace the poison if this frame is clean)
+        graph_variance_claimed(me, slot);
+        in_group = true;
     }
     // (The group's frame: the outermost measurement's)
     bool outermost = slot && !my variance_depth;
-    u64 group_start = graph_taint_now, internal_start = my variance_internal_events;
-    VarianceClaim claim = { .declared = subject.declared, .alias = subject.alias, .len = subject.params.len, .in_group = in_group };
-    u64 census_taint = graph_taint_now, census_internal = my variance_internal_events, census_cuts = my deep_cuts;
+    u64 group_start = graph_taint_now;
+    VarianceClaim claim = { .declared = subject.declared, .alias = subject.alias, .len = subject.params.len, .in_group = in_group,
+        .slot = in_group ? slot : nullptr };
+    u64 census_taint = graph_taint_now, census_cuts = my deep_cuts;
     u32 census_types = checker_type_count(me), census_depth = my variance_depth;
     ty_claim_push(me, CLAIM_VARIANCES, &claim.claim, subject_ptr, !subject.declared);
     measure_variances(me, subject, &claim);
     ty_claim_pop(me, CLAIM_VARIANCES, &claim.claim);
     if (__builtin_expect(debug_env.variance_census, 0)) variance_census_line(me, subject, &claim, census_depth,
-        graph_taint_now - census_taint == my variance_internal_events - census_internal, my deep_cuts - census_cuts,
-        checker_type_count(me) - census_types, census_taint);
-    if (slot && !in_group && claim.done) {
-        // (Poisoned: this checker's own, a read of it a taint event, by the caller first)
-        graph_memo_taint_block(me, intern_slot(me, &my links, key, 2));
-        TAINT_EVENT(TAINT_READ_TAINTED);
-    }
+        claim.done && claim.done->clean, my deep_cuts - census_cuts, checker_type_count(me) - census_types, census_taint);
     if (outermost && my graph_variance_claims_len) {
-        // Clean: every event since its start was a read of its own claims or values
-        bool clean = graph_taint_now - group_start == my variance_internal_events - internal_start;
-        bool kept = graph_variances_publish(me, variance_slot_block, variances_equal, clean);
-        // (What the caller reads is the published values then: the group's internal events don't taint it. Otherwise it
+        // (Each frame published if it was clean, the outermost's first)
+        bool kept = graph_variances_publish(me, variance_slot_block, variances_equal, variances_clean);
+        // (What the caller reads is the published values then: the frame's internal events don't taint it. Otherwise it
         // reads private ones)
-        if (clean && kept) graph_taint_now = group_start;
+        if (kept) graph_taint_now = group_start;
         else TAINT_EVENT(TAINT_READ_TAINTED);
     }
     return claim.done;
@@ -3894,7 +4040,7 @@ static bool variances_known(Checker* me, Ty const* target) {
     // group if it is the running measurement's own subject)
     VarianceClaim* claim = variance_claim_of(me, target, nullptr);
     if (claim) {
-        variance_claim_read(me, claim);
+        variance_claim_read(me, claim, false);
         return true;
     }
     VarianceSlot const* slot = my graph ? graph_variance_slot(me, target, false, false) : nullptr;
@@ -3919,7 +4065,7 @@ static Variances const* get_variances(Checker* me, Ty const* target) {
         if (variances_clean < 0) variances_clean = getenv("TTTT_TAINT_VARIANCES_CLEAN") && *getenv("TTTT_TAINT_VARIANCES_CLEAN");
         if (!variances_clean) TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
 #else
-        variance_claim_read(me, claim);
+        variance_claim_read(me, claim, true);
 #endif
         return measured_variances(me, claim);
     }
@@ -3932,6 +4078,8 @@ static Variances const* get_variances(Checker* me, Ty const* target) {
         Variances* covariant = arena_alloc(&my arena, sizeof(Variances) + subject.params.len);
         covariant->len = subject.params.len;
         covariant->pending = false;
+        covariant->clean = true;
+        covariant->serial = 0;
         memset(covariant->data, VARIANCE_COVARIANT, covariant->len);
         *intern_slot(me, &my links, key, 2) = covariant;
         return covariant;
@@ -3952,7 +4100,7 @@ static Variances const* get_alias_variances(Checker* me, Symbol const* alias) {
     }
     VarianceClaim* claim = variance_claim_of(me, nullptr, alias);
     if (claim) {
-        variance_claim_read(me, claim);
+        variance_claim_read(me, claim, true);
         return measured_variances(me, claim);
     }
     return claim_and_measure(me, (VarianceSubject){ .alias = alias, .params = ty_alias_type_params(me, alias) });
@@ -7390,6 +7538,7 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     u64 intersection_bits = (st->intersection_target ? 1ull << 63 : 0) | (st->intersection_source ? 1ull << 62 : 0);
     key ^= intersection_bits;
     unsigned cached = relation_cache_get(cache, key);
+    u64 cached_key = key;
     // Not computed under this IntersectionState.Source yet: the pair under the other one may decide it (see
     // index_inferred). tsc computes it again, with the same result
     if (!cached && st->relation != TY_RELATION_IDENTITY) {
@@ -7398,12 +7547,16 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
             : (other & CACHE_SUCCEEDED) != 0
         ) {
             cached = other & ~CACHE_OVERFLOW;
+            cached_key = key ^ (1ull << 62);
         }
     }
     if (cached & CACHE_INDEX_INFERRED) st->index_inferred = true;
     if (__builtin_expect(cached & CACHE_DEEP, 0)) {
         my relation_deep_seen = true;
-        if (!debug_env.deep_hit_no_taint) TAINT_EVENT(TAINT_READ_TAINTED);
+        if (!debug_env.deep_hit_no_taint) {
+            deep_hit_frames(me, cache, cached_key);
+            TAINT_EVENT(TAINT_READ_TAINTED);
+        }
     }
     // A measurement of variances that goes through the pair again is as unreliable as the first one was
     if (cached & CACHE_UNRELIABLE) report_variance(me, source, VARIANCE_UNRELIABLE);
@@ -7464,7 +7617,7 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     u64 taint_start = __builtin_expect(my graph != nullptr, 0) ? graph_taint_now : 0;
     if (fails_common_properties(me, st, source, target, report)) {
         bool tainted = my graph && graph_taint_now != taint_start;
-        relation_cache_put(cache, key, CACHE_FAILED | (tainted ? CACHE_DEEP : 0));
+        relation_cache_put_deep(me, cache, key, CACHE_FAILED | (tainted ? CACHE_DEEP : 0));
         if (!tainted) relation_publish(me, st, key, CACHE_FAILED);
         return TERNARY_FALSE;
     }
@@ -7559,7 +7712,7 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
             // tsgo's resetMaybeStack never records Ternary.Unknown)
             if (result != TERNARY_UNKNOWN) {
                 for (u32 i = maybe_start; i < st->maybe_count; i++) {
-                    relation_cache_put(cache, st->maybe_keys[i], CACHE_SUCCEEDED | unreliable | inferred | deep);
+                    relation_cache_put_deep(me, cache, st->maybe_keys[i], CACHE_SUCCEEDED | unreliable | inferred | deep);
                     if (!unreliable && !inferred && !deep) relation_publish(me, st, st->maybe_keys[i], CACHE_SUCCEEDED);
                 }
                 st->relation_count -= st->maybe_count - maybe_start;
@@ -7567,7 +7720,7 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
             maybe_truncate(st, maybe_start);
         }
     } else {
-        relation_cache_put(cache, key, CACHE_FAILED | unreliable | deep);
+        relation_cache_put_deep(me, cache, key, CACHE_FAILED | unreliable | deep);
         if (!unreliable && !deep) relation_publish(me, st, key, CACHE_FAILED);
         st->relation_count--;
         maybe_truncate(st, maybe_start);
@@ -8602,10 +8755,14 @@ static bool check_related(
     // unreliable again lets every later failed comparison of QueryBuilder fall back to structure (4x the types)
     if (!st->reporting && (source->flags & TYF_OBJECT) && (target->flags & TYF_OBJECT)) {
         bool constrained;
-        unsigned cached = relation_cache_get(&my relations[relation], relation_cache_key(me, relation, source, target, &constrained));
+        u64 cache_key = relation_cache_key(me, relation, source, target, &constrained);
+        unsigned cached = relation_cache_get(&my relations[relation], cache_key);
         if (__builtin_expect(cached & CACHE_DEEP, 0)) {
             my relation_deep_seen = true;
-            if (!debug_env.deep_hit_no_taint) TAINT_EVENT(TAINT_READ_TAINTED);
+            if (!debug_env.deep_hit_no_taint) {
+                deep_hit_frames(me, &my relations[relation], cache_key);
+                TAINT_EVENT(TAINT_READ_TAINTED);
+            }
         }
         cached &= CACHE_SUCCEEDED | CACHE_FAILED;
         if (cached) return cached == CACHE_SUCCEEDED;

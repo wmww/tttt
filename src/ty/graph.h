@@ -140,9 +140,11 @@ void graph_memo_flush(Checker* checker);
 // Variances on threads (plan 86 4f, "Variances"): a slot per subject (the declared type or the alias symbol), its value a
 // shared word: empty, the Variances its group's measurement published, or POISON. Nobody waits: a worker that finds it
 // empty measures, and the subjects one outermost measurement claimed (its group, graph_variance_claimed()) are
-// published together when it ends (graph_variances_publish()): if the group was clean each slot by CAS, first wins; a
-// loser with equal values adopts the winner's, one with differing values keeps its own (private, a read of it a taint
-// event); a tainted group poisons its slots and keeps its values private. Null without threads
+// published together when it ends (graph_variances_publish()). Each subject's measurement is one frame: a clean frame
+// (it read nothing but published clean values and what it made itself: relate.c measure_variances()) publishes its
+// slot by CAS, first wins, over an empty or a poisoned slot; a loser with equal values adopts the winner's, one with
+// differing values keeps its own (private, a read of it a taint event); a tainted frame poisons an empty slot and keeps
+// its values private. A poisoned slot is claimed again by whoever measures it next. Null without threads
 typedef struct VarianceSlot {
     SharedWord value; // Variances const* published, or SW_POISON
     void const* subject;
@@ -151,11 +153,15 @@ typedef struct VarianceSlot {
 VarianceSlot* graph_variance_slot(Checker* checker, void const* subject, bool alias, bool create);
 void graph_variance_claimed(Checker* checker, VarianceSlot* slot);
 // The outermost measurement ended: each claimed slot is published from its private entry (`block_of`: the checker's
-// intern block of the slot's variances), or poisoned if the group wasn't clean. Returns whether the checker's values are
-// all the published ones (false: something it read is now private)
+// intern block of the slot's variances) if its frame was clean (`clean`), else poisoned. Returns whether the first
+// claimed slot (the outermost measurement's) holds the checker's values (false: what the caller read is private)
 bool graph_variances_publish(
-    Checker* checker, void const** (*block_of)(Checker* checker, VarianceSlot const* slot), bool (*equal)(void const* a, void const* b), bool clean
+    Checker* checker, void const** (*block_of)(Checker* checker, VarianceSlot const* slot), bool (*equal)(void const* a, void const* b),
+    bool (*clean)(void const* values)
 );
+// A nested clean frame's slot published at the frame's end (its values `block[0]`, final), not with its group: whether
+// they are the published ones now
+bool graph_variance_publish_early(Checker* checker, VarianceSlot* slot, void const** block, bool (*equal)(void const* a, void const* b));
 
 void graph_check_unshared(TyGraph* me, Checker* checker); // TTTT_DEBUG_UNSHARED=1 (program.c)
 // Relation results shared (plan 86 4e item 2): definitive and clean only (SUCCEEDED or FAILED, 1 or 2; nothing
