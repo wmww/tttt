@@ -8328,7 +8328,6 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     Span first_modifier = vec_spanned_modifier_is_empty(&modifiers.spanned) ?
         span_null :
         vec_spanned_modifier_front(&modifiers.spanned)->span;
-    modifier_list_drop(&modifiers);
 
     if (hop_member_keyword(&p, "async", false)) {
         must_be_method = true;
@@ -8358,6 +8357,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         hop_whitespace(&p);
         Expr key;
         if (!parse_expr(&p, expr_ctx_null, &key)) {
+            modifier_list_drop(&modifiers);
             return parse_fail(&p);
         }
         parse_computed_key_comma(&p, &key);
@@ -8378,7 +8378,10 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         if (!parse_name_or_value(&p, &item.name_span, &item.name_string, &name_is_value)) {
             // `{ a.b }`: the `.` is a list element to tsc (a missing name, then a missing ':' and `<missing>.b`)
             bool dot = *p.pos == '.' && p.pos[1] != '.';
-            if (!flags.is_generator && !dot) return parse_fail(&p);
+            if (!flags.is_generator && !dot) {
+                modifier_list_drop(&modifiers);
+                return parse_fail(&p);
+            }
             // `{ *() {} }`: committed to a generator method by the `*`, the name is missing
             parse_error(&p, span_from_token_or_eof(&p), 1003, "Identifier expected.");
             item.name_span = span_from_pos(&p);
@@ -8420,9 +8423,6 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     }
     FunctionImpl func;
     if ((*p.pos == '(' || *p.pos == '<') && parse_non_arrow_function(&p, flags, &func)) {
-        if (report_modifiers_cannot_appear && item.tag == OBJECT_ITEM_PROPERTY) {
-            grammar_error(&p, first_modifier, 1184, "Modifiers cannot appear here.");
-        }
         if (item.tag == OBJECT_ITEM_PROPERTY) {
             item.tag = OBJECT_ITEM_METHOD;
             item.optional_method = span_valid(question);
@@ -8461,6 +8461,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         item.value = expr_function(span_from(a), ast_new(FunctionImpl, func));
     } else if (must_be_method) {
         object_expr_item_drop(&item);
+        modifier_list_drop(&modifiers);
         return parse_fail(&p);
     } else if (hop_char(&p, ':')) {
         hop_whitespace(&p);
@@ -8535,6 +8536,31 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         }
         vec_jsdoc_tag_drop(&tags);
     }
+    // (A method's or accessor's modifiers: tsc's checkGrammarMethod/checkGrammarAccessor, by way of
+    // checkGrammarFunctionLikeDeclaration, check them as a class member's first, TS1184 for a method's only when they
+    // pass; either ends the member's grammar checks, its missing body's '{' expected too)
+    if (!vec_spanned_modifier_is_empty(&modifiers.spanned) && item.value.tag == EXPR_FUNCTION &&
+        item.tag != OBJECT_ITEM_PROPERTY && item.tag != OBJECT_ITEM_SHORTHAND
+    ) {
+        ModifiedKind kind = item.tag == OBJECT_ITEM_GETTER ? MODIFIED_GET_ACCESSOR :
+            item.tag == OBJECT_ITEM_SETTER ? MODIFIED_SET_ACCESSOR : MODIFIED_METHOD;
+        ErrorCtx errs = { .phase = ERROR_PHASE_PARSE };
+        bool failed = modifier_list_check_grammar(&modifiers, &(ModifiedNode){ .kind = kind, .parent = MODIFIED_IN_OTHER,
+            .parent_ambient = p.shared->in_ambient, .name = item.name_span }, &errs);
+        for_each (i, vec_error, &errs.errors) {
+            i->grammar = true;
+            add_error_to_parser(&p, *i);
+            *i = (Error){0};
+        }
+        error_ctx_drop(&errs);
+        if (!failed && kind == MODIFIED_METHOD && report_modifiers_cannot_appear) {
+            grammar_error(&p, first_modifier, 1184, "Modifiers cannot appear here.");
+            failed = true;
+        }
+        item.modifiers_failed = failed;
+    }
+    item.readonly_modifier = modifiers.includes[MODIFIER_READONLY];
+    modifier_list_drop(&modifiers);
     ast_cstr_seal(&item.name_string);
     *ret = item;
     return parse_success(&p);

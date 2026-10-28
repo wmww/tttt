@@ -5108,6 +5108,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         if ((symbol_flags & LIT_SYM_GET) && !(symbol_flags & LIT_SYM_SET)) flags |= PROP_READONLY;
         if (ctx.is_const) flags |= PROP_READONLY;
         ObjectExprItem const* value_declaration = symbol ? &object->data[symbol->first] : i;
+        if (value_declaration->readonly_modifier) flags |= PROP_READONLY;
         if (pattern_context) {
             Prop const* implied = ty_get_prop(me, pattern_context, name);
             if (implied && (implied->flags & PROP_OPTIONAL)) flags |= PROP_OPTIONAL | PROP_PATTERN_OPTIONAL;

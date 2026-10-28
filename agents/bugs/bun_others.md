@@ -178,7 +178,7 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
   `||` chains: checkGrammarModifiers before a class's or interface's heritage clauses and a variable statement's list,
   the heritage clauses' TS1172/TS1174/TS1175 before the class's type parameters, TS1358 before a tag's type
   arguments) or never looks (import type arguments, the heritage elements past the base): 28-C10a 28-P6a 28-P6b
-  28-P6c 28-P7b 02-C21a 28-C10b 28-C11b 28-P8a 28-P8b 28-C23 56-L20 62-L12. [fixed COMMIT2]
+  28-P6c 28-P7b 02-C21a 28-C10b 28-C11b 28-P8a 28-P8b 28-C23 56-L20 62-L12. [fixed 08b400854]
 - Grammar errors in what tsc never checks, still open: the initializers of a function type's parameters (84-R02c:
   +TS1174/TS1172/TS1173/TS1098 in a class expression there; tsc says TS2371 only), a `for` statement's declaration
   list after TS1036 in an ambient block (28-C26d: +TS1009), 56-L09 (+TS1326 for `extends import<string>, v`: the
@@ -194,11 +194,11 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
   parser has no such path), decorators in an object binding pattern (53-L16b: TS1180). tttt: TS1146 then +TS1128.
   [open]
 - Modifiers on an object literal's methods: tsc's checkGrammarMethod runs the whole checkGrammarModifiers first
-  (TS1244 abstract, TS1024 readonly, TS1028/TS1029/TS1040...) and says TS1184 only when that passes; `readonly` stays
-  a modifier of the property (TS2540 on assignments, 53-L18); a method without a body (`{ abstract e(): void }`) is
-  fine to the parser (tttt: '{' expected, TS1005). +TS1184 02-C13b 28-C18a 32-C10a 32-C10c 32-C10d 53-L18, 02-C13c
-  (TS2676 for abstract accessors). A class expression with modifiers in an expression (`@dec public class {}`,
-  80-R08: tsc parses them, TS1184). [open]
+  (TS1244 abstract, TS1024 readonly, TS1028/TS1029/TS1040...) and says TS1184 only when that passes; either ends the
+  member's grammar checks (no '{' expected for a missing body); `readonly` stays a modifier of the property (TS2540,
+  TS2704): 02-C13b 28-C18a 32-C10a 32-C10c 32-C10d 53-L18. [fixed COMMIT3]
+- Object literal accessors with `abstract` on one of a pair: TS2676 on both (02-C13c, missing); a class expression with
+  modifiers in an expression (`@dec public class {}`, 80-R08: tsc parses them, TS1184). [open]
 - Decorators on the parameters of signatures (function and constructor types, interface members, `@await` in an
   async body): tsc's parseParameter takes them (TS1206 from the checker, TS1109 for `@await`); tttt fails the type
   and cascades (+TS1005 +TS1109 +TS1128 +TS1131 +TS1146 +TS1434): 56-L14b 83-R20a. JavaScript `function h(export

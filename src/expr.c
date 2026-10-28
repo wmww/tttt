@@ -4813,7 +4813,8 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                     }
                 }
                 if ((i->tag == OBJECT_ITEM_METHOD || i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER) &&
-                    i->value.tag == EXPR_FUNCTION && !i->value.function->has_body && !i->value.function->body_missing
+                    i->value.tag == EXPR_FUNCTION && !i->value.function->has_body && !i->value.function->body_missing &&
+                    !i->modifiers_failed
                 ) {
                     // tsc's checkGrammarMethod/checkGrammarAccessor: at the member's last character
                     char const* end = span_end_ptr(i->span);

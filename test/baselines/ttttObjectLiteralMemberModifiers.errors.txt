@@ -1,0 +1,89 @@
+ttttObjectLiteralMemberModifiers.ts(5,14): error TS1042: 'abstract' modifier cannot be used here.
+ttttObjectLiteralMemberModifiers.ts(5,14): error TS1244: Abstract methods can only appear within an abstract class.
+ttttObjectLiteralMemberModifiers.ts(6,14): error TS1024: 'readonly' modifier can only appear on a property declaration or index signature.
+ttttObjectLiteralMemberModifiers.ts(6,14): error TS1042: 'readonly' modifier cannot be used here.
+ttttObjectLiteralMemberModifiers.ts(7,14): error TS1042: 'public' modifier cannot be used here.
+ttttObjectLiteralMemberModifiers.ts(7,21): error TS1028: Accessibility modifier already seen.
+ttttObjectLiteralMemberModifiers.ts(7,21): error TS1042: 'public' modifier cannot be used here.
+ttttObjectLiteralMemberModifiers.ts(8,14): error TS1042: 'public' modifier cannot be used here.
+ttttObjectLiteralMemberModifiers.ts(8,14): error TS1184: Modifiers cannot appear here.
+ttttObjectLiteralMemberModifiers.ts(8,21): error TS1042: 'static' modifier cannot be used here.
+ttttObjectLiteralMemberModifiers.ts(9,14): error TS1042: 'static' modifier cannot be used here.
+ttttObjectLiteralMemberModifiers.ts(9,21): error TS1029: 'public' modifier must precede 'static' modifier.
+ttttObjectLiteralMemberModifiers.ts(9,21): error TS1042: 'public' modifier cannot be used here.
+ttttObjectLiteralMemberModifiers.ts(10,20): error TS1029: 'public' modifier must precede 'async' modifier.
+ttttObjectLiteralMemberModifiers.ts(10,20): error TS1042: 'public' modifier cannot be used here.
+ttttObjectLiteralMemberModifiers.ts(11,14): error TS1042: 'declare' modifier cannot be used here.
+ttttObjectLiteralMemberModifiers.ts(11,22): error TS1040: 'async' modifier cannot be used in an ambient context.
+ttttObjectLiteralMemberModifiers.ts(12,14): error TS1042: 'abstract' modifier cannot be used here.
+ttttObjectLiteralMemberModifiers.ts(12,14): error TS1244: Abstract methods can only appear within an abstract class.
+ttttObjectLiteralMemberModifiers.ts(13,14): error TS1042: 'readonly' modifier cannot be used here.
+ttttObjectLiteralMemberModifiers.ts(14,4): error TS2540: Cannot assign to 'm' because it is a read-only property.
+ttttObjectLiteralMemberModifiers.ts(15,4): error TS2540: Cannot assign to 'a' because it is a read-only property.
+ttttObjectLiteralMemberModifiers.ts(16,8): error TS2704: The operand of a 'delete' operator cannot be a read-only property.
+
+
+==== ttttObjectLiteralMemberModifiers.ts (23 errors) ====
+    // Modifiers on an object literal's members: TS1042 for each (checkGrammarObjectLiteralExpression), then a method's or
+    // accessor's are checked like a class member's (checkGrammarFunctionLikeDeclaration's checkGrammarModifiers: TS1244,
+    // TS1024, TS1028, TS1029, TS1040), and a method's TS1184 only when those pass; either ends the member's grammar checks
+    // (no '{' expected for a missing body). `readonly` makes the property readonly all the same (TS2540, TS2704)
+    const a1 = { abstract m() {} };
+                 ~~~~~~~~
+!!! error TS1042: 'abstract' modifier cannot be used here.
+                 ~~~~~~~~
+!!! error TS1244: Abstract methods can only appear within an abstract class.
+    const a2 = { readonly m() {} };
+                 ~~~~~~~~
+!!! error TS1024: 'readonly' modifier can only appear on a property declaration or index signature.
+                 ~~~~~~~~
+!!! error TS1042: 'readonly' modifier cannot be used here.
+    const a3 = { public public m() {} };
+                 ~~~~~~
+!!! error TS1042: 'public' modifier cannot be used here.
+                        ~~~~~~
+!!! error TS1028: Accessibility modifier already seen.
+                        ~~~~~~
+!!! error TS1042: 'public' modifier cannot be used here.
+    const a4 = { public static m() {} };
+                 ~~~~~~
+!!! error TS1042: 'public' modifier cannot be used here.
+                 ~~~~~~
+!!! error TS1184: Modifiers cannot appear here.
+                        ~~~~~~
+!!! error TS1042: 'static' modifier cannot be used here.
+    const a5 = { static public m() {} };
+                 ~~~~~~
+!!! error TS1042: 'static' modifier cannot be used here.
+                        ~~~~~~
+!!! error TS1029: 'public' modifier must precede 'static' modifier.
+                        ~~~~~~
+!!! error TS1042: 'public' modifier cannot be used here.
+    const a6 = { async public m() {} };
+                       ~~~~~~
+!!! error TS1029: 'public' modifier must precede 'async' modifier.
+                       ~~~~~~
+!!! error TS1042: 'public' modifier cannot be used here.
+    const a7 = { declare async m() {} };
+                 ~~~~~~~
+!!! error TS1042: 'declare' modifier cannot be used here.
+                         ~~~~~
+!!! error TS1040: 'async' modifier cannot be used in an ambient context.
+    const a8 = { abstract e(): void };
+                 ~~~~~~~~
+!!! error TS1042: 'abstract' modifier cannot be used here.
+                 ~~~~~~~~
+!!! error TS1244: Abstract methods can only appear within an abstract class.
+    const a9 = { readonly a: 1 };
+                 ~~~~~~~~
+!!! error TS1042: 'readonly' modifier cannot be used here.
+    a2.m = () => {};
+       ~
+!!! error TS2540: Cannot assign to 'm' because it is a read-only property.
+    a9.a = 2;
+       ~
+!!! error TS2540: Cannot assign to 'a' because it is a read-only property.
+    delete a2.m;
+           ~~~~
+!!! error TS2704: The operand of a 'delete' operator cannot be a read-only property.
+    

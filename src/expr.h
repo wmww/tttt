@@ -841,6 +841,12 @@ typedef struct ObjectExprItem {
     } tag;
     bool name_is_value : 1;
     bool optional_method : 1; // `m?() {}` (TS1162): still an optional member to tsc's binder
+    // A method's or accessor's modifiers fail tsc's checkGrammarModifiers, or are a method's TS1184: the member's grammar
+    // checks end there (its missing body's '{' expected, expr.c)
+    bool modifiers_failed : 1;
+    // `{ readonly a: 1 }`, `{ readonly m() {} }`: TS1042, but the property is readonly all the same (tsc's
+    // getDeclarationModifierFlagsFromSymbol reads the modifier off the declaration)
+    bool readonly_modifier : 1;
     // A private name inside a class body: a property of the literal's type (tsc's binder names it in the class's
     // private scope), else it is dropped. Set by expr_lookup_names()
     bool private_name_in_class : 1;

@@ -1,0 +1,58 @@
+//// [test/cases/ttttObjectLiteralMemberModifiers.ts] ////
+
+=== ttttObjectLiteralMemberModifiers.ts ===
+// Modifiers on an object literal's members: TS1042 for each (checkGrammarObjectLiteralExpression), then a method's or
+// accessor's are checked like a class member's (checkGrammarFunctionLikeDeclaration's checkGrammarModifiers: TS1244,
+// TS1024, TS1028, TS1029, TS1040), and a method's TS1184 only when those pass; either ends the member's grammar checks
+// (no '{' expected for a missing body). `readonly` makes the property readonly all the same (TS2540, TS2704)
+const a1 = { abstract m() {} };
+>a1 : Symbol(a1, Decl(ttttObjectLiteralMemberModifiers.ts, 4, 5))
+>m : Symbol(m, Decl(ttttObjectLiteralMemberModifiers.ts, 4, 12))
+
+const a2 = { readonly m() {} };
+>a2 : Symbol(a2, Decl(ttttObjectLiteralMemberModifiers.ts, 5, 5))
+>m : Symbol(m, Decl(ttttObjectLiteralMemberModifiers.ts, 5, 12))
+
+const a3 = { public public m() {} };
+>a3 : Symbol(a3, Decl(ttttObjectLiteralMemberModifiers.ts, 6, 5))
+>m : Symbol(m, Decl(ttttObjectLiteralMemberModifiers.ts, 6, 12))
+
+const a4 = { public static m() {} };
+>a4 : Symbol(a4, Decl(ttttObjectLiteralMemberModifiers.ts, 7, 5))
+>m : Symbol(m, Decl(ttttObjectLiteralMemberModifiers.ts, 7, 12))
+
+const a5 = { static public m() {} };
+>a5 : Symbol(a5, Decl(ttttObjectLiteralMemberModifiers.ts, 8, 5))
+>m : Symbol(m, Decl(ttttObjectLiteralMemberModifiers.ts, 8, 12))
+
+const a6 = { async public m() {} };
+>a6 : Symbol(a6, Decl(ttttObjectLiteralMemberModifiers.ts, 9, 5))
+>m : Symbol(m, Decl(ttttObjectLiteralMemberModifiers.ts, 9, 12))
+
+const a7 = { declare async m() {} };
+>a7 : Symbol(a7, Decl(ttttObjectLiteralMemberModifiers.ts, 10, 5))
+>m : Symbol(m, Decl(ttttObjectLiteralMemberModifiers.ts, 10, 12))
+
+const a8 = { abstract e(): void };
+>a8 : Symbol(a8, Decl(ttttObjectLiteralMemberModifiers.ts, 11, 5))
+>e : Symbol(e, Decl(ttttObjectLiteralMemberModifiers.ts, 11, 12))
+
+const a9 = { readonly a: 1 };
+>a9 : Symbol(a9, Decl(ttttObjectLiteralMemberModifiers.ts, 12, 5))
+>a : Symbol(a, Decl(ttttObjectLiteralMemberModifiers.ts, 12, 12))
+
+a2.m = () => {};
+>a2.m : Symbol(m, Decl(ttttObjectLiteralMemberModifiers.ts, 5, 12))
+>a2 : Symbol(a2, Decl(ttttObjectLiteralMemberModifiers.ts, 5, 5))
+>m : Symbol(m, Decl(ttttObjectLiteralMemberModifiers.ts, 5, 12))
+
+a9.a = 2;
+>a9.a : Symbol(a, Decl(ttttObjectLiteralMemberModifiers.ts, 12, 12))
+>a9 : Symbol(a9, Decl(ttttObjectLiteralMemberModifiers.ts, 12, 5))
+>a : Symbol(a, Decl(ttttObjectLiteralMemberModifiers.ts, 12, 12))
+
+delete a2.m;
+>a2.m : Symbol(m, Decl(ttttObjectLiteralMemberModifiers.ts, 5, 12))
+>a2 : Symbol(a2, Decl(ttttObjectLiteralMemberModifiers.ts, 5, 5))
+>m : Symbol(m, Decl(ttttObjectLiteralMemberModifiers.ts, 5, 12))
+
