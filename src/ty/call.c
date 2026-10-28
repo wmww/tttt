@@ -3679,6 +3679,25 @@ static bool surely_no_effects(Checker* me, Signature const* sig) {
     return !signature_declared_never(me, sig);
 }
 
+bool ty_call_may_ask_context(Checker* me, CallExpr const* call) {
+    if (call->is_extends || call->optional_chain || call->continues_chain) return true;
+    if (call->callable.tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(&call->callable)) return false;
+    Ty const* callee = ty_expr_type(me, (Expr*)&call->callable);
+    if (callee->flags & TYF_ANY) return false;
+    Ty const* apparent = ty_apparent_type(me, callee);
+    if (apparent->kind == TY_UNION || apparent->kind == TY_INTERSECTION) return true;
+    Members const* members = ty_members(me, apparent);
+    Signature* const* sigs = call->uses_new ? members->construct : members->call;
+    u32 count = call->uses_new ? members->construct_count : members->call_count;
+    for (u32 i = 0; i < count; i++) {
+        TyList params = signature_resolve(me, sigs[i])->type_params;
+        for (u32 j = 0; j < params.len; j++) {
+            if (!ty_param_default(me, params.data[j])) return true;
+        }
+    }
+    return false;
+}
+
 CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call) {
     CallEffects none = {0};
     if (!callee || call->uses_new || call->is_extends) return none;

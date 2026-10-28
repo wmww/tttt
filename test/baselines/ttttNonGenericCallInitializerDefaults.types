@@ -1,0 +1,79 @@
+//// [test/cases/ttttNonGenericCallInitializerDefaults.ts] ////
+
+=== ttttNonGenericCallInitializerDefaults.ts ===
+// A destructuring's defaults take their context from the initializer's properties: a call that infers nothing (no
+// generic signature, explicit type arguments, or defaults for every type parameter) never asks for what the pattern
+// implies, so the defaults aren't checked without context first (npmsample.md, kirka's follow-up)
+interface X { a?(v: number): string; b?: (e: string) => number }
+>a : ((v: number) => string) | undefined
+>v : number
+>b : ((e: string) => number) | undefined
+>e : string
+
+declare function mk(): X;
+>mk : () => X
+
+const { a = (v) => "", b = (e) => 1 } = mk();
+>a : (v: number) => string
+>(v) => "" : (v: number) => string
+>v : number
+>"" : ""
+>b : (e: string) => number
+>(e) => 1 : (e: string) => number
+>e : string
+>1 : 1
+>mk() : X
+>mk : () => X
+
+declare function gen<T>(t: T): T;
+>gen : <T>(t: T) => T
+>t : T
+
+const { a: a2 = (v) => "" } = gen<X>({});
+>a : any
+>a2 : (v: number) => string
+>(v) => "" : (v: number) => string
+>v : number
+>"" : ""
+>gen<X>({}) : X
+>gen : <T>(t: T) => T
+>{} : {}
+
+declare function dflt<T = X>(): T;
+>dflt : <T = X>() => T
+
+const { a: a3 = (v) => "" } = dflt();
+>a : any
+>a3 : (v: number) => string
+>(v) => "" : (v: number) => string
+>v : number
+>"" : ""
+>dflt() : X
+>dflt : <T = X>() => T
+
+declare class K { constructor(); a?(v: number): string }
+>K : K
+>a : ((v: number) => string) | undefined
+>v : number
+
+const { a: a4 = (v) => "" } = new K();
+>a : any
+>a4 : (v: number) => string
+>(v) => "" : (v: number) => string
+>v : number
+>"" : ""
+>new K() : K
+>K : typeof K
+
+declare function inferred<T>(): T;
+>inferred : <T>() => T
+
+const { a: a5 = (v) => "" } = inferred();
+>a : any
+>a5 : any
+>(v) => "" : (v: any) => string
+>v : any
+>"" : ""
+>inferred() : unknown
+>inferred : <T>() => T
+

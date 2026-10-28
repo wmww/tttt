@@ -878,6 +878,9 @@ static bool initializer_ignores_context(Checker* checker, Expr const* value) {
     // pattern implies is never asked for, its defaults aren't checked without context first (tsc's
     // getContextualTypeForInitializerExpression is only asked on demand; kirka's `{ ok = (v) => v } = {} as {...}`)
     if (value->tag == EXPR_AS_TYPE) return true;
+    // A call asks only to infer its type arguments (tsc's inferTypeArguments): `const { a = (v) => v } = mk()` with a
+    // non-generic mk gives `v` the contextual type of mk's property, never the pattern's
+    if (value->tag == EXPR_CALL) return !ty_call_may_ask_context(checker, value->call);
     if (value->tag != EXPR_IDENTIFIER && value->tag != EXPR_PROPERTY) return false;
     if (value->tag == EXPR_PROPERTY && value->property->form == PROPERTY_EXPR_BRACKET) return false;
     Ty const* type = ty_expr_type(checker, (Expr*)value);

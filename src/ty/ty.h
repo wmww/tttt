@@ -2156,6 +2156,10 @@ typedef struct CallEffects {
     TyPredicate predicate; // With the type arguments of the call
 } CallEffects;
 CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call);
+// Whether resolving the call may ask for its contextual type to infer from (tsc's inferTypeArguments, ContextFlags.None):
+// some candidate is generic, there are no explicit type arguments, and not every type parameter has a default
+// (SkipBindingPatterns then). False only when surely not; checks the callee
+bool ty_call_may_ask_context(Checker* me, CallExpr const* call);
 TyList ty_reference_args(Checker* me, Ty const* reference);
 Ty const* ty_param_constraint(Checker* me, Ty const* param); // null if unconstrained (or circularly constrained)
 bool ty_param_declares_no_constraint(Checker* me, Ty const* param);

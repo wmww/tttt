@@ -1,0 +1,15 @@
+// @strict: true
+// A destructuring's defaults take their context from the initializer's properties: a call that infers nothing (no
+// generic signature, explicit type arguments, or defaults for every type parameter) never asks for what the pattern
+// implies, so the defaults aren't checked without context first (npmsample.md, kirka's follow-up)
+interface X { a?(v: number): string; b?: (e: string) => number }
+declare function mk(): X;
+const { a = (v) => "", b = (e) => 1 } = mk();
+declare function gen<T>(t: T): T;
+const { a: a2 = (v) => "" } = gen<X>({});
+declare function dflt<T = X>(): T;
+const { a: a3 = (v) => "" } = dflt();
+declare class K { constructor(); a?(v: number): string }
+const { a: a4 = (v) => "" } = new K();
+declare function inferred<T>(): T;
+const { a: a5 = (v) => "" } = inferred();

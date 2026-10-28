@@ -1,0 +1,71 @@
+//// [test/cases/ttttNonGenericCallInitializerDefaults.ts] ////
+
+=== ttttNonGenericCallInitializerDefaults.ts ===
+// A destructuring's defaults take their context from the initializer's properties: a call that infers nothing (no
+// generic signature, explicit type arguments, or defaults for every type parameter) never asks for what the pattern
+// implies, so the defaults aren't checked without context first (npmsample.md, kirka's follow-up)
+interface X { a?(v: number): string; b?: (e: string) => number }
+>X : Symbol(X, Decl(ttttNonGenericCallInitializerDefaults.ts, 0, 0))
+>a : Symbol(X.a, Decl(ttttNonGenericCallInitializerDefaults.ts, 3, 13))
+>v : Symbol(v, Decl(ttttNonGenericCallInitializerDefaults.ts, 3, 17))
+>b : Symbol(X.b, Decl(ttttNonGenericCallInitializerDefaults.ts, 3, 36))
+>e : Symbol(e, Decl(ttttNonGenericCallInitializerDefaults.ts, 3, 42))
+
+declare function mk(): X;
+>mk : Symbol(mk, Decl(ttttNonGenericCallInitializerDefaults.ts, 3, 64))
+>X : Symbol(X, Decl(ttttNonGenericCallInitializerDefaults.ts, 0, 0))
+
+const { a = (v) => "", b = (e) => 1 } = mk();
+>a : Symbol(a, Decl(ttttNonGenericCallInitializerDefaults.ts, 5, 7))
+>v : Symbol(v, Decl(ttttNonGenericCallInitializerDefaults.ts, 5, 13))
+>b : Symbol(b, Decl(ttttNonGenericCallInitializerDefaults.ts, 5, 22))
+>e : Symbol(e, Decl(ttttNonGenericCallInitializerDefaults.ts, 5, 28))
+>mk : Symbol(mk, Decl(ttttNonGenericCallInitializerDefaults.ts, 3, 64))
+
+declare function gen<T>(t: T): T;
+>gen : Symbol(gen, Decl(ttttNonGenericCallInitializerDefaults.ts, 5, 45))
+>T : Symbol(T, Decl(ttttNonGenericCallInitializerDefaults.ts, 6, 21))
+>t : Symbol(t, Decl(ttttNonGenericCallInitializerDefaults.ts, 6, 24))
+>T : Symbol(T, Decl(ttttNonGenericCallInitializerDefaults.ts, 6, 21))
+>T : Symbol(T, Decl(ttttNonGenericCallInitializerDefaults.ts, 6, 21))
+
+const { a: a2 = (v) => "" } = gen<X>({});
+>a : Symbol(X.a, Decl(ttttNonGenericCallInitializerDefaults.ts, 3, 13))
+>a2 : Symbol(a2, Decl(ttttNonGenericCallInitializerDefaults.ts, 7, 7))
+>v : Symbol(v, Decl(ttttNonGenericCallInitializerDefaults.ts, 7, 17))
+>gen : Symbol(gen, Decl(ttttNonGenericCallInitializerDefaults.ts, 5, 45))
+>X : Symbol(X, Decl(ttttNonGenericCallInitializerDefaults.ts, 0, 0))
+
+declare function dflt<T = X>(): T;
+>dflt : Symbol(dflt, Decl(ttttNonGenericCallInitializerDefaults.ts, 7, 41))
+>T : Symbol(T, Decl(ttttNonGenericCallInitializerDefaults.ts, 8, 22))
+>X : Symbol(X, Decl(ttttNonGenericCallInitializerDefaults.ts, 0, 0))
+>T : Symbol(T, Decl(ttttNonGenericCallInitializerDefaults.ts, 8, 22))
+
+const { a: a3 = (v) => "" } = dflt();
+>a : Symbol(X.a, Decl(ttttNonGenericCallInitializerDefaults.ts, 3, 13))
+>a3 : Symbol(a3, Decl(ttttNonGenericCallInitializerDefaults.ts, 9, 7))
+>v : Symbol(v, Decl(ttttNonGenericCallInitializerDefaults.ts, 9, 17))
+>dflt : Symbol(dflt, Decl(ttttNonGenericCallInitializerDefaults.ts, 7, 41))
+
+declare class K { constructor(); a?(v: number): string }
+>K : Symbol(K, Decl(ttttNonGenericCallInitializerDefaults.ts, 9, 37))
+>a : Symbol(K.a, Decl(ttttNonGenericCallInitializerDefaults.ts, 10, 32))
+>v : Symbol(v, Decl(ttttNonGenericCallInitializerDefaults.ts, 10, 36))
+
+const { a: a4 = (v) => "" } = new K();
+>a : Symbol(K.a, Decl(ttttNonGenericCallInitializerDefaults.ts, 10, 32))
+>a4 : Symbol(a4, Decl(ttttNonGenericCallInitializerDefaults.ts, 11, 7))
+>v : Symbol(v, Decl(ttttNonGenericCallInitializerDefaults.ts, 11, 17))
+>K : Symbol(K, Decl(ttttNonGenericCallInitializerDefaults.ts, 9, 37))
+
+declare function inferred<T>(): T;
+>inferred : Symbol(inferred, Decl(ttttNonGenericCallInitializerDefaults.ts, 11, 38))
+>T : Symbol(T, Decl(ttttNonGenericCallInitializerDefaults.ts, 12, 26))
+>T : Symbol(T, Decl(ttttNonGenericCallInitializerDefaults.ts, 12, 26))
+
+const { a: a5 = (v) => "" } = inferred();
+>a5 : Symbol(a5, Decl(ttttNonGenericCallInitializerDefaults.ts, 13, 7))
+>v : Symbol(v, Decl(ttttNonGenericCallInitializerDefaults.ts, 13, 17))
+>inferred : Symbol(inferred, Decl(ttttNonGenericCallInitializerDefaults.ts, 11, 38))
+
