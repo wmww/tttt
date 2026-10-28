@@ -52,11 +52,15 @@ wins first; land fast and gate in batches.
   is an unread lead (a checked `.d.ts` is the idle tail's usual shape: 188 of 300 projects have one file over 1/K).
 - **The front end's loader waits**: load+parse waits on a worker's parse 51% of the phase, resolve at 2.7 cores
   (bun_breadth.md "2026-10-28"); 9.5 s of the 300's 51.9 s loss.
-- **For the laptop**: (1) the checker cap A/B, `scripts/abbench.sh -n 7 OLD NEW drizzle zod nest react effect
-  vscode` with fast builds of main and of `wt-ref-cap` (copied out with `cp -L`); land the removal if no-cap wins or
-  ties on wall. (2) `perf stat -r 5 -e cycles:u,instructions:u` at `--threads 1 --checkers 8` against the default
+- **For the laptop**: `perf stat -r 5 -e cycles:u,instructions:u` at `--threads 1 --checkers 8` against the default
   threads with `--checkers 8` on dokploy/apps/dokploy, monkeytype/backend, solid/packages/solid, kebo and
-  vitest/test/browser: splits the 1.36x per-instruction slowdown (SMT, helpers, or this box's load).
+  vitest/test/browser: splits the 1.36x per-instruction slowdown (SMT, helpers, or this box's load). And
+  notes/footprint.md's `perf stat -M PipelineL1` on the immutable.d.ts and store.d.ts one-file projects (data stalls
+  against front-end stalls: orders the representation work).
+- **The physical-core checker cap stays until duplication is fixed** (the human, 2026-10-29): its removal (ad0215612,
+  byte-identical, built by ref) is a tuning question only while every checker rebuilds the declared world (drizzle
+  K8 -> K16 on this box: +50% user CPU, +22% RSS); no A/B. It goes with the duplication work, when one checker per
+  thread is simply right. The commit is in git history (branch wt-ref-cap deleted; `git show ad0215612`).
 - **Correctness, continuous** (cor's queue): sourcesweep_checker.md `[open]` (starlight's TS2589 is reentrancy stage
   E), then type_core.md's one-line probes, then bun cases. The content mappers' `--runExternalCode` is a feature
   decision for the human (it runs external code).

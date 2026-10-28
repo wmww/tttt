@@ -27,9 +27,9 @@ under tsc are the second.
   duplication 9.2 s (the "hub" regime: 41 projects where every checker rebuilds one type graph nearly every file
   reaches, K8 doing >= 2x K1's work), the rerun 4.0 s (its parallel passes now stop early: 15a98e4b7). The parked
   shared graph saves CPU on hubs but not wall: the hub is built serially by whoever builds it.
-- **Pending the laptop**: the physical-core checker cap removal (branch `wt-ref-cap`, ad0215612: drizzle K8 -> K16
-  on this box +50% user CPU, +22% RSS, wall worse under load; `scripts/abbench.sh` recipe in the conversation), and
-  the per-instruction slowdown at K8 (check CPU 1.66x ST of which duplication explains 1.22x).
+- **Pending the laptop**: the per-instruction slowdown at K8 (check CPU 1.66x ST of which duplication explains 1.22x)
+  and footprint.md's PipelineL1 split. The physical-core checker cap stays until duplication is fixed (the human,
+  2026-10-29: a tuning job made irrelevant by that work; its removal ad0215612 is in history, no A/B).
 
 ## State (2026-10-25: v1 released; full oracles at 5de65a46b, quick oracles at 45397f75f and 86bcd7ba4)
 - **Released: tag `v1` = 438727981** (the human's choice, 2026-10-25: the tree they tested; the README updated in
@@ -106,8 +106,8 @@ measured wins first; land fast and gate in batches.
   zeroing fresh pages 2.4% of user and not avoided by huge pages) are removed (24820df46, 4f3fa414e). Kept: the
   memory pool reading free memory (the alternative is an OOM kill or an arbitrary cap), the AST's address-space
   reservations (structural: pointer ownership in one load, not a perf trick), MADV_POPULATE_WRITE pre-faulting. The
-  physical-core checker cap is judged a hack by the human and its removal is built (wt-ref-cap) but held on this
-  box's drizzle numbers for the laptop's A/B. notes/portability.md lists what still depends on the box.
+  physical-core checker cap is judged a hack by the human; its removal (ad0215612, in history) waits for the
+  duplication fix that makes it moot rather than an A/B (2026-10-29). notes/portability.md lists what still depends on the box.
 - **Structural work is good** (2026-10-24, the human, approving the "this-instantiated members" project after hono's
   TS2769 turned out to be that design gap): a fix that gives a structural solution instead of a point fix is welcome
   even when the triggering case isn't a flip, as long as it lands in gated stages (quickgate --vs-main incl. instrcount

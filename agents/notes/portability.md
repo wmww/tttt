@@ -7,8 +7,8 @@ the taint prototype. The dependences are Linux kernel configuration and box stat
 - **The default checker count reads CPU topology from sysfs** (`physical_cores()`, `default_checker_cap()` in
   main.c: one checker per physical core, every hardware thread up to 4; no cap when sysfs is missing). A VM that
   exposes each vCPU as its own core gets twice the checkers of a bare-metal box with SMT. Its removal is built
-  (branch `wt-ref-cap`) and waits for the laptop's A/B: on this box drizzle K8 -> K16 costs +50% user CPU and +22%
-  RSS (todo.md "Now").
+  (ad0215612, in history) and waits for the duplication fix that makes it moot: on this box drizzle K8 -> K16 costs
+  +50% user CPU and +22% RSS because every checker rebuilds the declared world (todo.md "Now").
 - **The memory pool reads MemAvailable and the cgroup limit at startup** (`memory_available_bytes()` in prelude.c,
   80% of it; `TTTT_MEM_AVAILABLE_MB` overrides). Output is unaffected (the one-checker rerun's rule 4 covers
   recycles); wall is: a box low on free memory recycles checkers more. Kept on purpose (the alternative is an OOM
