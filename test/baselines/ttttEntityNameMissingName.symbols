@@ -1,0 +1,19 @@
+//// [test/cases/ttttEntityNameMissingName.ts] ////
+
+=== ttttEntityNameMissingName.ts ===
+// In an entity name a `.` right after a dot is a missing name (tsc's parseEntityName: TS1003 at it) and the name goes on;
+// `...` is a token of its own, which ends the name
+const a = { b: { c: 1 } };
+>a : Symbol(a, Decl(ttttEntityNameMissingName.ts, 2, 5))
+>b : Symbol(b, Decl(ttttEntityNameMissingName.ts, 2, 11))
+>c : Symbol(c, Decl(ttttEntityNameMissingName.ts, 2, 16))
+
+let x: typeof a..b;
+>x : Symbol(x, Decl(ttttEntityNameMissingName.ts, 3, 3))
+>a : Symbol(a, Decl(ttttEntityNameMissingName.ts, 2, 5))
+
+let y: typeof a...b;
+>y : Symbol(y, Decl(ttttEntityNameMissingName.ts, 4, 3))
+>a : Symbol(a, Decl(ttttEntityNameMissingName.ts, 2, 5))
+>b : Symbol(b, Decl(ttttEntityNameMissingName.ts, 4, 18))
+

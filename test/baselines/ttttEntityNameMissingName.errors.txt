@@ -1,0 +1,15 @@
+ttttEntityNameMissingName.ts(4,17): error TS1003: Identifier expected.
+ttttEntityNameMissingName.ts(5,16): error TS1005: ',' expected.
+
+
+==== ttttEntityNameMissingName.ts (2 errors) ====
+    // In an entity name a `.` right after a dot is a missing name (tsc's parseEntityName: TS1003 at it) and the name goes on;
+    // `...` is a token of its own, which ends the name
+    const a = { b: { c: 1 } };
+    let x: typeof a..b;
+                    ~
+!!! error TS1003: Identifier expected.
+    let y: typeof a...b;
+                   ~~~
+!!! error TS1005: ',' expected.
+    

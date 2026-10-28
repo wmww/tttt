@@ -9963,16 +9963,19 @@ static bool parse_right_unary_op(Parser* parent, UnaryOp* op) {
     return parse_success(&p);
 }
 
-static bool parse_dot_prop(Parser* parent, bool* optional_chain_ret, Span* ret) {
+static bool parse_dot_prop(Parser* parent, bool entity_name, bool* optional_chain_ret, Span* ret) {
     Parser p = parser(parent);
 
     bool optional_chain = hop_char(&p, '?');
 
+    // (`...` is a token of its own: `a...b` is no property access)
+    if (!optional_chain && p.pos[0] == '.' && p.pos[1] == '.' && p.pos[2] == '.') return parse_fail(&p);
     if (!hop_char(&p, '.')) {
         return parse_fail(&p);
     }
     // (`?.` is one token before anything but a digit, tsc's scanner: `a?..b` is `a?.` missing its name)
-    if ((*p.pos >= '0' && *p.pos <= '9') || (*p.pos == '.' && !optional_chain)) {
+    // (In an entity name a `.` after the dot is a missing name, tsc's parseEntityName: `typeof a..b`)
+    if ((*p.pos >= '0' && *p.pos <= '9') || (*p.pos == '.' && !optional_chain && !entity_name)) {
         return parse_fail(&p); // `a ? .5 : b`, `01.0`: a number; `@dec ...rest`: a spread
     }
     const char* after_dot = p.pos;
@@ -11184,7 +11187,7 @@ static inline bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left
     }
 
     Span prop_name;
-    if (parse_dot_prop(&p, &parsed.optional_chain, &prop_name)) {
+    if (parse_dot_prop(&p, ctx.entity_name, &parsed.optional_chain, &prop_name)) {
         if (left_and_ret->tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(left_and_ret)) {
             // `f<T>.x`, `f<T>?.x` too (tsc's parsePropertyAccessExpressionRest): over the type arguments, `<` to `>`
             const char* open = span_end_ptr(expr_outer_span(&left_and_ret->generic_params->expr));
