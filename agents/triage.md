@@ -263,3 +263,7 @@ intersection's property symbol to bugs/type_core.md.
 - (cor6, 2026-10-28) Symbols baseline: a union member's property reached through another member's template literal
   index signature (`v.b` with `{ b: 1 } | { readonly [k: `b${string}`]: 1 }`) has no symbol in tttt's harness, tsc
   prints the union property's (errors match: ttttUnionReadonlyIndexForName left it out). [open]
+
+- Harness: a long `-f 'a|b|c|...'` regex makes `baseline_tests` abort with "stack smashing detected" instead of matching
+  nothing (cor7, 2026-10-31; `-f @file` works). A fixed-size buffer in the filter's parsing; CLAUDE.md already warns that
+  long alternations silently match nothing. [harness]
