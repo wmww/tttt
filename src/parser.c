@@ -2914,6 +2914,8 @@ static bool parse_generic_decl(Parser* parent, TypeParamOwner owner, Generic* re
     *ret = (Generic){0};
 
     const char* open = p.pos;
+    // (In a JSX file `</` is a token of its own, tsc's LessThanSlashToken: no list)
+    if (p.pos[0] == '<' && p.pos[1] == '/' && p.pos[2] != '*' && p.shared->source->is_jsx) return parse_fail(&p);
     if (!hop_char(&p, '<')) {
         return parse_fail(&p);
     }
@@ -2926,7 +2928,16 @@ static bool parse_generic_decl(Parser* parent, TypeParamOwner owner, Generic* re
     while (!at_eof(&p, p.pos) && *p.pos != '>') {
         GenericItem item;
         const char* item_start = p.pos;
-        if (parse_generic_decl_item(&p, owner, &item)) {
+        // (tsc's isListElement(TypeParameters): `in`, `const` or an identifier, so not another reserved word: `<T
+        // export const x = ...` ends the list at the `export`, which a statement takes)
+        // (No reserved word starts with an upper case letter, `_` or `$`: the common `T` needs no token)
+        char c0 = *p.pos;
+        bool element = (c0 >= 'A' && c0 <= 'Z') || c0 == '_' || c0 == '$';
+        if (!element) {
+            Tok first = tok_peek(&p);
+            element = tok_is_identifier(first) || tok_is(first, "in") || tok_is(first, "const");
+        }
+        if (element && parse_generic_decl_item(&p, owner, &item)) {
             list_push(vec_generic_item, &ret->items, item);
             // (tsc's parseDelimitedList: an element that took nothing, `<in in>`'s second, skips its token)
             if (p.pos == item_start) hop_token(&p);
@@ -2940,10 +2951,11 @@ static bool parse_generic_decl(Parser* parent, TypeParamOwner owner, Generic* re
             p.pos++;
             hop_whitespace(&p);
             continue;
-        } else if (owner == TYPE_PARAM_OF_CLASS && !tok_is_eof(tok_peek(&p)) && *p.pos != '(' && *p.pos != '{' &&
+        } else if (owner != TYPE_PARAM_OF_FUNCTION && !tok_is_eof(tok_peek(&p)) && *p.pos != '(' && *p.pos != '{' &&
             !tok_is(tok_peek(&p), "extends") && !tok_is(tok_peek(&p), "implements")
         ) {
-            // A class's `<` commits to a type parameter list (tsc's parseTypeParameters, never speculative there): a
+            // A class's, interface's or type alias's `<` commits to a type parameter list (tsc's parseTypeParameters,
+            // never speculative there): a
             // token that can't start one is TS1139 and skipped, unless a list being parsed takes it (tsc's
             // abortParsingListOrMoveToNextToken): `class <%= classify(name) %>Component` of a schematics template
             Tok t = tok_peek(&p);
@@ -2966,7 +2978,7 @@ static bool parse_generic_decl(Parser* parent, TypeParamOwner owner, Generic* re
         hop_whitespace(&p);
     }
 
-    if (generic_empty(ret) && *p.pos != '>' && owner != TYPE_PARAM_OF_CLASS) {
+    if (generic_empty(ret) && *p.pos != '>' && owner == TYPE_PARAM_OF_FUNCTION) {
         generic_drop(ret);
         return parse_fail(&p);
     }

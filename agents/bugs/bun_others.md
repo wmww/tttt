@@ -463,11 +463,19 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   type arguments: `(<a><c<<T>()=>void> x="1"/></a>)` is `<c`, then `<` + `<<T>()=>void>` + ` x="1"/>`; `<=` gives an
   empty list and TS1005 '>' expected. A type argument list also ends at a token that is neither a comma nor a type's
   start (TS1005, not TS1110). Found by dumping tsgo's tree (a Go test through `go test -overlay` in
-  internal/parser). Replaces 8981a243d's missing-name and 092a66c3d's no-whitespace rules. [fixed bun8-1]
-- Mutation testing (mutate.py -n 2000 --seed 20261030) left after bun7: `--syntax` 5 (2 render; TS2842 renaming in a
-  parse-broken destructuring, discriminantPropertyInference; a `<A, B extends Object A>` duplicate type parameter
-  that tsc doesn't count for TS2314, genericContextualTypes2; a missing TS1005 in a broken type alias,
-  declarationEmitArrowFunctionNoRenaming). Errors component 0. [open]
+  internal/parser). Replaces 8981a243d's missing-name and 092a66c3d's no-whitespace rules. [fixed 7b4e07db3]
+- A type parameter list's elements are `in`, `const` or identifiers (tsc's isListElement(TypeParameters)): another
+  reserved word ends it when a statement takes it (`<A, B` then `export const x`: TS1005 ',' expected, the alias's
+  type is a reference named `export`), else it is TS1139 and skipped; an interface's or type alias's `<` commits
+  like a class's; in a JSX file `</` opens none (mutation testing's declarationEmitArrowFunctionNoRenaming, bun
+  56-L06's lt1). [fixed bun8-2] A function declaration's list still recovers like an arrow function's
+  (speculative): `function f<T, default>() {}` is TS1005 '>' expected and more, tsc's TS1139 alone. [open]
+- Mutation testing (seed 20261030) also leaves: a duplicate type parameter (`<A, B extends Object A>`, TS2300) that
+  tsc's appendTypeParameters counts once (getDeclaredTypeOfTypeParameter of the one merged symbol) and tttt's
+  several_types.c declared_type_params() twice (spurious TS2314 for two arguments, genericContextualTypes2): low
+  value, only with a parse error. [open] discriminantPropertyInference's TS2842 x2 is the harness's post-emit count
+  (tsc's pre-emit diagnostics have them too: the CLI reports them). [tsgo] errorInfoForRelatedIndexTypes...'s TS6053
+  is mutate.py's harness (a `/.lib/react16.d.ts` reference it doesn't serve). [text]
 - Class member TS1171 after the member's own modifier/signature grammar errors (TS1028, TS1029, TS1024, TS1031,
   TS1244, TS1014, TS1015, TS1094, TS1054, TS1049: tsgo's checkGrammarModifiers || checkGrammarProperty/Method/Accessor
   chain) is still reported by tttt; its TS1166/TS1168 too. Needs the parser to record which of a member's grammar

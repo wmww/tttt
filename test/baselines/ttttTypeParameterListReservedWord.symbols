@@ -1,0 +1,45 @@
+//// [test/cases/ttttTypeParameterListReservedWord.ts] ////
+
+=== a.ts ===
+export type BoundedInteger<
+>BoundedInteger : Symbol(BoundedInteger, Decl(a.ts, 0, 0))
+
+  LowerBound extends number,
+>LowerBound : Symbol(LowerBound, Decl(a.ts, 0, 27))
+
+  UpperBound extends number
+>UpperBound : Symbol(UpperBound, Decl(a.ts, 1, 28))
+
+export const toBoundedInteger = <L extends number>(bounds: L) => (n: number): BoundedInteger<L, L> => ({} as any);
+>export : Symbol(export)
+>toBoundedInteger : Symbol(toBoundedInteger, Decl(a.ts, 4, 12))
+>L : Symbol(L, Decl(a.ts, 4, 33))
+>bounds : Symbol(bounds, Decl(a.ts, 4, 51))
+>L : Symbol(L, Decl(a.ts, 4, 33))
+>n : Symbol(n, Decl(a.ts, 4, 66))
+>BoundedInteger : Symbol(BoundedInteger, Decl(a.ts, 0, 0))
+>L : Symbol(L, Decl(a.ts, 4, 33))
+>L : Symbol(L, Decl(a.ts, 4, 33))
+
+type X<export T> = T;
+>X : Symbol(X, Decl(a.ts, 4, 114))
+>T : Symbol(T, Decl(a.ts, 5, 13))
+>T : Symbol(T, Decl(a.ts, 5, 13))
+
+interface I<T, default U> { a: T; b: U }
+>I : Symbol(I, Decl(a.ts, 5, 21))
+>T : Symbol(T, Decl(a.ts, 6, 12))
+>U : Symbol(U, Decl(a.ts, 6, 22))
+>a : Symbol(I.a, Decl(a.ts, 6, 27))
+>T : Symbol(T, Decl(a.ts, 6, 12))
+>b : Symbol(I.b, Decl(a.ts, 6, 33))
+>U : Symbol(U, Decl(a.ts, 6, 22))
+
+type Y<
+>Y : Symbol(Y, Decl(a.ts, 6, 40))
+> : Symbol(unknown)
+
+=== b.tsx ===
+class A</T> {}
+>A : Symbol(A, Decl(b.tsx, 0, 0))
+

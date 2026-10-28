@@ -1,0 +1,36 @@
+//// [test/cases/ttttTypeParameterListReservedWord.ts] ////
+
+=== a.ts ===
+export type BoundedInteger<
+>BoundedInteger : export
+
+  LowerBound extends number,
+  UpperBound extends number
+
+export const toBoundedInteger = <L extends number>(bounds: L) => (n: number): BoundedInteger<L, L> => ({} as any);
+>toBoundedInteger : <L extends number>(bounds: L) => (n: number) => BoundedInteger<L, L>
+><L extends number>(bounds: L) => (n: number): BoundedInteger<L, L> => ({} as any) : <L extends number>(bounds: L) => (n: number) => BoundedInteger<L, L>
+>bounds : L
+>(n: number): BoundedInteger<L, L> => ({} as any) : (n: number) => BoundedInteger<L, L>
+>n : number
+>({} as any) : any
+>{} as any : any
+>{} : {}
+
+type X<export T> = T;
+>X : T
+
+interface I<T, default U> { a: T; b: U }
+>a : T
+>b : U
+
+type Y<
+>Y : any
+
+=== b.tsx ===
+class A</T> {}
+>A : A
+>T> {} : boolean
+>T : any
+>{} : {}
+
