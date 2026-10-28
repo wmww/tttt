@@ -606,6 +606,7 @@ static bool parse_template(Parser* parent, VecExpr* ret, AstCStrs* texts);
 static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret);
 static void parse_computed_key_comma(Parser* p, Expr* key);
 static bool parse_decorators(Parser* parent, VecExpr* ret);
+static bool parse_decorated_class_with_modifiers(Parser* parent, ClassDecl* ret);
 static void unhop_trivia(Parser* me);
 static bool parse_type_compat_literal(Parser* parent, Value* ret);
 static bool parse_template_type(Parser* parent, TypeNode* ret);
@@ -10011,6 +10012,38 @@ static bool parse_list_member(Parser* parent, ParsingContext ctx, bool is_type, 
 
 // abstract: the statement's modifiers had `abstract` (an expression's `abstract class` is taken here)
 [[gnu::noinline]] static bool parse_class_decl_slow(Parser* parent, bool abstract, ClassDecl* ret);
+static inline bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* ret);
+
+// `@dec public class {}`, `@dec export default class {}` in an expression: tsc's parseDecoratedExpression takes any
+// modifiers after the decorators, and the class expression has them (its checkGrammarModifiers: TS1184 at the first,
+// findFirstIllegalModifier; `abstract` still makes it abstract)
+static bool parse_decorated_class_with_modifiers(Parser* parent, ClassDecl* ret) {
+    Parser p = parser(parent);
+    VecExpr decorators = {0};
+    if (!parse_decorators(&p, &decorators)) {
+        vec_expr_drop(&decorators);
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+    ModifierList modifiers;
+    parse_modifier_list(&p, false, &modifiers);
+    hop_whitespace(&p);
+    // (Its members are parsed as a non-abstract class's: an abstract one is TS1244, which tsc says unless the parent
+    // is an abstract class declaration)
+    if (vec_spanned_modifier_is_empty(&modifiers.spanned) || !starts_with_followed_by_word_break(&p, "class") ||
+        !parse_class_decl(&p, false, ret)
+    ) {
+        modifier_list_drop(&modifiers);
+        vec_expr_drop(&decorators);
+        return parse_fail(&p);
+    }
+    vec_expr_drop(&ret->decorators);
+    ret->decorators = decorators;
+    ret->is_abstract |= modifiers.includes[MODIFIER_ABSTRACT];
+    grammar_error(&p, vec_spanned_modifier_front(&modifiers.spanned)->span, 1184, "Modifiers cannot appear here.");
+    modifier_list_drop(&modifiers);
+    return parse_success(&p);
+}
 // (The quick test inlined where it is called, the rest not: PGO inlined whole parse functions behind it)
 static inline bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* ret) {
     // (Decorators, `abstract`, `class`, an escaped keyword)
@@ -12726,7 +12759,9 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         ret->tag = EXPR_OBJECT;
     } else if (c == '[' && parse_array(&p, &ret->array)) {
         ret->tag = EXPR_ARRAY;
-    } else if ((c == '@' || c == 'a' || c == 'c') && parse_class_decl(&p, false, &parsed.class_decl)) {
+    } else if ((c == '@' && parse_decorated_class_with_modifiers(&p, &parsed.class_decl)) ||
+        ((c == '@' || c == 'a' || c == 'c') && parse_class_decl(&p, false, &parsed.class_decl))
+    ) {
         parsed.class_decl.is_expression = true;
         *ret = expr_class_decl(span_from(a), ast_new(ClassDecl, parsed.class_decl));
     } else if (c == '@') {

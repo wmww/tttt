@@ -1,0 +1,26 @@
+//// [test/cases/ttttDecoratedClassExpressionModifiers.ts] ////
+
+=== ttttDecoratedClassExpressionModifiers.ts ===
+// A decorated class expression takes modifiers after its decorators (tsc's parseDecoratedExpression): TS1184 at the
+// first (checkGrammarModifiers of a ClassExpression), `abstract` still makes it abstract (TS2511), and its abstract
+// members are TS1244, an abstract class being a class declaration to tsc (bun 80-R08)
+declare function dec(...a: any[]): any;
+>dec : Symbol(dec, Decl(ttttDecoratedClassExpressionModifiers.ts, 0, 0))
+>a : Symbol(a, Decl(ttttDecoratedClassExpressionModifiers.ts, 3, 21))
+
+const c1 = @dec abstract class { abstract m(): void };
+>c1 : Symbol(c1, Decl(ttttDecoratedClassExpressionModifiers.ts, 4, 5))
+>dec : Symbol(dec, Decl(ttttDecoratedClassExpressionModifiers.ts, 0, 0))
+>m : Symbol(c1.m, Decl(ttttDecoratedClassExpressionModifiers.ts, 4, 32))
+
+const c2 = @dec public class {};
+>c2 : Symbol(c2, Decl(ttttDecoratedClassExpressionModifiers.ts, 5, 5))
+>dec : Symbol(dec, Decl(ttttDecoratedClassExpressionModifiers.ts, 0, 0))
+
+const c3 = (@dec export default class {});
+>c3 : Symbol(c3, Decl(ttttDecoratedClassExpressionModifiers.ts, 6, 5))
+>dec : Symbol(dec, Decl(ttttDecoratedClassExpressionModifiers.ts, 0, 0))
+
+new c1();
+>c1 : Symbol(c1, Decl(ttttDecoratedClassExpressionModifiers.ts, 4, 5))
+

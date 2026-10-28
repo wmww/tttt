@@ -1,0 +1,27 @@
+ttttDecoratedClassExpressionModifiers.ts(5,17): error TS1184: Modifiers cannot appear here.
+ttttDecoratedClassExpressionModifiers.ts(5,34): error TS1244: Abstract methods can only appear within an abstract class.
+ttttDecoratedClassExpressionModifiers.ts(6,17): error TS1184: Modifiers cannot appear here.
+ttttDecoratedClassExpressionModifiers.ts(7,18): error TS1184: Modifiers cannot appear here.
+ttttDecoratedClassExpressionModifiers.ts(8,1): error TS2511: Cannot create an instance of an abstract class.
+
+
+==== ttttDecoratedClassExpressionModifiers.ts (5 errors) ====
+    // A decorated class expression takes modifiers after its decorators (tsc's parseDecoratedExpression): TS1184 at the
+    // first (checkGrammarModifiers of a ClassExpression), `abstract` still makes it abstract (TS2511), and its abstract
+    // members are TS1244, an abstract class being a class declaration to tsc (bun 80-R08)
+    declare function dec(...a: any[]): any;
+    const c1 = @dec abstract class { abstract m(): void };
+                    ~~~~~~~~
+!!! error TS1184: Modifiers cannot appear here.
+                                     ~~~~~~~~
+!!! error TS1244: Abstract methods can only appear within an abstract class.
+    const c2 = @dec public class {};
+                    ~~~~~~
+!!! error TS1184: Modifiers cannot appear here.
+    const c3 = (@dec export default class {});
+                     ~~~~~~
+!!! error TS1184: Modifiers cannot appear here.
+    new c1();
+    ~~~~~~~~
+!!! error TS2511: Cannot create an instance of an abstract class.
+    
