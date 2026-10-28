@@ -1,0 +1,32 @@
+//// [test/cases/ttttStrictDeleteInUncheckedExpressions.ts] ////
+
+=== ttttStrictDeleteInUncheckedExpressions.ts ===
+// tsc's binder visits what its checker never checks: `delete x` (TS1102) in a function declaration's invalid
+// decorator, a heritage element past TS1174, an implemented or extended expression that isn't a name (TS2500/TS2499)
+declare var x: any;
+>x : any
+
+@(delete x) function f() {}
+>(delete x) : boolean
+>delete x : boolean
+>x : any
+>f : () => void
+
+class C extends Object, (delete x) {}
+>C : C
+>Object : Object
+>(delete x) : Object
+>delete x : boolean
+>x : any
+
+interface I extends (delete x) {}
+>(delete x) : boolean
+>delete x : boolean
+>x : any
+
+class D implements (delete x) {}
+>D : D
+>(delete x) : boolean
+>delete x : boolean
+>x : any
+

@@ -1,0 +1,35 @@
+ttttStrictDeleteInUncheckedExpressions.ts(4,1): error TS1206: Decorators are not valid here.
+ttttStrictDeleteInUncheckedExpressions.ts(4,10): error TS1102: 'delete' cannot be called on an identifier in strict mode.
+ttttStrictDeleteInUncheckedExpressions.ts(5,25): error TS1174: Classes can only extend a single class.
+ttttStrictDeleteInUncheckedExpressions.ts(5,33): error TS1102: 'delete' cannot be called on an identifier in strict mode.
+ttttStrictDeleteInUncheckedExpressions.ts(6,21): error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+ttttStrictDeleteInUncheckedExpressions.ts(6,29): error TS1102: 'delete' cannot be called on an identifier in strict mode.
+ttttStrictDeleteInUncheckedExpressions.ts(7,20): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+ttttStrictDeleteInUncheckedExpressions.ts(7,28): error TS1102: 'delete' cannot be called on an identifier in strict mode.
+
+
+==== ttttStrictDeleteInUncheckedExpressions.ts (8 errors) ====
+    // tsc's binder visits what its checker never checks: `delete x` (TS1102) in a function declaration's invalid
+    // decorator, a heritage element past TS1174, an implemented or extended expression that isn't a name (TS2500/TS2499)
+    declare var x: any;
+    @(delete x) function f() {}
+    ~
+!!! error TS1206: Decorators are not valid here.
+             ~
+!!! error TS1102: 'delete' cannot be called on an identifier in strict mode.
+    class C extends Object, (delete x) {}
+                            ~
+!!! error TS1174: Classes can only extend a single class.
+                                    ~
+!!! error TS1102: 'delete' cannot be called on an identifier in strict mode.
+    interface I extends (delete x) {}
+                        ~~~~~~~~~~
+!!! error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+                                ~
+!!! error TS1102: 'delete' cannot be called on an identifier in strict mode.
+    class D implements (delete x) {}
+                       ~~~~~~~~~~
+!!! error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+                               ~
+!!! error TS1102: 'delete' cannot be called on an identifier in strict mode.
+    

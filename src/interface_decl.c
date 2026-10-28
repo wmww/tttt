@@ -60,7 +60,7 @@ void interface_decl_lookup_names(InterfaceDecl* me, Scope* names, ErrorCtx* errs
     // unused)
     unused_marking_suppressed++;
     for_each (i, vec_type, &my unchecked_extends) type_lookup_names(i, names, nullptr);
-    for_each (i, vec_expr, &my invalid_extends) expr_lookup_names(i, names, nullptr);
+    for_each (i, vec_expr, &my invalid_extends) expr_lookup_names_unchecked(i, names, errs);
     unused_marking_suppressed--;
     // The body's members directly: it isn't a type literal (whose `this` would be invalid). Computed names in there
     // aren't uses of values (tsc's isInAmbientOrTypeNode)

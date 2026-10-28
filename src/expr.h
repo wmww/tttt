@@ -764,6 +764,10 @@ typedef struct GenericParamsExpr {
 
 // tsc's getInstantiationExpressionType's TS2635 alone: the type (a union member, or `callee` itself) whose signatures
 // take no `written` type arguments (an empty list, an import type's, takes any generic one), null if there is none
+// expr_lookup_names() of an expression tsc never checks (an invalid decorator's, a heritage element past a grammar
+// error): only what tsc's binder says about it (strict mode: TS1102 `delete x`, TS1100, TS1212...) is reported
+void expr_lookup_names_unchecked(Expr* me, struct Scope* names, ErrorCtx* errs);
+
 struct Checker;
 Ty const* instantiation_error_type(struct Checker* checker, Ty const* callee, u32 written);
 

@@ -1848,6 +1848,26 @@ AccessSite* scope_access_site(Scope* names) {
     });
 }
 
+void expr_lookup_names_unchecked(Expr* me, Scope* names, ErrorCtx* errs) {
+    if (!errs) {
+        expr_lookup_names(me, names, nullptr);
+        return;
+    }
+    ErrorCtx scratch = error_ctx_scratch(errs);
+    expr_lookup_names(me, names, &scratch);
+    for_each (i, vec_error, &scratch.errors) {
+        // (tsc's binder's strict mode checks: checkStrictModeDeleteExpression, checkStrictModeEvalOrArguments,
+        // checkStrictModeIdentifier)
+        bool binder = i->ts_code == 1100 || i->ts_code == 1102 || i->ts_code == 1212 || i->ts_code == 1213 ||
+            i->ts_code == 1214 || i->ts_code == 1215;
+        if (binder) {
+            error_ctx_append_error(errs, *i);
+            *i = (Error){0};
+        }
+    }
+    error_ctx_drop(&scratch);
+}
+
 void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
     lazy_type_bind(&my lazy_type, LAZY_TYPE_EXPR);
 

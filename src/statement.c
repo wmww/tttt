@@ -2113,7 +2113,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
 
 void statement_resolve_names(Statement* me, Scope* names, ErrorCtx* errs) {
     if (statement_declares_name(my tag) && my decl.props.invalid_decorators) {
-        for_each (i, vec_expr, my decl.props.invalid_decorators) expr_lookup_names(i, names, nullptr);
+        for_each (i, vec_expr, my decl.props.invalid_decorators) expr_lookup_names_unchecked(i, names, errs);
     }
     statement_resolve_names_labeled(me, 0, names, errs);
 }

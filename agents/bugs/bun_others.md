@@ -1262,3 +1262,6 @@ block.".
 - Bigint literal property names (53-L04b): tsc's object literal names normalize them to decimal (`0b11n` is `3n`,
   TS1117 with `3n`), destructuring reads the lowercased text (`0XFFn` reads `"0xffn"`), tttt says TS2538 for the
   binding names and reads `any`. [open]
+- -TS1102 `delete x` in what tsc's checker never checks (30-C6a 30-C6f 30-C6g 30-P7b: a function declaration's
+  decorator, heritage elements past TS1174 or not names): tsc's binder still says it; expr_lookup_names_unchecked()
+  keeps the binder's strict mode errors of those walks. [fixed]
