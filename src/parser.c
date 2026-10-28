@@ -14279,6 +14279,7 @@ static bool parse_binding_content_inner(Parser* parent, Binding* ret) {
             hop_whitespace(&p);
 
             if (hop_char(&p, ':')) {
+                const char* target_full_start = p.pos;
                 hop_whitespace(&p);
                 if (!parse_binding_element(&p, &binding)) {
                     Span word;
@@ -14292,8 +14293,10 @@ static bool parse_binding_content_inner(Parser* parent, Binding* ret) {
                         const char* missing = token_full_start(&p);
                         binding = (Binding){ .tag = BINDING_IDENTIFIER, .content_span = span_make(p.shared->source, missing, missing) };
                     } else {
+                        // (tsc's parseIdentifierOrPattern: a missing identifier at the full start, `(Missing)` to the
+                        // binder and the checker, TS2842 and TS7031)
                         parse_error(&p, span_from_token_or_eof(&p), 1003, "Identifier expected.");
-                        binding = (Binding){ .tag = BINDING_NOOP, .content_span = span_from_pos(&p) };
+                        binding = (Binding){ .tag = BINDING_IDENTIFIER, .content_span = span_make(p.shared->source, target_full_start, target_full_start) };
                     }
                 }
             } else if (!shorthand_allowed && object_binding_name_follows(&p)) {

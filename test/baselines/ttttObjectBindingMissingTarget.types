@@ -1,0 +1,43 @@
+//// [test/cases/ttttObjectBindingMissingTarget.ts] ////
+
+=== ttttObjectBindingMissingTarget.ts ===
+// An object binding element whose target after `:` is missing is a missing identifier at its full start, which the
+// binder declares: TS2842 and TS7031 for `(Missing)` (mutation testing seed 20261031,
+// contextualTypesNegatedTypeLikeConstraintInGenericMappedType2)
+declare function matcher(x: any): void;
+>matcher : (x: any) => void
+>x : any
+
+matcher({
+>matcher({  A: (_) => _.a,  B: (_) => "fail",matcher({  A: (_) => _.a,}) : void
+>matcher : (x: any) => void
+>{  A: (_) => _.a,  B: (_) => "fail",matcher({  A: (_) : any
+>{  A: (_) => _.a,  B: (_) => "fail",matcher({  A: : { A: (_: any) => any; B: (_: any) => string; matcher({ A:  }: { A: any; }): any; }
+
+  A: (_) => _.a,
+>A : (_: any) => any
+>(_) => _.a : (_: any) => any
+>_ : any
+>_.a : any
+>_ : any
+>a : any
+
+  B: (_) => "fail",
+>B : (_: any) => string
+>(_) => "fail" : (_: any) => string
+>_ : any
+>"fail" : "fail"
+
+matcher({
+>matcher : ({ A:  }: { A: any; }) => any
+
+  A: (_) => _.a,
+>A : any
+> : any
+>_ : any
+>_.a : any
+>_ : any
+>a : any
+
+});
+

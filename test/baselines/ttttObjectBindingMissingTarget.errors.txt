@@ -1,0 +1,56 @@
+ttttObjectBindingMissingTarget.ts(5,9): error TS2349: This expression is not callable.
+  Type '{ A: (_: any) => any; B: (_: any) => string; matcher({ A:  }: { A: any; }): any; }' has no call signatures.
+ttttObjectBindingMissingTarget.ts(6,7): error TS7006: Parameter '_' implicitly has an 'any' type.
+ttttObjectBindingMissingTarget.ts(7,7): error TS7006: Parameter '_' implicitly has an 'any' type.
+ttttObjectBindingMissingTarget.ts(10,5): error TS2842: '(Missing)' is an unused renaming of 'A'. Did you intend to use it as a type annotation?
+ttttObjectBindingMissingTarget.ts(10,5): error TS7031: Binding element '(Missing)' implicitly has an 'any' type.
+ttttObjectBindingMissingTarget.ts(10,6): error TS1003: Identifier expected.
+ttttObjectBindingMissingTarget.ts(10,7): error TS2304: Cannot find name '_'.
+ttttObjectBindingMissingTarget.ts(10,10): error TS1005: ',' expected.
+ttttObjectBindingMissingTarget.ts(10,13): error TS2304: Cannot find name '_'.
+ttttObjectBindingMissingTarget.ts(10,13): error TS2554: Expected 1 arguments, but got 2.
+ttttObjectBindingMissingTarget.ts(11,1): error TS1135: Argument expression expected.
+
+
+==== ttttObjectBindingMissingTarget.ts (11 errors) ====
+    // An object binding element whose target after `:` is missing is a missing identifier at its full start, which the
+    // binder declares: TS2842 and TS7031 for `(Missing)` (mutation testing seed 20261031,
+    // contextualTypesNegatedTypeLikeConstraintInGenericMappedType2)
+    declare function matcher(x: any): void;
+    matcher({
+            ~
+      A: (_) => _.a,
+    ~~~~~~~~~~~~~~~~
+          ~
+!!! error TS7006: Parameter '_' implicitly has an 'any' type.
+      B: (_) => "fail",
+    ~~~~~~~~~~~~~~~~~~~
+          ~
+!!! error TS7006: Parameter '_' implicitly has an 'any' type.
+    
+    
+    matcher({
+    ~~~~~~~~~
+      A: (_) => _.a,
+    ~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Type '{ A: (_: any) => any; B: (_: any) => string; matcher({ A:  }: { A: any; }): any; }' has no call signatures.
+        
+!!! error TS2842: '(Missing)' is an unused renaming of 'A'. Did you intend to use it as a type annotation?
+!!! related TS2843 ttttObjectBindingMissingTarget.ts:10:5: We can only write a type for 'A' by adding a type for the entire parameter here.
+        
+!!! error TS7031: Binding element '(Missing)' implicitly has an 'any' type.
+         ~
+!!! error TS1003: Identifier expected.
+          ~
+!!! error TS2304: Cannot find name '_'.
+             ~~
+!!! error TS1005: ',' expected.
+                ~
+!!! error TS2304: Cannot find name '_'.
+                ~~~
+!!! error TS2554: Expected 1 arguments, but got 2.
+    });
+    ~
+!!! error TS1135: Argument expression expected.
+    
