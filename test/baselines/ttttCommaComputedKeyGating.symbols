@@ -1,0 +1,57 @@
+//// [test/cases/ttttCommaComputedKeyGating.ts] ////
+
+=== ttttCommaComputedKeyGating.ts ===
+// TS1171 (tsc's checkGrammarComputedPropertyName) comes after a member's other grammar checks: a class property's or
+// overload's TS1166/TS1168, an interface's or type literal's TS1169/TS1170 (a comma expression is no entity name, so
+// only an accessor's TS1171 is left there); and a type member's `[a, b]` parses like a class member's (bun 02-C10)
+declare function f(): void;
+>f : Symbol(f, Decl(ttttCommaComputedKeyGating.ts, 0, 0))
+
+declare const s: string;
+>s : Symbol(s, Decl(ttttCommaComputedKeyGating.ts, 4, 13))
+
+class C1 { [f(), "a"]() {} }
+>C1 : Symbol(C1, Decl(ttttCommaComputedKeyGating.ts, 4, 24))
+>[f(), "a"] : Symbol(C1[f(), "a"], Decl(ttttCommaComputedKeyGating.ts, 5, 10))
+>f : Symbol(f, Decl(ttttCommaComputedKeyGating.ts, 0, 0))
+
+class C2 { get [f(), "b"]() { return 1 } }
+>C2 : Symbol(C2, Decl(ttttCommaComputedKeyGating.ts, 5, 28))
+>[f(), "b"] : Symbol(C2[f(), "b"], Decl(ttttCommaComputedKeyGating.ts, 6, 10))
+>f : Symbol(f, Decl(ttttCommaComputedKeyGating.ts, 0, 0))
+
+class C3 { [f(), "e"] = 1; [f(), s] = 2; [f(), "g"](): void; [f(), "g"]() {} }
+>C3 : Symbol(C3, Decl(ttttCommaComputedKeyGating.ts, 6, 42))
+>[f(), "e"] : Symbol(C3[f(), "e"], Decl(ttttCommaComputedKeyGating.ts, 7, 10))
+>f : Symbol(f, Decl(ttttCommaComputedKeyGating.ts, 0, 0))
+>[f(), s] : Symbol(C3[f(), s], Decl(ttttCommaComputedKeyGating.ts, 7, 26))
+>f : Symbol(f, Decl(ttttCommaComputedKeyGating.ts, 0, 0))
+>s : Symbol(s, Decl(ttttCommaComputedKeyGating.ts, 4, 13))
+>[f(), "g"] : Symbol(C3[f(), "g"], Decl(ttttCommaComputedKeyGating.ts, 7, 40))
+>f : Symbol(f, Decl(ttttCommaComputedKeyGating.ts, 0, 0))
+>[f(), "g"] : Symbol(C3[f(), "g"], Decl(ttttCommaComputedKeyGating.ts, 7, 60))
+>f : Symbol(f, Decl(ttttCommaComputedKeyGating.ts, 0, 0))
+
+interface I1 { get [f(), "c"](): number }
+>I1 : Symbol(I1, Decl(ttttCommaComputedKeyGating.ts, 7, 78))
+>[f(), "c"] : Symbol(I1[f(), "c"], Decl(ttttCommaComputedKeyGating.ts, 8, 14))
+>f : Symbol(f, Decl(ttttCommaComputedKeyGating.ts, 0, 0))
+
+interface I2 { [f(), "d"]: number; [f(), "e"](): void; [f(), s]: number }
+>I2 : Symbol(I2, Decl(ttttCommaComputedKeyGating.ts, 8, 41))
+>[f(), "d"] : Symbol(I2[f(), "d"], Decl(ttttCommaComputedKeyGating.ts, 9, 14))
+>f : Symbol(f, Decl(ttttCommaComputedKeyGating.ts, 0, 0))
+>[f(), "e"] : Symbol(I2[f(), "e"], Decl(ttttCommaComputedKeyGating.ts, 9, 34))
+>f : Symbol(f, Decl(ttttCommaComputedKeyGating.ts, 0, 0))
+>[f(), s] : Symbol(I2[f(), s], Decl(ttttCommaComputedKeyGating.ts, 9, 54))
+>f : Symbol(f, Decl(ttttCommaComputedKeyGating.ts, 0, 0))
+>s : Symbol(s, Decl(ttttCommaComputedKeyGating.ts, 4, 13))
+
+type T = { [f(), "f"]: number; set [f(), "h"](v: number) };
+>T : Symbol(T, Decl(ttttCommaComputedKeyGating.ts, 9, 73))
+>[f(), "f"] : Symbol([f(), "f"], Decl(ttttCommaComputedKeyGating.ts, 10, 10))
+>f : Symbol(f, Decl(ttttCommaComputedKeyGating.ts, 0, 0))
+>[f(), "h"] : Symbol([f(), "h"], Decl(ttttCommaComputedKeyGating.ts, 10, 30))
+>f : Symbol(f, Decl(ttttCommaComputedKeyGating.ts, 0, 0))
+>v : Symbol(v, Decl(ttttCommaComputedKeyGating.ts, 10, 46))
+

@@ -872,8 +872,15 @@ static void class_computed_key_typecheck(ClassDecl const* me, ClassItem* item, b
             return;
         }
     }
-    if (!field && item->method.func.has_body) return; // Only overload signatures are restricted
-    if (modifier_error || !expr_is_non_bindable_dynamic_name(key)) return;
+    // tsc's checkGrammarComputedPropertyName, unless an earlier grammar check of the member reported (checkGrammarModifiers,
+    // checkGrammarProperty, checkGrammarMethod)
+    bool comma = key->tag == EXPR_BINARY_OP && key->binary_op->op == BINARY_OP_COMMA && !expr_is_perenthisized(key);
+    // Only overload signatures are restricted
+    bool dynamic_name_error = !modifier_error && (field || !item->method.func.has_body) && expr_is_non_bindable_dynamic_name(key);
+    if (comma && !modifier_error && !dynamic_name_error) {
+        error_ctx_grammar_error_d(errs, expr_outer_span(key), 1171, "A comma expression is not allowed in a computed property name.");
+    }
+    if (!dynamic_name_error) return;
     Span span = field ? item->field.name_span : item->method.name_span;
     if (field) {
         error_ctx_grammar_error_d(errs, span, 1166,

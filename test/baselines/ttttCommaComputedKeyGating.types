@@ -1,0 +1,92 @@
+//// [test/cases/ttttCommaComputedKeyGating.ts] ////
+
+=== ttttCommaComputedKeyGating.ts ===
+// TS1171 (tsc's checkGrammarComputedPropertyName) comes after a member's other grammar checks: a class property's or
+// overload's TS1166/TS1168, an interface's or type literal's TS1169/TS1170 (a comma expression is no entity name, so
+// only an accessor's TS1171 is left there); and a type member's `[a, b]` parses like a class member's (bun 02-C10)
+declare function f(): void;
+>f : () => void
+
+declare const s: string;
+>s : string
+
+class C1 { [f(), "a"]() {} }
+>C1 : C1
+>[f(), "a"] : () => void
+>f(), "a" : "a"
+>f() : void
+>f : () => void
+>"a" : "a"
+
+class C2 { get [f(), "b"]() { return 1 } }
+>C2 : C2
+>[f(), "b"] : number
+>f(), "b" : "b"
+>f() : void
+>f : () => void
+>"b" : "b"
+>1 : 1
+
+class C3 { [f(), "e"] = 1; [f(), s] = 2; [f(), "g"](): void; [f(), "g"]() {} }
+>C3 : C3
+>[f(), "e"] : number
+>f(), "e" : "e"
+>f() : void
+>f : () => void
+>"e" : "e"
+>1 : 1
+>[f(), s] : number
+>f(), s : string
+>f() : void
+>f : () => void
+>s : string
+>2 : 2
+>[f(), "g"] : () => void
+>f(), "g" : "g"
+>f() : void
+>f : () => void
+>"g" : "g"
+>[f(), "g"] : () => void
+>f(), "g" : "g"
+>f() : void
+>f : () => void
+>"g" : "g"
+
+interface I1 { get [f(), "c"](): number }
+>[f(), "c"] : number
+>f(), "c" : "c"
+>f() : void
+>f : () => void
+>"c" : "c"
+
+interface I2 { [f(), "d"]: number; [f(), "e"](): void; [f(), s]: number }
+>[f(), "d"] : number
+>f(), "d" : "d"
+>f() : void
+>f : () => void
+>"d" : "d"
+>[f(), "e"] : () => void
+>f(), "e" : "e"
+>f() : void
+>f : () => void
+>"e" : "e"
+>[f(), s] : number
+>f(), s : string
+>f() : void
+>f : () => void
+>s : string
+
+type T = { [f(), "f"]: number; set [f(), "h"](v: number) };
+>T : T
+>[f(), "f"] : number
+>f(), "f" : "f"
+>f() : void
+>f : () => void
+>"f" : "f"
+>[f(), "h"] : number
+>f(), "h" : "h"
+>f() : void
+>f : () => void
+>"h" : "h"
+>v : number
+

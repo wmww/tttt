@@ -1,0 +1,51 @@
+ttttCommaComputedKeyGating.ts(6,13): error TS1171: A comma expression is not allowed in a computed property name.
+ttttCommaComputedKeyGating.ts(7,17): error TS1171: A comma expression is not allowed in a computed property name.
+ttttCommaComputedKeyGating.ts(8,12): error TS1166: A computed property name in a class property declaration must have a simple literal type or a 'unique symbol' type.
+ttttCommaComputedKeyGating.ts(8,28): error TS1166: A computed property name in a class property declaration must have a simple literal type or a 'unique symbol' type.
+ttttCommaComputedKeyGating.ts(8,42): error TS1168: A computed property name in a method overload must refer to an expression whose type is a literal type or a 'unique symbol' type.
+ttttCommaComputedKeyGating.ts(8,63): error TS1171: A comma expression is not allowed in a computed property name.
+ttttCommaComputedKeyGating.ts(9,21): error TS1171: A comma expression is not allowed in a computed property name.
+ttttCommaComputedKeyGating.ts(10,16): error TS1169: A computed property name in an interface must refer to an expression whose type is a literal type or a 'unique symbol' type.
+ttttCommaComputedKeyGating.ts(10,36): error TS1169: A computed property name in an interface must refer to an expression whose type is a literal type or a 'unique symbol' type.
+ttttCommaComputedKeyGating.ts(10,56): error TS1169: A computed property name in an interface must refer to an expression whose type is a literal type or a 'unique symbol' type.
+ttttCommaComputedKeyGating.ts(11,12): error TS1170: A computed property name in a type literal must refer to an expression whose type is a literal type or a 'unique symbol' type.
+ttttCommaComputedKeyGating.ts(11,37): error TS1171: A comma expression is not allowed in a computed property name.
+
+
+==== ttttCommaComputedKeyGating.ts (12 errors) ====
+    // TS1171 (tsc's checkGrammarComputedPropertyName) comes after a member's other grammar checks: a class property's or
+    // overload's TS1166/TS1168, an interface's or type literal's TS1169/TS1170 (a comma expression is no entity name, so
+    // only an accessor's TS1171 is left there); and a type member's `[a, b]` parses like a class member's (bun 02-C10)
+    declare function f(): void;
+    declare const s: string;
+    class C1 { [f(), "a"]() {} }
+                ~~~~~~~~
+!!! error TS1171: A comma expression is not allowed in a computed property name.
+    class C2 { get [f(), "b"]() { return 1 } }
+                    ~~~~~~~~
+!!! error TS1171: A comma expression is not allowed in a computed property name.
+    class C3 { [f(), "e"] = 1; [f(), s] = 2; [f(), "g"](): void; [f(), "g"]() {} }
+               ~~~~~~~~~~
+!!! error TS1166: A computed property name in a class property declaration must have a simple literal type or a 'unique symbol' type.
+                               ~~~~~~~~
+!!! error TS1166: A computed property name in a class property declaration must have a simple literal type or a 'unique symbol' type.
+                                             ~~~~~~~~~~
+!!! error TS1168: A computed property name in a method overload must refer to an expression whose type is a literal type or a 'unique symbol' type.
+                                                                  ~~~~~~~~
+!!! error TS1171: A comma expression is not allowed in a computed property name.
+    interface I1 { get [f(), "c"](): number }
+                        ~~~~~~~~
+!!! error TS1171: A comma expression is not allowed in a computed property name.
+    interface I2 { [f(), "d"]: number; [f(), "e"](): void; [f(), s]: number }
+                   ~~~~~~~~~~
+!!! error TS1169: A computed property name in an interface must refer to an expression whose type is a literal type or a 'unique symbol' type.
+                                       ~~~~~~~~~~
+!!! error TS1169: A computed property name in an interface must refer to an expression whose type is a literal type or a 'unique symbol' type.
+                                                           ~~~~~~~~
+!!! error TS1169: A computed property name in an interface must refer to an expression whose type is a literal type or a 'unique symbol' type.
+    type T = { [f(), "f"]: number; set [f(), "h"](v: number) };
+               ~~~~~~~~~~
+!!! error TS1170: A computed property name in a type literal must refer to an expression whose type is a literal type or a 'unique symbol' type.
+                                        ~~~~~~~~
+!!! error TS1171: A comma expression is not allowed in a computed property name.
+    

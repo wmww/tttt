@@ -293,7 +293,16 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, bool in_t
             ty_check_computed_name(current_checker, my key.expr, my key.span, !my accessor_kind, errs);
             // (A missing expression is a missing identifier to tsc, an entity name: no TS1166-TS1170)
             bool missing_key = my key.expr->tag == EXPR_IMPLICIT_ANY && my key.expr->missing;
-            if (!my accessor_kind && !missing_key && expr_is_non_bindable_dynamic_name(my key.expr)) {
+            // (tsc's checkGrammarComputedPropertyName comes after those: a comma expression is no entity name, so only
+            // an accessor's is TS1171)
+            bool dynamic_name_error = !my accessor_kind && !missing_key && expr_is_non_bindable_dynamic_name(my key.expr);
+            if (!dynamic_name_error && my key.expr->tag == EXPR_BINARY_OP && my key.expr->binary_op->op == BINARY_OP_COMMA &&
+                !expr_is_perenthisized(my key.expr)
+            ) {
+                error_ctx_grammar_error_d(errs, expr_outer_span(my key.expr), 1171,
+                    "A comma expression is not allowed in a computed property name.");
+            }
+            if (dynamic_name_error) {
                 if (is_in_class) {
                     if (my is_method &&
                         my type.tag == TYPE_CALLABLE &&
