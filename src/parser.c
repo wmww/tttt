@@ -232,6 +232,9 @@ typedef struct FunctionFlags {
     bool brace_expected;
     // A function expression or object literal method (or `export default function`): see skip_body()
     bool expression;
+    // A function expression: its body is never left out (tsc's parseFunctionExpression calls parseFunctionBlock, not
+    // parseFunctionBlockOrSemicolon), '{' expected even at a `;` or a line break
+    bool block_required;
 } FunctionFlags;
 
 static const FunctionFlags function_flags_null = {0};
@@ -8761,11 +8764,11 @@ static bool parse_non_arrow_function_inner(Parser* parent, FunctionFlags flags, 
 
     if (skip_body(&p, ret, flags.expression) || parse_block(&p, false, &ret->body_)) {
         ret->has_body = true;
-    } else if (*p.pos == ';' || *p.pos == '}' || at_eof(&p, p.pos) || p.whitespace == WHITESPACE_NEWLINE) {
+    } else if (!flags.block_required && (*p.pos == ';' || *p.pos == '}' || at_eof(&p, p.pos) || p.whitespace == WHITESPACE_NEWLINE)) {
         ret->body_ = (Block){0};
     } else {
         // tsc's parseFunctionBlock: a body whose `{` is missing, empty
-        if (flags.brace_expected) expected_token_error(&p, "{");
+        if (flags.brace_expected || flags.block_required) expected_token_error(&p, "{");
         else parse_error(&p, span_from_token(&p), 1144, "'{' or ';' expected.");
         ret->body_ = (Block){0};
         ret->body_missing = true;
@@ -8776,7 +8779,8 @@ static bool parse_non_arrow_function_inner(Parser* parent, FunctionFlags flags, 
 }
 
 // `name_required`: a declaration that isn't `export default` (tsc's parseFunctionDeclaration, TS1003)
-static bool parse_function_keyword_function(Parser* parent, bool is_async, bool name_required, FunctionImpl* ret) {
+// is_expression: a function expression (name_required is false for `export default function` too)
+static bool parse_function_keyword_function(Parser* parent, bool is_async, bool name_required, bool is_expression, FunctionImpl* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
@@ -8785,7 +8789,7 @@ static bool parse_function_keyword_function(Parser* parent, bool is_async, bool 
     }
     hop_whitespace(&p);
 
-    FunctionFlags flags = { .is_async = is_async, .committed = true, .expression = !name_required };
+    FunctionFlags flags = { .is_async = is_async, .committed = true, .expression = !name_required, .block_required = is_expression };
     if (hop_char(&p, '*')) {
         flags.is_generator = true;
         flags.asterisk = span_from_previous_char(&p);
@@ -12223,7 +12227,7 @@ static inline bool parse_async_function_expr(Parser* parent, ExprCtx ctx, Functi
         return parse_fail(&p);
     }
 
-    if (!parse_function_keyword_function(&p, true, false, ret) &&
+    if (!parse_function_keyword_function(&p, true, false, true, ret) &&
         !parse_arrow_function(&p, ctx, (FunctionFlags){ .is_async = true }, arrow_tristate == TRISTATE_TRUE, ret)
     ) {
         return parse_fail(&p);
@@ -13116,7 +13120,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     } else if ((!word || c == 'd' || c == 'a' || c == 'y' || c == 't' || c == 'v' || c == '\\') && !ctx.left_hand_side &&
         parse_left_unary_op_expr(&p, ctx, ret)
     ) {
-    } else if (c == 'f' && parse_function_keyword_function(&p, false, false, &parsed.function)) {
+    } else if (c == 'f' && parse_function_keyword_function(&p, false, false, true, &parsed.function)) {
         *ret = expr_function(span_from(a), ast_new(FunctionImpl, parsed.function));
         if (p.shared->source->is_js) jsdoc_apply_function_expression(&p, ret);
     } else if (c == 'a' && parse_async_function_expr(&p, ctx, &parsed.function)) {
@@ -16198,7 +16202,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             },
         };
     } else if (parse_function_keyword_function(&p, modifiers.includes[MODIFIER_ASYNC],
-        decl_props.exported != DECL_EXPORTED_YES_DEFAULT, &parsed.function)) {
+        decl_props.exported != DECL_EXPORTED_YES_DEFAULT, false, &parsed.function)) {
         modified.kind = MODIFIED_FUNCTION;
         parsed.function.full_span = span_from(a);
         *ret = (Statement){

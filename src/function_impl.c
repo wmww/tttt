@@ -1370,7 +1370,9 @@ void function_impl_check_implicit_any_parameters(FunctionImpl const* me, ErrorCt
             error_ctx_error_d(errs, i->span, 7019, "Rest parameter '", span_name_text(i->initializer.binding.content_span),
                 "' implicitly has an 'any[]' type.");
         } else {
-            binding_add_implicit_any_type_errors(&i->initializer.binding, i->span, !my has_body, errs);
+            // (A function expression's or an object literal method's renamings too, body or not: tsc's
+            // assignNonContextualParameterTypes asks for every parameter's type, reporting the whole pattern)
+            binding_add_implicit_any_type_errors(&i->initializer.binding, i->span, !my has_body && !my is_expression, errs);
         }
     }
 }

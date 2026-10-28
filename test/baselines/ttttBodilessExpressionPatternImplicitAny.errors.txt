@@ -1,0 +1,82 @@
+ttttBodilessExpressionPatternImplicitAny.ts(6,9): error TS7031: Binding element 'a' implicitly has an 'any' type.
+ttttBodilessExpressionPatternImplicitAny.ts(6,12): error TS7031: Binding element 'b' implicitly has an 'any' type.
+ttttBodilessExpressionPatternImplicitAny.ts(9,12): error TS2842: 'x' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+ttttBodilessExpressionPatternImplicitAny.ts(9,12): error TS7031: Binding element 'x' implicitly has an 'any' type.
+ttttBodilessExpressionPatternImplicitAny.ts(9,18): error TS2842: 'y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+ttttBodilessExpressionPatternImplicitAny.ts(9,18): error TS7031: Binding element 'y' implicitly has an 'any' type.
+ttttBodilessExpressionPatternImplicitAny.ts(12,12): error TS2842: 'x' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+ttttBodilessExpressionPatternImplicitAny.ts(12,12): error TS7031: Binding element 'x' implicitly has an 'any' type.
+ttttBodilessExpressionPatternImplicitAny.ts(12,17): error TS2300: Duplicate identifier '(Missing)'.
+ttttBodilessExpressionPatternImplicitAny.ts(12,17): error TS2842: '(Missing)' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+ttttBodilessExpressionPatternImplicitAny.ts(12,17): error TS7031: Binding element '(Missing)' implicitly has an 'any' type.
+ttttBodilessExpressionPatternImplicitAny.ts(12,18): error TS1003: Identifier expected.
+ttttBodilessExpressionPatternImplicitAny.ts(12,21): error TS2300: Duplicate identifier '(Missing)'.
+ttttBodilessExpressionPatternImplicitAny.ts(12,21): error TS2842: '(Missing)' is an unused renaming of '"s"'. Did you intend to use it as a type annotation?
+ttttBodilessExpressionPatternImplicitAny.ts(12,21): error TS7031: Binding element '(Missing)' implicitly has an 'any' type.
+ttttBodilessExpressionPatternImplicitAny.ts(12,22): error TS1005: ':' expected.
+ttttBodilessExpressionPatternImplicitAny.ts(14,24): error TS2842: 'x' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+ttttBodilessExpressionPatternImplicitAny.ts(14,24): error TS7031: Binding element 'x' implicitly has an 'any' type.
+ttttBodilessExpressionPatternImplicitAny.ts(15,1): error TS1005: '{' expected.
+
+
+==== ttttBodilessExpressionPatternImplicitAny.ts (19 errors) ====
+    // An object literal method or a function expression missing its body reports every element of a parameter pattern
+    // implicitly any, a renaming too: tsc's assignNonContextualParameterTypes asks for the parameter's type (only
+    // checkVariableLikeDeclaration skips a bodiless signature's renamings). Mutation seed 20261106,
+    // indirectDiscriminantAndExcessProperty missing a `});`
+    let o = {
+        m({ a, b })
+            ~
+!!! error TS7031: Binding element 'a' implicitly has an 'any' type.
+               ~
+!!! error TS7031: Binding element 'b' implicitly has an 'any' type.
+    };
+    let o2 = {
+        m({ a: x, b: y })
+               ~
+!!! error TS2842: 'x' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+!!! related TS2843 ttttBodilessExpressionPatternImplicitAny.ts:9:21: We can only write a type for 'a' by adding a type for the entire parameter here.
+               ~
+!!! error TS7031: Binding element 'x' implicitly has an 'any' type.
+                     ~
+!!! error TS2842: 'y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+!!! related TS2843 ttttBodilessExpressionPatternImplicitAny.ts:9:21: We can only write a type for 'b' by adding a type for the entire parameter here.
+                     ~
+!!! error TS7031: Binding element 'y' implicitly has an 'any' type.
+    };
+    let o3 = {
+        m({ a: x, b: "s" })
+               ~
+!!! error TS2842: 'x' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+!!! related TS2843 ttttBodilessExpressionPatternImplicitAny.ts:12:23: We can only write a type for 'a' by adding a type for the entire parameter here.
+               ~
+!!! error TS7031: Binding element 'x' implicitly has an 'any' type.
+                    
+!!! error TS2300: Duplicate identifier '(Missing)'.
+                    
+!!! error TS2842: '(Missing)' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+!!! related TS2843 ttttBodilessExpressionPatternImplicitAny.ts:12:23: We can only write a type for 'b' by adding a type for the entire parameter here.
+                    
+!!! error TS7031: Binding element '(Missing)' implicitly has an 'any' type.
+                     ~~~
+!!! error TS1003: Identifier expected.
+                        
+!!! error TS2300: Duplicate identifier '(Missing)'.
+                        
+!!! error TS2842: '(Missing)' is an unused renaming of '"s"'. Did you intend to use it as a type annotation?
+!!! related TS2843 ttttBodilessExpressionPatternImplicitAny.ts:12:23: We can only write a type for '"s"' by adding a type for the entire parameter here.
+                        
+!!! error TS7031: Binding element '(Missing)' implicitly has an 'any' type.
+                         ~
+!!! error TS1005: ':' expected.
+    };
+    let f = function ({ a: x })
+                           ~
+!!! error TS2842: 'x' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+!!! related TS2843 ttttBodilessExpressionPatternImplicitAny.ts:14:27: We can only write a type for 'a' by adding a type for the entire parameter here.
+                           ~
+!!! error TS7031: Binding element 'x' implicitly has an 'any' type.
+    let g = 1;
+    ~~~
+!!! error TS1005: '{' expected.
+    

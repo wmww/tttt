@@ -1,0 +1,52 @@
+//// [test/cases/ttttBodilessExpressionPatternImplicitAny.ts] ////
+
+=== ttttBodilessExpressionPatternImplicitAny.ts ===
+// An object literal method or a function expression missing its body reports every element of a parameter pattern
+// implicitly any, a renaming too: tsc's assignNonContextualParameterTypes asks for the parameter's type (only
+// checkVariableLikeDeclaration skips a bodiless signature's renamings). Mutation seed 20261106,
+// indirectDiscriminantAndExcessProperty missing a `});`
+let o = {
+>o : { m({ a, b }: { a: any; b: any; }): any; }
+>{    m({ a, b })} : { m({ a, b }: { a: any; b: any; }): any; }
+
+    m({ a, b })
+>m : ({ a, b }: { a: any; b: any; }) => any
+>a : any
+>b : any
+
+};
+let o2 = {
+>o2 : { m({ a: x, b: y }: { a: any; b: any; }): any; }
+>{    m({ a: x, b: y })} : { m({ a: x, b: y }: { a: any; b: any; }): any; }
+
+    m({ a: x, b: y })
+>m : ({ a: x, b: y }: { a: any; b: any; }) => any
+>a : any
+>x : any
+>b : any
+>y : any
+
+};
+let o3 = {
+>o3 : { m({ a: x, b: , "s":  }: { a: any; b: any; s: any; }): any; }
+>{    m({ a: x, b: "s" })} : { m({ a: x, b: , "s":  }: { a: any; b: any; s: any; }): any; }
+
+    m({ a: x, b: "s" })
+>m : ({ a: x, b: , "s":  }: { a: any; b: any; s: any; }) => any
+>a : any
+>x : any
+>b : any
+> : any
+> : any
+
+};
+let f = function ({ a: x })
+>f : ({ a: x }: { a: any; }) => any
+>function ({ a: x }) : ({ a: x }: { a: any; }) => any
+>a : any
+>x : any
+
+let g = 1;
+>g : number
+>1 : 1
+

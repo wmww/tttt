@@ -1,0 +1,47 @@
+//// [test/cases/ttttBodilessExpressionPatternImplicitAny.ts] ////
+
+=== ttttBodilessExpressionPatternImplicitAny.ts ===
+// An object literal method or a function expression missing its body reports every element of a parameter pattern
+// implicitly any, a renaming too: tsc's assignNonContextualParameterTypes asks for the parameter's type (only
+// checkVariableLikeDeclaration skips a bodiless signature's renamings). Mutation seed 20261106,
+// indirectDiscriminantAndExcessProperty missing a `});`
+let o = {
+>o : Symbol(o, Decl(ttttBodilessExpressionPatternImplicitAny.ts, 4, 3))
+
+    m({ a, b })
+>m : Symbol(m, Decl(ttttBodilessExpressionPatternImplicitAny.ts, 4, 9))
+>a : Symbol(a, Decl(ttttBodilessExpressionPatternImplicitAny.ts, 5, 7))
+>b : Symbol(b, Decl(ttttBodilessExpressionPatternImplicitAny.ts, 5, 10))
+
+};
+let o2 = {
+>o2 : Symbol(o2, Decl(ttttBodilessExpressionPatternImplicitAny.ts, 7, 3))
+
+    m({ a: x, b: y })
+>m : Symbol(m, Decl(ttttBodilessExpressionPatternImplicitAny.ts, 7, 10))
+>a : Symbol(a)
+>x : Symbol(x, Decl(ttttBodilessExpressionPatternImplicitAny.ts, 8, 7))
+>b : Symbol(b)
+>y : Symbol(y, Decl(ttttBodilessExpressionPatternImplicitAny.ts, 8, 13))
+
+};
+let o3 = {
+>o3 : Symbol(o3, Decl(ttttBodilessExpressionPatternImplicitAny.ts, 10, 3))
+
+    m({ a: x, b: "s" })
+>m : Symbol(m, Decl(ttttBodilessExpressionPatternImplicitAny.ts, 10, 10))
+>a : Symbol(a)
+>x : Symbol(x, Decl(ttttBodilessExpressionPatternImplicitAny.ts, 11, 7))
+>b : Symbol(b)
+> : Symbol((Missing), Decl(ttttBodilessExpressionPatternImplicitAny.ts, 11, 13))
+> : Symbol((Missing), Decl(ttttBodilessExpressionPatternImplicitAny.ts, 11, 16))
+
+};
+let f = function ({ a: x })
+>f : Symbol(f, Decl(ttttBodilessExpressionPatternImplicitAny.ts, 13, 3))
+>a : Symbol(a)
+>x : Symbol(x, Decl(ttttBodilessExpressionPatternImplicitAny.ts, 13, 19))
+
+let g = 1;
+>g : Symbol(g, Decl(ttttBodilessExpressionPatternImplicitAny.ts, 14, 3))
+
