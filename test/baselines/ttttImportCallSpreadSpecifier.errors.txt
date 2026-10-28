@@ -1,0 +1,18 @@
+ttttImportCallSpreadSpecifier.ts(3,17): error TS1325: Argument of dynamic import cannot be spread element.
+ttttImportCallSpreadSpecifier.ts(3,17): error TS7036: Dynamic import's specifier must be of type 'string', but here has type 'string | number'.
+ttttImportCallSpreadSpecifier.ts(5,17): error TS1325: Argument of dynamic import cannot be spread element.
+
+
+==== ttttImportCallSpreadSpecifier.ts (3 errors) ====
+    // A spread specifier of a dynamic import (TS1325) is checked as its element type: (string | number)[] is TS7036
+    var a: (string | number)[] = ["./", 0];
+    var p1 = import(...a);
+                    ~~~~
+!!! error TS1325: Argument of dynamic import cannot be spread element.
+                    ~~~~
+!!! error TS7036: Dynamic import's specifier must be of type 'string', but here has type 'string | number'.
+    var b = ["./b"];
+    var p2 = import(...b);
+                    ~~~~
+!!! error TS1325: Argument of dynamic import cannot be spread element.
+    

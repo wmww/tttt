@@ -1,0 +1,27 @@
+//// [test/cases/ttttImportCallSpreadSpecifier.ts] ////
+
+=== ttttImportCallSpreadSpecifier.ts ===
+// A spread specifier of a dynamic import (TS1325) is checked as its element type: (string | number)[] is TS7036
+var a: (string | number)[] = ["./", 0];
+>a : (string | number)[]
+>["./", 0] : (string | number)[]
+>"./" : "./"
+>0 : 0
+
+var p1 = import(...a);
+>p1 : Promise<any>
+>import(...a) : Promise<any>
+>...a : string | number
+>a : (string | number)[]
+
+var b = ["./b"];
+>b : string[]
+>["./b"] : string[]
+>"./b" : "./b"
+
+var p2 = import(...b);
+>p2 : Promise<any>
+>import(...b) : Promise<any>
+>...b : string
+>b : string[]
+

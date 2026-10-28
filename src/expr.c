@@ -4896,8 +4896,10 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 callee_type = non_null ? non_null : ty_intrinsic(checker, TY_ERROR);
             }
             // `import("m", options)`: the options are ImportCallOptions
+            // (A spread specifier, TS1325, is its element type: tsc's checkSpreadExpression, `import(...a)` with
+            // `a: (string | number)[]` is TS7036 at the spread)
             if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_IMPORT &&
-                vec_expr_size(&my call->args) > 0 && vec_expr_at(&my call->args, 0)->tag != EXPR_SPREAD
+                vec_expr_size(&my call->args) > 0
             ) {
                 ty_check_import_call_specifier(checker, vec_expr_at(&my call->args, 0), errs);
             }
