@@ -12,10 +12,8 @@ passing tests).
   Clearing the non-spread rest arguments' types at the top of infer_rest_variadic changed nothing anywhere (suite,
   corpora, instructions) and no probe observes it (`q<T extends ["a"]>(n: number, ...a: T)` before `q<T extends
   string[]>(s: string, ...a: T)` passes). Look here if overloads with differing rest types ever disagree with tsc. [note]
-- Contextual types from a generic mapped type substitute the whole constraint for K, not the property's key. [open]
-- Older tsc-corpus findings (a probe each): `visitNode(node, visitor, isExpression)` resolving to the overload without
-  the predicate (`test/probes/plan05/visitNodeInference.ts`); literal widening in an object literal that has a
-  contextual type. [open]
+- Older tsc-corpus finding: literal widening in an object literal that has a contextual type (no probe; the visitNode
+  overload probe, test/probes/plan05/visitNodeInference.ts, passes since). [open]
 - (triage 2026-10-07) The contextual type of an argument for a rest parameter typed as a mapped type over `keyof
   [...E, "abc"]` (index 0 -> `{ bar: [...E, "abc"][0] }`) keeps the literal in tsc: TS2345 messages print `{ bar:
   "abc"; }` where tttt prints `{ bar: string; }`. [text]

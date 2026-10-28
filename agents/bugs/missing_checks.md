@@ -13,20 +13,17 @@ here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in 
   check only knows class and member decorators). In tsgo it comes from the emit resolver only (`m(@dec(C.s) x)`: the
   suite's TS-1 pre/post-emit count note), so it shows in baselines, not on the CLI. [tsgo]
 - **Classes**: TS2687 skips statics and method/accessor pairs (hacks.md). [open]
+- A class method merged with an interface's method signature of its name is one symbol in tsc, whose overload flag
+  agreement covers both (checkFunctionOrConstructorSymbol: the signature makes it overloaded): `interface I { m():
+  void } class I { private m() {} }` is TS2385 at the class's `m`; tttt's class_check_overload_agreement() sees the
+  class's items only (TS2386/TS2512 likewise). Probe only (cor5 2026-10-30). [open]
 - **Accessibility**: `this.x = v` in the constructor of a class merged with an interface declaring `readonly x` (tttt
   exempted any property whose parent is the class; tsc only one whose value declaration, the first, is in the class:
   check.c readonly_assignment()). Test ttttReadonlyFromMergedInterface [fixed db2e41209]. Private names: TS18015.
   [open]
 - **Declarations**: `export function g() {}` + `function g() {}` is TS2393 in tsc (one local symbol with two implementations; tttt said nothing). Test ttttExportedAndLocalFunctionDuplicate. [fixed 17d5794b5]
-- **Implicit any**: widening errors past `report_errors_from_widening` (binding.c; the tests the tsc mechanism ports named for them
-  pass since, re-check with a probe: TS7008 class fields, TS7018 through a spread) and of generator yield/next types. [open]
 - **Target-gated**: TS2705 comes only from an inferred return type's demand (tsc's createPromiseReturnType), and tttt
   infers more eagerly than tsc, so the two can disagree. [open]
-- **Iteration**: TS2489 (iterator without `next`), TS2763-2765 (iterator next-type mismatches);
-  generator next types aren't inferred from `yield` uses (tsc's `nextTypes`). [open]
-- **Modules**: exports in non-module containers dropped silently (`scope_add_port()`, TODO TS1194); `import { type
-  require }` isn't type-only for TS2441; a nested
-  `declare module "m"` gets TS2435 but is still bound as a global ambient module (tsc: a local namespace). [open]
 - **Variance annotations**: `type B<in T, in T> = { a: T }` misses tsgo's TS2636 at the second `in T` (the two are
   one type parameter symbol, the first's type parameter, which each declaration checks again: tttt checked the second,
   unused, type parameter). ty_check_variance_annotations(). Test ttttVarianceRepeatedTypeParameter [fixed COMMIT-next].
