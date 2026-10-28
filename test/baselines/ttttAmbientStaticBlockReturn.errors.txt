@@ -1,0 +1,19 @@
+ttttAmbientStaticBlockReturn.ts(1,28): error TS1036: Statements are not allowed in ambient contexts.
+ttttAmbientStaticBlockReturn.ts(2,36): error TS1039: Initializers are not allowed in ambient contexts.
+ttttAmbientStaticBlockReturn.ts(2,39): error TS1036: Statements are not allowed in ambient contexts.
+ttttAmbientStaticBlockReturn.ts(3,20): error TS18041: A 'return' statement cannot be used inside a class static block.
+
+
+==== ttttAmbientStaticBlockReturn.ts (4 errors) ====
+    declare class C { static { return; } }
+                               ~~~~~~
+!!! error TS1036: Statements are not allowed in ambient contexts.
+    declare class D { static { let x = 1; return; } }
+                                       ~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+                                          ~~~~~~
+!!! error TS1036: Statements are not allowed in ambient contexts.
+    class E { static { return; } }
+                       ~~~~~~
+!!! error TS18041: A 'return' statement cannot be used inside a class static block.
+    

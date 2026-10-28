@@ -1,0 +1,13 @@
+//// [test/cases/ttttAmbientStaticBlockReturn.ts] ////
+
+=== ttttAmbientStaticBlockReturn.ts ===
+declare class C { static { return; } }
+>C : Symbol(C, Decl(ttttAmbientStaticBlockReturn.ts, 0, 0))
+
+declare class D { static { let x = 1; return; } }
+>D : Symbol(D, Decl(ttttAmbientStaticBlockReturn.ts, 0, 38))
+>x : Symbol(x, Decl(ttttAmbientStaticBlockReturn.ts, 1, 30))
+
+class E { static { return; } }
+>E : Symbol(E, Decl(ttttAmbientStaticBlockReturn.ts, 1, 49))
+

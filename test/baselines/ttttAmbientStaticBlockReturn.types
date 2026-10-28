@@ -1,0 +1,14 @@
+//// [test/cases/ttttAmbientStaticBlockReturn.ts] ////
+
+=== ttttAmbientStaticBlockReturn.ts ===
+declare class C { static { return; } }
+>C : C
+
+declare class D { static { let x = 1; return; } }
+>D : D
+>x : number
+>1 : 1
+
+class E { static { return; } }
+>E : E
+

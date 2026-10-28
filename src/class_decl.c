@@ -386,6 +386,9 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
 
         case CLASS_ITEM_STATIC_BLOCK:
             Scope* block_scope = scope_new(names, SCOPE_STATIC_BLOCK);
+            // (A `declare class`'s is an ambient context: its first statement is TS1036, which ends that statement's
+            // checks, ambient_reported_at())
+            if (class_decl->is_ambient) block_scope->ambient = true;
             block_add_names(&my static_block, block_scope);
             my static_block_return_flow = block_lookup_names_inline_container(&my static_block, block_scope, errs);
             break;
@@ -2647,7 +2650,8 @@ void class_decl_typecheck_members(ClassDecl* me, ErrorCtx* errs) {
                 break;
 
             case CLASS_ITEM_STATIC_BLOCK:
-                block_typecheck(&i->static_block, (BlockTypecheckCtx){ .in_function = true }, errs);
+                // (In a `declare class` its statements are TS1036, the first one: checkGrammarStatementInAmbientContext)
+                block_typecheck(&i->static_block, (BlockTypecheckCtx){ .in_function = true, .ambient = my is_ambient }, errs);
                 break;
         }
     }

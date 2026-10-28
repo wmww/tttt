@@ -1926,10 +1926,13 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             while (container && container->kind != SCOPE_FUNCTION && container->kind != SCOPE_STATIC_BLOCK) {
                 container = container->parent;
             }
-            if (container && container->kind == SCOPE_STATIC_BLOCK) {
+            // (Nothing more when it is the statement TS1036 is reported at: checkReturnStatement's
+            // checkGrammarStatementInAmbientContext comes first, `declare class C { static { return; } }`)
+            bool ambient_reported = ambient_reported_at(me, names);
+            if (container && container->kind == SCOPE_STATIC_BLOCK && !ambient_reported) {
                 error_ctx_grammar_error_d(errs, block_first_token(my span), 18041,
                     "A 'return' statement cannot be used inside a class static block.");
-            } else if (!container && !ambient_reported_at(me, names)) {
+            } else if (!container && !ambient_reported) {
                 // (grammarErrorOnFirstToken: the `return`, not reported in a file with parse errors)
                 error_ctx_grammar_error_d(errs, block_first_token(my span), 1108,
                     "A 'return' statement can only be used within a function body.");
