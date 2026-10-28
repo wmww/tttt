@@ -1,0 +1,47 @@
+//// [test/cases/ttttDecoratorContextNameType.ts] ////
+
+=== ttttDecoratorContextNameType.ts ===
+// An ES decorator context's `name` is tsc's getLiteralTypeFromPropertyName of the member's name: a numeric name's
+// number literal, a computed one's literal type, a bigint's bigint (intersected with the context's `string | symbol`:
+// never, assignable to anything: bun case 16-P2a, not here, tsgo's test harness writes no baseline for a bigint method
+// name). See ttttLegacyDecoratorKeyType for a legacy decorator's key
+declare function decN(target: any, context: { name: 0 }): void;
+>decN : Symbol(decN, Decl(ttttDecoratorContextNameType.ts, 0, 0))
+>target : Symbol(target, Decl(ttttDecoratorContextNameType.ts, 4, 22))
+>context : Symbol(context, Decl(ttttDecoratorContextNameType.ts, 4, 34))
+>name : Symbol(name, Decl(ttttDecoratorContextNameType.ts, 4, 45))
+
+declare function decS(target: any, context: { name: "x" }): void;
+>decS : Symbol(decS, Decl(ttttDecoratorContextNameType.ts, 4, 63))
+>target : Symbol(target, Decl(ttttDecoratorContextNameType.ts, 5, 22))
+>context : Symbol(context, Decl(ttttDecoratorContextNameType.ts, 5, 34))
+>name : Symbol(name, Decl(ttttDecoratorContextNameType.ts, 5, 45))
+
+class C {
+>C : Symbol(C, Decl(ttttDecoratorContextNameType.ts, 5, 65))
+
+  @decN [1]() {}
+>decN : Symbol(decN, Decl(ttttDecoratorContextNameType.ts, 0, 0))
+>[1] : Symbol(C[1], Decl(ttttDecoratorContextNameType.ts, 6, 9))
+>1 : Symbol(C[1], Decl(ttttDecoratorContextNameType.ts, 6, 9))
+
+  @decN [2] = 1;
+>decN : Symbol(decN, Decl(ttttDecoratorContextNameType.ts, 0, 0))
+>[2] : Symbol(C[2], Decl(ttttDecoratorContextNameType.ts, 7, 16))
+>2 : Symbol(C[2], Decl(ttttDecoratorContextNameType.ts, 7, 16))
+
+  @decN get [3]() { return 1 }
+>decN : Symbol(decN, Decl(ttttDecoratorContextNameType.ts, 0, 0))
+>[3] : Symbol(C[3], Decl(ttttDecoratorContextNameType.ts, 8, 16))
+>3 : Symbol(C[3], Decl(ttttDecoratorContextNameType.ts, 8, 16))
+
+  @decS 4() {}
+>decS : Symbol(decS, Decl(ttttDecoratorContextNameType.ts, 4, 63))
+>4 : Symbol(C[4], Decl(ttttDecoratorContextNameType.ts, 9, 30))
+
+  @decS ["y"]() {}
+>decS : Symbol(decS, Decl(ttttDecoratorContextNameType.ts, 4, 63))
+>["y"] : Symbol(C["y"], Decl(ttttDecoratorContextNameType.ts, 10, 14))
+>"y" : Symbol(C["y"], Decl(ttttDecoratorContextNameType.ts, 10, 14))
+}
+

@@ -1,0 +1,49 @@
+//// [test/cases/ttttDecoratorContextNameType.ts] ////
+
+=== ttttDecoratorContextNameType.ts ===
+// An ES decorator context's `name` is tsc's getLiteralTypeFromPropertyName of the member's name: a numeric name's
+// number literal, a computed one's literal type, a bigint's bigint (intersected with the context's `string | symbol`:
+// never, assignable to anything: bun case 16-P2a, not here, tsgo's test harness writes no baseline for a bigint method
+// name). See ttttLegacyDecoratorKeyType for a legacy decorator's key
+declare function decN(target: any, context: { name: 0 }): void;
+>decN : (target: any, context: { name: 0; }) => void
+>target : any
+>context : { name: 0; }
+>name : 0
+
+declare function decS(target: any, context: { name: "x" }): void;
+>decS : (target: any, context: { name: "x"; }) => void
+>target : any
+>context : { name: "x"; }
+>name : "x"
+
+class C {
+>C : C
+
+  @decN [1]() {}
+>decN : (target: any, context: { name: 0; }) => void
+>[1] : () => void
+>1 : 1
+
+  @decN [2] = 1;
+>decN : (target: any, context: { name: 0; }) => void
+>[2] : number
+>2 : 2
+>1 : 1
+
+  @decN get [3]() { return 1 }
+>decN : (target: any, context: { name: 0; }) => void
+>[3] : number
+>3 : 3
+>1 : 1
+
+  @decS 4() {}
+>decS : (target: any, context: { name: "x"; }) => void
+>4 : () => void
+
+  @decS ["y"]() {}
+>decS : (target: any, context: { name: "x"; }) => void
+>["y"] : () => void
+>"y" : "y"
+}
+

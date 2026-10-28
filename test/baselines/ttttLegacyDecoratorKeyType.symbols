@@ -1,0 +1,36 @@
+//// [test/cases/ttttLegacyDecoratorKeyType.ts] ////
+
+=== ttttLegacyDecoratorKeyType.ts ===
+// A legacy decorator's key argument is tsc's getClassElementPropertyKeyType: a numeric name's text, a computed one's
+// string (or symbol), a bigint's the error type (no complaint)
+declare function legacyN(target: any, key: number): any;
+>legacyN : Symbol(legacyN, Decl(ttttLegacyDecoratorKeyType.ts, 0, 0))
+>target : Symbol(target, Decl(ttttLegacyDecoratorKeyType.ts, 2, 25))
+>key : Symbol(key, Decl(ttttLegacyDecoratorKeyType.ts, 2, 37))
+
+declare function legacyS(target: any, key: "1"): any;
+>legacyS : Symbol(legacyS, Decl(ttttLegacyDecoratorKeyType.ts, 2, 56))
+>target : Symbol(target, Decl(ttttLegacyDecoratorKeyType.ts, 3, 25))
+>key : Symbol(key, Decl(ttttLegacyDecoratorKeyType.ts, 3, 37))
+
+class C {
+>C : Symbol(C, Decl(ttttLegacyDecoratorKeyType.ts, 3, 53))
+
+  @legacyN 2n() {}
+>legacyN : Symbol(legacyN, Decl(ttttLegacyDecoratorKeyType.ts, 0, 0))
+>2n : Symbol(C[2n], Decl(ttttLegacyDecoratorKeyType.ts, 4, 9))
+
+  @legacyS 1() {}
+>legacyS : Symbol(legacyS, Decl(ttttLegacyDecoratorKeyType.ts, 2, 56))
+>1 : Symbol(C[1], Decl(ttttLegacyDecoratorKeyType.ts, 5, 18))
+
+  @legacyN [3]() {}
+>legacyN : Symbol(legacyN, Decl(ttttLegacyDecoratorKeyType.ts, 0, 0))
+>[3] : Symbol(C[3], Decl(ttttLegacyDecoratorKeyType.ts, 6, 17))
+>3 : Symbol(C[3], Decl(ttttLegacyDecoratorKeyType.ts, 6, 17))
+
+  @legacyS 4() {}
+>legacyS : Symbol(legacyS, Decl(ttttLegacyDecoratorKeyType.ts, 2, 56))
+>4 : Symbol(C[4], Decl(ttttLegacyDecoratorKeyType.ts, 7, 19))
+}
+

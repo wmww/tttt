@@ -271,7 +271,7 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
 - JSDoc parsing: `function () {}` with `@overload` in JS (61-L17: the reparsed signature's missing name is TS1003
   again, on the character before it), `@import { A as await }` in an async function (92-R03d: a JSDoc import in a
   function is misplaced, TS1473, its module never resolved to a file, TS2307; `await`/`yield` there are no names,
-  TS1003). [fixed]
+  TS1003). [fixed 71eafc9c0 c233bdf33]
 - `import { A as while }` (and `as await` in an async function, `as yield` in a generator): TS1003 matches, but tsc's
   symbols baseline has no symbol for the imported name `A` of such a specifier, tttt's shows the export it names
   (ttttImportSpecifierKeywordName, known failing). [open]
@@ -1256,3 +1256,9 @@ block.".
 -TS18046 (missing), 1 case: 31-SC1. First: 31-SC1 a.ts:3 "'…' is of type '…'.".
 
 -TS18047 (missing), 1 case: 54-L20b. First: 54-L20b a.ts:3 "'…' is possibly '…'.".
+- +TS1241 on decorators of numeric, computed and bigint names (16-C12, 16-P2a, 16-P2b): an ES decorator context's
+  `name` is getLiteralTypeFromPropertyName's (number literal, the computed literal type, bigint), a legacy key
+  getClassElementPropertyKeyType's (a bigint's the error type): member_key_type() (ty/call.c). [fixed]
+- Bigint literal property names (53-L04b): tsc's object literal names normalize them to decimal (`0b11n` is `3n`,
+  TS1117 with `3n`), destructuring reads the lowercased text (`0XFFn` reads `"0xffn"`), tttt says TS2538 for the
+  binding names and reads `any`. [open]

@@ -1,0 +1,24 @@
+ttttLegacyDecoratorKeyType.ts(8,4): error TS1241: Unable to resolve signature of method decorator when called as an expression.
+  Argument of type 'string' is not assignable to parameter of type 'number'.
+ttttLegacyDecoratorKeyType.ts(9,4): error TS1241: Unable to resolve signature of method decorator when called as an expression.
+  Argument of type '"4"' is not assignable to parameter of type '"1"'.
+
+
+==== ttttLegacyDecoratorKeyType.ts (2 errors) ====
+    // A legacy decorator's key argument is tsc's getClassElementPropertyKeyType: a numeric name's text, a computed one's
+    // string (or symbol), a bigint's the error type (no complaint)
+    declare function legacyN(target: any, key: number): any;
+    declare function legacyS(target: any, key: "1"): any;
+    class C {
+      @legacyN 2n() {}
+      @legacyS 1() {}
+      @legacyN [3]() {}
+       ~~~~~~~
+!!! error TS1241: Unable to resolve signature of method decorator when called as an expression.
+!!! error TS1241:   Argument of type 'string' is not assignable to parameter of type 'number'.
+      @legacyS 4() {}
+       ~~~~~~~
+!!! error TS1241: Unable to resolve signature of method decorator when called as an expression.
+!!! error TS1241:   Argument of type '"4"' is not assignable to parameter of type '"1"'.
+    }
+    

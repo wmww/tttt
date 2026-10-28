@@ -4349,14 +4349,28 @@ static Ty const* union2(Checker* me, Ty const* a, Ty const* b) {
 }
 
 // tsc's getClassElementPropertyKeyType
-static Ty const* member_key_type(Checker* me, ClassItem* item) {
+// A legacy decorator's key argument (tsc's getClassElementPropertyKeyType: a name's text, a computed one's symbol or
+// string, a bigint's the error type), else an ES decorator context's `name` (getLiteralTypeFromPropertyName: a numeric
+// name's number literal, a computed one's regular literal type, a bigint's bigint, which intersected with the context's
+// `string | symbol` are never)
+static Ty const* member_key_type(Checker* me, ClassItem* item, bool legacy) {
     Expr const* computed = item->tag == CLASS_ITEM_FIELD ? item->field.computed_key :
         item->tag == CLASS_ITEM_METHOD ? item->method.computed_key : nullptr;
     if (computed) {
         Ty const* key = ty_expr_type(me, computed);
+        if (!legacy) return ty_regular(me, key);
         return key->flags & TYF_ES_SYMBOL_LIKE ? key : ty_intrinsic(me, TY_STRING);
     }
     cstr const* name = item->tag == CLASS_ITEM_FIELD ? &item->field.name_string : &item->method.name_string;
+    Span name_span = item->tag == CLASS_ITEM_FIELD ? item->field.name_span : item->method.name_span;
+    char first = span_valid(name_span) && name_span.size ? name_span.buf[0] : 0;
+    if ((first >= '0' && first <= '9') || first == '.') {
+        if (name_span.buf[name_span.size - 1] == 'n') return ty_intrinsic(me, legacy ? TY_ERROR : TY_BIGINT);
+        if (!legacy) {
+            Value value = value_number(strtod(cstr_str(name), nullptr));
+            return ty_literal(me, &value);
+        }
+    }
     return ty_string_literal(me, cstr_sv(name));
 }
 
@@ -4410,7 +4424,7 @@ static bool decorator_call(Checker* me, DecoratorSite site, DecoratorCall* out, 
         out->head_code = 1239;
         out->void_only = true;
         out->params[0] = item->tag == CLASS_ITEM_CONSTRUCTOR ? ty_type_of_symbol(me, class_decl->symbol) : member_this_type(me, class_decl, item);
-        out->params[1] = item->tag == CLASS_ITEM_CONSTRUCTOR ? ty_intrinsic(me, TY_UNDEFINED) : member_key_type(me, item);
+        out->params[1] = item->tag == CLASS_ITEM_CONSTRUCTOR ? ty_intrinsic(me, TY_UNDEFINED) : member_key_type(me, item, true);
         Value index = value_number(site.param_index);
         out->params[2] = ty_literal(me, &index);
         out->count = 3;
@@ -4427,7 +4441,7 @@ static bool decorator_call(Checker* me, DecoratorSite site, DecoratorCall* out, 
         out->head_code = field ? 1240 : 1241;
         if (legacy) {
             out->params[0] = this_type;
-            out->params[1] = member_key_type(me, item);
+            out->params[1] = member_key_type(me, item, true);
             Ty const* descriptor = global_generic(me, "TypedPropertyDescriptor", &value, 1, errs);
             if (!descriptor) descriptor = ty_intrinsic(me, TY_ANY);
             bool has_descriptor = !field || auto_accessor;
@@ -4469,7 +4483,7 @@ static bool decorator_call(Checker* me, DecoratorSite site, DecoratorCall* out, 
             // & { name: "x"; private: boolean; static: boolean } (tsc's getClassMemberDecoratorContextOverrideType)
             bool is_private = span_valid(class_item_private_name(item));
             cstr const* name_string = field ? &item->field.name_string : &item->method.name_string;
-            Ty const* name_type = is_private ? ty_string_literal(me, cstr_sv(name_string)) : member_key_type(me, item);
+            Ty const* name_type = is_private ? ty_string_literal(me, cstr_sv(name_string)) : member_key_type(me, item, false);
             ObjectLiteralProp props[3] = {
                 { .name = checker_atom(me, c_sv("name")), .type = name_type },
                 { .name = checker_atom(me, c_sv("private")), .type = ty_intrinsic(me, is_private ? TY_TRUE : TY_FALSE) },
