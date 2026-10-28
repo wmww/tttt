@@ -636,7 +636,7 @@ const baselines = {
         types: false,
     },
     'bun04-C4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -651,7 +651,7 @@ const baselines = {
         types: true,
     },
     'bun04-C6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -886,7 +886,7 @@ const baselines = {
         types: true,
     },
     'bun06-C14': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1586,7 +1586,7 @@ const baselines = {
         types: true,
     },
     'bun10-C21': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1706,7 +1706,7 @@ const baselines = {
         types: true,
     },
     'bun10-P4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1746,7 +1746,7 @@ const baselines = {
         types: true,
     },
     'bun10-SC8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -4713,7 +4713,7 @@ const baselines = {
     'bun28-C17c': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun28-C18a': {
         errors: false,
@@ -5101,14 +5101,14 @@ const baselines = {
         types: true,
     },
     'bun28-P10b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'bun28-P11': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun28-P12': {
         errors: true,
@@ -5931,7 +5931,7 @@ const baselines = {
         types: true,
     },
     'bun31-SC6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -5971,7 +5971,7 @@ const baselines = {
         types: true,
     },
     'bun32-C11': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8451,9 +8451,9 @@ const baselines = {
         types: true,
     },
     'bun52-L01': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun52-L01b': {
         errors: true,
@@ -8806,7 +8806,7 @@ const baselines = {
         types: true,
     },
     'bun56-L15': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -10011,7 +10011,7 @@ const baselines = {
         types: false,
     },
     'bun83-R10a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11226,7 +11226,7 @@ const baselines = {
         types: true,
     },
     'bun99-N3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11386,12 +11386,12 @@ const baselines = {
         types: true,
     },
     'bun99-U1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'bun99-U2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11801,9 +11801,9 @@ const baselines = {
         types: true,
     },
     'npm_artsy_metaphysics_TS2741': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'npm_better-auth_TS2352': {
         errors: true,
@@ -12071,7 +12071,17 @@ const baselines = {
         symbols: false,
         types: false,
     },
+    'ttttAccessorCircularityReports': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAccessorJoinsPropertySymbol': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttAccessorWriteTypeCircularity': {
         errors: true,
         symbols: true,
         types: true,
@@ -12164,6 +12174,11 @@ const baselines = {
         types: true,
     },
     'ttttAnnotatedExpandoObjectWidened': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttAnnotatedInitialQuickType': {
         errors: true,
         symbols: true,
         types: true,
@@ -12301,6 +12316,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttBaseConstructorNotObject': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttBaseExpressionTupleIndexCycle': {
         errors: true,
         symbols: true,
@@ -12423,6 +12443,11 @@ const baselines = {
         types: true,
     },
     'ttttClassAnyBaseIndex': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttClassBaseReducedIntersection': {
         errors: true,
         symbols: true,
         types: true,
@@ -12632,6 +12657,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttConstructorAssignedFieldCycle': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttConstructorNarrowsThisType': {
         errors: true,
         symbols: true,
@@ -12644,6 +12674,11 @@ const baselines = {
         dts: true,
     },
     'ttttContextRootSettled': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttContextualCheckInfersReturnCycle': {
         errors: true,
         symbols: true,
         types: true,
@@ -13466,6 +13501,16 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDeleteIntersectionPropertyOptional(exactoptionalpropertytypes=false)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttDeleteIntersectionPropertyOptional(exactoptionalpropertytypes=true)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDeleteUnionIndexSignatureMember(exactoptionalpropertytypes=false)': {
         errors: true,
         symbols: true,
@@ -13751,6 +13796,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttExportedAndLocalFunctionDuplicate': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttExtendedConfigDiagnosticLocated': {
         errors: true,
         symbols: true,
@@ -13767,6 +13817,11 @@ const baselines = {
         types: true,
     },
     'ttttExtendsExportsExactBeforePattern': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttFieldCycleSettledOnce': {
         errors: true,
         symbols: true,
         types: true,
@@ -13812,6 +13867,11 @@ const baselines = {
         types: true,
     },
     'ttttFunctionDeclarationErrorSpan': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttFunctionExpressionDefaultsAtFirstCheck': {
         errors: true,
         symbols: true,
         types: true,
@@ -13947,12 +14007,27 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttIifeDestructuredTuple': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttIifeInInferredArgumentContext': {
         errors: true,
         symbols: true,
         types: true,
     },
     'ttttImplicitAnyIndexIntersectionAlias': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttImplicitAnyParameterNameIsTypeUse': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttImplicitAnyParameterNamedLikeOwnTypeParameter': {
         errors: true,
         symbols: true,
         types: true,
@@ -14165,6 +14240,16 @@ const baselines = {
         types: true,
     },
     'ttttInstantiationStackTailCall': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttInterfaceBaseCycleKeepsSecondBase': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'ttttInterfaceBaseCycleThroughIntersection': {
         errors: true,
         symbols: true,
         types: true,
@@ -14961,6 +15046,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttNeverIntersectionSpreadRestMapped': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttNeverPropertyInstantiationExpression': {
         errors: true,
         symbols: true,
@@ -15148,12 +15238,27 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttPaddedTupleHoleImplicitAny': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttParameterDefaultCycleThroughCall': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
     'ttttParenthesizedConstraintPosition': {
         errors: true,
         symbols: true,
         types: true,
     },
     'ttttParenthesizedNarrowingReferences': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttParenthesizedNonNullOperand': {
         errors: true,
         symbols: true,
         types: true,
@@ -15353,6 +15458,16 @@ const baselines = {
         dts: true,
     },
     'ttttReverseMappedFixedByContextualSignature': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttReverseMappedLimitedUntyped': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttReverseMappedReentryUnknown': {
         errors: true,
         symbols: true,
         types: true,
@@ -15587,6 +15702,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttTaggedTemplateInOptionalChain': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttTemplatePlaceholderCurrentNode': {
         errors: true,
         symbols: true,
@@ -15698,9 +15818,9 @@ const baselines = {
         types: true,
     },
     'ttttTuplePatternCircularElement': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ttttTupleSpreadNotArrayLike': {
         errors: true,
@@ -15832,6 +15952,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttUncheckedHeritageExpressionsQuiet': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttUnconstrainedSourcePushesSourceOnly': {
         errors: true,
         symbols: true,
@@ -15953,12 +16078,22 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttUnusedParameterPropertyOutsideConstructor': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttUnusedPrivateReadLaterFile': {
         errors: true,
         symbols: true,
         types: true,
     },
     'ttttUnusedRedeclaration': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUnusedRenamingSameNamedTypeParameter': {
         errors: true,
         symbols: true,
         types: true,
@@ -15998,12 +16133,22 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttWhileBodyDeclarationScope': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttWidenedNullableLiteralNotLiteral': {
         errors: true,
         symbols: true,
         types: true,
     },
     'ttttWriteConstraintIntersectionProperty': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttWriteTypeMergedAndIndexed': {
         errors: true,
         symbols: true,
         types: true,
