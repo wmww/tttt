@@ -107,6 +107,38 @@ the divergence.
   annotated `const connection: T | null = fetchPage(ctx, log)`'s assignment narrowing, bugs/sourcesweep_checker.md).
   Not all are re-entry: some are other eager orders (16-C1a: a base type `Pick<typeof xa, "a">` with `xa = ya!`; 10-C2b:
   a setter parameter `typeof x10` in x10's own initializer). Triage each with `scripts/reentrytrace.py` first.
+- **F. Lazy parameter typing** (design only, cor3 2026-10-29; not built: not a bounded change). tsc's
+  getSignatureFromDeclaration types nothing: a signature's parameters are symbols, and its shape comes from syntax
+  alone (count, `this` by name, minArgumentCount from `?`/initializer/rest/an untyped IIFE parameter past the written
+  arguments, HasRestParameter, the untyped-JS flag through getContextualType). A parameter's type is getTypeOfSymbol
+  of it when someone asks, under its own pushTypeResolution; getTypeOfParameter/getTypeAtPosition add the optional
+  undefined then. instantiateSignature instantiates the symbols, each instantiated symbol typed on demand
+  (getTypeOfInstantiatedSymbol). Who asks: isSignatureApplicable/checkApplicableSignature only for the positions that
+  get an argument (and the rest type for a spread); TS2554's counts need no types; compareSignaturesRelated,
+  inference from signatures and printing ask all. tttt: function_signature_params() types every parameter of a
+  declared signature in one pass (ty_binding_type each, then the optionality pass that needs min_args), and
+  signature_resolve_slow() instantiates every parameter type of an instantiated one; the record (SigResolved) is
+  published whole (one SharedWord), re-entries read sig_resolving_record()'s patch (typed so far, the one in flight
+  any, the rest typed then). What differs: a re-entry that passes an argument for the in-flight parameter gets any
+  where tsc reports the parameter's circularity (10-C1b's TS7022 on y in `function i2<T>(x: T, y = i2(x,
+  undefined))`, 99-V4's assignNonContextualParameterTypes__01/02), and parameters after the one asked are typed
+  inside a cycle they aren't part of (kebo's MST cycle, openclaw's TS2554 history, pothos's TS7023 via variance).
+  The design: SigResolved keeps the syntactic shape (count, min_args including the default-before-required rule,
+  optional, rest, this position, decl) up front; SigParam.type becomes a slot read only through
+  `sig_param_type(me, rs, i)`: declared, ty_binding_type(binding) (its own RESOLVING_BINDING entry and memo: the
+  cycle tsc finds) plus the optionality undefined; instantiated, the target's slot instantiated by the mapper,
+  memoized per (signature, index) (a SharedWord per parameter, or a KEY_SIG_PARAM memo kind classified as a graph
+  memo with the taint rule); `this_type` likewise. The re-entry patch (sig_resolving_record, SigResolving.typing/
+  typed/whole/completing) goes away. Cost and risk: ~76 sites read `params[i].type` directly (relate.c, call.c,
+  infer.c, ty_display.c, declaration_emit.c, check.c, flow.c, iterate.c, conditional.c, members.c, class_decl.c,
+  graph_debug.c) and ~120 handle SigResolved; the relation and inference loops are hot (an extra branch and load per
+  parameter: measure instructions on drizzle, zod, vscode); the shared graph's publication of a per-parameter word
+  needs the taint/claim protocol of a lazy field (plan 86 4f), and `undefined_added` is decided at typing time. Gate
+  list: the suite (functionWithDefaultParameterWithNoStatements*, the 99-V4 assign*ParameterTypes family, 10-C1/
+  10-C1b, ttttGenericArgumentParamsUntypedWithoutContext), kebo/apps/mobile, openclaw core at K1 and K16 (kdiff),
+  pothos (ttttVarianceReentersOwnReturnType), checkerdiff and threadcheck (`quickgate -k`), expecttypes, the DT sweep,
+  instrcount. A stint of its own (estimate 2-3 days with the graph part); do the accessor refactor first as an
+  output-identical commit, then the laziness.
 - **E. Members without in-flight state**: won't fix unless members.c adopts tsc's resolution order (bases instantiated
   with the reference's arguments); which instantiation is the 100th decides the error type. vue's 2 and arktype's
   TS5115 stay (bugs/tsgo_divergences.md).
