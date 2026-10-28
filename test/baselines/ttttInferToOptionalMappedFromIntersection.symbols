@@ -1,0 +1,61 @@
+//// [test/cases/ttttInferToOptionalMappedFromIntersection.ts] ////
+
+=== ttttInferToOptionalMappedFromIntersection.ts ===
+// origin: npm freelensapp/freelens @ 088d085 packages/core (tsconfig.bench.json), src/main/get-metrics.injectable.ts:76 (object.entries of an intersection)
+// flip: no
+// Inferring to { [P in K]?: X } with K a type parameter: X from the union of the source's property types (an
+// intersection's are all of its members'), against the template made optional (tsc's getTemplateTypeFromMappedType)
+declare function entries<K extends string, V>(obj: Partial<Record<K, V>>): [K, V][];
+>entries : Symbol(entries, Decl(ttttInferToOptionalMappedFromIntersection.ts, 0, 0))
+>K : Symbol(K, Decl(ttttInferToOptionalMappedFromIntersection.ts, 4, 25))
+>V : Symbol(V, Decl(ttttInferToOptionalMappedFromIntersection.ts, 4, 42))
+>obj : Symbol(obj, Decl(ttttInferToOptionalMappedFromIntersection.ts, 4, 46))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>K : Symbol(K, Decl(ttttInferToOptionalMappedFromIntersection.ts, 4, 25))
+>V : Symbol(V, Decl(ttttInferToOptionalMappedFromIntersection.ts, 4, 42))
+>K : Symbol(K, Decl(ttttInferToOptionalMappedFromIntersection.ts, 4, 25))
+>V : Symbol(V, Decl(ttttInferToOptionalMappedFromIntersection.ts, 4, 42))
+
+interface P { start?: number | string; step?: number }
+>P : Symbol(P, Decl(ttttInferToOptionalMappedFromIntersection.ts, 4, 84))
+>start : Symbol(P.start, Decl(ttttInferToOptionalMappedFromIntersection.ts, 5, 13))
+>step : Symbol(P.step, Decl(ttttInferToOptionalMappedFromIntersection.ts, 5, 38))
+
+declare const q: P & { query: string };
+>q : Symbol(q, Decl(ttttInferToOptionalMappedFromIntersection.ts, 6, 13))
+>P : Symbol(P, Decl(ttttInferToOptionalMappedFromIntersection.ts, 4, 84))
+>query : Symbol(query, Decl(ttttInferToOptionalMappedFromIntersection.ts, 6, 22))
+
+const r = entries(q);
+>r : Symbol(r, Decl(ttttInferToOptionalMappedFromIntersection.ts, 7, 5))
+>entries : Symbol(entries, Decl(ttttInferToOptionalMappedFromIntersection.ts, 0, 0))
+>q : Symbol(q, Decl(ttttInferToOptionalMappedFromIntersection.ts, 6, 13))
+
+declare const q2: P;
+>q2 : Symbol(q2, Decl(ttttInferToOptionalMappedFromIntersection.ts, 8, 13))
+>P : Symbol(P, Decl(ttttInferToOptionalMappedFromIntersection.ts, 4, 84))
+
+const r2 = entries(q2);
+>r2 : Symbol(r2, Decl(ttttInferToOptionalMappedFromIntersection.ts, 9, 5))
+>entries : Symbol(entries, Decl(ttttInferToOptionalMappedFromIntersection.ts, 0, 0))
+>q2 : Symbol(q2, Decl(ttttInferToOptionalMappedFromIntersection.ts, 8, 13))
+
+declare const q3: { start?: number | string; query: string };
+>q3 : Symbol(q3, Decl(ttttInferToOptionalMappedFromIntersection.ts, 10, 13))
+>start : Symbol(start, Decl(ttttInferToOptionalMappedFromIntersection.ts, 10, 19))
+>query : Symbol(query, Decl(ttttInferToOptionalMappedFromIntersection.ts, 10, 44))
+
+const r3 = entries(q3);
+>r3 : Symbol(r3, Decl(ttttInferToOptionalMappedFromIntersection.ts, 11, 5))
+>entries : Symbol(entries, Decl(ttttInferToOptionalMappedFromIntersection.ts, 0, 0))
+>q3 : Symbol(q3, Decl(ttttInferToOptionalMappedFromIntersection.ts, 10, 13))
+
+for (const [, value] of entries(q)) value.toString();
+>value : Symbol(value, Decl(ttttInferToOptionalMappedFromIntersection.ts, 12, 13))
+>entries : Symbol(entries, Decl(ttttInferToOptionalMappedFromIntersection.ts, 0, 0))
+>q : Symbol(q, Decl(ttttInferToOptionalMappedFromIntersection.ts, 6, 13))
+>value.toString : Symbol(toString, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>value : Symbol(value, Decl(ttttInferToOptionalMappedFromIntersection.ts, 12, 13))
+>toString : Symbol(toString, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+

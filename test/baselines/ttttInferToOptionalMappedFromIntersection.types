@@ -1,0 +1,55 @@
+//// [test/cases/ttttInferToOptionalMappedFromIntersection.ts] ////
+
+=== ttttInferToOptionalMappedFromIntersection.ts ===
+// origin: npm freelensapp/freelens @ 088d085 packages/core (tsconfig.bench.json), src/main/get-metrics.injectable.ts:76 (object.entries of an intersection)
+// flip: no
+// Inferring to { [P in K]?: X } with K a type parameter: X from the union of the source's property types (an
+// intersection's are all of its members'), against the template made optional (tsc's getTemplateTypeFromMappedType)
+declare function entries<K extends string, V>(obj: Partial<Record<K, V>>): [K, V][];
+>entries : <K extends string, V>(obj: Partial<Record<K, V>>) => [K, V][]
+>obj : Partial<Record<K, V>>
+
+interface P { start?: number | string; step?: number }
+>start : string | number | undefined
+>step : number | undefined
+
+declare const q: P & { query: string };
+>q : P & { query: string; }
+>query : string
+
+const r = entries(q);
+>r : ["query" | keyof P, string | number][]
+>entries(q) : ["query" | keyof P, string | number][]
+>entries : <K extends string, V>(obj: Partial<Record<K, V>>) => [K, V][]
+>q : P & { query: string; }
+
+declare const q2: P;
+>q2 : P
+
+const r2 = entries(q2);
+>r2 : [keyof P, string | number][]
+>entries(q2) : [keyof P, string | number][]
+>entries : <K extends string, V>(obj: Partial<Record<K, V>>) => [K, V][]
+>q2 : P
+
+declare const q3: { start?: number | string; query: string };
+>q3 : { start?: number | string; query: string; }
+>start : string | number | undefined
+>query : string
+
+const r3 = entries(q3);
+>r3 : ["query" | "start", string | number][]
+>entries(q3) : ["query" | "start", string | number][]
+>entries : <K extends string, V>(obj: Partial<Record<K, V>>) => [K, V][]
+>q3 : { start?: number | string; query: string; }
+
+for (const [, value] of entries(q)) value.toString();
+>value : string | number
+>entries(q) : ["query" | keyof P, string | number][]
+>entries : <K extends string, V>(obj: Partial<Record<K, V>>) => [K, V][]
+>q : P & { query: string; }
+>value.toString() : string
+>value.toString : (() => string) | ((radix?: number) => string)
+>value : string | number
+>toString : (() => string) | ((radix?: number) => string)
+

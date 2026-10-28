@@ -950,14 +950,29 @@ static bool infer_to_mapped(Checker* me, Inference* inf, Ty const* source, Mappe
         // K's own constraint, `K extends keyof T`, makes it the homomorphic mapped type over T (Pick<T, K>)
         Ty const* extended = ty_param_constraint(me, constraint);
         if (extended && extended != constraint && infer_to_mapped(me, inf, source, mapped, extended)) return true;
+        // (tsc's getPropertiesOfType: an intersection's are those of all of its members, each name once, which its own
+        // Members don't list)
         Members const* members = ty_members(me, source);
-        u32 count = members->prop_count + members->index_count;
-        if (!count) return true;
+        ObjectLiteralProp* intersected = nullptr;
+        u32 prop_count = source->kind == TY_INTERSECTION ? ty_reverse_mapped_source_props(me, source, &intersected) :
+            members->prop_count;
+        u32 count = prop_count + members->index_count;
+        if (!count) {
+            free(intersected);
+            return true;
+        }
         Ty const** types = malloc(sizeof(Ty const*) * count);
         panic_if(!types, "out of memory");
-        for (u32 i = 0; i < members->prop_count; i++) types[i] = prop_type(me, members->props[i]);
-        for (u32 i = 0; i < members->index_count; i++) types[members->prop_count + i] = members->index[i].value;
-        infer_from(me, inf, ty_union(me, types, count, nullptr, (TyList){0}), ty_mapped_template(me, mapped));
+        for (u32 i = 0; i < prop_count; i++) types[i] = intersected ? intersected[i].type : prop_type(me, members->props[i]);
+        for (u32 i = 0; i < members->index_count; i++) types[prop_count + i] = members->index[i].value;
+        free(intersected);
+        // (tsc's getTemplateTypeFromMappedType: a `?` mapped type's template is optional, which takes the optional
+        // properties' undefined: `Partial<Record<K, V>>` from `{ a?: string }` infers V = string)
+        Ty const* template = ty_mapped_template(me, mapped);
+        if (mapped->optional > 0 && compiler_options()->strict_null_checks) {
+            template = ty_union(me, (Ty const*[]){ template, ty_undefined_or_missing(me) }, 2, nullptr, (TyList){0});
+        }
+        infer_from(me, inf, ty_union(me, types, count, nullptr, (TyList){0}), template);
         free(types);
         return true;
     }
