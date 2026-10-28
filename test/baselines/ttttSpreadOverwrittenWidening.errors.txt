@@ -1,0 +1,41 @@
+ttttSpreadOverwrittenWidening.ts(6,7): error TS7005: Variable 'a1' implicitly has an '{ p: string; s: string; }' type.
+ttttSpreadOverwrittenWidening.ts(7,20): error TS7018: Object literal's property 'p' implicitly has an 'any' type.
+ttttSpreadOverwrittenWidening.ts(8,7): error TS7005: Variable 'a3' implicitly has an '{ p: string; s: string; }' type.
+ttttSpreadOverwrittenWidening.ts(9,14): error TS7018: Object literal's property 'p' implicitly has an 'any' type.
+ttttSpreadOverwrittenWidening.ts(10,14): error TS7018: Object literal's property 'x' implicitly has an 'any[]' type.
+ttttSpreadOverwrittenWidening.ts(11,19): error TS7018: Object literal's property 'y' implicitly has an 'any' type.
+ttttSpreadOverwrittenWidening.ts(12,12): error TS7006: Parameter 'x' implicitly has an '{ p: string; s: string; }' type.
+ttttSpreadOverwrittenWidening.ts(13,5): error TS7005: Variable 'a7' implicitly has an '{ p: string; s: string; }' type.
+
+
+==== ttttSpreadOverwrittenWidening.ts (8 errors) ====
+    // A literal's written member with a widening null (`{ p: null, ...o }`) makes the spread result ContainsWideningType
+    // even once o's p replaced it (tsc's checkObjectLiteral passes its members' flags to getSpreadType): no property
+    // reports TS7018, so the declaration is TS7005/TS7006 with the whole type
+    declare const o: { p: string; s: string };
+    declare const u: { p: string } | { q: number };
+    const a1 = { p: null, ...o };
+          ~~
+!!! error TS7005: Variable 'a1' implicitly has an '{ p: string; s: string; }' type.
+    const a2 = { ...o, p: null };
+                       ~~~~~~~
+!!! error TS7018: Object literal's property 'p' implicitly has an 'any' type.
+    const a3 = { p: null, s: undefined, ...o };
+          ~~
+!!! error TS7005: Variable 'a3' implicitly has an '{ p: string; s: string; }' type.
+    const a4 = { p: null, ...u };
+                 ~~~~~~~
+!!! error TS7018: Object literal's property 'p' implicitly has an 'any' type.
+    const a5 = { x: [null], ...o };
+                 ~~~~~~~~~
+!!! error TS7018: Object literal's property 'x' implicitly has an 'any[]' type.
+    const a6 = { x: { y: null }, ...o, x2: 1 };
+                      ~~~~~~~
+!!! error TS7018: Object literal's property 'y' implicitly has an 'any' type.
+    function f(x = { p: null, ...o }) { return x; }
+               ~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7006: Parameter 'x' implicitly has an '{ p: string; s: string; }' type.
+    let a7 = { p: null, ...o, s: "s" };
+        ~~
+!!! error TS7005: Variable 'a7' implicitly has an '{ p: string; s: string; }' type.
+    

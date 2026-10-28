@@ -4109,6 +4109,8 @@ typedef struct SpreadAcc {
     // The last thing spread was no object (TS2698): the literal is errorType (tsc's checkObjectLiteral; a spread after
     // it makes any of it, getSpreadType)
     bool error;
+    // A written member's type contains a widening null or undefined (OBJECT_CONTAINS_WIDENING)
+    bool own_widening;
 } SpreadAcc;
 
 static void spread_alt_push(SpreadAlt* alt, SpreadPart part) {
@@ -4185,6 +4187,9 @@ static void spread_alt_generic(SpreadAlt* alt, Ty const* generic) {
 // Properties spread into what was spread so far (the ones written since the last spread, an object spread)
 static void spread_acc_props(Checker* me, SpreadAcc* acc, LiteralBuilder const* right) {
     if (!acc->alt_count) spread_acc_add_alt(acc, (SpreadAlt){0});
+    for (u32 i = 0; i < right->count; i++) {
+        if (right->props[i].type && (right->props[i].type->xflags & TYX_CONTAINS_WIDENING)) acc->own_widening = true;
+    }
     for (u32 i = 0; i < acc->alt_count; i++) spread_alt_object(me, &acc->alts[i], right, acc->readonly);
 }
 
@@ -4359,6 +4364,7 @@ static Ty const* spread_acc_finish(Checker* me, SpreadAcc* acc, LiteralBuilder* 
     } else {
         if (own->count || own->index_count) spread_acc_props(me, acc, own);
         kind |= OBJECT_CONTAINS_SPREAD;
+        if (acc->own_widening && !compiler_options()->strict_null_checks) kind |= OBJECT_CONTAINS_WIDENING;
         TyBuf alts = {0};
         TyBuf parts = {0};
         for (u32 i = 0; i < acc->alt_count; i++) {

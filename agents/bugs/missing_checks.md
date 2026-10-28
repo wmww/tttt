@@ -302,7 +302,7 @@ tsc keeps one local symbol per block for a name's exported and local declaration
 ## JSX
 - TS6229 isn't checked for union tag types or inside an overload chain: now a union tag's union signatures
   (ty_jsx_tag_arity_fits) and CallInfo.jsx_arity_unfit failing every candidate (an overloaded component is TS2769,
-  the last overload's TS6229). Test ttttJsxTagArityUnionOverloads. [fixed HASH]
+  the last overload's TS6229). Test ttttJsxTagArityUnionOverloads. [fixed b3625732b]
 
 ## Messages: elaboration and printing (`scripts/errtextdiff.py`)
 - Union sources: for `Snap<...>` (a union alias) not assignable to `number`, tsc adds a line for the union's first
@@ -427,6 +427,14 @@ constraint, TS2208 for a mapped key). Left, each looked at:
 
 ## Mutation seeds 61/62 leftovers (2026-10-14: `MUTATE_DIR=/tmp/X scripts/mutate.py -n 4000 --seed 61|62`)
 Seed 61: 11 -> 5 differing, seed 62: 11 -> 8 (both before the last fixes' rechecks of each other). Left, each looked at:
+- (cor8 2026-10-28, seed 62 rerun: 4 differ) missing TS7005 in noImplicitAnyUnionNormalizedObjectLiteral1 return-void:
+  `{ p: null, s: null, ...f() }` (strictNullChecks off) with f's object replacing both properties is TS7005 with the
+  whole type in tsgo (checkObjectLiteral passes the written members' ContainsWideningType to getSpreadType; nothing in
+  the result reports TS7018). tttt took the flags of the final properties only. SpreadAcc.own_widening ->
+  OBJECT_CONTAINS_WIDENING -> TyAnonymous.spread_widening. Test ttttSpreadOverwrittenWidening. [fixed HASH] The
+  other three: unicodeLineSeparatorInMultilineComment never-const (the errors.txt rendering of a U+2028 line, harness
+  text), restElementWithInitializer2 (the lazy name resolution entry below), classVarianceResolveCircularity2
+  swap-stmts (missing TS7022, the circularity family). [text]
 - **Spurious circularity on getters** (seed 62, not the satisfies one, which is fixed): TS7022/TS7023/TS2502 in
   recursiveTypeInference add-optional (`_zod?:` on line 28, `$ZodString`'s), TS2339 in
   noCircularitySelfReferentialGetter2 drop-as. Not looked into; not the expression-memo bail (unchanged with
@@ -443,7 +451,8 @@ Seed 61: 11 -> 5 differing, seed 62: 11 -> 8 (both before the last fixes' rechec
 - seed 62 localTypeParameterInferencePriority delete-stmt and extends-object (spurious TS2322): without the
   `__schema!: S` property, `typeof ColumnSelectViewImp` to `new <S>() => Table<UnrollOnHover<S>>` fails in tttt
   (S' inferred as Schema, the generic `getRows<C extends keyof S>` the only mention of S); tsgo infers through it.
-  Inference, not reduced further. [open]
+  Inference, not reduced further. (cor8 2026-10-28: the delete-stmt mutant and every `Object` constraint variant
+  match tsgo now.) [fixed]
 - seed 62 recursiveTypeInference drop-prop (TS2741 text): the source object literal prints `posts: []` in tsgo,
   `posts: never[]` in tttt (an empty array literal against a circular `any[]` target); not looked into. [text]
 

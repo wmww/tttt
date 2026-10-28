@@ -454,6 +454,7 @@ struct Ty {
             bool is_reverse : 1; // `reverse` is set, not `merged_value`
             bool no_inferable_index : 1; // OBJECT_NO_INFERABLE_INDEX
             bool contains_spread : 1; // OBJECT_CONTAINS_SPREAD
+            bool spread_widening : 1; // OBJECT_CONTAINS_WIDENING
             bool no_symbol : 1; // OBJECT_NO_SYMBOL
             // The type of a namespace import of an `export =` module, made anew (tsc's cloneTypeAsModuleType: an anonymous
             // type whose symbol is a clone of the assigned one, `typeof x`): KEY_MODULE_CLONE says for which alias
@@ -2815,6 +2816,10 @@ typedef enum ObjectLiteralKind {
     // TyAnonymous.module_clone: a type of its own, set at creation (plan 86 4f: a bit written on a shared type later
     // was a race and reached the type's other uses)
     OBJECT_MODULE_CLONE = 1 << 9,
+    // Or'ed with an object literal kind that contains a spread: one of the literal's written members has a widening
+    // null or undefined (TYX_CONTAINS_WIDENING) though no property has it any more, `{ p: null, ...o }` with o's p
+    // (tsc's checkObjectLiteral passes its members' propagating flags to every getSpreadType). TyAnonymous.spread_widening
+    OBJECT_CONTAINS_WIDENING = 1 << 10,
 } ObjectLiteralKind;
 Ty const* ty_object_literal(
     Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, ObjectLiteralKind kind

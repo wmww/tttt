@@ -6911,7 +6911,9 @@ Ty const* ty_object_literal_alternative(
     bool no_symbol = kind & OBJECT_NO_SYMBOL;
     bool empty_symbol = kind & OBJECT_EMPTY_SYMBOL;
     bool module_clone = kind & OBJECT_MODULE_CLONE;
-    kind &= ~(OBJECT_JS | OBJECT_NO_INFERABLE_INDEX | OBJECT_CONTAINS_SPREAD | OBJECT_NO_SYMBOL | OBJECT_EMPTY_SYMBOL | OBJECT_MODULE_CLONE);
+    bool spread_widening = kind & OBJECT_CONTAINS_WIDENING;
+    kind &= ~(OBJECT_JS | OBJECT_NO_INFERABLE_INDEX | OBJECT_CONTAINS_SPREAD | OBJECT_NO_SYMBOL | OBJECT_EMPTY_SYMBOL | OBJECT_MODULE_CLONE |
+        OBJECT_CONTAINS_WIDENING);
     if (!ret) {
         MembersBuilder builder = {0};
         bool widens = kind == OBJECT_LITERAL_FRESH || kind == OBJECT_JSX_ATTRIBUTES_FRESH || kind == OBJECT_LITERAL_REGULAR;
@@ -6971,6 +6973,7 @@ Ty const* ty_object_literal_alternative(
                 fresh->xflags |= props[i].own || props[i].own_merged ? xflags : xflags & ~(u32)TYX_CONTAINS_WIDENING;
             }
             for (u32 i = 0; i < index_count; i++) fresh->xflags |= index[i].value->xflags;
+            if (spread_widening) fresh->xflags |= TYX_CONTAINS_WIDENING;
         }
         fresh->anonymous.ctx = (LowerCtx){ .generic = true };
         // (Of a literal outside every function and generic declaration: none, so it's never instantiated. Keyed by
@@ -6981,6 +6984,7 @@ Ty const* ty_object_literal_alternative(
         fresh->anonymous.outer_instantiable = outer_instantiable;
         fresh->anonymous.no_inferable_index = no_inferable_index;
         fresh->anonymous.contains_spread = contains_spread;
+        fresh->anonymous.spread_widening = spread_widening;
         fresh->anonymous.no_symbol = no_symbol;
         fresh->anonymous.empty_symbol = empty_symbol;
         fresh->anonymous.module_clone = module_clone;
@@ -7381,7 +7385,8 @@ Ty const* ty_regular_object_literal(Checker* me, Ty const* ty) {
     for (u32 i = 0; i < index_count; i++) index[i] = members->index[i];
     Ty const* ret = ty_object_literal_alternative(me, props, members->prop_count, index, index_count,
         OBJECT_LITERAL_REGULAR | (ty->anonymous.js_literal ? OBJECT_JS : 0) |
-            (ty->anonymous.contains_spread ? OBJECT_CONTAINS_SPREAD : 0), ty->anonymous.literal_expr,
+            (ty->anonymous.contains_spread ? OBJECT_CONTAINS_SPREAD : 0) |
+            (ty->anonymous.spread_widening ? OBJECT_CONTAINS_WIDENING : 0), ty->anonymous.literal_expr,
         ty->anonymous.spread_alternative);
     free(props);
     *intern_slot(me, &my links, key, 2) = ret;

@@ -1,0 +1,75 @@
+//// [test/cases/ttttSpreadOverwrittenWidening.ts] ////
+
+=== ttttSpreadOverwrittenWidening.ts ===
+// A literal's written member with a widening null (`{ p: null, ...o }`) makes the spread result ContainsWideningType
+// even once o's p replaced it (tsc's checkObjectLiteral passes its members' flags to getSpreadType): no property
+// reports TS7018, so the declaration is TS7005/TS7006 with the whole type
+declare const o: { p: string; s: string };
+>o : { p: string; s: string; }
+>p : string
+>s : string
+
+declare const u: { p: string } | { q: number };
+>u : { p: string; } | { q: number; }
+>p : string
+>q : number
+
+const a1 = { p: null, ...o };
+>a1 : { p: string; s: string; }
+>{ p: null, ...o } : { p: string; s: string; }
+>p : null
+>o : { p: string; s: string; }
+
+const a2 = { ...o, p: null };
+>a2 : { s: string; p: any; }
+>{ ...o, p: null } : { s: string; p: null; }
+>o : { p: string; s: string; }
+>p : null
+
+const a3 = { p: null, s: undefined, ...o };
+>a3 : { p: string; s: string; }
+>{ p: null, s: undefined, ...o } : { p: string; s: string; }
+>p : null
+>s : undefined
+>undefined : undefined
+>o : { p: string; s: string; }
+
+const a4 = { p: null, ...u };
+>a4 : { p: string; } | { q: number; p: any; }
+>{ p: null, ...u } : { p: string; } | { q: number; p: null; }
+>p : null
+>u : { p: string; } | { q: number; }
+
+const a5 = { x: [null], ...o };
+>a5 : { p: string; s: string; x: any[]; }
+>{ x: [null], ...o } : { p: string; s: string; x: null[]; }
+>x : null[]
+>[null] : null[]
+>o : { p: string; s: string; }
+
+const a6 = { x: { y: null }, ...o, x2: 1 };
+>a6 : { p: string; s: string; x: { y: any; }; x2: number; }
+>{ x: { y: null }, ...o, x2: 1 } : { p: string; s: string; x: { y: null; }; x2: number; }
+>x : { y: null; }
+>{ y: null } : { y: null; }
+>y : null
+>o : { p: string; s: string; }
+>x2 : number
+>1 : 1
+
+function f(x = { p: null, ...o }) { return x; }
+>f : (x?: { p: string; s: string; }) => { p: string; s: string; }
+>x : { p: string; s: string; }
+>{ p: null, ...o } : { p: string; s: string; }
+>p : null
+>o : { p: string; s: string; }
+>x : { p: string; s: string; }
+
+let a7 = { p: null, ...o, s: "s" };
+>a7 : { p: string; s: string; }
+>{ p: null, ...o, s: "s" } : { p: string; s: string; }
+>p : null
+>o : { p: string; s: string; }
+>s : string
+>"s" : "s"
+
