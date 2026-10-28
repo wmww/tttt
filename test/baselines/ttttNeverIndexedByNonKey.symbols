@@ -1,0 +1,52 @@
+//// [test/cases/ttttNeverIndexedByNonKey.ts] ////
+
+=== ttttNeverIndexedByNonKey.ts ===
+// `T[P]` with T extends never and P extends a non-key type has no write constraint: never indexed by Object is
+// nothing without an access node (tsc's getPropertyTypeForIndexType), so writing a string to it is TS2322
+function a<T extends never, P extends Object>(s: string, tp: T[P]): void { tp = s; }
+>a : Symbol(a, Decl(ttttNeverIndexedByNonKey.ts, 0, 0))
+>T : Symbol(T, Decl(ttttNeverIndexedByNonKey.ts, 2, 11))
+>P : Symbol(P, Decl(ttttNeverIndexedByNonKey.ts, 2, 27))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>s : Symbol(s, Decl(ttttNeverIndexedByNonKey.ts, 2, 46))
+>tp : Symbol(tp, Decl(ttttNeverIndexedByNonKey.ts, 2, 56))
+>T : Symbol(T, Decl(ttttNeverIndexedByNonKey.ts, 2, 11))
+>P : Symbol(P, Decl(ttttNeverIndexedByNonKey.ts, 2, 27))
+>tp : Symbol(tp, Decl(ttttNeverIndexedByNonKey.ts, 2, 56))
+>s : Symbol(s, Decl(ttttNeverIndexedByNonKey.ts, 2, 46))
+
+function b<T extends never, P extends string>(s: string, tp: T[P]): void { tp = s; }
+>b : Symbol(b, Decl(ttttNeverIndexedByNonKey.ts, 2, 84))
+>T : Symbol(T, Decl(ttttNeverIndexedByNonKey.ts, 3, 11))
+>P : Symbol(P, Decl(ttttNeverIndexedByNonKey.ts, 3, 27))
+>s : Symbol(s, Decl(ttttNeverIndexedByNonKey.ts, 3, 46))
+>tp : Symbol(tp, Decl(ttttNeverIndexedByNonKey.ts, 3, 56))
+>T : Symbol(T, Decl(ttttNeverIndexedByNonKey.ts, 3, 11))
+>P : Symbol(P, Decl(ttttNeverIndexedByNonKey.ts, 3, 27))
+>tp : Symbol(tp, Decl(ttttNeverIndexedByNonKey.ts, 3, 56))
+>s : Symbol(s, Decl(ttttNeverIndexedByNonKey.ts, 3, 46))
+
+function c<T extends never, P extends {}>(s: string, tp: T[P]): void { tp = s; }
+>c : Symbol(c, Decl(ttttNeverIndexedByNonKey.ts, 3, 84))
+>T : Symbol(T, Decl(ttttNeverIndexedByNonKey.ts, 4, 11))
+>P : Symbol(P, Decl(ttttNeverIndexedByNonKey.ts, 4, 27))
+>s : Symbol(s, Decl(ttttNeverIndexedByNonKey.ts, 4, 42))
+>tp : Symbol(tp, Decl(ttttNeverIndexedByNonKey.ts, 4, 52))
+>T : Symbol(T, Decl(ttttNeverIndexedByNonKey.ts, 4, 11))
+>P : Symbol(P, Decl(ttttNeverIndexedByNonKey.ts, 4, 27))
+>tp : Symbol(tp, Decl(ttttNeverIndexedByNonKey.ts, 4, 52))
+>s : Symbol(s, Decl(ttttNeverIndexedByNonKey.ts, 4, 42))
+
+function d<T extends {a: 1}, P extends Object>(s: string, tp: T[P]): void { tp = s; }
+>d : Symbol(d, Decl(ttttNeverIndexedByNonKey.ts, 4, 80))
+>T : Symbol(T, Decl(ttttNeverIndexedByNonKey.ts, 5, 11))
+>a : Symbol(a, Decl(ttttNeverIndexedByNonKey.ts, 5, 22))
+>P : Symbol(P, Decl(ttttNeverIndexedByNonKey.ts, 5, 28))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>s : Symbol(s, Decl(ttttNeverIndexedByNonKey.ts, 5, 47))
+>tp : Symbol(tp, Decl(ttttNeverIndexedByNonKey.ts, 5, 57))
+>T : Symbol(T, Decl(ttttNeverIndexedByNonKey.ts, 5, 11))
+>P : Symbol(P, Decl(ttttNeverIndexedByNonKey.ts, 5, 28))
+>tp : Symbol(tp, Decl(ttttNeverIndexedByNonKey.ts, 5, 57))
+>s : Symbol(s, Decl(ttttNeverIndexedByNonKey.ts, 5, 47))
+

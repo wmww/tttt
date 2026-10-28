@@ -1,0 +1,39 @@
+ttttNeverIndexedByNonKey.ts(3,62): error TS2536: Type 'P' cannot be used to index type 'T'.
+ttttNeverIndexedByNonKey.ts(3,76): error TS2322: Type 'string' is not assignable to type 'T[P]'.
+  'T[P]' could be instantiated with an arbitrary type which could be unrelated to 'string'.
+ttttNeverIndexedByNonKey.ts(4,76): error TS2322: Type 'string' is not assignable to type 'T[P]'.
+  'T[P]' could be instantiated with an arbitrary type which could be unrelated to 'string'.
+ttttNeverIndexedByNonKey.ts(5,58): error TS2536: Type 'P' cannot be used to index type 'T'.
+ttttNeverIndexedByNonKey.ts(5,72): error TS2322: Type 'string' is not assignable to type 'T[P]'.
+  'T[P]' could be instantiated with an arbitrary type which could be unrelated to 'string'.
+ttttNeverIndexedByNonKey.ts(6,63): error TS2536: Type 'P' cannot be used to index type 'T'.
+ttttNeverIndexedByNonKey.ts(6,77): error TS2322: Type 'string' is not assignable to type 'T[P]'.
+  'T[P]' could be instantiated with an arbitrary type which could be unrelated to 'string'.
+
+
+==== ttttNeverIndexedByNonKey.ts (7 errors) ====
+    // `T[P]` with T extends never and P extends a non-key type has no write constraint: never indexed by Object is
+    // nothing without an access node (tsc's getPropertyTypeForIndexType), so writing a string to it is TS2322
+    function a<T extends never, P extends Object>(s: string, tp: T[P]): void { tp = s; }
+                                                                 ~~~~
+!!! error TS2536: Type 'P' cannot be used to index type 'T'.
+                                                                               ~~
+!!! error TS2322: Type 'string' is not assignable to type 'T[P]'.
+!!! error TS2322:   'T[P]' could be instantiated with an arbitrary type which could be unrelated to 'string'.
+    function b<T extends never, P extends string>(s: string, tp: T[P]): void { tp = s; }
+                                                                               ~~
+!!! error TS2322: Type 'string' is not assignable to type 'T[P]'.
+!!! error TS2322:   'T[P]' could be instantiated with an arbitrary type which could be unrelated to 'string'.
+    function c<T extends never, P extends {}>(s: string, tp: T[P]): void { tp = s; }
+                                                             ~~~~
+!!! error TS2536: Type 'P' cannot be used to index type 'T'.
+                                                                           ~~
+!!! error TS2322: Type 'string' is not assignable to type 'T[P]'.
+!!! error TS2322:   'T[P]' could be instantiated with an arbitrary type which could be unrelated to 'string'.
+    function d<T extends {a: 1}, P extends Object>(s: string, tp: T[P]): void { tp = s; }
+                                                                  ~~~~
+!!! error TS2536: Type 'P' cannot be used to index type 'T'.
+                                                                                ~~
+!!! error TS2322: Type 'string' is not assignable to type 'T[P]'.
+!!! error TS2322:   'T[P]' could be instantiated with an arbitrary type which could be unrelated to 'string'.
+    

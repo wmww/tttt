@@ -440,7 +440,10 @@ static Ty const* access_uncached(Checker* me, Ty const* object, Ty const* index,
         // (never too, assignable to every kind: `never[never]` is never, solid's store setter through its base signature)
         bool key = (index->flags & (TYF_ANY | TYF_NEVER)) || (!(index->flags & TYF_NULLABLE) &&
             (ty_key_flags(index) & (TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM | TYF_ES_SYMBOL_LIKE)));
-        return key || index->kind == TY_UNION || ty_is_generic_index(index) ? object : ty_intrinsic(me, TY_ERROR);
+        // (Without an access node, nothing: getIndexedAccessTypeOrUndefined's nil, so `T[P]` with T extends never and P
+        // extends Object has no write constraint to relate a source to)
+        if (key || index->kind == TY_UNION || ty_is_generic_index(index)) return object;
+        return (flags & ACCESS_NO_NODE) ? nullptr : ty_intrinsic(me, TY_ERROR);
     }
     if (index->flags & TYF_NEVER) {
         // What the index signatures say (never is assignable to every key type), else never (tsc's

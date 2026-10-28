@@ -1,0 +1,38 @@
+//// [test/cases/ttttNeverIndexedByNonKey.ts] ////
+
+=== ttttNeverIndexedByNonKey.ts ===
+// `T[P]` with T extends never and P extends a non-key type has no write constraint: never indexed by Object is
+// nothing without an access node (tsc's getPropertyTypeForIndexType), so writing a string to it is TS2322
+function a<T extends never, P extends Object>(s: string, tp: T[P]): void { tp = s; }
+>a : <T extends never, P extends Object>(s: string, tp: T[P]) => void
+>s : string
+>tp : T[P]
+>tp = s : string
+>tp : T[P]
+>s : string
+
+function b<T extends never, P extends string>(s: string, tp: T[P]): void { tp = s; }
+>b : <T extends never, P extends string>(s: string, tp: T[P]) => void
+>s : string
+>tp : T[P]
+>tp = s : string
+>tp : T[P]
+>s : string
+
+function c<T extends never, P extends {}>(s: string, tp: T[P]): void { tp = s; }
+>c : <T extends never, P extends {}>(s: string, tp: T[P]) => void
+>s : string
+>tp : T[P]
+>tp = s : string
+>tp : T[P]
+>s : string
+
+function d<T extends {a: 1}, P extends Object>(s: string, tp: T[P]): void { tp = s; }
+>d : <T extends { a: 1; }, P extends Object>(s: string, tp: T[P]) => void
+>a : 1
+>s : string
+>tp : T[P]
+>tp = s : string
+>tp : T[P]
+>s : string
+
