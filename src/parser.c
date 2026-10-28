@@ -14297,6 +14297,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
     p.shared->let_forced = false;
 
     Anchor start = anchor(&p);
+    ret->empty_in_for = ret->list_grammar_error = false;
     if (hop_start_if_ends_on_word_break(&p, "var")) {
         ret->keyword = VAR_INIT_VAR;
     } else if (hop_start_if_ends_on_word_break(&p, "let")) {
@@ -14356,6 +14357,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
                 }
             } else if (span_valid(comma_span)) {
                 if (!list_unchecked) grammar_error(&p, comma_span, 1009, "Trailing comma not allowed.");
+                ret->list_grammar_error = !list_unchecked;
                 p.pos = span_end_ptr(comma_span);
             } else if (vec_initialized_binding_is_empty(&ret->initializers)) {
                 if (ret->keyword == VAR_INIT_LET && !empty_for_of && !in_for && !let_forced) {
@@ -14370,7 +14372,9 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
                 } else {
                     Span s = span_from(end_of_keyword);
                     s.size = 0;
-                    if (!list_unchecked) grammar_error(&p, s, 1123, "Variable declaration list cannot be empty.");
+                    if (in_for) ret->empty_in_for = !list_unchecked;
+                    else if (!list_unchecked) grammar_error(&p, s, 1123, "Variable declaration list cannot be empty.");
+                    ret->list_grammar_error = !in_for && !list_unchecked;
                 }
             } else if (list_is_terminator(PARSING_VARIABLE_DECLARATIONS, tok_peek(&p))) {
                 // After a missing `,` or a skipped token (`var v = (a): => {}` ends at the `=>`)

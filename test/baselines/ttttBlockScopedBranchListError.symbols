@@ -1,0 +1,13 @@
+//// [test/cases/ttttBlockScopedBranchListError.ts] ////
+
+=== ttttBlockScopedBranchListError.ts ===
+// A variable statement's list grammar error (TS1009 trailing comma, TS1123 empty list) ends tsc's checkVariableStatement
+// grammar checks: no TS1156 for a `let` or `const` as an `if` branch then (bun 28-C25a)
+if (1) let a = 1,;
+>a : Symbol(a, Decl(ttttBlockScopedBranchListError.ts, 2, 10))
+
+if (1) const b = 1;
+>b : Symbol(b, Decl(ttttBlockScopedBranchListError.ts, 3, 12))
+
+if (1) const;
+

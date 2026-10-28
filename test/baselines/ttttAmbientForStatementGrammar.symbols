@@ -1,0 +1,16 @@
+//// [test/cases/ttttAmbientForStatementGrammar.ts] ////
+
+=== ttttAmbientForStatementGrammar.ts ===
+// The first statement of an ambient block is TS1036 (tsc's checkGrammarStatementInAmbientContext), which ends a for
+// statement's grammar checks: no TS1123 for its empty declaration list, no TS1103 for its `await` (bun 28-C26c,
+// 28-C26e); a later one gets them
+declare namespace N { for (var;;) {} for (let;;) {} }
+>N : Symbol(N, Decl(ttttAmbientForStatementGrammar.ts, 0, 0))
+
+declare namespace M { for await (const x of []) {} for await (const y of []) {} }
+>M : Symbol(M, Decl(ttttAmbientForStatementGrammar.ts, 3, 53))
+>x : Symbol(x, Decl(ttttAmbientForStatementGrammar.ts, 4, 38))
+>y : Symbol(y, Decl(ttttAmbientForStatementGrammar.ts, 4, 67))
+
+for (const;;) {}
+

@@ -1699,6 +1699,15 @@ static bool ambient_reported_at(Statement const* me, Scope const* names) {
     return false;
 }
 
+// A for statement's empty declaration list (TS1123, at the end of its keyword)
+static void check_empty_for_list(Statement const* me, VariableStatement const* list, Scope const* names, ErrorCtx* errs) {
+    if (!list->empty_in_for || ambient_reported_at(me, names)) return;
+    char const* start = span_start_ptr(list->span);
+    char const* end = list->keyword == VAR_INIT_AWAIT_USING ? strstr(start + 5, "using") + 5 :
+        start + strlen(variable_statement_keyword_str(list));
+    error_ctx_grammar_error_d(errs, span_make_in(list->span, end, end), 1123, "Variable declaration list cannot be empty.");
+}
+
 static void statement_resolve_names_reachable(Statement* me, u32 label_count, Scope* names, ErrorCtx* errs) {
     FlowBuilder* flow = scope_flow(names);
     if (statement_declares_name(my tag) || my tag == STATEMENT_IMPORT_EXPORT) {
@@ -1767,6 +1776,9 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
 
         case STATEMENT_FOR_LOOP: {
             ForLoopStatement* loop = my for_loop;
+            if (loop->initialization.tag == STATEMENT_DECL_VARIABLE) {
+                check_empty_for_list(me, &loop->initialization.decl.variable, names, errs);
+            }
             Scope* loop_scope = scope_new(names, SCOPE_BLOCK);
             statement_add_names(&loop->initialization, loop_scope);
             // (`while (a) const x = 1;` (TS1156) declares x where the loop is: a while or do statement isn't a block
@@ -1814,7 +1826,11 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
 
         case STATEMENT_FOR_EACH_LOOP: {
             ForEachLoopStatement* loop = my for_each_loop;
-            await_check_grammar(loop->await_place, AWAIT_KIND_FOR, loop->await_span, scope_containing_function(names), errs);
+            // (tsc's checkGrammarForInOrForOfStatement: nothing after checkGrammarStatementInAmbientContext's TS1036)
+            if (!ambient_reported_at(me, names)) {
+                await_check_grammar(loop->await_place, AWAIT_KIND_FOR, loop->await_span, scope_containing_function(names), errs);
+            }
+            if (loop->variable.tag == FOR_EACH_LOOP_STATEMENT) check_empty_for_list(me, &loop->variable.statement, names, errs);
             if (loop->variable.tag == FOR_EACH_LOOP_STATEMENT) variable_statement_check_await_place(&loop->variable.statement, names, errs);
             lazy_type_bind(&loop->var_type, LAZY_TYPE_FOR_EACH_LOOP_VAR);
             Scope* loop_scope = scope_new(names, SCOPE_BLOCK);
@@ -3148,7 +3164,10 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                 ty_check_emit_helpers(current_checker, my decl.variable.span, EMIT_HELPER_DISPOSABLE, errs);
             }
             // (Not after an illegal modifier, `if (a) export const x = 1;`: tsc's checkVariableStatement stops at TS1184)
-            if (body && my decl.variable.keyword != VAR_INIT_VAR && !my decl.props.exported && !span_valid(my decl.props.declare_keyword)) {
+            bool list_error = my decl.variable.list_grammar_error && span_source(my span) && !span_source(my span)->has_parse_errors;
+            if (body && my decl.variable.keyword != VAR_INIT_VAR && !my decl.props.exported && !span_valid(my decl.props.declare_keyword) &&
+                !list_error
+            ) {
                 // tsc's checkGrammarForDisallowedBlockScopedVariableStatement() (an error, said with parse errors too)
                 error_ctx_error_d(errs, span_with_semicolon(my span), 1156,
                     "'", variable_statement_keyword_str(&my decl.variable), "' declarations can only be declared inside a block.");

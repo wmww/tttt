@@ -1,0 +1,25 @@
+ttttAmbientForStatementGrammar.ts(4,23): error TS1036: Statements are not allowed in ambient contexts.
+ttttAmbientForStatementGrammar.ts(4,46): error TS1123: Variable declaration list cannot be empty.
+ttttAmbientForStatementGrammar.ts(5,23): error TS1036: Statements are not allowed in ambient contexts.
+ttttAmbientForStatementGrammar.ts(5,56): error TS1103: 'for await' loops are only allowed within async functions and at the top levels of modules.
+ttttAmbientForStatementGrammar.ts(6,11): error TS1123: Variable declaration list cannot be empty.
+
+
+==== ttttAmbientForStatementGrammar.ts (5 errors) ====
+    // The first statement of an ambient block is TS1036 (tsc's checkGrammarStatementInAmbientContext), which ends a for
+    // statement's grammar checks: no TS1123 for its empty declaration list, no TS1103 for its `await` (bun 28-C26c,
+    // 28-C26e); a later one gets them
+    declare namespace N { for (var;;) {} for (let;;) {} }
+                          ~~~
+!!! error TS1036: Statements are not allowed in ambient contexts.
+                                                 
+!!! error TS1123: Variable declaration list cannot be empty.
+    declare namespace M { for await (const x of []) {} for await (const y of []) {} }
+                          ~~~
+!!! error TS1036: Statements are not allowed in ambient contexts.
+                                                           ~~~~~
+!!! error TS1103: 'for await' loops are only allowed within async functions and at the top levels of modules.
+    for (const;;) {}
+              
+!!! error TS1123: Variable declaration list cannot be empty.
+    

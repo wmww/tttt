@@ -32,6 +32,13 @@ typedef struct VariableStatement {
     bool at_top_level; // `await using` outside of any function
     bool in_sync_function; // `await using` in a function that isn't async (TS2852, said by the resolve walk)
     bool in_static_block; // `await using` in a class `static {}` block
+    // A for statement's head with no declarations (`for (var;;)`): TS1123, which the resolve walk reports unless the
+    // statement is the one TS1036 is reported at (tsc's checkForStatement checks the list after
+    // checkGrammarStatementInAmbientContext)
+    bool empty_in_for;
+    // The parser reported a trailing comma (TS1009) or an empty list (TS1123): tsc's checkGrammarVariableDeclarationList,
+    // which ends checkVariableStatement's grammar checks (no TS1156) in a file without parse errors
+    bool list_grammar_error;
     VecInitializedBinding initializers;
     Span span; // From the keyword to the end of the last declaration (`await` of `await using`: variable_statement_await_span())
 } VariableStatement;

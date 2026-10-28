@@ -1,0 +1,18 @@
+ttttBlockScopedBranchListError.ts(3,17): error TS1009: Trailing comma not allowed.
+ttttBlockScopedBranchListError.ts(4,8): error TS1156: 'const' declarations can only be declared inside a block.
+ttttBlockScopedBranchListError.ts(5,13): error TS1123: Variable declaration list cannot be empty.
+
+
+==== ttttBlockScopedBranchListError.ts (3 errors) ====
+    // A variable statement's list grammar error (TS1009 trailing comma, TS1123 empty list) ends tsc's checkVariableStatement
+    // grammar checks: no TS1156 for a `let` or `const` as an `if` branch then (bun 28-C25a)
+    if (1) let a = 1,;
+                    ~
+!!! error TS1009: Trailing comma not allowed.
+    if (1) const b = 1;
+           ~~~~~~~~~~~~
+!!! error TS1156: 'const' declarations can only be declared inside a block.
+    if (1) const;
+                
+!!! error TS1123: Variable declaration list cannot be empty.
+    
