@@ -1,0 +1,26 @@
+//// [test/cases/ttttParameterListMissingParenEnd.ts] ////
+
+=== ttttParameterListMissingParenEnd.ts ===
+// A parameter list missing its `)` ends with its last token (tsc's finishNode at the next token's full start), so a
+// call signature ending there spans no trivia: TS7020's underline stops at the comma (mutation testing seed 20261102,
+// contextualParameterAndSelfReferentialConstraint1)
+declare const repeat: {
+>repeat : <O>(options: O) => any
+
+  <O>(
+    options: O,
+>options : O
+
+};
+interface I {
+  m(a: string,
+>m : (a: string) => any
+>a : string
+
+}
+type F = new (a: number,
+>F : F
+>a : number
+
+;
+

@@ -1,0 +1,39 @@
+ttttParameterListMissingParenEnd.ts(5,3): error TS7020: Call signature, which lacks return-type annotation, implicitly has an 'any' return type.
+ttttParameterListMissingParenEnd.ts(7,1): error TS1138: Parameter declaration expected.
+ttttParameterListMissingParenEnd.ts(9,3): error TS7010: 'm', which lacks return-type annotation, implicitly has an 'any' return type.
+ttttParameterListMissingParenEnd.ts(11,1): error TS1138: Parameter declaration expected.
+ttttParameterListMissingParenEnd.ts(13,1): error TS1138: Parameter declaration expected.
+ttttParameterListMissingParenEnd.ts(13,2): error TS1110: Type expected.
+ttttParameterListMissingParenEnd.ts(14,1): error TS1005: ')' expected.
+
+
+==== ttttParameterListMissingParenEnd.ts (7 errors) ====
+    // A parameter list missing its `)` ends with its last token (tsc's finishNode at the next token's full start), so a
+    // call signature ending there spans no trivia: TS7020's underline stops at the comma (mutation testing seed 20261102,
+    // contextualParameterAndSelfReferentialConstraint1)
+    declare const repeat: {
+      <O>(
+      ~~~~
+        options: O,
+    ~~~~~~~~~~~~~~~
+!!! error TS7020: Call signature, which lacks return-type annotation, implicitly has an 'any' return type.
+    };
+    ~
+!!! error TS1138: Parameter declaration expected.
+    interface I {
+      m(a: string,
+      ~~~~~~~~~~~~
+!!! error TS7010: 'm', which lacks return-type annotation, implicitly has an 'any' return type.
+    
+    }
+    ~
+!!! error TS1138: Parameter declaration expected.
+    type F = new (a: number,
+    ;
+    ~
+!!! error TS1138: Parameter declaration expected.
+     
+!!! error TS1110: Type expected.
+    
+    
+!!! error TS1005: ')' expected.

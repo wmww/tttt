@@ -7785,7 +7785,12 @@ static bool parse_function_args_inner(
         // (A missing `)` is only an error: tsc's parseParameters keeps what it parsed and goes on. Not in a speculative
         // arrow function, which it ends: parseParenthesizedArrowFunctionExpression without allowAmbiguity,
         // `({ x: x => 1 })`'s pattern list stops at the `=>` that ends the variable declaration list)
-        if (!expect_char(&p, ')') && !is_definitely_function && !parse_type_return_syntax && !commit_on_paren) goto drop_and_fail;
+        if (!expect_char(&p, ')')) {
+            if (!is_definitely_function && !parse_type_return_syntax && !commit_on_paren) goto drop_and_fail;
+            // (Without its `)` the list ends with its last token, tsc's finishNode at the next token's full start: a
+            // signature ending there spans no trivia after it)
+            unhop_trivia(&p);
+        }
     } else if (is_definitely_function) {
         expected_token_error(&p, "(");
         //goto drop_and_fail;
