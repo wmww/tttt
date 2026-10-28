@@ -721,7 +721,7 @@ static void class_decl_lookup_names_in_owner(ClassDecl* me, Scope* names, ErrorC
     bind_member_symbols(me);
     if (!my is_ambient) link_overload_implementations(me);
     for_each (i, vec_class_item, &my items) {
-        if (i->tag == CLASS_ITEM_FIELD && i->field.is_static && i->field.is_readonly && !i->field.computed_key) {
+        if (i->tag == CLASS_ITEM_FIELD && i->field.is_static && i->field.is_readonly) {
             unique_symbol_decl_mark(
                 (UniqueSymbolDecl){ .key = i, .owner = my symbol, .member = i->field.name_span },
                 &i->field.explicit_type, &i->field.value

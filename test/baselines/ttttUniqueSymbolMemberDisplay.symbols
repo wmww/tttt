@@ -1,0 +1,26 @@
+//// [test/cases/ttttUniqueSymbolMemberDisplay.ts] ////
+
+=== ttttUniqueSymbolMemberDisplay.ts ===
+declare const k: unique symbol;
+>k : Symbol(k, Decl(ttttUniqueSymbolMemberDisplay.ts, 0, 13))
+
+declare const b: { readonly x: unique symbol };
+>b : Symbol(b, Decl(ttttUniqueSymbolMemberDisplay.ts, 1, 13))
+>x : Symbol(x, Decl(ttttUniqueSymbolMemberDisplay.ts, 1, 18))
+
+const c: { readonly x: unique symbol } = b;
+>c : Symbol(c, Decl(ttttUniqueSymbolMemberDisplay.ts, 2, 5))
+>x : Symbol(x, Decl(ttttUniqueSymbolMemberDisplay.ts, 2, 10))
+>b : Symbol(b, Decl(ttttUniqueSymbolMemberDisplay.ts, 1, 13))
+
+declare const b2: { readonly [k]: unique symbol };
+>b2 : Symbol(b2, Decl(ttttUniqueSymbolMemberDisplay.ts, 3, 13))
+>[k] : Symbol([k], Decl(ttttUniqueSymbolMemberDisplay.ts, 3, 19))
+>k : Symbol(k, Decl(ttttUniqueSymbolMemberDisplay.ts, 0, 13))
+
+const c2: { readonly [k]: unique symbol } = b2;
+>c2 : Symbol(c2, Decl(ttttUniqueSymbolMemberDisplay.ts, 4, 5))
+>[k] : Symbol([k], Decl(ttttUniqueSymbolMemberDisplay.ts, 4, 11))
+>k : Symbol(k, Decl(ttttUniqueSymbolMemberDisplay.ts, 0, 13))
+>b2 : Symbol(b2, Decl(ttttUniqueSymbolMemberDisplay.ts, 3, 13))
+

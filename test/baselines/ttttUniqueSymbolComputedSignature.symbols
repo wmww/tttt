@@ -1,0 +1,48 @@
+//// [test/cases/ttttUniqueSymbolComputedSignature.ts] ////
+
+=== ttttUniqueSymbolComputedSignature.ts ===
+declare const k: unique symbol;
+>k : Symbol(k, Decl(ttttUniqueSymbolComputedSignature.ts, 0, 13))
+
+declare const a: { readonly [k]: unique symbol };
+>a : Symbol(a, Decl(ttttUniqueSymbolComputedSignature.ts, 1, 13))
+>[k] : Symbol([k], Decl(ttttUniqueSymbolComputedSignature.ts, 1, 18))
+>k : Symbol(k, Decl(ttttUniqueSymbolComputedSignature.ts, 0, 13))
+
+declare const a2: { readonly x: unique symbol };
+>a2 : Symbol(a2, Decl(ttttUniqueSymbolComputedSignature.ts, 2, 13))
+>x : Symbol(x, Decl(ttttUniqueSymbolComputedSignature.ts, 2, 19))
+
+interface I { readonly [k]: unique symbol }
+>I : Symbol(I, Decl(ttttUniqueSymbolComputedSignature.ts, 2, 48))
+>[k] : Symbol(I[k], Decl(ttttUniqueSymbolComputedSignature.ts, 3, 13))
+>k : Symbol(k, Decl(ttttUniqueSymbolComputedSignature.ts, 0, 13))
+
+declare class Q { static readonly [k]: unique symbol }
+>Q : Symbol(Q, Decl(ttttUniqueSymbolComputedSignature.ts, 3, 43))
+>[k] : Symbol(Q[k], Decl(ttttUniqueSymbolComputedSignature.ts, 4, 17))
+>k : Symbol(k, Decl(ttttUniqueSymbolComputedSignature.ts, 0, 13))
+
+interface J { [k]: unique symbol }
+>J : Symbol(J, Decl(ttttUniqueSymbolComputedSignature.ts, 4, 54))
+>[k] : Symbol(J[k], Decl(ttttUniqueSymbolComputedSignature.ts, 5, 13))
+>k : Symbol(k, Decl(ttttUniqueSymbolComputedSignature.ts, 0, 13))
+
+type L = { [k]: unique symbol[] };
+>L : Symbol(L, Decl(ttttUniqueSymbolComputedSignature.ts, 5, 34))
+>[k] : Symbol([k], Decl(ttttUniqueSymbolComputedSignature.ts, 6, 10))
+>k : Symbol(k, Decl(ttttUniqueSymbolComputedSignature.ts, 0, 13))
+
+declare const b: { readonly [k]: unique symbol };
+>b : Symbol(b, Decl(ttttUniqueSymbolComputedSignature.ts, 7, 13))
+>[k] : Symbol([k], Decl(ttttUniqueSymbolComputedSignature.ts, 7, 18))
+>k : Symbol(k, Decl(ttttUniqueSymbolComputedSignature.ts, 0, 13))
+
+class R { static readonly [k] = Symbol(); static readonly ["s"]: unique symbol; }
+>R : Symbol(R, Decl(ttttUniqueSymbolComputedSignature.ts, 7, 49))
+>[k] : Symbol(R[k], Decl(ttttUniqueSymbolComputedSignature.ts, 8, 9))
+>k : Symbol(k, Decl(ttttUniqueSymbolComputedSignature.ts, 0, 13))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>["s"] : Symbol(R["s"], Decl(ttttUniqueSymbolComputedSignature.ts, 8, 41))
+>"s" : Symbol(R["s"], Decl(ttttUniqueSymbolComputedSignature.ts, 8, 41))
+

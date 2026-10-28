@@ -1,0 +1,47 @@
+//// [test/cases/ttttUniqueSymbolComputedSignature.ts] ////
+
+=== ttttUniqueSymbolComputedSignature.ts ===
+declare const k: unique symbol;
+>k : unique symbol
+
+declare const a: { readonly [k]: unique symbol };
+>a : { readonly [k]: unique symbol; }
+>[k] : unique symbol
+>k : unique symbol
+
+declare const a2: { readonly x: unique symbol };
+>a2 : { readonly x: unique symbol; }
+>x : unique symbol
+
+interface I { readonly [k]: unique symbol }
+>[k] : unique symbol
+>k : unique symbol
+
+declare class Q { static readonly [k]: unique symbol }
+>Q : Q
+>[k] : unique symbol
+>k : unique symbol
+
+interface J { [k]: unique symbol }
+>[k] : symbol
+>k : unique symbol
+
+type L = { [k]: unique symbol[] };
+>L : L
+>[k] : any
+>k : unique symbol
+
+declare const b: { readonly [k]: unique symbol };
+>b : { readonly [k]: unique symbol; }
+>[k] : unique symbol
+>k : unique symbol
+
+class R { static readonly [k] = Symbol(); static readonly ["s"]: unique symbol; }
+>R : R
+>[k] : unique symbol
+>k : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+>["s"] : unique symbol
+>"s" : "s"
+

@@ -107,8 +107,11 @@ bool interface_member_is_misplaced_mapped(InterfaceMember const* me) {
 }
 
 void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* errs) {
-    // `readonly k: unique symbol`. The owner is set by the interface declaration, if there is one
-    if (my type.tag == TYPE_UNIQUE_SYMBOL && my readonly && my key.tag == INTERFACE_KEY_NAME) {
+    // `readonly k: unique symbol`, `readonly [k]: unique symbol`. The owner is set by the interface declaration, if
+    // there is one
+    if (my type.tag == TYPE_UNIQUE_SYMBOL && my readonly &&
+        (my key.tag == INTERFACE_KEY_NAME || (my key.tag == INTERFACE_KEY_EXPR && !my is_method))
+    ) {
         my type.unique_symbol.key = me;
         my type.unique_symbol.member = my key.span;
     }

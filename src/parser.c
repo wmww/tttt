@@ -9291,6 +9291,8 @@ static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
     return parse_success(&p);
 }
 
+static void expect_annotation_type(Parser* parent, char const* start, TypeNode* type);
+
 static bool parse_expr_interface_member(Parser* parent, bool is_type, FunctionFlags flags, InterfaceMember* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
@@ -9337,7 +9339,10 @@ static bool parse_expr_interface_member(Parser* parent, bool is_type, FunctionFl
         ret->is_method = true;
     } else if (hop_char(&p, ':')) {
         hop_whitespace(&p);
-        expect_type(&p, TYPE_PRECEDENCE_NULL, &ret->type);
+        // (A property signature's annotation may be `unique symbol`: tsc's checkGrammarTypeOperatorNode, TS1330 unless
+        // it is readonly, see the caller)
+        if (is_type && (*p.pos == 'u' || *p.pos == '(')) expect_annotation_type(&p, p.pos, &ret->type);
+        else expect_type(&p, TYPE_PRECEDENCE_NULL, &ret->type);
     } else {
         ret->implicit_any = true; // (TS7008 under noImplicitAny: `{ [k] }`)
     }
@@ -9893,6 +9898,12 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             ret->interface_memeber.declaration = span_from(a);
             ret->interface_memeber.readonly = modifiers.includes[MODIFIER_READONLY];
             ret->interface_member_static = modifiers.includes[MODIFIER_STATIC];
+            if (is_type && ret->interface_memeber.key.tag == INTERFACE_KEY_EXPR && !ret->interface_memeber.is_method &&
+                ret->interface_memeber.type.tag == TYPE_UNIQUE_SYMBOL && !ret->interface_memeber.readonly
+            ) {
+                grammar_error(&p, ret->interface_memeber.key.span, 1330, "A property of an interface or type literal whose "
+                    "type is a 'unique symbol' type must be 'readonly'.");
+            }
             // `readonly [K in T]: X` (the modifier went to the list before the key was known to be mapped)
             InterfaceMember* member = &ret->interface_memeber;
             if (is_type && (is_getter || is_setter) && member->key.tag == INTERFACE_KEY_EXPR && member->is_method &&

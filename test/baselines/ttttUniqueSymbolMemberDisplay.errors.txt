@@ -1,0 +1,23 @@
+ttttUniqueSymbolMemberDisplay.ts(3,7): error TS2719: Type '{ readonly x: unique symbol; }' is not assignable to type '{ readonly x: unique symbol; }'. Two different types with this name exist, but they are unrelated.
+  Types of property 'x' are incompatible.
+    Type 'typeof b.x' is not assignable to type 'typeof c.x'.
+ttttUniqueSymbolMemberDisplay.ts(5,7): error TS2719: Type '{ readonly [k]: unique symbol; }' is not assignable to type '{ readonly [k]: unique symbol; }'. Two different types with this name exist, but they are unrelated.
+  Types of property '[k]' are incompatible.
+    Type '(typeof b2)[typeof k]' is not assignable to type '(typeof c2)[typeof k]'.
+
+
+==== ttttUniqueSymbolMemberDisplay.ts (2 errors) ====
+    declare const k: unique symbol;
+    declare const b: { readonly x: unique symbol };
+    const c: { readonly x: unique symbol } = b;
+          ~
+!!! error TS2719: Type '{ readonly x: unique symbol; }' is not assignable to type '{ readonly x: unique symbol; }'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:   Types of property 'x' are incompatible.
+!!! error TS2719:     Type 'typeof b.x' is not assignable to type 'typeof c.x'.
+    declare const b2: { readonly [k]: unique symbol };
+    const c2: { readonly [k]: unique symbol } = b2;
+          ~~
+!!! error TS2719: Type '{ readonly [k]: unique symbol; }' is not assignable to type '{ readonly [k]: unique symbol; }'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:   Types of property '[k]' are incompatible.
+!!! error TS2719:     Type '(typeof b2)[typeof k]' is not assignable to type '(typeof c2)[typeof k]'.
+    

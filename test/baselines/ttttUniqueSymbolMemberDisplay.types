@@ -1,0 +1,26 @@
+//// [test/cases/ttttUniqueSymbolMemberDisplay.ts] ////
+
+=== ttttUniqueSymbolMemberDisplay.ts ===
+declare const k: unique symbol;
+>k : unique symbol
+
+declare const b: { readonly x: unique symbol };
+>b : { readonly x: unique symbol; }
+>x : unique symbol
+
+const c: { readonly x: unique symbol } = b;
+>c : { readonly x: unique symbol; }
+>x : unique symbol
+>b : { readonly x: unique symbol; }
+
+declare const b2: { readonly [k]: unique symbol };
+>b2 : { readonly [k]: unique symbol; }
+>[k] : unique symbol
+>k : unique symbol
+
+const c2: { readonly [k]: unique symbol } = b2;
+>c2 : { readonly [k]: unique symbol; }
+>[k] : unique symbol
+>k : unique symbol
+>b2 : { readonly [k]: unique symbol; }
+
