@@ -2062,6 +2062,9 @@ static inline void sig_predicate_init(Signature* sig, TyPredicate const* predica
 // resolution made
 bool sig_return_known(Checker* me, Signature const* sig);
 Ty const* signature_return_type(Checker* me, Signature const* sig);
+// A function declared with a return type: that, its parameters not typed (the quick type of a call). Otherwise
+// signature_return_type()
+Ty const* ty_signature_declared_return_type(Checker* me, Signature const* sig);
 bool ty_signature_return_in_flight(Checker* me, Signature const* sig); // Its return type is being inferred up the stack
 // The same, but an inferred return type in flight only counts above the barrier of a call being resolved: below it, asking
 // infers it again (tsc's isResolvingReturnTypeOfSignature, findResolutionCycleStartIndex)

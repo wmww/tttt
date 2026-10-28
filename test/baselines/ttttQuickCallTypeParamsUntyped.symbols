@@ -1,0 +1,93 @@
+//// [test/cases/ttttQuickCallTypeParamsUntyped.ts] ////
+
+=== ttttQuickCallTypeParamsUntyped.ts ===
+// origin: npm SII-Holos/synergy @ a283cf3 packages/util/src/features.ts:43 (seen from packages/harness and local-runtime, tsconfig.bench.json)
+// flip: yes
+// The quick type of a call of a function declared with a return type is that type, its parameters untyped (tsc's
+// getSignatureFromDeclaration): typing activate's parameter here reached back to Plan's initializer, a cycle
+interface Schema<T> {
+>Schema : Symbol(Schema, Decl(ttttQuickCallTypeParamsUntyped.ts, 0, 0))
+>T : Symbol(T, Decl(ttttQuickCallTypeParamsUntyped.ts, 4, 17))
+
+  refine<Ch extends (arg: T) => unknown | Promise<unknown>>(check: Ch, msg?: string): Ch extends (arg: any) => arg is infer R ? this & Schema<R> : this;
+>refine : Symbol(Schema.refine, Decl(ttttQuickCallTypeParamsUntyped.ts, 4, 21))
+>Ch : Symbol(Ch, Decl(ttttQuickCallTypeParamsUntyped.ts, 5, 9))
+>arg : Symbol(arg, Decl(ttttQuickCallTypeParamsUntyped.ts, 5, 21))
+>T : Symbol(T, Decl(ttttQuickCallTypeParamsUntyped.ts, 4, 17))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>check : Symbol(check, Decl(ttttQuickCallTypeParamsUntyped.ts, 5, 60))
+>Ch : Symbol(Ch, Decl(ttttQuickCallTypeParamsUntyped.ts, 5, 9))
+>msg : Symbol(msg, Decl(ttttQuickCallTypeParamsUntyped.ts, 5, 70))
+>Ch : Symbol(Ch, Decl(ttttQuickCallTypeParamsUntyped.ts, 5, 9))
+>arg : Symbol(arg, Decl(ttttQuickCallTypeParamsUntyped.ts, 5, 98))
+>arg : Symbol(arg, Decl(ttttQuickCallTypeParamsUntyped.ts, 5, 98))
+>R : Symbol(R, Decl(ttttQuickCallTypeParamsUntyped.ts, 5, 123))
+>Schema : Symbol(Schema, Decl(ttttQuickCallTypeParamsUntyped.ts, 0, 0))
+>R : Symbol(R, Decl(ttttQuickCallTypeParamsUntyped.ts, 5, 123))
+
+  _out: T
+>_out : Symbol(Schema._out, Decl(ttttQuickCallTypeParamsUntyped.ts, 5, 152))
+>T : Symbol(T, Decl(ttttQuickCallTypeParamsUntyped.ts, 4, 17))
+}
+declare function object<T>(shape: T): Schema<T>;
+>object : Symbol(object, Decl(ttttQuickCallTypeParamsUntyped.ts, 7, 1))
+>T : Symbol(T, Decl(ttttQuickCallTypeParamsUntyped.ts, 8, 24))
+>shape : Symbol(shape, Decl(ttttQuickCallTypeParamsUntyped.ts, 8, 27))
+>T : Symbol(T, Decl(ttttQuickCallTypeParamsUntyped.ts, 8, 24))
+>Schema : Symbol(Schema, Decl(ttttQuickCallTypeParamsUntyped.ts, 0, 0))
+>T : Symbol(T, Decl(ttttQuickCallTypeParamsUntyped.ts, 8, 24))
+
+type Infer<S> = S extends { _out: infer T } ? T : never;
+>Infer : Symbol(Infer, Decl(ttttQuickCallTypeParamsUntyped.ts, 8, 48))
+>S : Symbol(S, Decl(ttttQuickCallTypeParamsUntyped.ts, 9, 11))
+>S : Symbol(S, Decl(ttttQuickCallTypeParamsUntyped.ts, 9, 11))
+>_out : Symbol(_out, Decl(ttttQuickCallTypeParamsUntyped.ts, 9, 27))
+>T : Symbol(T, Decl(ttttQuickCallTypeParamsUntyped.ts, 9, 39))
+>T : Symbol(T, Decl(ttttQuickCallTypeParamsUntyped.ts, 9, 39))
+
+export const Plan = object({ ids: [] as string[], names: [] as string[] })
+>Plan : Symbol(Plan, Decl(ttttQuickCallTypeParamsUntyped.ts, 11, 12), Decl(ttttQuickCallTypeParamsUntyped.ts, 15, 16))
+>object({ ids: [] as string[], names: [] as string[] })  .refine : Symbol(Schema.refine, Decl(ttttQuickCallTypeParamsUntyped.ts, 4, 21))
+>object : Symbol(object, Decl(ttttQuickCallTypeParamsUntyped.ts, 7, 1))
+>ids : Symbol(ids, Decl(ttttQuickCallTypeParamsUntyped.ts, 11, 28))
+>names : Symbol(names, Decl(ttttQuickCallTypeParamsUntyped.ts, 11, 49))
+
+  .refine((plan) => {
+>refine : Symbol(Schema.refine, Decl(ttttQuickCallTypeParamsUntyped.ts, 4, 21))
+>plan : Symbol(plan, Decl(ttttQuickCallTypeParamsUntyped.ts, 12, 11))
+
+    const active = activate(plan)
+>active : Symbol(active, Decl(ttttQuickCallTypeParamsUntyped.ts, 13, 9))
+>activate : Symbol(activate, Decl(ttttQuickCallTypeParamsUntyped.ts, 16, 37))
+>plan : Symbol(plan, Decl(ttttQuickCallTypeParamsUntyped.ts, 12, 11))
+
+    return plan.ids.length === active.size
+>plan.ids.length : Symbol(Array.length, Decl(lib.es5.d.ts, --, --))
+>plan.ids : Symbol(ids, Decl(ttttQuickCallTypeParamsUntyped.ts, 11, 28))
+>plan : Symbol(plan, Decl(ttttQuickCallTypeParamsUntyped.ts, 12, 11))
+>ids : Symbol(ids, Decl(ttttQuickCallTypeParamsUntyped.ts, 11, 28))
+>length : Symbol(Array.length, Decl(lib.es5.d.ts, --, --))
+>active.size : Symbol(Set.size, Decl(lib.es2015.collection.d.ts, --, --))
+>active : Symbol(active, Decl(ttttQuickCallTypeParamsUntyped.ts, 13, 9))
+>size : Symbol(Set.size, Decl(lib.es2015.collection.d.ts, --, --))
+
+  }, "mismatch")
+export type Plan = Infer<typeof Plan>
+>Plan : Symbol(Plan, Decl(ttttQuickCallTypeParamsUntyped.ts, 11, 12), Decl(ttttQuickCallTypeParamsUntyped.ts, 15, 16))
+>Infer : Symbol(Infer, Decl(ttttQuickCallTypeParamsUntyped.ts, 8, 48))
+>Plan : Symbol(Plan, Decl(ttttQuickCallTypeParamsUntyped.ts, 11, 12), Decl(ttttQuickCallTypeParamsUntyped.ts, 15, 16))
+
+function activate(plan: Pick<Plan, "ids">): Set<string> {
+>activate : Symbol(activate, Decl(ttttQuickCallTypeParamsUntyped.ts, 16, 37))
+>plan : Symbol(plan, Decl(ttttQuickCallTypeParamsUntyped.ts, 18, 18))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>Plan : Symbol(Plan, Decl(ttttQuickCallTypeParamsUntyped.ts, 11, 12), Decl(ttttQuickCallTypeParamsUntyped.ts, 15, 16))
+>Set : Symbol(Set, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2025.collection.d.ts, --, --))
+
+  return new Set(plan.ids)
+>Set : Symbol(Set, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2025.collection.d.ts, --, --))
+>plan.ids : Symbol(ids, Decl(ttttQuickCallTypeParamsUntyped.ts, 11, 28))
+>plan : Symbol(plan, Decl(ttttQuickCallTypeParamsUntyped.ts, 18, 18))
+>ids : Symbol(ids, Decl(ttttQuickCallTypeParamsUntyped.ts, 11, 28))
+}
+

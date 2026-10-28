@@ -1,0 +1,19 @@
+//// [test/cases/ttttTuplePatternCircularElement.ts] ////
+
+=== ttttTuplePatternCircularElement.ts ===
+// Known failing (cor, 2026-10-28): tsgo reports TS7022 on `d`, the tuple pattern's element read inside a function of
+// its own initializer; tttt reports nothing (agents/bugs/missing_checks.md)
+const [d, e]: [number, (n: number) => number] = [1, (n) => e(n) + d];
+>d : any
+>e : (n: number) => number
+>n : number
+>[1, (n) => e(n) + d] : [number, (n: number) => any]
+>1 : 1
+>(n) => e(n) + d : (n: number) => any
+>n : number
+>e(n) + d : any
+>e(n) : number
+>e : (n: number) => number
+>n : number
+>d : any
+

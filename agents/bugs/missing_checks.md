@@ -76,6 +76,10 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   tttt prints `{ [Symbol.unscopablesX]: ... }`. Printing only (the .types baseline reuses the syntax on both sides). [text]
 
 ## Circularity tsc finds and tttt doesn't (the resolution stack's leftovers)
+- (cor, 2026-10-28) `const [d, e]: [number, (n: number) => number] = [1, (n) => e(n) + d]`: tsgo reports TS7022 on
+  `d` (an element of an annotated tuple pattern read inside a function of its own initializer: the element's type goes
+  through getTypeForBindingElement, whose parent type asks the initializer for undefined-removal), tttt nothing.
+  Known-failing test ttttTuplePatternCircularElement. The object pattern equivalent agrees. [open]
 - **Base constraint circularity and base types resolved through constraints** (re-checked 2026-10-07, errors only).
   Port, plan-sized: a resolution-identity stack for base constraints (tsc's pushTypeResolution with
   ImmediateBaseConstraint plus getImmediateBaseConstraint's 5-deep identity check), TS2313 at the type node being

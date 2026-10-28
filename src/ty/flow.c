@@ -1028,6 +1028,17 @@ Ty const* ty_quick_expr_type(Checker* me, Expr const* expr, bool in_flow) {
     u32 other = call->uses_new ? members->call_count : members->construct_count;
     if (count != 1 || other) return nullptr;
     Signature const* sig = call->uses_new ? members->construct[0] : members->call[0];
+    // A TypeScript function declared with a return type and no type parameters of its own: that type, its parameters
+    // untyped (tsc's getSignatureFromDeclaration types none, getReturnTypeOfSignature reads the annotation). Typing them
+    // can reach back to what asks: `const active = activate(plan)` in a callback of FeaturePlan's initializer, with
+    // `activate(plan: Pick<z.infer<typeof FeaturePlan>, ...>): Set<string>` (synergy's TS7022)
+    FunctionImpl const* declared = sig->function;
+    if (declared && !sig_target(me, sig) && !declared->is_type && !declared->is_method && declared->ret_explicit && !call->uses_new &&
+        !vec_generic_item_size(&declared->generic.items) && !function_impl_rare(declared)->jsdoc_signature_type &&
+        span_source(declared->full_span) && !span_source(declared->full_span)->is_js
+    ) {
+        return ty_signature_declared_return_type(me, sig);
+    }
     SigResolved const* sig_rs = signature_resolve(me, sig);
     if (sig_rs->type_params.len) return nullptr;
     return signature_return_type(me, sig);

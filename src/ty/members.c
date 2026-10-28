@@ -6321,8 +6321,26 @@ bool sig_return_known(Checker* me, Signature const* sig) {
 
 static Ty const* compute_signature_return(Checker* me, Signature* sig, SigResolved const* sig_rs);
 
+static Ty const* signature_return_type_in(Checker* me, Signature* sig, SigResolved const* sig_rs);
+
 static __attribute__((noinline)) Ty const* signature_return_type_slow(Checker* me, Signature* sig) {
-    SigResolved const* sig_rs = signature_resolve(me, sig);
+    return signature_return_type_in(me, sig, signature_resolve(me, sig));
+}
+
+// A function declared with a return type, its return type without resolving the signature (tsc's
+// getSignatureFromDeclaration types no parameter, getReturnTypeOfSignature reads the annotation): what a quick
+// expression type asks (ty_quick_expr_type()). The rest go through signature_return_type()
+Ty const* ty_signature_declared_return_type(Checker* me, Signature const* sig) {
+    FunctionImpl const* function = sig->function;
+    if (!function || function->is_type || !function->ret_explicit || sig_target(me, sig) ||
+        function_impl_rare(function)->constructed_class
+    ) {
+        return signature_return_type(me, sig);
+    }
+    return signature_return_type_in(me, (Signature*)sig, &sig_resolved_none);
+}
+
+static Ty const* signature_return_type_in(Checker* me, Signature* sig, SigResolved const* sig_rs) {
     uintptr_t v;
     switch (sw_look_fast(me, &sig->ret, &sig->ret_flight, &v)) {
         case SW_LOOK_DONE:
