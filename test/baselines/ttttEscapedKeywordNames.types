@@ -1,0 +1,27 @@
+//// [test/cases/ttttEscapedKeywordNames.ts] ////
+
+=== a.ts ===
+var v\u0061r;
+let \u0063lass = 1;
+>let : any
+>1 : 1
+
+var \u0061wait2 = 1;
+>\u0061wait2 : number
+>1 : 1
+
+var \u{61}bc = 1;
+>\u{61}bc : number
+>1 : 1
+
+function f(v\u0061r) {}
+>f : () => any
+
+=== b.ts ===
+export {};
+declare glob\u0061l { interface G {} }
+>glob\u0061l : any
+
+let g: G;
+>g : G
+

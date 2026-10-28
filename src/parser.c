@@ -2413,7 +2413,9 @@ static void list_report_error(Parser* p, ParsingContext ctx, Tok t) {
             break;
         case PARSING_PARAMETERS:
             if (tok_is_keyword(t)) {
-                parse_error(p, span, 1390, "'", span, "' is not allowed as a parameter name.");
+                cstr name = identifier_name_value(span_sv(span));
+                parse_error(p, span, 1390, "'", name, "' is not allowed as a parameter name.");
+                cstr_drop(&name);
             } else {
                 parse_error(p, span, 1138, "Parameter declaration expected.");
             }
@@ -2426,7 +2428,10 @@ static void list_report_error(Parser* p, ParsingContext ctx, Tok t) {
             break;
         case PARSING_VARIABLE_DECLARATIONS:
             if (tok_is_keyword(t)) {
-                parse_error(p, span, 1389, "'", span, "' is not allowed as a variable declaration name.");
+                // (Named by the keyword: tsc's tokenToString, `v\u0061r` is 'var')
+                cstr name = identifier_name_value(span_sv(span));
+                parse_error(p, span, 1389, "'", name, "' is not allowed as a variable declaration name.");
+                cstr_drop(&name);
             } else {
                 parse_error(p, span, 1134, "Variable declaration expected.");
             }
@@ -13862,7 +13867,14 @@ static void note_top_level_await_identifier(Parser* p, csview name) {
 static bool parse_binding_identifier(Parser* parent) {
     const char* start = parent->pos;
     if (!parse_identifier(parent, nullptr)) return false;
-    if (is_reserved_word(csview_from_range(start, parent->pos))) {
+    // (Spelled with escapes a reserved word is that word all the same: tsc's scanner, `var v\u0061r` is TS1389)
+    bool reserved = is_reserved_word(csview_from_range(start, parent->pos));
+    if (!reserved && __builtin_expect(parent->shared->any_escaped_word, 0) && memchr(start, '\\', (size_t)(parent->pos - start))) {
+        cstr cooked = identifier_name_value(csview_from_range(start, parent->pos));
+        reserved = is_reserved_word(cstr_sv(&cooked));
+        cstr_drop(&cooked);
+    }
+    if (reserved) {
         parent->pos = start;
         return false;
     }
@@ -15556,7 +15568,8 @@ static bool parse_global_block(Parser* parent, NamespaceDecl* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
-    if (!hop_start_if_ends_on_word_break(&p, "global")) {
+    // (Consumed as the augmentation's name, an identifier: escaped it is no TS1260, tsc's parseIdentifier)
+    if (!hop_word_cooked(&p, "global")) {
         return parse_fail(&p);
     }
 

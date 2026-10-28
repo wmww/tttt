@@ -1,0 +1,37 @@
+a.ts(1,5): error TS1389: 'var' is not allowed as a variable declaration name.
+a.ts(2,1): error TS1440: Variable declaration not allowed at this location.
+a.ts(2,1): error TS2304: Cannot find name 'let'.
+a.ts(2,5): error TS1260: Keywords cannot contain escape characters.
+a.ts(2,16): error TS1005: '{' expected.
+a.ts(5,10): error TS7010: 'f', which lacks return-type annotation, implicitly has an 'any' return type.
+a.ts(5,12): error TS1390: 'var' is not allowed as a parameter name.
+a.ts(5,20): error TS1134: Variable declaration expected.
+
+
+==== a.ts (8 errors) ====
+    var v\u0061r;
+        ~~~~~~~~
+!!! error TS1389: 'var' is not allowed as a variable declaration name.
+    let \u0063lass = 1;
+    ~~~
+!!! error TS1440: Variable declaration not allowed at this location.
+    ~~~
+!!! error TS2304: Cannot find name 'let'.
+        ~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                   ~
+!!! error TS1005: '{' expected.
+    var \u0061wait2 = 1;
+    var \u{61}bc = 1;
+    function f(v\u0061r) {}
+             ~
+!!! error TS7010: 'f', which lacks return-type annotation, implicitly has an 'any' return type.
+               ~~~~~~~~
+!!! error TS1390: 'var' is not allowed as a parameter name.
+                       ~
+!!! error TS1134: Variable declaration expected.
+==== b.ts (0 errors) ====
+    export {};
+    declare glob\u0061l { interface G {} }
+    let g: G;
+    

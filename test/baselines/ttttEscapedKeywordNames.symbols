@@ -1,0 +1,24 @@
+//// [test/cases/ttttEscapedKeywordNames.ts] ////
+
+=== a.ts ===
+var v\u0061r;
+let \u0063lass = 1;
+var \u0061wait2 = 1;
+>\u0061wait2 : Symbol(\u0061wait2, Decl(a.ts, 2, 3))
+
+var \u{61}bc = 1;
+>\u{61}bc : Symbol(\u{61}bc, Decl(a.ts, 3, 3))
+
+function f(v\u0061r) {}
+>f : Symbol(f, Decl(a.ts, 3, 17))
+
+=== b.ts ===
+export {};
+declare glob\u0061l { interface G {} }
+>glob\u0061l : Symbol(glob\u0061l, Decl(b.ts, 0, 10))
+>G : Symbol(G, Decl(b.ts, 1, 21))
+
+let g: G;
+>g : Symbol(g, Decl(b.ts, 2, 3))
+>G : Symbol(G, Decl(b.ts, 1, 21))
+
