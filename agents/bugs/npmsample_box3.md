@@ -237,6 +237,21 @@ for flips); a separate file so the three boxes never conflict.
   that message didn't finish, an unrestricted run drifted) and the two missing TS2322 at service.test.ts:672/675
   (`builder.memory(String, { get: (value: string) => value, set: (value) => value })`: injectInfo.ts's `memory`
   with GetFn's constraint over GetFieldValue<ValueRef, ExplicitType>; not reduced). [open]
+  - (cor, 2026-10-28, re-created at 1324d30dc with a shallow fetch) The TS2344 at constant.test.ts:182: `keyof
+    ReturnType<typeof buildNumericFieldTypeChecks>` stays a deferred ReturnType in tttt. The `@ts-expect-error`'d
+    `f<number>(Number)` call leaks f's own type parameters into its type (tsc's getTypeArgumentsFromNodes fills the
+    missing type arguments with raw defaults, `PlainTypeToFieldType<ExplicitType>`), and ReturnType's definitely-true
+    test (definitely_related() in ty/conditional.c, the restrictive instantiation) maps the leaked V in the inferred
+    R but not in the check type: the arrow's type is instantiated by its outer type parameters (none), the object
+    literal R by what its properties mention (instantiate.c's object_literal branch through
+    ty_function_type_mentions()). tsc instantiates an object literal's type by the outer type parameters of its
+    declaration only (getObjectTypeInstantiation), none at the top level, so both sides keep V and relate. The fix:
+    an object literal's free parameters filtered to those in scope where it is written (the literal has no scope
+    pointer today: plumbing). Known-failing test ttttLeakedTypeParamReturnType. [open]
+  - The two missing TS2322 at service.test.ts:672/675: reduce.py cut it to 38 lines (injectInfo.ts's `memory` and one
+    test line) but the cut leaves names unresolved (MapValue, FieldToValue, IsNullable), so its error types decide;
+    tsgo's message there is `(value: string) => string` not assignable to `(value: {}) => unknown` (the GetFn
+    constraint with an error type), in the project `(value: unknown) => string | null`. Not pursued further. [open]
 - Seed 20261216, liruifengv/starlight-head (starlight-head@0.0.1): an extra TS2589 at @astrojs/starlight 0.21.3's
   schema.ts:113, where tsgo also reports a depth diagnostic (TS5114 "Instantiations of type 'ZodType' appear
   infinitely circular"), which tttt reports too. An extra limit error next to tsgo's own, in the depth-limit family

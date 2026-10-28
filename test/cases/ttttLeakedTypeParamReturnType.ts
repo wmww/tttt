@@ -1,0 +1,18 @@
+// @strict: true
+// origin: npm akan-team/akanjs @ 1324d30dc pkgs/akanjs, constant/constant.test.ts:182 (a spurious TS2344 there)
+// flip: no
+// Known failing (cor, 2026-10-28): a call whose explicit type arguments fail its arguments leaks the signature's own
+// type parameters into its type (tsc's getTypeArgumentsFromNodes fills the missing ones with raw defaults); an object
+// literal holding it at the top level is never instantiated by tsc (no outer type parameters), but tttt's object
+// literal instantiation goes by what its properties mention, so the restrictive instantiation in ReturnType's
+// definitely-true test maps one side's V and not the other's, and ReturnType<typeof b> stays deferred
+type Lift<E> = E extends number ? "n" : "s";
+declare function f<E, V extends string = Lift<E>, M = V extends "n" ? 1 : 2>(v: V): { v: V; m: M };
+const b = () => ({
+  ok: 1,
+  // @ts-expect-error
+  x: f<number>(5),
+});
+export const shown: number = b().x;
+type R = ReturnType<typeof b>;
+export const k: { [K in keyof R]: 0 } = 1;
