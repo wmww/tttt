@@ -27,7 +27,8 @@ ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 cd "$ROOT"
 usage() { sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
 
-if test "${1:-}" = --clean; then
+# prune MINUTES [quiet]: delete every cached build not used for MINUTES (all: every one), never one a process runs in
+prune() {
     for d in /tmp/abbuild-*/; do
         test -d "$d" || continue
         d=${d%/}
@@ -37,15 +38,22 @@ if test "${1:-}" = --clean; then
             for l in "$p/cwd" "$p/exe"; do r=$(readlink "$l" 2>/dev/null) && case "$r/" in "$d/"*) echo "${p#/proc/}";; esac; done
         done; true; } | sort -u | head -3 | tr '\n' ' ')
         if test -n "$busy"; then
-            echo "keeping $d: in use (pid $busy)" >&2
-        elif test "${2:-}" = all || test -z "$(find "$d/.used" -mmin "-${2:-1440}" 2>/dev/null)"; then
-            echo "removing $d" >&2
+            test -n "${2:-}" || echo "keeping $d: in use (pid $busy)" >&2
+        elif test "$1" = all || test -z "$(find "$d/.used" -mmin "-$1" 2>/dev/null)"; then
+            test -n "${2:-}" || echo "removing $d" >&2
             ( flock 9; rm -rf "$d" ) 9> "$d.lock"
             rm -f "$d.lock"
         fi
     done
+}
+
+if test "${1:-}" = --clean; then
+    prune "${2:-1440}"
     exit 0
 fi
+# Every ordinary run prunes builds unused for 3 hours, quietly: on 2026-10-30 two batches of ~110 cached builds (15k
+# inodes each) filled /tmp's inodes and blocked every worker's Bash until someone ran --clean by hand
+prune 180 quiet
 
 REV=
 PATCH=
