@@ -1,0 +1,42 @@
+//// [test/cases/ttttClassBaseReducedIntersection.ts] ////
+
+=== ttttClassBaseReducedIntersection.ts ===
+// A base constructor's return type is reduced first: `D & (J | W)` with D & J never (a private and a public id) is the
+// base D & W, so the derived class's public id is TS2415 (tsc's resolveBaseTypesOfClass, getReducedType)
+interface J { id: string | number }
+>J : Symbol(J, Decl(ttttClassBaseReducedIntersection.ts, 0, 0))
+>id : Symbol(J.id, Decl(ttttClassBaseReducedIntersection.ts, 2, 13))
+
+declare class D { private readonly id: string | number; other: 1 }
+>D : Symbol(D, Decl(ttttClassBaseReducedIntersection.ts, 2, 35))
+>id : Symbol(D.id, Decl(ttttClassBaseReducedIntersection.ts, 3, 17))
+>other : Symbol(D.other, Decl(ttttClassBaseReducedIntersection.ts, 3, 55))
+
+type W = Record<'id', string | number>
+>W : Symbol(W, Decl(ttttClassBaseReducedIntersection.ts, 3, 66))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+declare const dju: D & (J | W)
+>dju : Symbol(dju, Decl(ttttClassBaseReducedIntersection.ts, 5, 13))
+>D : Symbol(D, Decl(ttttClassBaseReducedIntersection.ts, 2, 35))
+>J : Symbol(J, Decl(ttttClassBaseReducedIntersection.ts, 0, 0))
+>W : Symbol(W, Decl(ttttClassBaseReducedIntersection.ts, 3, 66))
+
+declare const dju_base: new () => typeof dju
+>dju_base : Symbol(dju_base, Decl(ttttClassBaseReducedIntersection.ts, 6, 13))
+>dju : Symbol(dju, Decl(ttttClassBaseReducedIntersection.ts, 5, 13))
+
+class dju_derived extends dju_base { id = 'x' }
+>dju_derived : Symbol(dju_derived, Decl(ttttClassBaseReducedIntersection.ts, 6, 44))
+>dju_base : Symbol(dju_base, Decl(ttttClassBaseReducedIntersection.ts, 6, 13))
+>id : Symbol(dju_derived.id, Decl(ttttClassBaseReducedIntersection.ts, 7, 36))
+
+declare const x: D & J
+>x : Symbol(x, Decl(ttttClassBaseReducedIntersection.ts, 8, 13))
+>D : Symbol(D, Decl(ttttClassBaseReducedIntersection.ts, 2, 35))
+>J : Symbol(J, Decl(ttttClassBaseReducedIntersection.ts, 0, 0))
+
+const y: never = x
+>y : Symbol(y, Decl(ttttClassBaseReducedIntersection.ts, 9, 5))
+>x : Symbol(x, Decl(ttttClassBaseReducedIntersection.ts, 8, 13))
+

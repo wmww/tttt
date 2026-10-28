@@ -1527,7 +1527,8 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
             if (constructed) *instance = constructed; // (For ty_class_invalid_base())
             return false;
         }
-        *instance = constructed;
+        // (The reduced type is the base: tsc's resolveBaseTypesOfClass, `D & (J | W)` where D & J is never)
+        *instance = ty_reduced(me, constructed);
         *base_decl = nullptr;
         return true;
     }

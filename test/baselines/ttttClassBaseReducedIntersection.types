@@ -1,0 +1,36 @@
+//// [test/cases/ttttClassBaseReducedIntersection.ts] ////
+
+=== ttttClassBaseReducedIntersection.ts ===
+// A base constructor's return type is reduced first: `D & (J | W)` with D & J never (a private and a public id) is the
+// base D & W, so the derived class's public id is TS2415 (tsc's resolveBaseTypesOfClass, getReducedType)
+interface J { id: string | number }
+>id : string | number
+
+declare class D { private readonly id: string | number; other: 1 }
+>D : D
+>id : string | number
+>other : 1
+
+type W = Record<'id', string | number>
+>W : W
+
+declare const dju: D & (J | W)
+>dju : D & W
+
+declare const dju_base: new () => typeof dju
+>dju_base : new () => typeof dju
+>dju : D & W
+
+class dju_derived extends dju_base { id = 'x' }
+>dju_derived : dju_derived
+>dju_base : D & W
+>id : string
+>'x' : "x"
+
+declare const x: D & J
+>x : never
+
+const y: never = x
+>y : never
+>x : never
+
