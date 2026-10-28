@@ -1,0 +1,37 @@
+//// [test/cases/ttttJsdocSatisfiesHost.ts] ////
+
+=== a.js ===
+const /** @satisfies {number} */ x = "";
+>x : Symbol(x, Decl(a.js, 0, 5))
+
+/** @satisfies {number} */
+let z, w = "", v = "";
+>z : Symbol(z, Decl(a.js, 2, 3))
+>w : Symbol(w, Decl(a.js, 2, 6))
+>v : Symbol(v, Decl(a.js, 2, 14))
+
+/** @satisfies {number} */
+const /** */ z2 = "";
+>z2 : Symbol(z2, Decl(a.js, 4, 5))
+
+/** @satisfies {number} */
+const /* */ z3 = "";
+>z3 : Symbol(z3, Decl(a.js, 6, 5))
+
+/** @satisfies {number} */
+const /** other */ x4 = "";
+>x4 : Symbol(x4, Decl(a.js, 8, 5))
+
+/** @satisfies {string} */
+const /** @satisfies {number} */ x5 = 1;
+>x5 : Symbol(x5, Decl(a.js, 10, 5))
+
+/** @satisfies {number} */
+const /** other */ x6 = /** @satisfies {number} */ ("")
+>x6 : Symbol(x6, Decl(a.js, 12, 5))
+
+/** @satisfies {number} */
+const /** other */ {a} = {a: ""}
+>a : Symbol(a, Decl(a.js, 14, 20))
+>a : Symbol(a, Decl(a.js, 14, 26))
+

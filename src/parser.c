@@ -5043,9 +5043,10 @@ static bool jsdoc_before(Parser* parent, const char* pos, VecJsDocTag* tags) {
     return jsdoc_before_ex(parent, pos, tags, true);
 }
 
-static bool jsdoc_before_ex(Parser* parent, const char* pos, VecJsDocTag* tags, bool trailing_ok) {
+// The index of the host's last JSDoc comment in jsdoc_comments, -1 if it has none (nothing is parsed)
+static isize jsdoc_locate(Parser* parent, const char* pos, bool trailing_ok) {
     VecJsDocRange const* comments = &parent->shared->jsdoc_comments;
-    if (!comments->size) return false;
+    if (!comments->size) return -1;
     const char* file_start = source_file_start(parent->shared->source);
     const char* c = pos;
     // The last JSDoc comment among the host's leading comments (tsc's getJSDocCommentRanges): other comments between
@@ -5067,7 +5068,7 @@ static bool jsdoc_before_ex(Parser* parent, const char* pos, VecJsDocTag* tags, 
             // A plain block comment: before its `/*`
             const char* open = c - 2;
             while (open > file_start + 1 && !(open[-2] == '/' && open[-1] == '*')) open--;
-            if (open <= file_start + 1) return false;
+            if (open <= file_start + 1) return -1;
             c = open - 2;
             continue;
         }
@@ -5078,9 +5079,17 @@ static bool jsdoc_before_ex(Parser* parent, const char* pos, VecJsDocTag* tags, 
             c = comment;
             continue;
         }
-        return false;
+        return -1;
     }
-    if (!trailing_ok && !jsdoc_comment_is_leading(file_start, comments->data[lo].start)) return false;
+    if (!trailing_ok && !jsdoc_comment_is_leading(file_start, comments->data[lo].start)) return -1;
+    return lo;
+}
+
+static bool jsdoc_before_ex(Parser* parent, const char* pos, VecJsDocTag* tags, bool trailing_ok) {
+    isize lo = jsdoc_locate(parent, pos, trailing_ok);
+    if (lo < 0) return false;
+    VecJsDocRange const* comments = &parent->shared->jsdoc_comments;
+    const char* file_start = source_file_start(parent->shared->source);
     // The JSDoc comments before it among the leading comments (other comments may come between) are the host's too:
     // their `@overload` tags count (tsc's getJSDocOverloadTags), and their errors (tsc parses and checks every one)
     isize first = lo;
@@ -5158,6 +5167,40 @@ static TypeNode jsdoc_take_type(JsDocTag* tag, Span* span_ret) {
     if (span_ret) *span_ret = tag->type_span;
     tag->type.from_jsdoc = true;
     return tag->type;
+}
+
+// `v` as `v satisfies T` from a JSDoc `@satisfies` (tsgo's reparser, makeNewCast), TS1360 at `at`
+static void jsdoc_wrap_satisfies(Expr* value, Span at, TypeNode type) {
+    Expr inner = *value;
+    *value = expr_as_type(expr_outer_span(&inner), ast_new(AsTypeExpr, {
+        .expr = inner,
+        .keyword_span = at,
+        .type = type,
+        .is_satisfies = true,
+        .is_jsdoc = true,
+    }));
+}
+
+// The token after `span` (tsgo's GetRangeOfTokenAtPosition at SkipTrivia of its end), empty at the end of the file
+static Span jsdoc_token_after(Span span) {
+    char const* at = span_end_ptr(span);
+    SourceFile const* source = span_source(span);
+    char const* file_end = cstr_str(&source->contents) + cstr_size(&source->contents);
+    while (at < file_end) {
+        if (is_js_ascii_space(*at)) {
+            at++;
+        } else if (at + 1 < file_end && at[0] == '/' && at[1] == '/') {
+            while (at < file_end && *at != '\n') at++;
+        } else if (at + 1 < file_end && at[0] == '/' && at[1] == '*') {
+            at += 2;
+            while (at + 1 < file_end && !(at[0] == '*' && at[1] == '/')) at++;
+            at = at + 2 < file_end ? at + 2 : file_end;
+        } else {
+            break;
+        }
+    }
+    Span token = block_first_token(span_make(source, at, file_end));
+    return span_valid(token) ? token : span_make(source, at, at);
 }
 
 // `@type` on a declaration with no annotation of its own. Whether it took one
@@ -14347,6 +14390,11 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
                     if (jsdoc_apply_type_to_binding(&tags, &initializer.binding)) {
                         unique_symbol_variable_check(&p, &initializer.binding, in_for, ret->keyword);
                     }
+                    // Its own `@satisfies` casts its initializer (tsgo's reparser), inside the statement's
+                    JsDocTag* satisfies = jsdoc_find_typed(&tags, JSDOC_TAG_SATISFIES);
+                    if (satisfies && initializer.value && initializer.value->tag != EXPR_IMPLICIT_ANY) {
+                        jsdoc_wrap_satisfies(initializer.value, satisfies->tag_name, jsdoc_take_type(satisfies, nullptr));
+                    }
                 }
                 vec_jsdoc_tag_drop(&tags);
             }
@@ -15923,22 +15971,34 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
 // a variable statement's `@type` is its single declaration's annotation, and like the tags of an assignment statement
 // or `return` its `@param`s/`@returns` are for the function it gives
 // `/** @satisfies {T} */ const x = v`: v is checked like `v satisfies T` (tsc's checkDeclarationInitializer and
-// getContextualTypeForVariableLikeDeclaration: tryGetJSDocSatisfiesTypeNode). An initializer `/** @satisfies {U} */ (v)`
-// is wrapped again (tsgo's reparser casts whatever the initializer is)
-static void jsdoc_apply_satisfies_initializer(VecJsDocTag* tags, InitializedBinding* initializer) {
+// getContextualTypeForVariableLikeDeclaration: tryGetJSDocSatisfiesTypeNode), the first declaration with an initializer
+// (tsgo's reparser). An initializer `/** @satisfies {U} */ (v)` is wrapped again (tsgo's reparser casts whatever the
+// initializer is). TS1360 is at the tag, unless the declaration has JSDoc of its own (`const /** c */ x = v`, tsgo's
+// findOriginatingJSDocSatisfiesTag stops at the first host with JSDoc): that JSDoc's `@satisfies`, else the token after v
+static void jsdoc_apply_satisfies_initializer(Parser* p, VecJsDocTag* tags, VecInitializedBinding* list) {
     JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_SATISFIES);
-    // (Under a type annotation, `@type` or written, too, and an empty object literal: tsgo's reparser casts any
-    // initializer)
-    if (!tag || initialized_binding_value(initializer)->tag == EXPR_IMPLICIT_ANY) return;
-    Expr* value = initialized_binding_value(initializer);
-    Expr inner = *value;
-    *value = expr_as_type(expr_outer_span(&inner), ast_new(AsTypeExpr, {
-        .expr = inner,
-        .keyword_span = tag->tag_name,
-        .type = jsdoc_take_type(tag, nullptr),
-        .is_satisfies = true,
-        .is_jsdoc = true,
-    }));
+    if (!tag) return;
+    for_each (i, vec_initialized_binding, list) {
+        Expr* value = initialized_binding_value(i);
+        // (Under a type annotation, `@type` or written, too, and an empty object literal: tsgo's reparser casts any
+        // initializer)
+        if (value->tag == EXPR_IMPLICIT_ANY) {
+            if (value->missing) return;
+            continue;
+        }
+        Span at = tag->tag_name;
+        if (span_valid(i->binding.content_span) && jsdoc_locate(p, span_start_ptr(i->binding.content_span), true) >= 0) {
+            if (value->tag == EXPR_AS_TYPE && value->as_type->is_satisfies && value->as_type->is_jsdoc &&
+                span_start_ptr(value->as_type->keyword_span) < span_start_ptr(i->binding.content_span)
+            ) {
+                at = value->as_type->keyword_span;
+            } else {
+                at = jsdoc_token_after(expr_outer_span(value));
+            }
+        }
+        jsdoc_wrap_satisfies(value, at, jsdoc_take_type(tag, nullptr));
+        return;
+    }
 }
 
 // Whether an assignment's target makes it a JavaScript assignment declaration (tsgo's GetAssignmentDeclarationKind):
@@ -15972,6 +16032,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                         unique_symbol_variable_check(p, &list->data[0].binding, false, statement->decl.variable.keyword);
                     }
                 }
+                jsdoc_apply_satisfies_initializer(p, &tags, list);
                 FunctionImpl* function = jsdoc_function_of(initialized_binding_value(&list->data[0]));
                 if (function) jsdoc_apply_function(p, &tags, function);
                 break;
@@ -15997,7 +16058,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
             ) {
                 call->call->callable.identifier.require_call = 1;
             }
-            jsdoc_apply_satisfies_initializer(&tags, initializer);
+            jsdoc_apply_satisfies_initializer(p, &tags, list);
             FunctionImpl* function = jsdoc_function_of(initialized_binding_value(initializer));
             // (A `@template` here has no host, tsgo's reparser drops it: its names are unresolved, TS2304)
             // (The variable's `@type` is its declared type only, the function's contextual type: tsgo has no
