@@ -1,0 +1,35 @@
+ttttAsyncGeneratorYieldAwaitable.ts(5,30): error TS1062: Type is referenced directly or indirectly in the fulfillment callback of its own 'then' method.
+ttttAsyncGeneratorYieldAwaitable.ts(6,30): error TS1321: Type of 'yield' operand in an async generator must either be a valid promise or must not contain a callable 'then' member.
+ttttAsyncGeneratorYieldAwaitable.ts(7,31): error TS1322: Type of iterated elements of a 'yield*' operand must either be a valid promise or must not contain a callable 'then' member.
+ttttAsyncGeneratorYieldAwaitable.ts(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+ttttAsyncGeneratorYieldAwaitable.ts(11,30): error TS1321: Type of 'yield' operand in an async generator must either be a valid promise or must not contain a callable 'then' member.
+ttttAsyncGeneratorYieldAwaitable.ts(13,45): error TS1062: Type is referenced directly or indirectly in the fulfillment callback of its own 'then' method.
+
+
+==== ttttAsyncGeneratorYieldAwaitable.ts (6 errors) ====
+    export {};
+    interface BadP { then(cb: (v: BadP) => void): void }
+    interface NoCb { then(): void }
+    declare const bp: BadP, nc: NoCb, ai: AsyncIterable<NoCb>;
+    async function* g1() { yield bp; }
+                                 ~~
+!!! error TS1062: Type is referenced directly or indirectly in the fulfillment callback of its own 'then' method.
+    async function* g2() { yield nc; }
+                                 ~~
+!!! error TS1321: Type of 'yield' operand in an async generator must either be a valid promise or must not contain a callable 'then' member.
+    async function* g3() { yield* ai; }
+                                  ~~
+!!! error TS1322: Type of iterated elements of a 'yield*' operand must either be a valid promise or must not contain a callable 'then' member.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    
+    declare const un: string | NoCb;
+    async function* g5() { yield un; yield un; }
+                                 ~~
+!!! error TS1321: Type of 'yield' operand in an async generator must either be a valid promise or must not contain a callable 'then' member.
+    declare const sit: Iterable<BadP>;
+    async function g7() { for await (const y of sit) { y; } }
+                                                ~~~
+!!! error TS1062: Type is referenced directly or indirectly in the fulfillment callback of its own 'then' method.
+    

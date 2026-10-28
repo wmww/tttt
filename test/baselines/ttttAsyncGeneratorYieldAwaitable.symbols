@@ -1,0 +1,59 @@
+//// [test/cases/ttttAsyncGeneratorYieldAwaitable.ts] ////
+
+=== ttttAsyncGeneratorYieldAwaitable.ts ===
+export {};
+interface BadP { then(cb: (v: BadP) => void): void }
+>BadP : Symbol(BadP, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 0, 10))
+>then : Symbol(BadP.then, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 1, 16))
+>cb : Symbol(cb, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 1, 22))
+>v : Symbol(v, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 1, 27))
+>BadP : Symbol(BadP, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 0, 10))
+
+interface NoCb { then(): void }
+>NoCb : Symbol(NoCb, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 1, 52))
+>then : Symbol(NoCb.then, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 2, 16))
+
+declare const bp: BadP, nc: NoCb, ai: AsyncIterable<NoCb>;
+>bp : Symbol(bp, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 3, 13))
+>BadP : Symbol(BadP, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 0, 10))
+>nc : Symbol(nc, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 3, 23))
+>NoCb : Symbol(NoCb, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 1, 52))
+>ai : Symbol(ai, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 3, 33))
+>AsyncIterable : Symbol(AsyncIterable, Decl(lib.es2018.asynciterable.d.ts, --, --))
+>NoCb : Symbol(NoCb, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 1, 52))
+
+async function* g1() { yield bp; }
+>g1 : Symbol(g1, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 3, 58))
+>bp : Symbol(bp, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 3, 13))
+
+async function* g2() { yield nc; }
+>g2 : Symbol(g2, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 4, 34))
+>nc : Symbol(nc, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 3, 23))
+
+async function* g3() { yield* ai; }
+>g3 : Symbol(g3, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 5, 34))
+>ai : Symbol(ai, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 3, 33))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 7, 5))
+
+declare const un: string | NoCb;
+>un : Symbol(un, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 9, 13))
+>NoCb : Symbol(NoCb, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 1, 52))
+
+async function* g5() { yield un; yield un; }
+>g5 : Symbol(g5, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 9, 32))
+>un : Symbol(un, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 9, 13))
+>un : Symbol(un, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 9, 13))
+
+declare const sit: Iterable<BadP>;
+>sit : Symbol(sit, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 11, 13))
+>Iterable : Symbol(Iterable, Decl(lib.es2015.iterable.d.ts, --, --))
+>BadP : Symbol(BadP, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 0, 10))
+
+async function g7() { for await (const y of sit) { y; } }
+>g7 : Symbol(g7, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 11, 34))
+>y : Symbol(y, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 12, 38))
+>sit : Symbol(sit, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 11, 13))
+>y : Symbol(y, Decl(ttttAsyncGeneratorYieldAwaitable.ts, 12, 38))
+

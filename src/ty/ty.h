@@ -2371,6 +2371,13 @@ static inline CurrentNode ty_enter_expr(Checker* me, struct Expr const* expr) {
     return saved;
 }
 static inline void ty_leave_node(Checker* me, CurrentNode saved) { me->current_node = saved; }
+// tsc's explicit error node of one call (getAwaitedTypeEx(t, errorNode)): where its diagnostics go, without starting the
+// instantiation count over. Give the result back to ty_leave_node()
+static inline CurrentNode ty_point_node(Checker* me, Span span) {
+    CurrentNode saved = me->current_node;
+    me->current_node = (CurrentNode){ .span = span };
+    return saved;
+}
 Span ty_current_node_span(Checker* me);
 // tsc's error(currentNode, ...): only while the program is being typechecked (not while a baseline prints types)
 void ty_error_at_current_node(Checker* me, unsigned ts_code, cstr message);
@@ -3357,6 +3364,8 @@ u32 ty_call_signature_count(Checker* me, Ty const* ty); // call.c
 bool ty_is_promise(Checker* me, Ty const* ty); // A thenable (tsc's getAwaitedTypeOfPromise), call.c
 Ty const* ty_awaited_of_promise(Checker* me, Ty const* ty); // What a thenable awaits to, else null (call.c)
 void ty_check_await_operand(Checker* me, Ty const* ty, Span at, ErrorCtx* errs);
+// The same of what a `yield` (TS1321) or `yield*` (TS1322, its iterated elements) in an async generator yields
+void ty_check_yield_operand_awaitable(Checker* me, Ty const* ty, Span at, bool yield_star, ErrorCtx* errs);
 // Marks a union or promise whose awaited type a contextual `await` operand computed first (no TS1320 for it later)
 void ty_await_context_awaited(Checker* me, Ty const* ty);
 Ty const* ty_promised_type(Checker* me, Ty const* ty); // What a thenable resolves to, else null (tsc's getPromisedTypeOfPromise)

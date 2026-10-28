@@ -347,6 +347,12 @@ tttt's parser reports are tsgo's checker's, see `grammar_error()`).
 - `@dec export @dec2 function f() {}` in JavaScript (53-L17): TS1206 twice, the checker's at the `@` and
   getJSSyntacticDiagnosticsForFile's over `@dec` (not for `module "m"`/`global`, which tsgo never JS-checks).
   [fixed 6027d85bf]
+- Async generators (04-C3b, 04-C3, 06-C1, 11-C1): a `yield`'s operand is awaited with it as the error node, TS1321
+  (TS1322 for a `yield*`'s iterated elements) and TS1062 there; an async iterable's thenable-but-not-promise yield type
+  stays itself (getIterationTypesOfIterableFast's `|| yieldType`, async-from-sync's is any); a yield with no awaited
+  type adds nothing to the generator's yield type (never). [fixed COMMIT] tsgo 7.1 panics (nil message in
+  getAsyncFromSyncIterationTypes' getAwaitedTypeEx, and the async-iterable fast path's) on `yield* [nc]` and
+  `for await (const x of ai)` with a thenable that isn't a promise (NoCb): not in the repro. [tsgo]
 
 ## Not looked at, by code
 - Each paragraph below is a code and direction with the cases it mismatches in, uninvestigated: at least one open

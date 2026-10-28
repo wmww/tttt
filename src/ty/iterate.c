@@ -351,10 +351,22 @@ static TyIterationTypes const* iteration_types_of_method(Checker* me, Ty const* 
 
 // (tsc's asyncIterationTypesResolver.resolveIterationType and getAsyncFromSyncIterationTypes: getAwaitedType, which
 // makes Awaited<T> of a generic T)
-static TyIterationTypes const* resolve_types(Checker* me, TyIterationTypes const* types, bool async) {
+// A thenable that isn't a promise has no awaited type: an async iterable's is then the type as it is
+// (getIterationTypesOfIterableFast's `resolveIterationType(t) || t`, whose awaiting a `yield*` reports, TS1322), an async
+// iteration of a sync iterable's the error type (getAsyncFromSyncIterationTypes' `|| anyType`)
+static Ty const* resolved_iteration_type(Checker* me, Ty const* ty, bool from_sync) {
+    Ty const* awaited = ty_awaited(me, ty);
+    return !from_sync && awaited == ty_intrinsic(me, TY_ERROR) && ty != awaited ? ty : awaited;
+}
+
+static TyIterationTypes const* resolve_types_ex(Checker* me, TyIterationTypes const* types, bool async, bool from_sync) {
     if (!async) return types;
-    Ty const* yield = ty_awaited(me, types->yield_type);
-    return make_types(me, yield, ty_awaited(me, types->return_type), types->next_type);
+    return make_types(me, resolved_iteration_type(me, types->yield_type, from_sync),
+        resolved_iteration_type(me, types->return_type, from_sync), types->next_type);
+}
+
+static TyIterationTypes const* resolve_types(Checker* me, TyIterationTypes const* types, bool async) {
+    return resolve_types_ex(me, types, async, false);
 }
 
 // tsc's getIterationTypesOfIterator: null if it isn't one
@@ -458,7 +470,7 @@ static TyIterationTypes const* iterable_types_of(Checker* me, Ty const* ty, u32 
     }
     if (use & ITERATION_ALLOWS_SYNC) {
         TyIterationTypes const* types = iterable_types_with(me, ty, false);
-        if (types != &no_iteration_types) return (use & ITERATION_ALLOWS_ASYNC) ? resolve_types(me, types, true) : types;
+        if (types != &no_iteration_types) return (use & ITERATION_ALLOWS_ASYNC) ? resolve_types_ex(me, types, true, true) : types;
     }
     return &no_iteration_types;
 }
@@ -706,7 +718,19 @@ Ty const* ty_iterated_type(Checker* me, u32 use, Ty const* input, Span span, Err
     return ty_iterated_type_sending(me, use, input, ty_intrinsic(me, TY_UNDEFINED), span, errs);
 }
 
+static Ty const* iterated_type_sending(Checker* me, u32 use, Ty const* input, Ty const* sent, Span span, ErrorCtx* errs);
+
 Ty const* ty_iterated_type_sending(Checker* me, u32 use, Ty const* input, Ty const* sent, Span span, ErrorCtx* errs) {
+    // (An async iteration awaits what it yields with the expression as the error node: TS1062 there, tsc's
+    // getIterationTypesOfIterable(type, use, errorNode))
+    if (!(use & ITERATION_ALLOWS_ASYNC) || !span_valid(span)) return iterated_type_sending(me, use, input, sent, span, errs);
+    CurrentNode saved = ty_point_node(me, span);
+    Ty const* ret = iterated_type_sending(me, use, input, sent, span, errs);
+    ty_leave_node(me, saved);
+    return ret;
+}
+
+static Ty const* iterated_type_sending(Checker* me, u32 use, Ty const* input, Ty const* sent, Span span, ErrorCtx* errs) {
     if (input->flags & TYF_ANY) return input;
     bool async = (use & ITERATION_ALLOWS_ASYNC) != 0;
     if (input == ty_intrinsic(me, TY_NEVER)) {

@@ -4163,13 +4163,13 @@ static bool await_checked_before(Checker* me, Ty const* ty) {
     return false;
 }
 
-static void check_await_operand(Checker* me, Ty const* ty, Span at, u32 depth, ErrorCtx* errs) {
+static void check_await_operand(Checker* me, Ty const* ty, Span at, u32 depth, unsigned code, ErrorCtx* errs) {
     for (; depth < 16; depth++) {
         // (A generic type is awaited as `Awaited<T>` or itself, never an error: tsc's isAwaitedTypeNeeded)
         if (ty->flags & TYF_ANY || ty_is_generic_type(me, ty)) return;
         if ((ty->kind == TY_UNION || ty_is_promise(me, ty)) && await_checked_before(me, ty)) return;
         if (ty->kind == TY_UNION) {
-            for (u32 i = 0; i < ty->composite.types.len; i++) check_await_operand(me, ty->composite.types.data[i], at, depth + 1, errs);
+            for (u32 i = 0; i < ty->composite.types.len; i++) check_await_operand(me, ty->composite.types.data[i], at, depth + 1, code, errs);
             return;
         }
         // (Most operands: a primitive, or the global Promise/PromiseLike of something, like awaited_type_in())
@@ -4189,8 +4189,16 @@ static void check_await_operand(Checker* me, Ty const* ty, Span at, u32 depth, E
             continue;
         }
         if (!is_thenable(me, ty)) return;
-        Error* error = error_ctx_error_d(errs, at, 1320, "Type of 'await' operand must either be a valid promise or must "
-            "not contain a callable 'then' member.");
+        // (A `yield` in an async generator says it of its operand, a `yield*` of the elements it iterates: tsc's
+        // getYieldedTypeOfYieldExpression)
+        Error* error = code == 1321 ?
+            error_ctx_error_d(errs, at, 1321, "Type of 'yield' operand in an async generator must either be a valid promise "
+                "or must not contain a callable 'then' member.") :
+            code == 1322 ?
+            error_ctx_error_d(errs, at, 1322, "Type of iterated elements of a 'yield*' operand must either be a valid "
+                "promise or must not contain a callable 'then' member.") :
+            error_ctx_error_d(errs, at, 1320, "Type of 'await' operand must either be a valid promise or must "
+                "not contain a callable 'then' member.");
         Ty const* this_type = error ? then_this_type_for_error(me, ty) : nullptr;
         if (this_type) {
             error_sub_error_d(error, span_null, 2684, "The 'this' context of type '", ty,
@@ -4200,7 +4208,10 @@ static void check_await_operand(Checker* me, Ty const* ty, Span at, u32 depth, E
     }
 }
 
-void ty_check_await_operand(Checker* me, Ty const* ty, Span at, ErrorCtx* errs) { check_await_operand(me, ty, at, 0, errs); }
+void ty_check_await_operand(Checker* me, Ty const* ty, Span at, ErrorCtx* errs) { check_await_operand(me, ty, at, 0, 1320, errs); }
+void ty_check_yield_operand_awaitable(Checker* me, Ty const* ty, Span at, bool yield_star, ErrorCtx* errs) {
+    check_await_operand(me, ty, at, 0, yield_star ? 1322 : 1321, errs);
+}
 
 // The awaited type of a union or promise computed with no error node first (tsc's getContextualTypeForAwaitOperand,
 // getAwaitedTypeNoAlias of the contextual type): its cachedTypes entry silences a later `await` of that type

@@ -179,7 +179,16 @@ static Ty const* infer_generator_type(Checker* me, FunctionImpl const* function,
                 if (yield_context && ty_is_const_type_variable(me, yield_context, 0)) type = ty_regular(me, type);
             }
         }
-        if (async) type = ty_awaited(me, type);
+        if (async) {
+            // (At the operand, tsc's getYieldedTypeOfYieldExpression's error node: TS1062)
+            CurrentNode saved = ty_point_node(me, yield->expr.tag == EXPR_IMPLICIT_ANY ? expr_outer_span(yield_exprs[i]) :
+                expr_outer_span(&yield->expr));
+            Ty const* awaited = ty_awaited(me, type);
+            ty_leave_node(me, saved);
+            // (No awaited type, a thenable that isn't a promise: nothing yielded, tsc's getUnionType drops the nil)
+            if (awaited == ty_intrinsic(me, TY_ERROR) && type != awaited) continue;
+            type = awaited;
+        }
         ty_buf_push(&yields, type);
     }
     Ty const* yield_type = yields.len ? ty_union_subtype_reduced(me, yields.data, yields.len) : nullptr;

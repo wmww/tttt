@@ -3619,7 +3619,15 @@ static void yield_typecheck(Expr const* me, ErrorCtx* errs) {
     } else {
         yielded = yield->expr.tag == EXPR_IMPLICIT_ANY ? ty_intrinsic(checker, TY_UNDEFINED) : ty_expr_type(checker, &yield->expr);
     }
-    if (async) yielded = ty_awaited(checker, yielded);
+    if (async) {
+        // (tsc's getYieldedTypeOfYieldExpression: getAwaitedTypeEx with the operand as the error node, TS1062 there too)
+        if (yield->expr.tag != EXPR_IMPLICIT_ANY) {
+            ty_check_yield_operand_awaitable(checker, yielded, span, yield->op == UNARY_OP_YIELD_STAR, errs);
+        }
+        CurrentNode saved = ty_point_node(checker, span);
+        yielded = ty_awaited(checker, yielded);
+        ty_leave_node(checker, saved);
+    }
     // tsc's checkYieldExpression: what the generator is sent is any without an annotation or contextual type
     if (!generator->ret_explicit && yield->op == UNARY_OP_YIELD && compiler_options()->no_implicit_any && !yield->result_unused) {
         TyIterationTypes const* context = ty_generator_context(checker, generator);

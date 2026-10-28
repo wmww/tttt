@@ -1,0 +1,55 @@
+//// [test/cases/ttttAsyncGeneratorYieldAwaitable.ts] ////
+
+=== ttttAsyncGeneratorYieldAwaitable.ts ===
+export {};
+interface BadP { then(cb: (v: BadP) => void): void }
+>then : (cb: (v: BadP) => void) => void
+>cb : (v: BadP) => void
+>v : BadP
+
+interface NoCb { then(): void }
+>then : () => void
+
+declare const bp: BadP, nc: NoCb, ai: AsyncIterable<NoCb>;
+>bp : BadP
+>nc : NoCb
+>ai : AsyncIterable<NoCb>
+
+async function* g1() { yield bp; }
+>g1 : () => AsyncGenerator<never, void, unknown>
+>yield bp : any
+>bp : BadP
+
+async function* g2() { yield nc; }
+>g2 : () => AsyncGenerator<never, void, unknown>
+>yield nc : any
+>nc : NoCb
+
+async function* g3() { yield* ai; }
+>g3 : () => AsyncGenerator<never, void, any>
+>yield* ai : any
+>ai : AsyncIterable<NoCb>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+declare const un: string | NoCb;
+>un : string | NoCb
+
+async function* g5() { yield un; yield un; }
+>g5 : () => AsyncGenerator<string, void, unknown>
+>yield un : any
+>un : string | NoCb
+>yield un : any
+>un : string | NoCb
+
+declare const sit: Iterable<BadP>;
+>sit : Iterable<BadP>
+
+async function g7() { for await (const y of sit) { y; } }
+>g7 : () => Promise<void>
+>y : any
+>sit : Iterable<BadP>
+>y : any
+
