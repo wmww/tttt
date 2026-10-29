@@ -687,7 +687,7 @@ str-to-num (`declare module 42 {`, the 20261121 block-scope family). Fixed:
   Test ttttBodilessRenamingComputedName [fixed 14d9d9515]. The key's TS2464 (an `in` expression's boolean), which
   tsc's checkComputedPropertyName says when the parameter's type is asked for (getTypeFromObjectBindingPattern):
   report_renamed_bodiless_elements() checks those keys now, with or without noImplicitAny. Test
-  ttttBodilessPatternComputedKeyCheck. [fixed 5e04a3d56]
+  ttttBodilessPatternComputedKeyCheck. [fixed e5d39c885]
 - Render only [text]: conditionalContextualReturnSubstitutionCache extends-object (a second related TS2208 "This type
   parameter might need an `extends ...` constraint" naming the whole conditional), mappedTypeConstraints2 drop-as (the
   related TS2751 "Circularity originates in type at this location" missing on a TS2313), and two `--syntax` ones.

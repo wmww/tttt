@@ -2456,9 +2456,9 @@ const baselines = {
         types: true,
     },
     'bun15-C2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun15-C3a': {
         errors: true,
@@ -2476,9 +2476,9 @@ const baselines = {
         types: true,
     },
     'bun15-C4a': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun15-C4b': {
         errors: false,
@@ -2641,14 +2641,14 @@ const baselines = {
         types: false,
     },
     'bun16-C3c': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun16-C3d': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun16-C4': {
         errors: true,
@@ -4381,9 +4381,9 @@ const baselines = {
         types: true,
     },
     'bun26-P3a': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun26-P3b': {
         errors: true,
@@ -10891,9 +10891,9 @@ const baselines = {
         types: true,
     },
     'bun94-R04a': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun94-R07': {
         errors: true,
@@ -12561,6 +12561,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttBindingElementGenericParentContext': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttBindingElementKeyNoName': {
         errors: true,
         symbols: true,
@@ -12593,6 +12598,16 @@ const baselines = {
         types: true,
     },
     'ttttBodilessParameterPatterns': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttBodilessPatternComputedKeyCheck(noimplicitany=false)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttBodilessPatternComputedKeyCheck(noimplicitany=true)': {
         errors: true,
         symbols: true,
         types: true,
@@ -14228,6 +14243,11 @@ const baselines = {
     },
     'ttttExportDefaultMisspelledSelfImport': {
         errors: false,
+        symbols: true,
+        types: true,
+    },
+    'ttttExportEqualsDefaultImportCycle': {
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -16462,6 +16482,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttPlusNumericKeyContext': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttPrivateNameAsIdentifierName': {
         errors: true,
         symbols: true,
@@ -16594,6 +16619,11 @@ const baselines = {
         types: true,
     },
     'ttttReservedParameterNameUnused': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttRestArgLiteralReturnMapper': {
         errors: true,
         symbols: true,
         types: true,
@@ -17092,6 +17122,11 @@ const baselines = {
         types: true,
     },
     'ttttThisParameterOptional': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttThislessParameterInstantiation': {
         errors: true,
         symbols: true,
         types: true,

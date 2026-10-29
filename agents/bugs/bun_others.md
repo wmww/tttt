@@ -282,13 +282,13 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   operator), and getContextualTypeForObjectLiteralElement looks that name up (hasBindableName: `+2` isn't dynamic), so
   the property `2` gives no context, nor a numeric index signature (the name "+2" isn't numeric). tttt looked the
   key's type up (2); plus_numeric_key_context_name() now gives the "+N" name. Test ttttPlusNumericKeyContext
-  [fixed 8d2d936a1].
+  [fixed 0cfc7658d].
   15-C2 (`const [a = x => {}] = t` with `t: T extends [F1, F2]`): tsc's getContextualTypeForBindingElement asks
   getTypeOfPropertyOfContextualType of the parent type as is, and a type parameter isn't a structured type there (no
   constraint), so x is implicitly any; tttt's contextual property lookup takes a type variable's constraint
   (get_prop_context_with_missing, right for getApparentTypeOfContextualType's paths only); the binding path has its
   own ty_contextual_binding_element_type() now, which iterates a type parameter. Test
-  ttttBindingElementGenericParentContext [fixed 0a3517e96].
+  ttttBindingElementGenericParentContext [fixed 3aef379a3].
 - -TS2448: two mechanisms, the JSX factory (`React`, `Frag`) declared after the element that uses it (tsc resolves
   the factory at the element as a use: 01-C2b, 15-C3b, 27-C3a, 27-P7, 34-C2b) and `const arguments = 1` in a
   function body (tsc's reference to the implicit `arguments`: 25-C17c, 33-P4g, 51-L01, 51-L05, 77-R12b). The JSX
@@ -769,7 +769,7 @@ type annotation.".
 -TS2345 (missing), 15 cases: 16-C5a, 16-C5b, 20-C3b, 22-C9, 25-P2, 26-P3a, 35-C1c, 35-C1e, 93-R11b, 95-J3, 96-ARKTYPE2,
 96-TSPATTERN1, 99-A1, 99-V4, checks-of-a-value-assigned-on-a-loop-back-edge. First: 16-C5a a.ts:4 "Argument of type
 '…' is not assignable to parameter of type '…'.". 26-P3a: an unannotated parameter keeps `this` under a this-only mapper (tsc's
-isThisless in instantiateSymbol). Test ttttThislessParameterInstantiation [fixed be352db80].
+isThisless in instantiateSymbol). Test ttttThislessParameterInstantiation [fixed 6e8f039d9].
 
 +TS6133 (spurious), 14 cases: 24-SC2, 30-C14a, 31-P6, 31-SC6, 43-C8b, 43-P4b, 43-P4c, 51-L01, 51-L20b, 74-R15a,
 80-R18a, 80-R18b, 83-R10a, 91-R12b. First: 24-SC2 a.ts:1 "'…' is declared but its value is never read.".

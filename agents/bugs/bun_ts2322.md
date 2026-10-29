@@ -192,7 +192,7 @@ last line. The real cause is then elsewhere, and the entry says where. Show a ca
   after all (cor17, tsgotrace): getTargetOfModuleDefault's resolveExportByName reads `default` among the properties of
   the `export =` target's type, which resolves module a's export aliases (`export default d`, d in flight).
   resolve_default_target() runs resolve_module_type_members() on that module now. Test
-  ttttExportEqualsDefaultImportCycle [fixed e3cda8930].
+  ttttExportEqualsDefaultImportCycle [fixed a6f196241].
 - The check-time alias cycles (cor17's design write-up, 2026-10-29; 08-C11c here, umd7 and 80-R13b in
   missing_checks.md/bun_others.md, ttttSharedGraphTypeofCycleBase's TS2502): tsgo resolves an alias lazily, and an
   alias-like expression's target (`export default o.p`, `export = expr`: getTargetOfAliasLikeExpression ->

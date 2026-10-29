@@ -57,6 +57,11 @@ wins first; land fast and gate in batches.
   link's augmentations step.
 - **Correctness** (worker `cor15`): the JSDoc `{@link}` TS6133 fix, seeds 20261120/21, the next bun root-cause groups;
   triage.md has vue-query's 4 spurious diagnostics (unwritten).
+- **Release freeze (2026-10-29 box time)**: the human is cutting the release; cor17's final fixes landed (main after
+  b3c6f1cb5's rebase); only verification runs now (full oracles, sgcheck all + forced, TSan, the instruction counts and
+  the headline at the release commit); new code lands only after the release unless a verification run finds a blocker.
+  Decision taken: the check-time alias cycles (bun_ts2322.md's A/B) stay as they are (option B) until a real project
+  shows one; every instance is a contrived self- or mutual import.
 - **Release**: the human cuts v2 when they feel like it; keep the oracles green and the headline saved
   (`bugcount.py --save` per full run).
 
