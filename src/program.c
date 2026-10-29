@@ -290,6 +290,8 @@ static void program_add_builtins(Program* me) {
 }
 
 static SourceFile* program_add_source_idempotent(Program* me, csview path);
+static SourceFile* program_find_source_known(Program const* me, csview path, bool path_normalized);
+static SourceFile* program_add_source_idempotent_known(Program* me, csview path, bool path_normalized);
 static SourceFile* program_add_made_source(Program* me, cstr canonical_path, SourceFile* source_file);
 
 Program* program_new(ErrorCtx* errs, Fs const* fs) {
@@ -1049,7 +1051,7 @@ static bool program_load_module_ref_again(Program* me, SourceFile* source, Modul
         canonical_hint.canonical = canonical;
         canonical_hint.stable = true;
     }
-    ref->file = program_add_source_idempotent(me, cstr_sv(&shared->path));
+    ref->file = program_add_source_idempotent_known(me, cstr_sv(&shared->path), shared->path_normalized);
     my include_site = span_null;
     my include_kind = INCLUDE_NONE;
     my include_package_id = c_sv("");
@@ -1160,7 +1162,7 @@ static void program_load_module_ref_inner(Program* me, SourceFile* source, Modul
         // Nothing is added to the program, but a name may still mean a file that is part of it (the file's own options:
         // a referenced project's output declaration file resolves with that project's, tsgo's
         // resolveImportsAndModuleAugmentations)
-        if (resolved.kind != RESOLVED_NONE) ref->file = program_find_source(me, cstr_sv(&resolved.path));
+        if (resolved.kind != RESOLVED_NONE) ref->file = program_find_source_known(me, cstr_sv(&resolved.path), resolved.path_normalized);
         csview redirected_from = resolved.kind == RESOLVED_DTS && !ref->file ?
             program_source_of_output(me, cstr_sv(&resolved.path)) : c_sv("");
         if (redirected_from.size) {
@@ -1177,12 +1179,12 @@ static void program_load_module_ref_inner(Program* me, SourceFile* source, Modul
     // the usual way (TS2665 for an untyped module)
     bool loadable = resolved.kind == RESOLVED_TS || resolved.kind == RESOLVED_DTS || (resolved.kind == RESOLVED_JS && my options.allow_js);
     if (ref->is_declaration && loadable) {
-        ref->file = program_find_source(me, cstr_sv(&resolved.path));
+        ref->file = program_find_source_known(me, cstr_sv(&resolved.path), resolved.path_normalized);
         cstr_take(&module_ref_rare_mut(ref)->augmented_path, cstr_clone(resolved.path));
         if (owned) resolved_module_drop(&resolved);
         return;
     }
-    bool is_new = resolved.kind != RESOLVED_NONE && !program_find_source(me, cstr_sv(&resolved.path));
+    bool is_new = resolved.kind != RESOLVED_NONE && !program_find_source_known(me, cstr_sv(&resolved.path), resolved.path_normalized);
     if (cstr_size(&resolved.alternate_result)) {
         cstr_take(&module_ref_rare_mut(ref)->alternate_result, program_path_for_message(me, cstr_sv(&resolved.alternate_result)));
     }
@@ -1238,7 +1240,7 @@ static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* re
                 ref->failure = MODULE_REF_ARBITRARY_EXTENSION;
                 cstr_take(&module_ref_rare_mut(ref)->resolved_path, program_path_for_message(me, cstr_sv(&resolved.path)));
             } else {
-                ref->file = program_add_source_idempotent(me, cstr_sv(&resolved.path));
+                ref->file = program_add_source_idempotent_known(me, cstr_sv(&resolved.path), resolved.path_normalized);
                 // (Only an extension the name itself has counts, not one a package.json or an export map wrote:
                 // tsc's candidateIsFromPackageJsonField, tryExtractTSExtension of the name)
                 ref->used_ts_extension = resolved.used_ts_extension &&
@@ -1257,18 +1259,18 @@ static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* re
             bool package_js = resolved.is_external_library &&
                 csview_find_sv(cstr_sv(&resolved.path), c_sv("/node_modules/")) != c_NPOS;
             if (my options.allow_js && (!package_js || source->node_modules_js_depth < my options.max_node_module_js_depth)) {
-                bool is_new = !program_find_source(me, cstr_sv(&resolved.path));
-                ref->file = program_add_source_idempotent(me, cstr_sv(&resolved.path));
+                bool is_new = !program_find_source_known(me, cstr_sv(&resolved.path), resolved.path_normalized);
+                ref->file = program_add_source_idempotent_known(me, cstr_sv(&resolved.path), resolved.path_normalized);
                 program_note_package_id(me, ref->file, &resolved);
                 // (tsc's maxNodeModuleJsDepth: a package's JavaScript, as deep as allowed, never checked)
                 if (ref->file && package_js && is_new) {
                     ref->file->node_modules_js_depth = source->node_modules_js_depth + 1;
                     ref->file->unchecked = true;
                 }
-            } else if (my options.allow_js && program_find_source(me, cstr_sv(&resolved.path))) {
+            } else if (my options.allow_js && program_find_source_known(me, cstr_sv(&resolved.path), resolved.path_normalized)) {
                 // Not added for this import, but in the program anyway (a root file): tsc's resolveExternalModule finds
                 // it with host.getSourceFile
-                ref->file = program_find_source(me, cstr_sv(&resolved.path));
+                ref->file = program_find_source_known(me, cstr_sv(&resolved.path), resolved.path_normalized);
             } else {
                 ref->failure = MODULE_REF_IS_JS;
                 cstr_take(&module_ref_rare_mut(ref)->resolved_path, program_path_for_message(me, cstr_sv(&resolved.path)));
@@ -1276,7 +1278,7 @@ static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* re
             }
             break;
         case RESOLVED_JSON:
-            ref->file = program_add_source_idempotent(me, cstr_sv(&resolved.path));
+            ref->file = program_add_source_idempotent_known(me, cstr_sv(&resolved.path), resolved.path_normalized);
             program_note_package_id(me, ref->file, &resolved);
             if (!ref->file) ref->failure = MODULE_REF_IS_JSON;
             break;
@@ -1363,7 +1365,7 @@ static SourceFile* program_load_type_reference(
     program_redirect_resolved(me, &resolved);
     if (resolved.is_external_library) my node_modules_depth++;
     SourceFile* ret = resolved.kind == RESOLVED_NONE ? nullptr :
-        program_add_source_idempotent(me, cstr_sv(&resolved.path));
+        program_add_source_idempotent_known(me, cstr_sv(&resolved.path), resolved.path_normalized);
     program_note_package_id(me, ret, &resolved);
     if (resolved.is_external_library) my node_modules_depth--;
     resolved_module_drop(&resolved);
@@ -2221,11 +2223,17 @@ void program_finish_deferred_libs(Program* me, char const* when, csview wanted) 
     my node_modules_depth = depth;
 }
 
+static SourceFile* program_add_source_idempotent_known(Program* me, csview path, bool path_normalized);
 static SourceFile* program_add_source_idempotent(Program* me, csview path) {
+    return program_add_source_idempotent_known(me, path, false);
+}
+
+// path_normalized: see program_find_source_known()
+static SourceFile* program_add_source_idempotent_known(Program* me, csview path, bool path_normalized) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
 
     cstr storage = cstr_null;
-    csview canonical_view = program_key_view(me, path, &storage);
+    csview canonical_view = path_normalized ? path : program_key_view(me, path, &storage);
     SourceFile* cached_source = program_lookup_canonical(me, canonical_view);
     // (After the libs phase, a library file the program doesn't have yet may be one the libs phase left to its worker,
     // or under one: the remembered ones are loaded first, as they would have been, program_finish_deferred_libs(). In
@@ -2577,13 +2585,18 @@ SourceFile* program_source_at(Program const* me, u32 index) {
     return *vec_source_file_ptr_at(&my source_files_ordered, index);
 }
 
-SourceFile* program_find_source(Program const* me, csview path) {
+// path_normalized: path is rooted and normalized, its own key (a resolution's, ResolvedModule.path_normalized)
+static SourceFile* program_find_source_known(Program const* me, csview path, bool path_normalized) {
     cstr storage = cstr_null;
-    SourceFile* found = program_lookup_canonical(me, program_key_view(me, path, &storage));
+    SourceFile* found = program_lookup_canonical(me, path_normalized ? path : program_key_view(me, path, &storage));
     cstr_drop(&storage);
     // (A redirect as itself: what refers to it says what it stands for)
     if (found && found->excluded && !found->package_redirect) return nullptr;
     return found;
+}
+
+SourceFile* program_find_source(Program const* me, csview path) {
+    return program_find_source_known(me, path, false);
 }
 
 failable program_load_stdlib(Program* me, csview name, returns SourceFile*) {

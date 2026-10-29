@@ -1909,6 +1909,7 @@ ResolvedModule const* module_resolver_resolve_shared(
         }
     }
     ResolvedModule* box = c_new(ResolvedModule, resolve_uncached(me, specifier, cstr_sv(&dir), mode));
+    box->path_normalized = cstr_size(&box->path) && cstr_str(&box->path)[0] == '/' && path_is_normalized(cstr_sv(&box->path));
     pthread_rwlock_wrlock(&shard->lock);
     ret = shard_insert(shard, key, shard_box(shard, box));
     pthread_rwlock_unlock(&shard->lock);

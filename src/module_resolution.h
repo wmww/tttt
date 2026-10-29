@@ -35,6 +35,7 @@ typedef struct ResolvedModule {
     bool arbitrary_extension; // `./a.css` found as a.d.css.ts: TS6263 without allowArbitraryExtensions
     bool used_ts_extension; // The specifier itself ended in .ts/.tsx/.mts/.cts (not .d.ts): TS5097 without the option
     bool ts_extension_from_star; // A package.json imports/exports `*` matched the specifier's TS extension
+    bool path_normalized; // path is rooted and path_is_normalized(): the program's key as it is (set once, when cached)
     // Failure hints, for the caller's choice of message
     bool needs_extension; // A relative name without extension in ESM mode of node16/nodenext: TS2834/TS2835
     cstr suggested_extension; // With needs_extension: ".js", ".mjs"... when the file that was meant exists
