@@ -1,9 +1,10 @@
-ttttAnyBaseClassInIntersection.ts(9,7): error TS2741: Property 'other' is missing in type 'B & { x: 1; }' but required in type 'Other<string>'.
+ttttAnyBaseClassInIntersection.ts(10,7): error TS2741: Property 'other' is missing in type 'B & { x: 1; }' but required in type 'Other<string>'.
 
 
 ==== ttttAnyBaseClassInIntersection.ts (1 errors) ====
-    // Known failing (missing_checks.md, seed 20261111): a class whose base is any is a non-augmenting subtype normalized to
-    // any, assignable to any object type on its own, but tsgo rejects it as a member of an intersection source (TS2741)
+    // A class whose base is any is a non-augmenting subtype normalized to any, assignable to any object type on its own, but
+    // as a member of an intersection source the optional properties' extra check still asks for the target's required ones
+    // (tsc's propertiesRelatedTo calls getUnmatchedProperty for optionalsOnly too): TS2741 (seed 20261111)
     class Other<T> { constructor(public other: T) {} }
     declare const anyB: any;
     class B extends anyB {}
@@ -13,5 +14,5 @@ ttttAnyBaseClassInIntersection.ts(9,7): error TS2741: Property 'other' is missin
     const o2: Other<string> = b2;
           ~~
 !!! error TS2741: Property 'other' is missing in type 'B & { x: 1; }' but required in type 'Other<string>'.
-!!! related TS2728 ttttAnyBaseClassInIntersection.ts:3:30: 'other' is declared here.
+!!! related TS2728 ttttAnyBaseClassInIntersection.ts:4:30: 'other' is declared here.
     

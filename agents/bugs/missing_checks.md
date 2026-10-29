@@ -611,9 +611,10 @@ never `module.exports`), declarationsForIndirectTypeAliasReference (tsgo's doubl
   top (`const o: Other<string> = new B()` is fine there). But tsgo rejects it as a member of an intersection source:
   `declare const b2: B & { x: 1 }; const o: Other<string> = b2` is TS2741 in tsgo, accepted by tttt (and so the mixin's
   `mixin.(Anonymous class) & A<string>` against `@extends {Other<string>}`'s TS8023). Why tsgo's someTypeRelatedToType
-  doesn't normalize the member to any wasn't found (reltrace shows no member-level comparison; tsgotrace --funcs on
-  type-argument functions crashes the report: its `where` expects a node). ty_non_augmenting_base / class_base_is_any
-  (members.c). Repro /tmp-free: the two declarations above. [open]
+  doesn't normalize the member to any: it does, B relates, but structuredTypeRelatedTo's extra check of an intersection
+  source (isSourceIntersectionNeedingExtraCheck, propertiesRelatedTo with optionalsOnly) asks getUnmatchedProperty
+  first, required properties included; props_related_impl skipped that for optionals_only. Fixed there (the line shows
+  the intersection, not its apparent type: bun18-C6a passes too). Test ttttAnyBaseClassInIntersection. [fixed PENDING]
 - arbitraryModuleNamespaceIdentifiers_syntax drop-as: `export { "invalid 3" };` (no `from`) is no error in tsgo
   (checkExportSpecifier checks a string *name* with allowStringLiteral true, only a string propertyName without a module
   specifier is TS1003); tttt's parser reports TS1003. Parser: relayed to bun12. [open]

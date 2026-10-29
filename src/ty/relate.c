@@ -2872,25 +2872,34 @@ static char const* ternary_debug_name(unsigned ternary) {
 
 static Ternary props_related_impl(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool source_is_apparent,
-    bool optionals_only
+    bool optionals_only, Ty const* shown_source
 );
+static Ty const* non_augmenting_normalized(Checker* me, Ty const* ty);
 
 static Ternary props_related(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool source_is_apparent
 ) {
-    return props_related_impl(me, st, source, target, report, source_is_apparent, false);
+    return props_related_impl(me, st, source, target, report, source_is_apparent, false, nullptr);
 }
 
-// `optionals_only`: only the optional properties of the target that the source has (tsc's optionalsOnly)
+// `optionals_only`: only the optional properties of the target that the source has (tsc's optionalsOnly); with
+// `shown_source`, the intersection `source` is the apparent type of, that it has the required ones too, the missing
+// one's line showing the intersection
 static Ternary props_related_impl(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool source_is_apparent,
-    bool optionals_only
+    bool optionals_only, Ty const* shown_source
 ) {
     Members const* target_members = ty_members(me, target);
     bool comparable = st->relation == TY_RELATION_COMPARABLE;
 
     // A primitive is shown as itself, not as the global interface its properties come from
-    if (report && !source_is_apparent && !optionals_only && should_report_unmatched_property(me, source, target)) {
+    // (Also in the optional properties' check of an intersection source, whose getUnmatchedProperty runs first all the
+    // same: a member that relates without the target's properties, a class with an `any` base normalized to any, leaves
+    // `B & { x: 1 }` missing Other's `other`)
+    // (Looked up in the intersection itself there too, as tsc's getPropertyOfType does, member by member: `S[string] &
+    // U[string]` with U's values any has S's values' properties, though its apparent type is any)
+    Ty const* lookup = optionals_only ? shown_source : nullptr;
+    if (report && !source_is_apparent && (!optionals_only || lookup) && should_report_unmatched_property(me, source, target)) {
         // Missing properties get a message of their own instead of the generic head
         Prop const* missing[5];
         Prop const* missing_prop = nullptr;
@@ -2898,7 +2907,11 @@ static Ternary props_related_impl(
         for (u32 i = 0; i < target_members->prop_count; i++) {
             Prop const* target_prop = members_prop(me, target_members, i);
             // (Untyped: tsc's getUnmatchedProperties asks getPropertyOfType)
-            if ((target_prop->flags & PROP_OPTIONAL) || source_has_prop(me, source, target_prop->name, 0)) continue;
+            if ((target_prop->flags & PROP_OPTIONAL) || source_has_prop(me, source, target_prop->name, 0) ||
+                (lookup && source_has_prop(me, lookup, target_prop->name, 0))
+            ) {
+                continue;
+            }
             if (is_static_private_name(me, target_prop)) continue;
             if (missing_count < c_arraylen(missing)) missing[missing_count] = target_prop;
             if (!missing_count) missing_prop = target_prop;
@@ -2922,8 +2935,9 @@ static Ternary props_related_impl(
         }
         if (missing_count) {
             cstr source_str, target_str;
-            Ty const* shown = source == st->tuple_array_source && st->tuple_source ? st->tuple_source : source;
-            display_pair(me, apparent_intersection(me, normalized_reference(me, shown)), true,
+            Ty const* shown = shown_source ? shown_source :
+                source == st->tuple_array_source && st->tuple_source ? st->tuple_source : source;
+            display_pair(me, shown_source ? shown : apparent_intersection(me, normalized_reference(me, shown)), true,
                 normalized_reference(me, target), &source_str, &target_str);
             if (missing_count == 1) {
                 cstr name = ty_prop_written_name(me, missing_prop); // (tsgo's symbolToString, no WriteComputedProps)
@@ -2997,7 +3011,14 @@ static Ternary props_related_impl(
     // declared type of the global `crypto` itself, is false without typing `crypto`). Only types that aren't known yet
     // could tell: an object's properties are checked when the first of them is about to be resolved, a union's first
     bool object_source = (source->flags & TYF_OBJECT) && source->kind != TY_INTERSECTION && source->kind != TY_UNION;
-    bool require_optional = !optionals_only && is_subtype_relation(st->relation) && requires_optional_properties(me, source);
+    bool require_optional = is_subtype_relation(st->relation) && requires_optional_properties(me, source);
+    // (tsc's propertiesRelatedTo asks getUnmatchedProperty for optionalsOnly too, required properties included)
+    for (u32 i = 0; lookup && i < target_members->prop_count; i++) {
+        Prop const* target_prop = members_prop_keyed(target_members, i); // (Its name and flags)
+        if ((target_prop->flags & PROP_PROTOTYPE) || ((target_prop->flags & PROP_OPTIONAL) && !require_optional)) continue;
+        if (source_has_prop(me, source, target_prop->name, 0) || is_static_private_name(me, target_prop)) continue;
+        if (!source_has_prop(me, lookup, target_prop->name, 0)) return TERNARY_FALSE;
+    }
     // (An intersection's properties are made with their types: nothing to resolve)
     bool unmatched_checked = optionals_only || source->kind == TY_INTERSECTION;
     if (!unmatched_checked && !object_source) {
@@ -6325,10 +6346,12 @@ static Ternary structured_related_members(
         // compared, which leaves the members of a constraint like SyntaxKind all to be tried, each against every
         // member of the union, rather than failing on the first)
         Ternary related = TERNARY_FALSE;
+        Ty const* related_member = nullptr;
         for (u32 i = 0; !objects_only && !related && i < source->composite.types.len; i++) {
             Ty const* member = source->composite.types.data[i];
             if (target->kind == TY_UNION && member->kind == TY_TYPE_PARAM) continue;
             related = is_related_to_side(me, st, member, target, false, 2);
+            if (related) related_member = member;
         }
         st->intersection_source = false;
         // The members' constraints together may be related (tsc's getEffectiveConstraintOfIntersection): `T & {}` with
@@ -6357,8 +6380,15 @@ static Ternary structured_related_members(
             if (!member_is_target && (target->flags & TYF_OBJECT) && !ty_is_generic_object(me, target) &&
                 !(target->kind == TY_REFERENCE && is_array_target(me, target->reference.target)) && !is_tuple(target)
             ) {
+                // (And for the required ones, which tsc's getUnmatchedProperty asks for there too. An object member that
+                // related structurally has them all, so the intersection does: only a member normalized to any, a
+                // class with an `any` base, or a type variable related through its constraint can leave one out)
+                bool required_known = related_member && (related_member->flags & TYF_OBJECT) &&
+                    related_member->kind != TY_INTERSECTION && related_member->kind != TY_UNION &&
+                    !(non_augmenting_normalized(me, related_member)->flags & TYF_ANY);
                 IState saved_props = passing(st);
-                related &= props_related_impl(me, st, apparent_type(me, source), target, report, false, true);
+                related &= props_related_impl(me, st, apparent_type(me, source), target, report, false, true,
+                    required_known ? nullptr : source);
                 istate_swap(st, saved_props);
             }
             return related;

@@ -1,0 +1,43 @@
+//// [test/cases/ttttIntersectionExtraCheckMembers.ts] ////
+
+=== ttttIntersectionExtraCheckMembers.ts ===
+// The required properties an intersection source's optional property check asks for are looked up member by member
+// (tsc's getPropertyOfType on the intersection), not only in its apparent type: U's values being any makes
+// `S[string] & U[string]` apparent any, but S's values' properties are there (zod's util.Extend, TS2344)
+interface Z { _zod: 1; b: 2 }
+>Z : Symbol(Z, Decl(ttttIntersectionExtraCheckMembers.ts, 0, 0))
+>_zod : Symbol(Z._zod, Decl(ttttIntersectionExtraCheckMembers.ts, 3, 13))
+>b : Symbol(Z.b, Decl(ttttIntersectionExtraCheckMembers.ts, 3, 22))
+
+type L = Readonly<{ [k: string]: Z }>;
+>L : Symbol(L, Decl(ttttIntersectionExtraCheckMembers.ts, 3, 29))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>k : Symbol(k, Decl(ttttIntersectionExtraCheckMembers.ts, 4, 21))
+>Z : Symbol(Z, Decl(ttttIntersectionExtraCheckMembers.ts, 0, 0))
+
+function f<S extends L, U extends Record<string, any>>(x: S[string] & U[string], y: S[keyof S] & U[keyof U]) {
+>f : Symbol(f, Decl(ttttIntersectionExtraCheckMembers.ts, 4, 38))
+>S : Symbol(S, Decl(ttttIntersectionExtraCheckMembers.ts, 5, 11))
+>L : Symbol(L, Decl(ttttIntersectionExtraCheckMembers.ts, 3, 29))
+>U : Symbol(U, Decl(ttttIntersectionExtraCheckMembers.ts, 5, 23))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttIntersectionExtraCheckMembers.ts, 5, 55))
+>S : Symbol(S, Decl(ttttIntersectionExtraCheckMembers.ts, 5, 11))
+>U : Symbol(U, Decl(ttttIntersectionExtraCheckMembers.ts, 5, 23))
+>y : Symbol(y, Decl(ttttIntersectionExtraCheckMembers.ts, 5, 80))
+>S : Symbol(S, Decl(ttttIntersectionExtraCheckMembers.ts, 5, 11))
+>S : Symbol(S, Decl(ttttIntersectionExtraCheckMembers.ts, 5, 11))
+>U : Symbol(U, Decl(ttttIntersectionExtraCheckMembers.ts, 5, 23))
+>U : Symbol(U, Decl(ttttIntersectionExtraCheckMembers.ts, 5, 23))
+
+  const z: Z = x;
+>z : Symbol(z, Decl(ttttIntersectionExtraCheckMembers.ts, 6, 7))
+>Z : Symbol(Z, Decl(ttttIntersectionExtraCheckMembers.ts, 0, 0))
+>x : Symbol(x, Decl(ttttIntersectionExtraCheckMembers.ts, 5, 55))
+
+  const z2: Z = y;
+>z2 : Symbol(z2, Decl(ttttIntersectionExtraCheckMembers.ts, 7, 7))
+>Z : Symbol(Z, Decl(ttttIntersectionExtraCheckMembers.ts, 0, 0))
+>y : Symbol(y, Decl(ttttIntersectionExtraCheckMembers.ts, 5, 80))
+}
+
