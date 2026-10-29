@@ -278,7 +278,7 @@ tsc keeps one local symbol per block for a name's exported and local declaration
 - A NUL byte inside the file is an invalid character (at_eof() in parser.c, 2026-10-14) in the token scanner and the
   list loops; other `*p.pos` stops (keyword lookahead, JSON values) still take it as an end, harmlessly as far as
   probed (they see no token, the list skips it). [fixed 2026-10-14]
-- A class member starting with `<` (`class D { <T>() {} }`): tsc says '=>' expected at the `{`, tttt TS2304/TS1109. A parameter list after type parameters then `{` is an arrow missing its `=>`. Test ttttGenericArrowMissingArrow. [fixed 07580c722]
+- A class member starting with `<` (`class D { <T>() {} }`): tsc says '=>' expected at the `{`, tttt TS2304/TS1109. A parameter list after type parameters then `{` is an arrow missing its `=>`. Test ttttGenericArrowMissingArrow. [fixed 6c4973288]
 - Object literal grammar errors in destructuring assignment targets (TS1255 `!`, TS1042 modifiers, TS1162 `?`): tsc
   reports checkGrammarObjectLiteralExpression's errors for a target exactly when checkObjectLiteral runs on it, i.e.
   when the right side asks for its contextual type: `({ a!: a } = { a: 1 })` reports, `= x` and `for ({ a!: a } of
@@ -607,7 +607,7 @@ symbolProperty18 (TS7022), conditionalContextualReturnSubstitutionCache drop-as 
 [text]). Fixed:
 - nonPrimitiveAndEmptyObject delete-stmt: `const { fooProps = {} } = foo` with `fooProps?: BarProps & object` and an
   empty BarProps is `{}` in tsgo (mutual strict subtypes, tsgo's union order decides), `BarProps & object` in tttt
-  (ty_binding_element_type's mutual-subtype guard). Test ttttBindingDefaultMutualSubtype. [fixed da8e5066c]
+  (ty_binding_element_type's mutual-subtype guard). Test ttttBindingDefaultMutualSubtype. [fixed ceab20e12]
 Not fixed:
 - declarationEmitNestedAnonymousMappedType drop-as: tsgo's baseline has TS2313's related TS2751 "Circularity
   originates in type at this location", tttt not; the CLI (projdiff, noEmit) is byte-identical: the harness's emit
@@ -648,7 +648,7 @@ Known: recursiveClassBaseType (TS2310, 3), globalThisGlobalExportAsGlobal, recur
 exportSpecifierReferencingOuterDeclaration3. Fixed:
 - contextualTypingGenericFunction2 delete-stmt: `export const a` as parameters, `const` a parameter of its own (two
   TS7006 '(Missing)', TS2300). Test ttttParameterModifierThenReservedWord. [fixed 8ff5b4867] Left: its types baseline,
-  the object literal in a bodiless declaration's parameter initializer typed contextually by tsgo, any in tttt. Test ttttBodilessInitializerContext. [fixed 846be68bc]
+  the object literal in a bodiless declaration's parameter initializer typed contextually by tsgo, any in tttt. Test ttttBodilessInitializerContext. [fixed e06d37706]
 - excessPropertyChecksWithNestedIntersections, typeSatisfaction_contextualTyping2,
   declarationEmitTypeParameterNameReusedInOverloads delete-stmt: node ends under recovery. Test ttttRecoveryNodeEnds2.
   [fixed c5fa02a3a]
@@ -713,7 +713,7 @@ Not fixed:
   `,` the array literal wants (function expressions only: jsxTernaryWithObjectInAttribute broke when every list did).
   Test ttttParameterListAbortAtComma. [fixed 957142ee9] Left: contextually typed (the type assertion), tsgo's
   contextual check infers `never` from the missing body (getReturnTypeFromBody, no HasImplicitReturn), tttt `any`
-  (function_return_type's !body branch); types baseline only. Test ttttMissingBodyContextualReturn. [fixed b6758ecd8]
+  (function_return_type's !body branch); types baseline only. Test ttttMissingBodyContextualReturn. [fixed 92b863223]
 - allowUnescapedParagraphAndLineSeparatorsInStringLiteral delete-stmt: the errors baseline's squiggles after a U+2028
   inside an unterminated string: tsc's line starts count U+2028/U+2029, the harness's rendering doesn't (positions
   agree). [text]
