@@ -1,0 +1,103 @@
+//// [test/cases/ttttBodilessInitializerContext.ts] ////
+
+=== ttttBodilessInitializerContext.ts ===
+// A parameter initializer of a signature without a body is only TS2371 (checkVariableLikeDeclaration returns
+// there), but its type is still checkExpression's, with the parameter's annotation as contextual type; nothing in
+// it is checked or reported. Seed 20261116, contextualTypingGenericFunction2 delete-stmt
+declare function h(o: { p: 1 | 2, f: (x: number) => void } = { p: 1, f: x => {} }): void;
+>h : (o?: { p: 1 | 2; f: (x: number) => void; }) => void
+>o : { p: 1 | 2; f: (x: number) => void; }
+>p : 1 | 2
+>f : (x: number) => void
+>x : number
+>{ p: 1, f: x => {} } : { p: 1; f: (x: number) => void; }
+>p : 1
+>1 : 1
+>f : (x: number) => void
+>x => {} : (x: number) => void
+>x : number
+
+declare class K { m(o: { f: (x: number) => void } = { f: x => {} }): void; }
+>K : K
+>m : (o?: { f: (x: number) => void; }) => void
+>o : { f: (x: number) => void; }
+>f : (x: number) => void
+>x : number
+>{ f: x => {} } : { f: (x: number) => void; }
+>f : (x: number) => void
+>x => {} : (x: number) => void
+>x : number
+
+interface I { m(o: { f: (x: number) => void } = { f: x => {} }): void; }
+>m : (o?: { f: (x: number) => void; }) => void
+>o : { f: (x: number) => void; }
+>f : (x: number) => void
+>x : number
+>{ f: x => {} } : { f: (x: number) => void; }
+>f : (x: number) => void
+>x => {} : (x: number) => void
+>x : number
+
+type T = (o: { f: (x: number) => void } = { f: x => {} }) => void;
+>T : T
+>o : { f: (x: number) => void; }
+>f : (x: number) => void
+>x : number
+>{ f: x => {} } : { f: (x: number) => void; }
+>f : (x: number) => void
+>x => {} : (x: number) => void
+>x : number
+
+declare function h1(o: { f: (x: number) => void } = { f: x => x.foo }): void;
+>h1 : (o?: { f: (x: number) => void; }) => void
+>o : { f: (x: number) => void; }
+>f : (x: number) => void
+>x : number
+>{ f: x => x.foo } : { f: (x: number) => any; }
+>f : (x: number) => any
+>x => x.foo : (x: number) => any
+>x : number
+>x.foo : any
+>x : number
+>foo : any
+
+declare function h2(o: { p: string } = { p: 1, q: 2 }): void;
+>h2 : (o?: { p: string; }) => void
+>o : { p: string; }
+>p : string
+>{ p: 1, q: 2 } : { p: number; q: number; }
+>p : number
+>1 : 1
+>q : number
+>2 : 2
+
+declare function h3([a, b]: [number, string] = [1, ""]): void;
+>h3 : ([a, b]?: [number, string]) => void
+>a : number
+>b : string
+>[1, ""] : [number, string]
+>1 : 1
+>"" : ""
+
+declare function h5(o = { f: (x: number) => x }): void;
+>h5 : (o?: { f: (x: number) => number; }) => void
+>o : { f: (x: number) => number; }
+>{ f: (x: number) => x } : { f: (x: number) => number; }
+>f : (x: number) => number
+>(x: number) => x : (x: number) => number
+>x : number
+>x : number
+
+function ov(o: { f: (x: number) => void } = { f: x => {} }): void;
+>ov : (o?: { f: (x: number) => void; }) => void
+>o : { f: (x: number) => void; }
+>f : (x: number) => void
+>x : number
+>{ f: x => {} } : { f: (x: number) => void; }
+>f : (x: number) => void
+>x => {} : (x: number) => void
+>x : number
+
+function ov() {}
+>ov : (o?: { f: (x: number) => void; }) => void
+

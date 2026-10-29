@@ -1,0 +1,81 @@
+//// [test/cases/ttttBodilessInitializerContext.ts] ////
+
+=== ttttBodilessInitializerContext.ts ===
+// A parameter initializer of a signature without a body is only TS2371 (checkVariableLikeDeclaration returns
+// there), but its type is still checkExpression's, with the parameter's annotation as contextual type; nothing in
+// it is checked or reported. Seed 20261116, contextualTypingGenericFunction2 delete-stmt
+declare function h(o: { p: 1 | 2, f: (x: number) => void } = { p: 1, f: x => {} }): void;
+>h : Symbol(h, Decl(ttttBodilessInitializerContext.ts, 0, 0))
+>o : Symbol(o, Decl(ttttBodilessInitializerContext.ts, 3, 19))
+>p : Symbol(p, Decl(ttttBodilessInitializerContext.ts, 3, 23))
+>f : Symbol(f, Decl(ttttBodilessInitializerContext.ts, 3, 33))
+>x : Symbol(x, Decl(ttttBodilessInitializerContext.ts, 3, 38))
+>p : Symbol(p, Decl(ttttBodilessInitializerContext.ts, 3, 62))
+>f : Symbol(f, Decl(ttttBodilessInitializerContext.ts, 3, 68))
+>x : Symbol(x, Decl(ttttBodilessInitializerContext.ts, 3, 71))
+
+declare class K { m(o: { f: (x: number) => void } = { f: x => {} }): void; }
+>K : Symbol(K, Decl(ttttBodilessInitializerContext.ts, 3, 89))
+>m : Symbol(K.m, Decl(ttttBodilessInitializerContext.ts, 4, 17))
+>o : Symbol(o, Decl(ttttBodilessInitializerContext.ts, 4, 20))
+>f : Symbol(f, Decl(ttttBodilessInitializerContext.ts, 4, 24))
+>x : Symbol(x, Decl(ttttBodilessInitializerContext.ts, 4, 29))
+>f : Symbol(f, Decl(ttttBodilessInitializerContext.ts, 4, 53))
+>x : Symbol(x, Decl(ttttBodilessInitializerContext.ts, 4, 56))
+
+interface I { m(o: { f: (x: number) => void } = { f: x => {} }): void; }
+>I : Symbol(I, Decl(ttttBodilessInitializerContext.ts, 4, 76))
+>m : Symbol(I.m, Decl(ttttBodilessInitializerContext.ts, 5, 13))
+>o : Symbol(o, Decl(ttttBodilessInitializerContext.ts, 5, 16))
+>f : Symbol(f, Decl(ttttBodilessInitializerContext.ts, 5, 20))
+>x : Symbol(x, Decl(ttttBodilessInitializerContext.ts, 5, 25))
+>f : Symbol(f, Decl(ttttBodilessInitializerContext.ts, 5, 49))
+>x : Symbol(x, Decl(ttttBodilessInitializerContext.ts, 5, 52))
+
+type T = (o: { f: (x: number) => void } = { f: x => {} }) => void;
+>T : Symbol(T, Decl(ttttBodilessInitializerContext.ts, 5, 72))
+>o : Symbol(o, Decl(ttttBodilessInitializerContext.ts, 6, 10))
+>f : Symbol(f, Decl(ttttBodilessInitializerContext.ts, 6, 14))
+>x : Symbol(x, Decl(ttttBodilessInitializerContext.ts, 6, 19))
+>f : Symbol(f, Decl(ttttBodilessInitializerContext.ts, 6, 43))
+>x : Symbol(x, Decl(ttttBodilessInitializerContext.ts, 6, 46))
+
+declare function h1(o: { f: (x: number) => void } = { f: x => x.foo }): void;
+>h1 : Symbol(h1, Decl(ttttBodilessInitializerContext.ts, 6, 66))
+>o : Symbol(o, Decl(ttttBodilessInitializerContext.ts, 7, 20))
+>f : Symbol(f, Decl(ttttBodilessInitializerContext.ts, 7, 24))
+>x : Symbol(x, Decl(ttttBodilessInitializerContext.ts, 7, 29))
+>f : Symbol(f, Decl(ttttBodilessInitializerContext.ts, 7, 53))
+>x : Symbol(x, Decl(ttttBodilessInitializerContext.ts, 7, 56))
+>x : Symbol(x, Decl(ttttBodilessInitializerContext.ts, 7, 56))
+
+declare function h2(o: { p: string } = { p: 1, q: 2 }): void;
+>h2 : Symbol(h2, Decl(ttttBodilessInitializerContext.ts, 7, 77))
+>o : Symbol(o, Decl(ttttBodilessInitializerContext.ts, 8, 20))
+>p : Symbol(p, Decl(ttttBodilessInitializerContext.ts, 8, 24))
+>p : Symbol(p, Decl(ttttBodilessInitializerContext.ts, 8, 40))
+>q : Symbol(q, Decl(ttttBodilessInitializerContext.ts, 8, 46))
+
+declare function h3([a, b]: [number, string] = [1, ""]): void;
+>h3 : Symbol(h3, Decl(ttttBodilessInitializerContext.ts, 8, 61))
+>a : Symbol(a, Decl(ttttBodilessInitializerContext.ts, 9, 21))
+>b : Symbol(b, Decl(ttttBodilessInitializerContext.ts, 9, 23))
+
+declare function h5(o = { f: (x: number) => x }): void;
+>h5 : Symbol(h5, Decl(ttttBodilessInitializerContext.ts, 9, 62))
+>o : Symbol(o, Decl(ttttBodilessInitializerContext.ts, 10, 20))
+>f : Symbol(f, Decl(ttttBodilessInitializerContext.ts, 10, 25))
+>x : Symbol(x, Decl(ttttBodilessInitializerContext.ts, 10, 30))
+>x : Symbol(x, Decl(ttttBodilessInitializerContext.ts, 10, 30))
+
+function ov(o: { f: (x: number) => void } = { f: x => {} }): void;
+>ov : Symbol(ov, Decl(ttttBodilessInitializerContext.ts, 10, 55), Decl(ttttBodilessInitializerContext.ts, 11, 66))
+>o : Symbol(o, Decl(ttttBodilessInitializerContext.ts, 11, 12))
+>f : Symbol(f, Decl(ttttBodilessInitializerContext.ts, 11, 16))
+>x : Symbol(x, Decl(ttttBodilessInitializerContext.ts, 11, 21))
+>f : Symbol(f, Decl(ttttBodilessInitializerContext.ts, 11, 45))
+>x : Symbol(x, Decl(ttttBodilessInitializerContext.ts, 11, 48))
+
+function ov() {}
+>ov : Symbol(ov, Decl(ttttBodilessInitializerContext.ts, 10, 55), Decl(ttttBodilessInitializerContext.ts, 11, 66))
+

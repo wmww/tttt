@@ -192,6 +192,9 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs);
 // An overload's parameter's initializer checked when its type is asked (tsc's checkDeclarationInitializer without a
 // quick type: function_impl_check_compared_initializers())
 void initialized_binding_typecheck_overload_value(InitializedBinding* me, ErrorCtx* errs);
+// A bodiless signature's parameter's initializer typed with its contextual type and nothing reported: TS2371 is all
+// tsc's checkVariableLikeDeclaration says there, but the initializer's type is still its checkExpression's
+void initialized_binding_type_bodiless_value(InitializedBinding* me);
 // A parameter (`span`: all of it)
 void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, bool bodiless, ErrorCtx* errs);
 

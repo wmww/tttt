@@ -1161,6 +1161,8 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
                 2371,
                 "A parameter initializer is only allowed in a function or constructor implementation."
             );
+            // (A type's signature has no other check of its parameters; a declaration's are checked below)
+            if (is_type) initialized_binding_type_bodiless_value((InitializedBinding*)&i->initializer);
         }
         if ((is_type || !my has_body) && is_pattern) report_pattern_initializers(&i->initializer.binding, errs);
         // (A type's signature has no other check of its parameters: the elements of a pattern have to exist too, tsc's
@@ -1577,6 +1579,7 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         // returns there, after the annotation)
         if (!my has_body && initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY) {
             if (i->initializer.binding.has_explicit_type) type_typecheck(binding_type(&i->initializer.binding), errs);
+            initialized_binding_type_bodiless_value(&i->initializer);
             // (A pattern's elements are checked before that: checkSourceElements of the elements, whose types look at
             // the initializer under a written type, getBindingElementTypeFromParentType)
             Binding* binding = (Binding*)&i->initializer.binding;

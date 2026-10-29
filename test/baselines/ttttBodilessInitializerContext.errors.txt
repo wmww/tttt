@@ -1,0 +1,44 @@
+ttttBodilessInitializerContext.ts(4,20): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttBodilessInitializerContext.ts(5,21): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttBodilessInitializerContext.ts(6,17): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttBodilessInitializerContext.ts(7,11): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttBodilessInitializerContext.ts(8,21): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttBodilessInitializerContext.ts(9,21): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttBodilessInitializerContext.ts(10,21): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttBodilessInitializerContext.ts(11,21): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttBodilessInitializerContext.ts(12,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+
+
+==== ttttBodilessInitializerContext.ts (9 errors) ====
+    // A parameter initializer of a signature without a body is only TS2371 (checkVariableLikeDeclaration returns
+    // there), but its type is still checkExpression's, with the parameter's annotation as contextual type; nothing in
+    // it is checked or reported. Seed 20261116, contextualTypingGenericFunction2 delete-stmt
+    declare function h(o: { p: 1 | 2, f: (x: number) => void } = { p: 1, f: x => {} }): void;
+                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    declare class K { m(o: { f: (x: number) => void } = { f: x => {} }): void; }
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    interface I { m(o: { f: (x: number) => void } = { f: x => {} }): void; }
+                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    type T = (o: { f: (x: number) => void } = { f: x => {} }) => void;
+              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    declare function h1(o: { f: (x: number) => void } = { f: x => x.foo }): void;
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    declare function h2(o: { p: string } = { p: 1, q: 2 }): void;
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    declare function h3([a, b]: [number, string] = [1, ""]): void;
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    declare function h5(o = { f: (x: number) => x }): void;
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    function ov(o: { f: (x: number) => void } = { f: x => {} }): void;
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    function ov() {}
+    

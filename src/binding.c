@@ -1270,6 +1270,16 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
     ty_leave_node(checker, saved);
 }
 
+void initialized_binding_type_bodiless_value(InitializedBinding* me) {
+    // (Its function expressions' bodies aren't checked: nothing checks the initializer itself)
+    bool defer = current_checker->defer_checks;
+    current_checker->defer_checks = false;
+    bool entered = ty_context_root_enter(me);
+    initialized_binding_check_value(me);
+    ty_context_root_leave(entered);
+    current_checker->defer_checks = defer;
+}
+
 void initialized_binding_typecheck_overload_value(InitializedBinding* me, ErrorCtx* errs) {
     bool entered = ty_context_root_enter(me);
     initialized_binding_check_value(me);
