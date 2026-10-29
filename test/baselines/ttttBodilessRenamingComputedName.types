@@ -1,0 +1,34 @@
+//// [test/cases/ttttBodilessRenamingComputedName.ts] ////
+
+=== ttttBodilessRenamingComputedName.ts ===
+// A renaming with a computed name in a parameter of a signature without a body says nothing about the name (bun cases
+// 03-C11b, 34-C14b; a function type's too, which the harness's declaration emit reports anyway): tsc's
+// checkVariableLikeDeclaration returns at the renaming (TS2842) before checkComputedPropertyName
+declare function fe({ [undeclared]: z }: any): void;
+>fe : ({ [undeclared]: z }: any) => void
+>undeclared : any
+>z : any
+
+declare function fe3({ x: { [missing2]: b } }: any): void;
+>fe3 : ({ x: { [missing2]: b } }: any) => void
+>x : any
+>missing2 : any
+>b : any
+
+declare class C { m({ [missing3]: c }: any): void; }
+>C : C
+>m : ({ [missing3]: c }: any) => void
+>missing3 : any
+>c : any
+
+function body({ [missing4]: d }: any) { return d; }
+>body : ({ [missing4]: d }: any) => any
+>missing4 : any
+>d : any
+>d : any
+
+declare function fe2({ [missing5]: { e } }: any): void;
+>fe2 : ({ [missing5]: { e } }: any) => void
+>missing5 : any
+>e : any
+

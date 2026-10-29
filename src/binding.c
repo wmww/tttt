@@ -193,7 +193,14 @@ void binding_lookup_names(Binding* me, Scope* names, ErrorCtx* errs) {
             my access_site = scope_access_site(names);
             for_each (i, vec_object_binding_item, &my object) {
                 if (i->computed_key) {
-                    expr_lookup_names(i->computed_key, names, errs);
+                    // (A renaming in a parameter of a signature without a body isn't checked beyond TS2842, its
+                    // computed name neither: tsc's checkVariableLikeDeclaration returns first, `({ [k]: a }) => void`
+                    // says nothing of an undeclared k)
+                    FlowBuilder const* flow = scope_flow(names);
+                    Scope const* function_scope = flow && flow->parameter_initializing ? flow->parameter_function_scope : nullptr;
+                    bool unchecked = function_scope && function_scope->function && !function_scope->function->has_body &&
+                        i->target.tag == BINDING_IDENTIFIER && (!i->target.rest || i->target.rest_property_name);
+                    expr_lookup_names(i->computed_key, names, unchecked ? binder_discarded_errs(names->binder) : errs);
                 }
                 binding_lookup_names(&i->target, names, errs);
             }

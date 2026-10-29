@@ -1,0 +1,28 @@
+//// [test/cases/ttttBodilessRenamingComputedName.ts] ////
+
+=== ttttBodilessRenamingComputedName.ts ===
+// A renaming with a computed name in a parameter of a signature without a body says nothing about the name (bun cases
+// 03-C11b, 34-C14b; a function type's too, which the harness's declaration emit reports anyway): tsc's
+// checkVariableLikeDeclaration returns at the renaming (TS2842) before checkComputedPropertyName
+declare function fe({ [undeclared]: z }: any): void;
+>fe : Symbol(fe, Decl(ttttBodilessRenamingComputedName.ts, 0, 0))
+>z : Symbol(z, Decl(ttttBodilessRenamingComputedName.ts, 3, 21))
+
+declare function fe3({ x: { [missing2]: b } }: any): void;
+>fe3 : Symbol(fe3, Decl(ttttBodilessRenamingComputedName.ts, 3, 52))
+>b : Symbol(b, Decl(ttttBodilessRenamingComputedName.ts, 4, 27))
+
+declare class C { m({ [missing3]: c }: any): void; }
+>C : Symbol(C, Decl(ttttBodilessRenamingComputedName.ts, 4, 58))
+>m : Symbol(C.m, Decl(ttttBodilessRenamingComputedName.ts, 5, 17))
+>c : Symbol(c, Decl(ttttBodilessRenamingComputedName.ts, 5, 21))
+
+function body({ [missing4]: d }: any) { return d; }
+>body : Symbol(body, Decl(ttttBodilessRenamingComputedName.ts, 5, 52))
+>d : Symbol(d, Decl(ttttBodilessRenamingComputedName.ts, 6, 15))
+>d : Symbol(d, Decl(ttttBodilessRenamingComputedName.ts, 6, 15))
+
+declare function fe2({ [missing5]: { e } }: any): void;
+>fe2 : Symbol(fe2, Decl(ttttBodilessRenamingComputedName.ts, 6, 51))
+>e : Symbol(e, Decl(ttttBodilessRenamingComputedName.ts, 7, 36))
+

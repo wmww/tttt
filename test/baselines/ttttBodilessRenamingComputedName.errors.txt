@@ -1,0 +1,27 @@
+ttttBodilessRenamingComputedName.ts(4,37): error TS2842: 'z' is an unused renaming of '[undeclared]'. Did you intend to use it as a type annotation?
+ttttBodilessRenamingComputedName.ts(5,41): error TS2842: 'b' is an unused renaming of '[missing2]'. Did you intend to use it as a type annotation?
+ttttBodilessRenamingComputedName.ts(6,35): error TS2842: 'c' is an unused renaming of '[missing3]'. Did you intend to use it as a type annotation?
+ttttBodilessRenamingComputedName.ts(7,18): error TS2304: Cannot find name 'missing4'.
+ttttBodilessRenamingComputedName.ts(8,25): error TS2304: Cannot find name 'missing5'.
+
+
+==== ttttBodilessRenamingComputedName.ts (5 errors) ====
+    // A renaming with a computed name in a parameter of a signature without a body says nothing about the name (bun cases
+    // 03-C11b, 34-C14b; a function type's too, which the harness's declaration emit reports anyway): tsc's
+    // checkVariableLikeDeclaration returns at the renaming (TS2842) before checkComputedPropertyName
+    declare function fe({ [undeclared]: z }: any): void;
+                                        ~
+!!! error TS2842: 'z' is an unused renaming of '[undeclared]'. Did you intend to use it as a type annotation?
+    declare function fe3({ x: { [missing2]: b } }: any): void;
+                                            ~
+!!! error TS2842: 'b' is an unused renaming of '[missing2]'. Did you intend to use it as a type annotation?
+    declare class C { m({ [missing3]: c }: any): void; }
+                                      ~
+!!! error TS2842: 'c' is an unused renaming of '[missing3]'. Did you intend to use it as a type annotation?
+    function body({ [missing4]: d }: any) { return d; }
+                     ~~~~~~~~
+!!! error TS2304: Cannot find name 'missing4'.
+    declare function fe2({ [missing5]: { e } }: any): void;
+                            ~~~~~~~~
+!!! error TS2304: Cannot find name 'missing5'.
+    
