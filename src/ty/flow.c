@@ -1492,11 +1492,12 @@ static bool type_at_flow_assignment(FlowQuery* q, FlowNode const* flow, FlowType
             return true;
         }
         // (`x ||= e` is a definite assignment, not a compound one: tsc's getAssignmentTargetKind)
-        if (assign->kind == FLOW_ASSIGN_EXPR && assign->assignment->binary_op->op == BINARY_OP_EQUAL) {
-            // `x = x + 1` (tsc's isInCompoundLikeAssignment)
-            Expr const* left = &assign->assignment->binary_op->left;
-            bool compound_like = (left->tag == EXPR_IDENTIFIER && left->identifier.compound_like_target) ||
-                (left->tag == EXPR_PROPERTY && left->property->compound_like_target);
+        // `x = x + 1`, `x! = x + 1`, `[x] = s + s` (tsc's isInCompoundLikeAssignment of the reference)
+        if (assign->target) {
+            Expr const* target = assign->target;
+            while (target->tag == EXPR_UNARY_OP && target->unary_op->op == UNARY_OP_RIGHT_BANG) target = &target->unary_op->expr;
+            bool compound_like = (target->tag == EXPR_IDENTIFIER && target->identifier.compound_like_target) ||
+                (target->tag == EXPR_PROPERTY && target->property->compound_like_target);
             if (compound_like) declared = base_type_of_literal(me, declared);
         }
         if (declared->kind == TY_UNION) {

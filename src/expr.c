@@ -2047,6 +2047,8 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 // A destructuring assignment. Nested in another pattern (`[[a] = [1]] = e`) the default comes first
                 if (assignment_target) expr_lookup_names(right, names, errs);
                 flow->assignment_target = FLOW_TARGET_DEFINITE;
+                // (tsc's GetAssignmentTarget walks up through array and object literals: `[x] = s + s` is compound-like)
+                flow->compound_like_target = is_compound_like(right);
                 expr_lookup_names(left, names, errs);
                 if (!assignment_target) expr_lookup_names(right, names, errs);
                 // TODO: when nested, tsc makes these nodes twice (here and from the outer pattern)
@@ -2111,6 +2113,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                         expr_lookup_names_chain_flow(me, names, errs, true_target, false_target, chain_continues, nullish_condition);
                     } else {
                         flow->assignment_target = assignment_target; // `x! = 1`
+                        flow->compound_like_target = compound_like_target;
                         flow->read_target = true;
                         flow->nested_read_target = assignment_target != FLOW_TARGET_NONE;
                         expr_lookup_names(operand, names, errs);
@@ -2491,6 +2494,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                     if (getter) function_impl_pair_setter(i->value.function, getter->value.function, nullptr);
                 }
                 flow->assignment_target = assignment_target; // A pattern: the values are the targets
+                flow->compound_like_target = compound_like_target;
                 i->pseudo_contextual = flow->contextual_depth > 0;
                 i->pseudo_const = flow->const_context;
                 if (object_item_is_private_name(i)) i->private_name_in_class = scope_enclosing_class(names) != nullptr;
@@ -2512,6 +2516,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             my assignment_pattern = assignment_target != FLOW_TARGET_NONE;
             for_each (i, vec_expr, &my array) {
                 flow->assignment_target = assignment_target;
+                flow->compound_like_target = compound_like_target;
                 if (i->tag == EXPR_TEMPLATE && i->template_->tag && !expr_is_perenthisized(i)) i->template_->array_element = true;
                 // (A destructuring rest element with an initializer is TS1186 and never checked: its names resolve
                 // silently, see expr_typecheck())
@@ -2533,6 +2538,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
 
         case EXPR_SPREAD:
             flow->assignment_target = assignment_target;
+            flow->compound_like_target = compound_like_target;
             flow->read_target = true;
             flow->nested_read_target = assignment_target != FLOW_TARGET_NONE;
             expr_lookup_names(my spread, names, errs);

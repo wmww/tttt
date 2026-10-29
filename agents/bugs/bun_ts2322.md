@@ -117,7 +117,9 @@ last line. The real cause is then elsewhere, and the entry says where. Show a ca
   B as string (widened), not "b", so the callback's TS2322 shows; tttt keeps the literal. [open]
 - 25-C9a and 25-C9b: a compound-like assignment through a `!` or an array destructuring target (`[x] = s + s`, `x! =
   x + 1`). tsc's isInCompoundLikeAssignment passes through NonNull and array literals (GetAssignmentTarget), so the
-  target's type is its base literal type. tttt's compound_like_target stops at them. TS2322 spurious. [open]
+  target's type is its base literal type. tttt's compound_like_target stopped at them; it also widened a property
+  access target, which tsc never does (getFlowTypeOfAccessExpression: only the flow type after the assignment).
+  TS2322 spurious. [fixed COMMIT-C9]
 - 28-C33d: `for (var a = 1 of [])` (TS1190). tsc still checks the initializer against the element type never,
   tttt doesn't. TS2322 missing. [open]
 - 31-P3: `interface I { get x(): this }`, `const r: null = i.x`. tsc reports nothing, tttt reports I to null.

@@ -1,0 +1,145 @@
+//// [test/cases/ttttCompoundLikeTargetThroughPatterns.ts] ////
+
+=== ttttCompoundLikeTargetThroughPatterns.ts ===
+// tsc's isInCompoundLikeAssignment walks up through `!`, array and object literals and spreads (GetAssignmentTarget);
+// a property access target is never widened (getFlowTypeOfAccessExpression), only its flow type after the assignment
+declare let s: string;
+>s : Symbol(s, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 2, 11))
+
+let z = 1;
+>z : Symbol(z, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 3, 3))
+
+z! = z + 1;
+>z : Symbol(z, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 3, 3))
+>z : Symbol(z, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 3, 3))
+
+let w: number = 1 as 1 | 2;
+>w : Symbol(w, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 5, 3))
+
+w! = w + 1;
+>w : Symbol(w, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 5, 3))
+>w : Symbol(w, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 5, 3))
+
+let v = "a" as "a" | "b";
+>v : Symbol(v, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 7, 3))
+
+[v] = s + s;
+>v : Symbol(v, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 7, 3))
+>s : Symbol(s, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 2, 11))
+>s : Symbol(s, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 2, 11))
+
+({ a: v } = { a: s + s });
+>a : Symbol(a, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 9, 2))
+>v : Symbol(v, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 7, 3))
+>a : Symbol(a, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 9, 13))
+>s : Symbol(s, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 2, 11))
+>s : Symbol(s, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 2, 11))
+
+let u: 1 | 2 = 1;
+>u : Symbol(u, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 10, 3))
+
+[u] = [u + 1];
+>u : Symbol(u, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 10, 3))
+>u : Symbol(u, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 10, 3))
+
+(u!) = u + 1;
+>u : Symbol(u, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 10, 3))
+>u : Symbol(u, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 10, 3))
+
+[...[u]] = [u + 1];
+>u : Symbol(u, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 10, 3))
+>u : Symbol(u, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 10, 3))
+
+let t: 1 | 2 = 1;
+>t : Symbol(t, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 14, 3))
+
+[t = t + 1] = [];
+>t : Symbol(t, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 14, 3))
+>t : Symbol(t, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 14, 3))
+
+t;
+>t : Symbol(t, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 14, 3))
+
+({ t } = { t: 1 });
+>t : Symbol(t, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 17, 2))
+>t : Symbol(t, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 17, 10))
+
+var o = { p: 1 as 1 | 2 };
+>o : Symbol(o, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 3), Decl(ttttCompoundLikeTargetThroughPatterns.ts, 28, 3))
+>p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+
+[o.p] = o.p + 1 as any;
+>o.p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+>o : Symbol(o, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 3), Decl(ttttCompoundLikeTargetThroughPatterns.ts, 28, 3))
+>p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+>o.p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+>o : Symbol(o, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 3), Decl(ttttCompoundLikeTargetThroughPatterns.ts, 28, 3))
+>p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+
+[o.p!] = [o.p + 1];
+>o.p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+>o : Symbol(o, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 3), Decl(ttttCompoundLikeTargetThroughPatterns.ts, 28, 3))
+>p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+>o.p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+>o : Symbol(o, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 3), Decl(ttttCompoundLikeTargetThroughPatterns.ts, 28, 3))
+>p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+
+o.p! = o.p + 1;
+>o.p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+>o : Symbol(o, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 3), Decl(ttttCompoundLikeTargetThroughPatterns.ts, 28, 3))
+>p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+>o.p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+>o : Symbol(o, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 3), Decl(ttttCompoundLikeTargetThroughPatterns.ts, 28, 3))
+>p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+
+o.p;
+>o.p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+>o : Symbol(o, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 3), Decl(ttttCompoundLikeTargetThroughPatterns.ts, 28, 3))
+>p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+
+let q: 1 | 2 = 1;
+>q : Symbol(q, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 23, 3))
+
+q! = q + 1;
+>q : Symbol(q, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 23, 3))
+>q : Symbol(q, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 23, 3))
+
+q;
+>q : Symbol(q, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 23, 3))
+
+[q] = q + 1;
+>q : Symbol(q, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 23, 3))
+>q : Symbol(q, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 23, 3))
+
+q;
+>q : Symbol(q, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 23, 3))
+
+var o = { p: 1 as 1 | 2 };
+>o : Symbol(o, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 3), Decl(ttttCompoundLikeTargetThroughPatterns.ts, 28, 3))
+>p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 28, 9))
+
+o.p = o.p + 1;
+>o.p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+>o : Symbol(o, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 3), Decl(ttttCompoundLikeTargetThroughPatterns.ts, 28, 3))
+>p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+>o.p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+>o : Symbol(o, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 3), Decl(ttttCompoundLikeTargetThroughPatterns.ts, 28, 3))
+>p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+
+o.p;
+>o.p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+>o : Symbol(o, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 3), Decl(ttttCompoundLikeTargetThroughPatterns.ts, 28, 3))
+>p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+
+o["p"] = o.p + 1;
+>o : Symbol(o, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 3), Decl(ttttCompoundLikeTargetThroughPatterns.ts, 28, 3))
+>"p" : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+>o.p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+>o : Symbol(o, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 3), Decl(ttttCompoundLikeTargetThroughPatterns.ts, 28, 3))
+>p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+
+o.p;
+>o.p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+>o : Symbol(o, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 3), Decl(ttttCompoundLikeTargetThroughPatterns.ts, 28, 3))
+>p : Symbol(p, Decl(ttttCompoundLikeTargetThroughPatterns.ts, 18, 9))
+

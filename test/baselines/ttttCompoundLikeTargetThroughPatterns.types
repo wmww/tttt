@@ -1,0 +1,233 @@
+//// [test/cases/ttttCompoundLikeTargetThroughPatterns.ts] ////
+
+=== ttttCompoundLikeTargetThroughPatterns.ts ===
+// tsc's isInCompoundLikeAssignment walks up through `!`, array and object literals and spreads (GetAssignmentTarget);
+// a property access target is never widened (getFlowTypeOfAccessExpression), only its flow type after the assignment
+declare let s: string;
+>s : string
+
+let z = 1;
+>z : number
+>1 : 1
+
+z! = z + 1;
+>z! = z + 1 : number
+>z! : number
+>z : number
+>z + 1 : number
+>z : number
+>1 : 1
+
+let w: number = 1 as 1 | 2;
+>w : number
+>1 as 1 | 2 : 1 | 2
+>1 : 1
+
+w! = w + 1;
+>w! = w + 1 : number
+>w! : number
+>w : number
+>w + 1 : number
+>w : number
+>1 : 1
+
+let v = "a" as "a" | "b";
+>v : "a" | "b"
+>"a" as "a" | "b" : "a" | "b"
+>"a" : "a"
+
+[v] = s + s;
+>[v] = s + s : string
+>[v] : [string]
+>v : string
+>s + s : string
+>s : string
+>s : string
+
+({ a: v } = { a: s + s });
+>({ a: v } = { a: s + s }) : { a: string; }
+>{ a: v } = { a: s + s } : { a: string; }
+>{ a: v } : { a: "a" | "b"; }
+>a : "a" | "b"
+>v : "a" | "b"
+>{ a: s + s } : { a: string; }
+>a : string
+>s + s : string
+>s : string
+>s : string
+
+let u: 1 | 2 = 1;
+>u : 1 | 2
+>1 : 1
+
+[u] = [u + 1];
+>[u] = [u + 1] : [number]
+>[u] : [1 | 2]
+>u : 1 | 2
+>[u + 1] : [number]
+>u + 1 : number
+>u : 1
+>1 : 1
+
+(u!) = u + 1;
+>(u!) = u + 1 : number
+>(u!) : number
+>u! : number
+>u : number
+>u + 1 : number
+>u : 1 | 2
+>1 : 1
+
+[...[u]] = [u + 1];
+>[...[u]] = [u + 1] : [number]
+>[...[u]] : [1 | 2]
+>...[u] : 1 | 2
+>[u] : [1 | 2]
+>u : 1 | 2
+>[u + 1] : [number]
+>u + 1 : number
+>u : number
+>1 : 1
+
+let t: 1 | 2 = 1;
+>t : 1 | 2
+>1 : 1
+
+[t = t + 1] = [];
+>[t = t + 1] = [] : []
+>[t = t + 1] : [number]
+>t = t + 1 : number
+>t : number
+>t + 1 : number
+>t : 1
+>1 : 1
+>[] : []
+
+t;
+>t : number
+
+({ t } = { t: 1 });
+>({ t } = { t: 1 }) : { t: 1; }
+>{ t } = { t: 1 } : { t: 1; }
+>{ t } : { t: 1 | 2; }
+>t : 1 | 2
+>{ t: 1 } : { t: 1; }
+>t : 1
+>1 : 1
+
+var o = { p: 1 as 1 | 2 };
+>o : { p: 1 | 2; }
+>{ p: 1 as 1 | 2 } : { p: 1 | 2; }
+>p : 1 | 2
+>1 as 1 | 2 : 1 | 2
+>1 : 1
+
+[o.p] = o.p + 1 as any;
+>[o.p] = o.p + 1 as any : any
+>[o.p] : [1 | 2]
+>o.p : 1 | 2
+>o : { p: 1 | 2; }
+>p : 1 | 2
+>o.p + 1 as any : any
+>o.p + 1 : number
+>o.p : 1 | 2
+>o : { p: 1 | 2; }
+>p : 1 | 2
+>1 : 1
+
+[o.p!] = [o.p + 1];
+>[o.p!] = [o.p + 1] : [number]
+>[o.p!] : [1 | 2]
+>o.p! : 1 | 2
+>o.p : 1 | 2
+>o : { p: 1 | 2; }
+>p : 1 | 2
+>[o.p + 1] : [number]
+>o.p + 1 : number
+>o.p : 1 | 2
+>o : { p: 1 | 2; }
+>p : 1 | 2
+>1 : 1
+
+o.p! = o.p + 1;
+>o.p! = o.p + 1 : number
+>o.p! : 1 | 2
+>o.p : 1 | 2
+>o : { p: 1 | 2; }
+>p : 1 | 2
+>o.p + 1 : number
+>o.p : 1 | 2
+>o : { p: 1 | 2; }
+>p : 1 | 2
+>1 : 1
+
+o.p;
+>o.p : number
+>o : { p: 1 | 2; }
+>p : number
+
+let q: 1 | 2 = 1;
+>q : 1 | 2
+>1 : 1
+
+q! = q + 1;
+>q! = q + 1 : number
+>q! : number
+>q : number
+>q + 1 : number
+>q : 1
+>1 : 1
+
+q;
+>q : number
+
+[q] = q + 1;
+>[q] = q + 1 : number
+>[q] : [number]
+>q : number
+>q + 1 : number
+>q : number
+>1 : 1
+
+q;
+>q : number
+
+var o = { p: 1 as 1 | 2 };
+>o : { p: 1 | 2; }
+>{ p: 1 as 1 | 2 } : { p: 1 | 2; }
+>p : 1 | 2
+>1 as 1 | 2 : 1 | 2
+>1 : 1
+
+o.p = o.p + 1;
+>o.p = o.p + 1 : number
+>o.p : 1 | 2
+>o : { p: 1 | 2; }
+>p : 1 | 2
+>o.p + 1 : number
+>o.p : 1 | 2
+>o : { p: 1 | 2; }
+>p : 1 | 2
+>1 : 1
+
+o.p;
+>o.p : number
+>o : { p: 1 | 2; }
+>p : number
+
+o["p"] = o.p + 1;
+>o["p"] = o.p + 1 : number
+>o["p"] : 1 | 2
+>o : { p: 1 | 2; }
+>"p" : "p"
+>o.p + 1 : number
+>o.p : number
+>o : { p: 1 | 2; }
+>p : number
+>1 : 1
+
+o.p;
+>o.p : number
+>o : { p: 1 | 2; }
+>p : number
+

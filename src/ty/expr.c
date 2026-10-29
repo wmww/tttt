@@ -2914,7 +2914,6 @@ static bool is_unnarrowed_method(Checker* me, Ty const* object, Ty const* key) {
 // tsc's getFlowTypeOfAccessExpression()
 static Ty const* access_flow_type(Checker* me, Expr const* expr, Ty const* object, Ty const* key, Ty const* type, Ty const* contextual) {
     PropertyExpr const* access = expr->property;
-    if (access->assignment_target == FLOW_TARGET_DEFINITE && access->compound_like_target) return base_type_of_literal(me, type);
     if (access->assignment_target == FLOW_TARGET_DEFINITE) return type;
     bool narrowable = access->flow && is_narrowable_access(expr);
     // (A reference that isn't narrowable still gets getNarrowableTypeForReference: `(x as M<S>)[k]` where the context
