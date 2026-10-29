@@ -638,7 +638,7 @@ Known: recursiveClassBaseType (TS2310), unionTypeWithIndexSignature (text TS2322
   ttttObjectLiteralExportBrace. [fixed 70b783cb9]
 - parseInvalidNames num-to-str: `namespace "100" {}`, the string not taken after the missing name. Test
   ttttNamespaceStringName (errors only: tsgo's symbols baseline shows the missing name's `(Missing)` symbol, tttt's
-  walk doesn't [open]). [fixed 9f85e491a]
+  walk didn't: declared since 74167606e, test ttttNamespaceStringName [fixed 74167606e]). [fixed 9f85e491a]
 - fallFromLastCase2 add-optional, contextualComputedNonBindablePropertyType delete-stmt, inferTypesWithExtends1
   drop-as: node ends under recovery (TS7029, TS2464, TS7039 spans). Test ttttRecoveryNodeSpans. [fixed 32baaef64]
 Not fixed:
