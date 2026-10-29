@@ -1,0 +1,105 @@
+//// [test/cases/ttttBindingElementGenericParentContext.ts] ////
+
+=== ttttBindingElementGenericParentContext.ts ===
+// A binding element's contextual type is of the pattern's contextual type as it is (tsc's
+// getContextualTypeForBindingElement, no getApparentTypeOfContextualType): an array pattern's element of a type
+// parameter is what iterating it gives (`F1 | F2` of a tuple constraint: no contextual signature), an object
+// pattern's property is of its apparent type
+type F1 = (x: number) => void; type F2 = (y: string) => void;
+>F1 : Symbol(F1, Decl(ttttBindingElementGenericParentContext.ts, 0, 0))
+>x : Symbol(x, Decl(ttttBindingElementGenericParentContext.ts, 4, 11))
+>F2 : Symbol(F2, Decl(ttttBindingElementGenericParentContext.ts, 4, 30))
+>y : Symbol(y, Decl(ttttBindingElementGenericParentContext.ts, 4, 42))
+
+function h1<T extends [F1, F2]>(t: T) { const [a = x => {}, b = y => {}] = t; }
+>h1 : Symbol(h1, Decl(ttttBindingElementGenericParentContext.ts, 4, 61))
+>T : Symbol(T, Decl(ttttBindingElementGenericParentContext.ts, 5, 12))
+>F1 : Symbol(F1, Decl(ttttBindingElementGenericParentContext.ts, 0, 0))
+>F2 : Symbol(F2, Decl(ttttBindingElementGenericParentContext.ts, 4, 30))
+>t : Symbol(t, Decl(ttttBindingElementGenericParentContext.ts, 5, 32))
+>T : Symbol(T, Decl(ttttBindingElementGenericParentContext.ts, 5, 12))
+>a : Symbol(a, Decl(ttttBindingElementGenericParentContext.ts, 5, 47))
+>x : Symbol(x, Decl(ttttBindingElementGenericParentContext.ts, 5, 50))
+>b : Symbol(b, Decl(ttttBindingElementGenericParentContext.ts, 5, 59))
+>y : Symbol(y, Decl(ttttBindingElementGenericParentContext.ts, 5, 63))
+>t : Symbol(t, Decl(ttttBindingElementGenericParentContext.ts, 5, 32))
+
+function h2<T extends [F1, F2]>(t: T) { const [a = x => {}] = t; }
+>h2 : Symbol(h2, Decl(ttttBindingElementGenericParentContext.ts, 5, 79))
+>T : Symbol(T, Decl(ttttBindingElementGenericParentContext.ts, 6, 12))
+>F1 : Symbol(F1, Decl(ttttBindingElementGenericParentContext.ts, 0, 0))
+>F2 : Symbol(F2, Decl(ttttBindingElementGenericParentContext.ts, 4, 30))
+>t : Symbol(t, Decl(ttttBindingElementGenericParentContext.ts, 6, 32))
+>T : Symbol(T, Decl(ttttBindingElementGenericParentContext.ts, 6, 12))
+>a : Symbol(a, Decl(ttttBindingElementGenericParentContext.ts, 6, 47))
+>x : Symbol(x, Decl(ttttBindingElementGenericParentContext.ts, 6, 50))
+>t : Symbol(t, Decl(ttttBindingElementGenericParentContext.ts, 6, 32))
+
+function h3<T extends F1[]>(t: T) { const [a = x => {}] = t; }
+>h3 : Symbol(h3, Decl(ttttBindingElementGenericParentContext.ts, 6, 66))
+>T : Symbol(T, Decl(ttttBindingElementGenericParentContext.ts, 7, 12))
+>F1 : Symbol(F1, Decl(ttttBindingElementGenericParentContext.ts, 0, 0))
+>t : Symbol(t, Decl(ttttBindingElementGenericParentContext.ts, 7, 28))
+>T : Symbol(T, Decl(ttttBindingElementGenericParentContext.ts, 7, 12))
+>a : Symbol(a, Decl(ttttBindingElementGenericParentContext.ts, 7, 43))
+>x : Symbol(x, Decl(ttttBindingElementGenericParentContext.ts, 7, 46))
+>t : Symbol(t, Decl(ttttBindingElementGenericParentContext.ts, 7, 28))
+
+function h4<T extends {p: F1}>(t: T) { const {p = x => {}} = t; }
+>h4 : Symbol(h4, Decl(ttttBindingElementGenericParentContext.ts, 7, 62))
+>T : Symbol(T, Decl(ttttBindingElementGenericParentContext.ts, 8, 12))
+>p : Symbol(p, Decl(ttttBindingElementGenericParentContext.ts, 8, 23))
+>F1 : Symbol(F1, Decl(ttttBindingElementGenericParentContext.ts, 0, 0))
+>t : Symbol(t, Decl(ttttBindingElementGenericParentContext.ts, 8, 31))
+>T : Symbol(T, Decl(ttttBindingElementGenericParentContext.ts, 8, 12))
+>p : Symbol(p, Decl(ttttBindingElementGenericParentContext.ts, 8, 46))
+>x : Symbol(x, Decl(ttttBindingElementGenericParentContext.ts, 8, 49))
+>t : Symbol(t, Decl(ttttBindingElementGenericParentContext.ts, 8, 31))
+
+function h5<T extends [F1]>(t: T) { const [a = x => {}] = t; }
+>h5 : Symbol(h5, Decl(ttttBindingElementGenericParentContext.ts, 8, 65))
+>T : Symbol(T, Decl(ttttBindingElementGenericParentContext.ts, 9, 12))
+>F1 : Symbol(F1, Decl(ttttBindingElementGenericParentContext.ts, 0, 0))
+>t : Symbol(t, Decl(ttttBindingElementGenericParentContext.ts, 9, 28))
+>T : Symbol(T, Decl(ttttBindingElementGenericParentContext.ts, 9, 12))
+>a : Symbol(a, Decl(ttttBindingElementGenericParentContext.ts, 9, 43))
+>x : Symbol(x, Decl(ttttBindingElementGenericParentContext.ts, 9, 46))
+>t : Symbol(t, Decl(ttttBindingElementGenericParentContext.ts, 9, 28))
+
+type C<U> = U extends 1 ? [F1, F2] : [F1, F2];
+>C : Symbol(C, Decl(ttttBindingElementGenericParentContext.ts, 9, 62))
+>U : Symbol(U, Decl(ttttBindingElementGenericParentContext.ts, 10, 7))
+>U : Symbol(U, Decl(ttttBindingElementGenericParentContext.ts, 10, 7))
+>F1 : Symbol(F1, Decl(ttttBindingElementGenericParentContext.ts, 0, 0))
+>F2 : Symbol(F2, Decl(ttttBindingElementGenericParentContext.ts, 4, 30))
+>F1 : Symbol(F1, Decl(ttttBindingElementGenericParentContext.ts, 0, 0))
+>F2 : Symbol(F2, Decl(ttttBindingElementGenericParentContext.ts, 4, 30))
+
+function h6<U>(t: C<U>) { const [a = x => {}] = t; }
+>h6 : Symbol(h6, Decl(ttttBindingElementGenericParentContext.ts, 10, 46))
+>U : Symbol(U, Decl(ttttBindingElementGenericParentContext.ts, 11, 12))
+>t : Symbol(t, Decl(ttttBindingElementGenericParentContext.ts, 11, 15))
+>C : Symbol(C, Decl(ttttBindingElementGenericParentContext.ts, 9, 62))
+>U : Symbol(U, Decl(ttttBindingElementGenericParentContext.ts, 11, 12))
+>a : Symbol(a, Decl(ttttBindingElementGenericParentContext.ts, 11, 33))
+>x : Symbol(x, Decl(ttttBindingElementGenericParentContext.ts, 11, 36))
+>t : Symbol(t, Decl(ttttBindingElementGenericParentContext.ts, 11, 15))
+
+function h7(t: [F1, F2]) { const [a = x => {}] = t; }
+>h7 : Symbol(h7, Decl(ttttBindingElementGenericParentContext.ts, 11, 52))
+>t : Symbol(t, Decl(ttttBindingElementGenericParentContext.ts, 12, 12))
+>F1 : Symbol(F1, Decl(ttttBindingElementGenericParentContext.ts, 0, 0))
+>F2 : Symbol(F2, Decl(ttttBindingElementGenericParentContext.ts, 4, 30))
+>a : Symbol(a, Decl(ttttBindingElementGenericParentContext.ts, 12, 34))
+>x : Symbol(x, Decl(ttttBindingElementGenericParentContext.ts, 12, 37))
+>t : Symbol(t, Decl(ttttBindingElementGenericParentContext.ts, 12, 12))
+
+function h8<T extends [F1, F2]>([a = x => {}]: T) {}
+>h8 : Symbol(h8, Decl(ttttBindingElementGenericParentContext.ts, 12, 53))
+>T : Symbol(T, Decl(ttttBindingElementGenericParentContext.ts, 13, 12))
+>F1 : Symbol(F1, Decl(ttttBindingElementGenericParentContext.ts, 0, 0))
+>F2 : Symbol(F2, Decl(ttttBindingElementGenericParentContext.ts, 4, 30))
+>a : Symbol(a, Decl(ttttBindingElementGenericParentContext.ts, 13, 33))
+>x : Symbol(x, Decl(ttttBindingElementGenericParentContext.ts, 13, 36))
+>T : Symbol(T, Decl(ttttBindingElementGenericParentContext.ts, 13, 12))
+

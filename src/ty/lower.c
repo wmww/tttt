@@ -4003,14 +4003,15 @@ static Ty const* binding_element_context(Checker* me, Binding const* element) {
     if (pattern->tag == BINDING_ARRAY) {
         // (An element's name is itself when there is no property name: a pattern has no context from here)
         if (element->tag == BINDING_OBJECT || element->tag == BINDING_ARRAY) return nullptr;
-        return ty_contextual_element_type(me, parent_type, element->parent_index);
+        return ty_contextual_binding_element_type(me, parent_type, element->parent_index);
     }
     ObjectBindingItem const* item = element->parent_item;
     if (item->private_name) return nullptr;
     Ty const* key = item->computed_key ? ty_binding_computed_key_type(me, item) : ty_literal(me, &item->source);
     Atom const* name = ty_literal_name(me, key);
     if (!name) return nullptr;
-    FoundProp found = ty_find_prop(me, parent_type, name);
+    // (Of its apparent type, tsc's getTypeOfPropertyOfType through getPropertyOfType: `T extends { p: F }` gives F)
+    FoundProp found = ty_find_prop(me, ty_apparent_type(me, parent_type), name);
     return found.found ? found.type : nullptr;
 }
 

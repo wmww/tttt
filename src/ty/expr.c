@@ -898,6 +898,10 @@ typedef struct ElementContextArg {
     u32 index;
     u32 length; // Of the array literal, UINT32_MAX if unknown
     u32 first_spread, last_spread; // UINT32_MAX if none
+    // A binding element's: the pattern's contextual type as it is, not its apparent type (tsc's
+    // getContextualTypeForBindingElement skips getApparentTypeOfContextualType), so a type parameter or a conditional
+    // type is no tuple: its element is what iterating it gives
+    bool binding;
 } ElementContextArg;
 
 // tsc's getContextualTypeForElementExpression for a tuple: the element at the index while the elements before it are
@@ -943,6 +947,12 @@ static Ty const* get_element_context(Checker* me, Ty const* object, void const* 
     ) {
         return any_element_context(me);
     }
+    // (A binding element's `T extends [F1, F2]`: `F1 | F2`, tsc's getContextualTypeForElementExpression past a
+    // non-object type's getTypeOfPropertyOfContextualType)
+    if (a->binding && (object->kind == TY_TYPE_PARAM || object->kind == TY_CONDITIONAL)) {
+        TyIterationTypes const* types = ty_iteration_types_of_iterable_unreported(me, object, ITERATION_ALLOWS_SYNC);
+        return types ? types->yield_type : nullptr;
+    }
     // A type parameter as its constraint (tsc's getApparentTypeOfContextualType): the elements of a tuple constraint
     if (object->kind == TY_TYPE_PARAM) {
         Ty const* apparent = ty_apparent_type(me, object);
@@ -982,15 +992,10 @@ static Ty const* get_element_context(Checker* me, Ty const* object, void const* 
     return ret;
 }
 
-static Ty const* contextual_element_type(Checker* me, Ty const* contextual, u32 index) {
-    ElementContextArg arg = { index, UINT32_MAX, UINT32_MAX, UINT32_MAX };
-    return context_map(me, contextual, get_element_context, &arg);
-}
-
 // An array literal's length and spread positions, for the contextual types of its elements (computed once per literal:
 // once per element is quadratic on large literals)
 static ElementContextArg array_element_context_arg(Expr const* array) {
-    ElementContextArg arg = { 0, (u32)vec_expr_size(&array->array), UINT32_MAX, UINT32_MAX };
+    ElementContextArg arg = { 0, (u32)vec_expr_size(&array->array), UINT32_MAX, UINT32_MAX, false };
     for_each (i, vec_expr, &array->array) {
         if (i->tag != EXPR_SPREAD) continue;
         if (arg.first_spread == UINT32_MAX) arg.first_spread = (u32)i_index;
@@ -1015,12 +1020,13 @@ Ty const* ty_contextual_prop_type(Checker* me, Ty const* contextual, Ty const* k
     return contextual_prop_type(me, contextual, key);
 }
 
-Ty const* ty_contextual_element_type(Checker* me, Ty const* contextual, u32 index) {
-    return contextual_element_type(me, contextual, index);
+Ty const* ty_contextual_binding_element_type(Checker* me, Ty const* contextual, u32 index) {
+    ElementContextArg arg = { index, UINT32_MAX, UINT32_MAX, UINT32_MAX, .binding = true };
+    return context_map(me, contextual, get_element_context, &arg);
 }
 
 Ty const* ty_contextual_element_type_of(Checker* me, Ty const* contextual, u32 index, u32 length) {
-    ElementContextArg arg = { index, length, UINT32_MAX, UINT32_MAX };
+    ElementContextArg arg = { index, length, UINT32_MAX, UINT32_MAX, false };
     return context_map(me, contextual, get_element_context, &arg);
 }
 

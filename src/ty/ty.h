@@ -2680,7 +2680,8 @@ bool ty_contextual_parameter_is_pattern(Checker* me, Binding const* pattern);
 void ty_function_apply_jsdoc_type(Checker* me, FunctionImpl const* function, InitializedBinding const* evaluating);
 // The contextual type of a property or an element of something whose contextual type is `contextual` (null: none)
 Ty const* ty_contextual_prop_type(Checker* me, Ty const* contextual, Ty const* key);
-Ty const* ty_contextual_element_type(Checker* me, Ty const* contextual, u32 index);
+// A binding element's (tsc's getContextualTypeForBindingElement): of the pattern's contextual type as it is
+Ty const* ty_contextual_binding_element_type(Checker* me, Ty const* contextual, u32 index);
 // The same for the element at `index` of `length` elements without spreads: the elements after a variadic one count from
 // the end (tsc's getContextualTypeForElementExpression with a length)
 Ty const* ty_contextual_element_type_of(Checker* me, Ty const* contextual, u32 index, u32 length);
