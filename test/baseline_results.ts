@@ -12288,6 +12288,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttArrowLineTerminatorGrammar': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttArrowParameterInvalidCharacter': {
         errors: true,
         symbols: true,
@@ -12350,6 +12355,11 @@ const baselines = {
         types: true,
     },
     'ttttAssignmentPatternDefaultsInfer': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttAssignmentTargetGrammar': {
         errors: true,
         symbols: true,
         types: true,
