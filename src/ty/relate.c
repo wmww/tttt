@@ -2526,8 +2526,11 @@ static Signature const* canonical_signature(Checker* me, Signature const* sig) {
     bool cloned = false;
     for (u32 i = 0; i < sig_r->type_params.len && !cloned; i++) cloned = sig_r->type_params.data[i]->param.state->clone_of != nullptr;
     if (!cloned) return sig;
+    // (Made of the type parameters as this worker resolved them: a private resolution's aren't the published entry's,
+    // sig_res_is_own(), so not cached)
+    bool own = sig_res_is_own(me, sig, sig_r);
     u64 key[2] = { KEY_CANONICAL_SIGNATURE, (u64)(uintptr_t)sig };
-    Signature const* cached = intern_get(&my links, key, 2);
+    Signature const* cached = own ? nullptr : intern_get(&my links, key, 2);
     if (cached) return cached;
     Ty const* stack_args[16];
     Ty const** args = sig_r->type_params.len <= c_arraylen(stack_args) ? stack_args : malloc(sizeof(Ty const*) * sig_r->type_params.len);
@@ -2544,7 +2547,7 @@ static Signature const* canonical_signature(Checker* me, Signature const* sig) {
     // `<T extends string>(str: T) => T extends '' ? ...` against its annotation relies on that for tsc's TS2322)
     Signature const* ret = changed ? ty_signature_instantiation(me, sig, (TyList){ .data = args, .len = sig_r->type_params.len }) : sig;
     if (args != stack_args) free(args);
-    *intern_slot(me, &my links, key, 2) = ret;
+    if (!own) *intern_slot(me, &my links, key, 2) = ret;
     return ret;
 }
 

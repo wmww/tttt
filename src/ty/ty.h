@@ -2198,6 +2198,13 @@ static inline TyMapper const* sig_mapper(Checker* me, Signature const* sig) {
     SigResolved const* r = sig_res_slow(me, sig);
     return r != &sig_resolved_none ? r->mapper : sig->mapper;
 }
+// --shared-graph: whether `record` (this worker's resolution of `sig`) is this worker's own, not the published one: its
+// type parameters are then this worker's, and what a memo keyed by the signature holds about them (a mapper from them,
+// an instance of them) is this worker's alone, not to be looked up among, nor published to, the others' (like
+// KEY_SIGNATURE_INSTANCE_OWN)
+static inline bool sig_res_is_own(Checker const* me, Signature const* sig, SigResolved const* record) {
+    return my graph && sw_load(&sig->res) != (uintptr_t)record;
+}
 // The record as published, else sig_resolved_none (the fingerprint oracle's, which has no worker)
 static inline SigResolved const* sig_res_published(Signature const* sig) {
     uintptr_t v = sw_load(&sig->res);

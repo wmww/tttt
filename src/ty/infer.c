@@ -209,10 +209,15 @@ static void infer_with_priority(Checker* me, Inference* inf, Ty const* source, T
 // (once per parameter), what is still left of them is `any`. Outer type parameters stay: `C extends keyof S` in a
 // method of a class over S is `keyof S`
 static TyMapper const* base_signature_mapper(Checker* me, Signature const* sig) {
-    TyList params = sig_res(me, sig)->type_params;
+    SigResolved const* record = sig_res(me, sig);
+    TyList params = record->type_params;
     if (!params.len) return nullptr;
+    // (Its sources are the type parameters as this worker resolved them: with a private resolution not the published
+    // entry's, which another worker made of its own, so not cached, sig_res_is_own(): zod's forced-poison runs read
+    // another worker's mapper and left a method's `Ch` uninferred, so a conditional type over it stayed deferred)
+    bool own = sig_res_is_own(me, sig, record);
     u64 key[2] = { KEY_BASE_SIGNATURE, (u64)(uintptr_t)sig };
-    TyMapper const* cached = intern_get(&my links, key, 2);
+    TyMapper const* cached = own ? nullptr : intern_get(&my links, key, 2);
     if (cached) return cached;
     Ty const** constraints = arena_new_n(&my arena, Ty const*, params.len);
     for (u32 i = 0; i < params.len; i++) {
@@ -230,7 +235,7 @@ static TyMapper const* base_signature_mapper(Checker* me, Signature const* sig) 
     TyMapper const* eraser = ty_mapper_new(me, params, (TyList){ .data = anys, .len = params.len });
     for (u32 i = 0; i < params.len; i++) targets[i] = ty_instantiate(me, targets[i], eraser);
     TyMapper const* ret = ty_mapper_new(me, params, (TyList){ .data = targets, .len = params.len });
-    *intern_slot(me, &my links, key, 2) = ret;
+    if (!own) *intern_slot(me, &my links, key, 2) = ret;
     return ret;
 }
 

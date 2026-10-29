@@ -509,6 +509,10 @@ static struct { _Atomic uintptr_t site; _Atomic u64 count; } identity_reports[25
     if (m->hash != hash) return; // (Its miss went unrecorded or was overwritten: nothing known)
     m->hash = 0;
     if (m->taint == graph_taint_now) return;
+#ifdef TTTT_TAINT_SITES
+    // (The events since its lookup, by site)
+    for (u64 at = m->taint; at < graph_taint_now && at < m->taint + 8; at++) eprintln("graph check:   event ", graph_taint_site(at));
+#endif
     identity_report(kind, site, "published");
 }
 

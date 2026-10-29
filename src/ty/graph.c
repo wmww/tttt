@@ -726,10 +726,10 @@ static bool memo_identity_valued(u32 kind) {
     switch (kind) {
     case KEY_MAPPED_KEY_PARAM: case KEY_EVOLVING_ARRAY: case KEY_REVERSE_MAPPED:
     // (KEY_UNION_NODE is one only when its lowering made a stray `infer X`: Checker.union_node_fresh, below)
-    // (A conditional instance's result can hold objects its inference made fresh, a nested reverse mapped type:
-    // withheld, react-navigation's TS2344/TS2345 at K16 T1, each checker making its own)
-    case KEY_CONDITIONAL_INSTANCE: case KEY_CONDITIONAL_INSTANCE_FOR_CONSTRAINT:
-        return true;
+    // (Not the conditional instances (4a19f6240 had them here, by a kdiff bisection on react-navigation): their value
+    // is a resolution, which a tainted computation makes from this worker's history, a deferred conditional where the
+    // clean one resolves; published whatever their taint, zod's forced-poison runs read such a deferred one in every
+    // worker (agents/bugs/shared_graph.md))
     default:
         return false;
     }

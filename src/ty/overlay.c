@@ -4,6 +4,7 @@
 #include "ty/overlay.h"
 #include "ty/graph.h"
 #include <pthread.h>
+#include <execinfo.h>
 
 thread_local uint64_t graph_taint_now;
 
@@ -412,15 +413,47 @@ static int force_shadow = -1;
 // output must not move. It does (2026-10-29, worker race: zod at K8, 1 in 100: 4 of 4 runs differ, some by thousands
 // of lines; 1 in 1000: 1 of 4; agents/bugs/shared_graph.md)
 static int force_poison = -1;
-static thread_local unsigned force_poison_count;
+static _Atomic u64 force_poison_count;
+static u64 force_poison_lo, force_poison_hi = UINT64_MAX;
+static int force_poison_trace;
+static u64 force_poison_at[1 << 16];
+static u32 force_poison_at_len;
+// TTTT_GRAPH_FORCE_POISON_RANGE=LO:HI: only the candidates numbered LO..HI-1 (a count over all workers: deterministic
+// under TTTT_GRAPH_SEED, so a divergence bisects to one forced event); TTTT_GRAPH_FORCE_POISON_TRACE=1 prints each
+// forced event's number, worker, word and the site that finished it
 [[gnu::cold]] static bool force_poison_now(void) {
     int every = __atomic_load_n(&force_poison, __ATOMIC_RELAXED);
     if (every < 0) {
         char const* env = getenv("TTTT_GRAPH_FORCE_POISON");
+        char const* range = getenv("TTTT_GRAPH_FORCE_POISON_RANGE");
+        if (range) {
+            force_poison_lo = strtoull(range, nullptr, 10);
+            char const* colon = strchr(range, ':');
+            if (colon && colon[1]) force_poison_hi = strtoull(colon + 1, nullptr, 10);
+        }
+        force_poison_trace = getenv("TTTT_GRAPH_FORCE_POISON_TRACE") != nullptr;
+        // (TTTT_GRAPH_FORCE_POISON_AT=A,B,...: exactly those candidates, ascending)
+        for (char const* at = getenv("TTTT_GRAPH_FORCE_POISON_AT"); at && *at && force_poison_at_len < (1u << 16);) {
+            char* end;
+            force_poison_at[force_poison_at_len++] = strtoull(at, &end, 10);
+            at = *end ? end + 1 : end;
+        }
         every = env ? atoi(env) : 0;
         __atomic_store_n(&force_poison, every, __ATOMIC_RELAXED);
     }
-    return every > 0 && ++force_poison_count % (unsigned)every == 0;
+    if (every <= 0) return false;
+    u64 n = atomic_fetch_add_explicit(&force_poison_count, 1, memory_order_relaxed);
+    if (force_poison_at_len) {
+        // (Ascending: a binary search)
+        u32 lo = 0, hi = force_poison_at_len;
+        while (lo < hi) {
+            u32 mid = (lo + hi) / 2;
+            if (force_poison_at[mid] < n) lo = mid + 1;
+            else hi = mid;
+        }
+        return lo < force_poison_at_len && force_poison_at[lo] == n;
+    }
+    return n % (u64)every == 0 && n >= force_poison_lo && n < force_poison_hi;
 }
 
 uintptr_t sw_finish(Checker* me, SharedWord* w, uint8_t* state, uintptr_t value, uint64_t taint) {
@@ -437,6 +470,13 @@ uintptr_t sw_finish(Checker* me, SharedWord* w, uint8_t* state, uintptr_t value,
     uintptr_t seen = sw_load(w);
     if ((seen == SW_POISON || o->copies || my graph_shadowed) && o->map.len) map_remove(o, (uintptr_t)w);
     if (__builtin_expect(__atomic_load_n(&force_poison, __ATOMIC_RELAXED) != 0, 0) && graph_taint_now == taint && force_poison_now()) {
+        if (force_poison_trace) {
+            eprintln("forced poison ", atomic_load_explicit(&force_poison_count, memory_order_relaxed) - 1, " worker ",
+                my census_id, " word ", (u64)(uintptr_t)w, " seen ", (u64)seen, " value ", (u64)value);
+            void* frames[12];
+            int n = backtrace(frames, 12);
+            backtrace_symbols_fd(frames, n, 2);
+        }
         TAINT_EVENT(TAINT_READ_TAINTED);
     }
     bool clean = graph_taint_now == taint;
