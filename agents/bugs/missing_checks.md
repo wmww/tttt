@@ -583,6 +583,17 @@ never-const (harness writes no errors baseline).
   Emulating it means the printer resolving declarations' types. [design]
 - distributiveConditionalTypeConstraints ann-string-number (both seeds): tsgo's elaboration repeats the conditional
   source's line before `Type 'string' is not assignable to type 'number'`. [text]
+- With `--syntax` (new parse errors in tsc's baseline, but checker divergences): fixed nonPrimitiveConstraintOfIndexAccessType
+  (never[Object] has no write constraint, 815378d2d), bigIntWithTargetES2016 (compound assignment to an only-nullable
+  operand, 2cf2a4e37), genericCallInferenceConditionalType2 (a failed call's extra arguments aren't typed while it
+  resolves, 37b11e18c), newTargetNarrowing (meta-property names, 60117356f), controlFlowForStatementContinueIntoIncrementor1
+  (arithmetic on a loop's partial types, 773cb2ef5), importCallExpressionGrammarError (spread specifier, c8b7355c9),
+  contextualReturnArrayPatternCallback (TS1338 is a grammar error, 147e45720), propertiesAndIndexersForNumericNames
+  (implicit any only at the first declaration, b5dbae2d2), nestedExcessPropertyChecking (a shorthand initializer is
+  typechecked, d141ca1a3), recursiveTypeInference (a shorthand name with an initializer isn't a use, e5e95c4e5).
+  [fixed] Left: recursiveTypeInferenceReturnTypeConstraint (missing TS2615, the history family),
+  exportSpecifierReferencingOuterDeclaration3 (spurious TS2694), substitutionTypesInIndexedAccessTypes (text TS2322),
+  octalIntegerLiteralES6 (TS2551->TS7053), parser-side ones for bun. [open]
 - recursiveClassBaseType delete-stmt: missing TS2310 (the base cycle design). noCircularitySelfReferentialGetter2
   (TS2345 text), unionTypeWithIndexSignature never-const (TS2322 text): not looked at. [open]
 
