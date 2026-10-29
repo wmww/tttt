@@ -12233,6 +12233,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAnnotatedVarianceMarker': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAnnotationReadsContextualParam': {
         errors: true,
         symbols: true,
