@@ -52,6 +52,25 @@ there (`nproc` 24): its section below; it is the one to read for core scaling.
   `--tsBuildInfoFile`); its walls right after `oracles.py`'s other oracles are inflated: rerun alone. A project whose
   `.tsbuildinfo` is committed makes tsc skip checking (webcmd).
 
+## Shared graph against plain, 33e018294 vs 583223a74 (2026-10-29 box time, a rebench agent; this box)
+Asked because the human's 24-thread laptop shows the flag beating plain (and v1, and bun) at 583223a74, which the
+go/no-go table (hub_regime.md, 33e018294) did not show here. Both commits' release builds (abbuild.sh), all four
+(build, mode) runs interleaved in one round with the order reversed every other round, sgbench's method otherwise
+(the 58 projects, 16/16 and the defaults, best of 5, TTTT_SYNC_EXIT=1, nice 10; 2320 runs, every flag run's output
+identical to its plain run's; load 3.5 -> 15.4, median at run start 14.6). Nothing moved: plain new/old median check
+wall 0.996-1.01, flag 1.00-1.02; the flag's instruction premium (callgrind at --threads 1 --checkers 8) identical to
+three digits (type-fest 1.007 -> 1.006, zod 0.961 -> 0.962, drizzle 0.761 -> 0.762, xstate 0.946 -> 0.947, effect
+1.040 -> 1.041). flag/plain check wall, new: hubs (43) 16/16 0.80 (31 better by >5%, 5 worse), defaults 0.95 (22 / 15);
+corpora (15) 16/16 1.13 (2 / 11), defaults 1.11 (3 / 10); all 58 at the defaults 0.99. Per corpus at 16/16 (old ->
+new): type-fest 1.29 -> 1.18, zod 1.20 -> 1.17, effect 1.17 -> 1.18, xstate 1.27 -> 1.26, react 1.25 -> 1.21, vue 1.09
+-> 1.11, vscode 1.06 -> 1.09, tanstack-router 1.18 -> 1.07, drizzle 0.80 -> 0.77, excalidraw 0.84. The laptop's
+difference is therefore the machine, unmeasured here: 12 physical cores give 12 default checkers (8 here, so its
+defaults sit between this box's 8 and 16 columns), real cores instead of SMT siblings for the 16/16-style runs, and
+less RAM pushing plain's larger peak into recycling. Extrapolating the break-even curve to 24 threads puts most corpora
+at 1.00-1.08 and type-fest/zod/xstate/react still at or above 1.10. The human decided default-on on their verdict
+(vision.md); this is the recorded cost on 8-core boxes. Raw runs: the agent's ab.py/ab.jsonl were in the coordinator's
+scratchpad (not kept).
+
 ## Instruction drift, attributed (2026-10-29, an attribution agent; callgrind, this box)
 A full `scripts/instrcount.sh` run on main (fast/tttt) read as a regression against test/instrcount.txt: tanstack-router
 +3.18%, type-fest +2.15%, valibot +2.12%, xstate +2.09%, vue +1.67%, vscode +0.54%. It wasn't one: the three saves of
