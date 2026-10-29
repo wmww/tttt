@@ -86,7 +86,7 @@ Tried and dropped (perf3):
   bogus -Wstringop-overflow under LTO (sw_load() inlined into props_related_impl(): "destination object is likely at
   address zero"), which -Werror makes fatal in pgobuild.sh only.
 
-## The one-file .d.ts shape (2026-10-29, 464fe54c6 -> 0ccb798ad, worker tail)
+## The one-file .d.ts shape (2026-10-29, 464fe54c6 -> d088132a6, worker tail)
 The idle tail behind one indivisible file is one checker's speed on it: at the defaults vitest/examples/lit's
 typecheck span (367 ms) is immutable.d.ts alone (321-361 ms on one checker), ng-bootstrap's 287 ms is immutable's
 257-277. One-file projects of immutable.d.ts (`imm`) and solid-js's store.d.ts (`store`) (tsconfigs: footprint.md), K1
@@ -115,16 +115,22 @@ instructions / D1 read misses / LL read misses / mispredictions):
   links table grows to 2M slots. Base constraints of `KeyOf<W<W<T>[K1]>[K2]>`-style chains, tsc's checks too.
 
 Landed (output byte-identical; instructions by callgrind against the commit before):
-- 8133f145f, the inference visited set: a calloc'd open-addressing table per Inference, grown by rehash and probed
+- 4cf2fa6d0, the inference visited set: a calloc'd open-addressing table per Inference, grown by rehash and probed
   twice per object pair, was ~6% of imm. Now entries in insertion order plus a u32 index, taken from a thread-local pool
   and cleared by the slots they used; visited_add() returns the entry visited_done() writes (bun's invoke_once does the
   same). imm -4.0%, store 0, zod -0.55%, drizzle -0.18%, vscode -0.46%.
-- 0ccb798ad, the by-name prop index as an open-addressing table instead of a binary search (whose order branch
+- 3677b66e0, the by-name prop index as an open-addressing table instead of a binary search (whose order branch
   mispredicted every other step: 10% of imm's simulated mispredictions, 5% of zod's and drizzle's). imm -1.1%, store
   -0.9%, zod -0.79%, drizzle -0.66%, type-fest -1.17%, vscode -0.55%; mispredictions imm -14%; arena type-fest +3%.
   A branchless lower bound (cmov) cut the same mispredictions but added 0.8-1.5% instructions: dropped.
-- Wall together, release, load 8-14 (interleaved): imm typecheck 306 -> 283 ms (best of 21; median -8.6%), store 465 ->
-  458; at the defaults vitest/examples/lit -7.7%, zod -0.8%, drizzle -0.7% (abbench -n 9).
+- 1fedc637f, a pair cut short by circularity is a flag on its visited entry: record_circular() appended keys to a
+  list that every pair met again scanned (thousands long within one immutable inference: 170 M instructions). imm
+  -6.3%, the corpora 0 (noise): it removes a quadratic that only this shape reaches today.
+- d088132a6, instantiate_anonymous() lost a filter that kept every composed mapper pair (each was already checked
+  against free_params, the identity pairs never kept): imm -2.4%, zod -0.69%, drizzle -0.56%, type-fest -0.14%.
+- Wall, all four against 464fe54c6, release, load 7-15, interleaved: imm typecheck best of 21 318 -> 272 ms (median
+  -12%), store 482 -> 468; at the defaults (abbench -n 9) vitest/examples/lit -9.0%, drizzle -3.6%, zod +1.5% (noise:
+  its instructions are -1.5%). imm instructions 3.160 -> 2.744 G (-13%).
 
 Measured, not built:
 - KEY_SIMPLIFIED as a per-type shared word (tsgo's fields on the indexed access and conditional type): at most ~6% of
@@ -133,6 +139,9 @@ Measured, not built:
 - KEY_VARIANCES lookups that hit (effect 343k ops for 421 inserts, ~0.5%): tsgo keeps variances on the symbol's links.
 - bun's infer_from_type_arguments_once (a walk between type arguments that changed nothing isn't repeated after 256
   infer_types calls): not measured; imm's argument walks are mostly the first measurement of a variance.
+- Caching the inference object stacks' ty_recursion_entry() values (tsc's isDeeplyNestedType runs twice per object
+  pair and recomputed the whole stack's entries each time): computed at every push, imm -1.6% but vscode +0.21%;
+  computed once a pair goes on top (a root flag), imm -0.4% and the corpora 0 to +0.1%. The stacks are short: dropped.
 - What is left on imm is the representation (footprint.md "What remains is structural": per-instance members, the
   type header) and code footprint (front end +150 M cycles against bun on the laptop); on store the intern tables'
   volume.

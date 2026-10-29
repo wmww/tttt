@@ -71,14 +71,22 @@ at 1.00-1.08 and type-fest/zod/xstate/react still at or above 1.10. The human de
 (vision.md); this is the recorded cost on 8-core boxes. Raw runs: the agent's ab.py/ab.jsonl were in the coordinator's
 scratchpad (not kept).
 
-## The one-file .d.ts shape: two cuts (2026-10-29, worker tail, 464fe54c6 -> 0ccb798ad; this box, release builds)
-Callgrind instructions, base -> 8133f145f (inference visited sets) -> 0ccb798ad (hashed prop name index): immutable.d.ts
-one-file 3.160 -> 3.032 -> 3.000 G (-5.1%), store.d.ts 4.017 -> 4.017 -> 3.980 G (-0.9%), zod 4.464 -> 4.440 -> 4.404
-(-1.3%), drizzle 5.601 -> 5.591 -> 5.553 (-0.9%), type-fest 10.161 -> 10.154 -> 10.036 (-1.2%), vscode 79.43 ->
-79.07 -> 78.64 G (-1.0%) (`scripts/instrcount.sh --vs`). Wall, interleaved at load 8-14: imm typecheck K1 best of 21
-306 -> 283 ms, store 465 -> 458 ms; defaults (abbench -n 9) vitest/examples/lit 0.352 -> 0.325 s, zod 0.183 -> 0.181,
-drizzle 0.265 -> 0.263. bun `--threads=1` on the two files: 0.19 and 0.38 s. The diagnosis: notes/checker_speed.md "The
-one-file .d.ts shape".
+## The one-file .d.ts shape: four cuts (2026-10-29, worker tail, 464fe54c6 -> d088132a6; this box, release builds)
+Callgrind instructions (`scripts/instrcount.sh --vs`, each against the commit before; the one-file projects by
+callgrind directly): base -> 4cf2fa6d0 (inference visited sets) -> 3677b66e0 (hashed prop name index) -> 1fedc637f
+(circular flag) -> d088132a6 (mapper filter):
+| | base | visited | name index | circular | mapper filter | total |
+|---|---|---|---|---|---|---|
+| immutable.d.ts one-file | 3.160 G | -4.0% | -1.1% | -6.3% | -2.4% | 2.744 G, -13.2% |
+| store.d.ts one-file | 4.017 G | 0.0% | -0.9% | 0.0% | - | 3.980 G, -0.9% |
+| zod | 4.464 G | -0.55% | -0.79% | -0.10% | -0.69% | 4.385 G, -1.8% |
+| drizzle | 5.601 G | -0.18% | -0.66% | -0.03% | -0.56% | 5.542 G, -1.1% |
+| type-fest | 10.161 G | -0.07% | -1.17% | +0.01% | -0.14% | 10.011 G, -1.5% |
+| vscode | 79.43 G | -0.46% | -0.55% | +0.07% | -0.07% | 78.66 G, -1.0% |
+Wall, base against d088132a6 (main's other commits in between too), interleaved at load 7-15: imm typecheck K1 best of
+21 318 -> 272 ms (median 338 -> 296), store 482 -> 468 ms; at the defaults (abbench -n 9) vitest/examples/lit -9.0%
+(its span is immutable.d.ts), drizzle -3.6%, zod +1.5% (noise). bun `--threads=1` on the two files: 0.19 and 0.38 s.
+The diagnosis: notes/checker_speed.md "The one-file .d.ts shape".
 
 ## Instruction drift, attributed (2026-10-29, an attribution agent; callgrind, this box)
 A full `scripts/instrcount.sh` run on main (fast/tttt) read as a regression against test/instrcount.txt: tanstack-router
