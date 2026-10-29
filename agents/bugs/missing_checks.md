@@ -601,6 +601,25 @@ never-const (harness writes no errors baseline).
 - recursiveClassBaseType delete-stmt: missing TS2310 (the base cycle design). noCircularitySelfReferentialGetter2
   (TS2345 text), unionTypeWithIndexSignature never-const (TS2322 text): not looked at. [open]
 
+## Mutation seed 20261111 (2026-10-29, cor10: `scripts/mutate.py -n 8000 --seed 20261111 --tests multi,js`, 26 of 8000 differ)
+12 render, 3 text TS2322, 2 text TS2551, 1 text TS4118; known: importHelpersES6 (TS2354 position),
+parser.numericSeparators.decmialNegative (TS1005 dedupe), typeTagNoErasure (TS2719), commonJSAliasedExport (TS2339 on a
+never `module.exports`), declarationsForIndirectTypeAliasReference (tsgo's doubled TS2304). New:
+- extendsTag12 delete-stmt (missing TS8023 once the mixin's class body is empty): a class whose base is `any` (`class B
+  extends anyB {}`, or a mixin's `class extends Base {}` with Base's constructor returning any) is a non-augmenting
+  subtype normalized to any (getSingleBaseForNonAugmentingSubtype), assignable to every object type, in tsgo too at the
+  top (`const o: Other<string> = new B()` is fine there). But tsgo rejects it as a member of an intersection source:
+  `declare const b2: B & { x: 1 }; const o: Other<string> = b2` is TS2741 in tsgo, accepted by tttt (and so the mixin's
+  `mixin.(Anonymous class) & A<string>` against `@extends {Other<string>}`'s TS8023). Why tsgo's someTypeRelatedToType
+  doesn't normalize the member to any wasn't found (reltrace shows no member-level comparison; tsgotrace --funcs on
+  type-argument functions crashes the report: its `where` expects a node). ty_non_augmenting_base / class_base_is_any
+  (members.c). Repro /tmp-free: the two declarations above. [open]
+- arbitraryModuleNamespaceIdentifiers_syntax drop-as: `export { "invalid 3" };` (no `from`) is no error in tsgo
+  (checkExportSpecifier checks a string *name* with allowStringLiteral true, only a string propertyName without a module
+  specifier is TS1003); tttt's parser reports TS1003. Parser: relayed to bun12. [open]
+- jsTypedefMergedWithModuleExportProperty delete-stmt (TS2693 -> TS4081/TS2309): a JS `@typedef T` merged with
+  `module.exports.T` once the `const T` is gone; not looked at. [open]
+
 ## Mutation seed 20261110 (2026-10-29, cor10: `scripts/mutate.py -n 8000 --seed 20261110`, 4 of 8000 differ)
 - complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound delete-stmt: the sticky errorNode (above). [fixed b088fd3d7]
 - asyncFunctionContextuallyTypedReturns str-to-num (render): TS1356's suggestion checks createPromiseType(sourceReturn),
