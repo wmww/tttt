@@ -236,7 +236,7 @@ const baselines = {
         types: false,
     },
     'bun02-C23a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -14589,6 +14589,11 @@ const baselines = {
         types: true,
     },
     'ttttIndexSignatureMethodSuggestion': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttIndexSignatureUntypedParams': {
         errors: true,
         symbols: true,
         types: true,
