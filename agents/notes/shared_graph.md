@@ -39,7 +39,7 @@ threads busy at 2.2 GB on vscode: the existence proof that sharing can pay.
   only (KEY_SIGNATURE_INSTANCE_OWN, bugs/shared_graph.md: effect's and folo's residues, 2026-10-29). Any other
   identity whose fields come from a resolved record has the same shape.
   So does every memo keyed by a record's owner whose value holds the record's identities (KEY_BASE_SIGNATURE,
-  KEY_CANONICAL_SIGNATURE: not cached over a private resolution since 7826dac81, sig_res_is_own()), and a memo whose
+  KEY_CANONICAL_SIGNATURE: not cached over a private resolution since fea36a257, sig_res_is_own()), and a memo whose
   computation read such a record before its own lookup (its window starts at the miss). Keeping identities private
   instead is unsound: a worker then holds two objects for one key (tried 2026-10-29, worker race2). The open part:
   bugs/shared_graph.md, the forced-poison entry.

@@ -58,13 +58,13 @@ scripts/sharedgraph/sgcheck_projects.txt, load 8-15): main at ab39dce20 12 of 34
   Bisected (worker race2, 2026-10-29; the knobs: overlay.c's TTTT_GRAPH_FORCE_POISON_AT/_RANGE/_TRACE, a global
   candidate count, and `TTTT_GRAPH_SEED=1 TTTT_GRAPH_SEED_RATE=1000000000`, which runs the workers one after another so
   one forced event doesn't reshuffle the schedule; a delta-debugging loop over the AT list finds 3-13 events that move
-  zod K8's output). Four cases looked at, two fixed (7826dac81), two leaks of one family left:
+  zod K8's output). Four cases looked at, two fixed (fea36a257), two leaks of one family left:
   - **KEY_BASE_SIGNATURE / KEY_CANONICAL_SIGNATURE read across a private resolution**: keyed by the signature, made of
     its resolved type parameters; a worker whose resolution was private read another's mapper, `Ch` stayed uninferred,
-    zod's `ProtoOf<ZodType>["refine"]` stayed deferred (schemas.ts(212,5) TS2322, two TS7006). [fixed 7826dac81]
+    zod's `ProtoOf<ZodType>["refine"]` stayed deferred (schemas.ts(212,5) TS2322, two TS7006). [fixed fea36a257]
   - **KEY_CONDITIONAL_INSTANCE published whatever its taint** (identity-valued since 4a19f6240): a tainted resolution
     (deferred) reached every worker; the fingerprint oracle names it. Taint-tracked now; react-navigation (4a19f6240's
-    reason) identical at K16 T1/T16. [fixed 7826dac81]
+    reason) identical at K16 T1/T16. [fixed fea36a257]
   - **A memo computed from a private record read before its own lookup** (the value-in-hand hole): its window starts at
     the miss, after the read's event (base_signature_mapper() read `sig_res()` first; the general shape). Tried (patch
     in the coordinator's scratchpad, race2/scratch-rule-wip.patch, not kept): a "scratch base" (the counter at the start
@@ -86,7 +86,7 @@ scripts/sharedgraph/sgcheck_projects.txt, load 8-15): main at ab39dce20 12 of 34
     KEY_SIGNATURE_INSTANCE_OWN applied to every memo keyed by a record's owner. [open]
   The natural dokploy difference wasn't seen again: 30 runs K16 rr under `--load 4`, the default list at K4/8/16 both
   deals x2 (732 runs) all identical. The oracles are `scripts/sgcheck.py --force-poison N` and `--force-shadow`; they
-  are not in quickgate (they don't pass: zod K8 --force-poison 30 3/4, dokploy K16 rr --force-shadow 4/6 at 7826dac81).
+  are not in quickgate (they don't pass: zod K8 --force-poison 30 3/4, dokploy K16 rr --force-shadow 4/6 at fea36a257).
 - **openbot/apps/auth-api: private names raced** (hub_regime.md's 75 TS2345s): ty_private_name() returned its own
   `#x` atom when another checker's was published first; the class's members carried the winner's, so lookups missed
   them (TS18014, TS6133, `unknown`/`{}` through Effect chains). 10/10 runs before, 0/60 after. [fixed b9a8bc824]
