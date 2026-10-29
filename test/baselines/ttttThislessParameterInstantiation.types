@@ -1,0 +1,184 @@
+//// [test/cases/ttttThislessParameterInstantiation.ts] ////
+
+=== ttttThislessParameterInstantiation.ts ===
+// tsc's instantiateSymbol leaves a parameter without annotation or initializer alone under a mapper of `this` only
+// (isThisless): a contextually typed `(x) => 1` keeps `x: this` through a non-generic class's members, while its
+// return type and an annotated `(x: this)` are instantiated; a generic class's mapper has its type parameters too
+// (bun case 26-P3a)
+declare function id<T>(t: T): T;
+>id : <T>(t: T) => T
+>t : T
+
+class C {
+>C : C
+
+  h = ((x) => 1) satisfies (x: this) => number;
+>h : (x: this) => number
+>((x) => 1) satisfies (x: this) => number : (x: this) => number
+>((x) => 1) : (x: this) => number
+>(x) => 1 : (x: this) => number
+>x : this
+>1 : 1
+>x : this
+
+  h1 = ((x) => x) satisfies (x: this) => this;
+>h1 : (x: this) => this
+>((x) => x) satisfies (x: this) => this : (x: this) => this
+>((x) => x) : (x: this) => this
+>(x) => x : (x: this) => this
+>x : this
+>x : this
+>x : this
+
+  h2 = ((x: this) => 1) satisfies (x: this) => number;
+>h2 : (x: this) => number
+>((x: this) => 1) satisfies (x: this) => number : (x: this) => number
+>((x: this) => 1) : (x: this) => number
+>(x: this) => 1 : (x: this) => number
+>x : this
+>1 : 1
+>x : this
+
+  h3 = id<(x: this) => number>((x) => 1);
+>h3 : (x: this) => number
+>id<(x: this) => number>((x) => 1) : (x: this) => number
+>id : <T>(t: T) => T
+>x : this
+>(x) => 1 : (x: this) => number
+>x : this
+>1 : 1
+
+  h4 = (() => (x: this) => 1) satisfies () => (x: this) => number;
+>h4 : () => (x: this) => number
+>(() => (x: this) => 1) satisfies () => (x: this) => number : () => (x: this) => number
+>(() => (x: this) => 1) : () => (x: this) => number
+>() => (x: this) => 1 : () => (x: this) => number
+>(x: this) => 1 : (x: this) => number
+>x : this
+>1 : 1
+>x : this
+
+  h5 = ((x, y = this) => y) satisfies (x: this, y?: this) => this;
+>h5 : (x: this, y?: this | undefined) => this
+>((x, y = this) => y) satisfies (x: this, y?: this) => this : (x: this, y?: this | undefined) => this
+>((x, y = this) => y) : (x: this, y?: this | undefined) => this
+>(x, y = this) => y : (x: this, y?: this | undefined) => this
+>x : this
+>y : this | undefined
+>this : this
+>y : this
+>x : this
+>y : this | undefined
+}
+const a = new C().h;
+>a : (x: this) => number
+>new C().h : (x: this) => number
+>new C() : C
+>C : typeof C
+>h : (x: this) => number
+
+const a1 = new C().h1;
+>a1 : (x: this) => C
+>new C().h1 : (x: this) => C
+>new C() : C
+>C : typeof C
+>h1 : (x: this) => C
+
+const a2 = new C().h2;
+>a2 : (x: C) => number
+>new C().h2 : (x: C) => number
+>new C() : C
+>C : typeof C
+>h2 : (x: C) => number
+
+const a3 = new C().h3;
+>a3 : (x: C) => number
+>new C().h3 : (x: C) => number
+>new C() : C
+>C : typeof C
+>h3 : (x: C) => number
+
+const a4 = new C().h4;
+>a4 : () => (x: C) => number
+>new C().h4 : () => (x: C) => number
+>new C() : C
+>C : typeof C
+>h4 : () => (x: C) => number
+
+const a5 = new C().h5;
+>a5 : (x: this, y?: C | undefined) => C
+>new C().h5 : (x: this, y?: C | undefined) => C
+>new C() : C
+>C : typeof C
+>h5 : (x: this, y?: C | undefined) => C
+
+new C().h(new C());
+>new C().h(new C()) : number
+>new C().h : (x: this) => number
+>new C() : C
+>C : typeof C
+>h : (x: this) => number
+>new C() : C
+>C : typeof C
+
+class D extends C {}
+>D : D
+>C : C
+
+const d = new D().h;
+>d : (x: this) => number
+>new D().h : (x: this) => number
+>new D() : D
+>D : typeof D
+>h : (x: this) => number
+
+class G<T> {
+>G : G<T>
+
+  h = ((x) => 1) satisfies (x: this) => number;
+>h : (x: this) => number
+>((x) => 1) satisfies (x: this) => number : (x: this) => number
+>((x) => 1) : (x: this) => number
+>(x) => 1 : (x: this) => number
+>x : this
+>1 : 1
+>x : this
+
+  constructor(public t: T) {}
+>t : T
+}
+const g = new G("s").h;
+>g : (x: G<string>) => number
+>new G("s").h : (x: G<string>) => number
+>new G("s") : G<string>
+>G : typeof G
+>"s" : "s"
+>h : (x: G<string>) => number
+
+g(new G("s"));
+>g(new G("s")) : number
+>g : (x: G<string>) => number
+>new G("s") : G<string>
+>G : typeof G
+>"s" : "s"
+
+interface I { m: (x: this) => void }
+>m : (x: this) => void
+>x : this
+
+declare const i: I;
+>i : I
+
+const im = i.m;
+>im : (x: I) => void
+>i.m : (x: I) => void
+>i : I
+>m : (x: I) => void
+
+const lit: I = { m: (x) => {} };
+>lit : I
+>{ m: (x) => {} } : { m: (x: I) => void; }
+>m : (x: I) => void
+>(x) => {} : (x: I) => void
+>x : I
+

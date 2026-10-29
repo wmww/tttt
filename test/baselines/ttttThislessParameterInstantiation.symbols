@@ -1,0 +1,149 @@
+//// [test/cases/ttttThislessParameterInstantiation.ts] ////
+
+=== ttttThislessParameterInstantiation.ts ===
+// tsc's instantiateSymbol leaves a parameter without annotation or initializer alone under a mapper of `this` only
+// (isThisless): a contextually typed `(x) => 1` keeps `x: this` through a non-generic class's members, while its
+// return type and an annotated `(x: this)` are instantiated; a generic class's mapper has its type parameters too
+// (bun case 26-P3a)
+declare function id<T>(t: T): T;
+>id : Symbol(id, Decl(ttttThislessParameterInstantiation.ts, 0, 0))
+>T : Symbol(T, Decl(ttttThislessParameterInstantiation.ts, 4, 20))
+>t : Symbol(t, Decl(ttttThislessParameterInstantiation.ts, 4, 23))
+>T : Symbol(T, Decl(ttttThislessParameterInstantiation.ts, 4, 20))
+>T : Symbol(T, Decl(ttttThislessParameterInstantiation.ts, 4, 20))
+
+class C {
+>C : Symbol(C, Decl(ttttThislessParameterInstantiation.ts, 4, 32))
+
+  h = ((x) => 1) satisfies (x: this) => number;
+>h : Symbol(C.h, Decl(ttttThislessParameterInstantiation.ts, 5, 9))
+>x : Symbol(x, Decl(ttttThislessParameterInstantiation.ts, 6, 8))
+>x : Symbol(x, Decl(ttttThislessParameterInstantiation.ts, 6, 28))
+
+  h1 = ((x) => x) satisfies (x: this) => this;
+>h1 : Symbol(C.h1, Decl(ttttThislessParameterInstantiation.ts, 6, 47))
+>x : Symbol(x, Decl(ttttThislessParameterInstantiation.ts, 7, 9))
+>x : Symbol(x, Decl(ttttThislessParameterInstantiation.ts, 7, 9))
+>x : Symbol(x, Decl(ttttThislessParameterInstantiation.ts, 7, 29))
+
+  h2 = ((x: this) => 1) satisfies (x: this) => number;
+>h2 : Symbol(C.h2, Decl(ttttThislessParameterInstantiation.ts, 7, 46))
+>x : Symbol(x, Decl(ttttThislessParameterInstantiation.ts, 8, 9))
+>x : Symbol(x, Decl(ttttThislessParameterInstantiation.ts, 8, 35))
+
+  h3 = id<(x: this) => number>((x) => 1);
+>h3 : Symbol(C.h3, Decl(ttttThislessParameterInstantiation.ts, 8, 54))
+>id : Symbol(id, Decl(ttttThislessParameterInstantiation.ts, 0, 0))
+>x : Symbol(x, Decl(ttttThislessParameterInstantiation.ts, 9, 11))
+>x : Symbol(x, Decl(ttttThislessParameterInstantiation.ts, 9, 32))
+
+  h4 = (() => (x: this) => 1) satisfies () => (x: this) => number;
+>h4 : Symbol(C.h4, Decl(ttttThislessParameterInstantiation.ts, 9, 41))
+>x : Symbol(x, Decl(ttttThislessParameterInstantiation.ts, 10, 15))
+>x : Symbol(x, Decl(ttttThislessParameterInstantiation.ts, 10, 47))
+
+  h5 = ((x, y = this) => y) satisfies (x: this, y?: this) => this;
+>h5 : Symbol(C.h5, Decl(ttttThislessParameterInstantiation.ts, 10, 66))
+>x : Symbol(x, Decl(ttttThislessParameterInstantiation.ts, 11, 9))
+>y : Symbol(y, Decl(ttttThislessParameterInstantiation.ts, 11, 11))
+>this : Symbol(C, Decl(ttttThislessParameterInstantiation.ts, 4, 32))
+>y : Symbol(y, Decl(ttttThislessParameterInstantiation.ts, 11, 11))
+>x : Symbol(x, Decl(ttttThislessParameterInstantiation.ts, 11, 39))
+>y : Symbol(y, Decl(ttttThislessParameterInstantiation.ts, 11, 47))
+}
+const a = new C().h;
+>a : Symbol(a, Decl(ttttThislessParameterInstantiation.ts, 13, 5))
+>new C().h : Symbol(C.h, Decl(ttttThislessParameterInstantiation.ts, 5, 9))
+>C : Symbol(C, Decl(ttttThislessParameterInstantiation.ts, 4, 32))
+>h : Symbol(C.h, Decl(ttttThislessParameterInstantiation.ts, 5, 9))
+
+const a1 = new C().h1;
+>a1 : Symbol(a1, Decl(ttttThislessParameterInstantiation.ts, 14, 5))
+>new C().h1 : Symbol(C.h1, Decl(ttttThislessParameterInstantiation.ts, 6, 47))
+>C : Symbol(C, Decl(ttttThislessParameterInstantiation.ts, 4, 32))
+>h1 : Symbol(C.h1, Decl(ttttThislessParameterInstantiation.ts, 6, 47))
+
+const a2 = new C().h2;
+>a2 : Symbol(a2, Decl(ttttThislessParameterInstantiation.ts, 15, 5))
+>new C().h2 : Symbol(C.h2, Decl(ttttThislessParameterInstantiation.ts, 7, 46))
+>C : Symbol(C, Decl(ttttThislessParameterInstantiation.ts, 4, 32))
+>h2 : Symbol(C.h2, Decl(ttttThislessParameterInstantiation.ts, 7, 46))
+
+const a3 = new C().h3;
+>a3 : Symbol(a3, Decl(ttttThislessParameterInstantiation.ts, 16, 5))
+>new C().h3 : Symbol(C.h3, Decl(ttttThislessParameterInstantiation.ts, 8, 54))
+>C : Symbol(C, Decl(ttttThislessParameterInstantiation.ts, 4, 32))
+>h3 : Symbol(C.h3, Decl(ttttThislessParameterInstantiation.ts, 8, 54))
+
+const a4 = new C().h4;
+>a4 : Symbol(a4, Decl(ttttThislessParameterInstantiation.ts, 17, 5))
+>new C().h4 : Symbol(C.h4, Decl(ttttThislessParameterInstantiation.ts, 9, 41))
+>C : Symbol(C, Decl(ttttThislessParameterInstantiation.ts, 4, 32))
+>h4 : Symbol(C.h4, Decl(ttttThislessParameterInstantiation.ts, 9, 41))
+
+const a5 = new C().h5;
+>a5 : Symbol(a5, Decl(ttttThislessParameterInstantiation.ts, 18, 5))
+>new C().h5 : Symbol(C.h5, Decl(ttttThislessParameterInstantiation.ts, 10, 66))
+>C : Symbol(C, Decl(ttttThislessParameterInstantiation.ts, 4, 32))
+>h5 : Symbol(C.h5, Decl(ttttThislessParameterInstantiation.ts, 10, 66))
+
+new C().h(new C());
+>new C().h : Symbol(C.h, Decl(ttttThislessParameterInstantiation.ts, 5, 9))
+>C : Symbol(C, Decl(ttttThislessParameterInstantiation.ts, 4, 32))
+>h : Symbol(C.h, Decl(ttttThislessParameterInstantiation.ts, 5, 9))
+>C : Symbol(C, Decl(ttttThislessParameterInstantiation.ts, 4, 32))
+
+class D extends C {}
+>D : Symbol(D, Decl(ttttThislessParameterInstantiation.ts, 19, 19))
+>C : Symbol(C, Decl(ttttThislessParameterInstantiation.ts, 4, 32))
+
+const d = new D().h;
+>d : Symbol(d, Decl(ttttThislessParameterInstantiation.ts, 22, 5))
+>new D().h : Symbol(C.h, Decl(ttttThislessParameterInstantiation.ts, 5, 9))
+>D : Symbol(D, Decl(ttttThislessParameterInstantiation.ts, 19, 19))
+>h : Symbol(C.h, Decl(ttttThislessParameterInstantiation.ts, 5, 9))
+
+class G<T> {
+>G : Symbol(G, Decl(ttttThislessParameterInstantiation.ts, 22, 20))
+>T : Symbol(T, Decl(ttttThislessParameterInstantiation.ts, 24, 8))
+
+  h = ((x) => 1) satisfies (x: this) => number;
+>h : Symbol(G.h, Decl(ttttThislessParameterInstantiation.ts, 24, 12))
+>x : Symbol(x, Decl(ttttThislessParameterInstantiation.ts, 25, 8))
+>x : Symbol(x, Decl(ttttThislessParameterInstantiation.ts, 25, 28))
+
+  constructor(public t: T) {}
+>t : Symbol(G.t, Decl(ttttThislessParameterInstantiation.ts, 26, 14))
+>T : Symbol(T, Decl(ttttThislessParameterInstantiation.ts, 24, 8))
+}
+const g = new G("s").h;
+>g : Symbol(g, Decl(ttttThislessParameterInstantiation.ts, 28, 5))
+>new G("s").h : Symbol(G.h, Decl(ttttThislessParameterInstantiation.ts, 24, 12))
+>G : Symbol(G, Decl(ttttThislessParameterInstantiation.ts, 22, 20))
+>h : Symbol(G.h, Decl(ttttThislessParameterInstantiation.ts, 24, 12))
+
+g(new G("s"));
+>g : Symbol(g, Decl(ttttThislessParameterInstantiation.ts, 28, 5))
+>G : Symbol(G, Decl(ttttThislessParameterInstantiation.ts, 22, 20))
+
+interface I { m: (x: this) => void }
+>I : Symbol(I, Decl(ttttThislessParameterInstantiation.ts, 29, 14))
+>m : Symbol(I.m, Decl(ttttThislessParameterInstantiation.ts, 31, 13))
+>x : Symbol(x, Decl(ttttThislessParameterInstantiation.ts, 31, 18))
+
+declare const i: I;
+>i : Symbol(i, Decl(ttttThislessParameterInstantiation.ts, 32, 13))
+>I : Symbol(I, Decl(ttttThislessParameterInstantiation.ts, 29, 14))
+
+const im = i.m;
+>im : Symbol(im, Decl(ttttThislessParameterInstantiation.ts, 33, 5))
+>i.m : Symbol(I.m, Decl(ttttThislessParameterInstantiation.ts, 31, 13))
+>i : Symbol(i, Decl(ttttThislessParameterInstantiation.ts, 32, 13))
+>m : Symbol(I.m, Decl(ttttThislessParameterInstantiation.ts, 31, 13))
+
+const lit: I = { m: (x) => {} };
+>lit : Symbol(lit, Decl(ttttThislessParameterInstantiation.ts, 34, 5))
+>I : Symbol(I, Decl(ttttThislessParameterInstantiation.ts, 29, 14))
+>m : Symbol(m, Decl(ttttThislessParameterInstantiation.ts, 34, 16))
+>x : Symbol(x, Decl(ttttThislessParameterInstantiation.ts, 34, 21))
+

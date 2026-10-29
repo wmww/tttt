@@ -6431,6 +6431,23 @@ static void function_signature_params(Checker* me, Signature const* sig, SigReso
     r->param_count = count;
 }
 
+// tsc's TypeMapper.MapsThisOnly(): a mapper of a `this` type alone (the members of a class or interface without type
+// parameters, getTypeWithThisArgument)
+static bool mapper_maps_this_only(TyMapper const* mapper) {
+    return mapper && mapper->len == 1 && mapper->sources[0]->kind == TY_TYPE_PARAM && mapper->sources[0]->param.state->is_this;
+}
+
+// tsc's isThisless of a parameter symbol (instantiateSymbol leaves one alone under a this-only mapper): no annotation
+// and no initializer, `(x) => 1` contextually typed by `(x: this) => number` keeps `this` (bun case 26-P3a). (An
+// annotation that isThislessType accepts can't change either; a JavaScript parameter's JSDoc type is its annotation
+// in tsgo: instantiated as before)
+static bool param_is_thisless(FunctionArg const* decl) {
+    if (!decl || decl->initializer.binding.has_explicit_type || decl->jsdoc_span) return false;
+    if (initialized_binding_value(&decl->initializer)->tag != EXPR_IMPLICIT_ANY) return false;
+    SourceFile const* source = span_source(decl->span);
+    return source && !source->is_js;
+}
+
 SigResolved const* signature_resolve_slow(Checker* me, Signature const* const_sig) {
     Signature* sig = (Signature*)const_sig;
     uintptr_t v;
@@ -6472,8 +6489,10 @@ SigResolved const* signature_resolve_slow(Checker* me, Signature const* const_si
         }
         if (r->mapper) clone_type_params(me, sig, r);
         SigParam* params = arena_new_n(&my arena, SigParam, t->param_count);
+        bool this_only = mapper_maps_this_only(r->mapper);
         for (u32 i = 0; i < t->param_count; i++) {
             params[i] = t->params[i];
+            if (this_only && param_is_thisless(params[i].decl)) continue;
             params[i].type = ty_instantiate(me, params[i].type, r->mapper);
         }
         r->params = params;
