@@ -1,0 +1,9 @@
+// @lib: es2025,es2026.json
+// @strict: true
+// A global interface the lib declares in a module's `declare global` (RawJSON extends RawJSONInstance) and a script
+// redeclares: tsc merges the scripts' globals before the global augmentations, so the script's is the first
+// declaration, where checkInterfaceDeclaration reports TS2430. A program sharing its libs (the harness) had merged
+// the lib's augmentation first. Seed 20261119, jsonRawJSON2 ann-string-number
+interface RawJSON {
+    readonly rawJSON: number;
+}

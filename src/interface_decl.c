@@ -156,6 +156,16 @@ static void interface_heritage_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     if (symbol_rare(symbol)->aug_one_level) symbol = symbol_rare(symbol)->aug_one_level;
     InterfaceDecl const* first = symbol_find_node(symbol, SYMBOL_DECL_INTERFACE);
     if (!first) return;
+    // (A global's declarations in `declare global` blocks come after the scripts' (tsc's initializeTypeChecker, see
+    // symbol_declaration_spans()), which a program sharing its libs has merged first: the first script one then)
+    for (u32 d = 0; d < symbol->decl_count; d++) {
+        SymbolDecl const* decl = &symbol->decls[d];
+        if (decl->kind != SYMBOL_DECL_INTERFACE) continue;
+        if (!(decl->block && decl->block->kind == SCOPE_GLOBAL_AUGMENTATION)) {
+            first = decl->node;
+            break;
+        }
+    }
     for (u32 d = 0; d < symbol->decl_count; d++) {
         SymbolDecl const* decl = &symbol->decls[d];
         if (decl->kind != SYMBOL_DECL_INTERFACE || !decl_file_walked(decl->name)) continue;
