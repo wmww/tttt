@@ -21,7 +21,7 @@ scripts/sharedgraph/sgcheck_projects.txt, load 8-15): main at ab39dce20 12 of 34
   - vidstack-player (and packages/vidstack) player-state.ts TS2531 (K16, deterministic at T1): an object literal getter
     typed by a call's resolution sees `this` as any (Checker.lazy_getter, in-flight per-worker state) without a taint
     event, so its body's locals were published clean and another checker skipped their evaluation (test
-    ttttSharedGraphLazyGetterThis). [fixed, next commit]
+    ttttSharedGraphLazyGetterThis). [fixed e598f8660]
 
 - **openbot/apps/auth-api: private names raced** (hub_regime.md's 75 TS2345s): ty_private_name() returned its own
   `#x` atom when another checker's was published first; the class's members carried the winner's, so lookups missed

@@ -16541,6 +16541,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttSharedGraphLazyGetterThis': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
     'ttttSharedGraphTypeofCycleBase': {
         errors: false,
         symbols: true,
