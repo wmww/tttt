@@ -242,14 +242,29 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   twice, once while the loop's flow types are incomplete (getInitialOrAssignedType checks `x = more ? "a" :
   takeNum(x)` with x still `string`) and once in the ordinary check (`string | number`); tttt reports the second
   only. Diagnostics produced during flow analysis are the mechanism: a design question. [design]
+- +TS2304 on a computed name in a renaming element of a bodiless signature's parameter, 03-C11b (`declare function
+  fe({ [undeclared]: z }: any)`), 34-C14b (a function type's): tsc's checkVariableLikeDeclaration returns at the renaming
+  (TS2842) before checkComputedPropertyName, so the name is never resolved; binding_lookup_names() now discards what
+  looking it up reports there. Test ttttBodilessRenamingComputedName [fixed 9ac29def3].
+- +TS2304 on a name an export specifier declares in a namespace's block (TS1194), 01-C11 (`namespace N { const a = 1;
+  export { a as b }; b; }`), 33-C11a: tsc's resolveNameHelper skips a pure export specifier alias of the exports only
+  in a source file or an ambient module declaration; scope_lookup's exports step took that rule everywhere. Test
+  ttttNamespaceExportSpecifierInScope [fixed PENDING].
 - -TS2448: two mechanisms, the JSX factory (`React`, `Frag`) declared after the element that uses it (tsc resolves
   the factory at the element as a use: 01-C2b, 15-C3b, 27-C3a, 27-P7, 34-C2b) and `const arguments = 1` in a
   function body (tsc's reference to the implicit `arguments`: 25-C17c, 33-P4g, 51-L01, 51-L05, 77-R12b). The JSX
   half: markJsxAliasReferenced's resolveName has a not-found message under jsx: react, so checkResolvedBlockScopedVariable
   runs at the tag (the fragment), and getJSXFragmentType's, once per file, whenever jsxFragmentFactory is set;
   jsx_reference_factory() and jsx_lookup_factory() now check the found factory as a use. Tests
-  ttttJsxFactoryUsedBeforeDeclaration, ttttJsxFragmentFactoryUsedBeforeDeclaration [fixed NEXT]. The `arguments`
-  half [open].
+  ttttJsxFactoryUsedBeforeDeclaration, ttttJsxFragmentFactoryUsedBeforeDeclaration [fixed ec0577ba4]. The `arguments`
+  half (25-C17c, 33-P4g, 51-L01, 51-L05, 77-R12b): tsgo's checkUnmatchedJSDocParameters, for any function with an
+  `@param` tag (TS files too), asks containsArgumentsReference, which visits every identifier spelled `arguments` in
+  the body (declaration names and a binding pattern's property names included: `const arguments = 1`,
+  `const { arguments: args } = call`) and calls getResolvedSymbol on it, which resolves it as a use with errors:
+  TS2448 for the const's own name, TS2304 or TS2662 for a destructured property name where no `arguments` is in scope
+  (an arrow function, a class field), until one resolves to the implicit arguments. Strada's containsArgumentsReference
+  asked getReferencedValueSymbol (no diagnostics): a tsgo port bug, reported on real tool-calling code (`arguments:
+  args` of an LLM tool call under a JSDoc'd arrow). Declined: not replicated. [tsgo]
 - 83-R01c (+TS2304 33): the for-initializer DisallowIn leak, missing_checks.md (ttttForInitializerDisallowInLeak). [dup]
 
 - 56-L15, 28-C11b: TS1358 for every tagged template whose tag is in an optional chain, not only right after `?.`.

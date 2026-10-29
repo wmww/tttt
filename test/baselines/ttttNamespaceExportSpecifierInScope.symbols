@@ -1,0 +1,46 @@
+//// [test/cases/ttttNamespaceExportSpecifierInScope.ts] ////
+
+=== ttttNamespaceExportSpecifierInScope.ts ===
+// An export specifier in a namespace's block (TS1194) puts its name in scope there (bun cases 01-C11, 33-C11a): tsc's
+// resolveNameHelper skips a pure export specifier alias only in a source file or an ambient module declaration
+export {};
+namespace N { const a = 1; export { a as b }; b; }
+>N : Symbol(N, Decl(ttttNamespaceExportSpecifierInScope.ts, 2, 10))
+>a : Symbol(a, Decl(ttttNamespaceExportSpecifierInScope.ts, 3, 19))
+>a : Symbol(a, Decl(ttttNamespaceExportSpecifierInScope.ts, 3, 19))
+>b : Symbol(b, Decl(ttttNamespaceExportSpecifierInScope.ts, 3, 35))
+>b : Symbol(b, Decl(ttttNamespaceExportSpecifierInScope.ts, 3, 35))
+
+const v = 1;
+>v : Symbol(v, Decl(ttttNamespaceExportSpecifierInScope.ts, 4, 5))
+
+namespace M { export { v as o }; o; }
+>M : Symbol(M, Decl(ttttNamespaceExportSpecifierInScope.ts, 4, 12))
+>v : Symbol(v, Decl(ttttNamespaceExportSpecifierInScope.ts, 4, 5))
+>o : Symbol(o, Decl(ttttNamespaceExportSpecifierInScope.ts, 5, 22))
+>o : Symbol(o, Decl(ttttNamespaceExportSpecifierInScope.ts, 5, 22))
+
+N.b;
+>N.b : Symbol(N.b, Decl(ttttNamespaceExportSpecifierInScope.ts, 3, 35))
+>N : Symbol(N, Decl(ttttNamespaceExportSpecifierInScope.ts, 2, 10))
+>b : Symbol(N.b, Decl(ttttNamespaceExportSpecifierInScope.ts, 3, 35))
+
+declare namespace D { const c: number; export { c as d }; type T = typeof d; }
+>D : Symbol(D, Decl(ttttNamespaceExportSpecifierInScope.ts, 6, 4))
+>c : Symbol(c, Decl(ttttNamespaceExportSpecifierInScope.ts, 7, 27))
+>c : Symbol(c, Decl(ttttNamespaceExportSpecifierInScope.ts, 7, 27))
+>d : Symbol(d, Decl(ttttNamespaceExportSpecifierInScope.ts, 7, 47))
+>T : Symbol(T, Decl(ttttNamespaceExportSpecifierInScope.ts, 7, 57))
+
+namespace P { export { q }; q; }
+>P : Symbol(P, Decl(ttttNamespaceExportSpecifierInScope.ts, 7, 78))
+>q : Symbol(q, Decl(ttttNamespaceExportSpecifierInScope.ts, 8, 22))
+>q : Symbol(q, Decl(ttttNamespaceExportSpecifierInScope.ts, 8, 22))
+
+namespace Q { function f() { return g; } export { f as g }; }
+>Q : Symbol(Q, Decl(ttttNamespaceExportSpecifierInScope.ts, 8, 32))
+>f : Symbol(f, Decl(ttttNamespaceExportSpecifierInScope.ts, 9, 13))
+>g : Symbol(g, Decl(ttttNamespaceExportSpecifierInScope.ts, 9, 49))
+>f : Symbol(f, Decl(ttttNamespaceExportSpecifierInScope.ts, 9, 13))
+>g : Symbol(g, Decl(ttttNamespaceExportSpecifierInScope.ts, 9, 49))
+

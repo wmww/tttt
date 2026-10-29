@@ -6197,8 +6197,11 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
                 }
                 if (!is_typedef) found = nullptr;
             }
-            // `export { a }` must not find itself
-            if (found && !is_export_specifier_alias(found) && symbol_has_meaning(found, meaning & visible)) return found;
+            // `export { a }` must not find itself: an export specifier puts no name in scope, in a file or an ambient
+            // module (tsc's resolveNameHelper). In a namespace's or a global augmentation's block (TS1194) it does
+            bool specifier_in_scope = scope->kind == SCOPE_GLOBAL_AUGMENTATION ||
+                (scope->kind == SCOPE_NAMESPACE && !scope->ambient && !(scope->container && scope->container->is_module));
+            if (found && (specifier_in_scope || !is_export_specifier_alias(found)) && symbol_has_meaning(found, meaning & visible)) return found;
         }
     }
     return nullptr;

@@ -1,0 +1,49 @@
+//// [test/cases/ttttNamespaceExportSpecifierInScope.ts] ////
+
+=== ttttNamespaceExportSpecifierInScope.ts ===
+// An export specifier in a namespace's block (TS1194) puts its name in scope there (bun cases 01-C11, 33-C11a): tsc's
+// resolveNameHelper skips a pure export specifier alias only in a source file or an ambient module declaration
+export {};
+namespace N { const a = 1; export { a as b }; b; }
+>N : typeof N
+>a : 1
+>1 : 1
+>a : 1
+>b : 1
+>b : 1
+
+const v = 1;
+>v : 1
+>1 : 1
+
+namespace M { export { v as o }; o; }
+>M : typeof M
+>v : 1
+>o : 1
+>o : 1
+
+N.b;
+>N.b : 1
+>N : typeof N
+>b : 1
+
+declare namespace D { const c: number; export { c as d }; type T = typeof d; }
+>D : typeof D
+>c : number
+>c : number
+>d : number
+>T : any
+>d : any
+
+namespace P { export { q }; q; }
+>P : typeof P
+>q : any
+>q : any
+
+namespace Q { function f() { return g; } export { f as g }; }
+>Q : typeof Q
+>f : () => typeof f
+>g : () => typeof f
+>f : () => typeof f
+>g : () => typeof f
+

@@ -1,0 +1,33 @@
+ttttNamespaceExportSpecifierInScope.ts(4,28): error TS1194: Export declarations are not permitted in a namespace.
+ttttNamespaceExportSpecifierInScope.ts(6,15): error TS1194: Export declarations are not permitted in a namespace.
+ttttNamespaceExportSpecifierInScope.ts(8,75): error TS2552: Cannot find name 'd'. Did you mean 'D'?
+ttttNamespaceExportSpecifierInScope.ts(9,15): error TS1194: Export declarations are not permitted in a namespace.
+ttttNamespaceExportSpecifierInScope.ts(9,24): error TS2303: Circular definition of import alias 'q'.
+ttttNamespaceExportSpecifierInScope.ts(10,42): error TS1194: Export declarations are not permitted in a namespace.
+
+
+==== ttttNamespaceExportSpecifierInScope.ts (6 errors) ====
+    // An export specifier in a namespace's block (TS1194) puts its name in scope there (bun cases 01-C11, 33-C11a): tsc's
+    // resolveNameHelper skips a pure export specifier alias only in a source file or an ambient module declaration
+    export {};
+    namespace N { const a = 1; export { a as b }; b; }
+                               ~~~~~~~~~~~~~~~~~~
+!!! error TS1194: Export declarations are not permitted in a namespace.
+    const v = 1;
+    namespace M { export { v as o }; o; }
+                  ~~~~~~~~~~~~~~~~~~
+!!! error TS1194: Export declarations are not permitted in a namespace.
+    N.b;
+    declare namespace D { const c: number; export { c as d }; type T = typeof d; }
+                                                                              ~
+!!! error TS2552: Cannot find name 'd'. Did you mean 'D'?
+!!! related TS2728 ttttNamespaceExportSpecifierInScope.ts:8:19: 'D' is declared here.
+    namespace P { export { q }; q; }
+                  ~~~~~~~~~~~~~
+!!! error TS1194: Export declarations are not permitted in a namespace.
+                           ~
+!!! error TS2303: Circular definition of import alias 'q'.
+    namespace Q { function f() { return g; } export { f as g }; }
+                                             ~~~~~~~~~~~~~~~~~~
+!!! error TS1194: Export declarations are not permitted in a namespace.
+    
