@@ -12263,6 +12263,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAnyKeyOfUnionObject': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAnyPatternElementDefaultNotPadded': {
         errors: true,
         symbols: true,
