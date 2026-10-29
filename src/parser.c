@@ -6809,7 +6809,15 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
         p.shared->no_mapped_member = is_declaration || member_count;
         bool accessor_body = false;
         Parser member_p = parser(&p);
+        u32 this_before = p.shared->this_count;
         bool parsed_member = parse_list_member(&member_p, PARSING_TYPE_MEMBERS, true, true, &item);
+        // An accessor is a `this` container that doesn't propagate a `this` type to the interface (tsc's binder: no
+        // ContainerFlagsPropagatesThisKeyword), so `interface I { get x(): this }` stays thisless: x is the error type
+        if (parsed_member && ((item.tag == CLASS_ITEM_METHOD && item.method.accessor != CLASS_ACCESSOR_NONE) ||
+            (item.tag == CLASS_ITEM_INTERFACE_MEMBER && item.interface_memeber.accessor_kind))
+        ) {
+            p.shared->this_count = this_before;
+        }
         // (tsc's isTypeMemberStart rejects a name followed by something else than `(`, `<`, `?`, `:`, `,` or the end of
         // a statement, which only an untyped property of tttt's can be: `{ f2 = 1 }` is TS1131, the list ends)
         // (The lookahead runs from the member's start in member_p, which p can't have a second child of meanwhile)

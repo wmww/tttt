@@ -871,6 +871,14 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
             if (identifier->keyword == KEYWORD_IDENTIFIER_THIS && declared->kind == TY_DECLARED && declared->declared.this_param) {
                 return declared->declared.this_param;
             }
+            // A thisless interface has no `this` type: `this` in its accessors' signatures, which don't make it one
+            // (tsc's getThisType: thisType is nil, errorType). A generic one always has one in tsc, which tttt leaves
+            // out when nothing mentions `this` (the reference to itself below stands for it)
+            if (identifier->keyword == KEYWORD_IDENTIFIER_THIS && identifier->this_kind == THIS_INTERFACE && declared->kind == TY_DECLARED &&
+                !declared->declared.type_params.len
+            ) {
+                return ty_intrinsic(me, TY_ERROR);
+            }
             if (declared->kind == TY_DECLARED && declared->declared.type_params.len) {
                 // TODO: `this` and a bare `C` inside generic class C are the class's own instantiation
                 // (type arguments = its type parameters), and `this` is really its own type parameter

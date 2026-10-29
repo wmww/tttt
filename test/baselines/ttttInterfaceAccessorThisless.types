@@ -1,0 +1,192 @@
+//// [test/cases/ttttInterfaceAccessorThisless.ts] ////
+
+=== ttttInterfaceAccessorThisless.ts ===
+// An accessor doesn't propagate a `this` type to its interface (tsc's binder: no ContainerFlagsPropagatesThisKeyword):
+// an interface whose only `this` is in accessor signatures is thisless, and that `this` is the error type
+interface I { get x(): this }
+>x : any
+
+declare const i: I;
+>i : I
+
+const r: null = i.x;
+>r : null
+>i.x : any
+>i : I
+>x : any
+
+interface K { get x(): this; w: number }
+>x : any
+>w : number
+
+declare const k: K;
+>k : K
+
+const r2: null = k.x;
+>r2 : null
+>k.x : any
+>k : K
+>x : any
+
+interface L { w: number; get x(): this }
+>w : number
+>x : any
+
+declare const l: L;
+>l : L
+
+const r3: null = l.x;
+>r3 : null
+>l.x : any
+>l : L
+>x : any
+
+interface J0 { get y(): this; m(): void }
+>y : any
+>m : () => void
+
+declare const j0: J0;
+>j0 : J0
+
+const b0: null = j0.y;
+>b0 : null
+>j0.y : any
+>j0 : J0
+>y : any
+
+interface M { m(): void; get y(): this }
+>m : () => void
+>y : any
+
+declare const m: M;
+>m : M
+
+const b2: null = m.y;
+>b2 : null
+>m.y : any
+>m : M
+>y : any
+
+interface N { get y(): this; z: this }
+>y : this
+>z : this
+
+declare const n: N;
+>n : N
+
+const b3: null = n.y;
+>b3 : null
+>n.y : N
+>n : N
+>y : N
+
+interface S { set x(v: this); get y(): number }
+>x : any
+>v : any
+>y : number
+
+declare const s: S;
+>s : S
+
+s.x = s;
+>s.x = s : S
+>s.x : any
+>s : S
+>x : any
+>s : S
+
+interface B { get x(): this }
+>x : this
+
+interface B { z: this }
+>z : this
+
+declare const b: B;
+>b : B
+
+const a2: null = b.x;
+>a2 : null
+>b.x : B
+>b : B
+>x : B
+
+interface D extends B { get w(): this }
+>w : this
+
+declare const d: D;
+>d : D
+
+const a3: null = d.w;
+>a3 : null
+>d.w : D
+>d : D
+>w : D
+
+interface E { get [Symbol.iterator](): this }
+>[Symbol.iterator] : any
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+
+type TL = { get x(): this };
+>TL : TL
+>x : any
+
+interface F { get x(): { y: this } }
+>x : { y: this; }
+>y : any
+
+declare const f: F;
+>f : F
+
+const a4: null = f.x.y;
+>a4 : null
+>f.x.y : any
+>f.x : { y: this; }
+>f : F
+>x : { y: this; }
+>y : any
+
+interface H { get x(): () => this }
+>x : () => this
+
+declare const h: H;
+>h : H
+
+const a5: null = h.x();
+>a5 : null
+>h.x() : any
+>h.x : () => this
+>h : H
+>x : () => this
+
+interface E { get [Symbol.iterator](): this }
+>[Symbol.iterator] : any
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+
+declare const e: E;
+>e : E
+
+const a6: null = e[Symbol.iterator];
+>a6 : null
+>e[Symbol.iterator] : any
+>e : E
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+
+interface E2 { get ["k"](): this }
+>["k"] : any
+>"k" : "k"
+
+declare const e2: E2;
+>e2 : E2
+
+const a7: null = e2.k;
+>a7 : null
+>e2.k : any
+>e2 : E2
+>k : any
+

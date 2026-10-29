@@ -108,7 +108,19 @@ bool interface_member_is_misplaced_mapped(InterfaceMember const* me) {
     return key->tag == EXPR_BINARY_OP && key->binary_op->op == BINARY_OP_IN && !expr_is_perenthisized(key);
 }
 
+static void interface_member_lookup_names_inner(InterfaceMember* me, Scope* names, ErrorCtx* errs);
+
 void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* errs) {
+    // An accessor is a `this` container that doesn't propagate a `this` type to its interface (tsc's binder: no
+    // ContainerFlagsPropagatesThisKeyword), so `interface I { get x(): this }` stays thisless and x is the error type
+    InterfaceDecl* interface = my accessor_kind && scope_rare(names)->this_ref.kind == THIS_INTERFACE ?
+        (InterfaceDecl*)scope_rare(names)->this_ref.interface : nullptr;
+    bool contains_this = interface && interface->contains_this;
+    interface_member_lookup_names_inner(me, names, errs);
+    if (interface) interface->contains_this = contains_this;
+}
+
+static void interface_member_lookup_names_inner(InterfaceMember* me, Scope* names, ErrorCtx* errs) {
     // `readonly k: unique symbol`, `readonly [k]: unique symbol`. The owner is set by the interface declaration, if
     // there is one
     if (my type.tag == TYPE_UNIQUE_SYMBOL && my readonly &&

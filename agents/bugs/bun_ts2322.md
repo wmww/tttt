@@ -119,11 +119,13 @@ last line. The real cause is then elsewhere, and the entry says where. Show a ca
   x + 1`). tsc's isInCompoundLikeAssignment passes through NonNull and array literals (GetAssignmentTarget), so the
   target's type is its base literal type. tttt's compound_like_target stopped at them; it also widened a property
   access target, which tsc never does (getFlowTypeOfAccessExpression: only the flow type after the assignment).
-  TS2322 spurious. [fixed COMMIT-C9]
+  TS2322 spurious. [fixed ae34e2b13]
 - 28-C33d: `for (var a = 1 of [])` (TS1190). tsc still checks the initializer against the element type never,
   tttt doesn't. TS2322 missing. [open]
 - 31-P3: `interface I { get x(): this }`, `const r: null = i.x`. tsc reports nothing, tttt reports I to null.
-  Probably tsc types a getter returning `this` in an interface differently. TS2322 spurious. [open]
+  An accessor is a `this` container that doesn't propagate ContainsThis to its interface (tsc's binder), so I is
+  thisless and the getter's `this` is the error type. A generic interface's `this` still prints as the reference
+  (tttt makes no this_param for a thisless generic interface; types-only). TS2322 spurious. [fixed COMMIT-P3]
 - 32-C17: `const s = (Symbol)()`. tsc makes no unique symbol for a parenthesized callee, so `typeof s` is symbol, while
   tttt's is unique. TS2322 spurious. [open]
 - 33-C17b: an object literal method `x()` and then `get x()`/`set x(v)`. A method excludes everything, so the binder

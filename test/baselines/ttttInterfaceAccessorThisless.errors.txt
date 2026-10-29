@@ -1,0 +1,69 @@
+ttttInterfaceAccessorThisless.ts(20,7): error TS2322: Type 'N' is not assignable to type 'null'.
+ttttInterfaceAccessorThisless.ts(27,7): error TS2322: Type 'B' is not assignable to type 'null'.
+ttttInterfaceAccessorThisless.ts(30,7): error TS2322: Type 'D' is not assignable to type 'null'.
+ttttInterfaceAccessorThisless.ts(31,19): error TS2300: Duplicate identifier '[Symbol.iterator]'.
+ttttInterfaceAccessorThisless.ts(32,22): error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+ttttInterfaceAccessorThisless.ts(33,29): error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+ttttInterfaceAccessorThisless.ts(39,19): error TS2300: Duplicate identifier '[Symbol.iterator]'.
+
+
+==== ttttInterfaceAccessorThisless.ts (7 errors) ====
+    // An accessor doesn't propagate a `this` type to its interface (tsc's binder: no ContainerFlagsPropagatesThisKeyword):
+    // an interface whose only `this` is in accessor signatures is thisless, and that `this` is the error type
+    interface I { get x(): this }
+    declare const i: I;
+    const r: null = i.x;
+    interface K { get x(): this; w: number }
+    declare const k: K;
+    const r2: null = k.x;
+    interface L { w: number; get x(): this }
+    declare const l: L;
+    const r3: null = l.x;
+    interface J0 { get y(): this; m(): void }
+    declare const j0: J0;
+    const b0: null = j0.y;
+    interface M { m(): void; get y(): this }
+    declare const m: M;
+    const b2: null = m.y;
+    interface N { get y(): this; z: this }
+    declare const n: N;
+    const b3: null = n.y;
+          ~~
+!!! error TS2322: Type 'N' is not assignable to type 'null'.
+    interface S { set x(v: this); get y(): number }
+    declare const s: S;
+    s.x = s;
+    interface B { get x(): this }
+    interface B { z: this }
+    declare const b: B;
+    const a2: null = b.x;
+          ~~
+!!! error TS2322: Type 'B' is not assignable to type 'null'.
+    interface D extends B { get w(): this }
+    declare const d: D;
+    const a3: null = d.w;
+          ~~
+!!! error TS2322: Type 'D' is not assignable to type 'null'.
+    interface E { get [Symbol.iterator](): this }
+                      ~~~~~~~~~~~~~~~~~
+!!! error TS2300: Duplicate identifier '[Symbol.iterator]'.
+    type TL = { get x(): this };
+                         ~~~~
+!!! error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+    interface F { get x(): { y: this } }
+                                ~~~~
+!!! error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+    declare const f: F;
+    const a4: null = f.x.y;
+    interface H { get x(): () => this }
+    declare const h: H;
+    const a5: null = h.x();
+    interface E { get [Symbol.iterator](): this }
+                      ~~~~~~~~~~~~~~~~~
+!!! error TS2300: Duplicate identifier '[Symbol.iterator]'.
+    declare const e: E;
+    const a6: null = e[Symbol.iterator];
+    interface E2 { get ["k"](): this }
+    declare const e2: E2;
+    const a7: null = e2.k;
+    

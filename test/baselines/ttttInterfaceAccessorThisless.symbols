@@ -1,0 +1,218 @@
+//// [test/cases/ttttInterfaceAccessorThisless.ts] ////
+
+=== ttttInterfaceAccessorThisless.ts ===
+// An accessor doesn't propagate a `this` type to its interface (tsc's binder: no ContainerFlagsPropagatesThisKeyword):
+// an interface whose only `this` is in accessor signatures is thisless, and that `this` is the error type
+interface I { get x(): this }
+>I : Symbol(I, Decl(ttttInterfaceAccessorThisless.ts, 0, 0))
+>x : Symbol(I.x, Decl(ttttInterfaceAccessorThisless.ts, 2, 13))
+
+declare const i: I;
+>i : Symbol(i, Decl(ttttInterfaceAccessorThisless.ts, 3, 13))
+>I : Symbol(I, Decl(ttttInterfaceAccessorThisless.ts, 0, 0))
+
+const r: null = i.x;
+>r : Symbol(r, Decl(ttttInterfaceAccessorThisless.ts, 4, 5))
+>i.x : Symbol(I.x, Decl(ttttInterfaceAccessorThisless.ts, 2, 13))
+>i : Symbol(i, Decl(ttttInterfaceAccessorThisless.ts, 3, 13))
+>x : Symbol(I.x, Decl(ttttInterfaceAccessorThisless.ts, 2, 13))
+
+interface K { get x(): this; w: number }
+>K : Symbol(K, Decl(ttttInterfaceAccessorThisless.ts, 4, 20))
+>x : Symbol(K.x, Decl(ttttInterfaceAccessorThisless.ts, 5, 13))
+>w : Symbol(K.w, Decl(ttttInterfaceAccessorThisless.ts, 5, 28))
+
+declare const k: K;
+>k : Symbol(k, Decl(ttttInterfaceAccessorThisless.ts, 6, 13))
+>K : Symbol(K, Decl(ttttInterfaceAccessorThisless.ts, 4, 20))
+
+const r2: null = k.x;
+>r2 : Symbol(r2, Decl(ttttInterfaceAccessorThisless.ts, 7, 5))
+>k.x : Symbol(K.x, Decl(ttttInterfaceAccessorThisless.ts, 5, 13))
+>k : Symbol(k, Decl(ttttInterfaceAccessorThisless.ts, 6, 13))
+>x : Symbol(K.x, Decl(ttttInterfaceAccessorThisless.ts, 5, 13))
+
+interface L { w: number; get x(): this }
+>L : Symbol(L, Decl(ttttInterfaceAccessorThisless.ts, 7, 21))
+>w : Symbol(L.w, Decl(ttttInterfaceAccessorThisless.ts, 8, 13))
+>x : Symbol(L.x, Decl(ttttInterfaceAccessorThisless.ts, 8, 24))
+
+declare const l: L;
+>l : Symbol(l, Decl(ttttInterfaceAccessorThisless.ts, 9, 13))
+>L : Symbol(L, Decl(ttttInterfaceAccessorThisless.ts, 7, 21))
+
+const r3: null = l.x;
+>r3 : Symbol(r3, Decl(ttttInterfaceAccessorThisless.ts, 10, 5))
+>l.x : Symbol(L.x, Decl(ttttInterfaceAccessorThisless.ts, 8, 24))
+>l : Symbol(l, Decl(ttttInterfaceAccessorThisless.ts, 9, 13))
+>x : Symbol(L.x, Decl(ttttInterfaceAccessorThisless.ts, 8, 24))
+
+interface J0 { get y(): this; m(): void }
+>J0 : Symbol(J0, Decl(ttttInterfaceAccessorThisless.ts, 10, 21))
+>y : Symbol(J0.y, Decl(ttttInterfaceAccessorThisless.ts, 11, 14))
+>m : Symbol(J0.m, Decl(ttttInterfaceAccessorThisless.ts, 11, 29))
+
+declare const j0: J0;
+>j0 : Symbol(j0, Decl(ttttInterfaceAccessorThisless.ts, 12, 13))
+>J0 : Symbol(J0, Decl(ttttInterfaceAccessorThisless.ts, 10, 21))
+
+const b0: null = j0.y;
+>b0 : Symbol(b0, Decl(ttttInterfaceAccessorThisless.ts, 13, 5))
+>j0.y : Symbol(J0.y, Decl(ttttInterfaceAccessorThisless.ts, 11, 14))
+>j0 : Symbol(j0, Decl(ttttInterfaceAccessorThisless.ts, 12, 13))
+>y : Symbol(J0.y, Decl(ttttInterfaceAccessorThisless.ts, 11, 14))
+
+interface M { m(): void; get y(): this }
+>M : Symbol(M, Decl(ttttInterfaceAccessorThisless.ts, 13, 22))
+>m : Symbol(M.m, Decl(ttttInterfaceAccessorThisless.ts, 14, 13))
+>y : Symbol(M.y, Decl(ttttInterfaceAccessorThisless.ts, 14, 24))
+
+declare const m: M;
+>m : Symbol(m, Decl(ttttInterfaceAccessorThisless.ts, 15, 13))
+>M : Symbol(M, Decl(ttttInterfaceAccessorThisless.ts, 13, 22))
+
+const b2: null = m.y;
+>b2 : Symbol(b2, Decl(ttttInterfaceAccessorThisless.ts, 16, 5))
+>m.y : Symbol(M.y, Decl(ttttInterfaceAccessorThisless.ts, 14, 24))
+>m : Symbol(m, Decl(ttttInterfaceAccessorThisless.ts, 15, 13))
+>y : Symbol(M.y, Decl(ttttInterfaceAccessorThisless.ts, 14, 24))
+
+interface N { get y(): this; z: this }
+>N : Symbol(N, Decl(ttttInterfaceAccessorThisless.ts, 16, 21))
+>y : Symbol(N.y, Decl(ttttInterfaceAccessorThisless.ts, 17, 13))
+>z : Symbol(N.z, Decl(ttttInterfaceAccessorThisless.ts, 17, 28))
+
+declare const n: N;
+>n : Symbol(n, Decl(ttttInterfaceAccessorThisless.ts, 18, 13))
+>N : Symbol(N, Decl(ttttInterfaceAccessorThisless.ts, 16, 21))
+
+const b3: null = n.y;
+>b3 : Symbol(b3, Decl(ttttInterfaceAccessorThisless.ts, 19, 5))
+>n.y : Symbol(N.y, Decl(ttttInterfaceAccessorThisless.ts, 17, 13))
+>n : Symbol(n, Decl(ttttInterfaceAccessorThisless.ts, 18, 13))
+>y : Symbol(N.y, Decl(ttttInterfaceAccessorThisless.ts, 17, 13))
+
+interface S { set x(v: this); get y(): number }
+>S : Symbol(S, Decl(ttttInterfaceAccessorThisless.ts, 19, 21))
+>x : Symbol(S.x, Decl(ttttInterfaceAccessorThisless.ts, 20, 13))
+>v : Symbol(v, Decl(ttttInterfaceAccessorThisless.ts, 20, 20))
+>y : Symbol(S.y, Decl(ttttInterfaceAccessorThisless.ts, 20, 29))
+
+declare const s: S;
+>s : Symbol(s, Decl(ttttInterfaceAccessorThisless.ts, 21, 13))
+>S : Symbol(S, Decl(ttttInterfaceAccessorThisless.ts, 19, 21))
+
+s.x = s;
+>s.x : Symbol(S.x, Decl(ttttInterfaceAccessorThisless.ts, 20, 13))
+>s : Symbol(s, Decl(ttttInterfaceAccessorThisless.ts, 21, 13))
+>x : Symbol(S.x, Decl(ttttInterfaceAccessorThisless.ts, 20, 13))
+>s : Symbol(s, Decl(ttttInterfaceAccessorThisless.ts, 21, 13))
+
+interface B { get x(): this }
+>B : Symbol(B, Decl(ttttInterfaceAccessorThisless.ts, 22, 8), Decl(ttttInterfaceAccessorThisless.ts, 23, 29))
+>x : Symbol(B.x, Decl(ttttInterfaceAccessorThisless.ts, 23, 13))
+
+interface B { z: this }
+>B : Symbol(B, Decl(ttttInterfaceAccessorThisless.ts, 22, 8), Decl(ttttInterfaceAccessorThisless.ts, 23, 29))
+>z : Symbol(B.z, Decl(ttttInterfaceAccessorThisless.ts, 24, 13))
+
+declare const b: B;
+>b : Symbol(b, Decl(ttttInterfaceAccessorThisless.ts, 25, 13))
+>B : Symbol(B, Decl(ttttInterfaceAccessorThisless.ts, 22, 8), Decl(ttttInterfaceAccessorThisless.ts, 23, 29))
+
+const a2: null = b.x;
+>a2 : Symbol(a2, Decl(ttttInterfaceAccessorThisless.ts, 26, 5))
+>b.x : Symbol(B.x, Decl(ttttInterfaceAccessorThisless.ts, 23, 13))
+>b : Symbol(b, Decl(ttttInterfaceAccessorThisless.ts, 25, 13))
+>x : Symbol(B.x, Decl(ttttInterfaceAccessorThisless.ts, 23, 13))
+
+interface D extends B { get w(): this }
+>D : Symbol(D, Decl(ttttInterfaceAccessorThisless.ts, 26, 21))
+>B : Symbol(B, Decl(ttttInterfaceAccessorThisless.ts, 22, 8), Decl(ttttInterfaceAccessorThisless.ts, 23, 29))
+>w : Symbol(D.w, Decl(ttttInterfaceAccessorThisless.ts, 27, 23))
+
+declare const d: D;
+>d : Symbol(d, Decl(ttttInterfaceAccessorThisless.ts, 28, 13))
+>D : Symbol(D, Decl(ttttInterfaceAccessorThisless.ts, 26, 21))
+
+const a3: null = d.w;
+>a3 : Symbol(a3, Decl(ttttInterfaceAccessorThisless.ts, 29, 5))
+>d.w : Symbol(D.w, Decl(ttttInterfaceAccessorThisless.ts, 27, 23))
+>d : Symbol(d, Decl(ttttInterfaceAccessorThisless.ts, 28, 13))
+>w : Symbol(D.w, Decl(ttttInterfaceAccessorThisless.ts, 27, 23))
+
+interface E { get [Symbol.iterator](): this }
+>E : Symbol(E, Decl(ttttInterfaceAccessorThisless.ts, 29, 21), Decl(ttttInterfaceAccessorThisless.ts, 37, 23))
+>[Symbol.iterator] : Symbol(E[Symbol.iterator], Decl(ttttInterfaceAccessorThisless.ts, 30, 13))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+
+type TL = { get x(): this };
+>TL : Symbol(TL, Decl(ttttInterfaceAccessorThisless.ts, 30, 45))
+>x : Symbol(x, Decl(ttttInterfaceAccessorThisless.ts, 31, 11))
+
+interface F { get x(): { y: this } }
+>F : Symbol(F, Decl(ttttInterfaceAccessorThisless.ts, 31, 28))
+>x : Symbol(F.x, Decl(ttttInterfaceAccessorThisless.ts, 32, 13))
+>y : Symbol(y, Decl(ttttInterfaceAccessorThisless.ts, 32, 24))
+
+declare const f: F;
+>f : Symbol(f, Decl(ttttInterfaceAccessorThisless.ts, 33, 13))
+>F : Symbol(F, Decl(ttttInterfaceAccessorThisless.ts, 31, 28))
+
+const a4: null = f.x.y;
+>a4 : Symbol(a4, Decl(ttttInterfaceAccessorThisless.ts, 34, 5))
+>f.x.y : Symbol(y, Decl(ttttInterfaceAccessorThisless.ts, 32, 24))
+>f.x : Symbol(F.x, Decl(ttttInterfaceAccessorThisless.ts, 32, 13))
+>f : Symbol(f, Decl(ttttInterfaceAccessorThisless.ts, 33, 13))
+>x : Symbol(F.x, Decl(ttttInterfaceAccessorThisless.ts, 32, 13))
+>y : Symbol(y, Decl(ttttInterfaceAccessorThisless.ts, 32, 24))
+
+interface H { get x(): () => this }
+>H : Symbol(H, Decl(ttttInterfaceAccessorThisless.ts, 34, 23))
+>x : Symbol(H.x, Decl(ttttInterfaceAccessorThisless.ts, 35, 13))
+
+declare const h: H;
+>h : Symbol(h, Decl(ttttInterfaceAccessorThisless.ts, 36, 13))
+>H : Symbol(H, Decl(ttttInterfaceAccessorThisless.ts, 34, 23))
+
+const a5: null = h.x();
+>a5 : Symbol(a5, Decl(ttttInterfaceAccessorThisless.ts, 37, 5))
+>h.x : Symbol(H.x, Decl(ttttInterfaceAccessorThisless.ts, 35, 13))
+>h : Symbol(h, Decl(ttttInterfaceAccessorThisless.ts, 36, 13))
+>x : Symbol(H.x, Decl(ttttInterfaceAccessorThisless.ts, 35, 13))
+
+interface E { get [Symbol.iterator](): this }
+>E : Symbol(E, Decl(ttttInterfaceAccessorThisless.ts, 29, 21), Decl(ttttInterfaceAccessorThisless.ts, 37, 23))
+>[Symbol.iterator] : Symbol(E[Symbol.iterator], Decl(ttttInterfaceAccessorThisless.ts, 38, 13))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+
+declare const e: E;
+>e : Symbol(e, Decl(ttttInterfaceAccessorThisless.ts, 39, 13))
+>E : Symbol(E, Decl(ttttInterfaceAccessorThisless.ts, 29, 21), Decl(ttttInterfaceAccessorThisless.ts, 37, 23))
+
+const a6: null = e[Symbol.iterator];
+>a6 : Symbol(a6, Decl(ttttInterfaceAccessorThisless.ts, 40, 5))
+>e : Symbol(e, Decl(ttttInterfaceAccessorThisless.ts, 39, 13))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+
+interface E2 { get ["k"](): this }
+>E2 : Symbol(E2, Decl(ttttInterfaceAccessorThisless.ts, 40, 36))
+>["k"] : Symbol(E2["k"], Decl(ttttInterfaceAccessorThisless.ts, 41, 14))
+>"k" : Symbol(E2["k"], Decl(ttttInterfaceAccessorThisless.ts, 41, 14))
+
+declare const e2: E2;
+>e2 : Symbol(e2, Decl(ttttInterfaceAccessorThisless.ts, 42, 13))
+>E2 : Symbol(E2, Decl(ttttInterfaceAccessorThisless.ts, 40, 36))
+
+const a7: null = e2.k;
+>a7 : Symbol(a7, Decl(ttttInterfaceAccessorThisless.ts, 43, 5))
+>e2.k : Symbol(E2["k"], Decl(ttttInterfaceAccessorThisless.ts, 41, 14))
+>e2 : Symbol(e2, Decl(ttttInterfaceAccessorThisless.ts, 42, 13))
+>k : Symbol(E2["k"], Decl(ttttInterfaceAccessorThisless.ts, 41, 14))
+
