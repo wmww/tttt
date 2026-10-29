@@ -102,6 +102,14 @@ measured wins first; land fast and gate in batches.
   granularity inside the existing graph machinery (measure the hot-declaration share first, one day; build if hubs are
   high and corpora low), with single-threaded work and the front end/idle tail as the continuous tracks; optimizing
   sharing alone is dropped. The human's four options and the reasoning are in the note.
+- **Share on second touch is dead (2026-10-29 box time, worker census: notes/threading.md "The census").** The
+  plan's step 1 measured it before any prototype: the buildable rule (a per-declaration touch counter) loses to the
+  better of plain and `--shared-graph` on 36 of 42 hubs and 6 of 13 corpora and beats it nowhere; even the oracle rule
+  only ties on the corpora, because 42-72% of their type copies are rooted at the shared generic core every checker
+  reaches (zod's schemas, effect's and xstate's generics, lib), not in pairs of files. The unification question is open
+  again and is the human's: either the flag's per-read premium comes down enough to make it the one mode (the census
+  says that is the only lever that reopens a mixed mode), or plain stays the mode and the flag is dropped when the hub
+  loss is accepted. The continuous tracks (single-threaded speed, the front end, the idle tail) go on meanwhile.
 - **No huge-page machinery, final** (2026-10-30, the human, after rehuge brought arena/AST huge pages back behind a
   rule on the kernel's THP and defrag settings: "there is absolutely no way this isn't overfit on whatever devices
   we've tried it on... don't make it more complicated, get rid of it and accept the slight regression"). The two

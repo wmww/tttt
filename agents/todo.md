@@ -41,18 +41,19 @@ check, not the bench, and no machine-specific tuning: vision.md "Decisions"); me
 wins first; land fast and gate in batches.
 
 ## Now (2026-10-29 box time, 2026-10-31 wall): the threading census is running; correctness on the second worker
-- **Threading** (notes/threading.md): the human gave the go for the plan's step 1 on 2026-10-29. Worker `census`
-  (/tmp/wt-census) measures per project the share of each checker's types and instructions rooted at declarations
-  reached by >= 2 checkers, and the modeled premium if only those were shared (plain, flag, routed), over sgcheck's 58
-  and the corpora; verdict by the plan's rule (hubs high, corpora low: build the share-on-second-touch prototype inside
-  graph.c/overlay.c, gated by sgcheck/TSan/GRAPH_CHECKS and sgbench; corpora also hot: the idea dies). Results go into
-  threading.md "The census".
-- **Two regressions found by the batch9 oracle run** (worker `reg`): openclaw's spurious TS2352 (0d3156599 uncovered a
+- **Threading** (notes/threading.md "The census"): the plan's step 1 is closed negative on 2026-10-29: share on second
+  touch loses to the better of plain and the flag everywhere (the corpora route most types hot). Open, for the human:
+  bring the flag's per-read premium down to make it the one mode (option 2, the only lever the census leaves), or keep
+  plain and drop the flag. Meanwhile worker `tail` is on the idle tail's shape (below).
+- **The idle tail's shape** (worker `tail`): a checked `.d.ts` bounds the parallel run on 188 of 300 projects; on the
+  one-file shapes (immutable.d.ts, store.d.ts) tttt is 2x bun at one thread (0.38 vs 0.19 s), memory-bound 31-43%
+  against bun's 28%, bad speculation twice bun's. Mode-independent: whatever it finds speeds plain, the flag and K1.
+- **Two regressions found by the batch9 oracle run** (fixed by worker `reg`: 8268d000e, 3213e6320): openclaw's spurious TS2352 (0d3156599 uncovered a
   missing comparable path: mapped source vs type-parameter target, Maybe) and opencode's spurious TS2367 (528301bb9:
   a parenthesized `&&` on the right of `||` stays in tsc's TypeOnly mode). Fixes, not reverts.
 - **Instruction drift** since the last save (8b1777931, 103 commits): tanstack-router +3.2%, type-fest/valibot/xstate
-  +2.1%, vue +1.7%, vscode +0.5%; zod/drizzle (the gated pair) +0.4/+0.1. An attribution agent is bisecting type-fest
-  and tanstack-router; add type-fest to quickgate's instrcount pair when it reports.
+  +2.1%, vue +1.7%, vscode +0.5%; zod/drizzle (the gated pair) +0.4/+0.1. Attributed (measurements.md
+  "Instruction drift, attributed"): a stale partial baseline, not a regression; the file is re-saved in full at 4f003017f.
 - **Correctness** (cor5: type_core/missing_checks probes, the 99-V4 leftovers; bun7: mutation-testing findings, then
   flagflip's cells and the own failing tests): continuous. The vscode regression since v1 is recovered except the
   huge pages, removed for good (vision.md).
