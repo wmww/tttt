@@ -1,0 +1,62 @@
+//// [test/cases/ttttLoopPartialCallArgument.ts] ////
+
+=== ttttLoopPartialCallArgument.ts ===
+// A call a loop's unfinished flow analysis evaluates reports on the partial types (tsc's getTypeOfExpression is a
+// full check and the resolution isn't cached in a loop): TS2345 'string' besides the walk's 'string | number'
+declare let cond: boolean;
+>cond : Symbol(cond, Decl(ttttLoopPartialCallArgument.ts, 2, 11))
+
+async function asNumber(x: number): Promise<number> { return x; }
+>asNumber : Symbol(asNumber, Decl(ttttLoopPartialCallArgument.ts, 2, 26))
+>x : Symbol(x, Decl(ttttLoopPartialCallArgument.ts, 3, 24))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>x : Symbol(x, Decl(ttttLoopPartialCallArgument.ts, 3, 24))
+
+function syncNumber(x: number): number { return x; }
+>syncNumber : Symbol(syncNumber, Decl(ttttLoopPartialCallArgument.ts, 3, 65))
+>x : Symbol(x, Decl(ttttLoopPartialCallArgument.ts, 4, 20))
+>x : Symbol(x, Decl(ttttLoopPartialCallArgument.ts, 4, 20))
+
+async function h2() {
+>h2 : Symbol(h2, Decl(ttttLoopPartialCallArgument.ts, 4, 52))
+
+    let x: string | number | boolean;
+>x : Symbol(x, Decl(ttttLoopPartialCallArgument.ts, 6, 7))
+
+    x = "0";
+>x : Symbol(x, Decl(ttttLoopPartialCallArgument.ts, 6, 7))
+
+    while (cond) {
+>cond : Symbol(cond, Decl(ttttLoopPartialCallArgument.ts, 2, 11))
+
+        x = await asNumber(x) + 1;
+>x : Symbol(x, Decl(ttttLoopPartialCallArgument.ts, 6, 7))
+>asNumber : Symbol(asNumber, Decl(ttttLoopPartialCallArgument.ts, 2, 26))
+>x : Symbol(x, Decl(ttttLoopPartialCallArgument.ts, 6, 7))
+
+        x;
+>x : Symbol(x, Decl(ttttLoopPartialCallArgument.ts, 6, 7))
+    }
+}
+function s2() {
+>s2 : Symbol(s2, Decl(ttttLoopPartialCallArgument.ts, 12, 1))
+
+    let x: string | number | boolean;
+>x : Symbol(x, Decl(ttttLoopPartialCallArgument.ts, 14, 7))
+
+    x = "0";
+>x : Symbol(x, Decl(ttttLoopPartialCallArgument.ts, 14, 7))
+
+    while (cond) {
+>cond : Symbol(cond, Decl(ttttLoopPartialCallArgument.ts, 2, 11))
+
+        x = syncNumber(x) + 1;
+>x : Symbol(x, Decl(ttttLoopPartialCallArgument.ts, 14, 7))
+>syncNumber : Symbol(syncNumber, Decl(ttttLoopPartialCallArgument.ts, 3, 65))
+>x : Symbol(x, Decl(ttttLoopPartialCallArgument.ts, 14, 7))
+
+        x;
+>x : Symbol(x, Decl(ttttLoopPartialCallArgument.ts, 14, 7))
+    }
+}
+

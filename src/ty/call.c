@@ -3889,11 +3889,20 @@ static Ty const* call_return_type(
         // set only for a call's first resolution)
         bool saved = my resolving_nested_call;
         my resolving_nested_call = true;
-        Ty const* ret = resolve_into(me, callee, call, tagged_template, contextual, span_null, nullptr, nullptr, nullptr);
+        // (Reporting on a loop's partial types, like below)
+        bool partial = my flow_uncached && span_valid(call_span) && ty_flow_partial_reports(me, call_span);
+        Ty const* ret = resolve_into(me, callee, call, tagged_template, contextual, partial ? call_span : span_null,
+            partial ? my errs : nullptr, nullptr, nullptr);
         my resolving_nested_call = saved;
         return ret;
     }
     if (my flow_uncached) {
+        // (A loop's unfinished flow analysis reports what the call finds on the partial types: `x = f(x) + 1` with x
+        // still the first iteration's string is TS2345 'string' besides the walk's 'string | number', see
+        // ty_flow_partial_reports(). Also when the walk's resolution of this call is what asked: tsc resolves it again)
+        if (span_valid(call_span) && ty_flow_partial_reports(me, call_span)) {
+            return resolve_into(me, callee, call, tagged_template, contextual, call_span, my errs, nullptr, nullptr);
+        }
         return resolve_into(me, callee, call, tagged_template, contextual, span_null, nullptr, nullptr, nullptr);
     }
     // (Not remembered while control flow analysis has nothing memoized: tsc's flowLoopStart === flowLoopCount)

@@ -1,0 +1,74 @@
+//// [test/cases/ttttLoopPartialCallArgument.ts] ////
+
+=== ttttLoopPartialCallArgument.ts ===
+// A call a loop's unfinished flow analysis evaluates reports on the partial types (tsc's getTypeOfExpression is a
+// full check and the resolution isn't cached in a loop): TS2345 'string' besides the walk's 'string | number'
+declare let cond: boolean;
+>cond : boolean
+
+async function asNumber(x: number): Promise<number> { return x; }
+>asNumber : (x: number) => Promise<number>
+>x : number
+>x : number
+
+function syncNumber(x: number): number { return x; }
+>syncNumber : (x: number) => number
+>x : number
+>x : number
+
+async function h2() {
+>h2 : () => Promise<void>
+
+    let x: string | number | boolean;
+>x : string | number | boolean
+
+    x = "0";
+>x = "0" : "0"
+>x : string | number | boolean
+>"0" : "0"
+
+    while (cond) {
+>cond : boolean
+
+        x = await asNumber(x) + 1;
+>x = await asNumber(x) + 1 : number
+>x : string | number | boolean
+>await asNumber(x) + 1 : number
+>await asNumber(x) : number
+>asNumber(x) : Promise<number>
+>asNumber : (x: number) => Promise<number>
+>x : string | number
+>1 : 1
+
+        x;
+>x : number
+    }
+}
+function s2() {
+>s2 : () => void
+
+    let x: string | number | boolean;
+>x : string | number | boolean
+
+    x = "0";
+>x = "0" : "0"
+>x : string | number | boolean
+>"0" : "0"
+
+    while (cond) {
+>cond : boolean
+
+        x = syncNumber(x) + 1;
+>x = syncNumber(x) + 1 : number
+>x : string | number | boolean
+>syncNumber(x) + 1 : number
+>syncNumber(x) : number
+>syncNumber : (x: number) => number
+>x : string | number
+>1 : 1
+
+        x;
+>x : number
+    }
+}
+
