@@ -1,0 +1,21 @@
+a.ts(2,8): error TS1035: Only ambient modules can use quoted names.
+a.ts(4,3): error TS2339: Property 'y' does not exist on type 'X'.
+a.ts(6,8): error TS1035: Only ambient modules can use quoted names.
+
+
+==== b.ts (0 errors) ====
+    export interface X { x: number }
+==== a.ts (3 errors) ====
+    import { X } from "./b";
+    module "./b" { export interface X { y: number } export default interface D {} }
+           ~~~~~
+!!! error TS1035: Only ambient modules can use quoted names.
+    declare const x: X;
+    x.y;
+      ~
+!!! error TS2339: Property 'y' does not exist on type 'X'.
+    x.x;
+    module "./nowhere" { export interface Z {} }
+           ~~~~~~~~~~~
+!!! error TS1035: Only ambient modules can use quoted names.
+    

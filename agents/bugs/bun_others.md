@@ -66,7 +66,14 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   (merge_into_umd_globals), so UC.extra resolves: TS2339 missing. A fix needs the module's exports as they were
   before the first merge for later globals. [open]
 - A non-ambient `module "./b" { ... }` augmentation (TS1035): tsc reports it and doesn't merge, tttt merges the
-  interface: 01-C6b TS2339 missing. [open]
+  interface: 01-C6b TS2339 missing. tsc's collectModuleReferences lists a file's ModuleAugmentations only for a
+  `declare module`, one in an ambient context or a .d.ts; the binder still makes the block a module symbol (the
+  name's type is error, the body isn't checked as an augmentation's). NamespaceDecl.unmerged_augmentation; test
+  ttttUndeclaredModuleAugmentation. [fixed NEXT] Left: tsc binds every `module "./b"` block of one file into one
+  local symbol and merges it once, through its first declaration (mergeModuleAugmentation returns for the others), so
+  an undeclared block first keeps a later `declare module "./b"` in that file from merging, and a declared one first
+  merges the undeclared ones after it; tttt decides per block (no bun case; the symbols baseline lists one block's
+  declarations where tsc lists the file's). [open]
 - Expandos through a container's exports: tsc's binder looks an assignment's name up in the container symbol's
   exports too (lookupName), so `g.x = 1` in `function f` with a `namespace f { export function g }` is an expando of g,
   and `export * as ns` in a function body declares `f.ns`: 30-C17a, 30-C17b, 30-P21 (`a.b = 1` beside
@@ -126,7 +133,7 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   missing three times): narrowTypeByBinaryExpression hands the left side as written to narrowTypeByTruthiness, whose
   getCandidateDiscriminantPropertyAccess wants an access expression. narrow_by_binary() now asks for a discriminant
   only through an unparenthesized property target (`x.kind! = v` neither); test ttttAssignTargetParenDiscriminant.
-  [fixed NEXT]
+  [fixed b8d104926]
 - 12-C1c: inside class C<T, U>, `c.m()` with `c: C<U, { a: 1 }>` and `m(): { [K in keyof T]: U }`: tsc's result is
   `{ a: { a: 1 } }` (the homomorphic mapped type over the class's own U, mapped through the instantiation again),
   tttt's `{ [K in keyof U]: { a: 1 } }`: TS2339 spurious. [open]

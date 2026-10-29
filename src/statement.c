@@ -652,7 +652,14 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
                 module->name_span = my name;
                 module->exports = arena_new(binder_arena(scope->binder), SymbolTable);
                 module->is_augmentation = true;
-                binder_add_augmentation(scope->binder, me);
+                // (Merged only when ambient: tsc's collectModuleReferences lists a file's ModuleAugmentations for a
+                // `declare module`, one in an ambient context or a declaration file. Without `declare` (TS1035) the
+                // block still binds and checks as an augmentation, into a symbol nothing merges)
+                if (props.declared || scope->ambient) binder_add_augmentation(scope->binder, me);
+                else {
+                    binder_add_module_declaration(module, me);
+                    my unmerged_augmentation = true;
+                }
             } else if (nested_ambient_module && !scope_in_script_block(scope)) {
                 // In a namespace it is a member of the namespace to tsc's binder (declareSymbolAndAddToSymbolTable),
                 // which no module name finds: a module of its own
@@ -853,7 +860,7 @@ void namespace_decl_typecheck(NamespaceDecl* me, bool declared, ErrorCtx* errs) 
     }
     // tsc's checkModuleAugmentationElement, for an augmentation that applies (global, or merged with its module)
     bool applies = (my is_global && !my is_invalid_global) ||
-        (my is_augmentation && my module_ref && binder_module_of_ref(current_checker->binder, my module_ref));
+        (my is_augmentation && !my unmerged_augmentation && my module_ref && binder_module_of_ref(current_checker->binder, my module_ref));
     for_each (i, vec_statement, applies ? &my contents.statements : &(VecStatement){0}) {
         bool is_export = i->tag == STATEMENT_EXPORT_DEFAULT_EXPR;
         bool is_import = false;

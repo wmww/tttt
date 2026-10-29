@@ -111,6 +111,9 @@ typedef struct NamespaceDecl {
     // imports a pattern module is for (tsgo's ModuleDeclaration.Attributes, see module_attributes.h)
     TypeNode* attributes;
     bool is_augmentation; // `declare module "./a" {}` in a module: adds to the module it names
+    // An augmentation without `declare` outside an ambient context (TS1035): tsc binds and checks it as one, but
+    // collectModuleReferences doesn't list it, so it merges into nothing and its body isn't checked as an augmentation's
+    bool unmerged_augmentation;
     bool labeled; // The body of a labeled statement (a context it isn't allowed in, TS1234/TS1235)
     bool module_keyword; // `module N {}` (and each part of `module A.B {}`): TS1540, `namespace` is the way now
     bool misplaced; // Where no namespace can be (TS1234/TS1235), nothing else is said about it

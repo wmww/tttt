@@ -2264,7 +2264,8 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
             // (`global x`: a shorthand ambient module to tsc, any)
             ctx->any_keeps_rendering = true;
             baseline_test_case_add_type_node(ctx, my name, &type_any);
-        } else if (my is_augmentation && my module_ref && !binder_module_of_ref(my symbol->binder, my module_ref) &&
+        } else if (my is_augmentation && my module_ref &&
+            (my unmerged_augmentation || !binder_module_of_ref(my symbol->binder, my module_ref)) &&
             !namespace_decl_is_instantiated(me)
         ) {
             // (An augmentation is a namespace to tsc's binder, a value only if instantiated: unmerged, its symbol has no
