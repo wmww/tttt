@@ -1,0 +1,43 @@
+//// [test/cases/ttttInferClassStaticClosely.ts] ////
+
+=== ttttInferClassStaticClosely.ts ===
+// `typeof D` to `D | T` is closely matched by D, which shares its symbol, so nothing is inferred to T from it (bun case
+// 22-C9: tsc's isTypeCloselyMatchedBy, s.symbol === t.symbol)
+class D { x = 1 }
+>D : Symbol(D, Decl(ttttInferClassStaticClosely.ts, 0, 0))
+>x : Symbol(D.x, Decl(ttttInferClassStaticClosely.ts, 2, 9))
+
+class D2 extends D { static s = 1 }
+>D2 : Symbol(D2, Decl(ttttInferClassStaticClosely.ts, 2, 17))
+>D : Symbol(D, Decl(ttttInferClassStaticClosely.ts, 0, 0))
+>s : Symbol(D2.s, Decl(ttttInferClassStaticClosely.ts, 3, 20))
+
+declare function f<T>(a: D | T, b: T): T;
+>f : Symbol(f, Decl(ttttInferClassStaticClosely.ts, 3, 35))
+>T : Symbol(T, Decl(ttttInferClassStaticClosely.ts, 4, 19))
+>a : Symbol(a, Decl(ttttInferClassStaticClosely.ts, 4, 22))
+>D : Symbol(D, Decl(ttttInferClassStaticClosely.ts, 0, 0))
+>T : Symbol(T, Decl(ttttInferClassStaticClosely.ts, 4, 19))
+>b : Symbol(b, Decl(ttttInferClassStaticClosely.ts, 4, 31))
+>T : Symbol(T, Decl(ttttInferClassStaticClosely.ts, 4, 19))
+>T : Symbol(T, Decl(ttttInferClassStaticClosely.ts, 4, 19))
+
+const r = f(D, D2);
+>r : Symbol(r, Decl(ttttInferClassStaticClosely.ts, 5, 5))
+>f : Symbol(f, Decl(ttttInferClassStaticClosely.ts, 3, 35))
+>D : Symbol(D, Decl(ttttInferClassStaticClosely.ts, 0, 0))
+>D2 : Symbol(D2, Decl(ttttInferClassStaticClosely.ts, 2, 17))
+
+declare function g<T>(a: string | T, b: T): T;
+>g : Symbol(g, Decl(ttttInferClassStaticClosely.ts, 5, 19))
+>T : Symbol(T, Decl(ttttInferClassStaticClosely.ts, 6, 19))
+>a : Symbol(a, Decl(ttttInferClassStaticClosely.ts, 6, 22))
+>T : Symbol(T, Decl(ttttInferClassStaticClosely.ts, 6, 19))
+>b : Symbol(b, Decl(ttttInferClassStaticClosely.ts, 6, 36))
+>T : Symbol(T, Decl(ttttInferClassStaticClosely.ts, 6, 19))
+>T : Symbol(T, Decl(ttttInferClassStaticClosely.ts, 6, 19))
+
+const r2 = g(1, "a" as "a" | 2);
+>r2 : Symbol(r2, Decl(ttttInferClassStaticClosely.ts, 7, 5))
+>g : Symbol(g, Decl(ttttInferClassStaticClosely.ts, 5, 19))
+

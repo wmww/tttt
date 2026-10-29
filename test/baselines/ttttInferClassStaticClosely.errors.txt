@@ -1,0 +1,24 @@
+ttttInferClassStaticClosely.ts(6,13): error TS2345: Argument of type 'typeof D' is not assignable to parameter of type 'D | typeof D2'.
+  Property 's' is missing in type 'typeof D' but required in type 'typeof D2'.
+ttttInferClassStaticClosely.ts(8,17): error TS2345: Argument of type '"a" | 2' is not assignable to parameter of type '1'.
+  Type '"a"' is not assignable to type '1'.
+
+
+==== ttttInferClassStaticClosely.ts (2 errors) ====
+    // `typeof D` to `D | T` is closely matched by D, which shares its symbol, so nothing is inferred to T from it (bun case
+    // 22-C9: tsc's isTypeCloselyMatchedBy, s.symbol === t.symbol)
+    class D { x = 1 }
+    class D2 extends D { static s = 1 }
+    declare function f<T>(a: D | T, b: T): T;
+    const r = f(D, D2);
+                ~
+!!! error TS2345: Argument of type 'typeof D' is not assignable to parameter of type 'D | typeof D2'.
+!!! error TS2345:   Property 's' is missing in type 'typeof D' but required in type 'typeof D2'.
+!!! related TS2728 ttttInferClassStaticClosely.ts:4:29: 's' is declared here.
+!!! related TS6213 ttttInferClassStaticClosely.ts:6:13: Did you mean to use 'new' with this expression?
+    declare function g<T>(a: string | T, b: T): T;
+    const r2 = g(1, "a" as "a" | 2);
+                    ~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type '"a" | 2' is not assignable to parameter of type '1'.
+!!! error TS2345:   Type '"a"' is not assignable to type '1'.
+    

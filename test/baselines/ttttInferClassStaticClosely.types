@@ -1,0 +1,41 @@
+//// [test/cases/ttttInferClassStaticClosely.ts] ////
+
+=== ttttInferClassStaticClosely.ts ===
+// `typeof D` to `D | T` is closely matched by D, which shares its symbol, so nothing is inferred to T from it (bun case
+// 22-C9: tsc's isTypeCloselyMatchedBy, s.symbol === t.symbol)
+class D { x = 1 }
+>D : D
+>x : number
+>1 : 1
+
+class D2 extends D { static s = 1 }
+>D2 : D2
+>D : D
+>s : number
+>1 : 1
+
+declare function f<T>(a: D | T, b: T): T;
+>f : <T>(a: D | T, b: T) => T
+>a : T | D
+>b : T
+
+const r = f(D, D2);
+>r : typeof D2
+>f(D, D2) : typeof D2
+>f : <T>(a: D | T, b: T) => T
+>D : typeof D
+>D2 : typeof D2
+
+declare function g<T>(a: string | T, b: T): T;
+>g : <T>(a: string | T, b: T) => T
+>a : string | T
+>b : T
+
+const r2 = g(1, "a" as "a" | 2);
+>r2 : 1
+>g(1, "a" as "a" | 2) : 1
+>g : <T>(a: string | T, b: T) => T
+>1 : 1
+>"a" as "a" | 2 : "a" | 2
+>"a" : "a"
+

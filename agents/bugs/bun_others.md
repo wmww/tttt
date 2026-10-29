@@ -255,7 +255,12 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   getTypeFacts gives an empty one EmptyObjectStrictFacts (all but the nullish ones), so neither narrowing removes it.
   type_facts()' is_empty_anonymous_object() now counts a namespace's or enum's object without members (only there:
   tsc's isEmptyAnonymousObjectType, which intersections ask, looks at members already resolved only, bun19-P3).
-  Test ttttEmptyNamespaceObjectFacts [fixed NEXT].
+  Test ttttEmptyNamespaceObjectFacts [fixed 559a1672b].
+- -TS2345 from an inference to a class's static side, 22-C9 (`f<T>(a: D | T, b: T)` called `f(D, D2)`): tsc's
+  inferFromMatchingTypes with isTypeCloselyMatchedBy matches `typeof D` with D (one symbol, the class's), so T is
+  inferred from b alone, typeof D2, and a fails. infer.c's is_closely_matched() compared references' targets, type
+  literals and aliases only; now also the symbol of a declared object type (class instance and static sides,
+  interfaces, namespace and enum objects). Test ttttInferClassStaticClosely [fixed NEXT].
 - -TS2448: two mechanisms, the JSX factory (`React`, `Frag`) declared after the element that uses it (tsc resolves
   the factory at the element as a use: 01-C2b, 15-C3b, 27-C3a, 27-P7, 34-C2b) and `const arguments = 1` in a
   function body (tsc's reference to the implicit `arguments`: 25-C17c, 33-P4g, 51-L01, 51-L05, 77-R12b). The JSX

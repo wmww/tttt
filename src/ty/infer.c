@@ -1534,6 +1534,22 @@ static void const* anonymous_declaration(Ty const* ty) {
     return root->anonymous.function;
 }
 
+// The symbol of a declared object type or a reference to one (tsc's type.symbol): a class's for both its instance and
+// its static side, a namespace's, module's or enum's for its object. Null otherwise
+static Symbol const* declared_object_symbol(Ty const* ty) {
+    if (ty->kind == TY_REFERENCE) ty = ty->reference.target;
+    if (ty->kind != TY_DECLARED) return nullptr;
+    switch ((TyDeclaredKind)ty->declared.kind) {
+        case TY_DECLARED_INTERFACE:
+        case TY_DECLARED_CLASS_INSTANCE:
+        case TY_DECLARED_CLASS_STATIC:
+        case TY_DECLARED_ENUM_OBJECT:
+            return ty->declared.symbol;
+        case TY_DECLARED_NAMESPACE: return ty->declared.namespace_symbol;
+        default: return nullptr;
+    }
+}
+
 static bool is_closely_matched(Ty const* source, Ty const* target) {
     // (A tuple's target type has no symbol, so tuples of one arity aren't: `[{ ... }]` to `P | [boolean]` goes to P as
     // directly as to [boolean], tsc's s.symbol === t.symbol; unified's `use(plugin, options)`)
@@ -1545,6 +1561,9 @@ static bool is_closely_matched(Ty const* source, Ty const* target) {
     // (Instantiations of one type literal: tsc's isTypeCloselyMatchedBy, s.symbol === t.symbol)
     void const* declaration = anonymous_declaration(source);
     if (declaration && declaration == anonymous_declaration(target)) return true;
+    // (A class's instance and static side share its symbol: `typeof D` to `D | T` is matched by D, nothing to T)
+    Symbol const* symbol = declared_object_symbol(source);
+    if (symbol && symbol == declared_object_symbol(target)) return true;
     return source->alias && target->alias_args.len && source->alias == target->alias;
 }
 
