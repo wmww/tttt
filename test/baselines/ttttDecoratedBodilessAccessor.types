@@ -1,0 +1,26 @@
+//// [test/cases/ttttDecoratedBodilessAccessor.ts] ////
+
+=== node_modules/tslib/index.d.ts ===
+export declare function __nothing(): void;
+>__nothing : () => void
+
+=== a.ts ===
+export {};
+declare const dec: any;
+>dec : any
+
+@dec class Q { @dec get x(): number; @dec set x(v: number) {} }
+>dec : any
+>Q : Q
+>dec : any
+>x : number
+>dec : any
+>x : number
+>v : number
+
+class R { get y(): number; set y(v: number) {} }
+>R : R
+>y : number
+>y : number
+>v : number
+

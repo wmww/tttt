@@ -270,7 +270,13 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   resolving, so getContextualTypeForArgumentAtIndex gets getEffectiveFirstArgumentForJsxSignature of
   resolvingSignature: IntrinsicAttributes & LibraryManagedAttributes<tag, unknown>. tttt checked them without a
   contextual type. ty_resolve_jsx_element() now checks them with ty_jsx_untyped_props(). Test
-  ttttJsxAnyTagAttributesContext [fixed NEXT].
+  ttttJsxAnyTagAttributesContext [fixed 4593e2c05].
+- 34-C16 (`@dec class Q { @dec get x(): number; @dec set x(v: number) {} }`, importHelpers below ESNext): tttt said
+  TS1005 '{' expected at the bodiless getter and TS2343 for __setFunctionName. tsc's checkAccessorDeclaration runs
+  checkGrammarAccessor only when checkGrammarFunctionLikeDeclaration (the decorators' TS1206) said nothing, and
+  getFirstTransformableStaticClassElement counts an accessor pair through its first accessor with decorators only
+  (ClassElementOrClassElementParameterIsDecorated), here the getter, which can't be decorated without a body. Test
+  ttttDecoratedBodilessAccessor [fixed NEXT].
 - -TS2448: two mechanisms, the JSX factory (`React`, `Frag`) declared after the element that uses it (tsc resolves
   the factory at the element as a use: 01-C2b, 15-C3b, 27-C3a, 27-P7, 34-C2b) and `const arguments = 1` in a
   function body (tsc's reference to the implicit `arguments`: 25-C17c, 33-P4g, 51-L01, 51-L05, 77-R12b). The JSX

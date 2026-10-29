@@ -2112,6 +2112,25 @@ static bool item_es_decorated(ClassItem const* item) {
     }
 }
 
+// tsc's ClassElementOrClassElementParameterIsDecorated: of an accessor pair only the first one with decorators counts,
+// and that one only if it can be decorated (`@dec get x(): number; @dec set x(v) {}`: the bodiless getter, so neither)
+static bool item_es_decorated_in(ClassDecl const* me, ClassItem const* item) {
+    ClassItem const* first = item->tag == CLASS_ITEM_METHOD && item->method.accessor ? item->symbol_first : nullptr;
+    if (first && first->tag == CLASS_ITEM_METHOD && first->method.accessor) {
+        ClassItem const* decorated = vec_expr_size(&first->decorators) ? first : nullptr;
+        for_each (i, vec_class_item, &my items) {
+            if (decorated) break;
+            if (i != first && i->symbol_first == first && i->tag == CLASS_ITEM_METHOD && i->method.accessor &&
+                vec_expr_size(&i->decorators)
+            ) {
+                decorated = i;
+            }
+        }
+        if (decorated != item) return false;
+    }
+    return item_es_decorated(item);
+}
+
 // tsc's getFirstTransformableStaticClassElement(): where the emitter builds the class's static side, and so names the
 // class with __setFunctionName (an invalid span if it doesn't)
 static Span class_transformable_static_element(ClassDecl const* me) {
@@ -2120,7 +2139,7 @@ static Span class_transformable_static_element(ClassDecl const* me) {
         vec_expr_size(&my decorators);
     bool standard_fields = options->use_define_for_class_fields && options->target >= SCRIPT_TARGET_ES2022;
     for_each (i, vec_class_item, &my items) {
-        if (decorated && item_es_decorated(i)) return decorator_span(vec_expr_at(&my decorators, 0));
+        if (decorated && item_es_decorated_in(me, i)) return decorator_span(vec_expr_at(&my decorators, 0));
         if (options->target < SCRIPT_TARGET_ESNEXT) {
             if (i->tag == CLASS_ITEM_STATIC_BLOCK) return i->span;
             if (!class_item_is_static((ClassItem*)i)) continue;
@@ -2784,9 +2803,10 @@ void class_decl_typecheck_members(ClassDecl* me, ErrorCtx* errs) {
             case CLASS_ITEM_METHOD:
                 if (i->method.computed_key) class_computed_key_typecheck(me, i, decorators_rejected, errs);
                 if (i->method.accessor && !i->method.func.has_body && !i->method.is_abstract && !i->method.func.ambient &&
-                    !i->method.is_declare
+                    !i->method.is_declare && !decorators_rejected
                 ) {
-                    // tsc's checkGrammarAccessor: at the accessor's last character (its `;` if it has one)
+                    // tsc's checkGrammarAccessor: at the accessor's last character (its `;` if it has one). Not after
+                    // its decorators' grammar error (checkAccessorDeclaration: checkGrammarFunctionLikeDeclaration first)
                     Span full = i->method.func.full_span;
                     while (full.size && strchr(" \t\r\n", full.buf[full.size - 1])) full.size--;
                     full = span_with_semicolon(full);
