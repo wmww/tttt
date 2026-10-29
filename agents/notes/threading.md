@@ -9,6 +9,15 @@ The human made the shared graph the mode at K > 1 (vision.md "Decisions"); one c
 `count > 1`), `TTTT_SHARED_GRAPH=0` is plain at any K. What follows is the reasoning before that decision; "What the
 shared graph is now" below describes the option it was then.
 
+**The default's first full gate (2026-10-29, worker flip)** found three graph bugs that sgcheck's list had missed, all
+on the source sweep's kdiff (K16 against K1) and buncases' K-dependence check, none on the corpora: a lowered node's
+memo published whatever its taint (85-R16b), the walk nesting order cutting where the ids don't (youtube-enhancer),
+and an unflagged read of per-worker in-flight state (`this` of a getter typed by a call's resolution: vidstack). Each
+is fixed by mechanism (bugs/shared_graph.md) and the projects are on sgcheck's list. Every other oracle printed the
+same per project in both modes on the same tree (sweep, buncases, `$ExpectType`, flagflip, the source sweep sample and
+`--build`, dtsdiff, clidiff, the corpora). Lesson: sgcheck's 58 projects aren't breadth; the source sweep's kdiff is
+the graph's breadth gate now that it is the default.
+
 **Compiling plain out was measured and not landed** (the human: only on a real gain, and never deleting plain's code).
 One checker must stay plain, so a build can only drop the graph's null tests where K > 1. A variant with every
 `my graph` test in src/ty (63 sites) rewritten to a constant, callgrind at `--threads 1`, K8 (vscode K16), against
