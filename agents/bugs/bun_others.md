@@ -563,6 +563,10 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   initializer resolves silently (712fb465d), a namespace body's missing `}` has no TS1007 (161cda90c). Left: [open]
   circularInlineMappedGenericTupleTypeNoCrash: TS2464's underline on a broken computed name `[P in keyof Elements]`
   in an object literal is one character shorter than tsgo's (render only).
+- Mutation seed 20261109 (bun12, 2000; errors component: 1 difference, controlFlowGenericTypes swap-args, the known
+  TS2345 text; with `--syntax` 3 more): a reserved word as a parameter name is a missing identifier that hides its
+  TS6133 (f3e68eb4a), a missing operand followed by `?` is a conditional (`case?:`, 6c16fc9bc); left:
+  objectFreezeLiteralsDontWiden delete-stmt (render only).
 - Mutation seed 20261107 (bun11, `--syntax`, 2000: 8 errors-component differences) and 20261106 without `--syntax`
   (4, all known: distributiveConditionalBaseConstraint, distributiveConditionalTypeConstraints, two render): TS1338
   is a grammar error (0540d6753). Checker, relayed: controlFlowForStatementContinueIntoIncrementor1 undefined-init
@@ -571,7 +575,7 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   ttttLoopPartialArithmetic) [fixed]; recursiveTypeInferenceReturnTypeConstraint str-to-num (missing TS7022/TS2615, the known item) [open];
   newTargetNarrowing member-typo (`.targetX`: missing TS2345 boolean to true: flow took every `new.X` for `new.target`) [fixed 5806eba5e]; octalIntegerLiteralES6
   num-to-str (TS2551 'Did you mean' on a property named `5.462437423415177e+244` is TS7053 in tttt: a numeric literal
-  key's name) (number literal keys had no name for the suggestion, ttttNumericKeySuggestion) [fixed]; generatorTypeCheck46 member-typo (`[Symbol.iteratorX]`: missing TS2488 on a type with only a
+  key's name) (number literal keys had no name for the suggestion, ttttNumericKeySuggestion) [fixed 6e475379d]; generatorTypeCheck46 member-typo (`[Symbol.iteratorX]`: missing TS2488 on a type with only a
   number index signature; tsgo reports it a second time, `{ [x: number]: {}; }`, from the inference pass that skips
   context-sensitive arguments, which reports in tsgo and not in tttt: inference, cor9's) [open]; two render. Seed 20261108 `--syntax` (bun11, 2000: 6, no parser item): checker,
   relayed: genericCallWithTupleType add-optional (`tuple1?:` then an element assignment: missing TS2322 'false' to
