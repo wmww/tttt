@@ -1,0 +1,29 @@
+ttttNewNonVoidFailedCall.ts(3,1): error TS2350: Only a void function can be called with the 'new' keyword.
+ttttNewNonVoidFailedCall.ts(3,17): error TS2554: Expected 1 arguments, but got 2.
+ttttNewNonVoidFailedCall.ts(5,1): error TS2350: Only a void function can be called with the 'new' keyword.
+ttttNewNonVoidFailedCall.ts(5,7): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+ttttNewNonVoidFailedCall.ts(7,1): error TS2679: A function that is called with the 'new' keyword cannot have a 'this' type that is 'void'.
+ttttNewNonVoidFailedCall.ts(7,12): error TS2554: Expected 1 arguments, but got 2.
+
+
+==== ttttNewNonVoidFailedCall.ts (6 errors) ====
+    // A `new` of something with call signatures only is TS2350 for a non-void signature also when the arguments don't fit
+    // (mutation seed 20261123's mut1522: tsc's resolveCall returns the overload failure candidate)
+    new BigInt(123, 1);
+    ~~~~~~~~~~~~~~~~~~
+!!! error TS2350: Only a void function can be called with the 'new' keyword.
+                    ~
+!!! error TS2554: Expected 1 arguments, but got 2.
+    declare function f(a: number): number;
+    new f("x");
+    ~~~~~~~~~~
+!!! error TS2350: Only a void function can be called with the 'new' keyword.
+          ~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    declare function g(this: void, a: number): void;
+    new g("y", 2);
+    ~~~~~~~~~~~~~
+!!! error TS2679: A function that is called with the 'new' keyword cannot have a 'this' type that is 'void'.
+               ~
+!!! error TS2554: Expected 1 arguments, but got 2.
+    

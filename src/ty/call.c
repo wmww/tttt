@@ -3329,6 +3329,9 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
                 CallInfo as_call = *info;
                 as_call.new_as_call = true;
                 as_call.chosen_out = &chosen;
+                // (What resolveCall returns when nothing fits is the overload failure candidate, which TS2350 and
+                // TS2679 look at too: `new BigInt(1, 2)` is TS2554 and TS2350)
+                as_call.failure_out = true;
                 resolve_call(me, callee, &as_call, call_span, errs);
             }
             if (no_implicit_any) {

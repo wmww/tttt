@@ -1,0 +1,31 @@
+//// [test/cases/ttttNewNonVoidFailedCall.ts] ////
+
+=== ttttNewNonVoidFailedCall.ts ===
+// A `new` of something with call signatures only is TS2350 for a non-void signature also when the arguments don't fit
+// (mutation seed 20261123's mut1522: tsc's resolveCall returns the overload failure candidate)
+new BigInt(123, 1);
+>new BigInt(123, 1) : any
+>BigInt : BigIntConstructor
+>123 : 123
+>1 : 1
+
+declare function f(a: number): number;
+>f : (a: number) => number
+>a : number
+
+new f("x");
+>new f("x") : any
+>f : (a: number) => number
+>"x" : "x"
+
+declare function g(this: void, a: number): void;
+>g : (this: void, a: number) => void
+>this : void
+>a : number
+
+new g("y", 2);
+>new g("y", 2) : any
+>g : (this: void, a: number) => void
+>"y" : "y"
+>2 : 2
+

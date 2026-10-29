@@ -667,6 +667,14 @@ circular), so nothing is in flight to fail and V.p is never named. Fixing it mea
 entry whose evaluation repeats getTargetOfAliasDeclaration's member lookup; the other 15 missing TS2502 bun cases
 (bun_others.md) are other mechanisms (lazy parameter typing, notes/reentrancy.md). [design]
 
+## Mutation seed 20261123 (2026-10-29, cor16: `scripts/mutate.py -n 8000 --seed 20261123`, 3 of 8000 differ; `--syntax` 5)
+Known: recursiveClassBaseType (TS2310), globalThisGlobalExportAsGlobal (TS2303), importDeclWithExportModifierInAmbientContext
+str-to-num (`declare module 42 {`), conditionalTypeContextualTypeSimplificationsSuceeds extends-object (the key's TS2464,
+seed 20261122's leftover below), allowUnescapedParagraphAndLineSeparatorsInStringLiteral delete-stmt (render). Fixed:
+- bigintWithLib add-arg: `new BigInt(123, 1)` (call signatures only, strict false) is TS2554 and TS2350 in tsc, whose
+  resolveCall returns the overload failure candidate when nothing fits; tttt's new-as-call resolution left no
+  signature then. Test ttttNewNonVoidFailedCall [fixed NEXT].
+
 ## Mutation seed 20261122 (2026-10-29, cor16: `scripts/mutate.py -n 8000 --seed 20261122`, 5 of 8000 differ; `--syntax` 12)
 Known: recursiveClassBaseType (TS2310, 2: mut5311's family), unicodeLineSeparatorInMultilineComment [tsgo],
 exportSpecifierReferencingOuterDeclaration3 and importDeclWithExportModifierAndExportAssignmentInAmbientContext
@@ -676,7 +684,7 @@ str-to-num (`declare module 42 {`, the 20261121 block-scope family). Fixed:
   resolved with errors there, since the pattern types the parameter and the overload check asks for it (cor16's first
   version of 03-C11b's fix had dropped them: now only for an annotated parameter), and the element isn't implicitly any
   (report_renamed_bodiless_elements(): a key not usable as a name isn't in getTypeFromObjectBindingPattern's type).
-  Test ttttBodilessRenamingComputedName [fixed NEXT]. Left: the key's TS2464 (an `in` expression's boolean), which
+  Test ttttBodilessRenamingComputedName [fixed 14d9d9515]. Left: the key's TS2464 (an `in` expression's boolean), which
   tsc's checkComputedPropertyName says when the parameter's type is asked for. [open]
 - Render only [text]: conditionalContextualReturnSubstitutionCache extends-object (a second related TS2208 "This type
   parameter might need an `extends ...` constraint" naming the whole conditional), mappedTypeConstraints2 drop-as (the
