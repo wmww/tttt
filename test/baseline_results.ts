@@ -12344,6 +12344,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAssignmentPatternComputedName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAssignmentPatternDefaultsInfer': {
         errors: true,
         symbols: true,
@@ -15955,6 +15960,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttObjectLiteralExportBrace': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttObjectLiteralInstantiatedByOuterTypeParams': {
         errors: true,
         symbols: true,
@@ -15997,6 +16007,11 @@ const baselines = {
         types: true,
     },
     'ttttObjectToGenericMappedRecord': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttOctalScannerErrorFirst': {
         errors: true,
         symbols: true,
         types: true,
