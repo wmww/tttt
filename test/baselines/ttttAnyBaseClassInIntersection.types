@@ -1,0 +1,31 @@
+//// [test/cases/ttttAnyBaseClassInIntersection.ts] ////
+
+=== ttttAnyBaseClassInIntersection.ts ===
+// Known failing (missing_checks.md, seed 20261111): a class whose base is any is a non-augmenting subtype normalized to
+// any, assignable to any object type on its own, but tsgo rejects it as a member of an intersection source (TS2741)
+class Other<T> { constructor(public other: T) {} }
+>Other : Other<T>
+>other : T
+
+declare const anyB: any;
+>anyB : any
+
+class B extends anyB {}
+>B : B
+>anyB : any
+
+declare const b: B;
+>b : B
+
+const o1: Other<string> = b;
+>o1 : Other<string>
+>b : B
+
+declare const b2: B & { x: 1 };
+>b2 : B & { x: 1; }
+>x : 1
+
+const o2: Other<string> = b2;
+>o2 : Other<string>
+>b2 : B & { x: 1; }
+
