@@ -648,7 +648,11 @@ Not fixed:
   binary operator was looked for at a `>`, every other `>` is one character. Test ttttRecoveryTrailingTriviaSpans.
   [fixed 0cdc358da]
 - contextualTyping null-arg: `[function(null, s) { return s; }]` in a type assertion: after TS1359 and TS1138 tsgo's
-  recovery reports TS2304/TS1005 for the rest of the line, tttt's swallows it. [open]
+  recovery reports TS2304/TS1005 for the rest of the line, tttt's swallows it. The parameter list now aborts at the
+  `,` the array literal wants (function expressions only: jsxTernaryWithObjectInAttribute broke when every list did).
+  Test ttttParameterListAbortAtComma. [fixed 6f0bc74ec] Left: contextually typed (the type assertion), tsgo's
+  contextual check infers `never` from the missing body (getReturnTypeFromBody, no HasImplicitReturn), tttt `any`
+  (function_return_type's !body branch); types baseline only. [open]
 - allowUnescapedParagraphAndLineSeparatorsInStringLiteral delete-stmt: the errors baseline's squiggles after a U+2028
   inside an unterminated string: tsc's line starts count U+2028/U+2029, the harness's rendering doesn't (positions
   agree). [text]
