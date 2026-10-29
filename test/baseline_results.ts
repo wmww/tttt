@@ -1761,9 +1761,9 @@ const baselines = {
         types: true,
     },
     'bun11-C10': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun11-C11': {
         errors: false,
@@ -14202,6 +14202,11 @@ const baselines = {
         types: true,
     },
     'ttttExportEqualsTypeOnlyImportSameFile': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttExportEqualsUnionIndexProperty': {
         errors: true,
         symbols: true,
         types: true,
