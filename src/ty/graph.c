@@ -247,6 +247,7 @@ void graph_drop(TyGraph* me) {
     shared_links_drop(my variance_slots);
     for (u32 i = 0; i < TY_RELATION_COUNT; i++) shared_links_drop(my relations[i]);
     zero_pages_drop(&my pages);
+    free(my singletons);
     free(me);
 }
 

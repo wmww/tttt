@@ -119,7 +119,9 @@ SharedTable* shared_table_new(ZeroPages* pages) {
 void shared_table_drop(SharedTable* me) {
     if (!me) return;
     shards_drop(&my sh);
-    free(me);
+    // (The real free(): aligned_alloc() isn't debug_allocator.h's, whose free() would be handed the block's address
+    // minus its offset. The test runners crashed on it once the harness's several checkers shared a graph)
+    (free)(me);
 }
 
 u64 shared_table_len(SharedTable const* me) { return shards_len(&my sh); }
@@ -235,7 +237,7 @@ SharedLinks* shared_links_new(ZeroPages* pages) {
 void shared_links_drop(SharedLinks* me) {
     if (!me) return;
     shards_drop(&my sh);
-    free(me);
+    (free)(me); // (aligned_alloc()'s: shared_table_drop())
 }
 
 u64 shared_links_len(SharedLinks const* me) { return shards_len(&my sh); }
