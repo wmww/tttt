@@ -679,4 +679,4 @@ missing_checks.md, together with variances for a declared type against its insta
   intersection holding a Pick, against the type parameter target): getRecursionIdentityTarget takes an indexed
   access's object type through the mapped-type unwrapping and intersection matching, tttt's recursion_key() didn't
   (an indexed access's identity was its bare object type, an intersection never matched by its members). Test
-  ttttDeepNestingIndexedAccessIdentity (the variant without the Pick still errors). [fixed HASH2]
+  ttttDeepNestingIndexedAccessIdentity (the variant without the Pick still errors). [fixed 319a29f06]
