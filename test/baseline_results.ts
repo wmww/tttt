@@ -15830,6 +15830,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttNeverReducedGenericClassReference': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttNeverReducedGenericReference': {
         errors: true,
         symbols: true,
