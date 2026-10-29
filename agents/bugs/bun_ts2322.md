@@ -73,7 +73,7 @@ last line. The real cause is then elsewhere, and the entry says where. Show a ca
 
 ## Checker
 - 01-C3: a class expression's type parameters are in scope in its own decorators (`@dec((x: T) => x) class<T> {}`):
-  tsc resolves T there, tttt says TS2304 and misses the later TS2322. [open]
+  tsc resolves T there, tttt says TS2304 and misses the later TS2322. [fixed d2b062e28]
 - 05-C11a: an overload whose rest is a tuple of callbacks, `...r: [number, ...((x: number) => void)[][]]`. tsc
   contextually types the arrow's parameter from the failing overload, tttt reports TS7006. TS2322 missing. [open]
 - 06-C15: `yield* [[1], ["a"]]` in a `Generator<number[]>`. tsc elaborates the array literal element by element
