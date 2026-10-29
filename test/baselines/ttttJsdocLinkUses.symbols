@@ -1,0 +1,157 @@
+//// [test/cases/ttttJsdocLinkUses.ts] ////
+
+=== m.ts ===
+export class A {} export class B {} export class C {} export class D {} export class E {} export class F {}
+>A : Symbol(A, Decl(m.ts, 0, 0))
+>B : Symbol(B, Decl(m.ts, 0, 17))
+>C : Symbol(C, Decl(m.ts, 0, 35))
+>D : Symbol(D, Decl(m.ts, 0, 53))
+>E : Symbol(E, Decl(m.ts, 0, 71))
+>F : Symbol(F, Decl(m.ts, 0, 89))
+
+export class G {} export class H {} export class I {} export class J {} export class K {} export class L {}
+>G : Symbol(G, Decl(m.ts, 0, 107))
+>H : Symbol(H, Decl(m.ts, 1, 17))
+>I : Symbol(I, Decl(m.ts, 1, 35))
+>J : Symbol(J, Decl(m.ts, 1, 53))
+>K : Symbol(K, Decl(m.ts, 1, 71))
+>L : Symbol(L, Decl(m.ts, 1, 89))
+
+export class M {} export class N {} export class O {} export class P {} export class Q {} export class R {}
+>M : Symbol(M, Decl(m.ts, 1, 107))
+>N : Symbol(N, Decl(m.ts, 2, 17))
+>O : Symbol(O, Decl(m.ts, 2, 35))
+>P : Symbol(P, Decl(m.ts, 2, 53))
+>Q : Symbol(Q, Decl(m.ts, 2, 71))
+>R : Symbol(R, Decl(m.ts, 2, 89))
+
+export class S {} export class T {} export class U {} export class V {} export class W {} export class X {}
+>S : Symbol(S, Decl(m.ts, 2, 107))
+>T : Symbol(T, Decl(m.ts, 3, 17))
+>U : Symbol(U, Decl(m.ts, 3, 35))
+>V : Symbol(V, Decl(m.ts, 3, 53))
+>W : Symbol(W, Decl(m.ts, 3, 71))
+>X : Symbol(X, Decl(m.ts, 3, 89))
+
+=== a.ts ===
+import { A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X } from "./m";
+>A : Symbol(A, Decl(a.ts, 0, 8))
+>B : Symbol(B, Decl(a.ts, 0, 11))
+>C : Symbol(C, Decl(a.ts, 0, 14))
+>D : Symbol(D, Decl(a.ts, 0, 17))
+>E : Symbol(E, Decl(a.ts, 0, 20))
+>F : Symbol(F, Decl(a.ts, 0, 23))
+>G : Symbol(G, Decl(a.ts, 0, 26))
+>H : Symbol(H, Decl(a.ts, 0, 29))
+>I : Symbol(I, Decl(a.ts, 0, 32))
+>J : Symbol(J, Decl(a.ts, 0, 35))
+>K : Symbol(K, Decl(a.ts, 0, 38))
+>L : Symbol(L, Decl(a.ts, 0, 41))
+>M : Symbol(M, Decl(a.ts, 0, 44))
+>N : Symbol(N, Decl(a.ts, 0, 47))
+>O : Symbol(O, Decl(a.ts, 0, 50))
+>P : Symbol(P, Decl(a.ts, 0, 53))
+>Q : Symbol(Q, Decl(a.ts, 0, 56))
+>R : Symbol(R, Decl(a.ts, 0, 59))
+>S : Symbol(S, Decl(a.ts, 0, 62))
+>T : Symbol(T, Decl(a.ts, 0, 65))
+>U : Symbol(U, Decl(a.ts, 0, 68))
+>V : Symbol(V, Decl(a.ts, 0, 71))
+>W : Symbol(W, Decl(a.ts, 0, 74))
+>X : Symbol(X, Decl(a.ts, 0, 77))
+
+/** main {@link A} */
+export function f1() {}
+>f1 : Symbol(f1, Decl(a.ts, 0, 93))
+
+/**
+ * @param x {@link B} desc
+ * @returns {@link C} rest
+ * @throws {@link D} after {@link E}
+ * @see F
+ * @see {@link G}
+ * @deprecated use {@link H}
+ */
+export function f2(x: number) { return x; }
+>f2 : Symbol(f2, Decl(a.ts, 2, 23))
+>x : Symbol(x, Decl(a.ts, 11, 19))
+>x : Symbol(x, Decl(a.ts, 11, 19))
+
+/**
+ * @typedef {object} T1
+ * @property {number} p {@link I}
+ */
+/**
+ * @callback CB
+ * @param {number} q {@link J}
+ */
+export class Cl {
+>Cl : Symbol(Cl, Decl(a.ts, 11, 43))
+
+    /** {@link K} */
+    m() {}
+>m : Symbol(Cl.m, Decl(a.ts, 20, 17))
+
+    /** {@link L} */
+    p = 1;
+>p : Symbol(Cl.p, Decl(a.ts, 22, 10))
+}
+export function f3(/** {@link M} */ a: number) { return a; }
+>f3 : Symbol(f3, Decl(a.ts, 25, 1))
+>a : Symbol(a, Decl(a.ts, 26, 19))
+>a : Symbol(a, Decl(a.ts, 26, 19))
+
+export const o = { /** {@link N} */ k: 1 };
+>o : Symbol(o, Decl(a.ts, 27, 12))
+>k : Symbol(k, Decl(a.ts, 27, 18))
+
+export enum En {
+>En : Symbol(En, Decl(a.ts, 27, 43))
+
+    /** {@link O} */
+    a,
+>a : Symbol(En.a, Decl(a.ts, 28, 16))
+}
+export interface In {
+>In : Symbol(In, Decl(a.ts, 31, 1))
+
+    /** {@link P} */
+    m: number;
+>m : Symbol(In.m, Decl(a.ts, 32, 21))
+}
+export function f4() {
+>f4 : Symbol(f4, Decl(a.ts, 35, 1))
+
+    /** {@link Q} */
+    const z = 1;
+>z : Symbol(z, Decl(a.ts, 38, 9))
+
+    return z;
+>z : Symbol(z, Decl(a.ts, 38, 9))
+}
+/** {@linkcode R} and {@linkplain S} and {@link   T#foo} and {@link U.prototype} */
+export type Ty = number;
+>Ty : Symbol(Ty, Decl(a.ts, 40, 1))
+
+/**
+ * @overload
+ * @param {string} s {@link V}
+ */
+export function f5(s: string) { return s; }
+>f5 : Symbol(f5, Decl(a.ts, 42, 24))
+>s : Symbol(s, Decl(a.ts, 47, 19))
+>s : Symbol(s, Decl(a.ts, 47, 19))
+
+/** @param {object} o desc
+ * @param o.a {@link W}
+ */
+export function f6(o: { a: number }) { return o; }
+>f6 : Symbol(f6, Decl(a.ts, 47, 43))
+>o : Symbol(o, Decl(a.ts, 51, 19))
+>a : Symbol(a, Decl(a.ts, 51, 23))
+>o : Symbol(o, Decl(a.ts, 51, 19))
+
+/** text @link X inline */
+export const v1 = 1;
+>v1 : Symbol(v1, Decl(a.ts, 53, 12))
+

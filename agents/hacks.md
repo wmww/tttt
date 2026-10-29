@@ -788,10 +788,17 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   site (`ClassDecl.is_ambient`, `Binding.ambient`, `BlockTypecheckCtx.ambient`; want NodeFlags.Ambient).
   `EMIT_HELPER_EXTENDS/ASSIGN/GENERATOR/VALUES/READ/SPREAD_ARRAY/MAKE_TEMPLATE_OBJECT` are dead (ES5/downlevelIteration
   only) but stay in the enum: `helpers.c`'s table is indexed by bit.
-- `unused_mark_jsdoc_links()` HACK: `{@link X}` is a use by text scan, looked up from the file's scope (fix: resolve
-  parsed tags). A JSDoc right before a statement in a block is also resolved from that block's scope
-  (`unused_mark_leading_jsdoc_links()`, block_lookup_names_as), so a local only a link names is used; the file-wide
-  scan still runs over every link (class members', parameters' JSDoc too), so a shadowed name keeps the outer one used. Member reads are keyed by declaration span start (`ty_mark_member_referenced`). Tested by ttttHackJsdocLinkShadowed (known failing: a link to a shadowed name keeps the import used). The fix needs the link's scope: the walk would resolve it, but deferred bodies aren't walked when the file's links are marked.
+- `unused_mark_jsdoc_links_before()` (unused.c): JSDoc `{@link X}` uses are found from the raw comment text, not
+  from parsed JSDoc nodes: the walk calls it at each source element tsc's checkSourceElement visits (statements,
+  class/interface/type-literal/enum members, parameters, variable declarations, named tuple members, `;` class
+  elements recorded by the parser in `ClassDecl.jsdoc_semicolons`), it scans back from the element over whitespace and
+  block comments to the previous token, and `scan_jsdoc()` re-implements tsgo's JSDoc tag structure in a few hundred
+  lines (main text and top-level tag comments only; type expressions, `@see` names and nested @property/@param/
+  @returns skipped; backticks and fences). Approximations: a `//` comment between the JSDoc and the element stops the
+  backward scan (the JSDoc is missed); an earlier `/*` in code text (a string) can be taken for the comment's start;
+  a qualified name's member isn't looked up (resolveJSDocMemberName's fallback to the left side only on a reserved
+  `#` part); the eager-parse condition (scanJSDocCommentForTags) is checked per gap. Member reads are keyed by
+  declaration span start (`ty_mark_member_referenced`).
 - `program_apply_comment_directives`: suppression by tttt's error phase, not tsc's diagnostic kind; `\n` and ASCII
   `\s` only; relies on every comment going through `hop_comment`.
 - `SourceFile.unchecked` + `error_ctx_remove_unchecked`: skipLibCheck/noCheck/JS filtering happens after checking, so

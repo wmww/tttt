@@ -1,0 +1,167 @@
+//// [test/cases/ttttJsdocLinkUses2.ts] ////
+
+=== m.ts ===
+export class A {} export class B {} export class C {} export class D {} export class E {} export class F {}
+>A : Symbol(A, Decl(m.ts, 0, 0))
+>B : Symbol(B, Decl(m.ts, 0, 17))
+>C : Symbol(C, Decl(m.ts, 0, 35))
+>D : Symbol(D, Decl(m.ts, 0, 53))
+>E : Symbol(E, Decl(m.ts, 0, 71))
+>F : Symbol(F, Decl(m.ts, 0, 89))
+
+export class G {} export class H {} export class I {} export class J {} export class K {} export class L {}
+>G : Symbol(G, Decl(m.ts, 0, 107))
+>H : Symbol(H, Decl(m.ts, 1, 17))
+>I : Symbol(I, Decl(m.ts, 1, 35))
+>J : Symbol(J, Decl(m.ts, 1, 53))
+>K : Symbol(K, Decl(m.ts, 1, 71))
+>L : Symbol(L, Decl(m.ts, 1, 89))
+
+export class M {} export class N {} export class O {} export class P {} export class Q {} export class R {}
+>M : Symbol(M, Decl(m.ts, 1, 107))
+>N : Symbol(N, Decl(m.ts, 2, 17))
+>O : Symbol(O, Decl(m.ts, 2, 35))
+>P : Symbol(P, Decl(m.ts, 2, 53))
+>Q : Symbol(Q, Decl(m.ts, 2, 71))
+>R : Symbol(R, Decl(m.ts, 2, 89))
+
+export class S {} export class T {} export class U {} export class V {} export class W {} export class X {}
+>S : Symbol(S, Decl(m.ts, 2, 107))
+>T : Symbol(T, Decl(m.ts, 3, 17))
+>U : Symbol(U, Decl(m.ts, 3, 35))
+>V : Symbol(V, Decl(m.ts, 3, 53))
+>W : Symbol(W, Decl(m.ts, 3, 71))
+>X : Symbol(X, Decl(m.ts, 3, 89))
+
+=== a.ts ===
+import { A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X } from "./m";
+>A : Symbol(A, Decl(a.ts, 0, 8))
+>B : Symbol(B, Decl(a.ts, 0, 11))
+>C : Symbol(C, Decl(a.ts, 0, 14))
+>D : Symbol(D, Decl(a.ts, 0, 17))
+>E : Symbol(E, Decl(a.ts, 0, 20))
+>F : Symbol(F, Decl(a.ts, 0, 23))
+>G : Symbol(G, Decl(a.ts, 0, 26))
+>H : Symbol(H, Decl(a.ts, 0, 29))
+>I : Symbol(I, Decl(a.ts, 0, 32))
+>J : Symbol(J, Decl(a.ts, 0, 35))
+>K : Symbol(K, Decl(a.ts, 0, 38))
+>L : Symbol(L, Decl(a.ts, 0, 41))
+>M : Symbol(M, Decl(a.ts, 0, 44))
+>N : Symbol(N, Decl(a.ts, 0, 47))
+>O : Symbol(O, Decl(a.ts, 0, 50))
+>P : Symbol(P, Decl(a.ts, 0, 53))
+>Q : Symbol(Q, Decl(a.ts, 0, 56))
+>R : Symbol(R, Decl(a.ts, 0, 59))
+>S : Symbol(S, Decl(a.ts, 0, 62))
+>T : Symbol(T, Decl(a.ts, 0, 65))
+>U : Symbol(U, Decl(a.ts, 0, 68))
+>V : Symbol(V, Decl(a.ts, 0, 71))
+>W : Symbol(W, Decl(a.ts, 0, 74))
+>X : Symbol(X, Decl(a.ts, 0, 77))
+
+export function f1(x: number) {
+>f1 : Symbol(f1, Decl(a.ts, 0, 93))
+>x : Symbol(x, Decl(a.ts, 1, 19))
+
+    switch (x) {
+>x : Symbol(x, Decl(a.ts, 1, 19))
+
+        case 1:
+            /** {@link A} */
+            return 1;
+    }
+    return 0;
+}
+export namespace NS {
+>NS : Symbol(NS, Decl(a.ts, 8, 1))
+
+    /** {@link B} */
+    export const b = 1;
+>b : Symbol(b, Decl(a.ts, 11, 16))
+}
+export const arrow = (/** {@link C} */ p: number) => p;
+>arrow : Symbol(arrow, Decl(a.ts, 13, 12))
+>p : Symbol(p, Decl(a.ts, 13, 22))
+>p : Symbol(p, Decl(a.ts, 13, 22))
+
+export type TL = {
+>TL : Symbol(TL, Decl(a.ts, 13, 55))
+
+    /** {@link D} */
+    m: number;
+>m : Symbol(m, Decl(a.ts, 14, 18))
+
+};
+export class Cl { /** {@link E} */ m = 1; }
+>Cl : Symbol(Cl, Decl(a.ts, 17, 2))
+>m : Symbol(Cl.m, Decl(a.ts, 18, 17))
+
+export type FT = (/** {@link F} */ q: number) => void;
+>FT : Symbol(FT, Decl(a.ts, 18, 43))
+>q : Symbol(q, Decl(a.ts, 19, 18))
+
+export const ol = { m(/** {@link G} */ r: number) { return r; } };
+>ol : Symbol(ol, Decl(a.ts, 20, 12))
+>m : Symbol(m, Decl(a.ts, 20, 19))
+>r : Symbol(r, Decl(a.ts, 20, 22))
+>r : Symbol(r, Decl(a.ts, 20, 22))
+
+/** `{@link H}` and ```
+ * {@link I}
+ * ``` {@link J} */
+export const v1 = 1;
+>v1 : Symbol(v1, Decl(a.ts, 24, 12))
+
+/** x @see {@link K} */
+export const v2 = 1;
+>v2 : Symbol(v2, Decl(a.ts, 26, 12))
+
+/**
+ * @param {Object} o
+ * @param {number} o.a {@link L}
+ * @returns nothing {@link M}
+ */
+export function f2(o: { a: number }) { return o; }
+>f2 : Symbol(f2, Decl(a.ts, 26, 20))
+>o : Symbol(o, Decl(a.ts, 32, 19))
+>a : Symbol(a, Decl(a.ts, 32, 23))
+>o : Symbol(o, Decl(a.ts, 32, 19))
+
+/** @typedef {number} T2
+ * @property {number} z {@link N}
+ */
+export class Dec {
+>Dec : Symbol(Dec, Decl(a.ts, 32, 50))
+
+    m(@dd /** {@link O} */ s: number) { return s; }
+>m : Symbol(Dec.m, Decl(a.ts, 36, 18))
+>dd : Symbol(dd, Decl(a.ts, 38, 1))
+>s : Symbol(s, Decl(a.ts, 37, 6))
+>s : Symbol(s, Decl(a.ts, 37, 6))
+}
+declare function dd(...a: any[]): any;
+>dd : Symbol(dd, Decl(a.ts, 38, 1))
+>a : Symbol(a, Decl(a.ts, 39, 20))
+
+export function f3<
+>f3 : Symbol(f3, Decl(a.ts, 39, 38))
+
+    /** {@link P} */
+    Q1>() {}
+>Q1 : Symbol(Q1, Decl(a.ts, 40, 19))
+
+/** {@link Q.foo} {@link R#bar} {@link   S} */
+export const v3 = 1;
+>v3 : Symbol(v3, Decl(a.ts, 44, 12))
+
+export const v4 = 1, /** {@link T} */ v5 = 2;
+>v4 : Symbol(v4, Decl(a.ts, 45, 12))
+>v5 : Symbol(v5, Decl(a.ts, 45, 20))
+
+for (const /** {@link U} */ z of [1]) { z; }
+>z : Symbol(z, Decl(a.ts, 46, 10))
+>z : Symbol(z, Decl(a.ts, 46, 10))
+
+label: /** {@link V} */ for (;;) { break label; }
+

@@ -3982,7 +3982,6 @@ void program_order_stdlib_first(Program* me) {
 
 // What resolve_file() does after the walk (a file walked in chunks: once its chunks are merged)
 static void resolve_file_finish(SourceFile* source) {
-    if (!source->is_stdlib && !source->unchecked && !source->is_declaration) unused_mark_jsdoc_links(source);
     // (Grown by doubling while the walk registered them: kept until checking ends, so without the slack)
     if (source->unused_cap > source->unused_count) {
         UnusedCandidate* trimmed = source->unused_count ? realloc(source->unused, sizeof(UnusedCandidate) * source->unused_count) : nullptr;

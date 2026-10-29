@@ -1,0 +1,90 @@
+a.ts(1,16): error TS6133: 'C' is declared but its value is never read.
+a.ts(1,19): error TS6133: 'D' is declared but its value is never read.
+a.ts(1,25): error TS6133: 'F' is declared but its value is never read.
+a.ts(1,34): error TS6133: 'I' is declared but its value is never read.
+a.ts(1,37): error TS6133: 'J' is declared but its value is never read.
+a.ts(1,49): error TS6133: 'N' is declared but its value is never read.
+a.ts(1,73): error TS6133: 'V' is declared but its value is never read.
+a.ts(1,76): error TS6133: 'W' is declared but its value is never read.
+a.ts(1,79): error TS6133: 'X' is declared but its value is never read.
+
+
+==== m.ts (0 errors) ====
+    export class A {} export class B {} export class C {} export class D {} export class E {} export class F {}
+    export class G {} export class H {} export class I {} export class J {} export class K {} export class L {}
+    export class M {} export class N {} export class O {} export class P {} export class Q {} export class R {}
+    export class S {} export class T {} export class U {} export class V {} export class W {} export class X {}
+==== a.ts (9 errors) ====
+    import { A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X } from "./m";
+                   ~
+!!! error TS6133: 'C' is declared but its value is never read.
+                      ~
+!!! error TS6133: 'D' is declared but its value is never read.
+                            ~
+!!! error TS6133: 'F' is declared but its value is never read.
+                                     ~
+!!! error TS6133: 'I' is declared but its value is never read.
+                                        ~
+!!! error TS6133: 'J' is declared but its value is never read.
+                                                    ~
+!!! error TS6133: 'N' is declared but its value is never read.
+                                                                            ~
+!!! error TS6133: 'V' is declared but its value is never read.
+                                                                               ~
+!!! error TS6133: 'W' is declared but its value is never read.
+                                                                                  ~
+!!! error TS6133: 'X' is declared but its value is never read.
+    /** main {@link A} */
+    export function f1() {}
+    /**
+     * @param x {@link B} desc
+     * @returns {@link C} rest
+     * @throws {@link D} after {@link E}
+     * @see F
+     * @see {@link G}
+     * @deprecated use {@link H}
+     */
+    export function f2(x: number) { return x; }
+    /**
+     * @typedef {object} T1
+     * @property {number} p {@link I}
+     */
+    /**
+     * @callback CB
+     * @param {number} q {@link J}
+     */
+    export class Cl {
+        /** {@link K} */
+        m() {}
+        /** {@link L} */
+        p = 1;
+    }
+    export function f3(/** {@link M} */ a: number) { return a; }
+    export const o = { /** {@link N} */ k: 1 };
+    export enum En {
+        /** {@link O} */
+        a,
+    }
+    export interface In {
+        /** {@link P} */
+        m: number;
+    }
+    export function f4() {
+        /** {@link Q} */
+        const z = 1;
+        return z;
+    }
+    /** {@linkcode R} and {@linkplain S} and {@link   T#foo} and {@link U.prototype} */
+    export type Ty = number;
+    /**
+     * @overload
+     * @param {string} s {@link V}
+     */
+    export function f5(s: string) { return s; }
+    /** @param {object} o desc
+     * @param o.a {@link W}
+     */
+    export function f6(o: { a: number }) { return o; }
+    /** text @link X inline */
+    export const v1 = 1;
+    

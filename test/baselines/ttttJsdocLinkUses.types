@@ -1,0 +1,160 @@
+//// [test/cases/ttttJsdocLinkUses.ts] ////
+
+=== m.ts ===
+export class A {} export class B {} export class C {} export class D {} export class E {} export class F {}
+>A : A
+>B : B
+>C : C
+>D : D
+>E : E
+>F : F
+
+export class G {} export class H {} export class I {} export class J {} export class K {} export class L {}
+>G : G
+>H : H
+>I : I
+>J : J
+>K : K
+>L : L
+
+export class M {} export class N {} export class O {} export class P {} export class Q {} export class R {}
+>M : M
+>N : N
+>O : O
+>P : P
+>Q : Q
+>R : R
+
+export class S {} export class T {} export class U {} export class V {} export class W {} export class X {}
+>S : S
+>T : T
+>U : U
+>V : V
+>W : W
+>X : X
+
+=== a.ts ===
+import { A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X } from "./m";
+>A : typeof A
+>B : typeof B
+>C : typeof C
+>D : typeof D
+>E : typeof E
+>F : typeof F
+>G : typeof G
+>H : typeof H
+>I : typeof I
+>J : typeof J
+>K : typeof K
+>L : typeof L
+>M : typeof M
+>N : typeof N
+>O : typeof O
+>P : typeof P
+>Q : typeof Q
+>R : typeof R
+>S : typeof S
+>T : typeof T
+>U : typeof U
+>V : typeof V
+>W : typeof W
+>X : typeof X
+
+/** main {@link A} */
+export function f1() {}
+>f1 : () => void
+
+/**
+ * @param x {@link B} desc
+ * @returns {@link C} rest
+ * @throws {@link D} after {@link E}
+ * @see F
+ * @see {@link G}
+ * @deprecated use {@link H}
+ */
+export function f2(x: number) { return x; }
+>f2 : (x: number) => number
+>x : number
+>x : number
+
+/**
+ * @typedef {object} T1
+ * @property {number} p {@link I}
+ */
+/**
+ * @callback CB
+ * @param {number} q {@link J}
+ */
+export class Cl {
+>Cl : Cl
+
+    /** {@link K} */
+    m() {}
+>m : () => void
+
+    /** {@link L} */
+    p = 1;
+>p : number
+>1 : 1
+}
+export function f3(/** {@link M} */ a: number) { return a; }
+>f3 : (a: number) => number
+>a : number
+>a : number
+
+export const o = { /** {@link N} */ k: 1 };
+>o : { k: number; }
+>{ /** {@link N} */ k: 1 } : { k: number; }
+>k : number
+>1 : 1
+
+export enum En {
+>En : En
+
+    /** {@link O} */
+    a,
+>a : En.a
+}
+export interface In {
+    /** {@link P} */
+    m: number;
+>m : number
+}
+export function f4() {
+>f4 : () => number
+
+    /** {@link Q} */
+    const z = 1;
+>z : 1
+>1 : 1
+
+    return z;
+>z : 1
+}
+/** {@linkcode R} and {@linkplain S} and {@link   T#foo} and {@link U.prototype} */
+export type Ty = number;
+>Ty : number
+
+/**
+ * @overload
+ * @param {string} s {@link V}
+ */
+export function f5(s: string) { return s; }
+>f5 : (s: string) => string
+>s : string
+>s : string
+
+/** @param {object} o desc
+ * @param o.a {@link W}
+ */
+export function f6(o: { a: number }) { return o; }
+>f6 : (o: { a: number; }) => { a: number; }
+>o : { a: number; }
+>a : number
+>o : { a: number; }
+
+/** text @link X inline */
+export const v1 = 1;
+>v1 : 1
+>1 : 1
+

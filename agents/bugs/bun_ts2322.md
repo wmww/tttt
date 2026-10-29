@@ -95,7 +95,7 @@ last line. The real cause is then elsewhere, and the entry says where. Show a ca
 - 11-C10: a named import of `a` from an `export =` of a union with an index signature (`{ a: 1 } | { [k: string]: 2
   }`). tsc finds the property through the union (a member's index signature makes it partial, not missing), tttt
   reported TS2305: export_equals_property_type_of() wanted a real property in every member. TS2322 missing.
-  [fixed COMMIT-C10]
+  [fixed 13497b5cf]
 - 12-C1a: `{ [K in keyof T]: T }` against `{ [K in keyof U]: T }`. tsc compares the constraints (keyof U to keyof
   T) and fails, tttt accepts. TS2322 missing. [open]
 - 12-C2b: `pipe1(<T,>(x: T) => [x, q] as [T, Q])` inside `outer<Q>`. tsc's returned signature keeps Q, so

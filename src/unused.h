@@ -44,10 +44,10 @@ void unused_register(Scope const* scope, UnusedKind kind, void const* node);
 // declarations walked meanwhile are never unused (tsc doesn't check them)
 extern thread_local u32 unused_marking_suppressed;
 void unused_mark_referenced(Scope const* scope, Symbol* found, u32 meaning);
-// The names of the file's JSDoc `{@link X}` tags are uses. Part of name resolution, before checking
-void unused_mark_jsdoc_links(SourceFile const* file);
-// Whether the file's text mentions "@link" at all (decided once): without it no statement's leading JSDoc has a link
+// Whether the file's text mentions "@link" at all (decided once): without it no JSDoc has a link
 bool unused_file_has_link_tag(struct SourceFile const* file);
-void unused_mark_leading_jsdoc_links(struct Scope const* names, char const* statement_start, char const* file_start);
+// The `{@link X}` names of the JSDoc tsc attaches to the source element starting at node_start (a statement, a class,
+// interface or enum member, a parameter: `trailing`) are uses, resolved from `names` (tsc's checkJSDocComments)
+void unused_mark_jsdoc_links_before(struct Scope const* names, char const* node_start, struct SourceFile const* file, bool trailing);
 // Everything registered in the file that nothing referenced
 void unused_report(SourceFile const* file, ErrorCtx* errs, u32 order); // order: its index among the checked files

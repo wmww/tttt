@@ -247,6 +247,7 @@ void class_decl_drop(ClassDecl* me) {
     vec_type_drop(&my unchecked_implements);
     vec_expr_drop(&my invalid_implements);
     vec_class_item_drop(&my items);
+    vec_span_drop(&my jsdoc_semicolons);
     vec_expr_cptr_drop(&my computed_this_assignments_);
     drop_namesakes(me);
     for (u32 i = 0; i < my jsdoc_augments_count; i++) {
@@ -327,6 +328,8 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
         binder_discarded_errs(names->binder) : errs;
     Scope* outer_names = names;
     ScopePendingMark pending_mark = scope_pending_mark(names->binder);
+    // (tsc's checkJSDocComments of the member)
+    if (span_valid(my span) && span_source(my span)) unused_mark_jsdoc_links_before(names, span_start_ptr(my span), span_source(my span), false);
     if (my tag == CLASS_ITEM_FIELD) {
         names = scope_new(names, SCOPE_BLOCK);
         names->in_field = true;
@@ -494,6 +497,10 @@ static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* er
     scope_rare_mut(this_scope)->this_ref = (ThisRef){
         .kind = static_members ? THIS_CLASS_STATIC : THIS_CLASS_INSTANCE, .symbol = my symbol, .class_decl = me
     };
+    // (A `;` element's JSDoc, once: tsc's checkJSDocComments of the SemicolonClassElement)
+    if (!static_members) {
+        for_each (i, vec_span, &my jsdoc_semicolons) unused_mark_jsdoc_links_before(this_scope, span_start_ptr(*i), span_source(*i), false);
+    }
     this_scope->strict = true;
     this_scope->class_strict = true;
 

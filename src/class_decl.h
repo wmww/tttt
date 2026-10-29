@@ -200,6 +200,9 @@ typedef struct ClassDecl {
     VecExpr invalid_implements;
     u32 invalid_implements_checked;
     VecClassItem items;
+    // The `;` class elements (tsc's SemicolonClassElement) a JSDoc comment comes right before: where tsc checks its
+    // links (tsc's checkJSDocComments), zero-size spans at the `;`
+    VecSpan jsdoc_semicolons;
     Symbol* symbol;
     struct ClassDecl const* outer_class; // The class this one is in (scope_enclosing_class()), set when resolving
     // A JavaScript class expression that initializes a variable with expandos (`var C = class {}; C.x = 1`,

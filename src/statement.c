@@ -46,6 +46,9 @@ static void variable_statement_check_await_place(VariableStatement const* me, Sc
 void variable_statement_resolve_names(VariableStatement* me, Scope* names, ErrorCtx* errs) {
     variable_statement_check_await_place(me, names, errs);
     for_each (i, vec_initialized_binding, &my initializers) {
+        // (tsc's checkJSDocComments of the declaration, its trailing comments too: getJSDocCommentRanges)
+        Span at = i->binding.content_span;
+        if (span_valid(at) && span_source(at)) unused_mark_jsdoc_links_before(names, span_start_ptr(at), span_source(at), true);
         initialized_binding_lookup_names(i, names, errs);
     }
 }
@@ -1861,6 +1864,9 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             if (is_declaration) {
                 unused_register(loop_scope, UNUSED_FOR_IN_OF_VARIABLES, &loop->variable.statement);
                 for_each (i, vec_initialized_binding, &loop->variable.statement.initializers) {
+                    // (tsc's checkJSDocComments of the declaration, its trailing comments too)
+                    Span at = i->binding.content_span;
+                    if (span_valid(at) && span_source(at)) unused_mark_jsdoc_links_before(loop_scope, span_start_ptr(at), span_source(at), true);
                     // (What its pattern's computed names and defaults may not use yet)
                     flow->initializing = i;
                     binding_lookup_names(&i->binding, loop_scope, errs);
@@ -2157,6 +2163,11 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
 }
 
 void statement_resolve_names(Statement* me, Scope* names, ErrorCtx* errs) {
+    // (A JSDoc `{@link x}` before it names x from here, tsc's checkJSDocComments. Not before `(`: the parenthesized
+    // expression takes it, tsgo's parseExpressionOrLabeledStatement)
+    if (span_valid(my span) && span_source(my span) && my span.size && *span_start_ptr(my span) != '(') {
+        unused_mark_jsdoc_links_before(names, span_start_ptr(my span), span_source(my span), false);
+    }
     if (statement_declares_name(my tag) && my decl.props.invalid_decorators) {
         for_each (i, vec_expr, my decl.props.invalid_decorators) expr_lookup_names_unchecked(i, names, errs);
     }

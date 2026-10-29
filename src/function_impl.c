@@ -411,6 +411,15 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     bool js = names->file && names->file->is_js && !my is_type;
     Scope const* saved_host = js ? identifier_type_set_jsdoc_host(function_scope) : nullptr;
     for_each (i, vec_function_arg, &my args) {
+        // (tsc's checkJSDocComments of the parameter, its trailing comments too: getJSDocCommentRanges. Not the one of
+        // an arrow without parentheses, which the arrow takes: tsgo's parseSimpleArrowFunctionExpression)
+        bool parenless = false;
+        if (function_impl_is_arrow(me) && span_valid(my full_span) && span_valid(i->span)) {
+            parenless = !memchr(span_start_ptr(my full_span), '(', (size_t)(span_start_ptr(i->span) - span_start_ptr(my full_span)));
+        }
+        if (!parenless && span_valid(i->span) && span_source(i->span)) {
+            unused_mark_jsdoc_links_before(parameter_scope, span_start_ptr(i->span), span_source(i->span), true);
+        }
         // (Without a body the initializer is only TS2371, but a pattern's elements under a written type look at its type
         // with strictNullChecks, which resolves its names: tsc's getBindingElementTypeFromParentType)
         Binding const* binding = &i->initializer.binding;

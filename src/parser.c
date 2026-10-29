@@ -10550,6 +10550,14 @@ static bool parse_decorated_class_with_modifiers(Parser* parent, ClassDecl* ret)
     return parse_success(&p);
 }
 // (The quick test inlined where it is called, the rest not: PGO inlined whole parse functions behind it)
+// A `;` class element at p->pos with a block comment right before it (see ClassDecl.jsdoc_semicolons)
+static void note_jsdoc_semicolon(Parser* p, ClassDecl* ret) {
+    char const* start = cstr_str(&p->shared->source->contents);
+    char const* at = p->pos;
+    while (at > start && (at[-1] == ' ' || at[-1] == '\t' || at[-1] == '\n' || at[-1] == '\r')) at--;
+    if (at - start >= 2 && at[-1] == '/' && at[-2] == '*') vec_span_push(&ret->jsdoc_semicolons, span_make(p->shared->source, p->pos, p->pos));
+}
+
 static inline bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* ret) {
     // (Decorators, `abstract`, `class`, an escaped keyword)
     switch (*parent->pos) {
@@ -10657,7 +10665,9 @@ static inline bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* re
     ClassItem item;
     u32 saved_context = list_enter(&p, PARSING_CLASS_MEMBERS);
     while (!at_eof(&p, p.pos) && *p.pos != '}') {
-        if (hop_char(&p, ';')) {
+        if (*p.pos == ';') {
+            note_jsdoc_semicolon(&p, ret);
+            hop_char(&p, ';');
             hop_whitespace(&p);
             continue;
         }
@@ -10686,6 +10696,10 @@ static inline bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* re
         }
         if (item.tag == CLASS_ITEM_METHOD) ast_cstr_seal(&item.method.name_string);
         if (item.tag == CLASS_ITEM_FIELD) ast_cstr_seal(&item.field.name_string);
+        // (A member without a body takes the `;` after it, tsgo's parseSemicolon: later ones are elements of their own)
+        bool takes_semicolon = item.tag == CLASS_ITEM_FIELD || item.tag == CLASS_ITEM_INTERFACE_MEMBER ||
+            (item.tag == CLASS_ITEM_METHOD && !item.method.func.has_body) ||
+            (item.tag == CLASS_ITEM_CONSTRUCTOR && !item.constructor.func.has_body);
         list_push(vec_class_item, &ret->items, item);
         hop_whitespace(&p);
 
@@ -10693,9 +10707,13 @@ static inline bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* re
             break;
         }
 
-        do {
+        while (true) {
             hop_whitespace(&p);
-        } while (hop_char(&p, ';'));
+            if (*p.pos != ';') break;
+            if (!takes_semicolon) note_jsdoc_semicolon(&p, ret);
+            takes_semicolon = false;
+            hop_char(&p, ';');
+        }
     }
     list_leave(&p, saved_context);
     expect_char(&p, '}');

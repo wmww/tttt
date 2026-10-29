@@ -1,0 +1,182 @@
+//// [test/cases/ttttJsdocLinkUses2.ts] ////
+
+=== m.ts ===
+export class A {} export class B {} export class C {} export class D {} export class E {} export class F {}
+>A : A
+>B : B
+>C : C
+>D : D
+>E : E
+>F : F
+
+export class G {} export class H {} export class I {} export class J {} export class K {} export class L {}
+>G : G
+>H : H
+>I : I
+>J : J
+>K : K
+>L : L
+
+export class M {} export class N {} export class O {} export class P {} export class Q {} export class R {}
+>M : M
+>N : N
+>O : O
+>P : P
+>Q : Q
+>R : R
+
+export class S {} export class T {} export class U {} export class V {} export class W {} export class X {}
+>S : S
+>T : T
+>U : U
+>V : V
+>W : W
+>X : X
+
+=== a.ts ===
+import { A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X } from "./m";
+>A : typeof A
+>B : typeof B
+>C : typeof C
+>D : typeof D
+>E : typeof E
+>F : typeof F
+>G : typeof G
+>H : typeof H
+>I : typeof I
+>J : typeof J
+>K : typeof K
+>L : typeof L
+>M : typeof M
+>N : typeof N
+>O : typeof O
+>P : typeof P
+>Q : typeof Q
+>R : typeof R
+>S : typeof S
+>T : typeof T
+>U : typeof U
+>V : typeof V
+>W : typeof W
+>X : typeof X
+
+export function f1(x: number) {
+>f1 : (x: number) => 0 | 1
+>x : number
+
+    switch (x) {
+>x : number
+
+        case 1:
+>1 : 1
+
+            /** {@link A} */
+            return 1;
+>1 : 1
+    }
+    return 0;
+>0 : 0
+}
+export namespace NS {
+>NS : typeof NS
+
+    /** {@link B} */
+    export const b = 1;
+>b : 1
+>1 : 1
+}
+export const arrow = (/** {@link C} */ p: number) => p;
+>arrow : (p: number) => number
+>(/** {@link C} */ p: number) => p : (p: number) => number
+>p : number
+>p : number
+
+export type TL = {
+>TL : TL
+
+    /** {@link D} */
+    m: number;
+>m : number
+
+};
+export class Cl { /** {@link E} */ m = 1; }
+>Cl : Cl
+>m : number
+>1 : 1
+
+export type FT = (/** {@link F} */ q: number) => void;
+>FT : FT
+>q : number
+
+export const ol = { m(/** {@link G} */ r: number) { return r; } };
+>ol : { m(r: number): number; }
+>{ m(/** {@link G} */ r: number) { return r; } } : { m(r: number): number; }
+>m : (r: number) => number
+>r : number
+>r : number
+
+/** `{@link H}` and ```
+ * {@link I}
+ * ``` {@link J} */
+export const v1 = 1;
+>v1 : 1
+>1 : 1
+
+/** x @see {@link K} */
+export const v2 = 1;
+>v2 : 1
+>1 : 1
+
+/**
+ * @param {Object} o
+ * @param {number} o.a {@link L}
+ * @returns nothing {@link M}
+ */
+export function f2(o: { a: number }) { return o; }
+>f2 : (o: { a: number; }) => { a: number; }
+>o : { a: number; }
+>a : number
+>o : { a: number; }
+
+/** @typedef {number} T2
+ * @property {number} z {@link N}
+ */
+export class Dec {
+>Dec : Dec
+
+    m(@dd /** {@link O} */ s: number) { return s; }
+>m : (s: number) => number
+>dd : (...a: any[]) => any
+>s : number
+>s : number
+}
+declare function dd(...a: any[]): any;
+>dd : (...a: any[]) => any
+>a : any[]
+
+export function f3<
+>f3 : <Q1>() => void
+
+    /** {@link P} */
+    Q1>() {}
+/** {@link Q.foo} {@link R#bar} {@link   S} */
+export const v3 = 1;
+>v3 : 1
+>1 : 1
+
+export const v4 = 1, /** {@link T} */ v5 = 2;
+>v4 : 1
+>1 : 1
+>v5 : 2
+>2 : 2
+
+for (const /** {@link U} */ z of [1]) { z; }
+>z : number
+>[1] : number[]
+>1 : 1
+>z : number
+
+label: /** {@link V} */ for (;;) { break label; }
+>label : any
+>label : any
+

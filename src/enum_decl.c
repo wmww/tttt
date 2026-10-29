@@ -1,4 +1,5 @@
 #include "enum_decl.h"
+#include "unused.h"
 #include <math.h>
 #include "error.h"
 #include "source_file.h"
@@ -57,6 +58,10 @@ void enum_decl_lookup_names(EnumDecl* me, Scope* names, ErrorCtx* errs) {
     my namespace->flow_ = scope_flow(names); // The scope was made when the enum was declared
     my namespace->self = my symbol;
     for_each (i, vec_enum_case, &my cases) {
+        // (tsc's checkJSDocComments of the member)
+        if (span_valid(i->full_name) && span_source(i->full_name)) {
+            unused_mark_jsdoc_links_before(names, span_start_ptr(i->full_name), span_source(i->full_name), false);
+        }
         // (tsgo's checkEnumMember checks a computed name's expression too)
         if (i->computed_key) expr_lookup_names(i->computed_key, my namespace, errs);
         expr_lookup_names(&i->value, my namespace, errs);

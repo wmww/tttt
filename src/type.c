@@ -430,6 +430,10 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
 
         case TYPE_TUPLE:
             for_each (i, vec_tuple_element, &my tuple.elements) {
+                // (A named member's JSDoc: tsc's checkJSDocComments of the NamedTupleMember)
+                if (span_valid(i->maybe_name) && span_valid(i->span) && span_source(i->span)) {
+                    unused_mark_jsdoc_links_before(names, span_start_ptr(i->span), span_source(i->span), false);
+                }
                 type_lookup_names(&i->type, names, errs);
             }
             break;

@@ -1,4 +1,5 @@
 #include "interface_member.h"
+#include "unused.h"
 #include "interface_decl.h"
 #include "type.h"
 #include "expr.h"
@@ -113,6 +114,9 @@ static void interface_member_lookup_names_inner(InterfaceMember* me, Scope* name
 void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* errs) {
     // An accessor is a `this` container that doesn't propagate a `this` type to its interface (tsc's binder: no
     // ContainerFlagsPropagatesThisKeyword), so `interface I { get x(): this }` stays thisless and x is the error type
+    // (tsc's checkJSDocComments of the member)
+    Span at = span_valid(my declaration) ? my declaration : my key.span;
+    if (span_valid(at) && span_source(at)) unused_mark_jsdoc_links_before(names, span_start_ptr(at), span_source(at), false);
     InterfaceDecl* interface = my accessor_kind && scope_rare(names)->this_ref.kind == THIS_INTERFACE ?
         (InterfaceDecl*)scope_rare(names)->this_ref.interface : nullptr;
     bool contains_this = interface && interface->contains_this;
