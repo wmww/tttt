@@ -601,6 +601,25 @@ never-const (harness writes no errors baseline).
 - recursiveClassBaseType delete-stmt: missing TS2310 (the base cycle design). noCircularitySelfReferentialGetter2
   (TS2345 text), unionTypeWithIndexSignature never-const (TS2322 text): not looked at. [open]
 
+## Mutation seed 20261116 (2026-10-29, cor13: `scripts/mutate.py -n 8000 --seed 20261116`, 6 of 8000 differ; `--syntax` 12)
+Known: recursiveClassBaseType (TS2310, 3), globalThisGlobalExportAsGlobal, recursiveTypeInferenceReturnTypeConstraint,
+exportSpecifierReferencingOuterDeclaration3. Fixed:
+- contextualTypingGenericFunction2 delete-stmt: `export const a` as parameters, `const` a parameter of its own (two
+  TS7006 '(Missing)', TS2300). Test ttttParameterModifierThenReservedWord. [fixed 306f9ca22] Left: its types baseline,
+  the object literal in a bodiless declaration's parameter initializer typed contextually by tsgo, any in tttt. [open]
+- excessPropertyChecksWithNestedIntersections, typeSatisfaction_contextualTyping2,
+  declarationEmitTypeParameterNameReusedInOverloads delete-stmt: node ends under recovery. Test ttttRecoveryNodeEnds2.
+  [fixed 20e99068e]
+Not fixed:
+- infiniteRecursionDestructuringLoop delete-stmt: missing TS2339 (`const { children, index = 0 } = node` in a loop
+  that assigns `node = children[index]`, MyNode without `children`). tsgo reports it while the loop's flow type of
+  `node` is first evaluated (getTypeOfSymbol(children) -> getBindingElementTypeFromParentType with the parent still
+  MyNode), before the circularity (TS7022) makes the parent any; tttt's binding_typecheck reads the parent type at check
+  time, any by then, so it says nothing. A diagnostic of a type evaluation's history. [design]
+- conditionalContextualReturnSubstitutionCache drop-as: a related TS2208 ("might need an `extends` constraint") tsgo
+  leaves out: its hasNonCircularBaseConstraint finds the synthetic constraint circular, tttt's
+  constraint_resolves_through doesn't. Not traced. [text]
+
 ## Mutation seed 20261115 (2026-10-29, cor12: `scripts/mutate.py -n 4000 --seed 20261115 --syntax`, 7 of 4000 differ; 4000 for /tmp's inodes)
 Fixed:
 - privateWriteOnlyAccessorRead add-optional: `({ foo?: {...} } = { foo })` TS1162: a destructuring target gets the
