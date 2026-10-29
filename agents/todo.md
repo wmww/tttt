@@ -42,9 +42,13 @@ wins first; land fast and gate in batches.
 
 ## Now (2026-10-29 box time, 2026-10-31 wall): the shared graph is the default; correctness and safe perf wins
 - **The shared graph is the default at K > 1** (vision.md Decisions; 7c91df2df; plain = `TTTT_SHARED_GRAPH=0`, one
-  checker never has a graph). The default-on gate found three graph bugs (fixed: 308bfacae, 9990e5259, e598f8660) and
-  one rare K16 round-robin difference on dokploy seen once under load (worker `race`, /tmp/wt-race: reproduce with the
-  GRAPH_CHECKS/FINGERPRINT builds under load, fix at the read with a taint event; bugs/shared_graph.md).
+  checker never has a graph). The default-on gate and the forced-taint oracles found five publication leaks this week,
+  all fixed by mechanism (308bfacae, 9990e5259, e598f8660, fea36a257, 1e1801c88) plus one forced-knob artifact
+  (4b87954cb); the rule now reads "a record's values may be private, the identities it mints never are"
+  (notes/shared_graph.md). quickgate -k runs sgcheck and `--force-poison 30`. Worker `fwc` builds the forbidden-write
+  check (a publish-time ownership walk in the GRAPH_CHECKS build, race3's design) so an identity leak fails on first
+  sight; then the OWN machinery (KEY_SIGNATURE_INSTANCE_OWN, sig_res_is_own) comes out if the oracles stay at zero. The
+  natural dokploy K16 rr difference (seen once) stays [open] with the signature clones as its likely mechanism.
 - **Perf, safe wins only (the human, 2026-10-31)**: no threading redesign, no big trade-offs; moderate refactors for a
   purpose are fine. Done: tail (the one-file .d.ts shape -13%), fe3 (front-end instructions -5..-22% at T1), fe4 (the
   front end's threads: whole runs -3..-7% at the defaults on five of six shapes). Next perf worker, when a slot is free:
