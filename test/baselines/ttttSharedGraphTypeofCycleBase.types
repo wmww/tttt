@@ -1,0 +1,35 @@
+//// [test/cases/ttttSharedGraphTypeofCycleBase.ts] ////
+
+=== m.ts ===
+import { y } from "./a";
+>y : any
+
+interface B<T> { b: T }
+>b : T
+
+interface V extends B<typeof y> { p: number }
+>y : any
+>p : number
+
+declare const v: V;
+>v : V
+
+export = v;
+>v : V
+
+=== a.ts ===
+import { p } from "./m";
+>p : any
+
+export const y = p;
+>y : any
+>p : any
+
+const t: never = y;
+>t : never
+>y : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

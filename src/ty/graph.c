@@ -720,11 +720,12 @@ static struct MemoTaint* memo_taint_of(Checker* checker) {
 }
 
 // Memo kinds whose value is a fresh object no other key hash-conses (a synthetic type parameter, an evolving array, a
-// reverse mapped object, a lowered node's type): withheld, every worker would make its own and tell them apart. They
+// reverse mapped object, a lowered node's type holding a stray `infer X`): withheld, every worker would make its own and tell them apart. They
 // publish whatever their computation saw, like identities (plan 86 stage 4f; the rest are values, listed in plan 86)
 static bool memo_identity_valued(u32 kind) {
     switch (kind) {
-    case KEY_MAPPED_KEY_PARAM: case KEY_EVOLVING_ARRAY: case KEY_REVERSE_MAPPED: case KEY_UNION_NODE:
+    case KEY_MAPPED_KEY_PARAM: case KEY_EVOLVING_ARRAY: case KEY_REVERSE_MAPPED:
+    // (KEY_UNION_NODE is one only when its lowering made a stray `infer X`: Checker.union_node_fresh, below)
     // (A conditional instance's result can hold objects its inference made fresh, a nested reverse mapped type:
     // withheld, react-navigation's TS2344/TS2345 at K16 T1, each checker making its own)
     case KEY_CONDITIONAL_INSTANCE: case KEY_CONDITIONAL_INSTANCE_FOR_CONSTRAINT:
@@ -879,7 +880,7 @@ void graph_memo_log_put(Checker* checker, InternTable const* table, void const**
     if (!graph_memo_sharing(checker)) return;
     // (Clean so far: no event since its miss, and pending until its value is there. Tainted: the checker's own from now
     // on, a hit of it an event)
-    bool identity = tag != 2 && memo_identity_valued(kind);
+    bool identity = tag != 2 && (memo_identity_valued(kind) || (kind == KEY_UNION_NODE && checker->union_node_fresh));
     bool tainted = false;
     if (!identity) {
         struct MemoTaint* t = memo_taint_of(checker);

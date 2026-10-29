@@ -1,0 +1,32 @@
+a.ts(1,10): error TS2303: Circular definition of import alias 'p'.
+a.ts(2,14): error TS7022: 'y' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(3,7): error TS2322: Type 'any' is not assignable to type 'never'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+m.ts(3,11): error TS2310: Type 'V' recursively references itself as a base type.
+m.ts(3,35): error TS2502: 'p' is referenced directly or indirectly in its own type annotation.
+
+
+==== m.ts (2 errors) ====
+    import { y } from "./a";
+    interface B<T> { b: T }
+    interface V extends B<typeof y> { p: number }
+              ~
+!!! error TS2310: Type 'V' recursively references itself as a base type.
+                                      ~
+!!! error TS2502: 'p' is referenced directly or indirectly in its own type annotation.
+    declare const v: V;
+    export = v;
+==== a.ts (4 errors) ====
+    import { p } from "./m";
+             ~
+!!! error TS2303: Circular definition of import alias 'p'.
+    export const y = p;
+                 ~
+!!! error TS7022: 'y' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    const t: never = y;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

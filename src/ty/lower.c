@@ -4627,8 +4627,14 @@ static inline __attribute__((always_inline)) Ty const* lower(
         u64 key[2] = { KEY_UNION_NODE | (u64)ctx.generic << 32, (u64)(uintptr_t)node };
         Ty const* memo = intern_get(&my links, key, 2);
         if (memo) return memo;
+        u32 stray_infers = my stray_infers;
         Ty const* ret = lower_node(me, node, ctx, alias, alias_args);
+        // (A value like any memo kind's, published only if its lowering was clean: `B<typeof y>` lowered inside y's
+        // own cycle holds that history's y, bun 85-R16b. Unless it made a stray `infer X`, a fresh object no key
+        // hash-conses: then everyone's, whatever its taint)
+        my union_node_fresh = my stray_infers != stray_infers;
         *intern_slot(me, &my links, key, 2) = ret;
+        my union_node_fresh = false;
         return ret;
     }
     // A template whose cross product is too large (TS2590 at the node being checked) is the error type however it is
@@ -4753,6 +4759,7 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
                 // (Its implied constraint all the same, tsc's getInferredTypeParameterConstraint goes by where the
                 // declaration is: `${infer X}` is a string)
                 Ty const* param = ty_synthetic_type_param(me, span_sv(node->inferred->name));
+                my stray_infers++;
                 InferPosition position = node->inferred->position;
                 Ty const* constraint = position == INFER_POSITION_TEMPLATE ? ty_intrinsic(me, TY_STRING) :
                     position == INFER_POSITION_REST ? ty_array(me, ty_intrinsic(me, TY_UNKNOWN_), false) :

@@ -1587,6 +1587,10 @@ struct Checker {
     bool relation_deep_seen; // The relation in progress went through a deep-nesting cut (relate.c CACHE_DEEP)
     u64 relation_pairs; // Pairs recursive_related() computed (TTTT_GRAPH_STATS: plan 86 4e's relation sharing)
     bool graph_memo_on; // --shared-graph with another checker to read them: memo kinds published as they finish
+    // Stray `infer X`s lowered (lower_node()'s anonymous type parameters), and whether the KEY_UNION_NODE entry being put
+    // holds one: then its value is a fresh object, published whatever its taint (graph_memo_log_put())
+    u32 stray_infers;
+    bool union_node_fresh;
 };
 
 // A shared word's fast path (overlay.h): its value if published and this worker isn't shadowed, else SW_EMPTY (then
