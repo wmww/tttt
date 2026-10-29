@@ -1583,6 +1583,15 @@ static inline void hop_whitespace_full(Parser* parent, bool hop_comments, bool h
         parent->whitespace_end = parent->pos;
         return;
     }
+    // (One space before a token, the most common trivia: what hop_whitespace_slow() does for it)
+    if (c == ' ' && (unsigned char)parent->pos[1] > ' ' && (unsigned char)parent->pos[1] < 0x80 && parent->pos[1] != '/') {
+        parent->shared->last_trivia_start = parent->pos;
+        parent->pos++;
+        parent->whitespace = WHITESPACE_PARSED;
+        parent->whitespace_end = parent->pos;
+        parent->shared->last_trivia_end = parent->pos;
+        return;
+    }
     hop_whitespace_slow(parent, hop_comments, hop_newlines);
 }
 
