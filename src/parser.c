@@ -207,6 +207,9 @@ typedef struct ParserShared {
     // The trivia hop_whitespace_slow() skipped last: token_full_start()
     const char* last_trivia_start;
     const char* last_trivia_end;
+    // Where an expression's binary operator was looked for at a `>` last: tsc's reScanGreaterToken made `>>`, `>=`,
+    // `>>>=`... one token there; anywhere else its scanner reads `>` alone (span_from_token())
+    const char* greater_rescanned;
     u32 errors_attempted; // Every parse_error() call, the ones dropped too (a position that already has one)
     // A parse error was reported (or deduplicated) since the last node finished: tsgo's hasParseError, which its
     // finishNode moves onto the node as ThisNodeHasError (note_error_node())
@@ -1181,6 +1184,9 @@ static Span span_from_token(Parser* me) {
     if (my shared->in_jsdoc && my shared->jsdoc_end && my pos >= my shared->jsdoc_end) {
         return span_make(my shared->source, my pos, my pos);
     }
+    // (A `>` is one character unless an expression's binary operator was rescanned there: `Array<new>>`'s '('
+    // expected, not `let y = a + b >>= 1`'s ',')
+    if (*my pos == '>' && my shared->greater_rescanned != my pos) return span_make(my shared->source, my pos, my pos + 1);
     Parser p = parser(me);
     Anchor a = anchor(&p);
     hop_token(&p);
@@ -3194,6 +3200,8 @@ static bool parse_generic_params(Parser* parent, bool fail_on_error, VecSpannedT
     char const* close = p.pos;
     if (!expect_char(&p, '>')) {
         if (fail_on_error) { goto fail; }
+        // (Without its `>` the list, and the type it is part of, ends with its last token, not the trivia after it)
+        unhop_trivia(&p);
     }
 
     // (tsc's checkGrammarTypeArguments: from the `<` over the token after the list, `>` or not)
@@ -8036,7 +8044,8 @@ static bool parse_function_args_inner(
         }
     } else if (is_definitely_function) {
         expected_token_error(&p, "(");
-        //goto drop_and_fail;
+        // (Likewise without its `(`: the signature ends with what it took, `set<K extends Object this>`'s TS7010)
+        unhop_trivia(&p);
     } else {
         goto drop_and_fail;
     }
@@ -11721,6 +11730,7 @@ static inline bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left
     bool hit_newline = p.whitespace == WHITESPACE_NEWLINE;
     // Where most expressions end: no branch below starts with these
     char c = *p.pos;
+    if (c == '>') p.shared->greater_rescanned = p.pos;
     switch (c) {
         case ';': case ',': case ')': case ']': case '}': case ':': case '\0': return parse_fail(&p);
         default: break;

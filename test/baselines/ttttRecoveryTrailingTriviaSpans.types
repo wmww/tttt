@@ -1,0 +1,60 @@
+//// [test/cases/ttttRecoveryTrailingTriviaSpans.ts] ////
+
+=== ttttRecoveryTrailingTriviaSpans.ts ===
+// Under recovery a node ends with its last token, not the trivia after it: a method signature missing its `(` (TS7010),
+// a type argument list missing its `>` (TS2314 over the reference, a trailing comma included, never a later `=>`'s
+// `>`); and a `>` in a type is one token of its own (tsc's scanner rescans `>>`, `>=` only after an expression's
+// operand). Seeds 20261114/20261115: inferenceErasedSignatures extends-object, awaitedTypeJQuery delete-stmt,
+// infiniteConstraints drop-prop
+interface I {
+    set<K extends Object this>(k: K): void;
+>set : <K extends Object>() => any
+>this>(k : boolean
+>this : typeof globalThis
+>(k : any
+>k : any
+>K : any
+>void : undefined
+> : any
+}
+interface P<A, B, C> { }
+declare function f(
+>f : (a: (t: number) => P<number, b>) => any
+
+    a: (t: number) => P<number,
+>a : (t: number) => P<number, b>
+>t : number
+
+    b: (t: string) => void): void;
+>(t: string) => void : (t: string) => undefined
+>t : string
+>void : undefined
+> : any
+>void : undefined
+> : any
+
+declare function g(a: P<number, string,
+>g : (a: P<number, string, c>, number: any) => void
+>a : P<number, string, c>
+
+    c: number): void;
+>number : any
+
+type A = Array<Array<new>>;
+>A : A
+
+type B = Array<new>= 1;
+>B : B
+>1 : 1
+
+let x = 1;
+>x : number
+>1 : 1
+
+let y = x + 1 >>= 1;
+>y : number
+>x + 1 : number
+>x : number
+>1 : 1
+>1 : 1
+

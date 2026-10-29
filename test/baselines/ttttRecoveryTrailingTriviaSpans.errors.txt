@@ -1,0 +1,101 @@
+ttttRecoveryTrailingTriviaSpans.ts(7,5): error TS7010: 'set', which lacks return-type annotation, implicitly has an 'any' return type.
+ttttRecoveryTrailingTriviaSpans.ts(7,26): error TS1005: ',' expected.
+ttttRecoveryTrailingTriviaSpans.ts(7,32): error TS2304: Cannot find name 'k'.
+ttttRecoveryTrailingTriviaSpans.ts(7,33): error TS1005: ')' expected.
+ttttRecoveryTrailingTriviaSpans.ts(7,35): error TS1434: Unexpected keyword or identifier.
+ttttRecoveryTrailingTriviaSpans.ts(7,35): error TS2304: Cannot find name 'K'.
+ttttRecoveryTrailingTriviaSpans.ts(7,36): error TS1128: Declaration or statement expected.
+ttttRecoveryTrailingTriviaSpans.ts(7,37): error TS1128: Declaration or statement expected.
+ttttRecoveryTrailingTriviaSpans.ts(7,43): error TS1109: Expression expected.
+ttttRecoveryTrailingTriviaSpans.ts(8,1): error TS1128: Declaration or statement expected.
+ttttRecoveryTrailingTriviaSpans.ts(10,18): error TS7010: 'f', which lacks return-type annotation, implicitly has an 'any' return type.
+ttttRecoveryTrailingTriviaSpans.ts(11,23): error TS2314: Generic type 'P<A, B, C>' requires 3 type argument(s).
+ttttRecoveryTrailingTriviaSpans.ts(12,5): error TS2552: Cannot find name 'b'. Did you mean 'B'?
+ttttRecoveryTrailingTriviaSpans.ts(12,6): error TS1005: '>' expected.
+ttttRecoveryTrailingTriviaSpans.ts(12,8): error TS1138: Parameter declaration expected.
+ttttRecoveryTrailingTriviaSpans.ts(12,27): error TS1109: Expression expected.
+ttttRecoveryTrailingTriviaSpans.ts(12,28): error TS1128: Declaration or statement expected.
+ttttRecoveryTrailingTriviaSpans.ts(12,34): error TS1109: Expression expected.
+ttttRecoveryTrailingTriviaSpans.ts(14,5): error TS2304: Cannot find name 'c'.
+ttttRecoveryTrailingTriviaSpans.ts(14,6): error TS1005: '>' expected.
+ttttRecoveryTrailingTriviaSpans.ts(14,8): error TS7006: Parameter 'number' implicitly has an 'any' type.
+ttttRecoveryTrailingTriviaSpans.ts(15,25): error TS1005: '(' expected.
+ttttRecoveryTrailingTriviaSpans.ts(16,19): error TS1005: '(' expected.
+ttttRecoveryTrailingTriviaSpans.ts(16,20): error TS1005: ';' expected.
+ttttRecoveryTrailingTriviaSpans.ts(18,15): error TS1005: ',' expected.
+ttttRecoveryTrailingTriviaSpans.ts(18,19): error TS1134: Variable declaration expected.
+
+
+==== ttttRecoveryTrailingTriviaSpans.ts (26 errors) ====
+    // Under recovery a node ends with its last token, not the trivia after it: a method signature missing its `(` (TS7010),
+    // a type argument list missing its `>` (TS2314 over the reference, a trailing comma included, never a later `=>`'s
+    // `>`); and a `>` in a type is one token of its own (tsc's scanner rescans `>>`, `>=` only after an expression's
+    // operand). Seeds 20261114/20261115: inferenceErasedSignatures extends-object, awaitedTypeJQuery delete-stmt,
+    // infiniteConstraints drop-prop
+    interface I {
+        set<K extends Object this>(k: K): void;
+        ~~~~~~~~~~~~~~~~~~~~
+!!! error TS7010: 'set', which lacks return-type annotation, implicitly has an 'any' return type.
+                             ~~~~
+!!! error TS1005: ',' expected.
+                                   ~
+!!! error TS2304: Cannot find name 'k'.
+                                    ~
+!!! error TS1005: ')' expected.
+                                      ~
+!!! error TS1434: Unexpected keyword or identifier.
+                                      ~
+!!! error TS2304: Cannot find name 'K'.
+                                       ~
+!!! error TS1128: Declaration or statement expected.
+                                        ~
+!!! error TS1128: Declaration or statement expected.
+                                              ~
+!!! error TS1109: Expression expected.
+    }
+    ~
+!!! error TS1128: Declaration or statement expected.
+    interface P<A, B, C> { }
+    declare function f(
+                     ~
+!!! error TS7010: 'f', which lacks return-type annotation, implicitly has an 'any' return type.
+        a: (t: number) => P<number,
+                          ~~~~~~~~~
+        b: (t: string) => void): void;
+    ~~~~~
+!!! error TS2314: Generic type 'P<A, B, C>' requires 3 type argument(s).
+        ~
+!!! error TS2552: Cannot find name 'b'. Did you mean 'B'?
+         ~
+!!! error TS1005: '>' expected.
+           ~
+!!! error TS1138: Parameter declaration expected.
+                              ~
+!!! error TS1109: Expression expected.
+                               ~
+!!! error TS1128: Declaration or statement expected.
+                                     ~
+!!! error TS1109: Expression expected.
+    declare function g(a: P<number, string,
+        c: number): void;
+        ~
+!!! error TS2304: Cannot find name 'c'.
+         ~
+!!! error TS1005: '>' expected.
+           ~~~~~~
+!!! error TS7006: Parameter 'number' implicitly has an 'any' type.
+    type A = Array<Array<new>>;
+                            ~
+!!! error TS1005: '(' expected.
+    type B = Array<new>= 1;
+                      ~
+!!! error TS1005: '(' expected.
+                       ~
+!!! error TS1005: ';' expected.
+    let x = 1;
+    let y = x + 1 >>= 1;
+                  ~~~
+!!! error TS1005: ',' expected.
+                      ~
+!!! error TS1134: Variable declaration expected.
+    

@@ -592,16 +592,30 @@ static bool declared_type_params(Symbol const* symbol, u32* min, MergedTypeParam
     return true;
 }
 
+// Where a type argument list whose last argument ends at `last_end` ends: after its `>`, which only trivia may
+// separate from that argument; without it (recovery: `P<number,\n b: (t: string) => void`) at the argument, tsc's
+// node end at the last token it took, not some later `>`
+static char const* type_args_end(SourceFile const* file, char const* last_end) {
+    char const* limit = cstr_str(&file->contents) + cstr_size(&file->contents);
+    char const* q = last_end;
+    while (q < limit && *q != '>' && *q != ',') q++;
+    if (q < limit && !span_only_trivia_between(last_end, q, false)) return last_end;
+    if (q < limit && *q == ',') {
+        // (A trailing comma is the list's last token when the `>` is missing)
+        char const* comma = q++;
+        while (q < limit && *q != '>') q++;
+        return q < limit && span_only_trivia_between(comma + 1, q, false) ? q + 1 : comma + 1;
+    }
+    return q < limit ? q + 1 : last_end;
+}
+
 Span identifier_type_span(IdentifierType const* me) {
     if (my keyword || identifier_type_import_ref(me) || !span_valid(my name) || !span_source(my name)) return my name;
     char const* start = span_start_ptr(!identifier_type_namespace_count(me) ? my name : *ast_spans_front(&my rare->namespaces));
     char const* end = span_end_ptr(my name);
     u32 arg_count = (u32)vec_spanned_type_size(&my generic_params);
     if (arg_count) {
-        char const* limit = cstr_str(&span_source(my name)->contents) + cstr_size(&span_source(my name)->contents);
-        end = span_end_ptr(vec_spanned_type_at(&my generic_params, arg_count - 1)->span);
-        while (end < limit && *end != '>') end++;
-        if (end < limit) end++;
+        end = type_args_end(span_source(my name), span_end_ptr(vec_spanned_type_at(&my generic_params, arg_count - 1)->span));
     } else {
         // An empty `<>` (TS1099) is still part of the reference
         char const* limit = cstr_str(&span_source(my name)->contents) + cstr_size(&span_source(my name)->contents);
@@ -647,10 +661,7 @@ static void identifier_type_check_arity(IdentifierType const* me, bool resolved_
         Span import_span = identifier_type_import_span(me);
         if (!span_valid(import_span) || !arg_count) return;
         SourceFile const* file = span_source(import_span);
-        char const* limit = cstr_str(&file->contents) + cstr_size(&file->contents);
-        char const* end = span_end_ptr(vec_spanned_type_at(&my generic_params, arg_count - 1)->span);
-        while (end < limit && *end != '>') end++;
-        if (end < limit) end++;
+        char const* end = type_args_end(file, span_end_ptr(vec_spanned_type_at(&my generic_params, arg_count - 1)->span));
         span = span_make(file, span_start_ptr(import_span), end);
     }
     if (jsdoc_named) {

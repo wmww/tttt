@@ -1,0 +1,62 @@
+//// [test/cases/ttttRecoveryTrailingTriviaSpans.ts] ////
+
+=== ttttRecoveryTrailingTriviaSpans.ts ===
+// Under recovery a node ends with its last token, not the trivia after it: a method signature missing its `(` (TS7010),
+// a type argument list missing its `>` (TS2314 over the reference, a trailing comma included, never a later `=>`'s
+// `>`); and a `>` in a type is one token of its own (tsc's scanner rescans `>>`, `>=` only after an expression's
+// operand). Seeds 20261114/20261115: inferenceErasedSignatures extends-object, awaitedTypeJQuery delete-stmt,
+// infiniteConstraints drop-prop
+interface I {
+>I : Symbol(I, Decl(ttttRecoveryTrailingTriviaSpans.ts, 0, 0))
+
+    set<K extends Object this>(k: K): void;
+>set : Symbol(I.set, Decl(ttttRecoveryTrailingTriviaSpans.ts, 5, 13))
+>K : Symbol(K, Decl(ttttRecoveryTrailingTriviaSpans.ts, 6, 8))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>this : Symbol(globalThis)
+}
+interface P<A, B, C> { }
+>P : Symbol(P, Decl(ttttRecoveryTrailingTriviaSpans.ts, 7, 1))
+>A : Symbol(A, Decl(ttttRecoveryTrailingTriviaSpans.ts, 8, 12))
+>B : Symbol(B, Decl(ttttRecoveryTrailingTriviaSpans.ts, 8, 14))
+>C : Symbol(C, Decl(ttttRecoveryTrailingTriviaSpans.ts, 8, 17))
+
+declare function f(
+>f : Symbol(f, Decl(ttttRecoveryTrailingTriviaSpans.ts, 8, 24))
+
+    a: (t: number) => P<number,
+>a : Symbol(a, Decl(ttttRecoveryTrailingTriviaSpans.ts, 9, 19))
+>t : Symbol(t, Decl(ttttRecoveryTrailingTriviaSpans.ts, 10, 8))
+>P : Symbol(P, Decl(ttttRecoveryTrailingTriviaSpans.ts, 7, 1))
+
+    b: (t: string) => void): void;
+>b : Symbol(b)
+>t : Symbol(t, Decl(ttttRecoveryTrailingTriviaSpans.ts, 11, 8))
+
+declare function g(a: P<number, string,
+>g : Symbol(g, Decl(ttttRecoveryTrailingTriviaSpans.ts, 11, 34))
+>a : Symbol(a, Decl(ttttRecoveryTrailingTriviaSpans.ts, 12, 19))
+>P : Symbol(P, Decl(ttttRecoveryTrailingTriviaSpans.ts, 7, 1))
+
+    c: number): void;
+>c : Symbol(c)
+>number : Symbol(number, Decl(ttttRecoveryTrailingTriviaSpans.ts, 13, 6))
+
+type A = Array<Array<new>>;
+>A : Symbol(A, Decl(ttttRecoveryTrailingTriviaSpans.ts, 13, 21))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+> : Symbol(unknown)
+
+type B = Array<new>= 1;
+>B : Symbol(B, Decl(ttttRecoveryTrailingTriviaSpans.ts, 14, 27))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+> : Symbol(unknown)
+
+let x = 1;
+>x : Symbol(x, Decl(ttttRecoveryTrailingTriviaSpans.ts, 16, 3))
+
+let y = x + 1 >>= 1;
+>y : Symbol(y, Decl(ttttRecoveryTrailingTriviaSpans.ts, 17, 3))
+>x : Symbol(x, Decl(ttttRecoveryTrailingTriviaSpans.ts, 16, 3))
+
