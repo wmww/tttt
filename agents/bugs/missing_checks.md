@@ -611,7 +611,12 @@ importDeclWithExportModifierInAmbientContext (TS2708 from tsgo's emit resolver [
 Not looked at:
 - mixinPrivateAndProtected delete-stmt: missing TS2339 on `never` with the "reduced to never because property 'pvt'
   exists in multiple constituents and is private in some" elaboration (a mixin intersection). [open]
-- genericMappedTypeAsClause delete-stmt: spurious TS2300 "Duplicate identifier 'const'" twice after recovery. [open]
+- genericMappedTypeAsClause delete-stmt: spurious TS2300 "Duplicate identifier 'const'" twice: a mapped type's `}` gone,
+  `const foo1: ...; const foo2: ...` are its extra members (TS7061 recovery), which tsc's checkMappedType never visits;
+  type.c's TYPE_INTERFACE check runs ty_check_object_type_duplicate_members on them. Skipping it when the first member
+  is mapped fixes the errors, but the symbols baseline then wants the two `const` properties merged into one symbol
+  (PropertyExcludes is none), which the test traversal takes from the owner's props (none for a mapped type): left.
+  [open]
 - conditionalTypeContextualTypeSimplificationsSuceeds extends-object (TS2464 -> TS7031), objectRestBindingContextualInference
   delete-stmt (missing TS7006 '(Missing)' and TS2554), distributiveConditionalBaseConstraint drop-optional (TS2344
   elaboration), parseInvalidNames num-to-str (missing TS1005), exportSpecifierAndLocalMemberDeclaration str-to-num
@@ -619,7 +624,7 @@ Not looked at:
 - duplicateIdentifierChecks num-to-str: `set x(v: number) {}, x() {}, get x() { return "0" }` in an object literal: the
   method's conflict makes the table's symbol both accessors, so `get x` is a symbol of its own without the setter's
   annotation as return type; tttt's name-lookup paired them (spurious TS2322). literal_symbol_getter (expr.c) pairs by
-  the binder's symbols now. Test ttttLiteralAccessorConflictPair. [fixed PENDING]
+  the binder's symbols now. Test ttttLiteralAccessorConflictPair. [fixed f50a35ffb]
 
 ## Mutation seed 20261112 (2026-10-29, cor11: `scripts/mutate.py -n 8000 --seed 20261112`, 5 of 8000 differ; `--syntax` 19)
 Known: noCircularitySelfReferentialGetter2 (text TS2345), recursiveClassBaseType (TS2310, the base cycle design),
