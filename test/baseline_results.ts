@@ -11,9 +11,9 @@ const baselines = {
         types: false,
     },
     'bun01-C11': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun01-C12a': {
         errors: true,
@@ -46,7 +46,7 @@ const baselines = {
         types: true,
     },
     'bun01-C2b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -86,9 +86,9 @@ const baselines = {
         types: true,
     },
     'bun01-C6b': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun01-C6c': {
         errors: false,
@@ -326,7 +326,7 @@ const baselines = {
         types: true,
     },
     'bun03-C11b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -896,7 +896,7 @@ const baselines = {
         types: true,
     },
     'bun06-C16': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -2466,7 +2466,7 @@ const baselines = {
         types: true,
     },
     'bun15-C3b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -2656,14 +2656,14 @@ const baselines = {
         types: true,
     },
     'bun16-C5a': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun16-C5b': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun16-C6': {
         errors: false,
@@ -3651,9 +3651,9 @@ const baselines = {
         types: false,
     },
     'bun22-C9': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun22-P1': {
         errors: true,
@@ -4276,9 +4276,9 @@ const baselines = {
         types: false,
     },
     'bun25-P2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun25-P3': {
         errors: true,
@@ -4521,7 +4521,7 @@ const baselines = {
         types: true,
     },
     'bun27-C3a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -4546,9 +4546,9 @@ const baselines = {
         types: false,
     },
     'bun27-C5': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun27-C6': {
         errors: true,
@@ -4611,7 +4611,7 @@ const baselines = {
         types: true,
     },
     'bun27-P7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -5541,9 +5541,9 @@ const baselines = {
         types: true,
     },
     'bun30-C3': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun30-C4': {
         errors: true,
@@ -6161,9 +6161,9 @@ const baselines = {
         types: true,
     },
     'bun33-C11a': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun33-C11b': {
         errors: true,
@@ -6546,7 +6546,7 @@ const baselines = {
         types: true,
     },
     'bun34-C14b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -6561,7 +6561,7 @@ const baselines = {
         types: true,
     },
     'bun34-C16': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -6596,7 +6596,7 @@ const baselines = {
         types: true,
     },
     'bun34-C2b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8602,7 +8602,7 @@ const baselines = {
     },
     'bun54-L02a': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'bun54-L02b': {
@@ -8696,9 +8696,9 @@ const baselines = {
         types: false,
     },
     'bun55-L08': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun55-L12a': {
         errors: true,
@@ -8971,9 +8971,9 @@ const baselines = {
         types: true,
     },
     'bun58-L17': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun58-L20a': {
         errors: true,
@@ -12344,6 +12344,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAssignTargetParenDiscriminant': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAssignedThroughNonNullReadType': {
         errors: true,
         symbols: true,
@@ -12598,6 +12603,11 @@ const baselines = {
         types: true,
     },
     'ttttBodilessPatternInitializerChecked': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttBodilessRenamingComputedName': {
         errors: true,
         symbols: true,
         types: true,
@@ -13746,6 +13756,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDecoratedBodilessAccessor': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDecoratedClassExpressionModifiers': {
         errors: true,
         symbols: true,
@@ -14056,6 +14071,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttEmptyNamespaceObjectFacts': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttEmptySpreadContainsSpread': {
         errors: true,
         symbols: true,
@@ -14172,6 +14192,11 @@ const baselines = {
         types: true,
     },
     'ttttExpandoFunctionTypeNamespace': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttExpandoInDecorator': {
         errors: true,
         symbols: true,
         types: true,
@@ -14392,6 +14417,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttGenericInterfaceAccessorThis': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttGenericMappedComputedMemberContext': {
         errors: true,
         symbols: true,
@@ -14534,6 +14564,11 @@ const baselines = {
         types: true,
     },
     'ttttIifeInInferredArgumentContext': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttIifeThisParameterIndex': {
         errors: true,
         symbols: true,
         types: true,
@@ -14708,6 +14743,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttInferClassStaticClosely': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttInferDeferredArrayAliasesByNode': {
         errors: true,
         symbols: true,
@@ -14801,6 +14841,11 @@ const baselines = {
         types: true,
     },
     'ttttInstanceofNoLib': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttInstantiationExprInterfaceMember': {
         errors: true,
         symbols: true,
         types: true,
@@ -15300,6 +15345,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttJsxAnyTagAttributesContext': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttJsxAttributeGenericCallInference': {
         errors: true,
         symbols: true,
@@ -15341,6 +15391,16 @@ const baselines = {
         types: true,
     },
     'ttttJsxFactoryImportedAsType(jsx=react)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttJsxFactoryUsedBeforeDeclaration': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttJsxFragmentFactoryUsedBeforeDeclaration': {
         errors: true,
         symbols: true,
         types: true,
@@ -15864,6 +15924,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttNamespaceExportSpecifierInScope': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttNamespaceExportSpecifierSelf': {
         errors: true,
         symbols: true,
@@ -15986,6 +16051,11 @@ const baselines = {
         types: true,
     },
     'ttttNeverReductionTypeVariableHasNeverType': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttNewNonVoidFailedCall': {
         errors: true,
         symbols: true,
         types: true,
@@ -16207,9 +16277,9 @@ const baselines = {
         types: true,
     },
     'ttttOverloadGetterContextSensitive': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ttttOverloadInitializerChecked': {
         errors: true,
@@ -17297,6 +17367,11 @@ const baselines = {
         types: true,
     },
     'ttttUnconstrainedSourcePushesSourceOnly': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUndeclaredModuleAugmentation': {
         errors: true,
         symbols: true,
         types: true,
