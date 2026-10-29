@@ -1,0 +1,62 @@
+ttttParameterModifierThenReservedWord.ts(5,20): error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+ttttParameterModifierThenReservedWord.ts(5,26): error TS2300: Duplicate identifier '(Missing)'.
+ttttParameterModifierThenReservedWord.ts(5,27): error TS1359: Identifier expected. 'const' is a reserved word that cannot be used here.
+ttttParameterModifierThenReservedWord.ts(5,27): error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+ttttParameterModifierThenReservedWord.ts(5,33): error TS1005: ',' expected.
+ttttParameterModifierThenReservedWord.ts(5,33): error TS7006: Parameter 'a' implicitly has an 'any' type.
+ttttParameterModifierThenReservedWord.ts(6,20): error TS2369: A parameter property is only allowed in a constructor implementation.
+ttttParameterModifierThenReservedWord.ts(6,20): error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+ttttParameterModifierThenReservedWord.ts(6,26): error TS2300: Duplicate identifier '(Missing)'.
+ttttParameterModifierThenReservedWord.ts(6,27): error TS1359: Identifier expected. 'const' is a reserved word that cannot be used here.
+ttttParameterModifierThenReservedWord.ts(6,27): error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+ttttParameterModifierThenReservedWord.ts(6,33): error TS1005: ',' expected.
+ttttParameterModifierThenReservedWord.ts(6,33): error TS7006: Parameter 'b' implicitly has an 'any' type.
+ttttParameterModifierThenReservedWord.ts(7,20): error TS1359: Identifier expected. 'const' is a reserved word that cannot be used here.
+ttttParameterModifierThenReservedWord.ts(7,20): error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+ttttParameterModifierThenReservedWord.ts(7,26): error TS1005: ',' expected.
+ttttParameterModifierThenReservedWord.ts(7,26): error TS7006: Parameter 'c' implicitly has an 'any' type.
+
+
+==== ttttParameterModifierThenReservedWord.ts (17 errors) ====
+    // A parameter's modifiers followed by a reserved word (`export const a`): the word is the name tsc's
+    // parseBindingIdentifier rejects (TS1359), left for the list, which makes it a parameter of its own, missing its name
+    // too (TS2300 for the two '(Missing)'). Only a parameter without modifiers skips a modifier word as its missing name
+    // (parseNameOfParameter's `!some(modifiers)`). Seed 20261116 --syntax, contextualTypingGenericFunction2 delete-stmt
+    declare function f(export const a): void;
+                       ~~~~~~
+!!! error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+                             
+!!! error TS2300: Duplicate identifier '(Missing)'.
+                              ~~~~~
+!!! error TS1359: Identifier expected. 'const' is a reserved word that cannot be used here.
+                              ~~~~~
+!!! error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+                                    ~
+!!! error TS1005: ',' expected.
+                                    ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+    declare function g(public const b): void;
+                       ~~~~~~
+!!! error TS2369: A parameter property is only allowed in a constructor implementation.
+                       ~~~~~~
+!!! error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+                             
+!!! error TS2300: Duplicate identifier '(Missing)'.
+                              ~~~~~
+!!! error TS1359: Identifier expected. 'const' is a reserved word that cannot be used here.
+                              ~~~~~
+!!! error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+                                    ~
+!!! error TS1005: ',' expected.
+                                    ~
+!!! error TS7006: Parameter 'b' implicitly has an 'any' type.
+    declare function h(const c): void;
+                       ~~~~~
+!!! error TS1359: Identifier expected. 'const' is a reserved word that cannot be used here.
+                       ~~~~~
+!!! error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+                             ~
+!!! error TS1005: ',' expected.
+                             ~
+!!! error TS7006: Parameter 'c' implicitly has an 'any' type.
+    

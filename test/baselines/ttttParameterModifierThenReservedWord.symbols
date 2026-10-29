@@ -1,0 +1,24 @@
+//// [test/cases/ttttParameterModifierThenReservedWord.ts] ////
+
+=== ttttParameterModifierThenReservedWord.ts ===
+// A parameter's modifiers followed by a reserved word (`export const a`): the word is the name tsc's
+// parseBindingIdentifier rejects (TS1359), left for the list, which makes it a parameter of its own, missing its name
+// too (TS2300 for the two '(Missing)'). Only a parameter without modifiers skips a modifier word as its missing name
+// (parseNameOfParameter's `!some(modifiers)`). Seed 20261116 --syntax, contextualTypingGenericFunction2 delete-stmt
+declare function f(export const a): void;
+>f : Symbol(f, Decl(ttttParameterModifierThenReservedWord.ts, 0, 0))
+> : Symbol((Missing), Decl(ttttParameterModifierThenReservedWord.ts, 4, 19))
+> : Symbol((Missing), Decl(ttttParameterModifierThenReservedWord.ts, 4, 25))
+>a : Symbol(a, Decl(ttttParameterModifierThenReservedWord.ts, 4, 31))
+
+declare function g(public const b): void;
+>g : Symbol(g, Decl(ttttParameterModifierThenReservedWord.ts, 4, 41))
+> : Symbol((Missing), Decl(ttttParameterModifierThenReservedWord.ts, 5, 19))
+> : Symbol((Missing), Decl(ttttParameterModifierThenReservedWord.ts, 5, 25))
+>b : Symbol(b, Decl(ttttParameterModifierThenReservedWord.ts, 5, 31))
+
+declare function h(const c): void;
+>h : Symbol(h, Decl(ttttParameterModifierThenReservedWord.ts, 5, 41))
+> : Symbol((Missing), Decl(ttttParameterModifierThenReservedWord.ts, 6, 19))
+>c : Symbol(c, Decl(ttttParameterModifierThenReservedWord.ts, 6, 24))
+

@@ -7933,7 +7933,9 @@ static bool parse_function_args_inner(
                     // (The missing name is at the parameter's full start, TS2300 '(Missing)' there)
                     if (at_start) initializer.binding.content_span = span_make(p.shared->source, param_full_start, param_full_start);
                     initializer.binding.tag = BINDING_IDENTIFIER;
-                    if (tok_is(word, "default") || tok_is(word, "export") || tok_is(word, "const") || tok_is(word, "in")) {
+                    // (Only without modifiers: tsc's parseNameOfParameter, `!some(modifiers)`; `export const a` is
+                    // `export` missing its name, then a parameter `const` missing its)
+                    if (at_start && (tok_is(word, "default") || tok_is(word, "export") || tok_is(word, "const") || tok_is(word, "in"))) {
                         p.pos = word.end;
                     }
                 } else if (rest && tok_is_word(tok_peek(&p)) && *p.pos != '#' &&
