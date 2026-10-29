@@ -1681,6 +1681,8 @@ static Symbol* jsx_reference_factory(JsxElement const* el, bool fragment, csview
         // (resolveName's checks of what it found run only with a not-found message, which is jsx: react's; a type-only
         // one only at an expression: a tag name, not a fragment nor `a:b`)
         if (jsx == JSX_REACT) check_umd_global_symbol_use(found, at, names, errs);
+        // (and checkResolvedBlockScopedVariable: `const React = ...` after the element, TS2448 at its tag)
+        if (jsx == JSX_REACT) check_symbol_declared_before_use(found, at, names, false, errs);
         if (jsx == JSX_REACT && !fragment && el->tag_name.inner_span.size && !el->namespaced) {
             check_type_only_value_at(found, at, name, names, errs);
         }
@@ -1730,6 +1732,9 @@ static void jsx_lookup_factory(Expr* expr, Scope* names, ErrorCtx* errs) {
         if (!el->factory_value) {
             error_ctx_error_d(errs, el->opening_span, 2879, "Using JSX fragments requires fragment factory '", name,
                 "' to be in scope, but it could not be found.");
+        } else if (options->jsx != JSX_REACT) {
+            // (Found with a not-found message, so checked as a use: jsx: react's element lookup did that already)
+            check_symbol_declared_before_use(el->factory_value, el->opening_span, names, false, errs);
         }
     }
 }

@@ -1,0 +1,14 @@
+ttttJsxFragmentFactoryUsedBeforeDeclaration.tsx(4,11): error TS2448: Block-scoped variable 'Frag' used before its declaration.
+
+
+==== ttttJsxFragmentFactoryUsedBeforeDeclaration.tsx (1 errors) ====
+    // The fragment factory declared after the file's first fragment, under jsx: preserve with jsxFragmentFactory (bun case
+    // 27-P7): tsc's getJSXFragmentType resolves it once per file as a use
+    declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} }
+    const f = <></>;
+              ~~
+!!! error TS2448: Block-scoped variable 'Frag' used before its declaration.
+!!! related TS2728 ttttJsxFragmentFactoryUsedBeforeDeclaration.tsx:6:7: 'Frag' is declared here.
+    const g = <></>;
+    const Frag = (p: {}) => null! as JSX.Element;
+    

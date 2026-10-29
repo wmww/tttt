@@ -1,0 +1,24 @@
+//// [test/cases/ttttJsxFragmentFactoryUsedBeforeDeclaration.tsx] ////
+
+=== ttttJsxFragmentFactoryUsedBeforeDeclaration.tsx ===
+// The fragment factory declared after the file's first fragment, under jsx: preserve with jsxFragmentFactory (bun case
+// 27-P7): tsc's getJSXFragmentType resolves it once per file as a use
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} }
+>e : 1
+
+const f = <></>;
+>f : JSX.Element
+><></> : JSX.Element
+
+const g = <></>;
+>g : JSX.Element
+><></> : JSX.Element
+
+const Frag = (p: {}) => null! as JSX.Element;
+>Frag : (p: {}) => JSX.Element
+>(p: {}) => null! as JSX.Element : (p: {}) => JSX.Element
+>p : {}
+>null! as JSX.Element : JSX.Element
+>null! : never
+>JSX : any
+

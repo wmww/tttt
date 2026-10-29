@@ -1,0 +1,34 @@
+//// [test/cases/ttttJsxFactoryUsedBeforeDeclaration.tsx] ////
+
+=== ttttJsxFactoryUsedBeforeDeclaration.tsx ===
+// The JSX factory declared after an element that uses it is used before its declaration (bun cases 01-C2b, 27-P7):
+// tsc resolves it at the element's tag with the not-found message of jsx: react, which checks block-scoped uses
+export {};
+declare global { namespace JSX { interface IntrinsicElements { div: any } interface Element {} } }
+>global : Symbol(global, Decl(ttttJsxFactoryUsedBeforeDeclaration.tsx, 2, 10))
+>JSX : Symbol(JSX, Decl(ttttJsxFactoryUsedBeforeDeclaration.tsx, 3, 16))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(ttttJsxFactoryUsedBeforeDeclaration.tsx, 3, 32))
+>div : Symbol(IntrinsicElements.div, Decl(ttttJsxFactoryUsedBeforeDeclaration.tsx, 3, 62))
+>Element : Symbol(Element, Decl(ttttJsxFactoryUsedBeforeDeclaration.tsx, 3, 73))
+
+const x1 = <div />;
+>x1 : Symbol(x1, Decl(ttttJsxFactoryUsedBeforeDeclaration.tsx, 4, 5))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(ttttJsxFactoryUsedBeforeDeclaration.tsx, 3, 62))
+
+const x2 = <></>;
+>x2 : Symbol(x2, Decl(ttttJsxFactoryUsedBeforeDeclaration.tsx, 5, 5))
+
+function later() { return <div />; }
+>later : Symbol(later, Decl(ttttJsxFactoryUsedBeforeDeclaration.tsx, 5, 17))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(ttttJsxFactoryUsedBeforeDeclaration.tsx, 3, 62))
+
+const React = { createElement(...a: any[]): any {}, Fragment: 1 };
+>React : Symbol(React, Decl(ttttJsxFactoryUsedBeforeDeclaration.tsx, 7, 5))
+>createElement : Symbol(createElement, Decl(ttttJsxFactoryUsedBeforeDeclaration.tsx, 7, 15))
+>a : Symbol(a, Decl(ttttJsxFactoryUsedBeforeDeclaration.tsx, 7, 30))
+>Fragment : Symbol(Fragment, Decl(ttttJsxFactoryUsedBeforeDeclaration.tsx, 7, 51))
+
+const x3 = <div />;
+>x3 : Symbol(x3, Decl(ttttJsxFactoryUsedBeforeDeclaration.tsx, 8, 5))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(ttttJsxFactoryUsedBeforeDeclaration.tsx, 3, 62))
+

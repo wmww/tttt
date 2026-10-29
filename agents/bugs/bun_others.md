@@ -149,7 +149,7 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   an ExpressionWithTypeArguments (instantiation expression or heritage clause) naming an interface; tttt had only the
   head identifier's case. PropertyExpr.extends_interface (the walk), expr_property_access_errors() reports it; the
   symbols baseline resolves such an entity name like a heritage clause's when the checker couldn't access it. Test
-  ttttInstantiationExprInterfaceMember. [fixed NEXT]
+  ttttInstantiationExprInterfaceMember. [fixed 8446fde30]
 - Modules: 39-C4a and 39-C4b (`typeof import("./b/b")` default of an .mts under a `type: module` package: TS2339
   missing and spurious), 75-R02 (`default` of `typeof N` namespaces re-exported, spurious TS2339), 87-R08, 94-R04a,
   27-P4b (JSX intrinsic `div` with a module-scoped JSX namespace: TS2339 spurious, TS7026 missing). [open]
@@ -244,7 +244,12 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   only. Diagnostics produced during flow analysis are the mechanism: a design question. [design]
 - -TS2448: two mechanisms, the JSX factory (`React`, `Frag`) declared after the element that uses it (tsc resolves
   the factory at the element as a use: 01-C2b, 15-C3b, 27-C3a, 27-P7, 34-C2b) and `const arguments = 1` in a
-  function body (tsc's reference to the implicit `arguments`: 25-C17c, 33-P4g, 51-L01, 51-L05, 77-R12b). [open]
+  function body (tsc's reference to the implicit `arguments`: 25-C17c, 33-P4g, 51-L01, 51-L05, 77-R12b). The JSX
+  half: markJsxAliasReferenced's resolveName has a not-found message under jsx: react, so checkResolvedBlockScopedVariable
+  runs at the tag (the fragment), and getJSXFragmentType's, once per file, whenever jsxFragmentFactory is set;
+  jsx_reference_factory() and jsx_lookup_factory() now check the found factory as a use. Tests
+  ttttJsxFactoryUsedBeforeDeclaration, ttttJsxFragmentFactoryUsedBeforeDeclaration [fixed NEXT]. The `arguments`
+  half [open].
 - 83-R01c (+TS2304 33): the for-initializer DisallowIn leak, missing_checks.md (ttttForInitializerDisallowInLeak). [dup]
 
 - 56-L15, 28-C11b: TS1358 for every tagged template whose tag is in an optional chain, not only right after `?.`.
