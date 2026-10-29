@@ -2,60 +2,61 @@
 
 === ttttRecursiveGetterDeferredConditional.ts ===
 // A conditional type met while a getter's inferred return type is in flight (the variable it returns from circular):
-// tsgo resolves `Out<Box<Box<any>>>` to unknown (`o` is optional), tttt leaves it deferred and never relates it. Known
-// failing (seed 20261119, recursiveTypeInference2 add-optional: a spurious TS2769 on zod-like `.default([])`)
+// tsgo resolves `Out<Box<Box<any>>>` to unknown (`o` is optional): a missing or optional required property says false
+// without the getter's type (seed 20261119, recursiveTypeInference2 add-optional: a spurious TS2769 on zod-like
+// `.default([])`)
 type Out<T> = T extends { o: any } ? T["o"] : unknown;
 >Out : Symbol(Out, Decl(ttttRecursiveGetterDeferredConditional.ts, 0, 0))
->T : Symbol(T, Decl(ttttRecursiveGetterDeferredConditional.ts, 3, 9))
->T : Symbol(T, Decl(ttttRecursiveGetterDeferredConditional.ts, 3, 9))
->o : Symbol(o, Decl(ttttRecursiveGetterDeferredConditional.ts, 3, 25))
->T : Symbol(T, Decl(ttttRecursiveGetterDeferredConditional.ts, 3, 9))
+>T : Symbol(T, Decl(ttttRecursiveGetterDeferredConditional.ts, 4, 9))
+>T : Symbol(T, Decl(ttttRecursiveGetterDeferredConditional.ts, 4, 9))
+>o : Symbol(o, Decl(ttttRecursiveGetterDeferredConditional.ts, 4, 25))
+>T : Symbol(T, Decl(ttttRecursiveGetterDeferredConditional.ts, 4, 9))
 
 interface Box<T> { o?: T; get(): Out<this>; }
->Box : Symbol(Box, Decl(ttttRecursiveGetterDeferredConditional.ts, 3, 54))
->T : Symbol(T, Decl(ttttRecursiveGetterDeferredConditional.ts, 4, 14))
->o : Symbol(Box.o, Decl(ttttRecursiveGetterDeferredConditional.ts, 4, 18))
->T : Symbol(T, Decl(ttttRecursiveGetterDeferredConditional.ts, 4, 14))
->get : Symbol(Box.get, Decl(ttttRecursiveGetterDeferredConditional.ts, 4, 25))
+>Box : Symbol(Box, Decl(ttttRecursiveGetterDeferredConditional.ts, 4, 54))
+>T : Symbol(T, Decl(ttttRecursiveGetterDeferredConditional.ts, 5, 14))
+>o : Symbol(Box.o, Decl(ttttRecursiveGetterDeferredConditional.ts, 5, 18))
+>T : Symbol(T, Decl(ttttRecursiveGetterDeferredConditional.ts, 5, 14))
+>get : Symbol(Box.get, Decl(ttttRecursiveGetterDeferredConditional.ts, 5, 25))
 >Out : Symbol(Out, Decl(ttttRecursiveGetterDeferredConditional.ts, 0, 0))
 
 declare function box<T>(v: T): Box<T>;
->box : Symbol(box, Decl(ttttRecursiveGetterDeferredConditional.ts, 4, 45))
->T : Symbol(T, Decl(ttttRecursiveGetterDeferredConditional.ts, 5, 21))
->v : Symbol(v, Decl(ttttRecursiveGetterDeferredConditional.ts, 5, 24))
->T : Symbol(T, Decl(ttttRecursiveGetterDeferredConditional.ts, 5, 21))
->Box : Symbol(Box, Decl(ttttRecursiveGetterDeferredConditional.ts, 3, 54))
->T : Symbol(T, Decl(ttttRecursiveGetterDeferredConditional.ts, 5, 21))
+>box : Symbol(box, Decl(ttttRecursiveGetterDeferredConditional.ts, 5, 45))
+>T : Symbol(T, Decl(ttttRecursiveGetterDeferredConditional.ts, 6, 21))
+>v : Symbol(v, Decl(ttttRecursiveGetterDeferredConditional.ts, 6, 24))
+>T : Symbol(T, Decl(ttttRecursiveGetterDeferredConditional.ts, 6, 21))
+>Box : Symbol(Box, Decl(ttttRecursiveGetterDeferredConditional.ts, 4, 54))
+>T : Symbol(T, Decl(ttttRecursiveGetterDeferredConditional.ts, 6, 21))
 
 declare function obj<T>(shape: T): Box<T>;
->obj : Symbol(obj, Decl(ttttRecursiveGetterDeferredConditional.ts, 5, 38))
->T : Symbol(T, Decl(ttttRecursiveGetterDeferredConditional.ts, 6, 21))
->shape : Symbol(shape, Decl(ttttRecursiveGetterDeferredConditional.ts, 6, 24))
->T : Symbol(T, Decl(ttttRecursiveGetterDeferredConditional.ts, 6, 21))
->Box : Symbol(Box, Decl(ttttRecursiveGetterDeferredConditional.ts, 3, 54))
->T : Symbol(T, Decl(ttttRecursiveGetterDeferredConditional.ts, 6, 21))
+>obj : Symbol(obj, Decl(ttttRecursiveGetterDeferredConditional.ts, 6, 38))
+>T : Symbol(T, Decl(ttttRecursiveGetterDeferredConditional.ts, 7, 21))
+>shape : Symbol(shape, Decl(ttttRecursiveGetterDeferredConditional.ts, 7, 24))
+>T : Symbol(T, Decl(ttttRecursiveGetterDeferredConditional.ts, 7, 21))
+>Box : Symbol(Box, Decl(ttttRecursiveGetterDeferredConditional.ts, 4, 54))
+>T : Symbol(T, Decl(ttttRecursiveGetterDeferredConditional.ts, 7, 21))
 
 const Tree = obj({
->Tree : Symbol(Tree, Decl(ttttRecursiveGetterDeferredConditional.ts, 7, 5))
->obj : Symbol(obj, Decl(ttttRecursiveGetterDeferredConditional.ts, 5, 38))
+>Tree : Symbol(Tree, Decl(ttttRecursiveGetterDeferredConditional.ts, 8, 5))
+>obj : Symbol(obj, Decl(ttttRecursiveGetterDeferredConditional.ts, 6, 38))
 
   name: 1,
->name : Symbol(name, Decl(ttttRecursiveGetterDeferredConditional.ts, 7, 18))
+>name : Symbol(name, Decl(ttttRecursiveGetterDeferredConditional.ts, 8, 18))
 
   get children() {
->children : Symbol(children, Decl(ttttRecursiveGetterDeferredConditional.ts, 8, 10))
+>children : Symbol(children, Decl(ttttRecursiveGetterDeferredConditional.ts, 9, 10))
 
     return box(Tree).get();
->box(Tree).get : Symbol(Box.get, Decl(ttttRecursiveGetterDeferredConditional.ts, 4, 25))
->box : Symbol(box, Decl(ttttRecursiveGetterDeferredConditional.ts, 4, 45))
->Tree : Symbol(Tree, Decl(ttttRecursiveGetterDeferredConditional.ts, 7, 5))
->get : Symbol(Box.get, Decl(ttttRecursiveGetterDeferredConditional.ts, 4, 25))
+>box(Tree).get : Symbol(Box.get, Decl(ttttRecursiveGetterDeferredConditional.ts, 5, 25))
+>box : Symbol(box, Decl(ttttRecursiveGetterDeferredConditional.ts, 5, 45))
+>Tree : Symbol(Tree, Decl(ttttRecursiveGetterDeferredConditional.ts, 8, 5))
+>get : Symbol(Box.get, Decl(ttttRecursiveGetterDeferredConditional.ts, 5, 25))
 
   },
 });
 declare const o1: Out<Box<typeof Tree>>;
->o1 : Symbol(o1, Decl(ttttRecursiveGetterDeferredConditional.ts, 13, 13))
+>o1 : Symbol(o1, Decl(ttttRecursiveGetterDeferredConditional.ts, 14, 13))
 >Out : Symbol(Out, Decl(ttttRecursiveGetterDeferredConditional.ts, 0, 0))
->Box : Symbol(Box, Decl(ttttRecursiveGetterDeferredConditional.ts, 3, 54))
->Tree : Symbol(Tree, Decl(ttttRecursiveGetterDeferredConditional.ts, 7, 5))
+>Box : Symbol(Box, Decl(ttttRecursiveGetterDeferredConditional.ts, 4, 54))
+>Tree : Symbol(Tree, Decl(ttttRecursiveGetterDeferredConditional.ts, 8, 5))
 

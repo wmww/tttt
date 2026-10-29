@@ -669,6 +669,29 @@ static bool object_lacks_signatures(Checker* me, Ty const* check_type, Ty const*
     return (target->construct_count && !source->construct_count) || (target->call_count && !source->call_count);
 }
 
+// An object type that lacks a property the extends type requires, or has it optional, isn't assignable to it whatever
+// the type variables in either stand for, asked when the type variables in them can't be told (an object type's properties and their optionality don't depend on them, a
+// mapped type's aside): tsc's permissive instantiation then fails the relation at the property's presence, without
+// resolving its type. So a getter whose return type is still being inferred doesn't leave `Out<Box<...>>` deferred
+// (`Out<T> = T extends { o: any } ? ... : unknown` over a `Box` whose `o` is optional: zod's `output<this>` on a
+// schema in a recursive getter)
+static bool object_lacks_required_property(Checker* me, Ty const* check_type, Ty const* extends) {
+    if (!(check_type->flags & TYF_OBJECT) || !(extends->flags & TYF_OBJECT)) return false;
+    if (check_type->kind != TY_REFERENCE && check_type->kind != TY_DECLARED && check_type->kind != TY_ANONYMOUS) return false;
+    if (extends->kind != TY_ANONYMOUS && extends->kind != TY_REFERENCE && extends->kind != TY_DECLARED) return false;
+    if ((check_type->kind == TY_ANONYMOUS && check_type->anonymous.is_reverse) || (extends->kind == TY_ANONYMOUS && extends->anonymous.is_reverse)) return false;
+    Members const* source = ty_members(me, check_type);
+    Members const* target = ty_members(me, extends);
+    if (source->mapped || target->mapped) return false;
+    for (u32 i = 0; i < target->prop_count; i++) {
+        Prop const* prop = members_prop(me, target, i);
+        if (prop->flags & PROP_OPTIONAL) continue;
+        Prop const* own = ty_property_of_type(me, check_type, prop->name);
+        if (!own || (own->flags & PROP_OPTIONAL)) return true;
+    }
+    return false;
+}
+
 // An object type with call signatures against `(...args: any[]) => any`, or one with call or construct signatures
 // against the global `Function` (the "is it a function" idioms), is related whatever its signatures return or mention,
 // without resolving them: tsc's relation compares the target's return type first and stops at any
@@ -728,7 +751,8 @@ static bool definitely_unrelated(Checker* me, Ty const* check_type, Ty const* ex
     MentionWalk walk = { .collect = &params };
     bool unsure = mentions_type_variables(me, check_type, &walk, 0) || mentions_type_variables(me, extends, &walk, 0);
     mention_walk_drop(&walk);
-    bool ret = false;
+    // (Unsure, a getter's return type still being inferred: what doesn't depend on it may still say)
+    bool ret = unsure && object_lacks_required_property(me, check_type, extends);
     if (!unsure) {
         Ty const** wildcards = malloc(sizeof(Ty const*) * (params.len ? params.len : 1));
         panic_if(!wildcards, "out of memory");

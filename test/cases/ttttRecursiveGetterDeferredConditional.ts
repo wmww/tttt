@@ -1,6 +1,7 @@
 // A conditional type met while a getter's inferred return type is in flight (the variable it returns from circular):
-// tsgo resolves `Out<Box<Box<any>>>` to unknown (`o` is optional), tttt leaves it deferred and never relates it. Known
-// failing (seed 20261119, recursiveTypeInference2 add-optional: a spurious TS2769 on zod-like `.default([])`)
+// tsgo resolves `Out<Box<Box<any>>>` to unknown (`o` is optional): a missing or optional required property says false
+// without the getter's type (seed 20261119, recursiveTypeInference2 add-optional: a spurious TS2769 on zod-like
+// `.default([])`)
 type Out<T> = T extends { o: any } ? T["o"] : unknown;
 interface Box<T> { o?: T; get(): Out<this>; }
 declare function box<T>(v: T): Box<T>;
