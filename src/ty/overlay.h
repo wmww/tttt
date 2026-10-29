@@ -90,6 +90,9 @@ SwLook sw_look_slow(struct Checker* me, SharedWord const* w, uint8_t const* stat
 uint64_t sw_claim(struct Checker* me, SharedWord* w, uint8_t* state);
 // The value this worker uses from now on (its own, or the winner's)
 uintptr_t sw_finish(struct Checker* me, SharedWord* w, uint8_t* state, uintptr_t value, uint64_t taint);
+// sw_finish() of a word whose value is an identity (an interface's or a class's declared type): clean whatever happened
+// since its claim, and exempt from the forced knobs (TTTT_GRAPH_FORCE_POISON/SHADOW), which no schedule can make it meet
+uintptr_t sw_finish_identity(struct Checker* me, SharedWord* w, uint8_t* state, uintptr_t value);
 // Whether this worker's claim of `w` is still unfinished: false once a nested computation of the same word (a re-entry
 // that computes again, like function_return_type()'s) finished it. No taint event
 bool sw_mine_in_flight(struct Checker const* me, SharedWord const* w, uint8_t const* state);

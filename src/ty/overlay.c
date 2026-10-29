@@ -456,7 +456,17 @@ static u32 force_poison_at_len;
     return n % (u64)every == 0 && n >= force_poison_lo && n < force_poison_hi;
 }
 
+static uintptr_t sw_finish_ex(Checker* me, SharedWord* w, uint8_t* state, uintptr_t value, uint64_t taint, bool identity);
+
 uintptr_t sw_finish(Checker* me, SharedWord* w, uint8_t* state, uintptr_t value, uint64_t taint) {
+    return sw_finish_ex(me, w, state, value, taint, false);
+}
+
+uintptr_t sw_finish_identity(Checker* me, SharedWord* w, uint8_t* state, uintptr_t value) {
+    return sw_finish_ex(me, w, state, value, graph_taint_now, true);
+}
+
+static uintptr_t sw_finish_ex(Checker* me, SharedWord* w, uint8_t* state, uintptr_t value, uint64_t taint, bool identity) {
     check(value != SW_EMPTY && value != SW_POISON);
     if (!my graph) {
         // (One worker: its value is the only history, tainted or not)
@@ -469,7 +479,9 @@ uintptr_t sw_finish(Checker* me, SharedWord* w, uint8_t* state, uintptr_t value,
     // (A private value is kept only for a poisoned word, or by a shadowed worker)
     uintptr_t seen = sw_load(w);
     if ((seen == SW_POISON || o->copies || my graph_shadowed) && o->map.len) map_remove(o, (uintptr_t)w);
-    if (__builtin_expect(__atomic_load_n(&force_poison, __ATOMIC_RELAXED) != 0, 0) && graph_taint_now == taint && force_poison_now()) {
+    // (Not at an identity's word: it is clean by construction, published whatever happened meanwhile, so no event can
+    // fall between its claim and its finish; a forced one there would make two identities of one key, which no schedule can)
+    if (__builtin_expect(__atomic_load_n(&force_poison, __ATOMIC_RELAXED) != 0, 0) && !identity && graph_taint_now == taint && force_poison_now()) {
         if (force_poison_trace) {
             eprintln("forced poison ", atomic_load_explicit(&force_poison_count, memory_order_relaxed) - 1, " worker ",
                 my census_id, " word ", (u64)(uintptr_t)w, " seen ", (u64)seen, " value ", (u64)value);
@@ -502,7 +514,7 @@ uintptr_t sw_finish(Checker* me, SharedWord* w, uint8_t* state, uintptr_t value,
         map_put(o, (uintptr_t)w, value);
         return value;
     }
-    if (clean && !(__builtin_expect(__atomic_load_n(&force_shadow, __ATOMIC_RELAXED) != 0, 0) && force_shadow_on())) {
+    if (clean && (identity || !(__builtin_expect(__atomic_load_n(&force_shadow, __ATOMIC_RELAXED) != 0, 0) && force_shadow_on()))) {
         // (Nothing read its own before now: a read of a value in flight is a taint event)
         o->stats.adopted++;
         return seen;

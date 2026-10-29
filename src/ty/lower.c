@@ -392,7 +392,9 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
     if (identity) taint = graph_taint_now;
     if (sw_mine_in_flight_fast(me, &links->declared, &links->declared_state)) {
         SW_FP(TK_SYMBOL_DECLARED, symbol, ret, taint);
-        v = sw_finish_fast(me, &links->declared, &links->declared_state, (uintptr_t)ret | (alias_circular ? SYMBOL_DECLARED_CIRCULAR : 0), taint);
+        uintptr_t value = (uintptr_t)ret | (alias_circular ? SYMBOL_DECLARED_CIRCULAR : 0);
+        v = identity && my graph ? sw_finish_identity(me, &links->declared, &links->declared_state, value) :
+            sw_finish_fast(me, &links->declared, &links->declared_state, value, taint);
     } else {
         // (Finished by a nested resolution, or an enum member by its enum's)
         sw_unclaim(me, &links->declared);
