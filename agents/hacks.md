@@ -109,6 +109,14 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   field after the laptop bench confirms the defaults.
 
 ## Parser
+- `skip_balanced_braces_at()` (the deferred-body skipper) decides a `/` by the token before it, not by tsc's grammar
+  (reScanSlashToken where an expression is expected). Three known departures, no output difference known (a body it
+  ends wrongly would parse with errors when materialized; none seen on 6 M bodies, fe3 2026-10-29): (1) a keyword used
+  as a property name (`x.in / y`, `.return`, `.of`, `.new`) counts as one of `regex_after` and makes the `/` a regex;
+  (2) `await`, `yield` and `of` as plain identifiers before `/` do too; (3) it gives up (the body is parsed eagerly)
+  after a `}` and after `++`/`--`, where tsc knows. Correct: the parser's own rule, or a skipper that tracks whether an
+  expression is expected. Oracle: a body that mis-skips materializes with parse errors the eager parse doesn't have
+  (`--no-defer-bodies` against the default). [open]
 - **A program with a syntax error is loaded twice when it has deferred bodies** (`program_deferred_bodies_parse()`,
   `check_files()`, plan 78): a gated program (syntactic diagnostics only) must report the syntax errors of every function
   body, but the bodies are only listed (`SourceFile.deferred_bodies`) by the resolve walk, which a gated program parses
