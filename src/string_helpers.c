@@ -241,17 +241,37 @@ bool path_is_network(csview path) {
     return count && sizes[0] == 2 && segments[0][0] == '?' && segments[0][1] == '?';
 }
 
+// A segment's start: whether no segment, an empty one, `.` or `..` begins there
+static inline bool path_segment_is_bad(const char* s, const char* end) {
+    if (s == end || *s == '/') return true;
+    if (*s != '.') return false;
+    if (s + 1 == end || s[1] == '/') return true;
+    return s[1] == '.' && (s + 2 == end || s[2] == '/');
+}
+
+// (Eight bytes at a time, each `/` found by an exact per-byte zero test and what follows it looked at: every import's
+// path is checked a few times, and a memchr() per segment was 3% of vscode's front end)
 bool path_is_normalized(csview path) {
     if (!path.size) return false;
     const char* c = path.buf;
     const char* end = path.buf + path.size;
     if (*c == '/' && ++c == end) return true;
-    for (;;) {
-        const char* next = memchr(c, '/', (size_t)(end - c));
-        if (!next) next = end;
-        isize n = next - c;
-        if (!n || (c[0] == '.' && (n == 1 || (n == 2 && c[1] == '.')))) return false;
-        if (next == end) return true;
-        c = next + 1;
+    if (path_segment_is_bad(c, end)) return false;
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    const u64 lows = 0x7F7F7F7F7F7F7F7FULL, slashes = 0x2F2F2F2F2F2F2F2FULL;
+    for (; end - c >= 8; c += 8) {
+        u64 x;
+        memcpy(&x, c, 8);
+        u64 y = x ^ slashes;
+        u64 found = ~(((y & lows) + lows) | y | lows);
+        while (found) {
+            if (path_segment_is_bad(c + (__builtin_ctzll(found) >> 3) + 1, end)) return false;
+            found &= found - 1;
+        }
     }
+#endif
+    for (; c < end; c++) {
+        if (*c == '/' && path_segment_is_bad(c + 1, end)) return false;
+    }
+    return true;
 }
