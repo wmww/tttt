@@ -1,0 +1,48 @@
+//// [test/cases/ttttRestArgLiteralReturnMapper.ts] ////
+
+=== ttttRestArgLiteralReturnMapper.ts ===
+// Whether a rest argument's literal stays a literal goes by its contextual type instantiated with the call's
+// returnMapper (tsc's checkExpressionWithContextualType -> instantiateContextualType): a `never` return context makes
+// `T[0]` `never`, no literal context, and the spread tuple widens (mutation seed 20261124's genericRestParameters1)
+declare function f11<T extends (string | number | boolean)[]>(...args: T): T;
+>f11 : Symbol(f11, Decl(ttttRestArgLiteralReturnMapper.ts, 0, 0))
+>T : Symbol(T, Decl(ttttRestArgLiteralReturnMapper.ts, 3, 21))
+>args : Symbol(args, Decl(ttttRestArgLiteralReturnMapper.ts, 3, 62))
+>T : Symbol(T, Decl(ttttRestArgLiteralReturnMapper.ts, 3, 21))
+>T : Symbol(T, Decl(ttttRestArgLiteralReturnMapper.ts, 3, 21))
+
+declare function g<T extends string | number>(x: T): T;
+>g : Symbol(g, Decl(ttttRestArgLiteralReturnMapper.ts, 3, 77))
+>T : Symbol(T, Decl(ttttRestArgLiteralReturnMapper.ts, 4, 19))
+>x : Symbol(x, Decl(ttttRestArgLiteralReturnMapper.ts, 4, 46))
+>T : Symbol(T, Decl(ttttRestArgLiteralReturnMapper.ts, 4, 19))
+>T : Symbol(T, Decl(ttttRestArgLiteralReturnMapper.ts, 4, 19))
+
+const z10 = f11(42, "hello", true);
+>z10 : Symbol(z10, Decl(ttttRestArgLiteralReturnMapper.ts, 5, 5))
+>f11 : Symbol(f11, Decl(ttttRestArgLiteralReturnMapper.ts, 0, 0))
+
+const z12: never = f11(42);
+>z12 : Symbol(z12, Decl(ttttRestArgLiteralReturnMapper.ts, 6, 5))
+>f11 : Symbol(f11, Decl(ttttRestArgLiteralReturnMapper.ts, 0, 0))
+
+const z13: never = g(42);
+>z13 : Symbol(z13, Decl(ttttRestArgLiteralReturnMapper.ts, 7, 5))
+>g : Symbol(g, Decl(ttttRestArgLiteralReturnMapper.ts, 3, 77))
+
+const z14: [1] = f11(1);
+>z14 : Symbol(z14, Decl(ttttRestArgLiteralReturnMapper.ts, 8, 5))
+>f11 : Symbol(f11, Decl(ttttRestArgLiteralReturnMapper.ts, 0, 0))
+
+const z15: string[] = f11("a");
+>z15 : Symbol(z15, Decl(ttttRestArgLiteralReturnMapper.ts, 9, 5))
+>f11 : Symbol(f11, Decl(ttttRestArgLiteralReturnMapper.ts, 0, 0))
+
+const z16: [number, "b"] = f11(2, "b");
+>z16 : Symbol(z16, Decl(ttttRestArgLiteralReturnMapper.ts, 10, 5))
+>f11 : Symbol(f11, Decl(ttttRestArgLiteralReturnMapper.ts, 0, 0))
+
+const z17: (1 | "c")[] = f11(1, "c");
+>z17 : Symbol(z17, Decl(ttttRestArgLiteralReturnMapper.ts, 11, 5))
+>f11 : Symbol(f11, Decl(ttttRestArgLiteralReturnMapper.ts, 0, 0))
+

@@ -1380,8 +1380,13 @@ static void check_rest_arg(Checker* me, ParamShape const* shape, Args* args, u32
     // (Under a const type parameter always: tsc's hasPrimitiveContextualType is inConstContext || ..., so
     // `f('a', 'b')` with `const X extends string[]` infers X from the regular "a" and "b", which an unconstrained
     // inference from `f(...)[number]` later keeps rather than widening)
+    // (Whether it is a literal context goes by the contextual type the call's returnMapper instantiates, tsc's
+    // checkExpressionWithContextualType -> instantiateContextualType: `const z: never = f(42)` with `...args: T` is
+    // `never[0]`, no literal context, and the spread tuple widens: `[number]`)
+    Ty const* literal_context = contextual && self && self->return_mapper ?
+        instantiate_with_return_mapper(me, contextual, self->return_mapper) : contextual;
     if ((arg->type->flags & TYF_FRESH_LITERAL) && (is_const || (contextual &&
-        (ty_is_literal_of_contextual_type(me, arg->type, contextual) || maybe_primitive_context(contextual))))
+        (ty_is_literal_of_contextual_type(me, arg->type, literal_context) || maybe_primitive_context(contextual))))
     ) {
         arg->type = ty_regular(me, arg->type);
     }

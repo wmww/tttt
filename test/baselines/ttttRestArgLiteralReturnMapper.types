@@ -1,0 +1,60 @@
+//// [test/cases/ttttRestArgLiteralReturnMapper.ts] ////
+
+=== ttttRestArgLiteralReturnMapper.ts ===
+// Whether a rest argument's literal stays a literal goes by its contextual type instantiated with the call's
+// returnMapper (tsc's checkExpressionWithContextualType -> instantiateContextualType): a `never` return context makes
+// `T[0]` `never`, no literal context, and the spread tuple widens (mutation seed 20261124's genericRestParameters1)
+declare function f11<T extends (string | number | boolean)[]>(...args: T): T;
+>f11 : <T extends (string | number | boolean)[]>(...args: T) => T
+>args : T
+
+declare function g<T extends string | number>(x: T): T;
+>g : <T extends string | number>(x: T) => T
+>x : T
+
+const z10 = f11(42, "hello", true);
+>z10 : [42, "hello", true]
+>f11(42, "hello", true) : [42, "hello", true]
+>f11 : <T extends (string | number | boolean)[]>(...args: T) => T
+>42 : 42
+>"hello" : "hello"
+>true : true
+
+const z12: never = f11(42);
+>z12 : never
+>f11(42) : [number]
+>f11 : <T extends (string | number | boolean)[]>(...args: T) => T
+>42 : 42
+
+const z13: never = g(42);
+>z13 : never
+>g(42) : 42
+>g : <T extends string | number>(x: T) => T
+>42 : 42
+
+const z14: [1] = f11(1);
+>z14 : [1]
+>f11(1) : [1]
+>f11 : <T extends (string | number | boolean)[]>(...args: T) => T
+>1 : 1
+
+const z15: string[] = f11("a");
+>z15 : string[]
+>f11("a") : [string]
+>f11 : <T extends (string | number | boolean)[]>(...args: T) => T
+>"a" : "a"
+
+const z16: [number, "b"] = f11(2, "b");
+>z16 : [number, "b"]
+>f11(2, "b") : [number, "b"]
+>f11 : <T extends (string | number | boolean)[]>(...args: T) => T
+>2 : 2
+>"b" : "b"
+
+const z17: (1 | "c")[] = f11(1, "c");
+>z17 : ("c" | 1)[]
+>f11(1, "c") : [1, "c"]
+>f11 : <T extends (string | number | boolean)[]>(...args: T) => T
+>1 : 1
+>"c" : "c"
+
