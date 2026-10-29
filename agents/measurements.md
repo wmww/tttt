@@ -3,6 +3,24 @@ The latest of each kind of measurement. **Replace a section when re-measuring** 
 append history, git has it. Older sections (oracle tallies, stage logs, superseded perf tables) were
 condensed on 2026-10-20 into "Past conclusions" below; the full log is `git show a9c5e07da:agents/measurements.md`.
 
+## The front end's profile-driven pass (2026-10-29, worker fe3, ed7b44817 -> 96857f1de; this box, callgrind)
+Front end only (`TTTT_EXIT_AFTER_RESOLVE=1 tttt -p P --noEmit --threads 1` under callgrind, release builds; main's
+other landings in between are checker-side), M instructions:
+
+| project | before | after | change |
+|---|---|---|---|
+| nest | 839 | 792 | -5.6% |
+| zod (packages/zod tsconfig.test.json) | 565 | 535 | -5.3% |
+| drizzle | 923 | 872 | -5.5% |
+| vscode | 9234 | 8480 | -8.2% |
+| nitro (sources) | 3029 | 2592 | -14.4% |
+| faker (sources) | 1553 | 1426 | -8.2% |
+| openclaw src/config (sources) | 11365 | 8910 | -21.6% |
+
+Whole runs at --threads 1 (instrcount): the trivia fast path alone nest -2.2%, tsc -0.7%, vscode -0.7%; the rest is
+front-end only. Walls not taken (the box was loaded by the shared graph's gate throughout). The cuts and what was
+measured and not built: notes/front_end.md "Profile-driven pass".
+
 ## The root census: share on second touch, modeled (2026-10-29, 663af2717 + 7f519a118, this box, --threads 1)
 `nice -n 10 scripts/sharedgraph/rootcensus.py run --rounds 3` (sgcheck's 58; vscode `--rounds 2 --mem-gb 40`), then
 `rootcensus.py report`. Medians, default K (8; vscode 16, tsc 4; the three K1-rerun projects left out):

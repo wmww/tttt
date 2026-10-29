@@ -216,3 +216,57 @@ for the GATE_FAIL tests (and checks tok_at()'s and starts_with_followed_by_word_
 ones): run its baseline_tests (with and without --no-defer-bodies) and `tttt --listFilesOnly` over the corpora and the
 source sweep's tsconfigs after touching a test. Per-function attempt/failure counters were a temporary patch (Parser
 creation per `__func__`, rdtsc of maximal failed subtrees).
+
+## Profile-driven pass (2026-10-29, fe3, ed7b44817 -> 96857f1de)
+The front end profiled with callgrind at `--threads 1` and `TTTT_EXIT_AFTER_RESOLVE=1` (config, libs, load+parse,
+resolve names; nothing checked) on seven shapes. Walls on a box at load 8-25, so rough. Instructions in G (config +
+the loader's own work outside parse + parse + resolve) and walls in ms at T1 and at the defaults:
+
+| project | front end G | config | loader | parse | resolve | T1 ms | default ms |
+|---|---|---|---|---|---|---|---|
+| nest | 0.84 | .006 | .19 | .42 | .22 | 241 | 78 (link 3, walk 15) |
+| zod | 0.57 | .007 | .05 | .33 | .18 | 77 | 21 |
+| drizzle | 0.92 | .013 | .13 | .50 | .28 | 126 | 34 |
+| vscode | 9.23 | .29 | 1.53 | 4.69 | 2.69 | 1392 | 417 (load+parse 243, declare 26, link 47, walk 69) |
+| nitro | 3.03 | .04 | .77 | 1.54 | .65 | 388 | 95 |
+| faker | 1.55 | .11 | .22 | .86 | .36 | 213 | 80 |
+| openclaw src/config | 11.37 | 2.34 | 1.63 | 4.70 | 2.65 | 1630 | 494 (link 80-118, its aliases 93) |
+
+Diffuse: the parser (no function over 3% but the trivia hop and the body skipper) and the walk (lookup_names,
+scope_resolve, symbol_table_get_own, symbol_name_hash: 2% each). Concentrated, and cut:
+- The include glob on configs with many patterns (openclaw: 17 include patterns over the whole repository, 2.1 G in
+  glob_matches): a pattern's literal leading segments as one memcmp (2b5b1ae3d), `**/<name>` matched in one pass
+  (a419cc0a8). openclaw -15.6% together.
+- Per-import path validation: path_is_normalized() word at a time (3aef6d7cc), and a cached resolution's
+  `path_normalized` so the loader's finds and adds don't validate its path again (96857f1de): vscode -1.7%, nitro -5.4%.
+- `paths` patterns searched for their `*` on every resolution (169 patterns on openclaw): found once (9437bc165), -1.7%.
+- Line starts made for every file at load though only diagnostics, directives, $ExpectType and maps read them: lazy,
+  published with a compare-and-swap (b798e549a): vscode -2.4%, nest -2.0%.
+- One space before a token through the out-of-line trivia hop: inline (d6bb97c0d): whole runs nest -2.2%, vscode -0.7%.
+- Small ones: the T1 ref memo takes the pool's "again" path (fb021c23c, nitro -6.3% at T1 only), a walk up the scopes
+  hashes a name once (e647f8c32, vscode -0.5%), string runs stop at a table (314132b93, -0.2..-0.3%).
+Front end at T1 after them: nest -5.6%, vscode -8.2%, nitro -14.4%, openclaw -21.6% (measurements.md "The front end's profile-driven pass").
+
+Measured and not built:
+- **A fast body skipper** (the old one is 9.6% of vscode's front end: 828 M instructions over 92 MB of skipped bodies,
+  ~9 per byte, one call per body). Built and measured: a byte loop over everything but strings, templates, comments,
+  braces, parentheses and `/`, deciding regex/division and `if (` heads by looking back at the run's last token
+  (runs hold no comments or strings, so the look back is exact; where a `.` precedes the word, a `+`/`-` precedes a
+  regex, or the old skipper would give up, the old one decided), `import`/`require` by a memmem over the body.
+  Exact: TTTT_SKIP_CHECK ran both on 5.99 M bodies (every source sweep config, the corpora, DT: 0 differences, 96.7%
+  ended by the fast one) and the suite's 27k. But **slower**: vscode front end +6.5%. The skipper is already
+  near a byte loop's floor (the old word loop is 4 instructions a byte; the fast scan was 8 with its look-backs at
+  every call's `(`), and memmem added 4%. Beating it needs reading several bytes at a time, which the file buffers'
+  NUL terminator doesn't allow (an mmapped text has no padding guarantee). Not committed; the old rule's heuristic differences from tsc (a keyword after `.`, `x.in / y`, taken as regex;
+  `await`/`yield`/`of` as plain identifiers before `/`) are unchanged and inherited.
+- **Link's alias loop** (openclaw 93 ms serial, 227k aliases, ~750 instructions each, memory-bound): the scan over
+  all symbols is cheap (the "type exports" and "resolved exports" loops over the same array take 3-6 ms), the cost is
+  symbol_resolve_alias()'s chains; no cut that keeps the loop's order and TS2303 positions beyond the prefetch.
+- path_is_normalized() SWAR with a next-byte mask (only `/.` and `//` verified): no fewer instructions than the
+  per-slash check at ~12 slashes per path.
+- The remaining calls of path_is_normalized() (the resolver's containing file per resolution, join()): ~1% of vscode,
+  needs a normalized flag through the resolver's API.
+
+Tools: `scripts/listcheck.py OLD NEW [--cwd-too] [--threads N]` (--listFilesOnly byte for byte on every sweep config
+and the corpora, 7010 configs, ~5 min at -j 8); the per-phase instruction split is `callgrind_annotate --inclusive=yes`
+of tsconfig_load_hooked, program_load (minus parse_file), program_resolve_names under TTTT_EXIT_AFTER_RESOLVE=1.
