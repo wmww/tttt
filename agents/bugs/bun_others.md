@@ -768,7 +768,8 @@ type annotation.".
 
 -TS2345 (missing), 15 cases: 16-C5a, 16-C5b, 20-C3b, 22-C9, 25-P2, 26-P3a, 35-C1c, 35-C1e, 93-R11b, 95-J3, 96-ARKTYPE2,
 96-TSPATTERN1, 99-A1, 99-V4, checks-of-a-value-assigned-on-a-loop-back-edge. First: 16-C5a a.ts:4 "Argument of type
-'…' is not assignable to parameter of type '…'.".
+'…' is not assignable to parameter of type '…'.". 26-P3a: an unannotated parameter keeps `this` under a this-only mapper (tsc's
+isThisless in instantiateSymbol). Test ttttThislessParameterInstantiation [fixed be352db80].
 
 +TS6133 (spurious), 14 cases: 24-SC2, 30-C14a, 31-P6, 31-SC6, 43-C8b, 43-P4b, 43-P4c, 51-L01, 51-L20b, 74-R15a,
 80-R18a, 80-R18b, 83-R10a, 91-R12b. First: 24-SC2 a.ts:1 "'…' is declared but its value is never read.".

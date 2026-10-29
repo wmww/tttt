@@ -188,8 +188,31 @@ last line. The real cause is then elsewhere, and the entry says where. Show a ca
 - 52-L05: `declare const {} = expr` and other ambient initializers. tsc doesn't check an ambient initializer's
   expression (beyond TS1254 or TS1039), tttt checks it (TS2304, the nested TS2322). TS2322 spurious. [open]
 - 94-R04a: an import default cycle through `export =` (`import d from "./b"` where b is `export = a`). tsc reports
-  TS2303 on the alias and types it any, so there is no TS2322 at a.ts; tttt types the module. Order-dependent, like
-  08-C11c, which corA wrote up earlier. TS2322 spurious and missing. [open]
+  TS2303 on the alias and types it any, so there is no TS2322 at a.ts; tttt typed the module. Not order-dependent
+  after all (cor17, tsgotrace): getTargetOfModuleDefault's resolveExportByName reads `default` among the properties of
+  the `export =` target's type, which resolves module a's export aliases (`export default d`, d in flight).
+  resolve_default_target() runs resolve_module_type_members() on that module now. Test
+  ttttExportEqualsDefaultImportCycle [fixed e3cda8930].
+- The check-time alias cycles (cor17's design write-up, 2026-10-29; 08-C11c here, umd7 and 80-R13b in
+  missing_checks.md/bun_others.md, ttttSharedGraphTypeofCycleBase's TS2502): tsgo resolves an alias lazily, and an
+  alias-like expression's target (`export default o.p`, `export = expr`: getTargetOfAliasLikeExpression ->
+  checkExpressionCached) or an alias's value type (getTypeOfAlias, pushTypeResolution) is computed *inside* that
+  resolution, so a type evaluation can reach the alias in flight: 08-C11c's `import d from "./a"; const o = { p: 1, q:
+  d }; export default o.p` (a self-import) resolves d -> a's default -> checks `o.p` -> o's initializer -> d's type ->
+  resolveAlias(d) in flight: TS2303 on d and on the default, TS7022 on o. Which alias reports depends on which
+  statement a checker reaches first (file order within one checker; the first file a checker takes across files).
+  tttt's binder resolves every alias at link time without types (scope.c's alias stack: the purely syntactic cycles
+  and resolve_module_type_members()'s are modelled, deterministically), and `export default <expr>` is a value symbol
+  of its own, never in flight. Options: (A) an alias-type resolution entry in the checker: the type of an import alias
+  whose target is an expression export (or `export =` of a value whose members' lookup needs types) pushed on the
+  checker's resolution stack, a re-entry making it circular (TS2303 at the import and at the export, the alias any),
+  with the one-checker rerun covering the order dependence (notes/one_checker_rerun.md); it also gives
+  ttttSharedGraphTypeofCycleBase's TS2502 its in-flight entry. Cost: a new checker-side alias state next to the
+  binder's (TS2303 from both without duplicates), every alias type read going through it (hot: identifiers resolving
+  to imports), a new history-dependent diagnostic family, and the graph's publication of alias types (a circular
+  verdict is history: unpublishable). (B) leave them: every instance seen is a contrived self- or mutual import in
+  bun's adversarial cases or a mutation; no corpus, sweep or npm sample has one. Recommendation: B until a real
+  project shows one. Awaiting the coordinator. [design]
 
 ## JSX
 - 27-C4a: a `const T` type parameter of an SFC, inferred from JSX attributes (`v={1}`). tsc infers T as 1, so the
