@@ -15815,6 +15815,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttNestedAssignmentPattern': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttNestedDestructuringDefaultAssigns': {
         errors: true,
         symbols: true,
@@ -16157,6 +16162,11 @@ const baselines = {
         symbols: true,
         types: false,
     },
+    'ttttParameterListAbortAtComma': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttParameterListBracketEnds': {
         errors: true,
         symbols: true,
@@ -16319,6 +16329,11 @@ const baselines = {
         types: true,
     },
     'ttttRecoveryNodeSpans': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttRecoveryTrailingTriviaSpans': {
         errors: true,
         symbols: true,
         types: true,
@@ -16977,6 +16992,11 @@ const baselines = {
         types: true,
     },
     'ttttTypeMemberStart': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttTypeMemberStartLookahead': {
         errors: true,
         symbols: true,
         types: true,
