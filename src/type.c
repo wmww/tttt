@@ -584,7 +584,10 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
                         as ? mapped->key.mapped->as_type_span : mapped->key.mapped->in_type_span, errs);
                 }
             }
-            {
+            // (Not a mapped type's: tsc's checkMappedType never visits the members recovery put after it, TS7061)
+            if (!vec_interface_member_size(&my interface.members) ||
+                vec_interface_member_at(&my interface.members, 0)->key.tag != INTERFACE_KEY_MAPPED
+            ) {
                 VecInterfaceMember const* list = &my interface.members;
                 ty_check_object_type_duplicate_members(current_checker, &list, 1, errs);
                 ty_check_property_modifiers(current_checker, nullptr, nullptr, list, errs);

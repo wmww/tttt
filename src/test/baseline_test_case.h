@@ -87,6 +87,9 @@ typedef struct BaselineTestCase {
     struct Symbol const* parameter_property_symbol; // With parameter_property_class: the class, and the parameter
     Span parameter_property_arg;
     struct Ty const* member_owner; // The interface or type literal whose members are being walked
+    // A mapped type's members after the mapping (TS7061 recovery), while walking them: the type has no properties, the
+    // binder's symbols merge members of one name (PropertyExcludes is none)
+    struct Interface const* mapped_extra;
     struct Symbol const* member_container; // The class, interface or enum whose members are being walked (null: literal)
     // The object literal a variable is initialized with, while walking it: its symbol is named by the variable (tsc's
     // getNameOfSymbolAsWritten), not `__object`

@@ -873,6 +873,17 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 Prop const* shown = merged ? merged_root : redeclared ? redeclared : joined ? joined : shared;
                 for (u32 i = 0; i < shown->decl->decl_span_count; i++) vec_span_push(&declarations, shown->decl->decl_spans[i]);
                 if (span_valid(shown->decl->name_span)) written = span_sv(shown->decl->name_span);
+            } else if (ctx->mapped_extra && span_valid(my declaration)) {
+                bool first = true;
+                for_each (i, vec_interface_member, &ctx->mapped_extra->members) {
+                    if (i->key.tag != INTERFACE_KEY_NAME || i->accessor_kind || !span_valid(i->declaration) ||
+                        !cstr_eq(&i->key.name_string, &my key.name_string)) {
+                        continue;
+                    }
+                    if (first) written = span_sv(i->key.span);
+                    first = false;
+                    vec_span_push(&declarations, i->declaration);
+                }
             } else {
                 if (span_valid(my declaration)) vec_span_push(&declarations, my declaration);
             }
@@ -1329,7 +1340,11 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             if (info && info->type_param) {
                 saved_generic = baseline_test_case_enter_type_params(ctx, (TyList){ .data = &info->type_param, .len = 1 });
             }
+            Interface const* outer_mapped_extra = ctx->mapped_extra;
+            ctx->mapped_extra = vec_interface_member_size(&my interface.members) > 1 &&
+                vec_interface_member_at(&my interface.members, 0)->key.tag == INTERFACE_KEY_MAPPED ? &my interface : nullptr;
             interface_compile_test_info(&my interface, span_null, ctx);
+            ctx->mapped_extra = outer_mapped_extra;
             if (info && info->type_param) baseline_test_case_leave_generic(ctx, saved_generic);
             ctx->class_params_len = outer_class_params_len;
             ctx->member_container = outer_container;

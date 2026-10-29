@@ -1,0 +1,22 @@
+ttttMappedTypeDuplicateExtraMembers.ts(8,7): error TS1005: ';' expected.
+ttttMappedTypeDuplicateExtraMembers.ts(9,7): error TS1005: ';' expected.
+ttttMappedTypeDuplicateExtraMembers.ts(10,1): error TS1005: '}' expected.
+
+
+==== ttttMappedTypeDuplicateExtraMembers.ts (3 errors) ====
+    // A mapped type's members after the mapping (its `}` gone: TS7061 recovery) are never checked (tsc's checkMappedType),
+    // so no TS2300 for two of one name, and the binder merges them into one symbol (seed 20261113's genericMappedTypeAsClause;
+    // ttttMappedTypeExtraMembers is the TS7008 case)
+    type Model = { a: string; b: number };
+    type MappedModel<Suffix extends string> = {
+        [K in keyof Model as `${K}${Suffix}`]: Model[K];
+    
+    const foo1: MappedModel<'Foo'> = { aFoo: 'test', bFoo: 42 };
+          ~~~~
+!!! error TS1005: ';' expected.
+    const foo2: MappedModel<'Foo'> = { bFoo: 'bar' };
+          ~~~~
+!!! error TS1005: ';' expected.
+    
+    
+!!! error TS1005: '}' expected.

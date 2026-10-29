@@ -1,0 +1,36 @@
+//// [test/cases/ttttMappedTypeDuplicateExtraMembers.ts] ////
+
+=== ttttMappedTypeDuplicateExtraMembers.ts ===
+// A mapped type's members after the mapping (its `}` gone: TS7061 recovery) are never checked (tsc's checkMappedType),
+// so no TS2300 for two of one name, and the binder merges them into one symbol (seed 20261113's genericMappedTypeAsClause;
+// ttttMappedTypeExtraMembers is the TS7008 case)
+type Model = { a: string; b: number };
+>Model : Symbol(Model, Decl(ttttMappedTypeDuplicateExtraMembers.ts, 0, 0))
+>a : Symbol(a, Decl(ttttMappedTypeDuplicateExtraMembers.ts, 3, 14))
+>b : Symbol(b, Decl(ttttMappedTypeDuplicateExtraMembers.ts, 3, 25))
+
+type MappedModel<Suffix extends string> = {
+>MappedModel : Symbol(MappedModel, Decl(ttttMappedTypeDuplicateExtraMembers.ts, 3, 38))
+>Suffix : Symbol(Suffix, Decl(ttttMappedTypeDuplicateExtraMembers.ts, 4, 17))
+
+    [K in keyof Model as `${K}${Suffix}`]: Model[K];
+>K : Symbol(K, Decl(ttttMappedTypeDuplicateExtraMembers.ts, 5, 5))
+>Model : Symbol(Model, Decl(ttttMappedTypeDuplicateExtraMembers.ts, 0, 0))
+>K : Symbol(K, Decl(ttttMappedTypeDuplicateExtraMembers.ts, 5, 5))
+>Suffix : Symbol(Suffix, Decl(ttttMappedTypeDuplicateExtraMembers.ts, 4, 17))
+>Model : Symbol(Model, Decl(ttttMappedTypeDuplicateExtraMembers.ts, 0, 0))
+>K : Symbol(K, Decl(ttttMappedTypeDuplicateExtraMembers.ts, 5, 5))
+
+const foo1: MappedModel<'Foo'> = { aFoo: 'test', bFoo: 42 };
+>const : Symbol(const, Decl(ttttMappedTypeDuplicateExtraMembers.ts, 5, 52), Decl(ttttMappedTypeDuplicateExtraMembers.ts, 7, 60))
+>foo1 : Symbol(foo1, Decl(ttttMappedTypeDuplicateExtraMembers.ts, 7, 5))
+>MappedModel : Symbol(MappedModel, Decl(ttttMappedTypeDuplicateExtraMembers.ts, 3, 38))
+>aFoo : Symbol(aFoo, Decl(ttttMappedTypeDuplicateExtraMembers.ts, 7, 34))
+>bFoo : Symbol(bFoo, Decl(ttttMappedTypeDuplicateExtraMembers.ts, 7, 48))
+
+const foo2: MappedModel<'Foo'> = { bFoo: 'bar' };
+>const : Symbol(const, Decl(ttttMappedTypeDuplicateExtraMembers.ts, 5, 52), Decl(ttttMappedTypeDuplicateExtraMembers.ts, 7, 60))
+>foo2 : Symbol(foo2, Decl(ttttMappedTypeDuplicateExtraMembers.ts, 8, 5))
+>MappedModel : Symbol(MappedModel, Decl(ttttMappedTypeDuplicateExtraMembers.ts, 3, 38))
+>bFoo : Symbol(bFoo, Decl(ttttMappedTypeDuplicateExtraMembers.ts, 8, 34))
+

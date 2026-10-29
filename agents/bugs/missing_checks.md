@@ -613,13 +613,15 @@ Not looked at:
   `never` with the "reduced to never because property 'pvt' exists in multiple constituents and is private in some"
   elaboration. Inside a generic function the mixin's class is `mixC.(Anonymous class)<typeof A, U>`, a reference with
   generic type arguments, which is_known_object_for_reduction left out of the reduction; any class or interface type
-  counts now. Test ttttNeverReducedGenericClassReference. [fixed]
+  counts now. Test ttttNeverReducedGenericClassReference. [fixed 8675e2dd4]
 - genericMappedTypeAsClause delete-stmt: spurious TS2300 "Duplicate identifier 'const'" twice: a mapped type's `}` gone,
   `const foo1: ...; const foo2: ...` are its extra members (TS7061 recovery), which tsc's checkMappedType never visits;
   type.c's TYPE_INTERFACE check runs ty_check_object_type_duplicate_members on them. Skipping it when the first member
   is mapped fixes the errors, but the symbols baseline then wants the two `const` properties merged into one symbol
   (PropertyExcludes is none), which the test traversal takes from the owner's props (none for a mapped type): left.
-  [open]
+  Fixed: type.c skips the duplicate/modifier/index checks when the first member is mapped, and the
+  symbols traversal (ctx->mapped_extra) merges same-name extra members. Test ttttMappedTypeDuplicateExtraMembers.
+  [fixed]
 - conditionalTypeContextualTypeSimplificationsSuceeds extends-object (TS2464 -> TS7031), objectRestBindingContextualInference
   delete-stmt (missing TS7006 '(Missing)' and TS2554), distributiveConditionalBaseConstraint drop-optional (TS2344
   elaboration), parseInvalidNames num-to-str (missing TS1005), exportSpecifierAndLocalMemberDeclaration str-to-num
