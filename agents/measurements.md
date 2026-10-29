@@ -71,10 +71,10 @@ at 1.00-1.08 and type-fest/zod/xstate/react still at or above 1.10. The human de
 (vision.md); this is the recorded cost on 8-core boxes. Raw runs: the agent's ab.py/ab.jsonl were in the coordinator's
 scratchpad (not kept).
 
-## The one-file .d.ts shape: four cuts (2026-10-29, worker tail, 464fe54c6 -> d088132a6; this box, release builds)
+## The one-file .d.ts shape: four cuts (2026-10-29, worker tail, 464fe54c6 -> b094e6d97; this box, release builds)
 Callgrind instructions (`scripts/instrcount.sh --vs`, each against the commit before; the one-file projects by
-callgrind directly): base -> 4cf2fa6d0 (inference visited sets) -> 3677b66e0 (hashed prop name index) -> 1fedc637f
-(circular flag) -> d088132a6 (mapper filter):
+callgrind directly): base -> 4cf2fa6d0 (inference visited sets) -> 3677b66e0 (hashed prop name index) -> a8e6dc2b8
+(circular flag) -> b094e6d97 (mapper filter):
 | | base | visited | name index | circular | mapper filter | total |
 |---|---|---|---|---|---|---|
 | immutable.d.ts one-file | 3.160 G | -4.0% | -1.1% | -6.3% | -2.4% | 2.744 G, -13.2% |
@@ -83,7 +83,7 @@ callgrind directly): base -> 4cf2fa6d0 (inference visited sets) -> 3677b66e0 (ha
 | drizzle | 5.601 G | -0.18% | -0.66% | -0.03% | -0.56% | 5.542 G, -1.1% |
 | type-fest | 10.161 G | -0.07% | -1.17% | +0.01% | -0.14% | 10.011 G, -1.5% |
 | vscode | 79.43 G | -0.46% | -0.55% | +0.07% | -0.07% | 78.66 G, -1.0% |
-Wall, base against d088132a6 (main's other commits in between too), interleaved at load 7-15: imm typecheck K1 best of
+Wall, base against b094e6d97 (main's other commits in between too), interleaved at load 7-15: imm typecheck K1 best of
 21 318 -> 272 ms (median 338 -> 296), store 482 -> 468 ms; at the defaults (abbench -n 9) vitest/examples/lit -9.0%
 (its span is immutable.d.ts), drizzle -3.6%, zod +1.5% (noise). bun `--threads=1` on the two files: 0.19 and 0.38 s.
 The diagnosis: notes/checker_speed.md "The one-file .d.ts shape".

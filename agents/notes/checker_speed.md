@@ -86,7 +86,7 @@ Tried and dropped (perf3):
   bogus -Wstringop-overflow under LTO (sw_load() inlined into props_related_impl(): "destination object is likely at
   address zero"), which -Werror makes fatal in pgobuild.sh only.
 
-## The one-file .d.ts shape (2026-10-29, 464fe54c6 -> d088132a6, worker tail)
+## The one-file .d.ts shape (2026-10-29, 464fe54c6 -> b094e6d97, worker tail)
 The idle tail behind one indivisible file is one checker's speed on it: at the defaults vitest/examples/lit's
 typecheck span (367 ms) is immutable.d.ts alone (321-361 ms on one checker), ng-bootstrap's 287 ms is immutable's
 257-277. One-file projects of immutable.d.ts (`imm`) and solid-js's store.d.ts (`store`) (tsconfigs: footprint.md), K1
@@ -123,10 +123,10 @@ Landed (output byte-identical; instructions by callgrind against the commit befo
   mispredicted every other step: 10% of imm's simulated mispredictions, 5% of zod's and drizzle's). imm -1.1%, store
   -0.9%, zod -0.79%, drizzle -0.66%, type-fest -1.17%, vscode -0.55%; mispredictions imm -14%; arena type-fest +3%.
   A branchless lower bound (cmov) cut the same mispredictions but added 0.8-1.5% instructions: dropped.
-- 1fedc637f, a pair cut short by circularity is a flag on its visited entry: record_circular() appended keys to a
+- a8e6dc2b8, a pair cut short by circularity is a flag on its visited entry: record_circular() appended keys to a
   list that every pair met again scanned (thousands long within one immutable inference: 170 M instructions). imm
   -6.3%, the corpora 0 (noise): it removes a quadratic that only this shape reaches today.
-- d088132a6, instantiate_anonymous() lost a filter that kept every composed mapper pair (each was already checked
+- b094e6d97, instantiate_anonymous() lost a filter that kept every composed mapper pair (each was already checked
   against free_params, the identity pairs never kept): imm -2.4%, zod -0.69%, drizzle -0.56%, type-fest -0.14%.
 - Wall, all four against 464fe54c6, release, load 7-15, interleaved: imm typecheck best of 21 318 -> 272 ms (median
   -12%), store 482 -> 468; at the defaults (abbench -n 9) vitest/examples/lit -9.0%, drizzle -3.6%, zod +1.5% (noise:
