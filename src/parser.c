@@ -13454,11 +13454,12 @@ static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     ret->missing = *parent->pos != '@';
     // tsc's isStartOfExpression takes a binary operator for a missing left operand and goes on with the binary
     // expression (`{ ...*o }`, `x = * y`). Not `<` (a type assertion) or `/` (a regex). The missing name is a
-    // left-hand side, so an assignment goes on too (`if (x ^= {})` missing its `)`: `<missing> ^= {}`)
+    // left-hand side, so an assignment goes on too (`if (x ^= {})` missing its `)`: `<missing> ^= {}`), and so does a
+    // conditional (parseConditionalExpressionRest: `case?:` is `<missing> ? <missing> : ...`)
     Tok t = tok_peek(parent);
     // (In a JSX file a `<` that starts no element is that binary operator too: `<:a` is `<missing> < <missing>`)
     if ((tok_is_binary_operator_here(parent, t) && !tok_is(t, "/") && (!tok_is(t, "<") || (parent->shared->source->is_jsx && t.start[1] != '/'))) ||
-        tok_is_assignment_operator(t) || tok_is(t, ".")
+        tok_is_assignment_operator(t) || tok_is(t, ".") || tok_is(t, "?")
     ) {
         while (parse_expr_right_side(parent, ctx, ret)) {}
     }

@@ -1,0 +1,22 @@
+//// [test/cases/ttttMissingOperandConditional.ts] ////
+
+=== ttttMissingOperandConditional.ts ===
+// A missing operand followed by `?` goes on as a conditional (parseConditionalExpressionRest): `case?:` is
+// `<missing> ? <missing> : result += 2`, then ':' expected
+declare let value: number;
+>value : Symbol(value, Decl(ttttMissingOperandConditional.ts, 2, 11))
+
+let result = 0;
+>result : Symbol(result, Decl(ttttMissingOperandConditional.ts, 3, 3))
+
+switch (value) {
+>value : Symbol(value, Decl(ttttMissingOperandConditional.ts, 2, 11))
+
+  case?:
+    result += 2;
+>result : Symbol(result, Decl(ttttMissingOperandConditional.ts, 3, 3))
+
+  default:
+    break;
+}
+

@@ -1,0 +1,23 @@
+ttttMissingOperandConditional.ts(6,7): error TS1109: Expression expected.
+ttttMissingOperandConditional.ts(6,8): error TS1109: Expression expected.
+ttttMissingOperandConditional.ts(7,16): error TS1005: ':' expected.
+
+
+==== ttttMissingOperandConditional.ts (3 errors) ====
+    // A missing operand followed by `?` goes on as a conditional (parseConditionalExpressionRest): `case?:` is
+    // `<missing> ? <missing> : result += 2`, then ':' expected
+    declare let value: number;
+    let result = 0;
+    switch (value) {
+      case?:
+          ~
+!!! error TS1109: Expression expected.
+           ~
+!!! error TS1109: Expression expected.
+        result += 2;
+                   ~
+!!! error TS1005: ':' expected.
+      default:
+        break;
+    }
+    
