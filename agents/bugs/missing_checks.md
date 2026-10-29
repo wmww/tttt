@@ -528,7 +528,8 @@ is declared here" for `(string[] | number[]).splice`). Left, each looked at:
   (field_initialized_in_constructor()). Only with a wrong annotation; not done. [open]
 - generatorTypeCheck46 member-typo: TS2488 twice in tsgo, once for the yield* operand typed in the context-sensitive
   pass (`{ [x: number]: {} }`, the method skipped) and once final; tttt reports the final one (the "errors of an early
-  pass stay" family). [open]
+  pass stay" family). [design] (cor10: presence matches, only tsgo's second text differs; a per-diagnostic link like
+  65e561e0b's TS2536 would be a point hack, the general fix is reporting what inference passes evaluate)
 - escapedIdentifiers member-typo: tsgo prints `argX\u0031` (escaped) in TS2551 only when another escaped identifier with
   the same unescaped text appears earlier in the file (`arg\u0031 = 1` in a method); alone it prints `argX1` like tttt.
   A tsgo text quirk, not mirrored. [tsgo]
@@ -575,7 +576,7 @@ never-const (harness writes no errors baseline).
 - generatorTypeCheck46 member-typo: tsgo reports TS2488 twice at one `yield*`, once from the inference pass (the
   object literal's method typed `{}` while context-sensitive) and once finally; tttt only the final one. The family of
   diagnostics made by an inference pass (like c3ffa3e8f's TS2536, rebased 65e561e0b), here with another type text.
-  [open]
+  [design] (see the seed entry above)
 - symbolProperty18 member-typo: `var str = i[Symbol.toStringTagX]()` is TS7022 for str in tsgo because printing the
   object type for TS7053 runs getSymbolChain's getWithAlternativeContainers, which types every value symbol in scope
   (looking for a variable of the container's type, `Symbol` for SymbolConstructor) and reaches str in flight. tttt's
@@ -592,10 +593,25 @@ never-const (harness writes no errors baseline).
   (implicit any only at the first declaration, c40370dd6), nestedExcessPropertyChecking (a shorthand initializer is
   typechecked, 355bf63a4), recursiveTypeInference (a shorthand name with an initializer isn't a use, d9f492fd3).
   [fixed] Left: recursiveTypeInferenceReturnTypeConstraint (missing TS2615, the history family),
-  exportSpecifierReferencingOuterDeclaration3 (spurious TS2694), substitutionTypesInIndexedAccessTypes (text TS2322),
-  octalIntegerLiteralES6 (TS2551->TS7053), parser-side ones for bun. [open]
+  substitutionTypesInIndexedAccessTypes (text TS2322), octalIntegerLiteralES6 (TS2551->TS7053), parser-side ones for
+  bun. [open]
+- exportSpecifierReferencingOuterDeclaration3 str-to-num (`declare module 42 {` parses as a block of a script, whose
+  `export { X }` aliases X to itself): tsgo's errors baseline lacks the TS2694 because tsgo dies of a stack overflow
+  (getDeclaredTypeOfAlias <-> tryGetDeclaredTypeOfSymbol on the self-referential alias) right after. [tsgo]
 - recursiveClassBaseType delete-stmt: missing TS2310 (the base cycle design). noCircularitySelfReferentialGetter2
   (TS2345 text), unionTypeWithIndexSignature never-const (TS2322 text): not looked at. [open]
+
+## Mutation seed 20261108 (2026-10-29, cor10: `scripts/mutate.py -n 8000 --seed 20261108`, 3 of 8000 differ)
+- varianceAnnotationValidation delete-stmt: a wrongly annotated `Controller<out T>` met while measuring
+  AnimalContainer's variance was taken as a marker type (is_marker_reference recognized any single-marker
+  instantiation), related structurally, AnimalContainer came out bivariant and `cd = ca` lost its TS2322. tsgo makes no
+  marker for an annotated parameter. Test ttttAnnotatedVarianceMarker. [fixed eab70b013]
+- duplicatePropertyAndAccessor add-optional: `y?: number = 2; accessor y: number = 3;` is one symbol in TS 7, typed by
+  its accessors (getTypeOfSymbol), so the auto-accessor isn't TS2717; tttt compared it with the first field's type.
+  ty_check_class_duplicate_members. Test ttttAccessorTypedPropertySymbol. [fixed c61457fba]
+- controlFlowGenericTypes swap-args (text TS2345): a union-of-tuples rest parameter's argument contextual type is
+  mapped without reductions (`string | unknown`), so the literal 0 stays `0` in the spread tuple. rest_arg_contextual.
+  Test ttttRestUnionTupleLiteralArg. [fixed b31156189]
 
 ## Mutation seed 2811 (2026-10-28, cor8: `scripts/mutate.py -n 8000 --seed 2811`, 9 of 8000 differ)
 - classDoesNotDependOnBaseTypes ann-number-string: writing `x[0]` on `string | StringTreeCollection` (a string index
@@ -627,7 +643,11 @@ never-const (harness writes no errors baseline).
 - Left from it: a re-export of a relative name in an ambient module (`export { b } from "./x"`, `export *`) is TS2307
   in tsgo only when something resolves the module's exports (checkExternalModuleExports' hasExportedMembersOfKind
   under an `export =`, an importer); tttt reports it eagerly (binder_link resolves every alias). Rare: needs a kept
-  error flushed by those resolutions, like a misplaced import's SymbolRare.unreported_errs. [open]
+  error flushed by those resolutions, like a misplaced import's SymbolRare.unreported_errs. cor10 (2026-10-29): tsgo's
+  report is history-dependent across files (diagnostics are collected per file right after its check, so an importer
+  checked before the declaring file loses it, one checked after reports it), and per name (`export *` on any walk of
+  the module's exports, `export { r }` only when r itself resolves). Eager matches the importer-after case; anything
+  K-stable differs somewhere. [design]
 
 ## Mutation seed 2810 (2026-10-28, cor8: `MUTATE_DIR=/tmp/X scripts/mutate.py -n 8000 --seed 2810 --tests multi,js`)
 27 of 8000 differ: 9 render, the rest below or known (commonJSAliasedExport/moduleExportAlias5 never-const, importTag14,

@@ -577,7 +577,7 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   num-to-str (TS2551 'Did you mean' on a property named `5.462437423415177e+244` is TS7053 in tttt: a numeric literal
   key's name) (number literal keys had no name for the suggestion, ttttNumericKeySuggestion) [fixed 6e475379d]; generatorTypeCheck46 member-typo (`[Symbol.iteratorX]`: missing TS2488 on a type with only a
   number index signature; tsgo reports it a second time, `{ [x: number]: {}; }`, from the inference pass that skips
-  context-sensitive arguments, which reports in tsgo and not in tttt: inference, cor9's) [open]; two render. Seed 20261108 `--syntax` (bun11, 2000: 6, no parser item): checker,
+  context-sensitive arguments, which reports in tsgo and not in tttt: inference, cor9's) [design] (missing_checks.md); two render. Seed 20261108 `--syntax` (bun11, 2000: 6, no parser item): checker,
   relayed: genericCallWithTupleType add-optional (`tuple1?:` then an element assignment: missing TS2322 'false' to
   'undefined': past a tuple's end is undefined in elaboration and after TS18048, ttttTuplePastTheEndElaboration) [fixed 6e5eb3236]; controlFlowIterationErrorsAsync ann-string-number (missing TS2345 string to number inside an
   async loop: a call the loop's partial flow evaluates reports on the partial types, ttttLoopPartialCallArgument) [fixed 800f0c685]; controlFlowGenericTypes swap-args (TS2345 text) [text]; three render.
