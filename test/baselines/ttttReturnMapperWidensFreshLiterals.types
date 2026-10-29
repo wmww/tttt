@@ -1,0 +1,145 @@
+//// [test/cases/ttttReturnMapperWidensFreshLiterals.ts] ////
+
+=== ttttReturnMapperWidensFreshLiterals.ts ===
+// tsc's returnMapper is a fixing mapper: a fresh literal inferred from the contextual return type widens, so the
+// argument's contextual type is string and its literal widens too (a regular literal context keeps it)
+declare function f<A extends B, B>(y: B, cb: (b: B) => void): A | B;
+>f : <A extends B, B>(y: B, cb: (b: B) => void) => A | B
+>y : B
+>cb : (b: B) => void
+>b : B
+
+declare function g<B>(y: B, cb: (b: B) => void): B;
+>g : <B>(y: B, cb: (b: B) => void) => B
+>y : B
+>cb : (b: B) => void
+>b : B
+
+const k = "a";
+>k : "a"
+>"a" : "a"
+
+k || f("b", b => { const t: "b" = b; });
+>k || f("b", b => { const t: "b" = b; }) : "a"
+>k : "a"
+>f("b", b => { const t: "b" = b; }) : string
+>f : <A extends B, B>(y: B, cb: (b: B) => void) => A | B
+>"b" : "b"
+>b => { const t: "b" = b; } : (b: string) => void
+>b : string
+>t : "b"
+>b : string
+
+f("b", b => { const t: "b" = b; });
+>f("b", b => { const t: "b" = b; }) : string
+>f : <A extends B, B>(y: B, cb: (b: B) => void) => A | B
+>"b" : "b"
+>b => { const t: "b" = b; } : (b: string) => void
+>b : string
+>t : "b"
+>b : string
+
+k || g("b", b => { const t: "b" = b; });
+>k || g("b", b => { const t: "b" = b; }) : "a"
+>k : "a"
+>g("b", b => { const t: "b" = b; }) : string
+>g : <B>(y: B, cb: (b: B) => void) => B
+>"b" : "b"
+>b => { const t: "b" = b; } : (b: string) => void
+>b : string
+>t : "b"
+>b : string
+
+g("b", b => { const t: "b" = b; });
+>g("b", b => { const t: "b" = b; }) : string
+>g : <B>(y: B, cb: (b: B) => void) => B
+>"b" : "b"
+>b => { const t: "b" = b; } : (b: string) => void
+>b : string
+>t : "b"
+>b : string
+
+const x1: "a" = f("b", b => { const t: "b" = b; });
+>x1 : "a"
+>f("b", b => { const t: "b" = b; }) : "b"
+>f : <A extends B, B>(y: B, cb: (b: B) => void) => A | B
+>"b" : "b"
+>b => { const t: "b" = b; } : (b: "b") => void
+>b : "b"
+>t : "b"
+>b : "b"
+
+declare function h<B>(y: B): B;
+>h : <B>(y: B) => B
+>y : B
+
+declare const k3: "a";
+>k3 : "a"
+
+k3 || g("b", b => { const t: "b" = b; });
+>k3 || g("b", b => { const t: "b" = b; }) : "a"
+>k3 : "a"
+>g("b", b => { const t: "b" = b; }) : "b"
+>g : <B>(y: B, cb: (b: B) => void) => B
+>"b" : "b"
+>b => { const t: "b" = b; } : (b: "b") => void
+>b : "b"
+>t : "b"
+>b : "b"
+
+k || g("b", b => { const t: "b" = b; });
+>k || g("b", b => { const t: "b" = b; }) : "a"
+>k : "a"
+>g("b", b => { const t: "b" = b; }) : string
+>g : <B>(y: B, cb: (b: B) => void) => B
+>"b" : "b"
+>b => { const t: "b" = b; } : (b: string) => void
+>b : string
+>t : "b"
+>b : string
+
+const r1 = k || h("b");
+>r1 : "a"
+>k || h("b") : "a"
+>k : "a"
+>h("b") : "b"
+>h : <B>(y: B) => B
+>"b" : "b"
+
+const r2 = k3 || h("b");
+>r2 : "a"
+>k3 || h("b") : "a"
+>k3 : "a"
+>h("b") : "b"
+>h : <B>(y: B) => B
+>"b" : "b"
+
+const r3: "a" | "b" = h("b");
+>r3 : "a" | "b"
+>h("b") : "b"
+>h : <B>(y: B) => B
+>"b" : "b"
+
+declare const k5: "a" | undefined;
+>k5 : "a" | undefined
+
+const r5 = k5 || h("b");
+>r5 : "a" | "b"
+>k5 || h("b") : "a" | "b"
+>k5 : "a" | undefined
+>h("b") : "b"
+>h : <B>(y: B) => B
+>"b" : "b"
+
+const r6 = k5 || g("b", b => { const t: "b" = b; });
+>r6 : "a" | "b"
+>k5 || g("b", b => { const t: "b" = b; }) : "a" | "b"
+>k5 : "a" | undefined
+>g("b", b => { const t: "b" = b; }) : "b"
+>g : <B>(y: B, cb: (b: B) => void) => B
+>"b" : "b"
+>b => { const t: "b" = b; } : (b: "b") => void
+>b : "b"
+>t : "b"
+>b : "b"
+

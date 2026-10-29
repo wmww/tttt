@@ -114,7 +114,9 @@ last line. The real cause is then elsewhere, and the entry says where. Show a ca
 - 21-C22: an object rest of a union whose members have a property named `rest` (`const { ...rest } = u`). tsc's
   `rest.k` is 1, mechanism unknown. TS2322 spurious. [open]
 - 22-P1: `k || f("b", b => ...)` with `f<A extends B, B>(y: B, cb: (b: B) => void): A | B` and `k = "a"`. tsc infers
-  B as string (widened), not "b", so the callback's TS2322 shows; tttt keeps the literal. [open]
+  B as string (widened), not "b", so the callback's TS2322 shows; tttt kept the literal: tsc's returnMapper is the
+  cloned return context's fixing mapper, so the fresh "a" (k's type) widens to string and "b" isn't a literal of
+  that context; return_inference_mapper() kept literals. [fixed COMMIT-P1]
 - 25-C9a and 25-C9b: a compound-like assignment through a `!` or an array destructuring target (`[x] = s + s`, `x! =
   x + 1`). tsc's isInCompoundLikeAssignment passes through NonNull and array literals (GetAssignmentTarget), so the
   target's type is its base literal type. tttt's compound_like_target stopped at them; it also widened a property
@@ -125,7 +127,7 @@ last line. The real cause is then elsewhere, and the entry says where. Show a ca
 - 31-P3: `interface I { get x(): this }`, `const r: null = i.x`. tsc reports nothing, tttt reports I to null.
   An accessor is a `this` container that doesn't propagate ContainsThis to its interface (tsc's binder), so I is
   thisless and the getter's `this` is the error type. A generic interface's `this` still prints as the reference
-  (tttt makes no this_param for a thisless generic interface; types-only). TS2322 spurious. [fixed COMMIT-P3]
+  (tttt makes no this_param for a thisless generic interface; types-only). TS2322 spurious. [fixed 43774737d]
 - 32-C17: `const s = (Symbol)()`. tsc makes no unique symbol for a parenthesized callee, so `typeof s` is symbol, while
   tttt's is unique. TS2322 spurious. [open]
 - 33-C17b: an object literal method `x()` and then `get x()`/`set x(v)`. A method excludes everything, so the binder

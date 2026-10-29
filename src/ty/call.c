@@ -789,9 +789,11 @@ static TyMapper const* return_inference_mapper(Checker* me, Signature const* sig
     TyList params = sig_res(me, sig)->type_params;
     Ty const** results = arena_new_n(&my arena, Ty const*, params.len ? params.len : 1);
     bool any = false;
+    // (tsc's returnMapper is the cloned context's fixing mapper: a fixed inference widens its fresh literals, so
+    // `k || f("b", ...)` with `const k = "a"` gives the argument the context string, not "a")
     for (u32 i = 0; i < params.len; i++) {
-        results[i] = inf->params[i].co_len || inf->params[i].contra_len ? inference_call_result(me, inf, i, true, ignored_priority) :
-            fallback && (fallback->params[i].co_len || fallback->params[i].contra_len) ? inference_call_result(me, fallback, i, true, 0) :
+        results[i] = inf->params[i].co_len || inf->params[i].contra_len ? inference_call_result(me, inf, i, false, ignored_priority) :
+            fallback && (fallback->params[i].co_len || fallback->params[i].contra_len) ? inference_call_result(me, fallback, i, false, 0) :
             nullptr;
         any |= results[i] != nullptr;
         if (!results[i]) results[i] = params.data[i];
@@ -1597,8 +1599,8 @@ static TyMapper const* infer_type_arguments(
             // `layerEffect(Foo, effectGen(() => ({ fn: ... })))` AEff is what Foo said S is
             // (When the main inference just had the same source, which nothing else has gone into yet, its candidates
             // are what that inference's would be: the walk depends on its priority only through comparisons between
-            // priorities, all of which have the return type's bit, and the top-level flag, which
-            // return_inference_mapper()'s kept literals make moot. What differs is how several combine: the return
+            // priorities, all of which have the return type's bit, and the top-level flag, which both walks set
+            // alike (it decides whether return_inference_mapper() widens fresh literals). What differs is how several combine: the return
             // type's priority unions them, no priority takes the common supertype, the first that takes the others in
             // union order (`xs.map(x => [x.id, x])` for `REs<string, H> | KV<H>` infers H, not a tuple, freelens'
             // TS2345): so the main candidates, taken without that bit. Unless a rest type parameter's implied arity,

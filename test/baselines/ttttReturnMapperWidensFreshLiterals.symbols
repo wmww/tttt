@@ -1,0 +1,118 @@
+//// [test/cases/ttttReturnMapperWidensFreshLiterals.ts] ////
+
+=== ttttReturnMapperWidensFreshLiterals.ts ===
+// tsc's returnMapper is a fixing mapper: a fresh literal inferred from the contextual return type widens, so the
+// argument's contextual type is string and its literal widens too (a regular literal context keeps it)
+declare function f<A extends B, B>(y: B, cb: (b: B) => void): A | B;
+>f : Symbol(f, Decl(ttttReturnMapperWidensFreshLiterals.ts, 0, 0))
+>A : Symbol(A, Decl(ttttReturnMapperWidensFreshLiterals.ts, 2, 19))
+>B : Symbol(B, Decl(ttttReturnMapperWidensFreshLiterals.ts, 2, 31))
+>B : Symbol(B, Decl(ttttReturnMapperWidensFreshLiterals.ts, 2, 31))
+>y : Symbol(y, Decl(ttttReturnMapperWidensFreshLiterals.ts, 2, 35))
+>B : Symbol(B, Decl(ttttReturnMapperWidensFreshLiterals.ts, 2, 31))
+>cb : Symbol(cb, Decl(ttttReturnMapperWidensFreshLiterals.ts, 2, 40))
+>b : Symbol(b, Decl(ttttReturnMapperWidensFreshLiterals.ts, 2, 46))
+>B : Symbol(B, Decl(ttttReturnMapperWidensFreshLiterals.ts, 2, 31))
+>A : Symbol(A, Decl(ttttReturnMapperWidensFreshLiterals.ts, 2, 19))
+>B : Symbol(B, Decl(ttttReturnMapperWidensFreshLiterals.ts, 2, 31))
+
+declare function g<B>(y: B, cb: (b: B) => void): B;
+>g : Symbol(g, Decl(ttttReturnMapperWidensFreshLiterals.ts, 2, 68))
+>B : Symbol(B, Decl(ttttReturnMapperWidensFreshLiterals.ts, 3, 19))
+>y : Symbol(y, Decl(ttttReturnMapperWidensFreshLiterals.ts, 3, 22))
+>B : Symbol(B, Decl(ttttReturnMapperWidensFreshLiterals.ts, 3, 19))
+>cb : Symbol(cb, Decl(ttttReturnMapperWidensFreshLiterals.ts, 3, 27))
+>b : Symbol(b, Decl(ttttReturnMapperWidensFreshLiterals.ts, 3, 33))
+>B : Symbol(B, Decl(ttttReturnMapperWidensFreshLiterals.ts, 3, 19))
+>B : Symbol(B, Decl(ttttReturnMapperWidensFreshLiterals.ts, 3, 19))
+
+const k = "a";
+>k : Symbol(k, Decl(ttttReturnMapperWidensFreshLiterals.ts, 4, 5))
+
+k || f("b", b => { const t: "b" = b; });
+>k : Symbol(k, Decl(ttttReturnMapperWidensFreshLiterals.ts, 4, 5))
+>f : Symbol(f, Decl(ttttReturnMapperWidensFreshLiterals.ts, 0, 0))
+>b : Symbol(b, Decl(ttttReturnMapperWidensFreshLiterals.ts, 5, 11))
+>t : Symbol(t, Decl(ttttReturnMapperWidensFreshLiterals.ts, 5, 24))
+>b : Symbol(b, Decl(ttttReturnMapperWidensFreshLiterals.ts, 5, 11))
+
+f("b", b => { const t: "b" = b; });
+>f : Symbol(f, Decl(ttttReturnMapperWidensFreshLiterals.ts, 0, 0))
+>b : Symbol(b, Decl(ttttReturnMapperWidensFreshLiterals.ts, 6, 6))
+>t : Symbol(t, Decl(ttttReturnMapperWidensFreshLiterals.ts, 6, 19))
+>b : Symbol(b, Decl(ttttReturnMapperWidensFreshLiterals.ts, 6, 6))
+
+k || g("b", b => { const t: "b" = b; });
+>k : Symbol(k, Decl(ttttReturnMapperWidensFreshLiterals.ts, 4, 5))
+>g : Symbol(g, Decl(ttttReturnMapperWidensFreshLiterals.ts, 2, 68))
+>b : Symbol(b, Decl(ttttReturnMapperWidensFreshLiterals.ts, 7, 11))
+>t : Symbol(t, Decl(ttttReturnMapperWidensFreshLiterals.ts, 7, 24))
+>b : Symbol(b, Decl(ttttReturnMapperWidensFreshLiterals.ts, 7, 11))
+
+g("b", b => { const t: "b" = b; });
+>g : Symbol(g, Decl(ttttReturnMapperWidensFreshLiterals.ts, 2, 68))
+>b : Symbol(b, Decl(ttttReturnMapperWidensFreshLiterals.ts, 8, 6))
+>t : Symbol(t, Decl(ttttReturnMapperWidensFreshLiterals.ts, 8, 19))
+>b : Symbol(b, Decl(ttttReturnMapperWidensFreshLiterals.ts, 8, 6))
+
+const x1: "a" = f("b", b => { const t: "b" = b; });
+>x1 : Symbol(x1, Decl(ttttReturnMapperWidensFreshLiterals.ts, 9, 5))
+>f : Symbol(f, Decl(ttttReturnMapperWidensFreshLiterals.ts, 0, 0))
+>b : Symbol(b, Decl(ttttReturnMapperWidensFreshLiterals.ts, 9, 22))
+>t : Symbol(t, Decl(ttttReturnMapperWidensFreshLiterals.ts, 9, 35))
+>b : Symbol(b, Decl(ttttReturnMapperWidensFreshLiterals.ts, 9, 22))
+
+declare function h<B>(y: B): B;
+>h : Symbol(h, Decl(ttttReturnMapperWidensFreshLiterals.ts, 9, 51))
+>B : Symbol(B, Decl(ttttReturnMapperWidensFreshLiterals.ts, 10, 19))
+>y : Symbol(y, Decl(ttttReturnMapperWidensFreshLiterals.ts, 10, 22))
+>B : Symbol(B, Decl(ttttReturnMapperWidensFreshLiterals.ts, 10, 19))
+>B : Symbol(B, Decl(ttttReturnMapperWidensFreshLiterals.ts, 10, 19))
+
+declare const k3: "a";
+>k3 : Symbol(k3, Decl(ttttReturnMapperWidensFreshLiterals.ts, 11, 13))
+
+k3 || g("b", b => { const t: "b" = b; });
+>k3 : Symbol(k3, Decl(ttttReturnMapperWidensFreshLiterals.ts, 11, 13))
+>g : Symbol(g, Decl(ttttReturnMapperWidensFreshLiterals.ts, 2, 68))
+>b : Symbol(b, Decl(ttttReturnMapperWidensFreshLiterals.ts, 12, 12))
+>t : Symbol(t, Decl(ttttReturnMapperWidensFreshLiterals.ts, 12, 25))
+>b : Symbol(b, Decl(ttttReturnMapperWidensFreshLiterals.ts, 12, 12))
+
+k || g("b", b => { const t: "b" = b; });
+>k : Symbol(k, Decl(ttttReturnMapperWidensFreshLiterals.ts, 4, 5))
+>g : Symbol(g, Decl(ttttReturnMapperWidensFreshLiterals.ts, 2, 68))
+>b : Symbol(b, Decl(ttttReturnMapperWidensFreshLiterals.ts, 13, 11))
+>t : Symbol(t, Decl(ttttReturnMapperWidensFreshLiterals.ts, 13, 24))
+>b : Symbol(b, Decl(ttttReturnMapperWidensFreshLiterals.ts, 13, 11))
+
+const r1 = k || h("b");
+>r1 : Symbol(r1, Decl(ttttReturnMapperWidensFreshLiterals.ts, 14, 5))
+>k : Symbol(k, Decl(ttttReturnMapperWidensFreshLiterals.ts, 4, 5))
+>h : Symbol(h, Decl(ttttReturnMapperWidensFreshLiterals.ts, 9, 51))
+
+const r2 = k3 || h("b");
+>r2 : Symbol(r2, Decl(ttttReturnMapperWidensFreshLiterals.ts, 15, 5))
+>k3 : Symbol(k3, Decl(ttttReturnMapperWidensFreshLiterals.ts, 11, 13))
+>h : Symbol(h, Decl(ttttReturnMapperWidensFreshLiterals.ts, 9, 51))
+
+const r3: "a" | "b" = h("b");
+>r3 : Symbol(r3, Decl(ttttReturnMapperWidensFreshLiterals.ts, 16, 5))
+>h : Symbol(h, Decl(ttttReturnMapperWidensFreshLiterals.ts, 9, 51))
+
+declare const k5: "a" | undefined;
+>k5 : Symbol(k5, Decl(ttttReturnMapperWidensFreshLiterals.ts, 17, 13))
+
+const r5 = k5 || h("b");
+>r5 : Symbol(r5, Decl(ttttReturnMapperWidensFreshLiterals.ts, 18, 5))
+>k5 : Symbol(k5, Decl(ttttReturnMapperWidensFreshLiterals.ts, 17, 13))
+>h : Symbol(h, Decl(ttttReturnMapperWidensFreshLiterals.ts, 9, 51))
+
+const r6 = k5 || g("b", b => { const t: "b" = b; });
+>r6 : Symbol(r6, Decl(ttttReturnMapperWidensFreshLiterals.ts, 19, 5))
+>k5 : Symbol(k5, Decl(ttttReturnMapperWidensFreshLiterals.ts, 17, 13))
+>g : Symbol(g, Decl(ttttReturnMapperWidensFreshLiterals.ts, 2, 68))
+>b : Symbol(b, Decl(ttttReturnMapperWidensFreshLiterals.ts, 19, 23))
+>t : Symbol(t, Decl(ttttReturnMapperWidensFreshLiterals.ts, 19, 36))
+>b : Symbol(b, Decl(ttttReturnMapperWidensFreshLiterals.ts, 19, 23))
+
