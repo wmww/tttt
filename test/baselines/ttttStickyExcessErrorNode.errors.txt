@@ -1,0 +1,73 @@
+ttttStickyExcessErrorNode.ts(28,53): error TS2344: Type 'string' does not satisfy the constraint 'keyof T'.
+  Type '"type"' is not assignable to type '"id"'.
+ttttStickyExcessErrorNode.ts(29,21): error TS2344: Type 'string' does not satisfy the constraint 'keyof T'.
+  Type 'string' is not assignable to type 'keyof T'.
+    Type '"type"' is not assignable to type '"id"'.
+ttttStickyExcessErrorNode.ts(34,14): error TS2322: Type '{ type: T; localChannelId: string; }' is not assignable to type 'NewChannel<ChannelOfType<T, EmailChannel>>'.
+  Type '{ type: T; localChannelId: string; }' is not assignable to type 'Partial<Omit<ChannelOfType<T, EmailChannel>, "id" | "type">>'.
+ttttStickyExcessErrorNode.ts(37,39): error TS2345: Argument of type '"text"' is not assignable to parameter of type 'never'.
+ttttStickyExcessErrorNode.ts(39,16): error TS2339: Property 'phoneNumber' does not exist on type 'NewChannel<never>'.
+ttttStickyExcessErrorNode.ts(41,66): error TS2345: Argument of type '"text"' is not assignable to parameter of type 'never'.
+
+
+==== ttttStickyExcessErrorNode.ts (6 errors) ====
+    // An excess property found while reporting moves the error node for good (tsc's hasExcessProperties sets r.errorNode):
+    // the TS2322 whose chain replaced the excess-property message is reported at the shorthand `type`
+    interface TextChannel {
+        id: string;
+        phoneNumber: string;
+    }
+    
+    interface EmailChannel {
+        id: string;
+        type: 'email';
+        addres: string;
+    }
+    
+    type Channel = TextChannel | EmailChannel;
+    
+    export type ChannelType = Channel extends { type: infer R } ? R : never;
+    
+    type Omit<T, K extends keyof T> = Pick<
+        T,
+        ({ [P in keyof T]: P } & { [P in K]: never } & { [x: string]: never })[keyof T]
+    >;
+    
+    type ChannelOfType<T extends ChannelType, A = Channel> = A extends { type: T }
+        ? A
+        : never;
+    
+    
+    export type NewChannel<T extends Channel> = Pick<T, 'type'> &
+                                                        ~~~~~~
+!!! error TS2344: Type 'string' does not satisfy the constraint 'keyof T'.
+!!! error TS2344:   Type '"type"' is not assignable to type '"id"'.
+        Partial<Omit<T, 'type' | 'id'>> & { localChannelId: string };
+                        ~~~~~~~~~~~~~
+!!! error TS2344: Type 'string' does not satisfy the constraint 'keyof T'.
+!!! error TS2344:   Type 'string' is not assignable to type 'keyof T'.
+!!! error TS2344:     Type '"type"' is not assignable to type '"id"'.
+    
+    
+    export function makeNewChannel<T extends ChannelType>(type: T): NewChannel<ChannelOfType<T>> {
+        const localChannelId = `blahblahblah`;
+        return { type, localChannelId };
+                 ~~~~
+!!! error TS2322: Type '{ type: T; localChannelId: string; }' is not assignable to type 'NewChannel<ChannelOfType<T, EmailChannel>>'.
+!!! error TS2322:   Type '{ type: T; localChannelId: string; }' is not assignable to type 'Partial<Omit<ChannelOfType<T, EmailChannel>, "id" | "type">>'.
+    }
+    
+    const newTextChannel = makeNewChannel('text');
+                                          ~~~~~~
+!!! error TS2345: Argument of type '"text"' is not assignable to parameter of type 'never'.
+    // This should work
+    newTextChannel.phoneNumber = '613-555-1234';
+                   ~~~~~~~~~~~
+!!! error TS2339: Property 'phoneNumber' does not exist on type 'NewChannel<never>'.
+    
+    const newTextChannel2 : NewChannel<TextChannel> = makeNewChannel('text');
+                                                                     ~~~~~~
+!!! error TS2345: Argument of type '"text"' is not assignable to parameter of type 'never'.
+    // Compare with this, which ofc works.
+    newTextChannel2.phoneNumber = '613-555-1234';
+    

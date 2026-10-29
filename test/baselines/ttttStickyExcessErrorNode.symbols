@@ -1,0 +1,129 @@
+//// [test/cases/ttttStickyExcessErrorNode.ts] ////
+
+=== ttttStickyExcessErrorNode.ts ===
+// An excess property found while reporting moves the error node for good (tsc's hasExcessProperties sets r.errorNode):
+// the TS2322 whose chain replaced the excess-property message is reported at the shorthand `type`
+interface TextChannel {
+>TextChannel : Symbol(TextChannel, Decl(ttttStickyExcessErrorNode.ts, 0, 0))
+
+    id: string;
+>id : Symbol(TextChannel.id, Decl(ttttStickyExcessErrorNode.ts, 2, 23))
+
+    phoneNumber: string;
+>phoneNumber : Symbol(TextChannel.phoneNumber, Decl(ttttStickyExcessErrorNode.ts, 3, 15))
+}
+
+interface EmailChannel {
+>EmailChannel : Symbol(EmailChannel, Decl(ttttStickyExcessErrorNode.ts, 5, 1))
+
+    id: string;
+>id : Symbol(EmailChannel.id, Decl(ttttStickyExcessErrorNode.ts, 7, 24))
+
+    type: 'email';
+>type : Symbol(EmailChannel.type, Decl(ttttStickyExcessErrorNode.ts, 8, 15))
+
+    addres: string;
+>addres : Symbol(EmailChannel.addres, Decl(ttttStickyExcessErrorNode.ts, 9, 18))
+}
+
+type Channel = TextChannel | EmailChannel;
+>Channel : Symbol(Channel, Decl(ttttStickyExcessErrorNode.ts, 11, 1))
+>TextChannel : Symbol(TextChannel, Decl(ttttStickyExcessErrorNode.ts, 0, 0))
+>EmailChannel : Symbol(EmailChannel, Decl(ttttStickyExcessErrorNode.ts, 5, 1))
+
+export type ChannelType = Channel extends { type: infer R } ? R : never;
+>ChannelType : Symbol(ChannelType, Decl(ttttStickyExcessErrorNode.ts, 13, 42))
+>Channel : Symbol(Channel, Decl(ttttStickyExcessErrorNode.ts, 11, 1))
+>type : Symbol(type, Decl(ttttStickyExcessErrorNode.ts, 15, 43))
+>R : Symbol(R, Decl(ttttStickyExcessErrorNode.ts, 15, 55))
+>R : Symbol(R, Decl(ttttStickyExcessErrorNode.ts, 15, 55))
+
+type Omit<T, K extends keyof T> = Pick<
+>Omit : Symbol(Omit, Decl(ttttStickyExcessErrorNode.ts, 15, 72))
+>T : Symbol(T, Decl(ttttStickyExcessErrorNode.ts, 17, 10))
+>K : Symbol(K, Decl(ttttStickyExcessErrorNode.ts, 17, 12))
+>T : Symbol(T, Decl(ttttStickyExcessErrorNode.ts, 17, 10))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+
+    T,
+>T : Symbol(T, Decl(ttttStickyExcessErrorNode.ts, 17, 10))
+
+    ({ [P in keyof T]: P } & { [P in K]: never } & { [x: string]: never })[keyof T]
+>P : Symbol(P, Decl(ttttStickyExcessErrorNode.ts, 19, 8))
+>T : Symbol(T, Decl(ttttStickyExcessErrorNode.ts, 17, 10))
+>P : Symbol(P, Decl(ttttStickyExcessErrorNode.ts, 19, 8))
+>P : Symbol(P, Decl(ttttStickyExcessErrorNode.ts, 19, 32))
+>K : Symbol(K, Decl(ttttStickyExcessErrorNode.ts, 17, 12))
+>x : Symbol(x, Decl(ttttStickyExcessErrorNode.ts, 19, 54))
+>T : Symbol(T, Decl(ttttStickyExcessErrorNode.ts, 17, 10))
+
+>;
+
+type ChannelOfType<T extends ChannelType, A = Channel> = A extends { type: T }
+>ChannelOfType : Symbol(ChannelOfType, Decl(ttttStickyExcessErrorNode.ts, 20, 2))
+>T : Symbol(T, Decl(ttttStickyExcessErrorNode.ts, 22, 19))
+>ChannelType : Symbol(ChannelType, Decl(ttttStickyExcessErrorNode.ts, 13, 42))
+>A : Symbol(A, Decl(ttttStickyExcessErrorNode.ts, 22, 41))
+>Channel : Symbol(Channel, Decl(ttttStickyExcessErrorNode.ts, 11, 1))
+>A : Symbol(A, Decl(ttttStickyExcessErrorNode.ts, 22, 41))
+>type : Symbol(type, Decl(ttttStickyExcessErrorNode.ts, 22, 68))
+>T : Symbol(T, Decl(ttttStickyExcessErrorNode.ts, 22, 19))
+
+    ? A
+>A : Symbol(A, Decl(ttttStickyExcessErrorNode.ts, 22, 41))
+
+    : never;
+
+
+export type NewChannel<T extends Channel> = Pick<T, 'type'> &
+>NewChannel : Symbol(NewChannel, Decl(ttttStickyExcessErrorNode.ts, 24, 12))
+>T : Symbol(T, Decl(ttttStickyExcessErrorNode.ts, 27, 23))
+>Channel : Symbol(Channel, Decl(ttttStickyExcessErrorNode.ts, 11, 1))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttStickyExcessErrorNode.ts, 27, 23))
+
+    Partial<Omit<T, 'type' | 'id'>> & { localChannelId: string };
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Omit : Symbol(Omit, Decl(ttttStickyExcessErrorNode.ts, 15, 72))
+>T : Symbol(T, Decl(ttttStickyExcessErrorNode.ts, 27, 23))
+>localChannelId : Symbol(localChannelId, Decl(ttttStickyExcessErrorNode.ts, 28, 39))
+
+
+export function makeNewChannel<T extends ChannelType>(type: T): NewChannel<ChannelOfType<T>> {
+>makeNewChannel : Symbol(makeNewChannel, Decl(ttttStickyExcessErrorNode.ts, 28, 65))
+>T : Symbol(T, Decl(ttttStickyExcessErrorNode.ts, 31, 31))
+>ChannelType : Symbol(ChannelType, Decl(ttttStickyExcessErrorNode.ts, 13, 42))
+>type : Symbol(type, Decl(ttttStickyExcessErrorNode.ts, 31, 54))
+>T : Symbol(T, Decl(ttttStickyExcessErrorNode.ts, 31, 31))
+>NewChannel : Symbol(NewChannel, Decl(ttttStickyExcessErrorNode.ts, 24, 12))
+>ChannelOfType : Symbol(ChannelOfType, Decl(ttttStickyExcessErrorNode.ts, 20, 2))
+>T : Symbol(T, Decl(ttttStickyExcessErrorNode.ts, 31, 31))
+
+    const localChannelId = `blahblahblah`;
+>localChannelId : Symbol(localChannelId, Decl(ttttStickyExcessErrorNode.ts, 32, 9))
+
+    return { type, localChannelId };
+>type : Symbol(type, Decl(ttttStickyExcessErrorNode.ts, 33, 12))
+>localChannelId : Symbol(localChannelId, Decl(ttttStickyExcessErrorNode.ts, 33, 18))
+}
+
+const newTextChannel = makeNewChannel('text');
+>newTextChannel : Symbol(newTextChannel, Decl(ttttStickyExcessErrorNode.ts, 36, 5))
+>makeNewChannel : Symbol(makeNewChannel, Decl(ttttStickyExcessErrorNode.ts, 28, 65))
+
+// This should work
+newTextChannel.phoneNumber = '613-555-1234';
+>newTextChannel : Symbol(newTextChannel, Decl(ttttStickyExcessErrorNode.ts, 36, 5))
+
+const newTextChannel2 : NewChannel<TextChannel> = makeNewChannel('text');
+>newTextChannel2 : Symbol(newTextChannel2, Decl(ttttStickyExcessErrorNode.ts, 40, 5))
+>NewChannel : Symbol(NewChannel, Decl(ttttStickyExcessErrorNode.ts, 24, 12))
+>TextChannel : Symbol(TextChannel, Decl(ttttStickyExcessErrorNode.ts, 0, 0))
+>makeNewChannel : Symbol(makeNewChannel, Decl(ttttStickyExcessErrorNode.ts, 28, 65))
+
+// Compare with this, which ofc works.
+newTextChannel2.phoneNumber = '613-555-1234';
+>newTextChannel2.phoneNumber : Symbol(phoneNumber, Decl(ttttStickyExcessErrorNode.ts, 3, 15))
+>newTextChannel2 : Symbol(newTextChannel2, Decl(ttttStickyExcessErrorNode.ts, 40, 5))
+>phoneNumber : Symbol(phoneNumber, Decl(ttttStickyExcessErrorNode.ts, 3, 15))
+

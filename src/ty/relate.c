@@ -116,6 +116,9 @@ typedef struct RelationState {
     Ty const* alias_fallback_source;
     Ty const* alias_fallback_target;
     VecTyReportLine lines; // innermost first while being collected
+    // Reporting: the name of the last excess property found (tsc's hasExcessProperties moves r.errorNode there and
+    // nothing moves it back), where the diagnostic goes even if its line was dropped for another explanation
+    Span sticky_span;
     // The IntersectionState the next is_related_to() is given (tsc's isRelatedToEx argument). Relating to the members of an
     // intersection target (IntersectionState.Target): no excess property or weak type checks, the intersection as a
     // whole has them
@@ -8323,6 +8326,7 @@ static bool has_excess_properties(Checker* me, RelationState* st, Ty const* sour
                     ), prop->decl->name_span);
                 }
                 vec_ty_report_line_back_mut(&st->lines)->relocates = span_valid(prop->decl->name_span);
+                if (span_valid(prop->decl->name_span)) st->sticky_span = prop->decl->name_span;
                 c_drop(cstr, &name, &target_str);
             }
             return true;
@@ -8758,6 +8762,7 @@ static bool check_related(
     st->relation = relation;
     st->reporting = report_into != nullptr;
     st->lines = (VecTyReportLine){0};
+    st->sticky_span = span_null;
     st->intersection_target = false;
     st->intersection_source = false;
     st->passed = (IState){0};
@@ -8847,9 +8852,21 @@ static bool check_related(
     }
     if (report_into && !result) {
         // Collected innermost first; related information goes last, in the order it was associated
+        isize_t first = vec_ty_report_line_size(report_into);
+        bool relocated = false;
         for (isize_t i = vec_ty_report_line_size(&st->lines); i > 0; i--) {
             TyReportLine* line = vec_ty_report_line_at_mut(&st->lines, i - 1);
-            if (!line->related && !line->elided) vec_ty_report_line_push(report_into, ty_report_line_clone(*line));
+            if (!line->related && !line->elided) {
+                vec_ty_report_line_push(report_into, ty_report_line_clone(*line));
+                relocated |= line->relocates;
+            }
+        }
+        // An excess property's line dropped for another explanation still moved the diagnostic (tsc's sticky
+        // errorNode): the outermost line says so
+        if (!relocated && span_valid(st->sticky_span) && vec_ty_report_line_size(report_into) > first) {
+            TyReportLine* line = vec_ty_report_line_at_mut(report_into, first);
+            line->span = st->sticky_span;
+            line->relocates = true;
         }
         for_each (line, vec_ty_report_line, &st->lines) {
             if (line->related) vec_ty_report_line_push(report_into, ty_report_line_clone(*line));
