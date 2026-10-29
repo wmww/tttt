@@ -3877,9 +3877,11 @@ Ty const* ty_pad_initializer_type(Checker* me, Ty const* type, Binding const* pa
         ObjectLiteralProp* props = nullptr;
         u32 count = 0;
         for_each (item, vec_object_binding_item, &pattern->object) {
-            if (item->target.rest || item->computed_key || item->private_name) continue;
+            if (item->target.rest || item->private_name) continue;
+            // (A computed name of a literal or unique symbol type too: tsc's getPropertyNameFromBindingElement)
             bool is_number = false;
-            Atom const* name = ty_property_name_of_key(me, ty_literal(me, &item->source), &is_number);
+            Ty const* key = item->computed_key ? ty_binding_computed_key_type(me, item) : ty_literal(me, &item->source);
+            Atom const* name = ty_property_name_of_key(me, key, &is_number);
             if (!name || ty_get_prop(me, type, name)) continue;
             if (!props) {
                 props = malloc(sizeof(ObjectLiteralProp) * (members->prop_count + vec_object_binding_item_size(&pattern->object)));

@@ -606,7 +606,7 @@ Known: noCircularitySelfReferentialGetter2 (text TS2345), recursiveClassBaseType
 exportSpecifierReferencingOuterDeclaration3 [tsgo]. New:
 - iterableArrayPattern2 delete-stmt (--syntax): a class body left open swallows `var [a, ...b] = x`: tsc's
   isClassMemberStart takes a keyword followed by `[`, so `var` is a property (TS1440) and `[a, ...b]` an index
-  signature; tttt's parser bailed out (TS1068). Test ttttClassMemberVarBracket. [fixed PENDING] Left: tsgo's TS7006 and
+  signature; tttt's parser bailed out (TS1068). Test ttttClassMemberVarBracket. [fixed ec36ec676] Left: tsgo's TS7006 and
   TS7019 for that index signature's untyped parameters `a` and `...b` (tttt reports none). [open]
 - subtypeReductionWithAnyFunctionType_promoted return-void (TS2345 -> TS2322): `const p: (input: string) => boolean =
   useMemo(() => { if (c) return; return x => x.length > 0; })`. The arrow is context sensitive (a block's returned

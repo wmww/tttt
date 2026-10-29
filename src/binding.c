@@ -334,13 +334,12 @@ void binding_add_padded_implicit_any_errors(Binding const* me, Ty const* initial
         if (initializer->kind != TY_ANONYMOUS || !initializer->anonymous.object_literal) return;
         for_each (item, vec_object_binding_item, &my object) {
             Binding const* element = &item->target;
-            if (element->default_value || element->rest || item->computed_key || item->private_name ||
-                element->tag != BINDING_IDENTIFIER
-            ) {
-                continue;
-            }
+            if (element->default_value || element->rest || item->private_name || element->tag != BINDING_IDENTIFIER) continue;
+            // (A computed name of a literal or unique symbol type too: tsc's getPropertyNameFromBindingElement)
             bool is_number = false;
-            Atom const* name = ty_property_name_of_key(current_checker, ty_literal(current_checker, &item->source), &is_number);
+            Ty const* key = item->computed_key ? ty_binding_computed_key_type(current_checker, item) :
+                ty_literal(current_checker, &item->source);
+            Atom const* name = ty_property_name_of_key(current_checker, key, &is_number);
             if (!name || ty_get_prop(current_checker, initializer, name)) continue;
             error_ctx_error_d(errs, element->content_span, 7031, "Binding element '", span_name_text(element->content_span),
                 "' implicitly has an 'any' type.");

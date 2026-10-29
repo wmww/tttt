@@ -1,0 +1,40 @@
+//// [test/cases/ttttPadComputedBindingName.ts] ////
+
+=== ttttPadComputedBindingName.ts ===
+// A destructured parameter's object literal initializer is padded with the pattern's computed names of literal type
+// too (tsc's padObjectLiteralType -> getPropertyNameFromBindingElement): `b` is an implicit any (TS7031), not a missing
+// property of `{}` (TS2339), which an annotation keeps (seed 20261113, controlFlowParameter drop-as)
+declare let s: "";
+>s : Symbol(s, Decl(ttttPadComputedBindingName.ts, 3, 11))
+
+function f1(a: number | string | undefined = 1, { [(a = "")]: b } = {}) {}
+>f1 : Symbol(f1, Decl(ttttPadComputedBindingName.ts, 3, 18))
+>a : Symbol(a, Decl(ttttPadComputedBindingName.ts, 4, 12))
+>a : Symbol(a, Decl(ttttPadComputedBindingName.ts, 4, 12))
+>b : Symbol(b, Decl(ttttPadComputedBindingName.ts, 4, 49))
+
+function f2({ [""]: b } = {}) {}
+>f2 : Symbol(f2, Decl(ttttPadComputedBindingName.ts, 4, 74))
+>"" : Symbol(b, Decl(ttttPadComputedBindingName.ts, 5, 13))
+>b : Symbol(b, Decl(ttttPadComputedBindingName.ts, 5, 13))
+
+function f3({ [s]: b } = {}) {}
+>f3 : Symbol(f3, Decl(ttttPadComputedBindingName.ts, 5, 32))
+>s : Symbol(s, Decl(ttttPadComputedBindingName.ts, 3, 11))
+>b : Symbol(b, Decl(ttttPadComputedBindingName.ts, 6, 13))
+
+function f4({ [s]: b }: {} = {}) {}
+>f4 : Symbol(f4, Decl(ttttPadComputedBindingName.ts, 6, 31))
+>s : Symbol(s, Decl(ttttPadComputedBindingName.ts, 3, 11))
+>b : Symbol(b, Decl(ttttPadComputedBindingName.ts, 7, 13))
+
+function f5({ a: b } = {}) {}
+>f5 : Symbol(f5, Decl(ttttPadComputedBindingName.ts, 7, 35))
+>a : Symbol(a)
+>b : Symbol(b, Decl(ttttPadComputedBindingName.ts, 8, 13))
+
+function f6({ ["a"]: b } = {}) {}
+>f6 : Symbol(f6, Decl(ttttPadComputedBindingName.ts, 8, 29))
+>"a" : Symbol(b, Decl(ttttPadComputedBindingName.ts, 9, 13))
+>b : Symbol(b, Decl(ttttPadComputedBindingName.ts, 9, 13))
+

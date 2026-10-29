@@ -1,0 +1,32 @@
+ttttPadComputedBindingName.ts(5,63): error TS7031: Binding element 'b' implicitly has an 'any' type.
+ttttPadComputedBindingName.ts(6,21): error TS7031: Binding element 'b' implicitly has an 'any' type.
+ttttPadComputedBindingName.ts(7,20): error TS7031: Binding element 'b' implicitly has an 'any' type.
+ttttPadComputedBindingName.ts(8,16): error TS2339: Property '' does not exist on type '{}'.
+ttttPadComputedBindingName.ts(9,18): error TS7031: Binding element 'b' implicitly has an 'any' type.
+ttttPadComputedBindingName.ts(10,22): error TS7031: Binding element 'b' implicitly has an 'any' type.
+
+
+==== ttttPadComputedBindingName.ts (6 errors) ====
+    // A destructured parameter's object literal initializer is padded with the pattern's computed names of literal type
+    // too (tsc's padObjectLiteralType -> getPropertyNameFromBindingElement): `b` is an implicit any (TS7031), not a missing
+    // property of `{}` (TS2339), which an annotation keeps (seed 20261113, controlFlowParameter drop-as)
+    declare let s: "";
+    function f1(a: number | string | undefined = 1, { [(a = "")]: b } = {}) {}
+                                                                  ~
+!!! error TS7031: Binding element 'b' implicitly has an 'any' type.
+    function f2({ [""]: b } = {}) {}
+                        ~
+!!! error TS7031: Binding element 'b' implicitly has an 'any' type.
+    function f3({ [s]: b } = {}) {}
+                       ~
+!!! error TS7031: Binding element 'b' implicitly has an 'any' type.
+    function f4({ [s]: b }: {} = {}) {}
+                   ~
+!!! error TS2339: Property '' does not exist on type '{}'.
+    function f5({ a: b } = {}) {}
+                     ~
+!!! error TS7031: Binding element 'b' implicitly has an 'any' type.
+    function f6({ ["a"]: b } = {}) {}
+                         ~
+!!! error TS7031: Binding element 'b' implicitly has an 'any' type.
+    
