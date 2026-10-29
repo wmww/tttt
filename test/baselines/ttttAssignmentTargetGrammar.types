@@ -1,0 +1,96 @@
+//// [test/cases/ttttAssignmentTargetGrammar.ts] ////
+
+=== ttttAssignmentTargetGrammar.ts ===
+// A destructuring assignment's target is checked as an object literal (its grammar: TS1162, TS1042, TS1171) only where tsc
+// asks for its type, as the contextual type of a right side that wants one (seed 20261115, privateWriteOnlyAccessorRead
+// add-optional); `({ a?: x } = o)` is nothing (ttttObjectLiteralModifierAfterDuplicate, bun28-C12)
+declare function g(): any;
+>g : () => any
+
+let x: any, o: any;
+>x : any
+>o : any
+
+({ public x } = { x: 1 });
+>({ public x } = { x: 1 }) : { x: number; }
+>{ public x } = { x: 1 } : { x: number; }
+>{ public x } : { x: any; }
+>x : any
+>{ x: 1 } : { x: number; }
+>x : number
+>1 : 1
+
+({ [g(), "a"]: x } = { a: 1 });
+>({ [g(), "a"]: x } = { a: 1 }) : { a: number; }
+>{ [g(), "a"]: x } = { a: 1 } : { a: number; }
+>{ [g(), "a"]: x } : { a: any; }
+>[g(), "a"] : any
+>g(), "a" : "a"
+>g() : any
+>g : () => any
+>"a" : "a"
+>x : any
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+
+({ a?: x } = ({ a: 1 }));
+>({ a?: x } = ({ a: 1 })) : { a: number; }
+>{ a?: x } = ({ a: 1 }) : { a: number; }
+>{ a?: x } : { a: any; }
+>a : any
+>x : any
+>({ a: 1 }) : { a: number; }
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+
+({ a?: x } = () => 1);
+>({ a?: x } = () => 1) : () => number
+>{ a?: x } = () => 1 : () => number
+>{ a?: x } : { a: any; }
+>a : any
+>x : any
+>() => 1 : () => number
+>1 : 1
+
+[{ b?: x }] = [{ b: 1 }];
+>[{ b?: x }] = [{ b: 1 }] : [{ b: number; }]
+>[{ b?: x }] : [{ b: any; }]
+>{ b?: x } : { b: any; }
+>b : any
+>x : any
+>[{ b: 1 }] : [{ b: number; }]
+>{ b: 1 } : { b: number; }
+>b : number
+>1 : 1
+
+({ a?: x } = o ? { a: 1 } : o);
+>({ a?: x } = o ? { a: 1 } : o) : any
+>{ a?: x } = o ? { a: 1 } : o : any
+>{ a?: x } : { a: any; }
+>a : any
+>x : any
+>o ? { a: 1 } : o : any
+>o : any
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+>o : any
+
+({ a?: x } = `s`);
+>({ a?: x } = `s`) : "s"
+>{ a?: x } = `s` : "s"
+>{ a?: x } : { a: any; }
+>a : any
+>x : any
+>`s` : "s"
+
+({ a?: x } = o);
+>({ a?: x } = o) : any
+>{ a?: x } = o : any
+>{ a?: x } : { a: any; }
+>a : any
+>x : any
+>o : any
+

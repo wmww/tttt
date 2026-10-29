@@ -1,0 +1,41 @@
+ttttAssignmentTargetGrammar.ts(6,4): error TS1042: 'public' modifier cannot be used here.
+ttttAssignmentTargetGrammar.ts(7,5): error TS1171: A comma expression is not allowed in a computed property name.
+ttttAssignmentTargetGrammar.ts(8,5): error TS1162: An object member cannot be declared optional.
+ttttAssignmentTargetGrammar.ts(9,4): error TS2339: Property 'a' does not exist on type '() => number'.
+ttttAssignmentTargetGrammar.ts(9,5): error TS1162: An object member cannot be declared optional.
+ttttAssignmentTargetGrammar.ts(10,5): error TS1162: An object member cannot be declared optional.
+ttttAssignmentTargetGrammar.ts(11,5): error TS1162: An object member cannot be declared optional.
+ttttAssignmentTargetGrammar.ts(12,4): error TS2339: Property 'a' does not exist on type 'String'.
+
+
+==== ttttAssignmentTargetGrammar.ts (8 errors) ====
+    // A destructuring assignment's target is checked as an object literal (its grammar: TS1162, TS1042, TS1171) only where tsc
+    // asks for its type, as the contextual type of a right side that wants one (seed 20261115, privateWriteOnlyAccessorRead
+    // add-optional); `({ a?: x } = o)` is nothing (ttttObjectLiteralModifierAfterDuplicate, bun28-C12)
+    declare function g(): any;
+    let x: any, o: any;
+    ({ public x } = { x: 1 });
+       ~~~~~~
+!!! error TS1042: 'public' modifier cannot be used here.
+    ({ [g(), "a"]: x } = { a: 1 });
+        ~~~~~~~~
+!!! error TS1171: A comma expression is not allowed in a computed property name.
+    ({ a?: x } = ({ a: 1 }));
+        ~
+!!! error TS1162: An object member cannot be declared optional.
+    ({ a?: x } = () => 1);
+       ~
+!!! error TS2339: Property 'a' does not exist on type '() => number'.
+        ~
+!!! error TS1162: An object member cannot be declared optional.
+    [{ b?: x }] = [{ b: 1 }];
+        ~
+!!! error TS1162: An object member cannot be declared optional.
+    ({ a?: x } = o ? { a: 1 } : o);
+        ~
+!!! error TS1162: An object member cannot be declared optional.
+    ({ a?: x } = `s`);
+       ~
+!!! error TS2339: Property 'a' does not exist on type 'String'.
+    ({ a?: x } = o);
+    

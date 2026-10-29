@@ -1,0 +1,53 @@
+//// [test/cases/ttttAssignmentTargetGrammar.ts] ////
+
+=== ttttAssignmentTargetGrammar.ts ===
+// A destructuring assignment's target is checked as an object literal (its grammar: TS1162, TS1042, TS1171) only where tsc
+// asks for its type, as the contextual type of a right side that wants one (seed 20261115, privateWriteOnlyAccessorRead
+// add-optional); `({ a?: x } = o)` is nothing (ttttObjectLiteralModifierAfterDuplicate, bun28-C12)
+declare function g(): any;
+>g : Symbol(g, Decl(ttttAssignmentTargetGrammar.ts, 0, 0))
+
+let x: any, o: any;
+>x : Symbol(x, Decl(ttttAssignmentTargetGrammar.ts, 4, 3))
+>o : Symbol(o, Decl(ttttAssignmentTargetGrammar.ts, 4, 11))
+
+({ public x } = { x: 1 });
+>x : Symbol(x, Decl(ttttAssignmentTargetGrammar.ts, 5, 2))
+>x : Symbol(x, Decl(ttttAssignmentTargetGrammar.ts, 5, 17))
+
+({ [g(), "a"]: x } = { a: 1 });
+>[g(), "a"] : Symbol([g(), "a"], Decl(ttttAssignmentTargetGrammar.ts, 6, 2))
+>g : Symbol(g, Decl(ttttAssignmentTargetGrammar.ts, 0, 0))
+>x : Symbol(x, Decl(ttttAssignmentTargetGrammar.ts, 4, 3))
+>a : Symbol(a, Decl(ttttAssignmentTargetGrammar.ts, 6, 22))
+
+({ a?: x } = ({ a: 1 }));
+>a : Symbol(a, Decl(ttttAssignmentTargetGrammar.ts, 7, 2))
+>x : Symbol(x, Decl(ttttAssignmentTargetGrammar.ts, 4, 3))
+>a : Symbol(a, Decl(ttttAssignmentTargetGrammar.ts, 7, 15))
+
+({ a?: x } = () => 1);
+>a : Symbol(a, Decl(ttttAssignmentTargetGrammar.ts, 8, 2))
+>x : Symbol(x, Decl(ttttAssignmentTargetGrammar.ts, 4, 3))
+
+[{ b?: x }] = [{ b: 1 }];
+>b : Symbol(b, Decl(ttttAssignmentTargetGrammar.ts, 9, 2))
+>x : Symbol(x, Decl(ttttAssignmentTargetGrammar.ts, 4, 3))
+>b : Symbol(b, Decl(ttttAssignmentTargetGrammar.ts, 9, 16))
+
+({ a?: x } = o ? { a: 1 } : o);
+>a : Symbol(a, Decl(ttttAssignmentTargetGrammar.ts, 10, 2))
+>x : Symbol(x, Decl(ttttAssignmentTargetGrammar.ts, 4, 3))
+>o : Symbol(o, Decl(ttttAssignmentTargetGrammar.ts, 4, 11))
+>a : Symbol(a, Decl(ttttAssignmentTargetGrammar.ts, 10, 18))
+>o : Symbol(o, Decl(ttttAssignmentTargetGrammar.ts, 4, 11))
+
+({ a?: x } = `s`);
+>a : Symbol(a, Decl(ttttAssignmentTargetGrammar.ts, 11, 2))
+>x : Symbol(x, Decl(ttttAssignmentTargetGrammar.ts, 4, 3))
+
+({ a?: x } = o);
+>a : Symbol(a, Decl(ttttAssignmentTargetGrammar.ts, 12, 2))
+>x : Symbol(x, Decl(ttttAssignmentTargetGrammar.ts, 4, 3))
+>o : Symbol(o, Decl(ttttAssignmentTargetGrammar.ts, 4, 11))
+

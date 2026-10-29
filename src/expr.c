@@ -3502,8 +3502,11 @@ static Atom const* object_item_effective_name(ObjectExprItem const* item) {
     return ty_property_name_of_key(current_checker, ty_expr_type(current_checker, key), &is_number);
 }
 
-static void object_check_grammar(Expr const* me, ErrorCtx* errs) {
-    if (!span_source(expr_outer_span(me)) || span_source(expr_outer_span(me))->has_parse_errors || my assignment_pattern) return;
+// `destructuring`: a destructuring assignment's target, checked as an object literal (see
+// assignment_target_check_grammar()): the member checks, not the duplicate names' (tsc's inDestructuring)
+static void object_check_grammar_ex(Expr const* me, bool destructuring, ErrorCtx* errs) {
+    if (!span_source(expr_outer_span(me)) || span_source(expr_outer_span(me))->has_parse_errors) return;
+    if (my assignment_pattern != destructuring) return;
     enum { GET = 1, SET = 2, PROPERTY = 4, METHOD = 8, ACCESSOR = GET | SET };
     ObjectExpr const* object = &my object;
     isize count = vec_object_expr_item_size(object);
@@ -3537,6 +3540,7 @@ static void object_check_grammar(Expr const* me, ErrorCtx* errs) {
             case OBJECT_ITEM_SETTER: kind = SET; break;
             default: continue;
         }
+        if (destructuring) continue;
         names[n] = object_item_effective_name(item);
         if (!names[n]) continue;
         isize existing = -1;
@@ -3573,6 +3577,53 @@ static void object_check_grammar(Expr const* me, ErrorCtx* errs) {
     free(seen);
     free(names);
     name_index_drop(&index);
+}
+
+static void object_check_grammar(Expr const* me, ErrorCtx* errs) {
+    object_check_grammar_ex(me, false, errs);
+}
+
+// A destructuring assignment's target is checked as an object literal only when tsc asks for its type: getTypeOfExpression
+// of the left side is the contextual type of the right (getContextualTypeForAssignmentDeclaration), which an object or
+// array literal or a function on the right asks for. Then checkObjectLiteral's grammar checks run on the target's object
+// literals, `({ foo?: x } = { foo })` is TS1162 where `({ foo?: x } = o)` is nothing
+// Whether checking the expression asks for its contextual type (an object or array literal, a function, where the
+// context passes through to one)
+static bool asks_contextual_type(Expr const* expr) {
+    switch (expr->tag) {
+        case EXPR_OBJECT: case EXPR_ARRAY: case EXPR_FUNCTION: return true;
+        case EXPR_TERNARY: return asks_contextual_type(&expr->ternary->yes) || asks_contextual_type(&expr->ternary->no);
+        case EXPR_BINARY_OP:
+            switch (expr->binary_op->op) {
+                case BINARY_OP_OR_OR: case BINARY_OP_EH_EH:
+                    return asks_contextual_type(&expr->binary_op->left) || asks_contextual_type(&expr->binary_op->right);
+                case BINARY_OP_AND_AND: case BINARY_OP_COMMA: return asks_contextual_type(&expr->binary_op->right);
+                default: return false;
+            }
+        default: return false;
+    }
+}
+
+static void assignment_target_check_grammar(Expr const* target, ErrorCtx* errs) {
+    switch (target->tag) {
+        case EXPR_OBJECT:
+            object_check_grammar_ex(target, true, errs);
+            for_each (i, vec_object_expr_item, &target->object) {
+                if (i->tag == OBJECT_ITEM_PROPERTY) assignment_target_check_grammar(&i->value, errs);
+            }
+            break;
+        case EXPR_ARRAY:
+            for_each (i, vec_expr, &target->array) assignment_target_check_grammar(i, errs);
+            break;
+        case EXPR_SPREAD:
+            assignment_target_check_grammar(target->spread, errs);
+            break;
+        case EXPR_BINARY_OP:
+            if (target->binary_op->op == BINARY_OP_EQUAL) assignment_target_check_grammar(&target->binary_op->left, errs);
+            break;
+        default:
+            break;
+    }
 }
 
 // tsc's binder declares the members of an object literal like any symbols (TypeScript 7's excludes): a property
@@ -4504,6 +4555,11 @@ static void binary_expr_typecheck(Expr const* me, ErrorCtx* errs) {
         type_typecheck(my binary_op->jsdoc_type, errs);
     }
     js_assignment_implicit_any_check(me, errs);
+    if (my binary_op->op == BINARY_OP_EQUAL && (my binary_op->left.tag == EXPR_OBJECT || my binary_op->left.tag == EXPR_ARRAY) &&
+        my binary_op->left.assignment_pattern && asks_contextual_type(&my binary_op->right)
+    ) {
+        assignment_target_check_grammar(&my binary_op->left, errs);
+    }
     if (my binary_op->op == BINARY_OP_IN && my binary_op->left.tag == EXPR_PRIVATE_NAME &&
         !expr_is_perenthisized(&my binary_op->left)
     ) {

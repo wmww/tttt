@@ -894,7 +894,8 @@ typedef struct ObjectExprItem {
     // (IsInConstContext, FlowBuilder.const_context). Set by expr_lookup_names(), see ty/pseudo.h
     bool pseudo_contextual : 1;
     bool pseudo_const : 1;
-    // `a?: 1`, `a?` (TS1162 unless a destructuring target): 1 + the offset of the `?` from the end of the name, 0: none
+    // `a?: 1`, `a?` (TS1162, a destructuring target's only where tsc checks it: assignment_target_check_grammar()):
+    // 1 + the offset of the `?` from the end of the name, 0: none
     uint16_t question_offset;
     Span span;
     cstr name_string; // Empty for spreads and computed keys
