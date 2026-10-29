@@ -627,7 +627,8 @@ Known: recursiveClassBaseType (TS2310), unionTypeWithIndexSignature (text TS2322
   only a non-literal property-key computed name opens an assignment pattern. Test ttttAssignmentPatternComputedName.
   [fixed 020c811ec] Left: the same inside an array pattern, `[{[foo]: bar4}] = [{bar: "bar"}]`: the nested object
   literal target isn't a pattern type in tttt (only the top-level one is cloned as a pattern in
-  assignment_value_context), so its literal gets no excess property check. [open]
+  assignment_value_context), so its literal gets no excess property check: nested targets (array elements, property
+  values) are patterns too now (nested_target_type). Test ttttNestedAssignmentPattern. [fixed 8e3d0ec78]
 - useRegexpGroups num-to-str: `"a"02""`, the scanner's TS1121 before the parser's ',' expected at the same token.
   Test ttttOctalScannerErrorFirst. [fixed 8b85c6f16]
 - thislessFunctionsNotContextSensitive3 delete-stmt: `export {` in a member list is no modifier. Test
