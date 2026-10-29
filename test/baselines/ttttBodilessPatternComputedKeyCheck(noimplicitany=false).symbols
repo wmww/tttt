@@ -1,0 +1,61 @@
+//// [test/cases/ttttBodilessPatternComputedKeyCheck.ts] ////
+
+=== ttttBodilessPatternComputedKeyCheck.ts ===
+// A bodiless signature's unannotated pattern is typed from its elements when the parameter's type is asked for
+// (an overload's check against its implementation, a call): tsc's getTypeFromObjectBindingPattern checks a
+// renamed element's computed key then (TS2464), which checkVariableLikeDeclaration skipped (mutation seed 20261122's
+// mut5487)
+declare const k: string, o: object;
+>k : Symbol(k, Decl(ttttBodilessPatternComputedKeyCheck.ts, 4, 13))
+>o : Symbol(o, Decl(ttttBodilessPatternComputedKeyCheck.ts, 4, 24))
+
+function f5({ [k in o]: c });
+>f5 : Symbol(f5, Decl(ttttBodilessPatternComputedKeyCheck.ts, 4, 35), Decl(ttttBodilessPatternComputedKeyCheck.ts, 5, 29))
+>k : Symbol(k, Decl(ttttBodilessPatternComputedKeyCheck.ts, 4, 13))
+>o : Symbol(o, Decl(ttttBodilessPatternComputedKeyCheck.ts, 4, 24))
+>c : Symbol(c, Decl(ttttBodilessPatternComputedKeyCheck.ts, 5, 13))
+
+function f5() {}
+>f5 : Symbol(f5, Decl(ttttBodilessPatternComputedKeyCheck.ts, 4, 35), Decl(ttttBodilessPatternComputedKeyCheck.ts, 5, 29))
+
+function f6(a: number, { [k in o]: P });
+>f6 : Symbol(f6, Decl(ttttBodilessPatternComputedKeyCheck.ts, 6, 16))
+>a : Symbol(a, Decl(ttttBodilessPatternComputedKeyCheck.ts, 7, 12))
+>k : Symbol(k, Decl(ttttBodilessPatternComputedKeyCheck.ts, 4, 13))
+>o : Symbol(o, Decl(ttttBodilessPatternComputedKeyCheck.ts, 4, 24))
+>P : Symbol(P, Decl(ttttBodilessPatternComputedKeyCheck.ts, 7, 24))
+
+declare function f7({ [k in o]: c }): void;
+>f7 : Symbol(f7, Decl(ttttBodilessPatternComputedKeyCheck.ts, 7, 40))
+>k : Symbol(k, Decl(ttttBodilessPatternComputedKeyCheck.ts, 4, 13))
+>o : Symbol(o, Decl(ttttBodilessPatternComputedKeyCheck.ts, 4, 24))
+>c : Symbol(c, Decl(ttttBodilessPatternComputedKeyCheck.ts, 8, 21))
+
+function f8({ a: { [k in o]: c } });
+>f8 : Symbol(f8, Decl(ttttBodilessPatternComputedKeyCheck.ts, 8, 43), Decl(ttttBodilessPatternComputedKeyCheck.ts, 9, 36))
+>a : Symbol(a)
+>k : Symbol(k, Decl(ttttBodilessPatternComputedKeyCheck.ts, 4, 13))
+>o : Symbol(o, Decl(ttttBodilessPatternComputedKeyCheck.ts, 4, 24))
+>c : Symbol(c, Decl(ttttBodilessPatternComputedKeyCheck.ts, 9, 18))
+
+function f8() {}
+>f8 : Symbol(f8, Decl(ttttBodilessPatternComputedKeyCheck.ts, 8, 43), Decl(ttttBodilessPatternComputedKeyCheck.ts, 9, 36))
+
+declare function f10({ [k in o]: c }): void;
+>f10 : Symbol(f10, Decl(ttttBodilessPatternComputedKeyCheck.ts, 10, 16))
+>k : Symbol(k, Decl(ttttBodilessPatternComputedKeyCheck.ts, 4, 13))
+>o : Symbol(o, Decl(ttttBodilessPatternComputedKeyCheck.ts, 4, 24))
+>c : Symbol(c, Decl(ttttBodilessPatternComputedKeyCheck.ts, 11, 22))
+
+f10({});
+>f10 : Symbol(f10, Decl(ttttBodilessPatternComputedKeyCheck.ts, 10, 16))
+
+function f11({ [k in o]: c }: {});
+>f11 : Symbol(f11, Decl(ttttBodilessPatternComputedKeyCheck.ts, 12, 8), Decl(ttttBodilessPatternComputedKeyCheck.ts, 13, 34))
+>k : Symbol(k, Decl(ttttBodilessPatternComputedKeyCheck.ts, 4, 13))
+>o : Symbol(o, Decl(ttttBodilessPatternComputedKeyCheck.ts, 4, 24))
+>c : Symbol(c, Decl(ttttBodilessPatternComputedKeyCheck.ts, 13, 14))
+
+function f11() {}
+>f11 : Symbol(f11, Decl(ttttBodilessPatternComputedKeyCheck.ts, 12, 8), Decl(ttttBodilessPatternComputedKeyCheck.ts, 13, 34))
+

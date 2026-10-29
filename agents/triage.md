@@ -268,3 +268,6 @@ intersection's property symbol to bugs/type_core.md.
   src/ts/components/pages/settings/SearchableAutoSetting.tsx:56 and TS2322 (`(args: { value: number; }) => string[] |
   undefined` to `FieldValidateOrFn<...>`) at :59, tsc neither; the same at --checkers 1 and on main 3d349c30c (cor16).
   Unreduced. [open]
+- A bodiless overload's pattern element with a default (`function f9({ [k in o]: c = 1 }); function f9() {}`, cor17
+  2026-10-29): tttt reports TS2371 "A parameter initializer is only allowed in a function or constructor
+  implementation" at the element's `c`, tsc only TS2842 there (TS2371 is a parameter's own initializer). [open]

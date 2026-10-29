@@ -6208,15 +6208,24 @@ static Signature const* jsdoc_tag_single_signature(Checker* me, FunctionImpl con
 
 // The renamed elements (`{ a: b }`) of a parameter pattern of a signature without a body, which
 // checkVariableLikeDeclaration leaves alone: implicitly any once something asks for the parameter's type (tsc's
-// getTypeOfSymbol of the parameter -> getTypeFromBindingElement with reportErrors), here when the signature is resolved
-static void report_renamed_bodiless_elements(Checker* me, Binding const* pattern) {
+// getTypeOfSymbol of the parameter -> getTypeFromBindingElement with reportErrors), here when the signature is resolved.
+// Their computed keys are checked then too (getTypeFromObjectBindingPattern's getLiteralTypeFromPropertyName:
+// checkComputedPropertyName's TS2464, with or without noImplicitAny)
+static void report_renamed_bodiless_elements(Checker* me, Binding const* pattern, bool implicit_any) {
     if (pattern->tag == BINDING_OBJECT) {
         for_each (i, vec_object_binding_item, &pattern->object) {
+            // (The ones binding_typecheck() skips: a renaming to an identifier)
+            if (i->computed_key && i->target.tag == BINDING_IDENTIFIER && (!i->target.rest || i->target.rest_property_name) &&
+                my errs->phase == ERROR_PHASE_TYPECHECK
+            ) {
+                ty_check_computed_name(me, i->computed_key, i->source_span, false, my errs);
+            }
             if (i->target.rest || i->target.default_value) continue;
             if (i->target.tag != BINDING_IDENTIFIER) {
-                report_renamed_bodiless_elements(me, &i->target);
+                report_renamed_bodiless_elements(me, &i->target, implicit_any);
                 continue;
             }
+            if (!implicit_any) continue;
             if (span_eq(i->source_span, i->target.content_span)) continue;
             // (A computed key not usable as a property name isn't in the pattern's type: tsc's
             // getTypeFromObjectBindingPattern skips the element, mutation seed 20261122's mut5487)
@@ -6226,7 +6235,7 @@ static void report_renamed_bodiless_elements(Checker* me, Binding const* pattern
         }
     } else if (pattern->tag == BINDING_ARRAY) {
         for_each (i, vec_binding, &pattern->array) {
-            if (i->tag == BINDING_OBJECT || i->tag == BINDING_ARRAY) report_renamed_bodiless_elements(me, i);
+            if (i->tag == BINDING_OBJECT || i->tag == BINDING_ARRAY) report_renamed_bodiless_elements(me, i, implicit_any);
         }
     }
 }
@@ -6365,8 +6374,8 @@ static void function_signature_params(Checker* me, Signature const* sig, SigReso
         } else {
             param->type = ty_binding_type(me, &i->initializer.binding, ctx);
         }
-        if (!from && !function->has_body && !i->initializer.binding.has_explicit_type && compiler_options()->no_implicit_any) {
-            report_renamed_bodiless_elements(me, &i->initializer.binding);
+        if (!from && !function->has_body && !i->initializer.binding.has_explicit_type) {
+            report_renamed_bodiless_elements(me, &i->initializer.binding, compiler_options()->no_implicit_any);
         }
         // (tsc's isOptionalParameter: an immediately invoked function's parameter past the arguments)
         // (the minimum argument count goes by the arguments as written, getSignatureFromDeclaration; whether it's

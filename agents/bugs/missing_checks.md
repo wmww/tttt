@@ -684,15 +684,23 @@ str-to-num (`declare module 42 {`, the 20261121 block-scope family). Fixed:
   resolved with errors there, since the pattern types the parameter and the overload check asks for it (cor16's first
   version of 03-C11b's fix had dropped them: now only for an annotated parameter), and the element isn't implicitly any
   (report_renamed_bodiless_elements(): a key not usable as a name isn't in getTypeFromObjectBindingPattern's type).
-  Test ttttBodilessRenamingComputedName [fixed 14d9d9515]. Left: the key's TS2464 (an `in` expression's boolean), which
-  tsc's checkComputedPropertyName says when the parameter's type is asked for. [open]
+  Test ttttBodilessRenamingComputedName [fixed 14d9d9515]. The key's TS2464 (an `in` expression's boolean), which
+  tsc's checkComputedPropertyName says when the parameter's type is asked for (getTypeFromObjectBindingPattern):
+  report_renamed_bodiless_elements() checks those keys now, with or without noImplicitAny. Test
+  ttttBodilessPatternComputedKeyCheck. [fixed COMMIT]
 - Render only [text]: conditionalContextualReturnSubstitutionCache extends-object (a second related TS2208 "This type
   parameter might need an `extends ...` constraint" naming the whole conditional), mappedTypeConstraints2 drop-as (the
   related TS2751 "Circularity originates in type at this location" missing on a TS2313), and two `--syntax` ones.
 - circularBaseConstraint delete-stmt (--syntax): TS5114 "Instantiations of type 'B' appear infinitely circular" in
   tsc where tttt says TS2589, the limit family. [design]
 - stringMappingSpecialCasing delete-stmt (--syntax): TS18004 for a shorthand `Capitalized` in recovery's object
-  literal, missing. [open]
+  literal, missing. cor17's analysis (tsgotrace): not the literal's check (checkShorthandPropertyAssignment outside a
+  pattern checks the `= init` only) but tsgo's node builder printing the literal as the source of the failed
+  initializer assignment (getTypeNamesForErrorDisplay): serializeTypeForDeclaration's pseudo type of the member falls
+  back to getTypeOfSymbol of the binder's symbol, whose lazy type is checkShorthandPropertyAssignment with
+  inDestructuringPattern = true, which resolves the name with errors. Simple shapes (`const s: string = { M = 1 }`,
+  with methods and excess properties) don't reach it; only this recovery shape was seen. A printing side effect in a
+  recovery-only shape (a shorthand initializer outside a pattern is TS1312 otherwise): not worth modelling. [design]
 
 ## Mutation seed 20261121 (2026-10-29, cor15: `scripts/mutate.py -n 8000 --seed 20261121`, 8 of 8000 differ)
 Known: generatorTypeCheck46 (TS2488), globalThisGlobalExportAsGlobal (TS2303). Fixed:

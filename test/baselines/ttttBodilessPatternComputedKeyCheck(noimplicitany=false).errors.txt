@@ -1,0 +1,54 @@
+ttttBodilessPatternComputedKeyCheck.ts(6,15): error TS2464: A computed property name must be of type 'string', 'number', 'symbol', or 'any'.
+ttttBodilessPatternComputedKeyCheck.ts(6,25): error TS2842: 'c' is an unused renaming of '[k in o]'. Did you intend to use it as a type annotation?
+ttttBodilessPatternComputedKeyCheck.ts(8,10): error TS2391: Function implementation is missing or not immediately following the declaration.
+ttttBodilessPatternComputedKeyCheck.ts(8,36): error TS2842: 'P' is an unused renaming of '[k in o]'. Did you intend to use it as a type annotation?
+ttttBodilessPatternComputedKeyCheck.ts(9,33): error TS2842: 'c' is an unused renaming of '[k in o]'. Did you intend to use it as a type annotation?
+ttttBodilessPatternComputedKeyCheck.ts(10,20): error TS2464: A computed property name must be of type 'string', 'number', 'symbol', or 'any'.
+ttttBodilessPatternComputedKeyCheck.ts(10,30): error TS2842: 'c' is an unused renaming of '[k in o]'. Did you intend to use it as a type annotation?
+ttttBodilessPatternComputedKeyCheck.ts(12,24): error TS2464: A computed property name must be of type 'string', 'number', 'symbol', or 'any'.
+ttttBodilessPatternComputedKeyCheck.ts(12,34): error TS2842: 'c' is an unused renaming of '[k in o]'. Did you intend to use it as a type annotation?
+ttttBodilessPatternComputedKeyCheck.ts(14,26): error TS2842: 'c' is an unused renaming of '[k in o]'. Did you intend to use it as a type annotation?
+
+
+==== ttttBodilessPatternComputedKeyCheck.ts (10 errors) ====
+    // A bodiless signature's unannotated pattern is typed from its elements when the parameter's type is asked for
+    // (an overload's check against its implementation, a call): tsc's getTypeFromObjectBindingPattern checks a
+    // renamed element's computed key then (TS2464), which checkVariableLikeDeclaration skipped (mutation seed 20261122's
+    // mut5487)
+    declare const k: string, o: object;
+    function f5({ [k in o]: c });
+                  ~~~~~~~~
+!!! error TS2464: A computed property name must be of type 'string', 'number', 'symbol', or 'any'.
+                            ~
+!!! error TS2842: 'c' is an unused renaming of '[k in o]'. Did you intend to use it as a type annotation?
+!!! related TS2843 ttttBodilessPatternComputedKeyCheck.ts:6:28: We can only write a type for '[k in o]' by adding a type for the entire parameter here.
+    function f5() {}
+    function f6(a: number, { [k in o]: P });
+             ~~
+!!! error TS2391: Function implementation is missing or not immediately following the declaration.
+                                       ~
+!!! error TS2842: 'P' is an unused renaming of '[k in o]'. Did you intend to use it as a type annotation?
+!!! related TS2843 ttttBodilessPatternComputedKeyCheck.ts:8:39: We can only write a type for '[k in o]' by adding a type for the entire parameter here.
+    declare function f7({ [k in o]: c }): void;
+                                    ~
+!!! error TS2842: 'c' is an unused renaming of '[k in o]'. Did you intend to use it as a type annotation?
+!!! related TS2843 ttttBodilessPatternComputedKeyCheck.ts:9:36: We can only write a type for '[k in o]' by adding a type for the entire parameter here.
+    function f8({ a: { [k in o]: c } });
+                       ~~~~~~~~
+!!! error TS2464: A computed property name must be of type 'string', 'number', 'symbol', or 'any'.
+                                 ~
+!!! error TS2842: 'c' is an unused renaming of '[k in o]'. Did you intend to use it as a type annotation?
+!!! related TS2843 ttttBodilessPatternComputedKeyCheck.ts:10:35: We can only write a type for '[k in o]' by adding a type for the entire parameter here.
+    function f8() {}
+    declare function f10({ [k in o]: c }): void;
+                           ~~~~~~~~
+!!! error TS2464: A computed property name must be of type 'string', 'number', 'symbol', or 'any'.
+                                     ~
+!!! error TS2842: 'c' is an unused renaming of '[k in o]'. Did you intend to use it as a type annotation?
+!!! related TS2843 ttttBodilessPatternComputedKeyCheck.ts:12:37: We can only write a type for '[k in o]' by adding a type for the entire parameter here.
+    f10({});
+    function f11({ [k in o]: c }: {});
+                             ~
+!!! error TS2842: 'c' is an unused renaming of '[k in o]'. Did you intend to use it as a type annotation?
+    function f11() {}
+    

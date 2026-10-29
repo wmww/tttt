@@ -1,0 +1,69 @@
+//// [test/cases/ttttBodilessPatternComputedKeyCheck.ts] ////
+
+=== ttttBodilessPatternComputedKeyCheck.ts ===
+// A bodiless signature's unannotated pattern is typed from its elements when the parameter's type is asked for
+// (an overload's check against its implementation, a call): tsc's getTypeFromObjectBindingPattern checks a
+// renamed element's computed key then (TS2464), which checkVariableLikeDeclaration skipped (mutation seed 20261122's
+// mut5487)
+declare const k: string, o: object;
+>k : string
+>o : object
+
+function f5({ [k in o]: c });
+>f5 : ({ [k in o]: c }: {}) => any
+>k in o : boolean
+>k : string
+>o : object
+>c : any
+
+function f5() {}
+>f5 : ({ [k in o]: c }: {}) => any
+
+function f6(a: number, { [k in o]: P });
+>f6 : (a: number, { [k in o]: P }: {}) => any
+>a : number
+>k in o : boolean
+>k : string
+>o : object
+>P : any
+
+declare function f7({ [k in o]: c }): void;
+>f7 : ({ [k in o]: c }: {}) => void
+>k in o : boolean
+>k : string
+>o : object
+>c : any
+
+function f8({ a: { [k in o]: c } });
+>f8 : ({ a: { [k in o]: c } }: { a: {}; }) => any
+>a : any
+>k in o : boolean
+>k : string
+>o : object
+>c : any
+
+function f8() {}
+>f8 : ({ a: { [k in o]: c } }: { a: {}; }) => any
+
+declare function f10({ [k in o]: c }): void;
+>f10 : ({ [k in o]: c }: {}) => void
+>k in o : boolean
+>k : string
+>o : object
+>c : any
+
+f10({});
+>f10({}) : void
+>f10 : ({ [k in o]: c }: {}) => void
+>{} : {}
+
+function f11({ [k in o]: c }: {});
+>f11 : ({ [k in o]: c }: {}) => any
+>k in o : boolean
+>k : string
+>o : object
+>c : any
+
+function f11() {}
+>f11 : ({ [k in o]: c }: {}) => any
+
