@@ -278,7 +278,7 @@ tsc keeps one local symbol per block for a name's exported and local declaration
 - A NUL byte inside the file is an invalid character (at_eof() in parser.c, 2026-10-14) in the token scanner and the
   list loops; other `*p.pos` stops (keyword lookahead, JSON values) still take it as an end, harmlessly as far as
   probed (they see no token, the list skips it). [fixed 2026-10-14]
-- A class member starting with `<` (`class D { <T>() {} }`): tsc says '=>' expected at the `{`, tttt TS2304/TS1109. A parameter list after type parameters then `{` is an arrow missing its `=>`. Test ttttGenericArrowMissingArrow. [fixed 6c4973288]
+- A class member starting with `<` (`class D { <T>() {} }`): tsc says '=>' expected at the `{`, tttt TS2304/TS1109. A parameter list after type parameters then `{` is an arrow missing its `=>`. Test ttttGenericArrowMissingArrow. [fixed 994308b21]
 - Object literal grammar errors in destructuring assignment targets (TS1255 `!`, TS1042 modifiers, TS1162 `?`): tsc
   reports checkGrammarObjectLiteralExpression's errors for a target exactly when checkObjectLiteral runs on it, i.e.
   when the right side asks for its contextual type: `({ a!: a } = { a: 1 })` reports, `= x` and `for ({ a!: a } of
@@ -606,13 +606,13 @@ Known: generatorTypeCheck46 (TS2488), distributiveConditionalBaseConstraint (ela
 restElementWithInitializer2 x2 (tsgo's TS-1 pre/post-emit line [tsgo]). Fixed:
 - jsonRawJSON2 ann-string-number: a script's `interface RawJSON` redeclaring the es2026.json lib's `declare global`
   one: TS2430 at the first declaration, the script's (globals merge before global augmentations); the harness shares
-  libs, whose augmentations were merged first. Test ttttGlobalAugmentationInterfaceFirst. [fixed 7fe119acc]
+  libs, whose augmentations were merged first. Test ttttGlobalAugmentationInterfaceFirst. [fixed 7b2ab4a7f]
 - syntheticProtectedProperties member-typo: a spelling suggestion on `Base & Mock` with a protected and a public
   `content` (the intersection's is public: TS2551), and its "declared here" by tsgo's value-declaration rule. Test
-  ttttIntersectionSuggestionVisibility. [fixed 2394d4a13]
+  ttttIntersectionSuggestionVisibility. [fixed a5f4eb448]
 - isolatedDeclarationErrorsObjects ann-number-string: an accessor pair of differing types printed from the checker's
   type reports TS9009 at the setter (serializeReturnTypeForSignature's inference fallback). Test
-  ttttIsolatedSetterReturnFallback. [fixed 3fa82438d] Left: a getter without annotation in such a pair. [open]
+  ttttIsolatedSetterReturnFallback. [fixed 680077745] Left: a getter without annotation in such a pair. [open]
 Not fixed:
 - recursiveTypeInference2 add-optional: a spurious TS2769 on zod-like `array(Tree).default([])` in a recursive getter:
   a conditional type met while the getter's inferred type is in flight (`Out<Box<Box<any>>>`, `o` optional) stays
@@ -626,11 +626,11 @@ symbolProperty18 (TS7022), conditionalContextualReturnSubstitutionCache drop-as 
 [text]). Fixed:
 - nonPrimitiveAndEmptyObject delete-stmt: `const { fooProps = {} } = foo` with `fooProps?: BarProps & object` and an
   empty BarProps is `{}` in tsgo (mutual strict subtypes, tsgo's union order decides), `BarProps & object` in tttt
-  (ty_binding_element_type's mutual-subtype guard). Test ttttBindingDefaultMutualSubtype. [fixed ceab20e12]
+  (ty_binding_element_type's mutual-subtype guard). Test ttttBindingDefaultMutualSubtype. [fixed eccf3c004]
 - `--syntax` (9 of 8000): objectRestBindingContextualInference delete-stmt, a missing TS2554 in an initializer of a
   bodiless signature's pattern parameter (the parameter list swallowed the next statement): an element of an
   unannotated pattern asks for the parameter's type, the initializer's, checked and reported unless it has a quick
-  type. Test ttttBodilessPatternInitializerChecked. [fixed 152e4cc95] The rest known (render: the U+2028 squiggles
+  type. Test ttttBodilessPatternInitializerChecked. [fixed 623bff30a] The rest known (render: the U+2028 squiggles
   [text], objectFreezeLiteralsDontWiden's TS-1 [tsgo]).
 Not fixed:
 - declarationEmitNestedAnonymousMappedType drop-as: tsgo's baseline has TS2313's related TS2751 "Circularity
@@ -672,7 +672,7 @@ Known: recursiveClassBaseType (TS2310, 3), globalThisGlobalExportAsGlobal, recur
 exportSpecifierReferencingOuterDeclaration3. Fixed:
 - contextualTypingGenericFunction2 delete-stmt: `export const a` as parameters, `const` a parameter of its own (two
   TS7006 '(Missing)', TS2300). Test ttttParameterModifierThenReservedWord. [fixed 8ff5b4867] Left: its types baseline,
-  the object literal in a bodiless declaration's parameter initializer typed contextually by tsgo, any in tttt. Test ttttBodilessInitializerContext. [fixed e06d37706]
+  the object literal in a bodiless declaration's parameter initializer typed contextually by tsgo, any in tttt. Test ttttBodilessInitializerContext. [fixed 82086211b]
 - excessPropertyChecksWithNestedIntersections, typeSatisfaction_contextualTyping2,
   declarationEmitTypeParameterNameReusedInOverloads delete-stmt: node ends under recovery. Test ttttRecoveryNodeEnds2.
   [fixed c5fa02a3a]
@@ -737,7 +737,7 @@ Not fixed:
   `,` the array literal wants (function expressions only: jsxTernaryWithObjectInAttribute broke when every list did).
   Test ttttParameterListAbortAtComma. [fixed 957142ee9] Left: contextually typed (the type assertion), tsgo's
   contextual check infers `never` from the missing body (getReturnTypeFromBody, no HasImplicitReturn), tttt `any`
-  (function_return_type's !body branch); types baseline only. Test ttttMissingBodyContextualReturn. [fixed 92b863223]
+  (function_return_type's !body branch); types baseline only. Test ttttMissingBodyContextualReturn. [fixed c9b971a60]
 - allowUnescapedParagraphAndLineSeparatorsInStringLiteral delete-stmt: the errors baseline's squiggles after a U+2028
   inside an unterminated string: tsc's line starts count U+2028/U+2029, the harness's rendering doesn't (positions
   agree). [text]

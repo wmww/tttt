@@ -9346,7 +9346,7 @@ const baselines = {
         types: true,
     },
     'bun71-R09a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11061,7 +11061,7 @@ const baselines = {
         types: true,
     },
     'bun97-M1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -12536,6 +12536,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttBindingDefaultMutualSubtype': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttBindingDefaultUnionSubtypeReduced': {
         errors: true,
         symbols: true,
@@ -12567,12 +12572,22 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttBodilessInitializerContext': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttBodilessParameterPatterns': {
         errors: true,
         symbols: true,
         types: true,
     },
     'ttttBodilessPatternImplicitAny': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttBodilessPatternInitializerChecked': {
         errors: true,
         symbols: true,
         types: true,
@@ -14321,6 +14336,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttGenericArrowMissingArrow': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttGenericArrowSpeculation': {
         errors: true,
         symbols: true,
@@ -14348,6 +14368,11 @@ const baselines = {
         types: true,
     },
     'ttttGetterMissingBody': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttGlobalAugmentationInterfaceFirst': {
         errors: true,
         symbols: true,
         types: true,
@@ -14877,6 +14902,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttIntersectionSuggestionVisibility': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttIntersectionTargetThisProps': {
         errors: true,
         symbols: true,
@@ -14903,6 +14933,11 @@ const baselines = {
         types: true,
     },
     'ttttInvalidGenericAccessInInference': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttIsolatedSetterReturnFallback': {
         errors: true,
         symbols: true,
         types: true,
@@ -15693,6 +15728,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttMissingBodyContextualReturn': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttMissingEnumInitializer': {
         errors: true,
         symbols: true,
@@ -16362,6 +16402,11 @@ const baselines = {
         errors: false,
         symbols: true,
         types: true,
+    },
+    'ttttRecursiveGetterDeferredConditional': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
     'ttttRecursiveReturnParenthesizedCallee': {
         errors: true,

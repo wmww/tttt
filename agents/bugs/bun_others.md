@@ -696,7 +696,7 @@ type annotation.".
 
 -TS6133 (missing), 13 cases: 03-SC8, 04-C4, 04-C6, 32-C11, 43-C8c, 43-P4a, 54-L06, 54-L07a, 54-L08, 71-R09a, 80-R17a,
 80-R17b, 97-M1. First: 03-SC8 a.ts:2 "'…' is declared but its value is never read.". 71-R09a and 97-M1: a namespace used as a value
-(TS2708) marked the import referenced [fixed 4a33df537]; 43-C8c/43-P4a/54-L07a/80-R17a/80-R17b are JSDoc `{@link}`
+(TS2708) marked the import referenced [fixed 29895013c]; 43-C8c/43-P4a/54-L07a/80-R17a/80-R17b are JSDoc `{@link}`
 marking, 03-SC8 an `export {}` inside a function body: not looked into.
 
 +TS2307 (spurious), 11 cases: 01-C10, 28-C21a, 36-C10b, 36-C11, 40-C13c, 40-P1, 41-P3a, 41-P3b, 42-C11, 42-P2, 59-L09.
