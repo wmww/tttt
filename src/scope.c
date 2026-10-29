@@ -3484,6 +3484,7 @@ static bool is_global_declaration(Binder const* binder, Symbol const* symbol) {
     return file && !file->is_module;
 }
 
+static void error_cannot_find_name(ErrorCtx* errs, Span name, char const* lib, bool shorthand);
 static void report_non_local_export(ErrorCtx* errs, Span name) {
     error_ctx_error_d(errs, name, 2661, "Cannot export '", name, "'. Only local declarations can be exported from a module.");
 }
@@ -4083,7 +4084,12 @@ static Symbol* resolve_alias_target_in(Symbol* me, ErrorCtx* errs) {
                 } else if (item->source_name.size && (*item->source_name.buf == '"' || *item->source_name.buf == '\'')) {
                     // `export { "x" }` (tsc's checkExportSpecifier skips it: the parser's TS1003)
                 } else {
-                    // (tsc's resolveName for the export specifier: with spelling suggestions)
+                    // tsc reports a value export's twice: resolveAlias' resolveEntityName (getTargetOfExportSpecifier)
+                    // without a suggestion, then markExportSpecifierAliasReferenced's resolveName with one (the two are
+                    // one diagnostic when there's no suggestion). A type-only one only once (duplicateErrorNameNotFound)
+                    if (!item->type_only && !item->type_modifier) {
+                        error_cannot_find_name(errs, item->source_name, lib_feature_of_global(span_sv(item->source_name)), false);
+                    }
                     scope_report_not_found(my alias->scope, item->source_name, SYMBOL_ANY_MEANING, false, errs);
                 }
                 return nullptr;

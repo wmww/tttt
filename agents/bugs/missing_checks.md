@@ -667,13 +667,21 @@ circular), so nothing is in flight to fail and V.p is never named. Fixing it mea
 entry whose evaluation repeats getTargetOfAliasDeclaration's member lookup; the other 15 missing TS2502 bun cases
 (bun_others.md) are other mechanisms (lazy parameter typing, notes/reentrancy.md). [design]
 
+## Mutation seed 20261121 (2026-10-29, cor15: `scripts/mutate.py -n 8000 --seed 20261121`, 8 of 8000 differ)
+Known: generatorTypeCheck46 (TS2488), globalThisGlobalExportAsGlobal (TS2303). Fixed:
+- destructuringAssignmentWithExportedName delete-stmt: `export { x }` of an undeclared x is TS2304 and TS2552 at
+  the same place in tsc (resolveAlias without a suggestion, markExportSpecifierAliasReferenced with one). Test
+  ttttExportSpecifierNotFoundTwice. [fixed COMMIT-EX]
+- unicodeLineSeparatorInMultilineComment never-const: tsgo's suite runner reports nothing for `/* a<U+2028>b */ const
+  x: never = 1`, its CLI does (projdiff byte-identical): a harness artifact. [tsgo]
+
 ## Mutation seed 20261120 (2026-10-29, cor15: `scripts/mutate.py -n 8000 --seed 20261120`, 3 of 8000 differ; `--syntax` 6)
 - destructureComputedProperty delete-stmt: an any key of a union of objects, TS2538. Test ttttAnyKeyOfUnionObject.
   [fixed 4e2a3c6c0]
 - recursiveClassBaseType drop-as (mut5311): TS2310/TS2506 through a class expression checked inside the base
   constructor resolution, type_core.md, test ttttClassExpressionBaseCircular. [design]
 - narrowingUnionWithBang delete-stmt (--syntax): `(a?.b` in a parameter list, `?.` one token: TS1005 at it. Test
-  ttttQuestionDotInParameterList. [fixed COMMIT-QD]
+  ttttQuestionDotInParameterList. [fixed 1de49c251]
 - instantiationExpressionErrorNoCrash delete-stmt (--syntax): a bodiless object literal method `return(state =
   initialState)` inside initialState's initializer: tsc's assignNonContextualParameterTypes types the parameter while
   the object literal is checked, circular, TS7022 at initialState; tttt types parameters lazily (notes/reentrancy.md,

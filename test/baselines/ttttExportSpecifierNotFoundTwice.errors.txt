@@ -1,0 +1,22 @@
+ttttExportSpecifierNotFoundTwice.ts(5,10): error TS2304: Cannot find name 'nonexportedFoo'.
+ttttExportSpecifierNotFoundTwice.ts(5,10): error TS2552: Cannot find name 'nonexportedFoo'. Did you mean 'exportedFoo'?
+ttttExportSpecifierNotFoundTwice.ts(5,31): error TS2552: Cannot find name 'Roomy'. Did you mean 'Roomx'?
+ttttExportSpecifierNotFoundTwice.ts(6,10): error TS2304: Cannot find name 'zzz'.
+
+
+==== ttttExportSpecifierNotFoundTwice.ts (4 errors) ====
+    // An undeclared name in a value export specifier is reported twice by tsc: TS2304 by resolveAlias (no suggestion),
+    // TS2552 by markExportSpecifierAliasReferenced; a type-only one once
+    export let exportedFoo: any;
+    type Roomx = {};
+    export { nonexportedFoo, type Roomy };
+             ~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'nonexportedFoo'.
+             ~~~~~~~~~~~~~~
+!!! error TS2552: Cannot find name 'nonexportedFoo'. Did you mean 'exportedFoo'?
+                                  ~~~~~
+!!! error TS2552: Cannot find name 'Roomy'. Did you mean 'Roomx'?
+    export { zzz };
+             ~~~
+!!! error TS2304: Cannot find name 'zzz'.
+    

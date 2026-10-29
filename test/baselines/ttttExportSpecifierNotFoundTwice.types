@@ -1,0 +1,18 @@
+//// [test/cases/ttttExportSpecifierNotFoundTwice.ts] ////
+
+=== ttttExportSpecifierNotFoundTwice.ts ===
+// An undeclared name in a value export specifier is reported twice by tsc: TS2304 by resolveAlias (no suggestion),
+// TS2552 by markExportSpecifierAliasReferenced; a type-only one once
+export let exportedFoo: any;
+>exportedFoo : any
+
+type Roomx = {};
+>Roomx : Roomx
+
+export { nonexportedFoo, type Roomy };
+>nonexportedFoo : any
+>Roomy : any
+
+export { zzz };
+>zzz : any
+
