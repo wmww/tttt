@@ -8716,9 +8716,9 @@ const baselines = {
         types: true,
     },
     'bun55-L12d': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun55-L13': {
         errors: true,
@@ -15719,6 +15719,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttNewTargetOtherName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttNoDefaultLibPragma': {
         errors: true,
         symbols: true,
@@ -16676,6 +16681,11 @@ const baselines = {
         types: true,
     },
     'ttttTupleOptionalRestElement': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttTuplePastTheEndElaboration': {
         errors: true,
         symbols: true,
         types: true,
