@@ -569,12 +569,12 @@ never-const (harness writes no errors baseline).
 ## Mutation seeds 20261106 and 20261107 (2026-10-28, cor9: `MUTATE_DIR=... scripts/mutate.py -n 8000 --seed S`)
 8 and 9 of 8000 differ (21 and 24 more with a new syntax error, `--syntax`: bun10's). 3 `render` each.
 - constEnumErrors num-to-str: `E2["1"]` on a const enum is a string (the reverse mapping's index signature, const
-  enums too). Test ttttConstEnumNumericIndex. [fixed 77661ee65]
+  enums too). Test ttttConstEnumNumericIndex. [fixed b1ed44b9e]
 - distributiveConditionalBaseConstraint extends-object: spurious TS2344, tail recursion's fresh deferred type
   (type_core.md). [design]
 - generatorTypeCheck46 member-typo: tsgo reports TS2488 twice at one `yield*`, once from the inference pass (the
   object literal's method typed `{}` while context-sensitive) and once finally; tttt only the final one. The family of
-  diagnostics made by an inference pass (like c3ffa3e8f's TS2536, rebased 5ce5e5c2b), here with another type text.
+  diagnostics made by an inference pass (like c3ffa3e8f's TS2536, rebased 65e561e0b), here with another type text.
   [open]
 - symbolProperty18 member-typo: `var str = i[Symbol.toStringTagX]()` is TS7022 for str in tsgo because printing the
   object type for TS7053 runs getSymbolChain's getWithAlternativeContainers, which types every value symbol in scope
@@ -584,13 +584,13 @@ never-const (harness writes no errors baseline).
 - distributiveConditionalTypeConstraints ann-string-number (both seeds): tsgo's elaboration repeats the conditional
   source's line before `Type 'string' is not assignable to type 'number'`. [text]
 - With `--syntax` (new parse errors in tsc's baseline, but checker divergences): fixed nonPrimitiveConstraintOfIndexAccessType
-  (never[Object] has no write constraint, 121f656fa), bigIntWithTargetES2016 (compound assignment to an only-nullable
-  operand, 3acfcbee1), genericCallInferenceConditionalType2 (a failed call's extra arguments aren't typed while it
-  resolves, 2d5d2799b), newTargetNarrowing (meta-property names, 5806eba5e), controlFlowForStatementContinueIntoIncrementor1
-  (arithmetic on a loop's partial types, 0fb0bee9d, 800f0c685), importCallExpressionGrammarError (spread specifier, f7671da55),
+  (never[Object] has no write constraint, d9db3cc43), bigIntWithTargetES2016 (compound assignment to an only-nullable
+  operand, f22a892bf), genericCallInferenceConditionalType2 (a failed call's extra arguments aren't typed while it
+  resolves, e4270d220), newTargetNarrowing (meta-property names, 5806eba5e), controlFlowForStatementContinueIntoIncrementor1
+  (arithmetic on a loop's partial types, 0fb0bee9d, 800f0c685), importCallExpressionGrammarError (spread specifier, 1847baef9),
   contextualReturnArrayPatternCallback (TS1338 is a grammar error, 0540d6753), propertiesAndIndexersForNumericNames
-  (implicit any only at the first declaration, cdcaa5554), nestedExcessPropertyChecking (a shorthand initializer is
-  typechecked, d3c99d463), recursiveTypeInference (a shorthand name with an initializer isn't a use, dfe118d5e).
+  (implicit any only at the first declaration, c40370dd6), nestedExcessPropertyChecking (a shorthand initializer is
+  typechecked, 355bf63a4), recursiveTypeInference (a shorthand name with an initializer isn't a use, d9f492fd3).
   [fixed] Left: recursiveTypeInferenceReturnTypeConstraint (missing TS2615, the history family),
   exportSpecifierReferencingOuterDeclaration3 (spurious TS2694), substitutionTypesInIndexedAccessTypes (text TS2322),
   octalIntegerLiteralES6 (TS2551->TS7053), parser-side ones for bun. [open]
@@ -613,9 +613,9 @@ never-const (harness writes no errors baseline).
 - assignmentGenericLookupTypeNarrowing str-to-num: `foo(mappedObject[key])` with `K extends 42` is TS2536 from the
   generic call's inference pass (no constraint substitution in an inferential check); the final check's type is the
   constraint. The walk now also reports an access any evaluation found invalid (KEY_INVALID_GENERIC_ACCESS). Test
-  ttttInvalidGenericAccessInInference. [fixed 5ce5e5c2b]
+  ttttInvalidGenericAccessInInference. [fixed 65e561e0b]
 - contextualTypeWithUnionTypeIndexSignatures ann-number-string: findMostOverlappyType keys `{ 1: x }` by the number
-  literal 1, which a number index overlaps; tttt used the string "1". Test ttttOverlappyNumericKeys. [fixed a74c0611d]
+  literal 1, which a number index overlaps; tttt used the string "1". Test ttttOverlappyNumericKeys. [fixed dd9e251d5]
 - Not looked at: recursiveTypeInference add-optional (TS2345 text), circularBaseTypes delete-stmt
   (missing TS2310, the base cycle design), nonPrimitiveAndEmptyObject drop-optional (TS2339 names the narrowed `{}`
   in tsgo, the union in tttt). [open]
@@ -623,7 +623,7 @@ never-const (harness writes no errors baseline).
   require("./Sub"); }` with m2 unused is only TS2439 in tsgo: the program doesn't resolve a relative name in an ambient
   module (collectExternalModuleReferences) and checkExternalImportOrExportDeclaration returns after TS2439, so TS2307
   comes only from resolving the alias on a use. Imports now go by PortItem.resolve_on_use (the namespace TS1147
-  mechanism: reported on a use, in the import's own file). Test ttttAmbientRelativeImportOnUse. [fixed 59017fe51]
+  mechanism: reported on a use, in the import's own file). Test ttttAmbientRelativeImportOnUse. [fixed bf2032fbe]
 - Left from it: a re-export of a relative name in an ambient module (`export { b } from "./x"`, `export *`) is TS2307
   in tsgo only when something resolves the module's exports (checkExternalModuleExports' hasExportedMembersOfKind
   under an `export =`, an importer); tttt reports it eagerly (binder_link resolves every alias). Rare: needs a kept

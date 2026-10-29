@@ -796,7 +796,7 @@ const baselines = {
         types: false,
     },
     'bun05-C7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -4111,7 +4111,7 @@ const baselines = {
         types: true,
     },
     'bun25-C12b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -4841,7 +4841,7 @@ const baselines = {
         types: true,
     },
     'bun28-C24b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -6056,7 +6056,7 @@ const baselines = {
         types: true,
     },
     'bun32-C21b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11098,7 +11098,7 @@ const baselines = {
     'bun99-B2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun99-B3': {
         errors: true,
@@ -12188,6 +12188,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAmbientRelativeImportOnUse': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAmbientStaticBlockReturn': {
         errors: true,
         symbols: true,
@@ -12695,6 +12700,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttCompoundNullableTarget': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttCompoundUnionKeyWrite': {
         errors: true,
         symbols: true,
@@ -12808,6 +12818,11 @@ const baselines = {
         dts: true,
     },
     'ttttConstContextFromRawParameter': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttConstEnumNumericIndex': {
         errors: true,
         symbols: true,
         types: true,
@@ -13881,6 +13896,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDuplicateFieldImplicitAny': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDuplicatePropertyWithErrorType': {
         errors: true,
         symbols: true,
@@ -13976,6 +13996,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttErrorAnyReturnRelated': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttErrorIndexStaysError': {
         errors: true,
         symbols: true,
@@ -14022,6 +14047,11 @@ const baselines = {
         types: true,
     },
     'ttttExactOptionalIntersectionTargetHead': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttExcessPropertyFirstDuplicate': {
         errors: true,
         symbols: true,
         types: true,
@@ -14127,6 +14157,11 @@ const baselines = {
         types: true,
     },
     'ttttExtendsExportsExactBeforePattern': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttFailedCallExtraArgsDeferred': {
         errors: true,
         symbols: true,
         types: true,
@@ -14414,6 +14449,11 @@ const baselines = {
         types: true,
     },
     'ttttImportAttributeErrorUnchecked': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttImportCallSpreadSpecifier': {
         errors: true,
         symbols: true,
         types: true,
@@ -14788,6 +14828,16 @@ const baselines = {
         types: true,
     },
     'ttttIntrinsicAliasKeywordAlone': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttInvalidGenericAccessInInference': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttIterateNullableConstraint': {
         errors: true,
         symbols: true,
         types: true,
@@ -15694,6 +15744,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttNeverIndexedByNonKey': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttNeverIntersectionSpreadRestMapped': {
         errors: true,
         symbols: true,
@@ -15896,6 +15951,11 @@ const baselines = {
         types: true,
     },
     'ttttOptionalPropIndexedConstraint': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttOverlappyNumericKeys': {
         errors: true,
         symbols: true,
         types: true,
@@ -16295,6 +16355,16 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttShorthandDefaultChecked': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttShorthandDefaultNameNotUsed': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttShorthandDefaultNameUnchecked': {
         errors: true,
         symbols: true,
@@ -16562,6 +16632,11 @@ const baselines = {
     },
     'ttttTaggedTemplateInOptionalChain': {
         errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttTailRecursionFreshConditional': {
+        errors: false,
         symbols: true,
         types: true,
     },
