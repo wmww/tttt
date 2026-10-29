@@ -1,0 +1,40 @@
+//// [test/cases/ttttNumericKeySuggestion.ts] ////
+
+=== ttttNumericKeySuggestion.ts ===
+// A number literal key names a property by its text: TS2551 suggests a near name (tsc's getPropertyNameFromIndex),
+// and TS7053 has no 'Property ... does not exist' chain for it
+var obj2 = { a: 1, 5.462437423415177e+244: true, abcdef: 2 };
+>obj2 : { a: number; 5.462437423415177e+244: boolean; abcdef: number; }
+>{ a: 1, 5.462437423415177e+244: true, abcdef: 2 } : { a: number; 5.462437423415177e+244: boolean; abcdef: number; }
+>a : number
+>1 : 1
+>5.462437423415177e+244 : boolean
+>true : true
+>abcdef : number
+>2 : 2
+
+obj2[5.462437423415177];
+>obj2[5.462437423415177] : any
+>obj2 : { a: number; 5.462437423415177e+244: boolean; abcdef: number; }
+>5.462437423415177 : 5.462437423415177
+
+obj2["5.462437423415177"];
+>obj2["5.462437423415177"] : any
+>obj2 : { a: number; 5.462437423415177e+244: boolean; abcdef: number; }
+>"5.462437423415177" : "5.462437423415177"
+
+obj2[5.46243742341517];
+>obj2[5.46243742341517] : any
+>obj2 : { a: number; 5.462437423415177e+244: boolean; abcdef: number; }
+>5.46243742341517 : 5.46243742341517
+
+obj2["abcdeg"];
+>obj2["abcdeg"] : any
+>obj2 : { a: number; 5.462437423415177e+244: boolean; abcdef: number; }
+>"abcdeg" : "abcdeg"
+
+obj2[12345];
+>obj2[12345] : any
+>obj2 : { a: number; 5.462437423415177e+244: boolean; abcdef: number; }
+>12345 : 12345
+

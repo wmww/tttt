@@ -1,0 +1,26 @@
+//// [test/cases/ttttNumericKeySuggestion.ts] ////
+
+=== ttttNumericKeySuggestion.ts ===
+// A number literal key names a property by its text: TS2551 suggests a near name (tsc's getPropertyNameFromIndex),
+// and TS7053 has no 'Property ... does not exist' chain for it
+var obj2 = { a: 1, 5.462437423415177e+244: true, abcdef: 2 };
+>obj2 : Symbol(obj2, Decl(ttttNumericKeySuggestion.ts, 2, 3))
+>a : Symbol(a, Decl(ttttNumericKeySuggestion.ts, 2, 12))
+>5.462437423415177e+244 : Symbol(5.462437423415177e+244, Decl(ttttNumericKeySuggestion.ts, 2, 18))
+>abcdef : Symbol(abcdef, Decl(ttttNumericKeySuggestion.ts, 2, 48))
+
+obj2[5.462437423415177];
+>obj2 : Symbol(obj2, Decl(ttttNumericKeySuggestion.ts, 2, 3))
+
+obj2["5.462437423415177"];
+>obj2 : Symbol(obj2, Decl(ttttNumericKeySuggestion.ts, 2, 3))
+
+obj2[5.46243742341517];
+>obj2 : Symbol(obj2, Decl(ttttNumericKeySuggestion.ts, 2, 3))
+
+obj2["abcdeg"];
+>obj2 : Symbol(obj2, Decl(ttttNumericKeySuggestion.ts, 2, 3))
+
+obj2[12345];
+>obj2 : Symbol(obj2, Decl(ttttNumericKeySuggestion.ts, 2, 3))
+

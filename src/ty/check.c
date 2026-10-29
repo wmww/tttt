@@ -2774,7 +2774,9 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
         }
     }
     cstr object_str = ty_to_cstr(me, object);
-    Atom const* name = (index->flags & TYF_STRING_LITERAL) && !(index->flags & TYF_ENUM_LITERAL) ? index->literal.string : nullptr;
+    // (A number literal's name is its text: tsc's getPropertyNameFromIndex, `o[5.46]` Did you mean '5.46e+244'?)
+    Atom const* name = (index->flags & TYF_STRING_LITERAL) && !(index->flags & TYF_ENUM_LITERAL) ? index->literal.string :
+        (index->flags & TYF_NUMBER_LITERAL) && !(index->flags & TYF_ENUM_LITERAL) ? ty_literal_name(me, index) : nullptr;
     Prop const* suggestion = nullptr;
     cstr method = cstr_null;
     Symbol const* class_symbol = instance_class(object);

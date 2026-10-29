@@ -571,12 +571,12 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   ttttLoopPartialArithmetic) [fixed]; recursiveTypeInferenceReturnTypeConstraint str-to-num (missing TS7022/TS2615, the known item) [open];
   newTargetNarrowing member-typo (`.targetX`: missing TS2345 boolean to true: flow took every `new.X` for `new.target`) [fixed 5806eba5e]; octalIntegerLiteralES6
   num-to-str (TS2551 'Did you mean' on a property named `5.462437423415177e+244` is TS7053 in tttt: a numeric literal
-  key's name) [open]; generatorTypeCheck46 member-typo (`[Symbol.iteratorX]`: missing TS2488 on a type with only a
+  key's name) (number literal keys had no name for the suggestion, ttttNumericKeySuggestion) [fixed]; generatorTypeCheck46 member-typo (`[Symbol.iteratorX]`: missing TS2488 on a type with only a
   number index signature; tsgo reports it a second time, `{ [x: number]: {}; }`, from the inference pass that skips
   context-sensitive arguments, which reports in tsgo and not in tttt: inference, cor9's) [open]; two render. Seed 20261108 `--syntax` (bun11, 2000: 6, no parser item): checker,
   relayed: genericCallWithTupleType add-optional (`tuple1?:` then an element assignment: missing TS2322 'false' to
   'undefined': past a tuple's end is undefined in elaboration and after TS18048, ttttTuplePastTheEndElaboration) [fixed 6e5eb3236]; controlFlowIterationErrorsAsync ann-string-number (missing TS2345 string to number inside an
-  async loop: a call the loop's partial flow evaluates reports on the partial types, ttttLoopPartialCallArgument) [fixed]; controlFlowGenericTypes swap-args (TS2345 text) [text]; three render.
+  async loop: a call the loop's partial flow evaluates reports on the partial types, ttttLoopPartialCallArgument) [fixed 800f0c685]; controlFlowGenericTypes swap-args (TS2345 text) [text]; three render.
 - Mutation seeds 20261105 and 20261106 (bun10, `--syntax`, 2000 each: 8 and 15 errors-component differences; 20261104
   without `--syntax`: 0). Fixed: a `]` ends a parameter list (fb750f459), a misplaced `import x = N` (TS1232) isn't
   resolved (a43889a36), the end of the file ends a type or class member (3aca4984e), a for-of's expression is no comma

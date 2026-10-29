@@ -1,0 +1,31 @@
+ttttNumericKeySuggestion.ts(4,6): error TS2551: Property '5.462437423415177' does not exist on type '{ a: number; 5.462437423415177e+244: boolean; abcdef: number; }'. Did you mean '5.462437423415177e+244'?
+ttttNumericKeySuggestion.ts(5,6): error TS2551: Property '5.462437423415177' does not exist on type '{ a: number; 5.462437423415177e+244: boolean; abcdef: number; }'. Did you mean '5.462437423415177e+244'?
+ttttNumericKeySuggestion.ts(6,1): error TS7053: Element implicitly has an 'any' type because expression of type '5.46243742341517' can't be used to index type '{ a: number; 5.462437423415177e+244: boolean; abcdef: number; }'.
+  Property '5.46243742341517' does not exist on type '{ a: number; 5.462437423415177e+244: boolean; abcdef: number; }'.
+ttttNumericKeySuggestion.ts(7,6): error TS2551: Property 'abcdeg' does not exist on type '{ a: number; 5.462437423415177e+244: boolean; abcdef: number; }'. Did you mean 'abcdef'?
+ttttNumericKeySuggestion.ts(8,1): error TS7053: Element implicitly has an 'any' type because expression of type '12345' can't be used to index type '{ a: number; 5.462437423415177e+244: boolean; abcdef: number; }'.
+  Property '12345' does not exist on type '{ a: number; 5.462437423415177e+244: boolean; abcdef: number; }'.
+
+
+==== ttttNumericKeySuggestion.ts (5 errors) ====
+    // A number literal key names a property by its text: TS2551 suggests a near name (tsc's getPropertyNameFromIndex),
+    // and TS7053 has no 'Property ... does not exist' chain for it
+    var obj2 = { a: 1, 5.462437423415177e+244: true, abcdef: 2 };
+    obj2[5.462437423415177];
+         ~~~~~~~~~~~~~~~~~
+!!! error TS2551: Property '5.462437423415177' does not exist on type '{ a: number; 5.462437423415177e+244: boolean; abcdef: number; }'. Did you mean '5.462437423415177e+244'?
+    obj2["5.462437423415177"];
+         ~~~~~~~~~~~~~~~~~~~
+!!! error TS2551: Property '5.462437423415177' does not exist on type '{ a: number; 5.462437423415177e+244: boolean; abcdef: number; }'. Did you mean '5.462437423415177e+244'?
+    obj2[5.46243742341517];
+    ~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '5.46243742341517' can't be used to index type '{ a: number; 5.462437423415177e+244: boolean; abcdef: number; }'.
+!!! error TS7053:   Property '5.46243742341517' does not exist on type '{ a: number; 5.462437423415177e+244: boolean; abcdef: number; }'.
+    obj2["abcdeg"];
+         ~~~~~~~~
+!!! error TS2551: Property 'abcdeg' does not exist on type '{ a: number; 5.462437423415177e+244: boolean; abcdef: number; }'. Did you mean 'abcdef'?
+    obj2[12345];
+    ~~~~~~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '12345' can't be used to index type '{ a: number; 5.462437423415177e+244: boolean; abcdef: number; }'.
+!!! error TS7053:   Property '12345' does not exist on type '{ a: number; 5.462437423415177e+244: boolean; abcdef: number; }'.
+    
