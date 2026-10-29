@@ -1,0 +1,85 @@
+//// [test/cases/ttttConstructorNarrowingSymbol.ts] ////
+
+=== ttttConstructorNarrowingSymbol.ts ===
+// `x.constructor === C` keeps the members tsc's isConstructedBy compares by symbol when either side is a class: `typeof C`
+// has the class's symbol, so it stays. bun 20-C15
+class A { a = 1 } class C { c = 3; static s = 1 }
+>A : Symbol(A, Decl(ttttConstructorNarrowingSymbol.ts, 0, 0))
+>a : Symbol(A.a, Decl(ttttConstructorNarrowingSymbol.ts, 2, 9))
+>C : Symbol(C, Decl(ttttConstructorNarrowingSymbol.ts, 2, 17), Decl(ttttConstructorNarrowingSymbol.ts, 2, 49))
+>c : Symbol(C.c, Decl(ttttConstructorNarrowingSymbol.ts, 2, 27))
+>s : Symbol(C.s, Decl(ttttConstructorNarrowingSymbol.ts, 2, 34))
+
+namespace C { export const n = 1; }
+>C : Symbol(C, Decl(ttttConstructorNarrowingSymbol.ts, 2, 17), Decl(ttttConstructorNarrowingSymbol.ts, 2, 49))
+>n : Symbol(n, Decl(ttttConstructorNarrowingSymbol.ts, 3, 26))
+
+class G<T> { g!: T }
+>G : Symbol(G, Decl(ttttConstructorNarrowingSymbol.ts, 3, 35))
+>T : Symbol(T, Decl(ttttConstructorNarrowingSymbol.ts, 4, 8))
+>g : Symbol(G.g, Decl(ttttConstructorNarrowingSymbol.ts, 4, 12))
+>T : Symbol(T, Decl(ttttConstructorNarrowingSymbol.ts, 4, 8))
+
+function o2(x: typeof C | A) { if (x.constructor === C) { const _: null = x; } }
+>o2 : Symbol(o2, Decl(ttttConstructorNarrowingSymbol.ts, 4, 20))
+>x : Symbol(x, Decl(ttttConstructorNarrowingSymbol.ts, 5, 12))
+>C : Symbol(C, Decl(ttttConstructorNarrowingSymbol.ts, 2, 17), Decl(ttttConstructorNarrowingSymbol.ts, 2, 49))
+>A : Symbol(A, Decl(ttttConstructorNarrowingSymbol.ts, 0, 0))
+>x.constructor : Symbol(Object.constructor, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttConstructorNarrowingSymbol.ts, 5, 12))
+>constructor : Symbol(Object.constructor, Decl(lib.es5.d.ts, --, --))
+>C : Symbol(C, Decl(ttttConstructorNarrowingSymbol.ts, 2, 17), Decl(ttttConstructorNarrowingSymbol.ts, 2, 49))
+>_ : Symbol(_, Decl(ttttConstructorNarrowingSymbol.ts, 5, 63))
+>x : Symbol(x, Decl(ttttConstructorNarrowingSymbol.ts, 5, 12))
+
+function o3(x: A | C | G<number>) { if (x.constructor === C) { const _: null = x; } else { const _2: null = x; } }
+>o3 : Symbol(o3, Decl(ttttConstructorNarrowingSymbol.ts, 5, 80))
+>x : Symbol(x, Decl(ttttConstructorNarrowingSymbol.ts, 6, 12))
+>A : Symbol(A, Decl(ttttConstructorNarrowingSymbol.ts, 0, 0))
+>C : Symbol(C, Decl(ttttConstructorNarrowingSymbol.ts, 2, 17), Decl(ttttConstructorNarrowingSymbol.ts, 2, 49))
+>G : Symbol(G, Decl(ttttConstructorNarrowingSymbol.ts, 3, 35))
+>x.constructor : Symbol(Object.constructor, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttConstructorNarrowingSymbol.ts, 6, 12))
+>constructor : Symbol(Object.constructor, Decl(lib.es5.d.ts, --, --))
+>C : Symbol(C, Decl(ttttConstructorNarrowingSymbol.ts, 2, 17), Decl(ttttConstructorNarrowingSymbol.ts, 2, 49))
+>_ : Symbol(_, Decl(ttttConstructorNarrowingSymbol.ts, 6, 68))
+>x : Symbol(x, Decl(ttttConstructorNarrowingSymbol.ts, 6, 12))
+>_2 : Symbol(_2, Decl(ttttConstructorNarrowingSymbol.ts, 6, 96))
+>x : Symbol(x, Decl(ttttConstructorNarrowingSymbol.ts, 6, 12))
+
+function o4(x: typeof A | typeof C) { if (x.constructor === A) { const _: null = x; } }
+>o4 : Symbol(o4, Decl(ttttConstructorNarrowingSymbol.ts, 6, 114))
+>x : Symbol(x, Decl(ttttConstructorNarrowingSymbol.ts, 7, 12))
+>A : Symbol(A, Decl(ttttConstructorNarrowingSymbol.ts, 0, 0))
+>C : Symbol(C, Decl(ttttConstructorNarrowingSymbol.ts, 2, 17), Decl(ttttConstructorNarrowingSymbol.ts, 2, 49))
+>x.constructor : Symbol(Object.constructor, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttConstructorNarrowingSymbol.ts, 7, 12))
+>constructor : Symbol(Object.constructor, Decl(lib.es5.d.ts, --, --))
+>A : Symbol(A, Decl(ttttConstructorNarrowingSymbol.ts, 0, 0))
+>_ : Symbol(_, Decl(ttttConstructorNarrowingSymbol.ts, 7, 70))
+>x : Symbol(x, Decl(ttttConstructorNarrowingSymbol.ts, 7, 12))
+
+function o5(x: G<string> | A) { if (x.constructor === G) { const _: null = x; } }
+>o5 : Symbol(o5, Decl(ttttConstructorNarrowingSymbol.ts, 7, 87))
+>x : Symbol(x, Decl(ttttConstructorNarrowingSymbol.ts, 8, 12))
+>G : Symbol(G, Decl(ttttConstructorNarrowingSymbol.ts, 3, 35))
+>A : Symbol(A, Decl(ttttConstructorNarrowingSymbol.ts, 0, 0))
+>x.constructor : Symbol(Object.constructor, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttConstructorNarrowingSymbol.ts, 8, 12))
+>constructor : Symbol(Object.constructor, Decl(lib.es5.d.ts, --, --))
+>G : Symbol(G, Decl(ttttConstructorNarrowingSymbol.ts, 3, 35))
+>_ : Symbol(_, Decl(ttttConstructorNarrowingSymbol.ts, 8, 64))
+>x : Symbol(x, Decl(ttttConstructorNarrowingSymbol.ts, 8, 12))
+
+function o6(x: { c: number } | A) { if (x.constructor === C) { const _: null = x; } }
+>o6 : Symbol(o6, Decl(ttttConstructorNarrowingSymbol.ts, 8, 81))
+>x : Symbol(x, Decl(ttttConstructorNarrowingSymbol.ts, 9, 12))
+>c : Symbol(c, Decl(ttttConstructorNarrowingSymbol.ts, 9, 16))
+>A : Symbol(A, Decl(ttttConstructorNarrowingSymbol.ts, 0, 0))
+>x.constructor : Symbol(Object.constructor, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttConstructorNarrowingSymbol.ts, 9, 12))
+>constructor : Symbol(Object.constructor, Decl(lib.es5.d.ts, --, --))
+>C : Symbol(C, Decl(ttttConstructorNarrowingSymbol.ts, 2, 17), Decl(ttttConstructorNarrowingSymbol.ts, 2, 49))
+>_ : Symbol(_, Decl(ttttConstructorNarrowingSymbol.ts, 9, 68))
+>x : Symbol(x, Decl(ttttConstructorNarrowingSymbol.ts, 9, 12))
+

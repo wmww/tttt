@@ -1,0 +1,31 @@
+ttttConstructorNarrowingSymbol.ts(6,65): error TS2322: Type 'typeof C' is not assignable to type 'null'.
+ttttConstructorNarrowingSymbol.ts(7,70): error TS2322: Type 'C' is not assignable to type 'null'.
+ttttConstructorNarrowingSymbol.ts(7,98): error TS2322: Type 'A | C | G<number>' is not assignable to type 'null'.
+  Type 'A' is not assignable to type 'null'.
+ttttConstructorNarrowingSymbol.ts(8,72): error TS2322: Type 'typeof A' is not assignable to type 'null'.
+ttttConstructorNarrowingSymbol.ts(9,66): error TS2322: Type 'G<string>' is not assignable to type 'null'.
+
+
+==== ttttConstructorNarrowingSymbol.ts (5 errors) ====
+    // `x.constructor === C` keeps the members tsc's isConstructedBy compares by symbol when either side is a class: `typeof C`
+    // has the class's symbol, so it stays. bun 20-C15
+    class A { a = 1 } class C { c = 3; static s = 1 }
+    namespace C { export const n = 1; }
+    class G<T> { g!: T }
+    function o2(x: typeof C | A) { if (x.constructor === C) { const _: null = x; } }
+                                                                    ~
+!!! error TS2322: Type 'typeof C' is not assignable to type 'null'.
+    function o3(x: A | C | G<number>) { if (x.constructor === C) { const _: null = x; } else { const _2: null = x; } }
+                                                                         ~
+!!! error TS2322: Type 'C' is not assignable to type 'null'.
+                                                                                                     ~~
+!!! error TS2322: Type 'A | C | G<number>' is not assignable to type 'null'.
+!!! error TS2322:   Type 'A' is not assignable to type 'null'.
+    function o4(x: typeof A | typeof C) { if (x.constructor === A) { const _: null = x; } }
+                                                                           ~
+!!! error TS2322: Type 'typeof A' is not assignable to type 'null'.
+    function o5(x: G<string> | A) { if (x.constructor === G) { const _: null = x; } }
+                                                                     ~
+!!! error TS2322: Type 'G<string>' is not assignable to type 'null'.
+    function o6(x: { c: number } | A) { if (x.constructor === C) { const _: null = x; } }
+    

@@ -2955,7 +2955,13 @@ static bool is_constructed_by(Checker* me, Ty const* source, void const* arg) {
             if (owner && owner->kind == TY_REFERENCE) owner = owner->reference.target;
             return owner && owner->kind == TY_DECLARED && owner->declared.symbol == target->declared.symbol;
         }
-        return source_class && target_class && source->declared.symbol == target->declared.symbol;
+        // (By symbol whatever the other is: `typeof C`'s is the class's too, so `x.constructor === C` keeps a
+        // `typeof C` member)
+        Symbol const* source_symbol = source->kind == TY_DECLARED ?
+            (source->declared.symbol ? source->declared.symbol : source->declared.namespace_symbol) : nullptr;
+        Symbol const* target_symbol = target->kind == TY_DECLARED ?
+            (target->declared.symbol ? target->declared.symbol : target->declared.namespace_symbol) : nullptr;
+        return source_symbol && source_symbol == target_symbol;
     }
     return is_subtype(me, source, target);
 }
