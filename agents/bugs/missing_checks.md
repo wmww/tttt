@@ -611,9 +611,11 @@ Fixed:
 Not fixed:
 - discriminantPropertyInference delete-stmt: an object literal left open swallows `f({ disc: undefined, cb: n => ... })`
   as a bodiless method `f({ disc: undefined, cb: n })`; tttt reports TS2842 (unused renamings) for its pattern, tsgo
-  doesn't there, though it does when `f` takes `any` (`declare function f(a: any)`, where tttt reports none). Which of
-  the method's checks tsgo runs depends on the call's resolution (the discriminated parameter type, TS2353 for `f`):
-  not traced. [open]
+  doesn't there, though it does when `f` takes `any` (`declare function f(a: any)`, where tttt reports none). Traced
+  (cor13): a harness artifact. tsgo's pre-emit program reports the TS2842 like tttt; the baseline is its post-emit
+  program's, whose emit checks the method's parameter before checkSourceFile, which resets renamedBindingElementsInTypes
+  and so drops it (the baseline's TS-1 "Pre-emit (9) and post-emit (8) diagnostic counts do not match" names the
+  TS2842 as the excess). The CLI shows neither (syntax errors stop it). [tsgo]
 - inferenceErasedSignatures extends-object (`set<K extends Object this>`), awaitedTypeJQuery delete-stmt: spans of a
   method or type argument list broken by recovery end after trivia (TS7010, TS2314). [open]
 - recursiveTypesWithTypeof swap-stmts (text TS2403), distributiveConditionalTypeConstraints ann-string-number
