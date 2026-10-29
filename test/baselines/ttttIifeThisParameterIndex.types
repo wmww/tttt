@@ -1,0 +1,41 @@
+//// [test/cases/ttttIifeThisParameterIndex.ts] ////
+
+=== ttttIifeThisParameterIndex.ts ===
+// An immediately invoked function's parameter takes the argument at its position among the parameters as written, a
+// `this` parameter counted (bun case 25-P2: tsc's getContextuallyTypedParameterType, func.parameters.indexOf)
+(function f(this: any, a) { const n: never = f; })(1);
+>(function f(this: any, a) { const n: never = f; })(1) : void
+>(function f(this: any, a) { const n: never = f; }) : (this: any, a?: undefined) => void
+>function f(this: any, a) { const n: never = f; } : (this: any, a?: undefined) => void
+>f : (this: any, a?: undefined) => void
+>this : any
+>a : undefined
+>n : never
+>f : (this: any, a?: undefined) => void
+>1 : 1
+
+(function g(this: any, a, b) { return [a, b]; })(1, "x");
+>(function g(this: any, a, b) { return [a, b]; })(1, "x") : (string | undefined)[]
+>(function g(this: any, a, b) { return [a, b]; }) : (this: any, a: string, b?: undefined) => (string | undefined)[]
+>function g(this: any, a, b) { return [a, b]; } : (this: any, a: string, b?: undefined) => (string | undefined)[]
+>g : (this: any, a: string, b?: undefined) => (string | undefined)[]
+>this : any
+>a : string
+>b : undefined
+>[a, b] : (string | undefined)[]
+>a : string
+>b : undefined
+>1 : 1
+>"x" : "x"
+
+(function h(this: any, ...r) { return r; })(1, 2);
+>(function h(this: any, ...r) { return r; })(1, 2) : [number]
+>(function h(this: any, ...r) { return r; }) : (this: any, r_0: number) => [number]
+>function h(this: any, ...r) { return r; } : (this: any, r_0: number) => [number]
+>h : (this: any, r_0: number) => [number]
+>this : any
+>r : [number]
+>r : [number]
+>1 : 1
+>2 : 2
+

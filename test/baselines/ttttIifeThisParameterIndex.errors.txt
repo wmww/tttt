@@ -1,0 +1,21 @@
+ttttIifeThisParameterIndex.ts(3,35): error TS2322: Type '(this: any, a?: undefined) => void' is not assignable to type 'never'.
+ttttIifeThisParameterIndex.ts(3,52): error TS2345: Argument of type '1' is not assignable to parameter of type 'undefined'.
+ttttIifeThisParameterIndex.ts(4,50): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+ttttIifeThisParameterIndex.ts(5,48): error TS2554: Expected 1 arguments, but got 2.
+
+
+==== ttttIifeThisParameterIndex.ts (4 errors) ====
+    // An immediately invoked function's parameter takes the argument at its position among the parameters as written, a
+    // `this` parameter counted (bun case 25-P2: tsc's getContextuallyTypedParameterType, func.parameters.indexOf)
+    (function f(this: any, a) { const n: never = f; })(1);
+                                      ~
+!!! error TS2322: Type '(this: any, a?: undefined) => void' is not assignable to type 'never'.
+                                                       ~
+!!! error TS2345: Argument of type '1' is not assignable to parameter of type 'undefined'.
+    (function g(this: any, a, b) { return [a, b]; })(1, "x");
+                                                     ~
+!!! error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+    (function h(this: any, ...r) { return r; })(1, 2);
+                                                   ~
+!!! error TS2554: Expected 1 arguments, but got 2.
+    

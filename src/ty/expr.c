@@ -6228,11 +6228,13 @@ static void assign_iife_parameter_types(Checker* me, FunctionImpl const* functio
     u32 arg_count = 0;
     EffectiveArg* args = effective_call_args(me, call, &arg_count);
     if (!args) return;
-    u32 index = 0;
     for_each (i, vec_function_arg, &function->args) {
         bool is_this = i->initializer.binding.tag == BINDING_IDENTIFIER && span_equals(i->initializer.binding.content_span, "this");
         if (is_this) continue;
-        u32 at = index++;
+        // (By the position among the parameters as written, a `this` parameter counted: tsc's
+        // getContextuallyTypedParameterType takes func.parameters.indexOf(parameter), so `(function (this: any, a) {})(1)`
+        // gives a no argument, undefined)
+        u32 at = (u32)i_index;
         if (i->initializer.binding.has_explicit_type) continue;
         LazyMemo* param_memo = lazy_type_state_peek((LazyType*)&i->initializer.lazy_type);
         if (param_memo && param_memo->evaluation_started) continue;

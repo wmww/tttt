@@ -1,0 +1,26 @@
+//// [test/cases/ttttIifeThisParameterIndex.ts] ////
+
+=== ttttIifeThisParameterIndex.ts ===
+// An immediately invoked function's parameter takes the argument at its position among the parameters as written, a
+// `this` parameter counted (bun case 25-P2: tsc's getContextuallyTypedParameterType, func.parameters.indexOf)
+(function f(this: any, a) { const n: never = f; })(1);
+>f : Symbol(f, Decl(ttttIifeThisParameterIndex.ts, 2, 1))
+>this : Symbol(this, Decl(ttttIifeThisParameterIndex.ts, 2, 12))
+>a : Symbol(a, Decl(ttttIifeThisParameterIndex.ts, 2, 22))
+>n : Symbol(n, Decl(ttttIifeThisParameterIndex.ts, 2, 33))
+>f : Symbol(f, Decl(ttttIifeThisParameterIndex.ts, 2, 1))
+
+(function g(this: any, a, b) { return [a, b]; })(1, "x");
+>g : Symbol(g, Decl(ttttIifeThisParameterIndex.ts, 3, 1))
+>this : Symbol(this, Decl(ttttIifeThisParameterIndex.ts, 3, 12))
+>a : Symbol(a, Decl(ttttIifeThisParameterIndex.ts, 3, 22))
+>b : Symbol(b, Decl(ttttIifeThisParameterIndex.ts, 3, 25))
+>a : Symbol(a, Decl(ttttIifeThisParameterIndex.ts, 3, 22))
+>b : Symbol(b, Decl(ttttIifeThisParameterIndex.ts, 3, 25))
+
+(function h(this: any, ...r) { return r; })(1, 2);
+>h : Symbol(h, Decl(ttttIifeThisParameterIndex.ts, 4, 1))
+>this : Symbol(this, Decl(ttttIifeThisParameterIndex.ts, 4, 12))
+>r : Symbol(r, Decl(ttttIifeThisParameterIndex.ts, 4, 22))
+>r : Symbol(r, Decl(ttttIifeThisParameterIndex.ts, 4, 22))
+

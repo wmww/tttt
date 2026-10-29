@@ -260,7 +260,11 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   inferFromMatchingTypes with isTypeCloselyMatchedBy matches `typeof D` with D (one symbol, the class's), so T is
   inferred from b alone, typeof D2, and a fails. infer.c's is_closely_matched() compared references' targets, type
   literals and aliases only; now also the symbol of a declared object type (class instance and static sides,
-  interfaces, namespace and enum objects). Test ttttInferClassStaticClosely [fixed NEXT].
+  interfaces, namespace and enum objects). Test ttttInferClassStaticClosely [fixed 26ad4edf5].
+- -TS2345 in an immediately invoked function with a `this` parameter, 25-P2 (`(function f(this: any, a) {})(1)`): tsc's
+  getContextuallyTypedParameterType takes the argument at func.parameters.indexOf(parameter), `this` counted, so a
+  gets none (`a?: undefined`) and the argument 1 fails. assign_iife_parameter_types() skipped `this` in the count.
+  Test ttttIifeThisParameterIndex [fixed NEXT].
 - -TS2448: two mechanisms, the JSX factory (`React`, `Frag`) declared after the element that uses it (tsc resolves
   the factory at the element as a use: 01-C2b, 15-C3b, 27-C3a, 27-P7, 34-C2b) and `const arguments = 1` in a
   function body (tsc's reference to the implicit `arguments`: 25-C17c, 33-P4g, 51-L01, 51-L05, 77-R12b). The JSX
