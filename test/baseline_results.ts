@@ -16521,6 +16521,16 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttSharedGraphTypeofCycleBase': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'ttttSharedGraphWalkMappedLiteral': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttShorthandAssignmentDefault': {
         errors: true,
         symbols: true,
