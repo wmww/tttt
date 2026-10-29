@@ -1,0 +1,63 @@
+//// [test/cases/ttttAnnotatedVarianceMarker.ts] ////
+
+=== ttttAnnotatedVarianceMarker.ts ===
+// An annotated type parameter's variance isn't measured, so its instantiation with a variance marker, met while another
+// type's variance is measured, is related by the annotation (here wrongly `out`), not structurally: AnimalContainer is
+// covariant, and AnimalContainer<Animal> isn't assignable to AnimalContainer<Dog>
+
+interface Controller<out T> {
+>Controller : Symbol(Controller, Decl(ttttAnnotatedVarianceMarker.ts, 0, 0))
+>T : Symbol(T, Decl(ttttAnnotatedVarianceMarker.ts, 4, 21))
+
+    run: (animal: T) => void;
+>run : Symbol(Controller.run, Decl(ttttAnnotatedVarianceMarker.ts, 4, 29))
+>animal : Symbol(animal, Decl(ttttAnnotatedVarianceMarker.ts, 5, 10))
+>T : Symbol(T, Decl(ttttAnnotatedVarianceMarker.ts, 4, 21))
+}
+
+interface Animal {
+>Animal : Symbol(Animal, Decl(ttttAnnotatedVarianceMarker.ts, 6, 1))
+
+    run(): void;
+>run : Symbol(Animal.run, Decl(ttttAnnotatedVarianceMarker.ts, 8, 18))
+}
+
+class Dog implements Animal {
+>Dog : Symbol(Dog, Decl(ttttAnnotatedVarianceMarker.ts, 10, 1))
+>Animal : Symbol(Animal, Decl(ttttAnnotatedVarianceMarker.ts, 6, 1))
+
+    run() {}
+>run : Symbol(Dog.run, Decl(ttttAnnotatedVarianceMarker.ts, 12, 29))
+
+    bark() {}
+>bark : Symbol(Dog.bark, Decl(ttttAnnotatedVarianceMarker.ts, 13, 12))
+}
+
+interface AnimalContainer<T> {
+>AnimalContainer : Symbol(AnimalContainer, Decl(ttttAnnotatedVarianceMarker.ts, 15, 1))
+>T : Symbol(T, Decl(ttttAnnotatedVarianceMarker.ts, 17, 26))
+
+    controller: Controller<T>;
+>controller : Symbol(AnimalContainer.controller, Decl(ttttAnnotatedVarianceMarker.ts, 17, 30))
+>Controller : Symbol(Controller, Decl(ttttAnnotatedVarianceMarker.ts, 0, 0))
+>T : Symbol(T, Decl(ttttAnnotatedVarianceMarker.ts, 17, 26))
+}
+
+declare let ca: AnimalContainer<Animal>;
+>ca : Symbol(ca, Decl(ttttAnnotatedVarianceMarker.ts, 21, 11))
+>AnimalContainer : Symbol(AnimalContainer, Decl(ttttAnnotatedVarianceMarker.ts, 15, 1))
+>Animal : Symbol(Animal, Decl(ttttAnnotatedVarianceMarker.ts, 6, 1))
+
+declare let cd: AnimalContainer<Dog>;
+>cd : Symbol(cd, Decl(ttttAnnotatedVarianceMarker.ts, 22, 11))
+>AnimalContainer : Symbol(AnimalContainer, Decl(ttttAnnotatedVarianceMarker.ts, 15, 1))
+>Dog : Symbol(Dog, Decl(ttttAnnotatedVarianceMarker.ts, 10, 1))
+
+ca = cd;
+>ca : Symbol(ca, Decl(ttttAnnotatedVarianceMarker.ts, 21, 11))
+>cd : Symbol(cd, Decl(ttttAnnotatedVarianceMarker.ts, 22, 11))
+
+cd = ca;
+>cd : Symbol(cd, Decl(ttttAnnotatedVarianceMarker.ts, 22, 11))
+>ca : Symbol(ca, Decl(ttttAnnotatedVarianceMarker.ts, 21, 11))
+

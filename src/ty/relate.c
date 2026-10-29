@@ -3626,6 +3626,12 @@ static bool is_marker_reference(Checker* me, Ty const* ty) {
         if (args.data[i] == params.data[i]) continue;
         Ty const* arg = args.data[i];
         if (arg != variance_marker(me, 0) && arg != variance_marker(me, 1) && arg != variance_marker(me, 2)) return false;
+        // (An annotated type parameter's variance isn't measured: tsgo's getVariancesWorker makes no marker type for
+        // it, so its instantiation with a marker met in another measurement is a plain reference, related by the
+        // annotated variance)
+        Ty const* target = ty->reference.target;
+        u32 outer = target->declared.outer_count;
+        if (i >= outer && ty_variance_modifiers(target->declared.symbol, i - outer)) return false;
         markers++;
     }
     return markers == 1;
