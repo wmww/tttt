@@ -4256,14 +4256,14 @@ const baselines = {
         types: true,
     },
     'bun25-C9a': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun25-C9b': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun25-P1a': {
         errors: false,
@@ -5861,9 +5861,9 @@ const baselines = {
         types: false,
     },
     'bun31-P3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun31-P4': {
         errors: true,
@@ -12765,6 +12765,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttCompoundLikeTargetThroughPatterns': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttCompoundNullableTarget': {
         errors: true,
         symbols: true,
@@ -14801,6 +14806,11 @@ const baselines = {
         types: true,
     },
     'ttttInstantiationStackTailCall': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttInterfaceAccessorThisless': {
         errors: true,
         symbols: true,
         types: true,
