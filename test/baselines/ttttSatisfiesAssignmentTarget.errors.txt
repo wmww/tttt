@@ -1,0 +1,37 @@
+ttttSatisfiesAssignmentTarget.ts(5,7): error TS2322: Type 'number' is not assignable to type 'undefined'.
+ttttSatisfiesAssignmentTarget.ts(5,10): error TS1360: Type 'undefined' does not satisfy the expected type 'number'.
+ttttSatisfiesAssignmentTarget.ts(7,1): error TS2322: Type '10' is not assignable to type 'undefined'.
+ttttSatisfiesAssignmentTarget.ts(7,4): error TS1360: Type 'undefined' does not satisfy the expected type 'number'.
+ttttSatisfiesAssignmentTarget.ts(9,2): error TS2322: Type 'number' is not assignable to type 'undefined'.
+ttttSatisfiesAssignmentTarget.ts(9,5): error TS1360: Type 'undefined' does not satisfy the expected type 'number'.
+ttttSatisfiesAssignmentTarget.ts(12,1): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== ttttSatisfiesAssignmentTarget.ts (7 errors) ====
+    // `(x satisfies T) = v`: tsc's assignment-target walk doesn't go through `satisfies`, so x is read with its narrowed
+    // type and the value is checked against that (TS2322), whatever x is declared as. Seed 20261117,
+    // referenceSatisfiesExpression undefined-init
+    let e = undefined;
+    ({ d: (e satisfies number) } = { d: 10 });
+          ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'undefined'.
+             ~~~~~~~~~
+!!! error TS1360: Type 'undefined' does not satisfy the expected type 'number'.
+    let f = undefined;
+    (f satisfies number) = 10;
+    ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type '10' is not assignable to type 'undefined'.
+       ~~~~~~~~~
+!!! error TS1360: Type 'undefined' does not satisfy the expected type 'number'.
+    let g = undefined;
+    [(g satisfies number)] = [10];
+     ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'undefined'.
+        ~~~~~~~~~
+!!! error TS1360: Type 'undefined' does not satisfy the expected type 'number'.
+    let n: number | string = 1;
+    (n satisfies number) = 2;
+    (n satisfies number) = "a";
+    ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

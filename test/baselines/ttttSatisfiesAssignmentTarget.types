@@ -1,0 +1,64 @@
+//// [test/cases/ttttSatisfiesAssignmentTarget.ts] ////
+
+=== ttttSatisfiesAssignmentTarget.ts ===
+// `(x satisfies T) = v`: tsc's assignment-target walk doesn't go through `satisfies`, so x is read with its narrowed
+// type and the value is checked against that (TS2322), whatever x is declared as. Seed 20261117,
+// referenceSatisfiesExpression undefined-init
+let e = undefined;
+>e : any
+>undefined : undefined
+
+({ d: (e satisfies number) } = { d: 10 });
+>({ d: (e satisfies number) } = { d: 10 }) : { d: number; }
+>{ d: (e satisfies number) } = { d: 10 } : { d: number; }
+>{ d: (e satisfies number) } : { d: undefined; }
+>d : undefined
+>(e satisfies number) : undefined
+>e satisfies number : undefined
+>e : undefined
+>{ d: 10 } : { d: number; }
+>d : number
+>10 : 10
+
+let f = undefined;
+>f : any
+>undefined : undefined
+
+(f satisfies number) = 10;
+>(f satisfies number) = 10 : 10
+>(f satisfies number) : undefined
+>f satisfies number : undefined
+>f : undefined
+>10 : 10
+
+let g = undefined;
+>g : any
+>undefined : undefined
+
+[(g satisfies number)] = [10];
+>[(g satisfies number)] = [10] : [number]
+>[(g satisfies number)] : [undefined]
+>(g satisfies number) : undefined
+>g satisfies number : undefined
+>g : undefined
+>[10] : [number]
+>10 : 10
+
+let n: number | string = 1;
+>n : string | number
+>1 : 1
+
+(n satisfies number) = 2;
+>(n satisfies number) = 2 : 2
+>(n satisfies number) : number
+>n satisfies number : number
+>n : number
+>2 : 2
+
+(n satisfies number) = "a";
+>(n satisfies number) = "a" : "a"
+>(n satisfies number) : number
+>n satisfies number : number
+>n : number
+>"a" : "a"
+

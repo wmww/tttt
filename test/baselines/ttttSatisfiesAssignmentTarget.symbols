@@ -1,0 +1,38 @@
+//// [test/cases/ttttSatisfiesAssignmentTarget.ts] ////
+
+=== ttttSatisfiesAssignmentTarget.ts ===
+// `(x satisfies T) = v`: tsc's assignment-target walk doesn't go through `satisfies`, so x is read with its narrowed
+// type and the value is checked against that (TS2322), whatever x is declared as. Seed 20261117,
+// referenceSatisfiesExpression undefined-init
+let e = undefined;
+>e : Symbol(e, Decl(ttttSatisfiesAssignmentTarget.ts, 3, 3))
+>undefined : Symbol(undefined)
+
+({ d: (e satisfies number) } = { d: 10 });
+>d : Symbol(d, Decl(ttttSatisfiesAssignmentTarget.ts, 4, 2))
+>e : Symbol(e, Decl(ttttSatisfiesAssignmentTarget.ts, 3, 3))
+>d : Symbol(d, Decl(ttttSatisfiesAssignmentTarget.ts, 4, 32))
+
+let f = undefined;
+>f : Symbol(f, Decl(ttttSatisfiesAssignmentTarget.ts, 5, 3))
+>undefined : Symbol(undefined)
+
+(f satisfies number) = 10;
+>f : Symbol(f, Decl(ttttSatisfiesAssignmentTarget.ts, 5, 3))
+
+let g = undefined;
+>g : Symbol(g, Decl(ttttSatisfiesAssignmentTarget.ts, 7, 3))
+>undefined : Symbol(undefined)
+
+[(g satisfies number)] = [10];
+>g : Symbol(g, Decl(ttttSatisfiesAssignmentTarget.ts, 7, 3))
+
+let n: number | string = 1;
+>n : Symbol(n, Decl(ttttSatisfiesAssignmentTarget.ts, 9, 3))
+
+(n satisfies number) = 2;
+>n : Symbol(n, Decl(ttttSatisfiesAssignmentTarget.ts, 9, 3))
+
+(n satisfies number) = "a";
+>n : Symbol(n, Decl(ttttSatisfiesAssignmentTarget.ts, 9, 3))
+

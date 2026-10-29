@@ -2725,9 +2725,13 @@ static void assignment_target_typecheck_of(
             return;
 
         case EXPR_AS_TYPE:
-            // `(x as T) = 1`: T is what's assigned to; `(x satisfies T) = 1` assigns to x
+            // `(x as T) = 1`: T is what's assigned to; `(x satisfies T) = 1` assigns to x, as the expression reads it:
+            // tsc's assignment target walk (GetAssignmentTarget) doesn't go through `satisfies`, so x is no target
+            // and its narrowed type is the left side's (checkBinaryLikeExpression's leftType): `let e = undefined;
+            // (e satisfies number) = 10` is TS2322 against undefined
             if (target->as_type->is_satisfies) {
-                assignment_target_typecheck_of(&target->as_type->expr, source, source_expr, site, false, report_at, errs);
+                assignment_target_typecheck_of(&target->as_type->expr, nullptr, source_expr, site, false, report_at, errs);
+                if (source) ty_check_assignable_expr(checker, source, ty_expr_type(checker, target), report_at, source_expr, errs);
             } else if (source) {
                 ty_check_assignable_expr(checker, source, ty_expr_type(checker, target), report_at, source_expr, errs);
             }
