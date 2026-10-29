@@ -747,16 +747,8 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
     }
     u32 flags = TYF_OBJECT | (free_params_unknown ? TYF_COULD_CONTAIN_TYPE_VARIABLES : 0);
     if (!free_params_unknown) {
-        u32 kept = 0;
-        for (u32 i = 0; i < len; i++) {
-            bool mentioned = false;
-            for (u32 j = 0; j < free_params.len; j++) mentioned |= free_params.data[j] == sources[i];
-            if (mentioned) {
-                sources[kept] = sources[i];
-                targets[kept++] = targets[i];
-            }
-        }
-        len = kept;
+        // (Every pair kept above maps a mentioned parameter: the inner mapper's are filtered by free_params, and so are
+        // the outer one's but for its identity pairs, which aren't kept)
         // What's left generic about the result: mapped-to types that are, and mentioned parameters nothing maps
         for (u32 j = 0; j < free_params.len; j++) {
             bool mapped = false;
