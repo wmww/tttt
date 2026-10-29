@@ -609,8 +609,11 @@ importDeclWithExportModifierInAmbientContext (TS2708 from tsgo's emit resolver [
 - controlFlowGenericTypes drop-as: `iSpec[null!` (an element access by never) lost TS18048: the non-null check comes
   first whatever the index, and the access is the non-nullable object's. Test ttttNeverIndexNonNull. [fixed 4d479601f]
 Not looked at:
-- mixinPrivateAndProtected delete-stmt: missing TS2339 on `never` with the "reduced to never because property 'pvt'
-  exists in multiple constituents and is private in some" elaboration (a mixin intersection). [open]
+- mixinPrivateAndProtected delete-stmt (--syntax: mixB's `}` gone, the rest nested in generic mixB): missing TS2339 on
+  `never` with the "reduced to never because property 'pvt' exists in multiple constituents and is private in some"
+  elaboration. Inside a generic function the mixin's class is `mixC.(Anonymous class)<typeof A, U>`, a reference with
+  generic type arguments, which is_known_object_for_reduction left out of the reduction; any class or interface type
+  counts now. Test ttttNeverReducedGenericClassReference. [fixed]
 - genericMappedTypeAsClause delete-stmt: spurious TS2300 "Duplicate identifier 'const'" twice: a mapped type's `}` gone,
   `const foo1: ...; const foo2: ...` are its extra members (TS7061 recovery), which tsc's checkMappedType never visits;
   type.c's TYPE_INTERFACE check runs ty_check_object_type_duplicate_members on them. Skipping it when the first member

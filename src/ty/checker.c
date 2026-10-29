@@ -2061,6 +2061,10 @@ static bool is_known_object(Checker* me, Ty const* ty) {
 static bool is_known_object_for_reduction(Checker* me, Ty const* ty) {
     if (!(ty->flags & TYF_OBJECT)) return false;
     if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return true;
+    // (A class or interface type, its type arguments generic or not: tsc's getReducedType reads every member's
+    // properties. A class expression of a mixin inside a generic function is `mixC.(Anonymous class)<typeof A, U>`,
+    // whose private `pvt` conflicts with A's all the same)
+    if (ty->kind == TY_REFERENCE || ty->kind == TY_DECLARED) return true;
     if (ty->kind != TY_ANONYMOUS) return false;
     // (An instantiation of one, by a mapper whose types have no type variables: the literal instantiated inside a
     // generic signature)

@@ -1,0 +1,74 @@
+//// [test/cases/ttttNeverReducedGenericClassReference.ts] ////
+
+=== ttttNeverReducedGenericClassReference.ts ===
+// An intersection with a class reference whose type arguments are generic is reduced like any other (tsc's
+// getReducedType reads every member's properties): a mixin's class expression inside a generic function is
+// `mixC.(Anonymous class)<typeof A, U>`, whose private `pvt` conflicts with A's (seed 20261113's mixinPrivateAndProtected)
+type Constructor<T> = new(...args: any[]) => T;
+>Constructor : Constructor<T>
+>args : any[]
+
+class A {
+>A : A
+
+    public pb: number = 2;
+>pb : number
+>2 : 2
+
+    private pvt: number = 0;
+>pvt : number
+>0 : 0
+}
+function outer<U>(u: U) {
+>outer : <U>(u: U) => void
+>u : U
+
+    function mixC<T extends Constructor<{}>>(Cls: T) {
+>mixC : <T extends Constructor<{}>>(Cls: T) => { new (...args: any[]): (Anonymous class); prototype: outer.mixC.(Anonymous class); } & T
+>Cls : T
+
+        return class extends Cls {
+>class extends Cls {            private pvt: number = 0;            own: U = u;        } : { new (...args: any[]): (Anonymous class); prototype: outer.mixC.(Anonymous class); } & T
+>Cls : {}
+
+            private pvt: number = 0;
+>pvt : number
+>0 : 0
+
+            own: U = u;
+>own : U
+>u : U
+
+        };
+    }
+    const AC = mixC(A);
+>AC : { new (...args: any[]): mixC.(Anonymous class); prototype: outer.mixC.(Anonymous class); } & typeof A
+>mixC(A) : { new (...args: any[]): mixC.(Anonymous class); prototype: outer.mixC.(Anonymous class); } & typeof A
+>mixC : <T extends Constructor<{}>>(Cls: T) => { new (...args: any[]): (Anonymous class); prototype: outer.mixC.(Anonymous class); } & T
+>A : typeof A
+
+    const ac = new AC();
+>ac : never
+>new AC() : never
+>AC : { new (...args: any[]): mixC.(Anonymous class); prototype: outer.mixC.(Anonymous class); } & typeof A
+
+    ac.pb;
+>ac.pb : any
+>ac : never
+>pb : any
+
+    class B<V> { private pvt = 1; v!: V; }
+>B : B<V>
+>pvt : number
+>1 : 1
+>v : V
+
+    let ab!: A & B<U>;
+>ab : never
+
+    ab.pb;
+>ab.pb : any
+>ab : never
+>pb : any
+}
+

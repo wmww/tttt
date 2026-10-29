@@ -1,0 +1,76 @@
+//// [test/cases/ttttNeverReducedGenericClassReference.ts] ////
+
+=== ttttNeverReducedGenericClassReference.ts ===
+// An intersection with a class reference whose type arguments are generic is reduced like any other (tsc's
+// getReducedType reads every member's properties): a mixin's class expression inside a generic function is
+// `mixC.(Anonymous class)<typeof A, U>`, whose private `pvt` conflicts with A's (seed 20261113's mixinPrivateAndProtected)
+type Constructor<T> = new(...args: any[]) => T;
+>Constructor : Symbol(Constructor, Decl(ttttNeverReducedGenericClassReference.ts, 0, 0))
+>T : Symbol(T, Decl(ttttNeverReducedGenericClassReference.ts, 3, 17))
+>args : Symbol(args, Decl(ttttNeverReducedGenericClassReference.ts, 3, 26))
+>T : Symbol(T, Decl(ttttNeverReducedGenericClassReference.ts, 3, 17))
+
+class A {
+>A : Symbol(A, Decl(ttttNeverReducedGenericClassReference.ts, 3, 47))
+
+    public pb: number = 2;
+>pb : Symbol(A.pb, Decl(ttttNeverReducedGenericClassReference.ts, 4, 9))
+
+    private pvt: number = 0;
+>pvt : Symbol(A.pvt, Decl(ttttNeverReducedGenericClassReference.ts, 5, 26))
+}
+function outer<U>(u: U) {
+>outer : Symbol(outer, Decl(ttttNeverReducedGenericClassReference.ts, 7, 1))
+>U : Symbol(U, Decl(ttttNeverReducedGenericClassReference.ts, 8, 15))
+>u : Symbol(u, Decl(ttttNeverReducedGenericClassReference.ts, 8, 18))
+>U : Symbol(U, Decl(ttttNeverReducedGenericClassReference.ts, 8, 15))
+
+    function mixC<T extends Constructor<{}>>(Cls: T) {
+>mixC : Symbol(mixC, Decl(ttttNeverReducedGenericClassReference.ts, 8, 25))
+>T : Symbol(T, Decl(ttttNeverReducedGenericClassReference.ts, 9, 18))
+>Constructor : Symbol(Constructor, Decl(ttttNeverReducedGenericClassReference.ts, 0, 0))
+>Cls : Symbol(Cls, Decl(ttttNeverReducedGenericClassReference.ts, 9, 45))
+>T : Symbol(T, Decl(ttttNeverReducedGenericClassReference.ts, 9, 18))
+
+        return class extends Cls {
+>Cls : Symbol(Cls, Decl(ttttNeverReducedGenericClassReference.ts, 9, 45))
+
+            private pvt: number = 0;
+>pvt : Symbol((Anonymous class).pvt, Decl(ttttNeverReducedGenericClassReference.ts, 10, 34))
+
+            own: U = u;
+>own : Symbol((Anonymous class).own, Decl(ttttNeverReducedGenericClassReference.ts, 11, 36))
+>U : Symbol(U, Decl(ttttNeverReducedGenericClassReference.ts, 8, 15))
+>u : Symbol(u, Decl(ttttNeverReducedGenericClassReference.ts, 8, 18))
+
+        };
+    }
+    const AC = mixC(A);
+>AC : Symbol(AC, Decl(ttttNeverReducedGenericClassReference.ts, 15, 9))
+>mixC : Symbol(mixC, Decl(ttttNeverReducedGenericClassReference.ts, 8, 25))
+>A : Symbol(A, Decl(ttttNeverReducedGenericClassReference.ts, 3, 47))
+
+    const ac = new AC();
+>ac : Symbol(ac, Decl(ttttNeverReducedGenericClassReference.ts, 16, 9))
+>AC : Symbol(AC, Decl(ttttNeverReducedGenericClassReference.ts, 15, 9))
+
+    ac.pb;
+>ac : Symbol(ac, Decl(ttttNeverReducedGenericClassReference.ts, 16, 9))
+
+    class B<V> { private pvt = 1; v!: V; }
+>B : Symbol(B, Decl(ttttNeverReducedGenericClassReference.ts, 17, 10))
+>V : Symbol(V, Decl(ttttNeverReducedGenericClassReference.ts, 18, 12))
+>pvt : Symbol(B.pvt, Decl(ttttNeverReducedGenericClassReference.ts, 18, 16))
+>v : Symbol(B.v, Decl(ttttNeverReducedGenericClassReference.ts, 18, 33))
+>V : Symbol(V, Decl(ttttNeverReducedGenericClassReference.ts, 18, 12))
+
+    let ab!: A & B<U>;
+>ab : Symbol(ab, Decl(ttttNeverReducedGenericClassReference.ts, 19, 7))
+>A : Symbol(A, Decl(ttttNeverReducedGenericClassReference.ts, 3, 47))
+>B : Symbol(B, Decl(ttttNeverReducedGenericClassReference.ts, 17, 10))
+>U : Symbol(U, Decl(ttttNeverReducedGenericClassReference.ts, 8, 15))
+
+    ab.pb;
+>ab : Symbol(ab, Decl(ttttNeverReducedGenericClassReference.ts, 19, 7))
+}
+
