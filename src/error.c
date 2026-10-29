@@ -368,6 +368,22 @@ void error_ctx_clear(ErrorCtx* me) {
     vec_error_clear(&my errors);
 }
 
+// Two messages of one code in tsgo's order: it compares their arguments (CompareDiagnostics: MessageArgs, after the
+// same key), not their texts. Arguments are quoted in nearly every message, so where the texts first differ, one
+// argument ending (its closing quote) where the other goes on is the shorter argument, first: 'string' before
+// 'string | number', where the texts would sort the space first
+static int message_cmp(cstr const* a, cstr const* b) {
+    csview x = cstr_sv(a), y = cstr_sv(b);
+    isize_t n = x.size < y.size ? x.size : y.size;
+    for (isize_t i = 0; i < n; i++) {
+        if (x.buf[i] == y.buf[i]) continue;
+        if (x.buf[i] == '\'') return -1;
+        if (y.buf[i] == '\'') return 1;
+        return (unsigned char)x.buf[i] < (unsigned char)y.buf[i] ? -1 : 1;
+    }
+    return x.size < y.size ? -1 : x.size > y.size ? 1 : 0;
+}
+
 static int error_cmp(Error const* a, Error const* b) {
     // Errors without a file come first (error_ctx_global_error_s() orders them)
     if (!span_valid(a->span)) return -1;
@@ -378,8 +394,7 @@ static int error_cmp(Error const* a, Error const* b) {
     if (a->phase == ERROR_PHASE_PARSE && b->phase == ERROR_PHASE_PARSE) return 0;
     // tsc's compareDiagnostics (what the harness sorts by): code, then message
     if (a->ts_code != b->ts_code) return a->ts_code > b->ts_code ? 1 : -1;
-    ret = cstr_cmp(&a->message, &b->message);
-    return ret > 0 ? 1 : ret < 0 ? -1 : 0;
+    return message_cmp(&a->message, &b->message);
 }
 
 // The same message chain (tsc's compareDiagnosticsSkipRelatedInformation: related information doesn't count)
@@ -605,8 +620,8 @@ static int error_full_cmp(Error const* a, Error const* b) {
     int ret = span_cmp(a->span, b->span);
     if (ret) return ret;
     if (a->ts_code != b->ts_code) return a->ts_code > b->ts_code ? 1 : -1;
-    ret = cstr_cmp(&a->message, &b->message);
-    if (ret) return ret > 0 ? 1 : -1;
+    ret = message_cmp(&a->message, &b->message);
+    if (ret) return ret;
     ret = chain_size_cmp(a, b);
     if (ret) return ret;
     ret = chain_content_cmp(a, b);
