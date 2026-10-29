@@ -12662,6 +12662,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttClassExpressionBaseCircular': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
     'ttttClassExpressionDecoratorScope': {
         errors: true,
         symbols: true,
@@ -16389,6 +16394,11 @@ const baselines = {
         dts: true,
     },
     'ttttQualifiedNameValueThroughShadowingNamespace': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttQuestionDotInParameterList': {
         errors: true,
         symbols: true,
         types: true,
