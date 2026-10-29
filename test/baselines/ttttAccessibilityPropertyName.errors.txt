@@ -1,0 +1,29 @@
+ttttAccessibilityPropertyName.ts(5,4): error TS2341: Property '"a-b"' is private and only accessible within class 'Q'.
+ttttAccessibilityPropertyName.ts(7,9): error TS2341: Property '"a-b"' is private and only accessible within class 'Q'.
+ttttAccessibilityPropertyName.ts(8,4): error TS2341: Property '"1n"' is private and only accessible within class 'Q'.
+ttttAccessibilityPropertyName.ts(9,9): error TS2341: Property '"1n"' is private and only accessible within class 'Q'.
+ttttAccessibilityPropertyName.ts(10,9): error TS2445: Property '"p q"' is protected and only accessible within class 'Q' and its subclasses.
+
+
+==== ttttAccessibilityPropertyName.ts (5 errors) ====
+    // TS2341/TS2445 name the property as symbolToString does, as written: `"a-b"` and `"1n"` quoted. A destructuring
+    // assignment's bigint key `1n` reads the property "1n" (tsgo's getLiteralTypeFromPropertyName), TS1539 aside
+    let s: any;
+    class Q { private "a-b" = 1; private "1n" = 2; protected "p q" = 3; }
+    ({ "a-b": s } = new Q());
+       ~~~~~
+!!! error TS2341: Property '"a-b"' is private and only accessible within class 'Q'.
+    new Q()["a-b"];
+    const { "a-b": z } = new Q();
+            ~~~~~
+!!! error TS2341: Property '"a-b"' is private and only accessible within class 'Q'.
+    ({ 1n: s } = new Q());
+       ~~
+!!! error TS2341: Property '"1n"' is private and only accessible within class 'Q'.
+    const { 1n: y } = new Q();
+            ~~
+!!! error TS2341: Property '"1n"' is private and only accessible within class 'Q'.
+    const { "p q": w } = new Q();
+            ~~~~~
+!!! error TS2445: Property '"p q"' is protected and only accessible within class 'Q' and its subclasses.
+    

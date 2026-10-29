@@ -2662,6 +2662,8 @@ static void assignment_target_typecheck(
 // `rest`: the target of an object rest (`{ ...target } = o`), which is said to be so (tsc's checkReferenceAssignment).
 // `at`: where a source that doesn't fit is reported, if not at the target (`(x!) = v`, `(x satisfies T) = v`: the
 // whole left side, tsc's checkBinaryLikeExpression reports at it)
+static Atom const* object_item_effective_name(ObjectExprItem const* item);
+
 static void assignment_target_typecheck_of(
     Expr const* target, Ty const* source, Expr const* source_expr, AccessSite const* site, bool object_rest, Span at, ErrorCtx* errs
 ) {
@@ -2847,7 +2849,11 @@ static void assignment_target_typecheck_of(
                     // (A never key, TS18064: tsgo's getLiteralTypeFromPropertyName of a private identifier)
                     property = ty_intrinsic(checker, TY_NEVER);
                 } else if (source && (i->tag == OBJECT_ITEM_PROPERTY || i->tag == OBJECT_ITEM_SHORTHAND) && !i->computed_key) {
-                    Ty const* key = ty_string_literal(checker, cstr_sv(&i->name_string));
+                    // (A bigint name by its token value, `1n` reads "1n": tsgo's getLiteralTypeFromPropertyName through
+                    // GetPropertyNameForPropertyNameNode; missing, it is TS2538 of a bigint)
+                    Ty const* key = span_is_bigint_name(i->name_span, i->name_is_value) ?
+                        ty_string_literal(checker, atom_sv(object_item_effective_name(i))) :
+                        ty_string_literal(checker, cstr_sv(&i->name_string));
                     // (undefined and null have no properties: a union with them has none either, tsc's
                     // getIndexedAccessType on the source as it is)
                     bool nullable_member = false;
@@ -3616,6 +3622,10 @@ static void assignment_target_check_grammar(Expr const* target, ErrorCtx* errs) 
         case EXPR_OBJECT:
             object_check_grammar_ex(target, true, errs);
             for_each (i, vec_object_expr_item, &target->object) {
+                // (tsc's checkGrammarObjectLiteralExpression of a property assignment, whatever the parse errors)
+                if (i->tag == OBJECT_ITEM_PROPERTY && !i->computed_key && span_is_bigint_name(i->name_span, i->name_is_value)) {
+                    error_ctx_error_d(errs, i->name_span, 1539, "A 'bigint' literal cannot be used as a property name.");
+                }
                 if (i->tag == OBJECT_ITEM_PROPERTY) assignment_target_check_grammar(&i->value, errs);
             }
             break;

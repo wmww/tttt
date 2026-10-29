@@ -1,0 +1,56 @@
+//// [test/cases/ttttAccessibilityPropertyName.ts] ////
+
+=== ttttAccessibilityPropertyName.ts ===
+// TS2341/TS2445 name the property as symbolToString does, as written: `"a-b"` and `"1n"` quoted. A destructuring
+// assignment's bigint key `1n` reads the property "1n" (tsgo's getLiteralTypeFromPropertyName), TS1539 aside
+let s: any;
+>s : any
+
+class Q { private "a-b" = 1; private "1n" = 2; protected "p q" = 3; }
+>Q : Q
+>"a-b" : number
+>1 : 1
+>"1n" : number
+>2 : 2
+>"p q" : number
+>3 : 3
+
+({ "a-b": s } = new Q());
+>({ "a-b": s } = new Q()) : Q
+>{ "a-b": s } = new Q() : Q
+>{ "a-b": s } : { "a-b": any; }
+>"a-b" : any
+>s : any
+>new Q() : Q
+>Q : typeof Q
+
+new Q()["a-b"];
+>new Q()["a-b"] : number
+>new Q() : Q
+>Q : typeof Q
+>"a-b" : "a-b"
+
+const { "a-b": z } = new Q();
+>z : number
+>new Q() : Q
+>Q : typeof Q
+
+({ 1n: s } = new Q());
+>({ 1n: s } = new Q()) : Q
+>{ 1n: s } = new Q() : Q
+>{ 1n: s } : {}
+>1n : any
+>s : any
+>new Q() : Q
+>Q : typeof Q
+
+const { 1n: y } = new Q();
+>y : number
+>new Q() : Q
+>Q : typeof Q
+
+const { "p q": w } = new Q();
+>w : number
+>new Q() : Q
+>Q : typeof Q
+

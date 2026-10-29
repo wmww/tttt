@@ -3352,10 +3352,11 @@ static bool check_accessibility(
     Ty const* declaring_type = ty_declared_type_of(me, prop->parent);
     if (modifiers & PROP_PRIVATE) {
         if (is_within_class(site->enclosing_class, declaring)) return true;
-        cstr class_str = ty_to_cstr(me, declaring_type);
+        // (The property as symbolToString names it: `"a-b"` as written)
+        cstr class_str = ty_to_cstr(me, declaring_type), prop_str = ty_prop_written_name(me, prop);
         error_ctx_error_d(errs, span, 2341,
-            "Property '", atom_sv(prop->name), "' is private and only accessible within class '", class_str, "'.");
-        cstr_drop(&class_str);
+            "Property '", prop_str, "' is private and only accessible within class '", class_str, "'.");
+        c_drop(cstr, &class_str, &prop_str);
         return false;
     }
     if (is_super) return true;
@@ -3372,21 +3373,21 @@ static bool check_accessibility(
         if (enclosing_type && !ty_has_base_type(me, enclosing_type, declaring_type)) enclosing_type = nullptr;
     }
     if (!enclosing_type || (prop->flags & PROP_STATIC && !enclosing_found)) {
-        cstr class_str = ty_to_cstr(me, declaring_type);
-        error_ctx_error_d(errs, span, 2445, "Property '", atom_sv(prop->name),
+        cstr class_str = ty_to_cstr(me, declaring_type), prop_str = ty_prop_written_name(me, prop);
+        error_ctx_error_d(errs, span, 2445, "Property '", prop_str,
             "' is protected and only accessible within class '", class_str, "' and its subclasses.");
-        cstr_drop(&class_str);
+        c_drop(cstr, &class_str, &prop_str);
         return false;
     }
     if (prop->flags & PROP_STATIC) return true;
     if (containing->kind == TY_TYPE_PARAM) containing = ty_apparent_type(me, containing);
     if (!containing_has_base(me, containing, enclosing_type)) {
         cstr enclosing_str = ty_to_cstr(me, enclosing_type);
-        cstr containing_str = ty_to_cstr(me, containing);
-        error_ctx_error_d(errs, span, 2446, "Property '", atom_sv(prop->name),
+        cstr containing_str = ty_to_cstr(me, containing), prop_str = ty_prop_written_name(me, prop);
+        error_ctx_error_d(errs, span, 2446, "Property '", prop_str,
             "' is protected and only accessible through an instance of class '", enclosing_str,
             "'. This is an instance of class '", containing_str, "'.");
-        c_drop(cstr, &enclosing_str, &containing_str);
+        c_drop(cstr, &enclosing_str, &containing_str, &prop_str);
         return false;
     }
     return true;

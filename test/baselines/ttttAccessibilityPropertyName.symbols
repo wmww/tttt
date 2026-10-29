@@ -1,0 +1,40 @@
+//// [test/cases/ttttAccessibilityPropertyName.ts] ////
+
+=== ttttAccessibilityPropertyName.ts ===
+// TS2341/TS2445 name the property as symbolToString does, as written: `"a-b"` and `"1n"` quoted. A destructuring
+// assignment's bigint key `1n` reads the property "1n" (tsgo's getLiteralTypeFromPropertyName), TS1539 aside
+let s: any;
+>s : Symbol(s, Decl(ttttAccessibilityPropertyName.ts, 2, 3))
+
+class Q { private "a-b" = 1; private "1n" = 2; protected "p q" = 3; }
+>Q : Symbol(Q, Decl(ttttAccessibilityPropertyName.ts, 2, 11))
+>"a-b" : Symbol(Q["a-b"], Decl(ttttAccessibilityPropertyName.ts, 3, 9))
+>"1n" : Symbol(Q["1n"], Decl(ttttAccessibilityPropertyName.ts, 3, 28))
+>"p q" : Symbol(Q["p q"], Decl(ttttAccessibilityPropertyName.ts, 3, 46))
+
+({ "a-b": s } = new Q());
+>"a-b" : Symbol("a-b", Decl(ttttAccessibilityPropertyName.ts, 4, 2))
+>s : Symbol(s, Decl(ttttAccessibilityPropertyName.ts, 2, 3))
+>Q : Symbol(Q, Decl(ttttAccessibilityPropertyName.ts, 2, 11))
+
+new Q()["a-b"];
+>Q : Symbol(Q, Decl(ttttAccessibilityPropertyName.ts, 2, 11))
+>"a-b" : Symbol(Q["a-b"], Decl(ttttAccessibilityPropertyName.ts, 3, 9))
+
+const { "a-b": z } = new Q();
+>z : Symbol(z, Decl(ttttAccessibilityPropertyName.ts, 6, 7))
+>Q : Symbol(Q, Decl(ttttAccessibilityPropertyName.ts, 2, 11))
+
+({ 1n: s } = new Q());
+>1n : Symbol(1n, Decl(ttttAccessibilityPropertyName.ts, 7, 2))
+>s : Symbol(s, Decl(ttttAccessibilityPropertyName.ts, 2, 3))
+>Q : Symbol(Q, Decl(ttttAccessibilityPropertyName.ts, 2, 11))
+
+const { 1n: y } = new Q();
+>y : Symbol(y, Decl(ttttAccessibilityPropertyName.ts, 8, 7))
+>Q : Symbol(Q, Decl(ttttAccessibilityPropertyName.ts, 2, 11))
+
+const { "p q": w } = new Q();
+>w : Symbol(w, Decl(ttttAccessibilityPropertyName.ts, 9, 7))
+>Q : Symbol(Q, Decl(ttttAccessibilityPropertyName.ts, 2, 11))
+
