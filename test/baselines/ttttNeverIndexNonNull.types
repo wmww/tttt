@@ -1,0 +1,34 @@
+//// [test/cases/ttttNeverIndexNonNull.ts] ////
+
+=== ttttNeverIndexNonNull.ts ===
+// An element access by never still says its object is possibly undefined (tsc's checkElementAccessExpression starts
+// with checkNonNullExpression, whatever the index), and the access is the non-nullable object's: `t[null!]` reads the
+// string index signature, any. Seed 20261113, controlFlowGenericTypes drop-as: `iSpec[null!`
+function f<T extends Record<string, any> | undefined>(t: T, x: { a: 1 } | undefined, k: never) {
+>f : <T extends Record<string, any> | undefined>(t: T, x: { a: 1; } | undefined, k: never) => void
+>t : T
+>x : { a: 1; } | undefined
+>a : 1
+>k : never
+
+    t[null!];
+>t[null!] : any
+>t : Record<string, any> | undefined
+>null! : never
+
+    t["a"];
+>t["a"] : any
+>t : Record<string, any> | undefined
+>"a" : "a"
+
+    x["a"];
+>x["a"] : 1
+>x : { a: 1; } | undefined
+>"a" : "a"
+
+    x[k];
+>x[k] : never
+>x : { a: 1; } | undefined
+>k : never
+}
+

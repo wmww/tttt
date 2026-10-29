@@ -6822,6 +6822,11 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             }
             Ty const* key = ty_access_key_type(me, expr->property);
             if (expr->property->form == PROPERTY_EXPR_BRACKET) key = ty_string_index_only_key(me, object, key);
+            // (By never, what the non-nullable object's index signatures say: tsc's checkNonNullExpression has removed
+            // null and undefined, `t[null!]` with `T extends Record<string, any> | undefined` is any)
+            if (expr->property->form == PROPERTY_EXPR_BRACKET && (key->flags & TYF_NEVER) && compiler_options()->strict_null_checks) {
+                object = ty_non_nullable(me, object);
+            }
             // `o[k]` with k any and no index signature that takes it is errorType (tsc's getPropertyTypeForIndexType
             // finds nothing for an access expression)
             // (Of the non-nullable object: tsc's checkElementAccessExpression has reported and removed null and undefined)

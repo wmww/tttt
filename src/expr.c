@@ -4625,9 +4625,12 @@ void expr_property_access_errors(Expr const* me, Ty const* expr_type, bool parti
     // An object that may be nullish indexed by a generic key (check_access() doesn't look at those): TS18048
     // and then its non-nullable part (tsc's checkNonNullExpression, type parameters by their constraint)
     // (A type parameter without constraint isn't: tsc says its members are missing instead)
+    // (Or by never, which check_access() takes as indexing anything: tsc's checkNonNullExpression comes first all the
+    // same, `x[null!]`)
+    Ty const* key = my property->form == PROPERTY_EXPR_BRACKET ? ty_regular(checker, ty_access_key_type(checker, my property)) : nullptr;
     bool generic_key = my property->form == PROPERTY_EXPR_BRACKET && compiler_options()->strict_null_checks &&
         (expr_type->kind == TY_UNION || (expr_type->kind == TY_TYPE_PARAM && ty_base_constraint(checker, expr_type))) &&
-        ty_is_generic_index(ty_regular(checker, ty_access_key_type(checker, my property)));
+        (ty_is_generic_index(key) || (key->flags & TYF_NEVER));
     // (tsc's getTypeFacts(IsUndefinedOrNull): an unconstrained type parameter is unknown's facts, which don't
     // have it, `x[k]` of `x: T | U` indexes `T | U`)
     if (generic_key && !my property->qualified_name && ty_undefined_or_null_facts(checker, expr_type)) {

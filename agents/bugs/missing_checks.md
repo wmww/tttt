@@ -601,6 +601,23 @@ never-const (harness writes no errors baseline).
 - recursiveClassBaseType delete-stmt: missing TS2310 (the base cycle design). noCircularitySelfReferentialGetter2
   (TS2345 text), unionTypeWithIndexSignature never-const (TS2322 text): not looked at. [open]
 
+## Mutation seed 20261113 (2026-10-29, cor11: `scripts/mutate.py -n 8000 --seed 20261113 --syntax`, 16 of 8000 differ)
+Known: generatorTypeCheck46 (TS2488 from the early pass [design]), recursiveClassBaseType (TS2310),
+importDeclWithExportModifierInAmbientContext (TS2708 from tsgo's emit resolver [tsgo]). Fixed:
+- controlFlowParameter drop-as: `{ [(a = "")]: b } = {}`: the initializer is padded with computed names of literal type
+  too (padObjectLiteralType). Test ttttPadComputedBindingName. [fixed 618de31ef]
+- controlFlowGenericTypes drop-as: `iSpec[null!` (an element access by never) lost TS18048: the non-null check comes
+  first whatever the index, and the access is the non-nullable object's. Test ttttNeverIndexNonNull. [fixed PENDING]
+Not looked at:
+- mixinPrivateAndProtected delete-stmt: missing TS2339 on `never` with the "reduced to never because property 'pvt'
+  exists in multiple constituents and is private in some" elaboration (a mixin intersection). [open]
+- genericMappedTypeAsClause delete-stmt: spurious TS2300 "Duplicate identifier 'const'" twice after recovery. [open]
+- conditionalTypeContextualTypeSimplificationsSuceeds extends-object (TS2464 -> TS7031), objectRestBindingContextualInference
+  delete-stmt (missing TS7006 '(Missing)' and TS2554), distributiveConditionalBaseConstraint drop-optional (TS2344
+  elaboration), parseInvalidNames num-to-str (missing TS1005), exportSpecifierAndLocalMemberDeclaration str-to-num
+  (TS2694 -> TS2503), duplicateIdentifierChecks num-to-str (spurious TS2322 on an object literal's `get x() { return
+  "0" }` next to `x()` and a setter), 3 render. [open]
+
 ## Mutation seed 20261112 (2026-10-29, cor11: `scripts/mutate.py -n 8000 --seed 20261112`, 5 of 8000 differ; `--syntax` 19)
 Known: noCircularitySelfReferentialGetter2 (text TS2345), recursiveClassBaseType (TS2310, the base cycle design),
 exportSpecifierReferencingOuterDeclaration3 [tsgo]. New:

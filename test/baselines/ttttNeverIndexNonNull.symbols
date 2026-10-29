@@ -1,0 +1,30 @@
+//// [test/cases/ttttNeverIndexNonNull.ts] ////
+
+=== ttttNeverIndexNonNull.ts ===
+// An element access by never still says its object is possibly undefined (tsc's checkElementAccessExpression starts
+// with checkNonNullExpression, whatever the index), and the access is the non-nullable object's: `t[null!]` reads the
+// string index signature, any. Seed 20261113, controlFlowGenericTypes drop-as: `iSpec[null!`
+function f<T extends Record<string, any> | undefined>(t: T, x: { a: 1 } | undefined, k: never) {
+>f : Symbol(f, Decl(ttttNeverIndexNonNull.ts, 0, 0))
+>T : Symbol(T, Decl(ttttNeverIndexNonNull.ts, 3, 11))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>t : Symbol(t, Decl(ttttNeverIndexNonNull.ts, 3, 54))
+>T : Symbol(T, Decl(ttttNeverIndexNonNull.ts, 3, 11))
+>x : Symbol(x, Decl(ttttNeverIndexNonNull.ts, 3, 59))
+>a : Symbol(a, Decl(ttttNeverIndexNonNull.ts, 3, 64))
+>k : Symbol(k, Decl(ttttNeverIndexNonNull.ts, 3, 84))
+
+    t[null!];
+>t : Symbol(t, Decl(ttttNeverIndexNonNull.ts, 3, 54))
+
+    t["a"];
+>t : Symbol(t, Decl(ttttNeverIndexNonNull.ts, 3, 54))
+
+    x["a"];
+>x : Symbol(x, Decl(ttttNeverIndexNonNull.ts, 3, 59))
+
+    x[k];
+>x : Symbol(x, Decl(ttttNeverIndexNonNull.ts, 3, 59))
+>k : Symbol(k, Decl(ttttNeverIndexNonNull.ts, 3, 84))
+}
+
