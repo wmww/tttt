@@ -3,6 +3,27 @@ The latest of each kind of measurement. **Replace a section when re-measuring** 
 append history, git has it. Older sections (oracle tallies, stage logs, superseded perf tables) were
 condensed on 2026-10-20 into "Past conclusions" below; the full log is `git show a9c5e07da:agents/measurements.md`.
 
+## The front end at the thread level (2026-10-29, worker fe4, 588cc154c -> ea0e1baed; this box, release builds)
+Whole runs at the defaults, `scripts/abbench.sh -n 7` (interleaved, medians), physical paths, load stated (a race
+hunter loaded the box in bursts: the tables are the second take, taken at load 5-12). Mechanisms and timelines:
+notes/front_end.md "Thread-level pass".
+
+| project | fe3's pass ed7b44817 -> 96857f1de (load 5-11) | fe4's pass 588cc154c -> ea0e1baed (load 10-12) |
+|---|---|---|
+| nest | 61 -> 61 ms (-0.7%) | 51 -> 47 ms (-6.9%) |
+| nitro | 174 -> 165 (-5.5%) | 152 -> 144 (-5.3%) |
+| faker | 136 -> 138 (+1.9%) | 123 -> 116 (-5.5%) |
+| zod | 204 -> 201 (-1.7%) | 201 -> 201 (0.0%) |
+| vscode | 2029 -> 2028 (-0.1%) | 1859 -> 1809 (-2.7%) |
+| openclaw/src/config | 2194 -> 2202 (+0.3%) | 2203 -> 2135 (-3.1%) |
+
+fe3's instruction cuts (-5..-22% of the front end at T1) don't show in multi-threaded walls but nitro's; fe4's are
+waits removed. Peak RSS within 0.6% both; fe4's minor faults +1.4..+4.2% (texts read into populated chunks rather
+than mapped). Front end only (TTTT_EXIT_AFTER_RESOLVE=1, 7 interleaved pairs per step, load 3-9): load+parse files
+vscode 188.6 -> 156.9 (texts read) -> 110.3 ms (pool sharded, measured at load 3-5 from 128.7), openclaw 210 -> 182 ->
+138.6 (from 158.6), faker 38.6 -> 38.1 -> 25.8 (from 31.0), nest 20.8 -> 20.3 -> 14.5 (from 16.4); the window before
+declare vscode ~9.5 -> ~5.5 ms, openclaw ~12 -> ~6 (release-thread frees).
+
 ## The front end's profile-driven pass (2026-10-29, worker fe3, ed7b44817 -> 96857f1de; this box, callgrind)
 Front end only (`TTTT_EXIT_AFTER_RESOLVE=1 tttt -p P --noEmit --threads 1` under callgrind, release builds; main's
 other landings in between are checker-side), M instructions:
