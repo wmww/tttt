@@ -270,3 +270,56 @@ Measured and not built:
 Tools: `scripts/listcheck.py OLD NEW [--cwd-too] [--threads N]` (--listFilesOnly byte for byte on every sweep config
 and the corpora, 7010 configs, ~5 min at -j 8); the per-phase instruction split is `callgrind_annotate --inclusive=yes`
 of tsconfig_load_hooked, program_load (minus parse_file), program_resolve_names under TTTT_EXIT_AFTER_RESOLVE=1.
+
+## Thread-level pass (2026-10-29, fe4, 588cc154c -> ea0e1baed)
+What the main thread waits on and the serial windows, from `bench/timeline/` (TIMELINE_ALL=1, release builds, the
+defaults: 16 threads on this 16-vCPU / 8-core box, warm page cache, load ~6). Before (588cc154c), ms:
+
+| project | load+parse wall | main run / runq / blocked | pool parallelism | resolve's serial windows | walk |
+|---|---|---|---|---|---|
+| nest | 19.9 | 13.6 / 2.4 / 3.9 | 8.7 | declare merge 3.7, link 3.0, shard merge 1.7, the rest ~3 | 4.6 at 9.4x |
+| faker | 37.6 | 18.2 / 2.5 / 17.0 | 7.4 | declare merge 4.7, link 4.9, shard merge 5.3 | 7.1 at 8.8x |
+| nitro | 52.4 | 32.8 / 3.6 / 16.0 | 8.2 | module refs 8.3 on one thread, link 8.6, declare merge 5.8, shard merge 5.7 | 12.3 at 11x |
+| vscode | 192 | 123 / 21.5 / 47.4 | 7.6 | pool end 9.9, file scopes 3.3, declare merge 8.2, link 47.8 (aliases 37, augmentations 7.5), export-star conflicts 5.3, shard merge 5.9, remaining aliases 3.3: ~85 | 46 at 12x |
+| openclaw/src/config | 193 | 127 / 12.7 / 53.6 | 8.4 | pool end 9.4, file scopes 5.0, declare merge 7.7, link 77.7 (aliases 61, augmentations 9.7), export-star 9.0, shard merge 6.1, remaining aliases 3.8: ~124 | 42 at 12.8x |
+
+The load phase's losses, ranked: (1) the workers blocked (state D) in source_text_map()'s mmap(): ~390 ms summed on
+vscode and ~375 on openclaw, ~25% of their parse time. Every file of 16 KB or more was mapped MAP_FIXED, which takes
+the mm lock for writing behind every reader (the AST slabs' 2 MB MADV_POPULATE_WRITEs, faults) and makes every
+fault after it wait; the small files' 256 KB read chunks were an mmap each too. (2) The load pool's one mutex: the
+loader 12-25% of its load+parse samples in __lll_lock_wait under load_pool_take() (35-55% once (1) was gone), the
+workers 10-20% in load_pool_queue_each()/load_pool_run(). (3) Behind both, the pool idles waiting for the loader,
+whose own serial work (~100 ms CPU on vscode and openclaw: program_add_made_source, the files map, include reasons)
+is the load phase's critical path. The walk is not bounded by one file (vscode's biggest, agentService.test.ts 1.45
+MB, walks 22 ms of 46 and starts first): 16 threads on 8 cores and the main thread's share.
+
+Built (each output-identical; gates: quickgate --vs-main -k, listcheck --cwd-too 0/14020, scenarios, TSan):
+- **Texts read, never mapped per file** (c0bf36593): read() into per-thread chunks carved from 256 MB reservations
+  under a lock and populated with one madvise (a read lock), a file over a quarter of a chunk in a slot of its own;
+  `TTTT_TEXT_READ_BELOW=N` keeps the old mapping mode (hacks.md). vscode's front end makes 201 mmaps instead of 1184.
+  load+parse files vscode 188.6 -> 156.9 ms, openclaw 210 -> 182, nitro 56.6 -> 51.6, zod 11.4 -> 9.4 (load 8-9).
+  Cost: a recycle can't drop text pages (vscode 106 MB, openclaw 59 MB; peak RSS at --checker-memory 1G +1.5..3.5% on
+  vscode); peak RSS at the defaults flat.
+- **The load pool's lookups sharded** (4f3525dac): paths in 64 shards with a lock each, the entry state atomic, a
+  parsed file taken by the loader with a shard lookup and an acquire load (no pool lock), the pool's lock taken once
+  per queued batch and only for new or still-queued entries. load+parse files vscode 128.7 -> 110.3, openclaw 158.6
+  -> 138.6, faker 31.0 -> 25.8, nest 16.4 -> 14.5 (load 3-5). The loader now gets ahead and waits on files in flight
+  more, parsing queued ones meanwhile (its CPU up, its wall down).
+- **The pool's entries freed on the release thread** (9705a6e17): load_pool_stop() at the start of resolve,
+  load_pool_destroy() in program_release_run(). The window before declare vscode ~9.5 -> ~5.5 ms, openclaw ~12 -> ~6.
+  Freeing on the stopping workers was worse (8 -> 18 ms: cross-arena frees, then joined).
+- **Link's module loops on a list** (ea0e1baed): type exports, resolved exports and export-star conflicts walk the
+  module symbols' indexes (is_module is a creation-time property), generic merge pairs walk the list
+  mark_serial_resolves() records. ~2-4 ms of serial pointer chasing on vscode and openclaw.
+
+Measured and not built:
+- **Module refs claimed by refs, not 64-file chunks**: nitro's generated openapi-document.d.ts (133k `import()`
+  refs) made "link: module refs" 5.7-8.9 ms on one thread; claiming 256 refs at a time (a prefix sum over files'
+  ref counts, deferred files deduped before the serial replay) took it to 1.1-1.6 ms, output identical; flat on
+  every other project, so one shape only (~60 lines in program.c module_refs_lane_run() and program_link_module_refs()).
+- **The remaining full-symbol scans**: binder_resolve_remaining_aliases() (3.3-3.8 ms) can't use a list made
+  before the walk (a JavaScript assignment declaration can give an existing symbol an alias declaration during the
+  walk); the alias loop is the work (fe3: ~750 instructions an alias, memory-bound).
+- What is left serial in resolve is order-bound: declare's shard merge and the files that don't declare in isolation
+  (lib files, global scripts) in program order, the alias loop, the walk's shard merge. The load phase's remaining
+  critical path is the loader's own per-file work (3).
