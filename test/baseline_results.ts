@@ -13756,6 +13756,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDeepNestingIndexedAccessIdentity': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDeepNestingObjectLiteralSource': {
         errors: true,
         symbols: true,
@@ -15451,6 +15456,11 @@ const baselines = {
         types: true,
     },
     'ttttLoopPartialSpread': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttLoopPartialTruthyTest': {
         errors: true,
         symbols: true,
         types: true,

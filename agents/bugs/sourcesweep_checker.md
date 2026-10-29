@@ -671,7 +671,7 @@ missing_checks.md, together with variances for a declared type against its insta
   operator's right operand as checked in normal mode; tsgo passes CheckModeTypeOnly to both operands, and the normal-mode
   check of a loop's partial types comes from checkTestingKnownTruthyTypes (a conditional's condition, a `&&`'s left
   operand: the right operand of a logical `cond` and of each `||`/`??` down its left, recursing into a logical right
-  operand), truthy_tests_check(). Test ttttLoopPartialTruthyTest. [fixed 01ffdfbea]
+  operand), truthy_tests_check(). Test ttttLoopPartialTruthyTest. [fixed 8268d000e]
 - openclaw (all 15 configs) src/config/sessions/session-transcript-worker-readers.ts(53), spurious TS2352 on `({ kind,
   ...input } as Extract<SessionHistoryWorkerPreparedInput, { kind: K }>)` (and with it the 8 declaration diagnostics
   tsgo reports gone), since 0d3156599 (right by tsc's rule: before it a never false branch was comparable to anything).
@@ -679,4 +679,4 @@ missing_checks.md, together with variances for a declared type against its insta
   intersection holding a Pick, against the type parameter target): getRecursionIdentityTarget takes an indexed
   access's object type through the mapped-type unwrapping and intersection matching, tttt's recursion_key() didn't
   (an indexed access's identity was its bare object type, an intersection never matched by its members). Test
-  ttttDeepNestingIndexedAccessIdentity (the variant without the Pick still errors). [fixed 319a29f06]
+  ttttDeepNestingIndexedAccessIdentity (the variant without the Pick still errors). [fixed 3213e6320]
