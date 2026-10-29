@@ -9736,9 +9736,9 @@ const baselines = {
         types: true,
     },
     'bun78-R01': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun78-R03': {
         errors: false,
@@ -16386,6 +16386,11 @@ const baselines = {
         dts: true,
     },
     'ttttReturnMapperCommonSupertype': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttReturnOnlyTypeApplicability': {
         errors: true,
         symbols: true,
         types: true,

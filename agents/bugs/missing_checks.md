@@ -645,7 +645,7 @@ exportSpecifierReferencingOuterDeclaration3 [tsgo]. New:
   with a non-inferrable member. Repro: the declaration above with `declare function useMemo<T>(func: () => T): T`.
   Found (instrumented tsgo): no second pass at all; the first applicability check relates the cached return-only type
   `() => {} | undefined`, which fails, where tttt related anyFunctionType. Test ttttReturnOnlyTypeApplicability.
-  [fixed 074270ae7]
+  [fixed b8120ef0a]
 - sourceMapValidationStatements delete-stmt: `with (obj) { z = 10; }` with no `z` declared: tsgo reports TS2304 inside
   the unchecked with body. Not checkWithStatement (it skips the body): most likely flow analysis of an identifier
   reference walking back over the assignment, isMatchingReference's getResolvedSymbol, which reports. tttt never
