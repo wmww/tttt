@@ -1,0 +1,25 @@
+//// [test/cases/ttttJsTypedefAliasOwnTarget.ts] ////
+
+=== local-lib/ModuleGraphConnection.js ===
+/** @typedef {typeof T} T */
+module.exports = class ModuleGraphConnection {};
+>module.exports : Symbol(exports, Decl(ModuleGraphConnection.js, 0, 0))
+>module : Symbol(module, Decl(ModuleGraphConnection.js, 0, 0))
+>exports : Symbol(exports, Decl(ModuleGraphConnection.js, 0, 0))
+>ModuleGraphConnection : Symbol(ModuleGraphConnection, Decl(ModuleGraphConnection.js, 1, 16))
+
+module.exports.T = T;
+>module.exports : Symbol(exports, Decl(ModuleGraphConnection.js, 0, 0))
+>module : Symbol(module, Decl(ModuleGraphConnection.js, 0, 0))
+>exports : Symbol(exports, Decl(ModuleGraphConnection.js, 0, 0))
+
+=== repro.js ===
+'use strict';
+/** @typedef {import('./local-lib/ModuleGraphConnection')} ImportedType */
+/** @type {ImportedType} */
+module.exports = class Repro {};
+>module.exports : Symbol(exports, Decl(repro.js, 0, 0))
+>module : Symbol(module, Decl(repro.js, 0, 0))
+>exports : Symbol(exports, Decl(repro.js, 0, 0))
+>Repro : Symbol(Repro, Decl(repro.js, 3, 16))
+

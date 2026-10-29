@@ -2070,6 +2070,24 @@ static bool export_equals_shadows_namespace(Symbol const* module, Symbol* export
     return false;
 }
 
+// A CommonJS `exports.T = T` merged with the file's `@typedef T`, with no `T` in the scopes between: the name finds the
+// export by its type meaning before any global, so the alias is its own target (resolve_alias_target_in()), with no
+// value meaning. Decided from the tables alone: what other files declare can't change it
+static bool commonjs_alias_is_own_target(Symbol const* symbol) {
+    if (!(symbol->flags & SYMBOL_ALIAS) || !(symbol->flags & (SYMBOL_TYPE | SYMBOL_NAMESPACE)) || !symbol->alias) return false;
+    SymbolAlias const* alias = symbol->alias;
+    if (alias->item || alias->entity || alias->class_expr || !span_valid(alias->name)) return false;
+    csview name = span_sv(alias->name);
+    if (!csview_equals_sv(name, symbol->name)) return false;
+    u64 hash = symbol_name_hash(name);
+    for (Scope const* scope = alias->scope; scope && scope->kind != SCOPE_GLOBAL; scope = scope->parent) {
+        SymbolTable const* locals = scope_locals(scope);
+        if ((locals->count || locals->parent) && symbol_table_lookup(locals, name, hash)) return false;
+        if (scope->container && scope->container->exports) return symbol_table_lookup(scope->container->exports, name, hash) == symbol;
+    }
+    return false;
+}
+
 static void check_module_exports(Symbol const* container, ErrorCtx* errs) {
     if (!container || !container->exports) return;
     SymbolTable const* exports = container->exports;
@@ -2082,7 +2100,9 @@ static void check_module_exports(Symbol const* container, ErrorCtx* errs) {
             Symbol* other = exports->entries[i].symbol;
             if (other == export_equals) continue;
             // (A CommonJS export's alias is a value: its target may be in a file not declared yet)
-            values = (other->flags & SYMBOL_ALIAS && !commonjs ? symbol_resolved_flags(other) : other->flags | (other->flags & SYMBOL_ALIAS ? SYMBOL_VALUE : 0)) & SYMBOL_VALUE;
+            // (Not one that is its own target, which has its typedef's meaning alone)
+            values = (other->flags & SYMBOL_ALIAS && !commonjs ? symbol_resolved_flags(other) :
+                other->flags | (other->flags & SYMBOL_ALIAS && !(commonjs && commonjs_alias_is_own_target(other)) ? SYMBOL_VALUE : 0)) & SYMBOL_VALUE;
         }
         if (values || (container->is_module && export_equals_shadows_namespace(container, export_equals))) {
             error_ctx_error_d(errs, export_equals->decls[0].full, 2309,
@@ -3831,7 +3851,10 @@ static Symbol* resolve_alias_target_in(Symbol* me, ErrorCtx* errs) {
         // unknown symbol, which has every meaning)
         if (symbol_is_builtin_type(found)) found = nullptr;
         SourceFile const* file = my alias->scope->file;
-        if (found == me) return nullptr;
+        // (Found by a meaning of its own, a JSDoc typedef's that `exports.T = T` merged with, it is its own target:
+        // tsc's getTargetOfAliasLikeExpression resolves the name without resolving aliases, and the symbol's flags
+        // stop there, `target === symbol`, without a value meaning)
+        if (found == me) return my flags & (SYMBOL_VALUE | SYMBOL_TYPE | SYMBOL_NAMESPACE) ? me : nullptr;
         // tsc's resolveNameHelper looks a CommonJS module's exports up after its locals and before the globals, and
         // discards what it finds (but typedefs); getSymbol's meaning test resolves a pure alias there all the same, so
         // `exports.y = y` or `module.exports = { parseInt }` with no local of the name is its own target in flight:

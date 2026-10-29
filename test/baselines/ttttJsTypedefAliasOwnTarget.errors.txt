@@ -1,0 +1,22 @@
+local-lib/ModuleGraphConnection.js(1,22): error TS2693: 'T' only refers to a type, but is being used as a value here.
+local-lib/ModuleGraphConnection.js(3,16): error TS2339: Property 'T' does not exist on type 'typeof ModuleGraphConnection'.
+local-lib/ModuleGraphConnection.js(3,20): error TS2693: 'T' only refers to a type, but is being used as a value here.
+
+
+==== local-lib/ModuleGraphConnection.js (3 errors) ====
+    /** @typedef {typeof T} T */
+                         ~
+!!! error TS2693: 'T' only refers to a type, but is being used as a value here.
+    module.exports = class ModuleGraphConnection {};
+    module.exports.T = T;
+                   ~
+!!! error TS2339: Property 'T' does not exist on type 'typeof ModuleGraphConnection'.
+                       ~
+!!! error TS2693: 'T' only refers to a type, but is being used as a value here.
+    
+==== repro.js (0 errors) ====
+    'use strict';
+    /** @typedef {import('./local-lib/ModuleGraphConnection')} ImportedType */
+    /** @type {ImportedType} */
+    module.exports = class Repro {};
+    
