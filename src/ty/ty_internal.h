@@ -390,6 +390,8 @@ u64 ty_seeded_id(u32 id);                  // A type id as TTTT_ORDER_SEED order
 int ty_compare_ids(Ty const* a, Ty const* b); // Distinct types in (seeded) id order
 u32 ty_height(Checker const* checker, Ty const* t); // TTTT_NESTING_ORDER=content: bun's Rank height (order.c)
 bool ty_is_subterm(Checker const* checker, Ty const* inner, Ty const* outer); // TTTT_NESTING_ORDER=sub (order.c)
+// Whether `visit` holds for one of `outer`'s proper key sub-terms (order.c; a budget of 256 types)
+bool ty_key_parts_any(Ty const* outer, bool (*visit)(void* ctx, Ty const* part), void* ctx);
 // The order deep nesting takes for "newer" (is_deeply_nested_as()): TTTT_NESTING_ORDER, else the ids on the plain
 // path and the walk order under --shared-graph, where ids are the schedule's (sharing_design.md §6)
 static inline NestingOrder ty_nesting_order(Checker const* me) {

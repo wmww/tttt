@@ -7275,8 +7275,24 @@ static bool made_before_part(Checker* me, Ty const* parent, Ty const* part, Ty c
 // instantiation, whose members are made after it) one of its property types or return types (or a key part of one).
 // These are peeks, what this worker knows: the walk that went from one to the other resolved them, but a peek is
 // history in principle (TTTT_GRAPH_CHECKS logs a decision that read another worker's)
+static bool made_before_parts(Checker* me, Ty const* parent, Ty const* child);
+typedef struct MadeBeforeVisit { Checker* me; Ty const* child; } MadeBeforeVisit;
+static bool made_before_visit(void* ctx, Ty const* part) {
+    MadeBeforeVisit const* v = ctx;
+    return made_before_parts(v->me, part, v->child);
+}
+
 static bool made_before_step(Checker* me, Ty const* parent, Ty const* child) {
     if (ty_is_subterm(me, child, parent)) return true;
+    if (made_before_parts(me, parent, child)) return true;
+    // A part of a type made from an expression that is itself a key part of `parent` (a homomorphic mapped type over an
+    // object literal's type, zod's `ZodObject<Writeable<{ ... }>>`: its properties are the literal's, made before
+    // it): made before `parent` too (youtube-enhancer's migrate-translation.ts, the walk cutting where the ids don't)
+    return ty_key_parts_any(parent, made_before_visit, &(MadeBeforeVisit){ me, child });
+}
+
+// The part of made_before_step() for a type made from an expression: one of its property or return types
+static bool made_before_parts(Checker* me, Ty const* parent, Ty const* child) {
     if (parent->kind != TY_ANONYMOUS || parent->anonymous.target || !(parent->anonymous.object_literal || parent->anonymous.function)) {
         return false;
     }

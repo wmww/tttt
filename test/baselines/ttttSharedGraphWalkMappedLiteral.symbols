@@ -1,0 +1,130 @@
+//// [test/cases/ttttSharedGraphWalkMappedLiteral.ts] ////
+
+=== ttttSharedGraphWalkMappedLiteral.ts ===
+// Deep nesting's walk order (the shared graph's "newer" test, relate.c walk_newer()) cut ZodObject<...> three levels
+// down where tsc's ids don't: each level's shape is `Writeable<{...}>`, a homomorphic mapped type over the object
+// literal's type, so its property types are the literal's, made before it (youtube-enhancer's migrate-translation.ts:
+// TS2578 at K > 1 only). made_before_step() now also looks through a key part made from an expression. Fails without
+// the fix under the graph (K > 1, or TTTT_NESTING_ORDER=walk); one plain checker goes by ids
+type Writeable<T> = { -readonly [P in keyof T]: T[P] } & {};
+>Writeable : Symbol(Writeable, Decl(ttttSharedGraphWalkMappedLiteral.ts, 0, 0))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 5, 15))
+>P : Symbol(P, Decl(ttttSharedGraphWalkMappedLiteral.ts, 5, 33))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 5, 15))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 5, 15))
+>P : Symbol(P, Decl(ttttSharedGraphWalkMappedLiteral.ts, 5, 33))
+
+interface ZodType<T> { _t: T }
+>ZodType : Symbol(ZodType, Decl(ttttSharedGraphWalkMappedLiteral.ts, 5, 60))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 6, 18))
+>_t : Symbol(ZodType._t, Decl(ttttSharedGraphWalkMappedLiteral.ts, 6, 22))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 6, 18))
+
+interface ZodOptional<T> { _o: T }
+>ZodOptional : Symbol(ZodOptional, Decl(ttttSharedGraphWalkMappedLiteral.ts, 6, 30))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 7, 22))
+>_o : Symbol(ZodOptional._o, Decl(ttttSharedGraphWalkMappedLiteral.ts, 7, 26))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 7, 22))
+
+interface ZodArray<T> { _a: T }
+>ZodArray : Symbol(ZodArray, Decl(ttttSharedGraphWalkMappedLiteral.ts, 7, 34))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 8, 19))
+>_a : Symbol(ZodArray._a, Decl(ttttSharedGraphWalkMappedLiteral.ts, 8, 23))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 8, 19))
+
+interface ZodObject<Shape> { shape: Shape }
+>ZodObject : Symbol(ZodObject, Decl(ttttSharedGraphWalkMappedLiteral.ts, 8, 31))
+>Shape : Symbol(Shape, Decl(ttttSharedGraphWalkMappedLiteral.ts, 9, 20))
+>shape : Symbol(ZodObject.shape, Decl(ttttSharedGraphWalkMappedLiteral.ts, 9, 28))
+>Shape : Symbol(Shape, Decl(ttttSharedGraphWalkMappedLiteral.ts, 9, 20))
+
+declare function object<T extends object>(shape: T): ZodObject<Writeable<T>>;
+>object : Symbol(object, Decl(ttttSharedGraphWalkMappedLiteral.ts, 9, 43))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 10, 24))
+>shape : Symbol(shape, Decl(ttttSharedGraphWalkMappedLiteral.ts, 10, 42))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 10, 24))
+>ZodObject : Symbol(ZodObject, Decl(ttttSharedGraphWalkMappedLiteral.ts, 8, 31))
+>Writeable : Symbol(Writeable, Decl(ttttSharedGraphWalkMappedLiteral.ts, 0, 0))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 10, 24))
+
+type Nullable<T> = null | T;
+>Nullable : Symbol(Nullable, Decl(ttttSharedGraphWalkMappedLiteral.ts, 10, 77))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 11, 14))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 11, 14))
+
+type TypeToZod<T> = {
+>TypeToZod : Symbol(TypeToZod, Decl(ttttSharedGraphWalkMappedLiteral.ts, 11, 28))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 12, 15))
+
+    [K in keyof T]: T[K] extends boolean | Nullable<number> | string | undefined ?
+>K : Symbol(K, Decl(ttttSharedGraphWalkMappedLiteral.ts, 13, 5))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 12, 15))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 12, 15))
+>K : Symbol(K, Decl(ttttSharedGraphWalkMappedLiteral.ts, 13, 5))
+>Nullable : Symbol(Nullable, Decl(ttttSharedGraphWalkMappedLiteral.ts, 10, 77))
+
+        undefined extends T[K] ? ZodOptional<ZodType<Exclude<T[K], undefined>>> : ZodType<T[K]>
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 12, 15))
+>K : Symbol(K, Decl(ttttSharedGraphWalkMappedLiteral.ts, 13, 5))
+>ZodOptional : Symbol(ZodOptional, Decl(ttttSharedGraphWalkMappedLiteral.ts, 6, 30))
+>ZodType : Symbol(ZodType, Decl(ttttSharedGraphWalkMappedLiteral.ts, 5, 60))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 12, 15))
+>K : Symbol(K, Decl(ttttSharedGraphWalkMappedLiteral.ts, 13, 5))
+>ZodType : Symbol(ZodType, Decl(ttttSharedGraphWalkMappedLiteral.ts, 5, 60))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 12, 15))
+>K : Symbol(K, Decl(ttttSharedGraphWalkMappedLiteral.ts, 13, 5))
+
+    : ZodObject<TypeToZod<T[K]>>;
+>ZodObject : Symbol(ZodObject, Decl(ttttSharedGraphWalkMappedLiteral.ts, 8, 31))
+>TypeToZod : Symbol(TypeToZod, Decl(ttttSharedGraphWalkMappedLiteral.ts, 11, 28))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 12, 15))
+>K : Symbol(K, Decl(ttttSharedGraphWalkMappedLiteral.ts, 13, 5))
+
+};
+type TypeToZodSchema<T> = ZodObject<{
+>TypeToZodSchema : Symbol(TypeToZodSchema, Decl(ttttSharedGraphWalkMappedLiteral.ts, 16, 2))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 17, 21))
+>ZodObject : Symbol(ZodObject, Decl(ttttSharedGraphWalkMappedLiteral.ts, 8, 31))
+
+    [K in keyof T]: T[K] extends any[] ? ZodArray<ZodType<T[K][number]>>
+>K : Symbol(K, Decl(ttttSharedGraphWalkMappedLiteral.ts, 18, 5))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 17, 21))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 17, 21))
+>K : Symbol(K, Decl(ttttSharedGraphWalkMappedLiteral.ts, 18, 5))
+>ZodArray : Symbol(ZodArray, Decl(ttttSharedGraphWalkMappedLiteral.ts, 7, 34))
+>ZodType : Symbol(ZodType, Decl(ttttSharedGraphWalkMappedLiteral.ts, 5, 60))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 17, 21))
+>K : Symbol(K, Decl(ttttSharedGraphWalkMappedLiteral.ts, 18, 5))
+
+    : T[K] extends object ? ZodObject<TypeToZod<T[K]>>
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 17, 21))
+>K : Symbol(K, Decl(ttttSharedGraphWalkMappedLiteral.ts, 18, 5))
+>ZodObject : Symbol(ZodObject, Decl(ttttSharedGraphWalkMappedLiteral.ts, 8, 31))
+>TypeToZod : Symbol(TypeToZod, Decl(ttttSharedGraphWalkMappedLiteral.ts, 11, 28))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 17, 21))
+>K : Symbol(K, Decl(ttttSharedGraphWalkMappedLiteral.ts, 18, 5))
+
+    : ZodType<T[K]>;
+>ZodType : Symbol(ZodType, Decl(ttttSharedGraphWalkMappedLiteral.ts, 5, 60))
+>T : Symbol(T, Decl(ttttSharedGraphWalkMappedLiteral.ts, 17, 21))
+>K : Symbol(K, Decl(ttttSharedGraphWalkMappedLiteral.ts, 18, 5))
+
+}>;
+type Old = { settings: { sections: { removingWatchedVideos: string } } };
+>Old : Symbol(Old, Decl(ttttSharedGraphWalkMappedLiteral.ts, 21, 3))
+>settings : Symbol(settings, Decl(ttttSharedGraphWalkMappedLiteral.ts, 22, 12))
+>sections : Symbol(sections, Decl(ttttSharedGraphWalkMappedLiteral.ts, 22, 24))
+>removingWatchedVideos : Symbol(removingWatchedVideos, Decl(ttttSharedGraphWalkMappedLiteral.ts, 22, 36))
+
+// @ts-expect-error the inner object lacks removingWatchedVideos
+export const schema: TypeToZodSchema<Old> = object({ settings: object({ sections: object({}) }) });
+>schema : Symbol(schema, Decl(ttttSharedGraphWalkMappedLiteral.ts, 24, 12))
+>TypeToZodSchema : Symbol(TypeToZodSchema, Decl(ttttSharedGraphWalkMappedLiteral.ts, 16, 2))
+>Old : Symbol(Old, Decl(ttttSharedGraphWalkMappedLiteral.ts, 21, 3))
+>object : Symbol(object, Decl(ttttSharedGraphWalkMappedLiteral.ts, 9, 43))
+>settings : Symbol(settings, Decl(ttttSharedGraphWalkMappedLiteral.ts, 24, 52))
+>object : Symbol(object, Decl(ttttSharedGraphWalkMappedLiteral.ts, 9, 43))
+>sections : Symbol(sections, Decl(ttttSharedGraphWalkMappedLiteral.ts, 24, 71))
+>object : Symbol(object, Decl(ttttSharedGraphWalkMappedLiteral.ts, 9, 43))
+

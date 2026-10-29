@@ -464,6 +464,62 @@ bool ty_is_subterm(Checker const* checker, Ty const* inner, Ty const* outer) {
     return subterm_in(&w, outer);
 }
 
+// Whether `visit` holds for one of `outer`'s proper key sub-terms (the edges subterm_in() follows), searched breadth
+// first up to a budget of 256 types (past it: no). Every one was made before `outer` in any history
+typedef struct KeyPartWalk {
+    bool (*visit)(void* ctx, Ty const* part);
+    void* ctx;
+    u32 budget;
+    Ty const* seen[64];
+    u32 seen_len;
+} KeyPartWalk;
+
+static bool key_parts_in(KeyPartWalk* w, Ty const* t, bool self);
+
+static bool key_parts_list(KeyPartWalk* w, Ty const* const* list, u32 len) {
+    for (u32 i = 0; i < len; i++) if (list[i] && key_parts_in(w, list[i], true)) return true;
+    return false;
+}
+
+static bool key_parts_mapper(KeyPartWalk* w, TyMapper const* m) {
+    return m && (key_parts_list(w, m->sources, m->len) || key_parts_list(w, m->targets, m->len));
+}
+
+static bool key_parts_in(KeyPartWalk* w, Ty const* t, bool self) {
+    if (!w->budget) return false;
+    w->budget--;
+    for (u32 i = 0; i < w->seen_len; i++) if (w->seen[i] == t) return false;
+    if (w->seen_len < 64) w->seen[w->seen_len++] = t;
+    if (self && w->visit(w->ctx, t)) return true;
+    if (key_parts_list(w, t->alias_args.data, t->alias_args.len)) return true;
+    switch ((TyKind)t->kind) {
+        case TY_REFERENCE:
+            if (t->reference.this_arg && key_parts_in(w, t->reference.this_arg, true)) return true;
+            if (t->reference.deferred) return key_parts_mapper(w, t->reference.deferred->mapper);
+            return key_parts_list(w, t->reference.args.data, t->reference.args.len);
+        case TY_ANONYMOUS: return key_parts_mapper(w, t->anonymous.mapper);
+        case TY_UNION:
+        case TY_INTERSECTION:
+            return key_parts_list(w, t->composite.types.data, t->composite.types.len) ||
+                (t->composite.origin && key_parts_in(w, t->composite.origin, true));
+        case TY_KEYOF: return key_parts_in(w, t->keyof.operand, true);
+        case TY_INDEXED: return key_parts_in(w, t->indexed.object, true) || key_parts_in(w, t->indexed.index, true);
+        case TY_CONDITIONAL:
+            return key_parts_in(w, t->conditional.check, true) || key_parts_in(w, t->conditional.extends, true) ||
+                key_parts_mapper(w, t->conditional.mapper);
+        case TY_SUBSTITUTION:
+            return key_parts_in(w, t->substitution.base, true) || key_parts_in(w, t->substitution.constraint, true);
+        case TY_TEMPLATE_LITERAL: return key_parts_list(w, t->template_literal.types.data, t->template_literal.types.len);
+        case TY_STRING_MAPPING: return key_parts_in(w, t->string_mapping.type, true);
+        default: return false;
+    }
+}
+
+bool ty_key_parts_any(Ty const* outer, bool (*visit)(void* ctx, Ty const* part), void* ctx) {
+    KeyPartWalk w = { .visit = visit, .ctx = ctx, .budget = 256 };
+    return key_parts_in(&w, outer, false);
+}
+
 // Two distinct types in id order, permuted by the seed (relate.c's conditional branches, related in id order)
 int ty_compare_ids(Ty const* a, Ty const* b) {
     return cmp_ids(ID_SITE_BRANCH_ORDER, a->kind, a->id, b->id);
