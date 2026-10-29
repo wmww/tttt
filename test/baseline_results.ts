@@ -15789,6 +15789,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttNumericKeySuggestion': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttObjectBindingMissingTarget': {
         errors: true,
         symbols: true,
