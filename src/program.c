@@ -309,6 +309,9 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
         .checker_memory_cap = UINT64_MAX,
         .checker_memory_shared = UINT64_MAX,
         .memory_pool = UINT64_MAX,
+        // (The shared graph is the mode, 2026-10-29; TTTT_SHARED_GRAPH=0 is plain, per-checker graphs: the oracles'
+        // reference and the A/B, not a user option)
+        .shared_graph = !(getenv("TTTT_SHARED_GRAPH") && streq(getenv("TTTT_SHARED_GRAPH"), "0")),
     });
     static atomic_uint serials;
     ret->serial = atomic_fetch_add(&serials, 1) + 1;
@@ -7091,11 +7094,16 @@ again:
     }
     my checker_start_budget = count > 1 && my checker_memory_shared < my checker_budget ? my checker_memory_shared : my checker_budget;
     ErrorCtx* checker_errs = c_new_n(ErrorCtx, count);
-    // --shared-graph (plan 86 stage 4, ty/graph.h): one checker after another, never recycled, sharing one graph
+    // The shared graph (plan 86 stage 4, ty/graph.h): the checkers, never recycled, share one graph. Not with one
+    // checker: there is no other to share with, and the graph's machinery (publication, taint frames, shared-table
+    // probes) costs it 2-5% instructions for nothing (zod +5.4%, drizzle +2.4%, type-fest +2.9% at K1, 2026-10-29).
+    // One flagged checker's output is one plain checker's (sgcheck's K1 runs), so this changes no output: the
+    // one-checker rerun and --checkers 1 are plain
+    bool share = my shared_graph && count > 1;
 #ifdef TTTT_GRAPH_FINGERPRINT
-    if (my shared_graph && !my graph && getenv("TTTT_GRAPH_FINGERPRINT")) graph_fingerprint_record(me);
+    if (share && !my graph && getenv("TTTT_GRAPH_FINGERPRINT")) graph_fingerprint_record(me);
 #endif
-    if (my shared_graph && !my graph) {
+    if (share && !my graph) {
         my graph = graph_new(my checker);
         my checker_budget = my checker_start_budget = UINT64_MAX;
         // (On threads: the checkers run at once, each its own lib singletons, plan 86 4d)
@@ -7213,8 +7221,8 @@ again:
     char const* rule = nullptr;
     bool stopped = atomic_load(&my rerun_due);
     if (stopped) rule = history_dependent_matters(me, checker_errs, count, &why);
-    // (--shared-graph too: what a limit or a circularity cut short is the history's there as well, better-drizzle's
-    // TS2589s. The rerun's one checker gets a fresh graph of its own, below)
+    // (The shared graph too: what a limit or a circularity cut short is the history's there as well, better-drizzle's
+    // TS2589s. The graph is dropped below: the rerun's one checker is a plain one)
     if (stopped || (!limit_rerun && !my no_rerun && program_limit_history_dependent(me) &&
         (rule = history_dependent_matters(me, checker_errs, count, &why)))
     ) {
@@ -7234,8 +7242,8 @@ again:
         typecheck_pass_drop(me, checker_errs, count);
         member_refs_clear(me);
         if (my graph) {
-            // (Every checker of the graph goes with it, the retired ones too: their diagnostics went above. The checker
-            // made next then starts a graph of its own at `again`)
+            // (Every checker of the graph goes with it, the retired ones too: their diagnostics went above. The one
+            // checker made next has none: `again` shares a graph only between several)
             for (u32 i = 0; i < my retired_count; i++) checker_drop(my retired[i]);
             my retired_count = 0;
             graph_drop(my graph);

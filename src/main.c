@@ -70,7 +70,6 @@ typedef struct Options {
     u64 checker_memory; // --checker-memory, bytes (UINT64_MAX: off)
     bool checker_memory_given; // Else the default: the memory pool (memory_pool), else that total caps it (each at least 64 MB)
     u64 memory_pool; // The default's resident set bound (memory_pool_default()), 0 when unknown
-    bool shared_graph; // --shared-graph
     u32 threads; // --threads
     const char* expect_types; // --expect-types FILE: print the types of the expressions it lists (expect_types.h)
     u32 build_jobs; // --builders: how many projects -b checks at once (0: decided by threads)
@@ -843,9 +842,6 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     }
     program_set_checkers(program, opts->checkers);
     program_set_build_mode(program, opts->build);
-    // (TTTT_SHARED_GRAPH=1: the same, for scripts that run tttt with their own arguments: the oracles)
-    char const* shared_env = getenv("TTTT_SHARED_GRAPH");
-    program_set_shared_graph(program, opts->shared_graph || (shared_env && *shared_env && strcmp(shared_env, "0")));
     // (Or TTTT_FIRST_TOUCH_STAMPS=1, which program_new() reads)
     program_set_checker_cap(program, opts->checker_cap);
     // (--expect-types reads each file's types in the checker that checked it)
@@ -1630,14 +1626,11 @@ static void print_help(void) {
         "                Default: the whole process stays below what it held at start plus 80% of the memory\n"
         "                available then (MemAvailable, cgroup limits; TTTT_MEM_AVAILABLE_MB overrides it): past\n"
         "                that the checkers holding the most start fresh\n"
-        "  --shared-graph  the checkers share one type graph (also TTTT_SHARED_GRAPH=1): less memory on\n"
-        "                projects where many files import one large hub (-30..-40%) and up to 2x faster there;\n"
-        "                slower on ordinary projects (each shared type costs a cache miss on first read)\n"
+        "                The output doesn't depend on it\n"
         "  --no-rerun    when several checkers (or a recycled one) report an instantiation limit or a\n"
         "                circularity, keep their output instead of checking everything again in one checker\n"
         "                (faster; where such a diagnostic lands may then depend on the checkers). --rerun: the\n"
         "                default, tsc --singleThreaded's output at any K; TTTT_NO_RERUN=1 is --no-rerun\n"
-        "                The output doesn't depend on it\n"
         "  --threads N   parse, bind and check on N threads (default: the number of cores; checking uses at\n"
         "                most K of them)\n"
         "  --OPTION [VALUE]  a tsc compiler option: --target es2020, --lib es2015,dom, --strict false,\n"
@@ -1799,8 +1792,6 @@ static int run(int argc, const char** argv) {
         ) {
             eprintln("tttt: ", argv[i], " isn't supported: tttt only checks");
             return 1;
-        } else if (streq(argv[i], "--shared-graph")) {
-            opts.shared_graph = true;
         } else if (streq(argv[i], "--checkers") && count_value(argc, argv, i)) {
             opts.checkers = (u32)atoi(argv[++i]);
         } else if (streq(argv[i], "--checker-memory") && i + 1 < argc &&

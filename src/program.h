@@ -123,7 +123,8 @@ void program_set_checkers(Program* me, u32 count);
 // its errors, unlike the libraries' own (which the CLI drops)
 void program_take_lib_replacement_errors(Program* me);
 void program_set_build_mode(Program* me, bool build); // Built by `-b` (the build info file, program_verify_emit_paths())
-// --shared-graph: the checkers share one type graph (plan 86 stage 4, ty/graph.h): one after another, never recycled
+// Whether several checkers share one type graph (plan 86 stage 4, ty/graph.h), never recycled. Default: yes, unless
+// TTTT_SHARED_GRAPH=0 (plain: each checker its own graph). One checker never has a graph (program_typecheck())
 void program_set_shared_graph(Program* me, bool shared);
 struct TyGraph* program_graph(Program const* me); // Null without
 struct AtomTable* program_atoms(Program const* me); // Its checkers' atoms (ty/atom_table.h)
