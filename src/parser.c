@@ -14229,8 +14229,9 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
     ) : PORT_IMPORT_SPECIFIC;
     for_each (i, vec_port_item, &statement.items) {
         if (i->tag != PORT_IMPORT_GATHER) i->tag = item_tag;
-        // tsc's checkModuleExportName: a local export names an identifier, not a string
-        if (item_tag == PORT_EXPORT_SPECIFIC && span_valid(i->source_name) &&
+        // tsc's checkModuleExportName: a local export's property name (before `as`) is an identifier, not a string.
+        // Without `as`, `export { "x" }`, the string is the name, allowed, and checkExportSpecifier skips it
+        if (item_tag == PORT_EXPORT_SPECIFIC && span_valid(i->source_name) && i->source_name.buf != i->decl_name.buf &&
             (*i->source_name.buf == '"' || *i->source_name.buf == '\'')
         ) {
             grammar_error(&p, i->source_name, 1003, "Identifier expected.");

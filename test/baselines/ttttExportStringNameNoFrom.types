@@ -1,0 +1,19 @@
+//// [test/cases/ttttExportStringNameNoFrom.ts] ////
+
+=== ttttExportStringNameNoFrom.ts ===
+// A local export's string name without `as` is allowed (tsc's checkExportSpecifier checks the name with
+// allowStringLiteral and skips the rest); only a string before `as` is TS1003 (seed 20261111)
+const x = 1;
+>x : 1
+>1 : 1
+
+export { "x" };
+>"x" : any
+
+export { x as "y z" };
+>x : 1
+>"y z" : 1
+
+export { "a b" as c };
+>c : any
+

@@ -614,10 +614,11 @@ never `module.exports`), declarationsForIndirectTypeAliasReference (tsgo's doubl
   doesn't normalize the member to any: it does, B relates, but structuredTypeRelatedTo's extra check of an intersection
   source (isSourceIntersectionNeedingExtraCheck, propertiesRelatedTo with optionalsOnly) asks getUnmatchedProperty
   first, required properties included; props_related_impl skipped that for optionals_only. Fixed there (the line shows
-  the intersection, not its apparent type: bun18-C6a passes too). Test ttttAnyBaseClassInIntersection. [fixed PENDING]
+  the intersection, not its apparent type: bun18-C6a passes too). Test ttttAnyBaseClassInIntersection. [fixed c851019fb]
 - arbitraryModuleNamespaceIdentifiers_syntax drop-as: `export { "invalid 3" };` (no `from`) is no error in tsgo
   (checkExportSpecifier checks a string *name* with allowStringLiteral true, only a string propertyName without a module
-  specifier is TS1003); tttt's parser reports TS1003. Parser: relayed to bun12. [open]
+  specifier is TS1003); tttt's parser reported TS1003 for both. Now only a string before `as`. Test
+  ttttExportStringNameNoFrom. [fixed PENDING]
 - jsTypedefMergedWithModuleExportProperty delete-stmt (TS2693 -> TS4081/TS2309): a JS `@typedef T` merged with
   `module.exports.T` once the `const T` is gone; not looked at. [open]
 
