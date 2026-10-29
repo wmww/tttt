@@ -276,7 +276,7 @@ const baselines = {
         types: true,
     },
     'bun02-C5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -6516,7 +6516,7 @@ const baselines = {
         types: true,
     },
     'bun34-C1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8046,12 +8046,12 @@ const baselines = {
         types: true,
     },
     'bun43-C8b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'bun43-C8c': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8106,17 +8106,17 @@ const baselines = {
         types: true,
     },
     'bun43-P4a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'bun43-P4b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'bun43-P4c': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8621,12 +8621,12 @@ const baselines = {
         types: true,
     },
     'bun54-L06': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'bun54-L07a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8636,7 +8636,7 @@ const baselines = {
         types: true,
     },
     'bun54-L08': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9846,12 +9846,12 @@ const baselines = {
         types: true,
     },
     'bun80-R17a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'bun80-R17b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -14443,7 +14443,7 @@ const baselines = {
         types: true,
     },
     'ttttHackJsdocLinkShadowed': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15211,6 +15211,16 @@ const baselines = {
         types: true,
     },
     'ttttJsdocLinkLocalInBlock': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttJsdocLinkUses': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttJsdocLinkUses2': {
         errors: true,
         symbols: true,
         types: true,
