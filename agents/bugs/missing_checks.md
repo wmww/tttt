@@ -510,7 +510,7 @@ type through the member fallback (`{ type: T }` to `Partial<X>`, `Partial<C<T>>`
   removing it costs react +82% instructions and gives largeTupleTypes a spurious TS2799). [open]
 - complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound add-optional: the TS2322 now comes, at the `return` where
   tsgo puts it at the shorthand `type` of the returned literal (tsgo's hasExcessProperties moves r.errorNode to the
-  excess property during a reporting pass, then a later failure reports there; not reproduced). [dup]
+  excess property during a reporting pass, then a later failure reports there). [fixed b088fd3d7]
 - jsonRawJSON2 ann-string-number (also seed 4's missing TS2430): harness only, the shared lib program's declaration
   order (harness.md "Shared lib programs"); the CLI reports it. [dup]
 - Known families: unknownSymbolOffContextualType1 (TS7022 circularity), conditionalContextualReturnSubstitutionCache
@@ -563,8 +563,8 @@ never-const (harness writes no errors baseline).
 - **position TS2322 from a sticky errorNode** (complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound add-optional):
   tsc reports the whole-object message at the `type` shorthand property. An excess-property check on a member of the
   target intersection (`type` is excess for `Partial<Omit<..., "id" | "type">>`) moved the relater's errorNode there;
-  that message was later replaced by the outer chain but the node wasn't restored. tttt models the moved node only when
-  the excess-property message itself is reported. [open]
+  that message was later replaced by the outer chain but the node wasn't restored. RelationState.sticky_span now keeps
+  the moved node. Test ttttStickyExcessErrorNode. [fixed b088fd3d7]
 - **elaboration TS2344** (distributiveConditionalBaseConstraint drop-optional): the chain differs. [text]
 
 ## Mutation seeds 20261106 and 20261107 (2026-10-28, cor9: `MUTATE_DIR=... scripts/mutate.py -n 8000 --seed S`)
@@ -600,6 +600,15 @@ never-const (harness writes no errors baseline).
   (getDeclaredTypeOfAlias <-> tryGetDeclaredTypeOfSymbol on the self-referential alias) right after. [tsgo]
 - recursiveClassBaseType delete-stmt: missing TS2310 (the base cycle design). noCircularitySelfReferentialGetter2
   (TS2345 text), unionTypeWithIndexSignature never-const (TS2322 text): not looked at. [open]
+
+## Mutation seed 20261110 (2026-10-29, cor10: `scripts/mutate.py -n 8000 --seed 20261110`, 4 of 8000 differ)
+- complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound delete-stmt: the sticky errorNode (above). [fixed b088fd3d7]
+- asyncFunctionContextuallyTypedReturns str-to-num (render): TS1356's suggestion checks createPromiseType(sourceReturn),
+  which awaits first (silently: no TS1062 for a cyclic union). Test ttttAsyncSuggestionAwaitsReturn. [fixed 2c75d34ea]
+- globalThisGlobalExportAsGlobal drop-as: `declare global { export { globalThis } }` in a script (TS2669) is TS2303 in
+  tsgo: the export specifier's alias merges into the global `globalThis` symbol and resolves to itself; tttt resolves
+  the name to the built-in and says TS2661. Adversarial, not done. [open]
+- unionTypeWithIndexSignature never-const (text TS2322): already listed under seeds 20261106/20261107. [open]
 
 ## Mutation seed 20261108 (2026-10-29, cor10: `scripts/mutate.py -n 8000 --seed 20261108`, 3 of 8000 differ)
 - varianceAnnotationValidation delete-stmt: a wrongly annotated `Controller<out T>` met while measuring
