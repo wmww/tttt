@@ -490,6 +490,19 @@ static bool tsc_could_contain_type_variables_uncached(Ty const* ty) {
         return false;
     }
     if (ty->kind != TY_ANONYMOUS) return false;
+    // An instantiation says what its type arguments say (tsc's getObjectTypeInstantiation precomputes the flag from
+    // the outer type parameters' mapped types): `{ [_ in K]: {} }` with K = "a" mentions none, so `() => { a: {} }`
+    // isn't a contextual return type a return-only signature is made for. The mapper has exactly the free parameters
+    // the node mentions; one it leaves unmapped is in tttt's flag already, and so is every parameter in scope when
+    // the node's aren't known. (tsc's members of a homomorphic mapped type distributed over a union still say yes:
+    // they're made by instantiateAnonymousType alone)
+    if (ty->anonymous.target && ty->anonymous.mapper && !ty->anonymous.is_reverse && !ty->anonymous.applies_type_args) {
+        TyMapper const* mapper = ty->anonymous.mapper;
+        for (u32 i = 0; i < mapper->len; i++) {
+            if (ty_tsc_could_contain_type_variables(mapper->targets[i])) return true;
+        }
+        return false;
+    }
     Ty const* root = ty->anonymous.target ? ty->anonymous.target : ty;
     return root->anonymous.node || root->anonymous.function || root->anonymous.object_literal || root->anonymous.mapped ||
         ty->anonymous.rest_of_binding;

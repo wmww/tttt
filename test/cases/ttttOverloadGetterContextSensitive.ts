@@ -1,5 +1,6 @@
-// vue-query's mutationOptions getter overload (sourcesweep): the arrow's inner parameter is typed by the failing
-// object overload first in tttt (data: any, TS7006), by the getter overload in tsgo (known failing, sourcesweep_checker.md)
+// vue-query's mutationOptions getter overload (sourcesweep): tsgo gives the getter overload's arrow anyFunctionType in
+// the first pass, as its contextual return type WithRequired<MO<number>, 'mutationKey'> can't contain type variables
+// (an instantiation's flag comes from its type arguments), so the arrow is checked fully under that overload first
 // @strict: true
 interface MO<TData = unknown> {
     mutationFn?: () => Promise<TData>;

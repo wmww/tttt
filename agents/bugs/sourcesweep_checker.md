@@ -15,10 +15,13 @@ dokploy, chatbox, angular-components, react-navigation, telegraf, commitlint, as
   (the returnOnly signature's widened object literal lacks optional properties, requireOptionalProperties), its
   assignable pass takes the object overload first with the arrow as anyFunctionType, then checks the arrow fully
   under it: no contextual signature, so `data` is assigned any for good. tsgo picks the getter overload with `data:
-  number`; its reltrace log (scripts/reltrace.py) shows no anyFunctionType relation at all, so the difference is in
-  how the first pass treats the context-sensitive arrow under a parameter without call signatures (an early reject
-  of the object overload, or the subtype pass accepting the getter one). Not traced further: start with
-  `scripts/tsgotrace.py --funcs chooseOverload,getSignatureApplicabilityError` on the test. [open]
+  number`. Root cause (instrumented tsgo): the getter overload's
+  instantiated contextual return type `WithRequired<MO<number>, 'mutationKey'>` can't contain type variables to tsgo
+  (getObjectTypeInstantiation precomputes an instantiation's couldContainTypeVariables from its type arguments: the
+  mapped `{ [_ in K]: {} }` at K = "mutationKey" says no), so the applicability check gets anyFunctionType, passes, and
+  the second pass checks the arrow fully under the getter overload; tttt said yes for any instantiated mapped type and
+  made a return-only signature, which failed. infer.c's tsc_could_contain_type_variables_uncached now asks the
+  mapper's targets. [open]
 
 ## Older leftovers (2026-10-08..09), still mismatching
 - tsc's TS2322 message truncation (`PromiseLike<...>` elision in long union-of-signature types) differs from tttt's. [text]
