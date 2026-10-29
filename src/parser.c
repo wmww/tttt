@@ -11467,6 +11467,14 @@ __attribute__((noinline)) static bool nul_inside_file(Parser const* p) {
     return p->pos >= file_start && p->pos < file_end;
 }
 
+// What ends a string literal's plain run: NUL, a line break and `\\` always (bit 0), each quote for its own kind
+static const uint8_t string_stop_table[256] = {
+    [0] = 1, ['\n'] = 1, ['\r'] = 1, ['\\'] = 1, ['"'] = 2, ['\''] = 4, ['`'] = 8,
+};
+static inline uint8_t string_stop_mask(char quote) {
+    return 1 | (quote == '"' ? 2 : quote == '\'' ? 4 : 8);
+}
+
 // `report_escapes`: false in a tagged template, where invalid escapes are allowed
 [[gnu::noinline]] static bool parse_string_or_tagged_slow(Parser* parent, cstr* ret, bool report_escapes);
 // (The quick test inlined where it is called, the rest not: PGO inlined whole parse functions behind it)
@@ -11507,7 +11515,8 @@ static inline bool parse_string_or_tagged(Parser* parent, cstr* ret, bool report
         } else {
             // The plain run up to whatever the loop has to look at, appended at once
             const char* run = p.pos++;
-            while (*p.pos && *p.pos != quote && *p.pos != '\n' && *p.pos != '\\' && *p.pos != '\r') p.pos++;
+            uint8_t stop = string_stop_mask(quote);
+            while (!(string_stop_table[(uint8_t)*p.pos] & stop)) p.pos++;
             cstr_append_n(&str, run, p.pos - run);
             continue;
         }
