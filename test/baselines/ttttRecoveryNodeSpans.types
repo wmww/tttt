@@ -1,0 +1,64 @@
+//// [test/cases/ttttRecoveryNodeSpans.ts] ////
+
+=== ttttRecoveryNodeSpans.ts ===
+// Under parser recovery a node ends with its last token, not the trivia after it, and a clause reaches what recovery
+// skipped up to its first statement (tsc's getErrorSpanForNode, node ends). Seed 20261114: fallFromLastCase2
+// add-optional (TS7029 at `default?:`), contextualComputedNonBindablePropertyType delete-stmt (TS2464 at `[key in
+// keyof` without its `]`), inferTypesWithExtends1 drop-as (TS7039 at a mapped type without its `}`)
+declare function use(a: string): void;
+>use : (a: string) => void
+>a : string
+
+function foo2(a: number) {
+>foo2 : (a: number) => void
+>a : number
+
+    switch (a) {
+>a : number
+
+        case 1:
+>1 : 1
+
+            use("1");
+>use("1") : void
+>use : (a: string) => void
+>"1" : "1"
+
+            break;
+        default?:
+            use("2");
+>use("2") : void
+>use : (a: string) => void
+>"2" : "2"
+
+        case 2:
+>2 : 2
+
+            use("3");
+>use("3") : void
+>use : (a: string) => void
+>"3" : "3"
+    }
+}
+declare function forceMatch2<T>(matched: T): void;
+>forceMatch2 : <T>(matched: T) => void
+>matched : T
+
+forceMatch2({ [key in keyof T]: 1 });
+>forceMatch2({ [key in keyof T]: 1 }) : void
+>forceMatch2 : <T>(matched: T) => void
+>{ [key in keyof T]: 1 } : { 1: any; }
+>[key in keyof : any
+>key in keyof : boolean
+>key : any
+>keyof : any
+>T : any
+>1 : any
+> : any
+
+type X18<T> = T extends { [P in keyof T U extends P]: 1; } ? 1 : 0;
+>X18 : X18<T>
+>1 : 1
+>1 : 1
+>0 : 0
+

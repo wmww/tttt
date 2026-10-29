@@ -1,0 +1,83 @@
+ttttRecoveryNodeSpans.ts(11,9): error TS7029: Fallthrough case in switch.
+ttttRecoveryNodeSpans.ts(11,16): error TS1005: ':' expected.
+ttttRecoveryNodeSpans.ts(11,17): error TS1129: Statement expected.
+ttttRecoveryNodeSpans.ts(18,15): error TS2464: A computed property name must be of type 'string', 'number', 'symbol', or 'any'.
+ttttRecoveryNodeSpans.ts(18,16): error TS2304: Cannot find name 'key'.
+ttttRecoveryNodeSpans.ts(18,23): error TS2304: Cannot find name 'keyof'.
+ttttRecoveryNodeSpans.ts(18,29): error TS1005: ']' expected.
+ttttRecoveryNodeSpans.ts(18,29): error TS2304: Cannot find name 'T'.
+ttttRecoveryNodeSpans.ts(18,30): error TS1005: ',' expected.
+ttttRecoveryNodeSpans.ts(18,31): error TS1136: Property assignment expected.
+ttttRecoveryNodeSpans.ts(18,35): error TS1005: ':' expected.
+ttttRecoveryNodeSpans.ts(19,25): error TS7039: Mapped object type implicitly has an 'any' template type.
+ttttRecoveryNodeSpans.ts(19,41): error TS1005: ']' expected.
+ttttRecoveryNodeSpans.ts(19,41): error TS2304: Cannot find name 'U'.
+ttttRecoveryNodeSpans.ts(19,51): error TS2304: Cannot find name 'P'.
+ttttRecoveryNodeSpans.ts(19,52): error TS1005: '?' expected.
+ttttRecoveryNodeSpans.ts(19,53): error TS1128: Declaration or statement expected.
+ttttRecoveryNodeSpans.ts(19,58): error TS1128: Declaration or statement expected.
+ttttRecoveryNodeSpans.ts(19,60): error TS1128: Declaration or statement expected.
+ttttRecoveryNodeSpans.ts(19,64): error TS1005: ';' expected.
+
+
+==== ttttRecoveryNodeSpans.ts (20 errors) ====
+    // Under parser recovery a node ends with its last token, not the trivia after it, and a clause reaches what recovery
+    // skipped up to its first statement (tsc's getErrorSpanForNode, node ends). Seed 20261114: fallFromLastCase2
+    // add-optional (TS7029 at `default?:`), contextualComputedNonBindablePropertyType delete-stmt (TS2464 at `[key in
+    // keyof` without its `]`), inferTypesWithExtends1 drop-as (TS7039 at a mapped type without its `}`)
+    declare function use(a: string): void;
+    function foo2(a: number) {
+        switch (a) {
+            case 1:
+                use("1");
+                break;
+            default?:
+            ~~~~~~~~~
+!!! error TS7029: Fallthrough case in switch.
+                   ~
+!!! error TS1005: ':' expected.
+                    ~
+!!! error TS1129: Statement expected.
+                use("2");
+            case 2:
+                use("3");
+        }
+    }
+    declare function forceMatch2<T>(matched: T): void;
+    forceMatch2({ [key in keyof T]: 1 });
+                  ~~~~~~~~~~~~~
+!!! error TS2464: A computed property name must be of type 'string', 'number', 'symbol', or 'any'.
+                   ~~~
+!!! error TS2304: Cannot find name 'key'.
+                          ~~~~~
+!!! error TS2304: Cannot find name 'keyof'.
+                                ~
+!!! error TS1005: ']' expected.
+                                ~
+!!! error TS2304: Cannot find name 'T'.
+                                 ~
+!!! error TS1005: ',' expected.
+                                  ~
+!!! error TS1136: Property assignment expected.
+                                      ~
+!!! error TS1005: ':' expected.
+    type X18<T> = T extends { [P in keyof T U extends P]: 1; } ? 1 : 0;
+                            ~~~~~~~~~~~~~~~
+!!! error TS7039: Mapped object type implicitly has an 'any' template type.
+                                            ~
+!!! error TS1005: ']' expected.
+                                            ~
+!!! error TS2304: Cannot find name 'U'.
+                                                      ~
+!!! error TS2304: Cannot find name 'P'.
+                                                       ~
+!!! error TS1005: '?' expected.
+                                                        ~
+!!! error TS1128: Declaration or statement expected.
+                                                             ~
+!!! error TS1128: Declaration or statement expected.
+                                                               ~
+!!! error TS1128: Declaration or statement expected.
+                                                                   ~
+!!! error TS1005: ';' expected.
+    

@@ -6973,6 +6973,12 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
     }
     list_leave(&p, saved_context);
 
+    // (Without its `}` the type ends with its last token, not the trivia after it: TS7039's span)
+    const char* close = p.pos;
+    const char* end = close;
+    if (*close != '}') {
+        while (end > a.start && is_js_ascii_space(end[-1])) end--;
+    }
     expect_char(&p, '}');
     shrink_list(vec_interface_member, &members);
     interface_members_bind(&members);
@@ -6989,7 +6995,7 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
         .members = members,
         .parsed = true,
         .type_literal = !is_declaration,
-        .span = span_from(a),
+        .span = *close == '}' ? span_from(a) : span_make(p.shared->source, a.start, end),
     };
     return parse_success(&p);
 }
@@ -9118,11 +9124,17 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         }
         allow_in_leave(&p, saved_in);
         p.shared->in_property_name--;
+        // (Where the expression ends: its parse may have taken the trivia after it)
+        Span key_span = expr_outer_span(&key);
+        const char* key_end = span_valid(key_span) && span_source(key_span) == p.shared->source &&
+            span_end_ptr(key_span) > key_anchor.start && span_end_ptr(key_span) <= p.pos ? span_end_ptr(key_span) : p.pos;
         hop_whitespace(&p);
         // (tsc's parseComputedPropertyName: `{ [s: symbol]: 1 }` is missing its `]`)
+        const char* close = p.pos;
         expect_char(&p, ']');
         item.computed_key = ast_new(Expr, key);
-        item.name_span = span_from(key_anchor);
+        // (Without its `]` the name ends with the expression, not the trivia after it)
+        item.name_span = *close == ']' ? span_from(key_anchor) : span_make(p.shared->source, key_anchor.start, key_end);
     } else if (*p.pos == '#' && identifier_char_size(p.pos + 1, true)) {
         // A private name (tsc's parsePropertyName), the checker reports it (not a shorthand: `{ #x }` misses a `:`)
         Anchor name_anchor = anchor(&p);
@@ -15778,6 +15790,14 @@ static bool parse_switch_case(Parser* parent, SwitchCase* ret) {
     if (!parse_append_statement_sequence(&p, false, PARSING_SWITCH_CLAUSE_STATEMENTS, list_start, &ret->statements)) {
         switch_case_drop(ret);
         return parse_fail(&p);
+    }
+    // (Without its `:`, the clause reaches as far as what recovery skipped, up to its first statement: tsc's
+    // getErrorSpanForNode ends a clause at its first statement's full start, `default?:` whole)
+    if (span_valid(ret->head) && span_end_ptr(ret->head)[-1] != ':' && vec_statement_size(&ret->statements)) {
+        Span first = vec_statement_at(&ret->statements, 0)->span;
+        const char* end = span_valid(first) ? span_start_ptr(first) : nullptr;
+        while (end && end > span_end_ptr(ret->head) && is_js_ascii_space(end[-1])) end--;
+        if (end && end > span_end_ptr(ret->head)) ret->head = span_make(p.shared->source, span_start_ptr(ret->head), end);
     }
 
     return parse_success(&p);
