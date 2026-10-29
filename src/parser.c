@@ -8081,8 +8081,10 @@ static bool parse_function_args_inner(
         if (!expect_char(&p, ')')) {
             if (!is_definitely_function && !parse_type_return_syntax && !commit_on_paren) goto drop_and_fail;
             // (Without its `)` the list ends with its last token, tsc's finishNode at the next token's full start: a
-            // signature ending there spans no trivia after it)
+            // signature ending there spans no trivia after it. Whitespace a lookahead hopped since, `\r\n` before the
+            // end of the file, isn't the last trivia recorded: trimmed by hand)
             unhop_trivia(&p);
+            while (p.pos > args_start.start + 1 && is_js_ascii_space(p.pos[-1])) p.pos--;
         }
     } else if (is_definitely_function) {
         expected_token_error(&p, "(");
@@ -9453,7 +9455,8 @@ static bool parse_object_ex(Parser* parent, ObjectExpr* ret, bool brace_expected
 
     // (Without its `{`, no related information: parseExpectedMatchingBrackets with openParsed false)
     if (open_parsed ? !expect_closing(&p, '}', open) : !expect_char(&p, '}')) {
-        // The literal ends with its last token, not the whitespace after it
+        // The literal ends with its last token, not the trivia after it (a comment included)
+        if (token_full_start(&p) > open) unhop_trivia(&p);
         while (p.pos > open + 1 && is_js_ascii_space(p.pos[-1])) p.pos--;
     }
 
@@ -14579,11 +14582,17 @@ static bool parse_binding_content_inner(Parser* parent, Binding* ret) {
                 p.shared->in_property_name++;
                 expect_expr(&p, expr_ctx_null, &key_expr);
                 p.shared->in_property_name--;
+                // (Where the expression ends: its parse may have taken the trivia after it)
+                Span key_span = expr_outer_span(&key_expr);
+                const char* key_end = span_valid(key_span) && span_source(key_span) == p.shared->source &&
+                    span_end_ptr(key_span) > key_anchor.start && span_end_ptr(key_span) <= p.pos ? span_end_ptr(key_span) : p.pos;
                 hop_whitespace(&p);
+                const char* close = p.pos;
                 expect_char(&p, ']');
                 computed_key = ast_new(Expr, key_expr);
                 key = value_undefined;
-                name = span_from(key_anchor);
+                // (Without its `]` the name ends with the expression, not the trivia after it, like an object literal's)
+                name = *close == ']' ? span_from(key_anchor) : span_make(p.shared->source, key_anchor.start, key_end);
             } else if (parse_type_compat_literal(&p, &key) && (key.tag == VALUE_STRING || key.tag == VALUE_NUMBER || key.tag == VALUE_BIGINT)) {
                 // (A bigint is a property name to tsc's parser too, its token value: `{ 0x10n: a }` reads "0x10n",
                 // tsgo's getLiteralTypeFromPropertyName)

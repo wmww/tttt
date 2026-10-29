@@ -1,0 +1,105 @@
+ttttRecoveryNodeEnds2.ts(7,1): error TS1005: ',' expected.
+ttttRecoveryNodeEnds2.ts(7,8): error TS18004: No value exists in scope for the shorthand property 'type'. Either declare one or provide an initializer.
+ttttRecoveryNodeEnds2.ts(7,13): error TS1005: ',' expected.
+ttttRecoveryNodeEnds2.ts(7,21): error TS1005: '(' expected.
+ttttRecoveryNodeEnds2.ts(7,23): error TS1136: Property assignment expected.
+ttttRecoveryNodeEnds2.ts(7,25): error TS2464: A computed property name must be of type 'string', 'number', 'symbol', or 'any'.
+ttttRecoveryNodeEnds2.ts(7,26): error TS2304: Cannot find name 'K'.
+ttttRecoveryNodeEnds2.ts(7,26): error TS2538: Type 'boolean' cannot be used as an index type.
+ttttRecoveryNodeEnds2.ts(7,31): error TS2304: Cannot find name 'keyof'.
+ttttRecoveryNodeEnds2.ts(7,37): error TS1005: ']' expected.
+ttttRecoveryNodeEnds2.ts(7,38): error TS1005: ',' expected.
+ttttRecoveryNodeEnds2.ts(7,39): error TS1180: Property destructuring pattern expected.
+ttttRecoveryNodeEnds2.ts(7,42): error TS7031: Binding element '(Missing)' implicitly has an 'any' type.
+ttttRecoveryNodeEnds2.ts(7,43): error TS1005: ':' expected.
+ttttRecoveryNodeEnds2.ts(8,61): error TS2349: This expression is not callable.
+  Type '{ f(s: any): void; g(s: any): void; }' has no call signatures.
+ttttRecoveryNodeEnds2.ts(9,7): error TS7006: Parameter 's' implicitly has an 'any' type.
+ttttRecoveryNodeEnds2.ts(10,7): error TS7006: Parameter 's' implicitly has an 'any' type.
+ttttRecoveryNodeEnds2.ts(13,1): error TS1005: ',' expected.
+ttttRecoveryNodeEnds2.ts(13,6): error TS7006: Parameter 'x' implicitly has an 'any' type.
+ttttRecoveryNodeEnds2.ts(19,5): error TS7013: Construct signature, which lacks return-type annotation, implicitly has an 'any' return type.
+ttttRecoveryNodeEnds2.ts(27,1): error TS1005: ')' expected.
+
+
+==== ttttRecoveryNodeEnds2.ts (21 errors) ====
+    // Under recovery a node ends with its last token, not the trivia after it: a binding pattern's computed name
+    // without its `]` (TS2464), an object literal without its `}` before a comment (its types text), a signature
+    // without its `)` at the end of the file (TS7013). Seed 20261116 --syntax: excessPropertyChecksWithNestedIntersections,
+    // typeSatisfaction_contextualTyping2, declarationEmitTypeParameterNameReusedInOverloads delete-stmt
+    let x = {
+      a: 1
+    export type View<T> = { [K in keyof T]: 1 };
+    ~~~~~~
+!!! error TS1005: ',' expected.
+           ~~~~
+!!! error TS18004: No value exists in scope for the shorthand property 'type'. Either declare one or provide an initializer.
+                ~~~~
+!!! error TS1005: ',' expected.
+                        ~
+!!! error TS1005: '(' expected.
+                          ~
+!!! error TS1136: Property assignment expected.
+                            ~~~~~~~~~~~
+!!! error TS2464: A computed property name must be of type 'string', 'number', 'symbol', or 'any'.
+                             ~
+!!! error TS2304: Cannot find name 'K'.
+                             ~~~~~~~~~~
+!!! error TS2538: Type 'boolean' cannot be used as an index type.
+                                  ~~~~~
+!!! error TS2304: Cannot find name 'keyof'.
+                                        ~
+!!! error TS1005: ']' expected.
+                                         ~
+!!! error TS1005: ',' expected.
+                                          ~
+!!! error TS1180: Property destructuring pattern expected.
+                                             
+!!! error TS7031: Binding element '(Missing)' implicitly has an 'any' type.
+                                              ~
+!!! error TS1005: ':' expected.
+    let obj: { f(s: string): void } & Record<string, unknown> = {
+                                                                ~
+        f(s) { },
+    ~~~~~~~~~~~~~
+          ~
+!!! error TS7006: Parameter 's' implicitly has an 'any' type.
+        g(s) { }
+    ~~~~~~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Type '{ f(s: any): void; g(s: any): void; }' has no call signatures.
+!!! related TS2734 ttttRecoveryNodeEnds2.ts:8:61: Are you missing a semicolon?
+          ~
+!!! error TS7006: Parameter 's' implicitly has an 'any' type.
+    
+    // a comment
+    ({ f(x) { } }) satisfies { f(s: string): void };
+    ~
+!!! error TS1005: ',' expected.
+         ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+    
+    class Base { foo!: string; }
+    class Derived extends Base { bar!: string; }
+    class Derived2 extends Derived { baz!: string; }
+    export type Foo = {
+        new (x: {
+        ~~~~~~~~~
+            new <T extends Derived>(a: T): T;
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            new <T extends Base>(a: T): T;
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        new (x: {
+    ~~~~~~~~~~~~~
+            new <T extends Derived2>(a: T): T;
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                new <T extends Base>(a: T): T;
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        }): any[];
+    ~~~~~~~~~~~~~~
+    }
+    ~
+!!! error TS7013: Construct signature, which lacks return-type annotation, implicitly has an 'any' return type.
+    
+    
+!!! error TS1005: ')' expected.

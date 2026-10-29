@@ -1,0 +1,86 @@
+//// [test/cases/ttttRecoveryNodeEnds2.ts] ////
+
+=== ttttRecoveryNodeEnds2.ts ===
+// Under recovery a node ends with its last token, not the trivia after it: a binding pattern's computed name
+// without its `]` (TS2464), an object literal without its `}` before a comment (its types text), a signature
+// without its `)` at the end of the file (TS7013). Seed 20261116 --syntax: excessPropertyChecksWithNestedIntersections,
+// typeSatisfaction_contextualTyping2, declarationEmitTypeParameterNameReusedInOverloads delete-stmt
+let x = {
+>x : { a: number; type: any; View<T>(): any; }
+>{  a: 1export type View<T> = : { a: number; type: any; View<T>(): any; }
+
+  a: 1
+>a : number
+>1 : 1
+
+export type View<T> = { [K in keyof T]: 1 };
+>type : any
+>View : <T>() => any
+>K in keyof : boolean
+>K : any
+>keyof : any
+>T : any
+> : any
+
+let obj: { f(s: string): void } & Record<string, unknown> = {
+>obj : { f(s: string): void; } & Record<string, unknown>
+>f : (s: string) => void
+>s : string
+>{    f(s) { },    g(s) { }// a comment({ f(x) { } }) satisfies { f(s: string): void } : any
+>{    f(s) { },    g(s) { }// a comment({ f(x) { } }) : any
+>{    f(s) { },    g(s) { } : { f(s: any): void; g(s: any): void; }
+
+    f(s) { },
+>f : (s: any) => void
+>s : any
+
+    g(s) { }
+>g : (s: any) => void
+>s : any
+
+// a comment
+({ f(x) { } }) satisfies { f(s: string): void };
+>{ f(x) { } } : { f(x: any): void; }
+>f : (x: any) => void
+>x : any
+>f : (s: string) => void
+>s : string
+
+class Base { foo!: string; }
+>Base : Base
+>foo : string
+
+class Derived extends Base { bar!: string; }
+>Derived : Derived
+>Base : Base
+>bar : string
+
+class Derived2 extends Derived { baz!: string; }
+>Derived2 : Derived2
+>Derived : Derived
+>baz : string
+
+export type Foo = {
+>Foo : Foo
+
+    new (x: {
+>x : { new <T extends Derived>(a: T): T; new <T extends Base>(a: T): T; new (x: { new <T extends Derived2>(a: T): T; new <T extends Base>(a: T): T; }): any[]; }
+
+        new <T extends Derived>(a: T): T;
+>a : T
+
+        new <T extends Base>(a: T): T;
+>a : T
+
+    new (x: {
+>x : { new <T extends Derived2>(a: T): T; new <T extends Base>(a: T): T; }
+
+        new <T extends Derived2>(a: T): T;
+>a : T
+
+            new <T extends Base>(a: T): T;
+>a : T
+
+    }): any[];
+}
+

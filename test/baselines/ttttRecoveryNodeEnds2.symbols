@@ -1,0 +1,95 @@
+//// [test/cases/ttttRecoveryNodeEnds2.ts] ////
+
+=== ttttRecoveryNodeEnds2.ts ===
+// Under recovery a node ends with its last token, not the trivia after it: a binding pattern's computed name
+// without its `]` (TS2464), an object literal without its `}` before a comment (its types text), a signature
+// without its `)` at the end of the file (TS7013). Seed 20261116 --syntax: excessPropertyChecksWithNestedIntersections,
+// typeSatisfaction_contextualTyping2, declarationEmitTypeParameterNameReusedInOverloads delete-stmt
+let x = {
+>x : Symbol(x, Decl(ttttRecoveryNodeEnds2.ts, 4, 3))
+
+  a: 1
+>a : Symbol(a, Decl(ttttRecoveryNodeEnds2.ts, 4, 9))
+
+export type View<T> = { [K in keyof T]: 1 };
+>type : Symbol(type, Decl(ttttRecoveryNodeEnds2.ts, 5, 6))
+>View : Symbol(View, Decl(ttttRecoveryNodeEnds2.ts, 6, 11))
+>T : Symbol(T, Decl(ttttRecoveryNodeEnds2.ts, 6, 17))
+>T : Symbol(T, Decl(ttttRecoveryNodeEnds2.ts, 6, 23))
+> : Symbol((Missing), Decl(ttttRecoveryNodeEnds2.ts, 6, 39))
+
+let obj: { f(s: string): void } & Record<string, unknown> = {
+>obj : Symbol(obj, Decl(ttttRecoveryNodeEnds2.ts, 7, 3))
+>f : Symbol(f, Decl(ttttRecoveryNodeEnds2.ts, 7, 10))
+>s : Symbol(s, Decl(ttttRecoveryNodeEnds2.ts, 7, 13))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+    f(s) { },
+>f : Symbol(f, Decl(ttttRecoveryNodeEnds2.ts, 7, 61))
+>s : Symbol(s, Decl(ttttRecoveryNodeEnds2.ts, 8, 6))
+
+    g(s) { }
+>g : Symbol(g, Decl(ttttRecoveryNodeEnds2.ts, 8, 13))
+>s : Symbol(s, Decl(ttttRecoveryNodeEnds2.ts, 9, 6))
+
+// a comment
+({ f(x) { } }) satisfies { f(s: string): void };
+>f : Symbol(f, Decl(ttttRecoveryNodeEnds2.ts, 12, 2))
+>x : Symbol(x, Decl(ttttRecoveryNodeEnds2.ts, 12, 5))
+>f : Symbol(f, Decl(ttttRecoveryNodeEnds2.ts, 12, 26))
+>s : Symbol(s, Decl(ttttRecoveryNodeEnds2.ts, 12, 29))
+
+class Base { foo!: string; }
+>Base : Symbol(Base, Decl(ttttRecoveryNodeEnds2.ts, 12, 48))
+>foo : Symbol(Base.foo, Decl(ttttRecoveryNodeEnds2.ts, 14, 12))
+
+class Derived extends Base { bar!: string; }
+>Derived : Symbol(Derived, Decl(ttttRecoveryNodeEnds2.ts, 14, 28))
+>Base : Symbol(Base, Decl(ttttRecoveryNodeEnds2.ts, 12, 48))
+>bar : Symbol(Derived.bar, Decl(ttttRecoveryNodeEnds2.ts, 15, 28))
+
+class Derived2 extends Derived { baz!: string; }
+>Derived2 : Symbol(Derived2, Decl(ttttRecoveryNodeEnds2.ts, 15, 44))
+>Derived : Symbol(Derived, Decl(ttttRecoveryNodeEnds2.ts, 14, 28))
+>baz : Symbol(Derived2.baz, Decl(ttttRecoveryNodeEnds2.ts, 16, 32))
+
+export type Foo = {
+>Foo : Symbol(Foo, Decl(ttttRecoveryNodeEnds2.ts, 16, 48))
+
+    new (x: {
+>x : Symbol(x, Decl(ttttRecoveryNodeEnds2.ts, 18, 9))
+
+        new <T extends Derived>(a: T): T;
+>T : Symbol(T, Decl(ttttRecoveryNodeEnds2.ts, 19, 13))
+>Derived : Symbol(Derived, Decl(ttttRecoveryNodeEnds2.ts, 14, 28))
+>a : Symbol(a, Decl(ttttRecoveryNodeEnds2.ts, 19, 32))
+>T : Symbol(T, Decl(ttttRecoveryNodeEnds2.ts, 19, 13))
+>T : Symbol(T, Decl(ttttRecoveryNodeEnds2.ts, 19, 13))
+
+        new <T extends Base>(a: T): T;
+>T : Symbol(T, Decl(ttttRecoveryNodeEnds2.ts, 20, 13))
+>Base : Symbol(Base, Decl(ttttRecoveryNodeEnds2.ts, 12, 48))
+>a : Symbol(a, Decl(ttttRecoveryNodeEnds2.ts, 20, 29))
+>T : Symbol(T, Decl(ttttRecoveryNodeEnds2.ts, 20, 13))
+>T : Symbol(T, Decl(ttttRecoveryNodeEnds2.ts, 20, 13))
+
+    new (x: {
+>x : Symbol(x, Decl(ttttRecoveryNodeEnds2.ts, 21, 9))
+
+        new <T extends Derived2>(a: T): T;
+>T : Symbol(T, Decl(ttttRecoveryNodeEnds2.ts, 22, 13))
+>Derived2 : Symbol(Derived2, Decl(ttttRecoveryNodeEnds2.ts, 15, 44))
+>a : Symbol(a, Decl(ttttRecoveryNodeEnds2.ts, 22, 33))
+>T : Symbol(T, Decl(ttttRecoveryNodeEnds2.ts, 22, 13))
+>T : Symbol(T, Decl(ttttRecoveryNodeEnds2.ts, 22, 13))
+
+            new <T extends Base>(a: T): T;
+>T : Symbol(T, Decl(ttttRecoveryNodeEnds2.ts, 23, 17))
+>Base : Symbol(Base, Decl(ttttRecoveryNodeEnds2.ts, 12, 48))
+>a : Symbol(a, Decl(ttttRecoveryNodeEnds2.ts, 23, 33))
+>T : Symbol(T, Decl(ttttRecoveryNodeEnds2.ts, 23, 17))
+>T : Symbol(T, Decl(ttttRecoveryNodeEnds2.ts, 23, 17))
+
+    }): any[];
+}
+
