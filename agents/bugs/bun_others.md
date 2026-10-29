@@ -249,7 +249,13 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
 - +TS2304 on a name an export specifier declares in a namespace's block (TS1194), 01-C11 (`namespace N { const a = 1;
   export { a as b }; b; }`), 33-C11a: tsc's resolveNameHelper skips a pure export specifier alias of the exports only
   in a source file or an ambient module declaration; scope_lookup's exports step took that rule everywhere. Test
-  ttttNamespaceExportSpecifierInScope [fixed PENDING].
+  ttttNamespaceExportSpecifierInScope [fixed 1cad0ca29].
+- -TS2345 on `typeof N` of a namespace without values narrowed to never, 16-C5a (`typeof nn !== "object"`, `!nn`),
+  16-C5b (a module whose exports are types only): tsc's namespace and module objects are anonymous object types, and
+  getTypeFacts gives an empty one EmptyObjectStrictFacts (all but the nullish ones), so neither narrowing removes it.
+  type_facts()' is_empty_anonymous_object() now counts a namespace's or enum's object without members (only there:
+  tsc's isEmptyAnonymousObjectType, which intersections ask, looks at members already resolved only, bun19-P3).
+  Test ttttEmptyNamespaceObjectFacts [fixed NEXT].
 - -TS2448: two mechanisms, the JSX factory (`React`, `Frag`) declared after the element that uses it (tsc resolves
   the factory at the element as a use: 01-C2b, 15-C3b, 27-C3a, 27-P7, 34-C2b) and `const arguments = 1` in a
   function body (tsc's reference to the implicit `arguments`: 25-C17c, 33-P4g, 51-L01, 51-L05, 77-R12b). The JSX

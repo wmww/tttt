@@ -1,0 +1,62 @@
+//// [test/cases/ttttEmptyNamespaceObjectFacts.ts] ////
+
+=== empty.ts ===
+export type T = number;
+>T : Symbol(T, Decl(empty.ts, 0, 0))
+
+=== a.ts ===
+import * as e from "./empty";
+>e : Symbol(e, Decl(a.ts, 0, 6))
+
+function n(x: never) {}
+>n : Symbol(n, Decl(a.ts, 0, 29))
+>x : Symbol(x, Decl(a.ts, 1, 11))
+
+namespace N { const x = 1; }
+>N : Symbol(N, Decl(a.ts, 1, 23))
+>x : Symbol(x, Decl(a.ts, 2, 19))
+
+const nn = N;
+>nn : Symbol(nn, Decl(a.ts, 3, 5))
+>N : Symbol(N, Decl(a.ts, 1, 23))
+
+if (typeof nn !== "object") n(nn);
+>nn : Symbol(nn, Decl(a.ts, 3, 5))
+>n : Symbol(n, Decl(a.ts, 0, 29))
+>nn : Symbol(nn, Decl(a.ts, 3, 5))
+
+if (!nn) n(nn);
+>nn : Symbol(nn, Decl(a.ts, 3, 5))
+>n : Symbol(n, Decl(a.ts, 0, 29))
+>nn : Symbol(nn, Decl(a.ts, 3, 5))
+
+if (typeof e !== "object") n(e);
+>e : Symbol(e, Decl(a.ts, 0, 6))
+>n : Symbol(n, Decl(a.ts, 0, 29))
+>e : Symbol(e, Decl(a.ts, 0, 6))
+
+enum E {}
+>E : Symbol(E, Decl(a.ts, 6, 32))
+
+const ee = E;
+>ee : Symbol(ee, Decl(a.ts, 8, 5))
+>E : Symbol(E, Decl(a.ts, 6, 32))
+
+if (!ee) n(ee);
+>ee : Symbol(ee, Decl(a.ts, 8, 5))
+>n : Symbol(n, Decl(a.ts, 0, 29))
+>ee : Symbol(ee, Decl(a.ts, 8, 5))
+
+namespace V { export const v = 1; }
+>V : Symbol(V, Decl(a.ts, 9, 15))
+>v : Symbol(v, Decl(a.ts, 10, 26))
+
+const vv = V;
+>vv : Symbol(vv, Decl(a.ts, 11, 5))
+>V : Symbol(V, Decl(a.ts, 9, 15))
+
+if (!vv) n(vv);
+>vv : Symbol(vv, Decl(a.ts, 11, 5))
+>n : Symbol(n, Decl(a.ts, 0, 29))
+>vv : Symbol(vv, Decl(a.ts, 11, 5))
+

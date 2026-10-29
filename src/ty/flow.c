@@ -355,7 +355,16 @@ static u32 primitive_facts(u32 eq, bool truthy, bool falsy) {
 }
 
 // tsc's isEmptyAnonymousObjectType (ty_is_empty_anonymous_object())
-static bool is_empty_anonymous_object(Checker* me, Ty const* ty) { return ty_is_empty_anonymous_object(me, ty); }
+// (tsc's getTypeFacts asks ObjectFlags.Anonymous and isEmptyObjectType, which resolves the members: a namespace's or
+// module's object and an enum's are anonymous too, `typeof N` of a namespace without values. Not
+// ty_is_empty_anonymous_object()'s, tsc's isEmptyAnonymousObjectType, which only looks at members already resolved)
+static bool is_empty_anonymous_object(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_DECLARED && (ty->declared.kind == TY_DECLARED_NAMESPACE || ty->declared.kind == TY_DECLARED_ENUM_OBJECT)) {
+        Members const* members = ty_members(me, ty);
+        return !members->prop_count && !members->call_count && !members->construct_count && !members->index_count;
+    }
+    return ty_is_empty_anonymous_object(me, ty);
+}
 
 static bool is_function_object(Checker* me, Ty const* ty) {
     Members const* members = ty_members(me, ty);
