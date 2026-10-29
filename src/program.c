@@ -4588,8 +4588,8 @@ static void resolve_lane_report(ResolveLane const* me, char const* name) {
     u32 top[8];
     u32 top_count = 0;
     for (u32 i = 0; i < my count; i++) {
+        if (top_count == 8 && my items[top[7]].ms >= my items[i].ms) continue;
         u32 at = top_count < 8 ? top_count++ : 7;
-        if (at == 7 && top_count == 8 && my items[top[7]].ms >= my items[i].ms) continue;
         top[at] = i;
         while (at > 0 && my items[top[at - 1]].ms < my items[top[at]].ms) {
             u32 swap = top[at - 1];
