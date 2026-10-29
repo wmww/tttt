@@ -1604,6 +1604,8 @@ static int compare_suggested_props(void* ctx, isize a, isize b) {
 
 // tsc's isValidPropertyAccessForCompletions: whether `access` may read prop (of `containing`). A #private member only
 // inside its class, outside an optional chain (tsc's isPropertyAccessible)
+static int intersection_prop_non_public(Checker* me, Ty const* intersection, Atom const* name);
+
 static bool suggestion_accessible(Checker* me, PropertyExpr const* access, Prop const* prop, Ty const* containing) {
     PropertyContext const* site = property_context(access);
     csview name = atom_sv(prop->name);
@@ -1673,7 +1675,11 @@ Prop const* ty_suggested_property(Checker* me, Ty const* object, csview name) {
         // (Nor where the union's members disagree on its visibility: the union has no such property, tsc's
         // createUnionOrIntersectionProperty)
         if (everywhere && object->kind == TY_UNION) everywhere = !ty_union_non_public_conflict(me, object, prop->name);
-        if (everywhere && me->suggestion_access) everywhere = suggestion_accessible(me, me->suggestion_access, prop, first);
+        // (An intersection's property as the intersection has it: its most permissive visibility, tsc's
+        // createUnionOrIntersectionProperty, not its first member's)
+        if (everywhere && me->suggestion_access && !(first->kind == TY_INTERSECTION && intersection_prop_non_public(me, first, prop->name) == 0)) {
+            everywhere = suggestion_accessible(me, me->suggestion_access, prop, first);
+        }
         names[i] = everywhere ? candidate : (csview){0};
     }
     // (Of the candidates at the best distance, the first declared: tsgo's getSpellingSuggestion with compareSymbols)
@@ -1715,27 +1721,34 @@ static bool seems_empty_dom_element(Checker* me, Ty const* ty) {
 
 // The declaration of the property `name` of ty, following instantiations; of an intersection the one its parts share
 // (null if they have different ones: tsc's createUnionOrIntersectionProperty only keeps a single declaration)
-static PropDecl const* prop_root_decl(Checker* me, Ty const* ty, Atom const* name) {
-    if (ty->kind == TY_INTERSECTION) {
-        PropDecl const* ret = nullptr;
-        for (u32 i = 0; i < ty->composite.types.len; i++) {
-            PropDecl const* part = prop_root_decl(me, ty_apparent_type(me, ty->composite.types.data[i]), name);
-            if (!part) continue;
-            if (ret && ret != part) return nullptr;
-            ret = part;
-        }
-        return ret;
-    }
-    if (!(ty->flags & TYF_OBJECT)) return nullptr;
-    Prop const* prop = ty_get_prop(me, ty, name);
-    while (prop && prop->target) prop = prop->target;
-    return prop ? prop->decl : nullptr;
-}
 
 // A property tsc gives declarations but no valueDeclaration: a mapped or reverse mapped type's, a spread's fresh copy, a
 // namespace's export that is an alias (`export { f }`: the export specifier)
 static bool no_value_declaration(Prop const* prop) {
     return prop->mapped || (prop->flags & PROP_NO_VALUE_DECLARATION) || prop_decl_rare(prop->decl)->reverse_of;
+}
+
+// The property whose declaration is the valueDeclaration of `ty`'s property `name` (a root, through targets), null if it
+// has none: a union's or intersection's is its members' when every one that has one agrees
+static Prop const* composite_value_prop(Checker* me, Ty const* ty, Atom const* name) {
+    if (ty->kind == TY_INTERSECTION || ty->kind == TY_UNION) {
+        Prop const* ret = nullptr;
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            Ty const* part = ty->composite.types.data[i];
+            if (part->flags & TYF_NULLABLE) continue;
+            Prop const* found = composite_value_prop(me, ty_apparent_type(me, part), name);
+            if (!found) continue;
+            if (ret && ret->decl != found->decl) return nullptr;
+            if (!ret) ret = found;
+        }
+        return ret;
+    }
+    if (!(ty->flags & TYF_OBJECT)) return nullptr;
+    // (Object's members included: a union's members are looked up with getPropertyOfType, `valueOf` of `string |
+    // Ref<string>` is String's and Object's, no declaration)
+    Prop const* prop = ty_property_of_type(me, ty, name);
+    while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target;
+    return prop && prop->decl && !no_value_declaration(prop) ? prop : nullptr;
 }
 
 // destructured: a binding element's property (tsc's getIndexedAccessType reports it, without saying which union member
@@ -1809,32 +1822,23 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
             declared = declared->target;
             synthetic |= no_value_declaration(declared);
         }
-        // (A union's property has a declaration only if every member's is the same one: tsc's
-        // createUnionOrIntersectionProperty with hasNonUniformValueDeclaration)
+        // (A union's or intersection's property has a declaration only if every member's that has one is the same:
+        // tsc's createUnionOrIntersectionProperty with hasNonUniformValueDeclaration, which skips the members' that
+        // have none, a nested non-uniform one included: `(Base & Mock) | (Dummy & Mock)` declares it at Mock's)
         bool uniform = true;
-        if (object->kind == TY_INTERSECTION) {
-            // (Likewise an intersection's: two members declaring it make none)
-            Prop const* root = suggestion;
-            while (root->target) root = root->target;
-            for (u32 i = 0; i < object->composite.types.len && uniform; i++) {
-                PropDecl const* part = prop_root_decl(me, ty_apparent_type(me, object->composite.types.data[i]), suggestion->name);
-                uniform = !part || part == root->decl;
-            }
-        } else if (object->kind == TY_UNION) {
-            Prop const* root = suggestion;
-            while (root->target) root = root->target;
-            for (u32 i = 0; i < object->composite.types.len && uniform; i++) {
-                Ty const* part = object->composite.types.data[i];
-                if (part->flags & TYF_NULLABLE) continue;
-                PropDecl const* part_decl = prop_root_decl(me, ty_apparent_type(me, part), suggestion->name);
-                // (An object literal without it adds no declaration, only undefined: WritePartial)
-                if (!part_decl && ty_is_object_literal_without_spread(me, part)) continue;
-                uniform = part_decl == root->decl;
+        Prop const* name_prop = suggestion;
+        if (object->kind == TY_INTERSECTION || object->kind == TY_UNION) {
+            Prop const* value = composite_value_prop(me, object, suggestion->name);
+            uniform = value != nullptr;
+            if (value) {
+                name_prop = value;
+                declared = value;
+                synthetic = no_value_declaration(value);
             }
         }
         if (error && uniform && !synthetic && declared->decl->decl_span_count) {
             // (tsc's error span of the declaration: its name)
-            Span name_span = ty_prop_decl_span(suggestion);
+            Span name_span = ty_prop_decl_span(name_prop);
             // (Its valueDeclaration: a class field declared after a JavaScript `this.x = v` that joined it is, tsc's
             // setValueDeclaration prefers a declaration to an assignment)
             Span at = declared->decl->decl_spans[0];
