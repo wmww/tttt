@@ -891,7 +891,7 @@ const baselines = {
         types: true,
     },
     'bun06-C15': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17523,6 +17523,11 @@ const baselines = {
         types: true,
     },
     'ttttYieldIsAnAssignmentExpression': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttYieldStarElaboration': {
         errors: true,
         symbols: true,
         types: true,
