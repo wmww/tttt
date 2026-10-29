@@ -1538,6 +1538,7 @@ struct Checker {
     Ty const* disposable_targets[2];
     bool disposable_looked_up[2];
     bool awaited_reported; // TS2318 for a missing Awaited (tsc's getGlobalAwaitedSymbol(/*reportErrors*/ true))
+    bool awaited_silent; // Awaiting without an error node (tsc's getAwaitedTypeNoAlias(t, nil)): a cycle isn't TS1062
     bool iterable_iterator_reported[2]; // TS2318 for a missing IterableIterator / AsyncIterableIterator (sync, async)
     bool iterable_reported; // TS2318 for a missing Iterable (an empty or rest-only array pattern's type)
     // --shared-graph (ty/graph.h): the graph it shares

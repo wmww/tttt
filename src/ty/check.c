@@ -594,6 +594,18 @@ static bool elaborate_jsx_attributes(Checker* me, Expr const* expr, Ty const* so
     return reported;
 }
 
+
+// Whether the async version of a function returning `source_ret` would fit: tsc's createPromiseType awaits what it wraps
+// (`"a" | Promise<"a">` makes Promise<"a">), without an error node (a cycle, `type T = string | Promise<T>`, says nothing)
+static bool async_return_fits(Checker* me, Ty const* promise, Ty const* source_ret, Ty const* target_ret) {
+    bool saved = my awaited_silent;
+    my awaited_silent = true;
+    Ty const* awaited = ty_awaited_no_alias(me, ty_unwrap_awaited(me, source_ret));
+    my awaited_silent = saved;
+    if (!awaited) return false;
+    return ty_is_related(me, ty_reference(me, promise, (TyList){ .data = &awaited, .len = 1 }), target_ret, TY_RELATION_ASSIGNABLE);
+}
+
 static bool elaborate_arrow_function(Checker* me, Expr const* expr, Ty const* source, Ty const* target, ErrorCtx* errs) {
     FunctionImpl const* function = expr->function;
     if (!function_impl_is_arrow(function) || !function->expression_body) return false;
@@ -637,9 +649,7 @@ static bool elaborate_arrow_function(Checker* me, Expr const* expr, Ty const* so
         program_get_global(my program, c_sv("Promise"), SYMBOL_TYPE);
     Ty const* promise = promise_symbol ? ty_declared_type_of(me, promise_symbol) : nullptr;
     if (promise && promise->kind == TY_DECLARED && promise->declared.type_params.len == 1 &&
-        !ty_access(me, source_ret, ty_prop_name_literal(me, my atoms.then)) &&
-        ty_is_related(me, ty_reference(me, promise, (TyList){ .data = &source_ret, .len = 1 }), target_ret,
-            TY_RELATION_ASSIGNABLE)
+        !ty_has_prop(me, source_ret, my atoms.then) && async_return_fits(me, promise, source_ret, target_ret)
     ) {
         error_add_related_d(error, expr->inner_span, 1356, "Did you mean to mark this function as 'async'?");
     }

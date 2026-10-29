@@ -1,0 +1,25 @@
+ttttAsyncSuggestionAwaitsReturn.ts(4,8): error TS2322: Type '"contextuallyTypable" | Promise<"contextuallyTypable">' is not assignable to type '42 | PromiseLike<"contextuallyTypable">'.
+  Type '"contextuallyTypable"' is not assignable to type '42 | PromiseLike<"contextuallyTypable">'.
+ttttAsyncSuggestionAwaitsReturn.ts(7,9): error TS2322: Type '"a" | Promise<string>' is not assignable to type 'PromiseLike<string>'.
+  Type 'string' is not assignable to type 'PromiseLike<string>'.
+
+
+==== ttttAsyncSuggestionAwaitsReturn.ts (2 errors) ====
+    // An arrow function whose returned value would fit as an async function's gets TS1356's suggestion: its return type
+    // is wrapped as tsc's createPromiseType does, awaited first (`"a" | Promise<"a">` makes Promise<"a">)
+    declare function g(cb: (v: boolean) => 42 | PromiseLike<"contextuallyTypable">): void;
+    g(v => v ? "contextuallyTypable" : Promise.reject());
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type '"contextuallyTypable" | Promise<"contextuallyTypable">' is not assignable to type '42 | PromiseLike<"contextuallyTypable">'.
+!!! error TS2322:   Type '"contextuallyTypable"' is not assignable to type '42 | PromiseLike<"contextuallyTypable">'.
+!!! related TS6502 ttttAsyncSuggestionAwaitsReturn.ts:3:24: The expected type comes from the return type of this signature.
+!!! related TS1356 ttttAsyncSuggestionAwaitsReturn.ts:4:3: Did you mean to mark this function as 'async'?
+    g(async v => v ? "contextuallyTypable" : Promise.reject());
+    declare function h(cb: () => PromiseLike<string>): void;
+    h(() => Math.random() ? "a" : Promise.resolve("b"));
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type '"a" | Promise<string>' is not assignable to type 'PromiseLike<string>'.
+!!! error TS2322:   Type 'string' is not assignable to type 'PromiseLike<string>'.
+!!! related TS6502 ttttAsyncSuggestionAwaitsReturn.ts:6:24: The expected type comes from the return type of this signature.
+!!! related TS1356 ttttAsyncSuggestionAwaitsReturn.ts:7:3: Did you mean to mark this function as 'async'?
+    

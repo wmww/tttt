@@ -1,0 +1,41 @@
+//// [test/cases/ttttAsyncSuggestionAwaitsReturn.ts] ////
+
+=== ttttAsyncSuggestionAwaitsReturn.ts ===
+// An arrow function whose returned value would fit as an async function's gets TS1356's suggestion: its return type
+// is wrapped as tsc's createPromiseType does, awaited first (`"a" | Promise<"a">` makes Promise<"a">)
+declare function g(cb: (v: boolean) => 42 | PromiseLike<"contextuallyTypable">): void;
+>g : Symbol(g, Decl(ttttAsyncSuggestionAwaitsReturn.ts, 0, 0))
+>cb : Symbol(cb, Decl(ttttAsyncSuggestionAwaitsReturn.ts, 2, 19))
+>v : Symbol(v, Decl(ttttAsyncSuggestionAwaitsReturn.ts, 2, 24))
+>PromiseLike : Symbol(PromiseLike, Decl(lib.es5.d.ts, --, --))
+
+g(v => v ? "contextuallyTypable" : Promise.reject());
+>g : Symbol(g, Decl(ttttAsyncSuggestionAwaitsReturn.ts, 0, 0))
+>v : Symbol(v, Decl(ttttAsyncSuggestionAwaitsReturn.ts, 3, 2))
+>v : Symbol(v, Decl(ttttAsyncSuggestionAwaitsReturn.ts, 3, 2))
+>Promise.reject : Symbol(PromiseConstructor.reject, Decl(lib.es2015.promise.d.ts, --, --))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>reject : Symbol(PromiseConstructor.reject, Decl(lib.es2015.promise.d.ts, --, --))
+
+g(async v => v ? "contextuallyTypable" : Promise.reject());
+>g : Symbol(g, Decl(ttttAsyncSuggestionAwaitsReturn.ts, 0, 0))
+>v : Symbol(v, Decl(ttttAsyncSuggestionAwaitsReturn.ts, 4, 7))
+>v : Symbol(v, Decl(ttttAsyncSuggestionAwaitsReturn.ts, 4, 7))
+>Promise.reject : Symbol(PromiseConstructor.reject, Decl(lib.es2015.promise.d.ts, --, --))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>reject : Symbol(PromiseConstructor.reject, Decl(lib.es2015.promise.d.ts, --, --))
+
+declare function h(cb: () => PromiseLike<string>): void;
+>h : Symbol(h, Decl(ttttAsyncSuggestionAwaitsReturn.ts, 4, 59))
+>cb : Symbol(cb, Decl(ttttAsyncSuggestionAwaitsReturn.ts, 5, 19))
+>PromiseLike : Symbol(PromiseLike, Decl(lib.es5.d.ts, --, --))
+
+h(() => Math.random() ? "a" : Promise.resolve("b"));
+>h : Symbol(h, Decl(ttttAsyncSuggestionAwaitsReturn.ts, 4, 59))
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Promise.resolve : Symbol(PromiseConstructor.resolve, Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>resolve : Symbol(PromiseConstructor.resolve, Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --))
+

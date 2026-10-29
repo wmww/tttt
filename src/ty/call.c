@@ -4102,6 +4102,7 @@ typedef struct AwaitedFrame {
 // (Null, which a union leaves out, and the error type at the top: tsc's getAwaitedTypeNoAlias returns undefined,
 // mapType drops it, checkAwaitedType makes it errorType)
 static Ty const* awaited_cycle(Checker* me) {
+    if (my awaited_silent) return nullptr;
     ty_error_at_current_node_d(me, 1062, "Type is referenced directly or indirectly in the fulfillment callback of its own 'then' method.");
     return nullptr;
 }
