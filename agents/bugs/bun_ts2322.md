@@ -107,8 +107,8 @@ last line. The real cause is then elsewhere, and the entry says where. Show a ca
   of the element types, so the yield's value is `string | boolean`; tttt takes one. TS2322 missing. [open]
 - 16-C3d: an array pattern's default against `T extends { 0?: F } & Iterable<G>`. tsc types the element from the
   pattern's position differently, tttt reports F against G. TS2322 spurious. [open]
-- 20-C15: `x.constructor === C` narrowing `typeof C | A`. tsc narrows to `typeof C`, tttt doesn't narrow. TS2322
-  missing. [open]
+- 20-C15: `x.constructor === C` narrowing `typeof C | A`. tsc narrows to `typeof C`, tttt narrowed to never (isConstructedBy compares
+  symbols when either is a class). TS2322 missing. [fixed 6f15f3f91]
 - 20-P10: `switch (x) { case y: ... }` in a do-while loop with `y = x`. tsc narrows x by the non-unit case y, to "a",
   tttt doesn't. TS2322 spurious. [open]
 - 21-C22: an object rest of a union whose members have a property named `rest` (`const { ...rest } = u`). tsc's
