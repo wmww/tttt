@@ -614,17 +614,17 @@ never `module.exports`), declarationsForIndirectTypeAliasReference (tsgo's doubl
   doesn't normalize the member to any: it does, B relates, but structuredTypeRelatedTo's extra check of an intersection
   source (isSourceIntersectionNeedingExtraCheck, propertiesRelatedTo with optionalsOnly) asks getUnmatchedProperty
   first, required properties included; props_related_impl skipped that for optionals_only. Fixed there (the line shows
-  the intersection, not its apparent type: bun18-C6a passes too). Test ttttAnyBaseClassInIntersection. [fixed c851019fb]
+  the intersection, not its apparent type: bun18-C6a passes too). Test ttttAnyBaseClassInIntersection. [fixed c492f8e6f]
 - arbitraryModuleNamespaceIdentifiers_syntax drop-as: `export { "invalid 3" };` (no `from`) is no error in tsgo
   (checkExportSpecifier checks a string *name* with allowStringLiteral true, only a string propertyName without a module
   specifier is TS1003); tttt's parser reported TS1003 for both. Now only a string before `as`. Test
-  ttttExportStringNameNoFrom. [fixed 92ee3d61c]
+  ttttExportStringNameNoFrom. [fixed a008343a8]
 - jsTypedefMergedWithModuleExportProperty delete-stmt (tsgo's TS2693 x2, tttt's TS4081/TS2309): a JS `@typedef T`
   merged with `module.exports.T = T` once the `const T` is gone. The alias `T` finds itself by its typedef meaning (tsc's
   getTargetOfAliasLikeExpression, dontResolveAlias) and is its own target, with no value meaning (getSymbolFlags'
   `target === symbol` stop); tttt's resolve_alias_target_in() made it unresolved (every meaning), and
   check_module_exports counted every CommonJS alias a value (TS2309). commonjs_alias_is_own_target() decides it from the
-  tables. Test ttttJsTypedefAliasOwnTarget. [fixed PENDING]
+  tables. Test ttttJsTypedefAliasOwnTarget. [fixed b9e3ed045]
 
 ## Mutation seed 20261110 (2026-10-29, cor10: `scripts/mutate.py -n 8000 --seed 20261110`, 4 of 8000 differ)
 - complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound delete-stmt: the sticky errorNode (above). [fixed b088fd3d7]

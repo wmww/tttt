@@ -72,7 +72,8 @@ passing tests).
   sketch: IndexComponent gets a declared type re-derived at creation (expr.c literal_members_index) when the object's
   const context came from a const type variable rather than an assertion: the member value checked non-const with its
   const type as contextual type; that needs ExprCtx to tell the two const origins apart (43 is_const sites), so not
-  done.) [open]
+  done.) (cor11 2026-10-29: the sites don't reduce to one predicate, ExprCtx.is_const is set and read along every
+  literal path; printing only, one types baseline: left as a design.) [design]
 
 - (types only) ttttNonNullOperandNotInferential: the diagnostics match; `mapping[k]` inside `mapping[k]!` in a generic
   call's argument prints `M[keyof S]` where tsc prints its constraint `string | number | undefined` (the non-null
