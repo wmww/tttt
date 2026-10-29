@@ -1,0 +1,158 @@
+//// [test/cases/ttttBodilessPatternInitializerChecked.ts] ////
+
+=== ttttBodilessPatternInitializerChecked.ts ===
+// A bodiless signature's unannotated pattern parameter: checking an element that isn't a renaming asks for the
+// parameter's type (getTypeForBindingElementParent from checkVariableLikeDeclaration), which is its initializer's,
+// checked and reported (checkDeclarationInitializer), unless the initializer has a quick type (a call of one
+// non-generic signature: only its callee is checked). Seed 20261118, objectRestBindingContextualInference
+// delete-stmt (a missing TS2554 in a parameter list that swallowed the next statement)
+declare function g(a: number): { p: number, q: string };
+>g : (a: number) => { p: number; q: string; }
+>a : number
+>p : number
+>q : string
+
+declare function h<K extends string>(a: number, k: K[]): { p: number, q: K };
+>h : <K extends string>(a: number, k: K[]) => { p: number; q: K; }
+>a : number
+>k : K[]
+>p : number
+>q : K
+
+declare function f1({ p, ...rest } = g()): void;
+>f1 : ({ p, ...rest }?: { p: number; q: string; }) => void
+>p : number
+>rest : { q: string; }
+>g() : { p: number; q: string; }
+>g : (a: number) => { p: number; q: string; }
+
+declare function f2({ p, ...rest } = h(1, ["x"], 3)): void;
+>f2 : ({ p, ...rest }?: { p: number; q: "x"; }) => void
+>p : number
+>rest : { q: "x"; }
+>h(1, ["x"], 3) : { p: number; q: "x"; }
+>h : <K extends string>(a: number, k: K[]) => { p: number; q: K; }
+>1 : 1
+>["x"] : "x"[]
+>"x" : "x"
+>3 : 3
+
+declare function f3({ p } = h(1, ["x"], 3)): void;
+>f3 : ({ p }?: { p: number; q: "x"; }) => void
+>p : number
+>h(1, ["x"], 3) : { p: number; q: "x"; }
+>h : <K extends string>(a: number, k: K[]) => { p: number; q: K; }
+>1 : 1
+>["x"] : "x"[]
+>"x" : "x"
+>3 : 3
+
+declare function f4({ p, ...rest } = h("x", ["x"])): void;
+>f4 : ({ p, ...rest }?: { p: number; q: "x"; }) => void
+>p : number
+>rest : { q: "x"; }
+>h("x", ["x"]) : { p: number; q: "x"; }
+>h : <K extends string>(a: number, k: K[]) => { p: number; q: K; }
+>"x" : "x"
+>["x"] : "x"[]
+>"x" : "x"
+
+declare function f5({ p: pp } = h("x", ["x"])): void;
+>f5 : ({ p: pp }?: { p: number; q: "x"; }) => void
+>p : any
+>pp : number
+>h("x", ["x"]) : { p: number; q: "x"; }
+>h : <K extends string>(a: number, k: K[]) => { p: number; q: K; }
+>"x" : "x"
+>["x"] : "x"[]
+>"x" : "x"
+
+declare function f6({ p }: { p: number } = h("x", ["x"])): void;
+>f6 : ({ p }?: { p: number; }) => void
+>p : number
+>p : number
+>h("x", ["x"]) : { p: number; q: "x"; }
+>h : <K extends string>(a: number, k: K[]) => { p: number; q: K; }
+>"x" : "x"
+>["x"] : "x"[]
+>"x" : "x"
+
+declare function f7(o = h("x", ["x"])): void;
+>f7 : (o?: { p: number; q: "x"; }) => void
+>o : { p: number; q: "x"; }
+>h("x", ["x"]) : { p: number; q: "x"; }
+>h : <K extends string>(a: number, k: K[]) => { p: number; q: K; }
+>"x" : "x"
+>["x"] : "x"[]
+>"x" : "x"
+
+type T1 = ([a] = [g("x")]) => void;
+>T1 : T1
+>a : { p: number; q: string; }
+>[g("x")] : [{ p: number; q: string; }]
+>g("x") : { p: number; q: string; }
+>g : (a: number) => { p: number; q: string; }
+>"x" : "x"
+
+interface I2 { m([a] = [g("x")]): void }
+>m : ([a]?: [{ p: number; q: string; }]) => void
+>a : { p: number; q: string; }
+>[g("x")] : [{ p: number; q: string; }]
+>g("x") : { p: number; q: string; }
+>g : (a: number) => { p: number; q: string; }
+>"x" : "x"
+
+declare class C3 { m([a] = [g("x")]): void }
+>C3 : C3
+>m : ([a]?: [{ p: number; q: string; }]) => void
+>a : { p: number; q: string; }
+>[g("x")] : [{ p: number; q: string; }]
+>g("x") : { p: number; q: string; }
+>g : (a: number) => { p: number; q: string; }
+>"x" : "x"
+
+declare function f8([] = [g("x")]): void;
+>f8 : ([]?: { p: number; q: string; }[]) => void
+>[g("x")] : { p: number; q: string; }[]
+>g("x") : { p: number; q: string; }
+>g : (a: number) => { p: number; q: string; }
+>"x" : "x"
+
+declare function f9([, ] = [g("x")]): void;
+>f9 : ([,]?: [{ p: number; q: string; }]) => void
+>[g("x")] : [{ p: number; q: string; }]
+>g("x") : { p: number; q: string; }
+>g : (a: number) => { p: number; q: string; }
+>"x" : "x"
+
+declare function f10({ a: [b] } = { a: [g("x")] }): void;
+>f10 : ({ a: [b] }?: { a: [{ p: number; q: string; }]; }) => void
+>a : any
+>b : { p: number; q: string; }
+>{ a: [g("x")] } : { a: [{ p: number; q: string; }]; }
+>a : [{ p: number; q: string; }]
+>[g("x")] : [{ p: number; q: string; }]
+>g("x") : { p: number; q: string; }
+>g : (a: number) => { p: number; q: string; }
+>"x" : "x"
+
+declare function f11([a] = [() => { g("x"); }]): void;
+>f11 : ([a]?: [() => void]) => void
+>a : () => void
+>[() => { g("x"); }] : [() => void]
+>() => { g("x"); } : () => void
+>g("x") : { p: number; q: string; }
+>g : (a: number) => { p: number; q: string; }
+>"x" : "x"
+
+function f12([a] = [g("x")]): void;
+>f12 : ([a]?: [{ p: number; q: string; }]) => void
+>a : { p: number; q: string; }
+>[g("x")] : [{ p: number; q: string; }]
+>g("x") : { p: number; q: string; }
+>g : (a: number) => { p: number; q: string; }
+>"x" : "x"
+
+function f12() {}
+>f12 : ([a]?: [{ p: number; q: string; }]) => void
+

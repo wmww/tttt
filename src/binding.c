@@ -1280,6 +1280,20 @@ void initialized_binding_type_bodiless_value(InitializedBinding* me) {
     current_checker->defer_checks = defer;
 }
 
+void initialized_binding_typecheck_bodiless_value(InitializedBinding* me, ErrorCtx* errs) {
+    // (An unannotated pattern with an element whose check asks for the parameter's type: that type is its initializer's,
+    // checked and reported, unless it has a quick type, which only checks the callee)
+    if (!my binding.has_explicit_type && binding_has_unrenamed_element(&my binding)) {
+        Expr const* value = initialized_binding_value(me);
+        if (!ty_quick_expr_type(current_checker, value, false)) {
+            initialized_binding_typecheck_overload_value(me, errs);
+            return;
+        }
+        check_quick_callee(value, errs);
+    }
+    initialized_binding_type_bodiless_value(me);
+}
+
 void initialized_binding_typecheck_overload_value(InitializedBinding* me, ErrorCtx* errs) {
     bool entered = ty_context_root_enter(me);
     initialized_binding_check_value(me);

@@ -1,0 +1,106 @@
+ttttBodilessPatternInitializerChecked.ts(8,21): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttBodilessPatternInitializerChecked.ts(9,21): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttBodilessPatternInitializerChecked.ts(9,50): error TS2554: Expected 2 arguments, but got 3.
+ttttBodilessPatternInitializerChecked.ts(10,21): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttBodilessPatternInitializerChecked.ts(10,41): error TS2554: Expected 2 arguments, but got 3.
+ttttBodilessPatternInitializerChecked.ts(11,21): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttBodilessPatternInitializerChecked.ts(11,40): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+ttttBodilessPatternInitializerChecked.ts(12,21): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttBodilessPatternInitializerChecked.ts(12,26): error TS2842: 'pp' is an unused renaming of 'p'. Did you intend to use it as a type annotation?
+ttttBodilessPatternInitializerChecked.ts(13,21): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttBodilessPatternInitializerChecked.ts(14,21): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttBodilessPatternInitializerChecked.ts(15,12): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttBodilessPatternInitializerChecked.ts(15,21): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+ttttBodilessPatternInitializerChecked.ts(16,18): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttBodilessPatternInitializerChecked.ts(16,27): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+ttttBodilessPatternInitializerChecked.ts(17,22): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttBodilessPatternInitializerChecked.ts(17,31): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+ttttBodilessPatternInitializerChecked.ts(18,21): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttBodilessPatternInitializerChecked.ts(19,21): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttBodilessPatternInitializerChecked.ts(20,22): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttBodilessPatternInitializerChecked.ts(20,43): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+ttttBodilessPatternInitializerChecked.ts(21,22): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttBodilessPatternInitializerChecked.ts(21,35): error TS1183: An implementation cannot be declared in ambient contexts.
+ttttBodilessPatternInitializerChecked.ts(21,39): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+ttttBodilessPatternInitializerChecked.ts(22,14): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttBodilessPatternInitializerChecked.ts(22,23): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+
+
+==== ttttBodilessPatternInitializerChecked.ts (26 errors) ====
+    // A bodiless signature's unannotated pattern parameter: checking an element that isn't a renaming asks for the
+    // parameter's type (getTypeForBindingElementParent from checkVariableLikeDeclaration), which is its initializer's,
+    // checked and reported (checkDeclarationInitializer), unless the initializer has a quick type (a call of one
+    // non-generic signature: only its callee is checked). Seed 20261118, objectRestBindingContextualInference
+    // delete-stmt (a missing TS2554 in a parameter list that swallowed the next statement)
+    declare function g(a: number): { p: number, q: string };
+    declare function h<K extends string>(a: number, k: K[]): { p: number, q: K };
+    declare function f1({ p, ...rest } = g()): void;
+                        ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    declare function f2({ p, ...rest } = h(1, ["x"], 3)): void;
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                                                     ~
+!!! error TS2554: Expected 2 arguments, but got 3.
+    declare function f3({ p } = h(1, ["x"], 3)): void;
+                        ~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                                            ~
+!!! error TS2554: Expected 2 arguments, but got 3.
+    declare function f4({ p, ...rest } = h("x", ["x"])): void;
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                                           ~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    declare function f5({ p: pp } = h("x", ["x"])): void;
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                             ~~
+!!! error TS2842: 'pp' is an unused renaming of 'p'. Did you intend to use it as a type annotation?
+!!! related TS2843 ttttBodilessPatternInitializerChecked.ts:12:46: We can only write a type for 'p' by adding a type for the entire parameter here.
+    declare function f6({ p }: { p: number } = h("x", ["x"])): void;
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    declare function f7(o = h("x", ["x"])): void;
+                        ~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    type T1 = ([a] = [g("x")]) => void;
+               ~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                        ~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    interface I2 { m([a] = [g("x")]): void }
+                     ~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                              ~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    declare class C3 { m([a] = [g("x")]): void }
+                         ~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                                  ~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    declare function f8([] = [g("x")]): void;
+                        ~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    declare function f9([, ] = [g("x")]): void;
+                        ~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    declare function f10({ a: [b] } = { a: [g("x")] }): void;
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                                              ~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    declare function f11([a] = [() => { g("x"); }]): void;
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                                      ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+                                          ~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    function f12([a] = [g("x")]): void;
+                 ~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                          ~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    function f12() {}
+    

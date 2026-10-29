@@ -1,0 +1,109 @@
+//// [test/cases/ttttBodilessPatternInitializerChecked.ts] ////
+
+=== ttttBodilessPatternInitializerChecked.ts ===
+// A bodiless signature's unannotated pattern parameter: checking an element that isn't a renaming asks for the
+// parameter's type (getTypeForBindingElementParent from checkVariableLikeDeclaration), which is its initializer's,
+// checked and reported (checkDeclarationInitializer), unless the initializer has a quick type (a call of one
+// non-generic signature: only its callee is checked). Seed 20261118, objectRestBindingContextualInference
+// delete-stmt (a missing TS2554 in a parameter list that swallowed the next statement)
+declare function g(a: number): { p: number, q: string };
+>g : Symbol(g, Decl(ttttBodilessPatternInitializerChecked.ts, 0, 0))
+>a : Symbol(a, Decl(ttttBodilessPatternInitializerChecked.ts, 5, 19))
+>p : Symbol(p, Decl(ttttBodilessPatternInitializerChecked.ts, 5, 32))
+>q : Symbol(q, Decl(ttttBodilessPatternInitializerChecked.ts, 5, 43))
+
+declare function h<K extends string>(a: number, k: K[]): { p: number, q: K };
+>h : Symbol(h, Decl(ttttBodilessPatternInitializerChecked.ts, 5, 56))
+>K : Symbol(K, Decl(ttttBodilessPatternInitializerChecked.ts, 6, 19))
+>a : Symbol(a, Decl(ttttBodilessPatternInitializerChecked.ts, 6, 37))
+>k : Symbol(k, Decl(ttttBodilessPatternInitializerChecked.ts, 6, 47))
+>K : Symbol(K, Decl(ttttBodilessPatternInitializerChecked.ts, 6, 19))
+>p : Symbol(p, Decl(ttttBodilessPatternInitializerChecked.ts, 6, 58))
+>q : Symbol(q, Decl(ttttBodilessPatternInitializerChecked.ts, 6, 69))
+>K : Symbol(K, Decl(ttttBodilessPatternInitializerChecked.ts, 6, 19))
+
+declare function f1({ p, ...rest } = g()): void;
+>f1 : Symbol(f1, Decl(ttttBodilessPatternInitializerChecked.ts, 6, 77))
+>p : Symbol(p, Decl(ttttBodilessPatternInitializerChecked.ts, 7, 21))
+>rest : Symbol(rest, Decl(ttttBodilessPatternInitializerChecked.ts, 7, 24))
+>g : Symbol(g, Decl(ttttBodilessPatternInitializerChecked.ts, 0, 0))
+
+declare function f2({ p, ...rest } = h(1, ["x"], 3)): void;
+>f2 : Symbol(f2, Decl(ttttBodilessPatternInitializerChecked.ts, 7, 48))
+>p : Symbol(p, Decl(ttttBodilessPatternInitializerChecked.ts, 8, 21))
+>rest : Symbol(rest, Decl(ttttBodilessPatternInitializerChecked.ts, 8, 24))
+>h : Symbol(h, Decl(ttttBodilessPatternInitializerChecked.ts, 5, 56))
+
+declare function f3({ p } = h(1, ["x"], 3)): void;
+>f3 : Symbol(f3, Decl(ttttBodilessPatternInitializerChecked.ts, 8, 59))
+>p : Symbol(p, Decl(ttttBodilessPatternInitializerChecked.ts, 9, 21))
+>h : Symbol(h, Decl(ttttBodilessPatternInitializerChecked.ts, 5, 56))
+
+declare function f4({ p, ...rest } = h("x", ["x"])): void;
+>f4 : Symbol(f4, Decl(ttttBodilessPatternInitializerChecked.ts, 9, 50))
+>p : Symbol(p, Decl(ttttBodilessPatternInitializerChecked.ts, 10, 21))
+>rest : Symbol(rest, Decl(ttttBodilessPatternInitializerChecked.ts, 10, 24))
+>h : Symbol(h, Decl(ttttBodilessPatternInitializerChecked.ts, 5, 56))
+
+declare function f5({ p: pp } = h("x", ["x"])): void;
+>f5 : Symbol(f5, Decl(ttttBodilessPatternInitializerChecked.ts, 10, 58))
+>p : Symbol(p, Decl(ttttBodilessPatternInitializerChecked.ts, 6, 58))
+>pp : Symbol(pp, Decl(ttttBodilessPatternInitializerChecked.ts, 11, 21))
+>h : Symbol(h, Decl(ttttBodilessPatternInitializerChecked.ts, 5, 56))
+
+declare function f6({ p }: { p: number } = h("x", ["x"])): void;
+>f6 : Symbol(f6, Decl(ttttBodilessPatternInitializerChecked.ts, 11, 53))
+>p : Symbol(p, Decl(ttttBodilessPatternInitializerChecked.ts, 12, 21))
+>p : Symbol(p, Decl(ttttBodilessPatternInitializerChecked.ts, 12, 28))
+>h : Symbol(h, Decl(ttttBodilessPatternInitializerChecked.ts, 5, 56))
+
+declare function f7(o = h("x", ["x"])): void;
+>f7 : Symbol(f7, Decl(ttttBodilessPatternInitializerChecked.ts, 12, 64))
+>o : Symbol(o, Decl(ttttBodilessPatternInitializerChecked.ts, 13, 20))
+>h : Symbol(h, Decl(ttttBodilessPatternInitializerChecked.ts, 5, 56))
+
+type T1 = ([a] = [g("x")]) => void;
+>T1 : Symbol(T1, Decl(ttttBodilessPatternInitializerChecked.ts, 13, 45))
+>a : Symbol(a, Decl(ttttBodilessPatternInitializerChecked.ts, 14, 12))
+>g : Symbol(g, Decl(ttttBodilessPatternInitializerChecked.ts, 0, 0))
+
+interface I2 { m([a] = [g("x")]): void }
+>I2 : Symbol(I2, Decl(ttttBodilessPatternInitializerChecked.ts, 14, 35))
+>m : Symbol(I2.m, Decl(ttttBodilessPatternInitializerChecked.ts, 15, 14))
+>a : Symbol(a, Decl(ttttBodilessPatternInitializerChecked.ts, 15, 18))
+>g : Symbol(g, Decl(ttttBodilessPatternInitializerChecked.ts, 0, 0))
+
+declare class C3 { m([a] = [g("x")]): void }
+>C3 : Symbol(C3, Decl(ttttBodilessPatternInitializerChecked.ts, 15, 40))
+>m : Symbol(C3.m, Decl(ttttBodilessPatternInitializerChecked.ts, 16, 18))
+>a : Symbol(a, Decl(ttttBodilessPatternInitializerChecked.ts, 16, 22))
+>g : Symbol(g, Decl(ttttBodilessPatternInitializerChecked.ts, 0, 0))
+
+declare function f8([] = [g("x")]): void;
+>f8 : Symbol(f8, Decl(ttttBodilessPatternInitializerChecked.ts, 16, 44))
+>g : Symbol(g, Decl(ttttBodilessPatternInitializerChecked.ts, 0, 0))
+
+declare function f9([, ] = [g("x")]): void;
+>f9 : Symbol(f9, Decl(ttttBodilessPatternInitializerChecked.ts, 17, 41))
+>g : Symbol(g, Decl(ttttBodilessPatternInitializerChecked.ts, 0, 0))
+
+declare function f10({ a: [b] } = { a: [g("x")] }): void;
+>f10 : Symbol(f10, Decl(ttttBodilessPatternInitializerChecked.ts, 18, 43))
+>a : Symbol(a, Decl(ttttBodilessPatternInitializerChecked.ts, 19, 35))
+>b : Symbol(b, Decl(ttttBodilessPatternInitializerChecked.ts, 19, 27))
+>a : Symbol(a, Decl(ttttBodilessPatternInitializerChecked.ts, 19, 35))
+>g : Symbol(g, Decl(ttttBodilessPatternInitializerChecked.ts, 0, 0))
+
+declare function f11([a] = [() => { g("x"); }]): void;
+>f11 : Symbol(f11, Decl(ttttBodilessPatternInitializerChecked.ts, 19, 57))
+>a : Symbol(a, Decl(ttttBodilessPatternInitializerChecked.ts, 20, 22))
+>g : Symbol(g, Decl(ttttBodilessPatternInitializerChecked.ts, 0, 0))
+
+function f12([a] = [g("x")]): void;
+>f12 : Symbol(f12, Decl(ttttBodilessPatternInitializerChecked.ts, 20, 54), Decl(ttttBodilessPatternInitializerChecked.ts, 21, 35))
+>a : Symbol(a, Decl(ttttBodilessPatternInitializerChecked.ts, 21, 14))
+>g : Symbol(g, Decl(ttttBodilessPatternInitializerChecked.ts, 0, 0))
+
+function f12() {}
+>f12 : Symbol(f12, Decl(ttttBodilessPatternInitializerChecked.ts, 20, 54), Decl(ttttBodilessPatternInitializerChecked.ts, 21, 35))
+
