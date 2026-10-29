@@ -792,6 +792,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         // (tsc's checkAndReportErrorForUsingNamespaceAsTypeOrValue)
         error_ctx_error_d(errs, identifier_expr_name(me), 2708, "Cannot use namespace '", identifier_expr_name(me), "' as a value.");
         my symbol = scope_resolve(names, span_sv(identifier_expr_name(me)), SYMBOL_NAMESPACE_MODULE);
+        my namespace_not_value = true;
     } else if (scope_get_type(names, span_sv(identifier_expr_name(me)), nullptr) &&
         !scope_hides_base_expression_type_parameter(names, scope_resolve(names, span_sv(identifier_expr_name(me)), SYMBOL_TYPE)) &&
         // (A keyword type is no name tsc's resolveName finds: only any, string, number, boolean, never and unknown are
@@ -1990,7 +1991,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
         case EXPR_IDENTIFIER:
             identifier_expr_lookup_names(&my identifier, names, errs);
             // `x = 1` doesn't read x (tsc's isWriteOnlyAccess)
-            if (assignment_target != FLOW_TARGET_DEFINITE || read_target) {
+            if ((assignment_target != FLOW_TARGET_DEFINITE || read_target) && !my identifier.namespace_not_value) {
                 unused_mark_referenced(names, (Symbol*)my identifier.symbol, SYMBOL_VALUE);
             }
             my identifier.flow = flow_builder_reference(flow, my inner_span);

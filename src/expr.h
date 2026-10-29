@@ -70,6 +70,9 @@ typedef struct IdentifierExpr {
     // The namespace an extended interface's name starts with (`M` of `extends M.I`, TS2689): no target, but the
     // symbols baseline shows `symbol` (tsc's getSymbolAtLocation of a property access's object)
     bool namespace_as_value : 1;
+    // A namespace used as a value (TS2708): `symbol` is what the name finds, but no value was found, so the name
+    // isn't a reference (tsc's resolveName failed: nothing marked referenced)
+    bool namespace_not_value : 1;
     bool shorthand : 1; // The value of a shorthand property `{ a }`
     bool shorthand_unchecked : 1; // `{ a = 1 }` outside a pattern: tsc checks the default instead of the name
     // `super.x` / `super[x]` (the base instance), `super(...)` (the base constructor)
