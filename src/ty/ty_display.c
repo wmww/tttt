@@ -6215,6 +6215,14 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
                 out_lit(d, "set ");
                 display_member_name(me, d, prop);
                 out_lit(d, "(");
+                // (The setter's signature has its return type serialized too, which the pseudo checker infers from the
+                // body: tsgo's serializeReturnTypeForSignature reports the inference fallback there, createAccessorTypeError
+                // at the setter's parameter)
+                if (prop_decl_rare(declared->decl)->setter) {
+                    PseudoReporter storage;
+                    pseudo_report(display_reporter(d, &storage),
+                        (PseudoError){ .kind = PSEUDO_ERROR_FUNCTION, .function = prop_decl_rare(declared->decl)->setter });
+                }
                 // (The parameter's name is its declaration's, reused)
                 if (prop_decl_rare(declared->decl)->setter) {
                     cstr param = cstr_null;

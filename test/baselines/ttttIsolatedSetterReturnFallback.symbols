@@ -1,0 +1,43 @@
+//// [test/cases/ttttIsolatedSetterReturnFallback.ts] ////
+
+=== ttttIsolatedSetterReturnFallback.ts ===
+// An object literal the pseudo checker can't type (an accessor pair without annotations) is printed from the checker's type:
+// an accessor pair whose types differ prints as both signatures, and the setter's return type is serialized from
+// the pseudo checker's inference of its body (serializeReturnTypeForSignature): an inference fallback, TS9009 at
+// the setter's parameter. A pair with one type is a property, nothing more. Seed 20261119,
+// isolatedDeclarationErrorsObjects ann-number-string
+export let o = {
+>o : Symbol(o, Decl(ttttIsolatedSetterReturnFallback.ts, 5, 10))
+
+    get bad() { return 0 },
+>bad : Symbol(bad, Decl(ttttIsolatedSetterReturnFallback.ts, 5, 16), Decl(ttttIsolatedSetterReturnFallback.ts, 6, 27))
+
+    set bad(value) { },
+>bad : Symbol(bad, Decl(ttttIsolatedSetterReturnFallback.ts, 5, 16), Decl(ttttIsolatedSetterReturnFallback.ts, 6, 27))
+>value : Symbol(value, Decl(ttttIsolatedSetterReturnFallback.ts, 7, 12))
+
+    get differ(): number { return 0 },
+>differ : Symbol(differ, Decl(ttttIsolatedSetterReturnFallback.ts, 7, 23), Decl(ttttIsolatedSetterReturnFallback.ts, 8, 38))
+
+    set differ(value: string) { },
+>differ : Symbol(differ, Decl(ttttIsolatedSetterReturnFallback.ts, 7, 23), Decl(ttttIsolatedSetterReturnFallback.ts, 8, 38))
+>value : Symbol(value, Decl(ttttIsolatedSetterReturnFallback.ts, 9, 15))
+
+    get same(): number { return 0 },
+>same : Symbol(same, Decl(ttttIsolatedSetterReturnFallback.ts, 9, 34), Decl(ttttIsolatedSetterReturnFallback.ts, 10, 36))
+
+    set same(value: number) { },
+>same : Symbol(same, Decl(ttttIsolatedSetterReturnFallback.ts, 9, 34), Decl(ttttIsolatedSetterReturnFallback.ts, 10, 36))
+>value : Symbol(value, Decl(ttttIsolatedSetterReturnFallback.ts, 11, 13))
+}
+export let fine = {
+>fine : Symbol(fine, Decl(ttttIsolatedSetterReturnFallback.ts, 13, 10))
+
+    get differ(): number { return 0 },
+>differ : Symbol(differ, Decl(ttttIsolatedSetterReturnFallback.ts, 13, 19), Decl(ttttIsolatedSetterReturnFallback.ts, 14, 38))
+
+    set differ(value: string) { },
+>differ : Symbol(differ, Decl(ttttIsolatedSetterReturnFallback.ts, 13, 19), Decl(ttttIsolatedSetterReturnFallback.ts, 14, 38))
+>value : Symbol(value, Decl(ttttIsolatedSetterReturnFallback.ts, 15, 15))
+}
+
