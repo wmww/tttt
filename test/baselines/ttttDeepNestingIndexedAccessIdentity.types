@@ -1,0 +1,53 @@
+//// [test/cases/ttttDeepNestingIndexedAccessIdentity.ts] ////
+
+=== ttttDeepNestingIndexedAccessIdentity.ts ===
+// Deep nesting takes an indexed access's object type for its recursion identity the way it takes a type (tsc's
+// getRecursionIdentityTarget): an instantiated mapped type unwrapped to its modifiers type, an intersection by its
+// members. `Omit<Scope & {...}, "database">` against a type parameter goes through `(Scope & {...})[P]` -> `Input[P]`,
+// `Scope` -> `Input`, `{...}[P]` -> `Input[P]`: the Pick's literal is on the source stack three times, the type
+// parameter on the target's, so the comparable relation is a Maybe and the cast is fine (openclaw's
+// session-transcript-worker-readers.ts). Without the Pick nothing nests and tsgo reports TS2352.
+type Scope = Pick<{ agentId: string; other: number }, "agentId">;
+>Scope : Scope
+>agentId : string
+>other : number
+
+type M = Omit<Scope & { kind: "c"; database: string }, "database">;
+>M : M
+>kind : "c"
+>database : string
+
+export function r<K extends "c", Input extends object>(kind: K, input: Input) {
+>r : <K extends "c", Input extends object>(kind: K, input: Input) => Extract<M, { kind: K; }>
+>kind : K
+>input : Input
+
+  return { kind, ...input } as Extract<M, { kind: K }>;
+>{ kind, ...input } as Extract<M, { kind: K }> : Extract<M, { kind: K; }>
+>{ kind, ...input } : { kind: K; } & Input
+>kind : K
+>input : Input
+>kind : K
+}
+type Plain = { agentId: string };
+>Plain : Plain
+>agentId : string
+
+type N = Omit<Plain & { kind: "c"; database: string }, "database">;
+>N : N
+>kind : "c"
+>database : string
+
+export function s<K extends "c", Input extends object>(kind: K, input: Input) {
+>s : <K extends "c", Input extends object>(kind: K, input: Input) => Extract<N, { kind: K; }>
+>kind : K
+>input : Input
+
+  return { kind, ...input } as Extract<N, { kind: K }>;
+>{ kind, ...input } as Extract<N, { kind: K }> : Extract<N, { kind: K; }>
+>{ kind, ...input } : { kind: K; } & Input
+>kind : K
+>input : Input
+>kind : K
+}
+

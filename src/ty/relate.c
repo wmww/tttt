@@ -7147,9 +7147,22 @@ static Ty const* mapped_target_with_symbol(Checker* me, Ty const* ty) {
     return ty;
 }
 
-// What `ty` stands for in deep nesting: an instantiated mapped type unwrapped (mapped_target_with_symbol())
+// What `ty` stands for in deep nesting (tsc's getRecursionIdentityTarget): an indexed access's object type, an
+// instantiated mapped type unwrapped (mapped_target_with_symbol()), recursively: `(Scope & { a: 1 })[P]` stands for the
+// intersection, so it matches `Scope`'s identity (tsgo's Omit of an intersection with a Pick against a type parameter
+// target, openclaw's Extract cast)
 static Ty const* recursion_key(Checker* me, Ty const* ty) {
-    return is_mapped_instance(ty) ? mapped_target_with_symbol(me, ty) : ty;
+    for (u32 depth = 0; depth < 64; depth++) {
+        if (ty->kind == TY_INDEXED) {
+            ty = ty->indexed.object;
+            continue;
+        }
+        if (!is_mapped_instance(ty)) break;
+        Ty const* unwrapped = mapped_target_with_symbol(me, ty);
+        if (unwrapped == ty) break;
+        ty = unwrapped;
+    }
+    return ty;
 }
 
 // A stack entry's recursion identity, worked out once when it's pushed: an intersection's key (tagged with bit 0) has

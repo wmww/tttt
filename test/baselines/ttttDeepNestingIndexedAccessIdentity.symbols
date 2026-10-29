@@ -1,0 +1,68 @@
+//// [test/cases/ttttDeepNestingIndexedAccessIdentity.ts] ////
+
+=== ttttDeepNestingIndexedAccessIdentity.ts ===
+// Deep nesting takes an indexed access's object type for its recursion identity the way it takes a type (tsc's
+// getRecursionIdentityTarget): an instantiated mapped type unwrapped to its modifiers type, an intersection by its
+// members. `Omit<Scope & {...}, "database">` against a type parameter goes through `(Scope & {...})[P]` -> `Input[P]`,
+// `Scope` -> `Input`, `{...}[P]` -> `Input[P]`: the Pick's literal is on the source stack three times, the type
+// parameter on the target's, so the comparable relation is a Maybe and the cast is fine (openclaw's
+// session-transcript-worker-readers.ts). Without the Pick nothing nests and tsgo reports TS2352.
+type Scope = Pick<{ agentId: string; other: number }, "agentId">;
+>Scope : Symbol(Scope, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 0, 0))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>agentId : Symbol(agentId, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 6, 19))
+>other : Symbol(other, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 6, 36))
+
+type M = Omit<Scope & { kind: "c"; database: string }, "database">;
+>M : Symbol(M, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 6, 65))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>Scope : Symbol(Scope, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 0, 0))
+>kind : Symbol(kind, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 7, 23))
+>database : Symbol(database, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 7, 34))
+
+export function r<K extends "c", Input extends object>(kind: K, input: Input) {
+>r : Symbol(r, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 7, 67))
+>K : Symbol(K, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 8, 18))
+>Input : Symbol(Input, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 8, 32))
+>kind : Symbol(kind, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 8, 55))
+>K : Symbol(K, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 8, 18))
+>input : Symbol(input, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 8, 63))
+>Input : Symbol(Input, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 8, 32))
+
+  return { kind, ...input } as Extract<M, { kind: K }>;
+>kind : Symbol(kind, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 9, 10))
+>input : Symbol(input, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 8, 63))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>M : Symbol(M, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 6, 65))
+>kind : Symbol(kind, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 9, 43))
+>K : Symbol(K, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 8, 18))
+}
+type Plain = { agentId: string };
+>Plain : Symbol(Plain, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 10, 1))
+>agentId : Symbol(agentId, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 11, 14))
+
+type N = Omit<Plain & { kind: "c"; database: string }, "database">;
+>N : Symbol(N, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 11, 33))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>Plain : Symbol(Plain, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 10, 1))
+>kind : Symbol(kind, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 12, 23))
+>database : Symbol(database, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 12, 34))
+
+export function s<K extends "c", Input extends object>(kind: K, input: Input) {
+>s : Symbol(s, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 12, 67))
+>K : Symbol(K, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 13, 18))
+>Input : Symbol(Input, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 13, 32))
+>kind : Symbol(kind, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 13, 55))
+>K : Symbol(K, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 13, 18))
+>input : Symbol(input, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 13, 63))
+>Input : Symbol(Input, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 13, 32))
+
+  return { kind, ...input } as Extract<N, { kind: K }>;
+>kind : Symbol(kind, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 14, 10))
+>input : Symbol(input, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 13, 63))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>N : Symbol(N, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 11, 33))
+>kind : Symbol(kind, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 14, 43))
+>K : Symbol(K, Decl(ttttDeepNestingIndexedAccessIdentity.ts, 13, 18))
+}
+
