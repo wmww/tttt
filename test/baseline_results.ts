@@ -12361,6 +12361,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttAsyncSuggestionAwaitsReturn': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAugmentationCloneChain': {
         errors: true,
         symbols: false,
@@ -16602,6 +16607,11 @@ const baselines = {
         symbols: true,
         types: true,
         dts: true,
+    },
+    'ttttStickyExcessErrorNode': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttStrictDeleteInUncheckedExpressions': {
         errors: true,
