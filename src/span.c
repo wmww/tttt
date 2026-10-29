@@ -53,7 +53,7 @@ const char* span_line_start(Span me) {
         return me.buf;
     } else {
         // A span that starts on a line break belongs to the line that line break ends
-        return source_file_start(span_source(me)) + span_source(me)->line_starts[span_line_index(me)];
+        return source_file_start(span_source(me)) + source_file_lines(span_source(me)).starts[span_line_index(me)];
     }
 }
 
@@ -67,8 +67,9 @@ const char* span_line_end(Span me) {
         SourceFile const* source = span_source(me);
         unsigned line = span_line_index(me);
         const char* text = source_file_start(source);
-        if (line + 1 >= source->line_count) return text + cstr_size(&source->contents);
-        const char* end = text + source->line_starts[line + 1];
+        LineStarts lines = source_file_lines(source);
+        if (line + 1 >= lines.count) return text + cstr_size(&source->contents);
+        const char* end = text + lines.starts[line + 1];
         if (end[-1] == '\n') end -= end - 1 > text && end[-2] == '\r' ? 2 : 1;
         else if (end[-1] == '\r') end--;
         else end -= 3; // U+2028/9

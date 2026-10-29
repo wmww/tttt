@@ -13,10 +13,11 @@
 
 // The byte offset of a 1-based line and 1-based column counted in UTF-16 units (tsc's), or -1 past the line's end
 static i64 utf16_offset(SourceFile const* file, u32 line, u32 col) {
-    if (line == 0 || line > file->line_count) return -1;
+    LineStarts lines = source_file_lines(file);
+    if (line == 0 || line > lines.count) return -1;
     char const* text = cstr_str(&file->contents);
     i64 size = cstr_size(&file->contents);
-    i64 at = file->line_starts[line - 1];
+    i64 at = lines.starts[line - 1];
     for (u32 units = 1; units < col; at++) {
         if (at >= size) return -1;
         unsigned char c = (unsigned char)text[at];

@@ -152,10 +152,11 @@ typedef struct SourceFile {
     uint8_t has_link_tag;
     // Not 0: contents is a private read-only mapping of the file (source_text_map()), unmapped by source_file_drop()
     u32 text_mapping;
-    // Offset of the first character of each line, for span_line_index(). Diagnostics are sorted and printed by line,
-    // counting newlines from the start of the file for each of them was a fifth of a run with 10k errors
-    u32* line_starts;
-    u32 line_count;
+    // Offset of the first character of each line, for span_line_index(), made on the first use (source_file_lines()):
+    // the count, then the offsets. Diagnostics are sorted and printed by line, counting newlines from the start of the
+    // file for each of them was a fifth of a run with 10k errors; but only diagnostics, comment directives and
+    // declaration maps read them, and a memchr per line of every file was 2% of vscode's front end
+    _Atomic(u32*) lines;
     Block ast;
     AstArena arena; // What the parser allocated for `ast` (ast_alloc.h)
     // If true this file is not typechecked and duplicate identifiers are blamed on the other file exclusively.
@@ -453,6 +454,11 @@ typedef enum DeferStat {
 void defer_stat_add(DeferStat stat, i64 n);
 
 SourceFile source_file_make(cstr canonical_path, cstr contents);
+typedef struct LineStarts {
+    u32 const* starts; // The offset of each line's first character
+    u32 count;
+} LineStarts;
+LineStarts source_file_lines(SourceFile const* me);
 // The module format the file is emitted in (tsc's getEmitModuleFormatOfFile): with node16/nodenext its implied format,
 // else a .cts/.mts extension or an explicit package.json `type` decide, else the `module` option
 ModuleKind source_file_emit_module_kind(SourceFile const* me);

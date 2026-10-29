@@ -81,12 +81,18 @@ cstr path_for_message(csview path) {
 
 SourceFile source_file_make(cstr canonical_path, cstr contents) {
     check(cstr_size(&canonical_path));
-    const char* start = cstr_str(&contents);
-    const char* end = start + cstr_size(&contents);
+    return (SourceFile){
+        .canonical_path = canonical_path,
+        .contents = contents,
+    };
+}
+
+// The count, then the line starts
+static u32* compute_line_starts(const char* start, const char* end) {
     u32 cap = 1024;
-    u32* line_starts = malloc(sizeof(u32) * cap);
-    u32 line_count = 0;
-    line_starts[line_count++] = 0;
+    u32* lines = malloc(sizeof(u32) * cap);
+    u32 count = 1;
+    lines[count++] = 0;
     // tsc's computeLineStarts: \r\n, \r, \n, U+2028 and U+2029 end a line. Most files have only \n and \r\n: memchr
     // (SIMD) finds those, and checking for the others with memchr is much cheaper than looking at every byte
     bool only_lf = !has_other_line_breaks(start, end);
@@ -102,30 +108,42 @@ SourceFile source_file_make(cstr canonical_path, cstr contents) {
             else if (c == 0xE2 && pos + 2 < end && (unsigned char)pos[1] == 0x80 && ((unsigned char)pos[2] & 0xFE) == 0xA8) pos += 3;
             else { pos++; continue; }
         }
-        if (line_count == cap) {
+        if (count == cap) {
             cap *= 2;
-            line_starts = realloc(line_starts, sizeof(u32) * cap);
+            lines = realloc(lines, sizeof(u32) * cap);
         }
-        line_starts[line_count++] = (u32)(pos - start);
+        lines[count++] = (u32)(pos - start);
     }
-    // (Most files are much shorter than the first guess: 9 MB of the nest corpus was unused room)
-    if (line_count < cap) line_starts = realloc(line_starts, sizeof(u32) * line_count);
-    return (SourceFile){
-        .canonical_path = canonical_path,
-        .contents = contents,
-        .line_starts = line_starts,
-        .line_count = line_count,
-    };
+    if (count < cap) lines = realloc(lines, sizeof(u32) * count);
+    lines[0] = count - 1;
+    return lines;
+}
+
+// (Made by whichever thread asks first; two at once both make them and one keeps its own)
+LineStarts source_file_lines(SourceFile const* me) {
+    SourceFile* file = (SourceFile*)me;
+    u32* lines = atomic_load_explicit(&file->lines, memory_order_acquire);
+    if (!lines) {
+        const char* start = cstr_str(&my contents);
+        u32* made = compute_line_starts(start, start + cstr_size(&my contents));
+        if (atomic_compare_exchange_strong_explicit(&file->lines, &lines, made, memory_order_acq_rel, memory_order_acquire)) {
+            lines = made;
+        } else {
+            free(made);
+        }
+    }
+    return (LineStarts){ lines + 1, lines[0] };
 }
 
 unsigned source_file_line_index(SourceFile const* me, const char* pos) {
     u32 offset = (u32)(pos - source_file_start(me));
+    LineStarts lines = source_file_lines(me);
     // The last line that starts at or before offset
     u32 low = 0;
-    u32 high = my line_count;
+    u32 high = lines.count;
     while (high - low > 1) {
         u32 mid = low + (high - low) / 2;
-        if (my line_starts[mid] <= offset) low = mid;
+        if (lines.starts[mid] <= offset) low = mid;
         else high = mid;
     }
     return low;
@@ -169,7 +187,7 @@ void source_file_drop(SourceFile* me) {
     cstr_drop(&my absolute_path);
     if (my text_mapping) source_text_unmap(my text_mapping);
     else cstr_drop(&my contents);
-    free(my line_starts);
+    free(atomic_load(&my lines));
     block_drop(&my ast);
     ast_arena_drop(&my arena);
     cstr_drop(&my decl_override);

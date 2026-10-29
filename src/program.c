@@ -3767,8 +3767,9 @@ static CommentDirective* preceding_comment_directive(SourceFile* source, Span sp
     for (intptr_t line = (intptr_t)source_file_line_index(source, span.buf) - 1; line >= 0; line--) {
         CommentDirective* directive = source_file_comment_directive_at_line(source, (u32)line);
         if (directive) return directive;
-        const char* c = text + source->line_starts[line];
-        const char* end = line + 1 < source->line_count ? text + source->line_starts[line + 1] : text_end;
+        LineStarts lines = source_file_lines(source);
+        const char* c = text + lines.starts[line];
+        const char* end = line + 1 < lines.count ? text + lines.starts[line + 1] : text_end;
         while (c < end && (*c == ' ' || *c == '\t' || *c == '\r' || *c == '\n' || *c == '\v' || *c == '\f')) c++;
         if (c < end && !(c + 1 < end && c[0] == '/' && c[1] == '/')) break;
     }

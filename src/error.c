@@ -149,7 +149,8 @@ static void pretty_code_span(cstr* out, Span span, char const* indent, char cons
     unsigned last_line_in_file = source_file_line_index(source, text_end);
     unsigned first_char = span_col_index(span);
     unsigned last_char = 0;
-    for (char const* c = text + source->line_starts[last_line]; c < span_end_ptr(span); c++) last_char += utf8_byte_utf16_units(c, text + source->line_starts[last_line]);
+    LineStarts lines = source_file_lines(source);
+    for (char const* c = text + lines.starts[last_line]; c < span_end_ptr(span); c++) last_char += utf8_byte_utf16_units(c, text + lines.starts[last_line]);
     if (span_start_ptr(span) == span_end_ptr(span)) last_char++; // (the character after an empty span)
 
     bool more_than_five = last_line - first_line >= 4;
@@ -162,8 +163,8 @@ static void pretty_code_span(cstr* out, Span span, char const* indent, char cons
             cstr_append_d(out, DEFAULT_DISPLAY, indent, PRETTY_GUTTER, repeated_d(" ", gutter - 3), "..." PRETTY_RESET " ", newline);
             i = last_line - 1;
         }
-        char const* line_start = text + source->line_starts[i];
-        char const* line_end = i < last_line_in_file ? text + source->line_starts[i + 1] : text_end;
+        char const* line_start = text + lines.starts[i];
+        char const* line_end = i < last_line_in_file ? text + lines.starts[i + 1] : text_end;
         line_end = pretty_trim_end(line_start, line_end);
         int width = snprintf(digits, sizeof(digits), "%u", i + 1);
         cstr_append_d(out, DEFAULT_DISPLAY, indent, PRETTY_GUTTER, repeated_d(" ", gutter - width), digits, PRETTY_RESET " ");

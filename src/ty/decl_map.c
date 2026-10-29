@@ -106,6 +106,7 @@ cstr decl_map_take(cstr* text, SourceFile const* source) {
     Generator gen = { .mappings = cstr_init() };
     char const* src = cstr_str(&source->contents);
     u32 src_size = (u32)cstr_size(&source->contents);
+    LineStarts lines = source_file_lines(source);
     // (tsc's text has no byte order mark)
     u32 bom = src_size >= 3 && (unsigned char)src[0] == 0xEF && (unsigned char)src[1] == 0xBB && (unsigned char)src[2] == 0xBF ? 3 : 0;
     char* buf = cstr_data(text);
@@ -123,18 +124,18 @@ cstr decl_map_take(cstr* text, SourceFile const* source) {
             for (int i = 0; i < 8; i++) offset = (offset << 4) | (u32)(buf[from + 1 + i] - 0x10);
             from += DECL_MAP_MARK_SIZE;
             if (offset > src_size) continue;
-            if (source_line >= source->line_count || source->line_starts[source_line] > offset) {
+            if (source_line >= lines.count || lines.starts[source_line] > offset) {
                 // (Back: the last line starting at or before offset)
-                u32 lo = 0, hi = source->line_count;
+                u32 lo = 0, hi = lines.count;
                 while (hi - lo > 1) {
                     u32 mid = lo + (hi - lo) / 2;
-                    if (source->line_starts[mid] <= offset) lo = mid;
+                    if (lines.starts[mid] <= offset) lo = mid;
                     else hi = mid;
                 }
                 source_line = lo;
             }
-            while (source_line + 1 < source->line_count && source->line_starts[source_line + 1] <= offset) source_line++;
-            u32 line_start = source->line_starts[source_line];
+            while (source_line + 1 < lines.count && lines.starts[source_line + 1] <= offset) source_line++;
+            u32 line_start = lines.starts[source_line];
             if (source_line == 0 && offset >= bom) line_start = bom;
             if (col_line != source_line || col_offset > offset || col_offset < line_start) {
                 col_line = source_line;
