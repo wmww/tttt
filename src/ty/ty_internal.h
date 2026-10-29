@@ -304,6 +304,25 @@ static inline u32 visit_key_hash(VisitKey k) {
     return (u32)(((k.pair ^ (u64)k.mode * 0xFF51AFD7ED558CCDull) * 0x9E3779B97F4A7C15ull) >> 32);
 }
 
+// A pair in an inference's visited set, in the order they were added: the best priority its walk inferred at (tsc's
+// invokeOnce status; UINT32_MAX while it runs) and its slot in the set's index
+typedef struct VisitEntry {
+    VisitKey key;
+    u32 priority;
+    u32 at;
+} VisitEntry;
+
+// The pairs, and an open-addressing index of them (entry number + 1, 0 empty). Clearing it zeroes only the index slots
+// its entries use, so a set is reused by inference after inference at the cost of what each one added
+typedef struct VisitedSet {
+    VisitEntry* entries;
+    u32* index;
+    u32 len;
+    u32 cap;
+    u32 index_cap;
+    struct VisitedSet* next; // In the thread's pool
+} VisitedSet;
+
 typedef struct Inference {
     InferParam* params;
     u32 len;
@@ -338,11 +357,9 @@ typedef struct Inference {
     Ty const* visiting_sources[INFER_MAX_DEPTH];
     Ty const* visiting_targets[INFER_MAX_DEPTH];
     // The (source id, target id) object pairs one infer_types() walked already, by mode (tsc's `visited`): a type
-    // graph is a DAG with a lot of sharing, and walking every path to a pair is exponential. Open addressing
-    VisitKey* visited;
-    u32* visited_priority; // Of each pair in visited: the best priority its walk inferred at (tsc's invokeOnce status)
-    u32 visited_cap;
-    u32 visited_len;
+    // graph is a DAG with a lot of sharing, and walking every path to a pair is exponential. Null until the first pair:
+    // taken from the thread's pool of sets, and given back cleared, with its arrays, by inference_drop()
+    VisitedSet* visited;
     // The visited pairs whose walk was cut short by circularity: met again, they are circular too (tsc's invokeOnce
     // remembers each pair's inference priority)
     VisitKey* circular;
