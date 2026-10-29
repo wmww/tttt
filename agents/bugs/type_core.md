@@ -62,7 +62,17 @@ passing tests).
   (cor8 2026-10-28: not the spread: any object literal under a non-literal computed key loses the readonly in tsgo,
   `dc({ [k]: { input: 1 } })` is `{ readonly [k]: { input: 1; }; }` (the literal 1 kept, so still a const context),
   where `dc({ a: { input: 1 } })` and `dc([{ input: 1 }])` have readonly members. Which step of the index signature's
-  value type (getObjectLiteralIndexInfo) or of its printing drops it wasn't found by reading.) [open]
+  value type (getObjectLiteralIndexInfo) or of its printing drops it wasn't found by reading.)
+  (cor10 2026-10-29: found, printing only. The type is readonly in tsgo (`a[k].push(1)` is TS2339 on `readonly [1]`,
+  `a[k]` prints `readonly [1]`); only the object's `[k]: ...` member prints the component's own symbol type:
+  nodebuilderimpl.go's indexInfoToObjectComputedNamesOrSignatureDeclaration prints getTypeOfSymbol(e.Symbol()), the
+  property assignment re-checked as a declaration, where isConstContext(array) asks the final contextual type (the
+  instantiated `{ readonly [x: string]: readonly [1] }`, no type variable): a tuple context keeping the literal, not a
+  const one. Under `as const` the re-check is const again (path 1 of isConstContext), so it prints readonly. Fix
+  sketch: IndexComponent gets a declared type re-derived at creation (expr.c literal_members_index) when the object's
+  const context came from a const type variable rather than an assertion: the member value checked non-const with its
+  const type as contextual type; that needs ExprCtx to tell the two const origins apart (43 is_const sites), so not
+  done.) [open]
 
 - (types only) ttttNonNullOperandNotInferential: the diagnostics match; `mapping[k]` inside `mapping[k]!` in a generic
   call's argument prints `M[keyof S]` where tsc prints its constraint `string | number | undefined` (the non-null
