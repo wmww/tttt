@@ -875,6 +875,8 @@ static inline bool at_eof(Parser const* p, char const* at) {
     return !*at && !nul_at_inside_file(p, at);
 }
 static int invalid_char_size(Parser const* p, const char* c);
+static inline int identifier_char_size(const char* c, bool start);
+static inline bool is_js_ascii_space(char c);
 // A checker's code (TS2xxx) the parser reports in tttt: not one of tsc's parse diagnostics, which parseErrorAtPosition
 // compares with. (tsc's parser reports a few TS2xxx itself: parseErrorForInvalidName's, JSX's TS2657, `super<T>`'s,
 // TS2809, TS2880)
@@ -910,6 +912,26 @@ static Error* parse_error_inner(Parser* me, Span span, unsigned ts_code, cstr me
         cstr_drop(&message);
         return parse_error_inner(me, span_make(my shared->source, at, at + 2), 18026,
             cstr_lit("'#!' can only be used at the start of a file."), false);
+    }
+    // Likewise a legacy octal literal's TS1121, which tsc's scanner reports as it reads the token, before the parser
+    // gets to say anything at it (`"a"02` is that, not ',' expected)
+    if (span_source(span) && !in_literal && ts_code != 1121 && at && at[0] == '0' && at[1] >= '0' && at[1] <= '7') {
+        const char* source_start = cstr_str(&my shared->source->contents);
+        const char* d = at + 1;
+        while (*d >= '0' && *d <= '7') d++;
+        bool token_start = at == source_start || !(identifier_char_size(at - 1, false) || at[-1] == '.');
+        if (token_start && !(*d >= '0' && *d <= '9') && !identifier_char_size(d, false) && *d != '.') {
+            double value = 0;
+            for (const char* q = at + 1; q < d; q++) value = value * 8 + (*q - '0');
+            const char* prev = at;
+            while (prev > source_start && is_js_ascii_space(prev[-1])) prev--;
+            bool minus = prev > source_start && prev[-1] == '-' && !(prev - 1 > source_start && prev[-2] == '-');
+            char octal_text[64];
+            snprintf(octal_text, sizeof(octal_text), "%s0o%llo", minus ? "-" : "", (unsigned long long)value);
+            cstr_drop(&message);
+            return parse_error_inner(me, span_make(my shared->source, minus ? prev - 1 : at, d), 1121,
+                cstr_d("Octal literals are not allowed. Use the syntax '", octal_text, "'."), false);
+        }
     }
     // (A grammar error is the checker's to tsc: no position is taken by another; nor is a semantic one the parser
     // reports, TS2523/TS2524)

@@ -1,0 +1,14 @@
+ttttOctalScannerErrorFirst.ts(4,13): error TS1121: Octal literals are not allowed. Use the syntax '0o2'.
+ttttOctalScannerErrorFirst.ts(4,15): error TS1005: ',' expected.
+
+
+==== ttttOctalScannerErrorFirst.ts (2 errors) ====
+    // A legacy octal literal's TS1121 is the scanner's, reported as the token is read, before the parser's error at it:
+    // `"2015-01-"02""` is TS1121 at `02`, not ',' expected (seed 20261114, useRegexpGroups num-to-str)
+    declare function f(...a: any[]): void;
+    f("2015-01-"02"");
+                ~~
+!!! error TS1121: Octal literals are not allowed. Use the syntax '0o2'.
+                  ~~
+!!! error TS1005: ',' expected.
+    

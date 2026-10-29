@@ -1,0 +1,12 @@
+//// [test/cases/ttttOctalScannerErrorFirst.ts] ////
+
+=== ttttOctalScannerErrorFirst.ts ===
+// A legacy octal literal's TS1121 is the scanner's, reported as the token is read, before the parser's error at it:
+// `"2015-01-"02""` is TS1121 at `02`, not ',' expected (seed 20261114, useRegexpGroups num-to-str)
+declare function f(...a: any[]): void;
+>f : Symbol(f, Decl(ttttOctalScannerErrorFirst.ts, 0, 0))
+>a : Symbol(a, Decl(ttttOctalScannerErrorFirst.ts, 2, 19))
+
+f("2015-01-"02"");
+>f : Symbol(f, Decl(ttttOctalScannerErrorFirst.ts, 0, 0))
+
