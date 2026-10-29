@@ -1,0 +1,17 @@
+//// [test/cases/ttttArrowLineTerminatorGrammar.ts] ////
+
+=== ttttArrowLineTerminatorGrammar.ts ===
+// TS1200 (a line break before `=>`) is a grammar error, tsc's checkGrammarArrowFunction: a file with parse errors
+// doesn't get it (seed 20261115, arrowFunctionErrorSpan delete-stmt)
+declare function f(a: () => number): void;
+>f : Symbol(f, Decl(ttttArrowLineTerminatorGrammar.ts, 0, 0))
+>a : Symbol(a, Decl(ttttArrowLineTerminatorGrammar.ts, 2, 19))
+
+f(() => {
+>f : Symbol(f, Decl(ttttArrowLineTerminatorGrammar.ts, 0, 0))
+
+f(()
+>f : Symbol(f, Decl(ttttArrowLineTerminatorGrammar.ts, 0, 0))
+
+    => { });
+

@@ -1,0 +1,26 @@
+ttttArrowLineTerminatorGrammar.ts(4,3): error TS2345: Argument of type '() => void' is not assignable to parameter of type '() => number'.
+  Type 'void' is not assignable to type 'number'.
+ttttArrowLineTerminatorGrammar.ts(6,3): error TS2345: Argument of type '() => void' is not assignable to parameter of type '() => number'.
+  Type 'void' is not assignable to type 'number'.
+ttttArrowLineTerminatorGrammar.ts(8,1): error TS1005: '}' expected.
+
+
+==== ttttArrowLineTerminatorGrammar.ts (3 errors) ====
+    // TS1200 (a line break before `=>`) is a grammar error, tsc's checkGrammarArrowFunction: a file with parse errors
+    // doesn't get it (seed 20261115, arrowFunctionErrorSpan delete-stmt)
+    declare function f(a: () => number): void;
+    f(() => {
+      ~~~~~~~
+!!! error TS2345: Argument of type '() => void' is not assignable to parameter of type '() => number'.
+!!! error TS2345:   Type 'void' is not assignable to type 'number'.
+    
+    f(()
+      ~~
+        => { });
+    ~~~~~~~~~~
+!!! error TS2345: Argument of type '() => void' is not assignable to parameter of type '() => number'.
+!!! error TS2345:   Type 'void' is not assignable to type 'number'.
+    
+    
+!!! error TS1005: '}' expected.
+!!! related TS1007 ttttArrowLineTerminatorGrammar.ts:4:9: The parser expected to find a '}' to match the '{' token here.

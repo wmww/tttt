@@ -1631,8 +1631,9 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         cstr_drop(&name);
     }
 
+    // (A grammar error, tsc's checkGrammarArrowFunction: none in a file with parse errors)
     if (my newline_before_arrow) {
-        error_ctx_error_d(errs, function_impl_arrow_span(me), 1200, "Line terminator not permitted before arrow.");
+        error_ctx_grammar_error_d(errs, function_impl_arrow_span(me), 1200, "Line terminator not permitted before arrow.");
     }
 
     // A function expression's body is checked after the statements of its file (tsc's checkNodeDeferred): its
