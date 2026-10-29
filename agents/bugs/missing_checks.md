@@ -639,7 +639,7 @@ exportSpecifierReferencingOuterDeclaration3 [tsgo]. New:
   signature; tttt's parser bailed out (TS1068). Test ttttClassMemberVarBracket. [fixed 62df40f74] Left: tsgo's TS7006 and
   TS7019 for that index signature's untyped parameters `a` and `...b` (tttt reported none): the parser records them
   (InterfaceIndexKey.untyped_params), interface_member_typecheck reports them. Test ttttIndexSignatureUntypedParams.
-  [fixed]
+  [fixed e685116e7]
 - subtypeReductionWithAnyFunctionType_promoted return-void (TS2345 -> TS2322): `const p: (input: string) => boolean =
   useMemo(() => { if (c) return; return x => x.length > 0; })`. The arrow is context sensitive (a block's returned
   expression is, tsgo's hasContextSensitiveReturnExpression, tttt has it), and tsgo ends with T fixed to the return
@@ -656,7 +656,11 @@ exportSpecifierReferencingOuterDeclaration3 [tsgo]. New:
 - sourceMapValidationStatements delete-stmt: `with (obj) { z = 10; }` with no `z` declared: tsgo reports TS2304 inside
   the unchecked with body. Not checkWithStatement (it skips the body): most likely flow analysis of an identifier
   reference walking back over the assignment, isMatchingReference's getResolvedSymbol, which reports. tttt never
-  resolves names in a with body. [open]
+  resolves names in a with body. Confirmed (tsgotrace, cor12): checkWithStatement checks a later `with (obj)`'s `obj`,
+  whose flow walk meets the body's `z = 10` assignment node, and isMatchingReference resolves `z` (TS2304 once, cached).
+  So tsgo reports an unresolved assignment target in an unchecked with body only when some later identifier
+  reference's flow walk crosses it: matching that needs tttt's flow walks to resolve with-body targets on the way,
+  for code that is TS2410 anyway. Left. [design]
 - recursiveTypeInference2 delete-stmt: the TS2345 elaboration prints `children: ...` where tttt prints `children: any`
   (printing depth). [text]
 - importDeclWithExportModifierInAmbientContext str-to-num (`declare module 42 {`): TS2708 comes only from tsgo's emit

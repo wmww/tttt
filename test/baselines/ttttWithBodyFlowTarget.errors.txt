@@ -1,0 +1,24 @@
+ttttWithBodyFlowTarget.ts(4,1): error TS1101: 'with' statements are not allowed in strict mode.
+ttttWithBodyFlowTarget.ts(4,1): error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+ttttWithBodyFlowTarget.ts(4,14): error TS2304: Cannot find name 'z'.
+ttttWithBodyFlowTarget.ts(5,1): error TS1101: 'with' statements are not allowed in strict mode.
+ttttWithBodyFlowTarget.ts(5,1): error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+
+
+==== ttttWithBodyFlowTarget.ts (5 errors) ====
+    // Known failing ([design], missing_checks.md): tsgo resolves an unchecked with body's assignment target `z` when a
+    // later reference's flow walk (the second `with (obj)`'s `obj`) crosses it, TS2304; tttt never resolves it
+    declare var obj: any;
+    with (obj) { z = 10; }
+    ~~~~
+!!! error TS1101: 'with' statements are not allowed in strict mode.
+    ~~~~~~~~~~
+!!! error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+                 ~
+!!! error TS2304: Cannot find name 'z'.
+    with (obj) { y; }
+    ~~~~
+!!! error TS1101: 'with' statements are not allowed in strict mode.
+    ~~~~~~~~~~
+!!! error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+    
