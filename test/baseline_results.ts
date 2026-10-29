@@ -16182,6 +16182,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttParameterModifierThenReservedWord': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttParameterPropertyDecoratorRejected(experimentaldecorators=false)': {
         errors: true,
         symbols: true,
@@ -16324,6 +16329,11 @@ const baselines = {
         types: true,
     },
     'ttttReadonlyUniqueSymbolName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttRecoveryNodeEnds2': {
         errors: true,
         symbols: true,
         types: true,

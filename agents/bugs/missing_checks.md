@@ -605,11 +605,11 @@ never-const (harness writes no errors baseline).
 Known: recursiveClassBaseType (TS2310, 3), globalThisGlobalExportAsGlobal, recursiveTypeInferenceReturnTypeConstraint,
 exportSpecifierReferencingOuterDeclaration3. Fixed:
 - contextualTypingGenericFunction2 delete-stmt: `export const a` as parameters, `const` a parameter of its own (two
-  TS7006 '(Missing)', TS2300). Test ttttParameterModifierThenReservedWord. [fixed 306f9ca22] Left: its types baseline,
+  TS7006 '(Missing)', TS2300). Test ttttParameterModifierThenReservedWord. [fixed 8ff5b4867] Left: its types baseline,
   the object literal in a bodiless declaration's parameter initializer typed contextually by tsgo, any in tttt. [open]
 - excessPropertyChecksWithNestedIntersections, typeSatisfaction_contextualTyping2,
   declarationEmitTypeParameterNameReusedInOverloads delete-stmt: node ends under recovery. Test ttttRecoveryNodeEnds2.
-  [fixed 20e99068e]
+  [fixed c5fa02a3a]
 Not fixed:
 - infiniteRecursionDestructuringLoop delete-stmt: missing TS2339 (`const { children, index = 0 } = node` in a loop
   that assigns `node = children[index]`, MyNode without `children`). tsgo reports it while the loop's flow type of
@@ -657,7 +657,7 @@ Known: recursiveClassBaseType (TS2310), unionTypeWithIndexSignature (text TS2322
   ttttObjectLiteralExportBrace. [fixed 70b783cb9]
 - parseInvalidNames num-to-str: `namespace "100" {}`, the string not taken after the missing name. Test
   ttttNamespaceStringName (errors only: tsgo's symbols baseline shows the missing name's `(Missing)` symbol, tttt's
-  walk didn't: declared since 74167606e, test ttttNamespaceStringName [fixed 74167606e]). [fixed 9f85e491a]
+  walk didn't: declared since 29b461949, test ttttNamespaceStringName [fixed 29b461949]). [fixed 9f85e491a]
 - fallFromLastCase2 add-optional, contextualComputedNonBindablePropertyType delete-stmt, inferTypesWithExtends1
   drop-as: node ends under recovery (TS7029, TS2464, TS7039 spans). Test ttttRecoveryNodeSpans. [fixed 32baaef64]
 Not fixed:
