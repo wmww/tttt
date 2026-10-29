@@ -181,7 +181,7 @@ passing tests).
   needs the early widening to keep regular literals regular (or a widened kind of its own). [open]
 - (mut1640) An element *write* with a `never` index on a union of objects (`both[sym] = 'x'`, `sym: never`, members
   `{ s: number, '0': number, [sym]: boolean } | { [n: number]: number, [s: string]: string | number }`): tsc reads the
-  union's number index info (getUnionIndexInfos, getApplicableIndexInfo with never: `number | boolean`), tttt `never`. [open]
+  union's number index info (getUnionIndexInfos, getApplicableIndexInfo with never: `number | boolean`), tttt `never`. Re-probed 2026-10-29: tsgo says never too (TS2322 to never), tttt matches. [fixed probe 2026-10-29]
 - The conditional base-constraint fallback (`base_constraint_uncached` TY_CONDITIONAL, used when there's no
   distributive constraint) leaves an `any` branch out like tsc's getDefaultConstraintOfConditionalType but uses the
   raw true branch, not tsc's inferred one. `ReturnType<T[M]>` property access (seed-5 mut0710/mut3585) still misses

@@ -601,6 +601,19 @@ never-const (harness writes no errors baseline).
 - recursiveClassBaseType delete-stmt: missing TS2310 (the base cycle design). noCircularitySelfReferentialGetter2
   (TS2345 text), unionTypeWithIndexSignature never-const (TS2322 text): not looked at. [open]
 
+## Mutation seed 20261118 (2026-10-29, cor14: `scripts/mutate.py -n 8000 --seed 20261118`, 7 of 8000 differ)
+Known: infiniteRecursionDestructuringLoop (TS2339 [design]), unionTypeWithIndexSignature (text TS2322),
+symbolProperty18 (TS7022), conditionalContextualReturnSubstitutionCache drop-as (the related TS2208, seed 20261116's
+[text]). Fixed:
+- nonPrimitiveAndEmptyObject delete-stmt: `const { fooProps = {} } = foo` with `fooProps?: BarProps & object` and an
+  empty BarProps is `{}` in tsgo (mutual strict subtypes, tsgo's union order decides), `BarProps & object` in tttt
+  (ty_binding_element_type's mutual-subtype guard). Test ttttBindingDefaultMutualSubtype. [fixed da8e5066c]
+Not fixed:
+- declarationEmitNestedAnonymousMappedType drop-as: tsgo's baseline has TS2313's related TS2751 "Circularity
+  originates in type at this location", tttt not; the CLI (projdiff, noEmit) is byte-identical: the harness's emit
+  before diagnostics (harness.md "Emit before diagnostics"). destructuringWithGenericParameter delete-stmt: tsgo's
+  TS-1 pre/post-emit count line (a TS2339 its emit resolver adds). [tsgo]
+
 ## Mutation seed 20261117 (2026-10-29, cor13: `scripts/mutate.py -n 8000 --seed 20261117`, 4 of 8000 differ; `--syntax` 9)
 Known: generatorTypeCheck46 (TS2488), unionTypeWithIndexSignature (text TS2322). Fixed:
 - decoratorMetadataObjectLiteralMethodNoCrash delete-stmt: an object literal setter's parameter decorator in a class
