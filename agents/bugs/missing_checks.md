@@ -601,6 +601,24 @@ never-const (harness writes no errors baseline).
 - recursiveClassBaseType delete-stmt: missing TS2310 (the base cycle design). noCircularitySelfReferentialGetter2
   (TS2345 text), unionTypeWithIndexSignature never-const (TS2322 text): not looked at. [open]
 
+## Mutation seed 20261115 (2026-10-29, cor12: `scripts/mutate.py -n 4000 --seed 20261115 --syntax`, 7 of 4000 differ; 4000 for /tmp's inodes)
+Fixed:
+- privateWriteOnlyAccessorRead add-optional: `({ foo?: {...} } = { foo })` TS1162: a destructuring target gets the
+  object literal grammar checks where tsc checks it as an expression (the right side asking for a contextual type,
+  hacks.md asks_contextual_type). Test ttttAssignmentTargetGrammar. [fixed a391f372e]
+- arrowFunctionErrorSpan delete-stmt: TS1200 is a grammar error (none with parse errors). Test
+  ttttArrowLineTerminatorGrammar. [fixed 3fb23a89a]
+Not fixed:
+- discriminantPropertyInference delete-stmt: an object literal left open swallows `f({ disc: undefined, cb: n => ... })`
+  as a bodiless method `f({ disc: undefined, cb: n })`; tttt reports TS2842 (unused renamings) for its pattern, tsgo
+  doesn't there, though it does when `f` takes `any` (`declare function f(a: any)`, where tttt reports none). Which of
+  the method's checks tsgo runs depends on the call's resolution (the discriminated parameter type, TS2353 for `f`):
+  not traced. [open]
+- inferenceErasedSignatures extends-object (`set<K extends Object this>`), awaitedTypeJQuery delete-stmt: spans of a
+  method or type argument list broken by recovery end after trivia (TS7010, TS2314). [open]
+- recursiveTypesWithTypeof swap-stmts (text TS2403), distributiveConditionalTypeConstraints ann-string-number
+  (elaboration TS2322): not looked at. [text]
+
 ## Mutation seed 20261114 (2026-10-29, cor12: `scripts/mutate.py -n 8000 --seed 20261114`, 3 of 8000 differ; `--syntax` 13)
 Known: recursiveClassBaseType (TS2310), unionTypeWithIndexSignature (text TS2322). Fixed:
 - circularInlineMappedGenericTupleTypeNoCrash str-to-num: TS2589 at a return statement as the current node spans its

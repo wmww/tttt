@@ -433,6 +433,13 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   literal's cached element/property types against the new context (literals kept, arrays tuples where the context is
   one) instead of re-checking the expression in CheckModeContextual; calls and functions keep what they inferred. Probed 2026-10-23, matches tsgo (`[{ a: g() }]`, `[{ a: h("y") }]`, a method in an annotated literal, a tuple from a generic call).
 
+- **asks_contextual_type() guesses when tsc checks a destructuring target as an expression** (expr.c,
+  binary_expr_typecheck -> assignment_target_check_grammar): tsc runs checkGrammarObjectLiteralExpression on a
+  destructuring assignment's target only when getTypeOfExpression(left) is asked, as the right side's contextual type.
+  tttt approximates "asked" syntactically (an object or array literal or a function on the right, through a
+  conditional's branches and ||/??/&&/, operands); a right side that asks some other way (a literal compared with its
+  contextual type, a call inferring from its return) isn't covered.
+
 ## Relations (`ty/relate.c`)
 - Reporting runs: tsc's error-node checkTypeAssignableTo callers run once, explaining (check.c relate_explaining(),
   ty_check_assignable()); the checkTypeRelatedToAndOptionallyElaborate ones (check_assignable()) and the overload
