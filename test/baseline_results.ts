@@ -16206,6 +16206,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttOverloadGetterContextSensitive': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
     'ttttOverloadInitializerChecked': {
         errors: true,
         symbols: true,
