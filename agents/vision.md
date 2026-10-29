@@ -95,6 +95,14 @@ measured wins first; land fast and gate in batches.
 6. **Re-pin to 7.1.0 stable** when it ships.
 
 ## Decisions (each with its reason; the narrative is in git history of this file)
+- **The shared graph is the default mode at K > 1 (2026-10-29 box time, the human; worker flip).** On the human's
+  24-thread laptop at 583223a74 it beat plain, tttt v1 and bun across their projects. Accepted cost: on this 8-core box
+  at 16 threads it is 5-20% slower on ordinary corpora (hub_regime.md's go/no-go table); byte-identity with one plain
+  checker (sgcheck: 0 differing) is non-negotiable. One checker never has a graph (no other to share with; the
+  machinery cost K1 +2.4..+5.4% instructions for nothing), so `--checkers 1`, the one-checker rerun, the suite's
+  default and instrcount stay plain. Plain at K > 1 stays behind `TTTT_SHARED_GRAPH=0` (no flag, not in `--help`):
+  the oracles' reference and the A/B. The human: keep plain's code unless removing it buys perf; at most a build define
+  (notes/threading.md "Default on").
 - **Threading, the understanding and the plan (2026-10-30, with the human): notes/threading.md.** The lead's erosion
   with threads is a real trade-off in the per-checker model (private graphs: fast at K=1, duplicated at K>1) against
   bun's shared store (a first-read tax at every K, no duplication); not a hack. The shared graph is correct and ships
@@ -118,7 +126,7 @@ measured wins first; land fast and gate in batches.
   (measurements.md "vscode since v1"). On THP-`always` boxes the kernel gives huge pages on its own. Any future page
   policy must not read the kernel's state or settings; the one allowed input is what the kernel does with a plain
   mmap.
-- **The shared graph ships as an option for hub-shaped projects; the per-checker model stays the default**
+- **(Superseded 2026-10-29 by "The shared graph is the default mode" above.) The shared graph ships as an option for hub-shaped projects; the per-checker model stays the default**
   (2026-10-30, the coordinator's call on the go/no-go table the human asked for, hub_regime.md "The go/no-go table";
   the human can overrule). On today's main (33e018294: walk order, variance frames, private caching, the graph's own
   mappings) the flag is byte-identical to one plain checker on 0 of 464 flagged runs and TSan-clean, so correctness no

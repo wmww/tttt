@@ -4,6 +4,18 @@ The coordinator's synthesis of the 2026-10-28..30 measurements (hub_regime.md, s
 attributed", bun_breadth.md "2026-10-28", footprint.md, intern_tables.md, sharing_design.md §6, measurements.md's
 sections at 15f15fdeb and 2c389b213) and the human's conclusions. Read this before touching the parallel model.
 
+## Default on (2026-10-29 box time)
+The human made the shared graph the mode at K > 1 (vision.md "Decisions"); one checker is plain (program_typecheck():
+`count > 1`), `TTTT_SHARED_GRAPH=0` is plain at any K. What follows is the reasoning before that decision; "What the
+shared graph is now" below describes the option it was then.
+
+**Compiling plain out was measured and not landed** (the human: only on a real gain, and never deleting plain's code).
+One checker must stay plain, so a build can only drop the graph's null tests where K > 1. A variant with every
+`my graph` test in src/ty (63 sites) rewritten to a constant, callgrind at `--threads 1`, K8 (vscode K16), against
+the same tree: zod 5.592 -> 5.571 G (-0.39%), drizzle 6.770 -> 6.755 (-0.23%), type-fest 11.084 -> 11.086 (+0.02%),
+vscode 86.30 -> 86.19 (-0.13%). Under the ~0.5% bar on every corpus (the tests are well predicted and next to loads
+the graph's path makes anyway), so no build define and no wall A/B.
+
 ## The pattern
 tttt wins single-threaded (half bun's instructions on the corpora at the same per-instruction profile; 1.15x on
 vscode, ~2x on hub-shaped projects) and the lead shrinks as both get more threads (the 42 hub projects: tttt wall /
@@ -32,7 +44,7 @@ at the same CPU (16.4 against 21.6 of 24).
 - The idle tail behind one indivisible file (usually a checked `.d.ts`) exceeds its 1/K share on 188 of 300 projects.
   Bun has the same tail but its shared store lets other threads' work warm that file's graph.
 
-## What the shared graph is now (`--shared-graph`, off by default)
+## What the shared graph was before the default flipped (`--shared-graph`, off by default until 2026-10-29)
 Correct: byte-identical to one plain checker on every run we can produce (the walk order for deep nesting, variance
 frames, the private-record rule, the race fixes; `scripts/sgcheck.py` is its gate, a `-DTTTT_GRAPH_CHECKS` build its
 debug check). Perf: removes the duplication (types made K8/K1 1.00-1.06) and pays the first-read tax everywhere: wins

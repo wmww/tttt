@@ -1,9 +1,11 @@
-# The shared type graph (parked)
-`--shared-graph` / `TTTT_SHARED_GRAPH=1`, off by default: one type graph shared by every checker on real threads
-(`src/ty/graph.{h,c}`, `overlay.{h,c}`, `shared_table.c`, `taint.h`; documentation.md "--shared-graph"; the oracles in
-`scripts/sharedgraph/README.md`). Built 2026-10-20..22, **parked 2026-10-21/22**: it is correct enough to measure and
-too expensive per instruction to win. This note keeps what was learned; the full design log (2240 lines, every stage,
-the census of lazily written fields, bun's design read from its source) is git history:
+# The shared type graph (the default mode at K > 1 since 2026-10-29)
+One type graph shared by every checker on real threads (`src/ty/graph.{h,c}`, `overlay.{h,c}`, `shared_table.c`,
+`taint.h`; documentation.md "The shared graph"; the oracles in `scripts/sharedgraph/README.md`, the gate
+`scripts/sgcheck.py`). The default whenever more than one checker runs (vision.md "Decisions", the human's call on
+their laptop's numbers); one checker never has one; `TTTT_SHARED_GRAPH=0` is plain (each checker its own graph), the
+oracles' reference. Built 2026-10-20..22, parked 2026-10-21/22 as too expensive per instruction, made byte-identical
+and option-grade 2026-10-29 (walk order, variance frames). The full design log (2240 lines, every stage, the census of
+lazily written fields, bun's design read from its source) is git history:
 `git show af936072c:agents/plans/86_multiples.md` and `git show af936072c:agents/plans/86_stage4_census.md`.
 
 ## Why it was built

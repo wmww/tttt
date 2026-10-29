@@ -4,6 +4,11 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 `bugs/*.md`, triage.md or a plan. `grep -rn HACK src` finds the code-side markers.
 
 ## Global state, memory, parallelism
+- **Two checking modes in one binary** (2026-10-29): the shared graph at K > 1 (the default) and plain, per-checker
+  graphs, at K1 (program_typecheck(): `count > 1`) and behind `TTTT_SHARED_GRAPH=0`. Every lazily written word keeps
+  both paths (`if (my graph)` / the state bytes below). Plain stays because one checker gains nothing from sharing and
+  the oracles need the reference; compiling the graph's null tests out at K > 1 was measured (notes/threading.md
+  "Default on").
 - **The shared graph's words (notes/shared_graph.md) keep a state byte each for the default path** (`FunctionReturn.state`,
   `SymbolLinks.declared_state`, `TyObjectState.base_state`, Prop.type_flight, Signature.res_flight, ret_flight, predicate_flight,
   TyObjectState.members_flight, MappedInfo.template_flight, TyParamState's three...): without --shared-graph in flight is that byte, as S0

@@ -4,7 +4,7 @@ the suite (saves test/baseline_results.ts like scripts/fasttest.sh -s, then the 
 every pinned corpus, the CLI's whole output with message text (scripts/clidiff.py, from tsc's cached output; --quick:
 the corpora's), the DefinitelyTyped sweep, bun's differential cases, `$ExpectType`, flagflip, the source sweep, perf at breadth
 (scripts/perfsweep.py: check time and type count ratios against tsgo), declaration emit (scripts/dtsdiff.py), and the output's independence of the checker count
-(scripts/kdiff.py, the suite's --dump at 1 and 16 checkers) and of the checker's history (a fresh checker per file,
+(scripts/kdiff.py, the suite's --dump at 1 and 16 checkers and at 4 on 4 threads: the shared graph) and of the checker's history (a fresh checker per file,
 --checker-memory 0, plan 67; the suite's too with deferred bodies, whose materializations are then dropped and made
 again, plan 78).
 
@@ -140,22 +140,28 @@ def clidiff(corpora_only=False):
           (f'; corpora: {c.group(1)}' if c else ''), flush=True)
 
 def kdiff():
-    # (Plan 62: tsgo's output doesn't depend on its checker count, tttt's mustn't either. The suite dumped at 1 and 16
-    # checkers, then the source sweep's raw CLI output at 1 and 16, ~7 min)
+    # (Plan 62: tsgo's output doesn't depend on its checker count, tttt's mustn't either. The suite dumped at 1, at 16
+    # checkers on one thread and at 4 checkers on 4 threads, then the source sweep's raw CLI output at 1 and 16, ~7 min.
+    # Since 2026-10-29 the K > 1 dumps run the shared graph, the default (one checker never has one): the harness's
+    # only exercise of it, at 4 threads concurrently)
     import shutil, tempfile
     tmp = tempfile.mkdtemp(prefix='oracles-kdiff-')
+    runs = {'k1': [], 'k16': ['--checkers', '16'], 'k4t4': ['--checkers', '4', '--threads', '4']}
     try:
-        for k in (1, 16):
-            os.mkdir(f'{tmp}/k{k}')
-            run(['release/baseline_tests', '--checkers', str(k), '--dump', f'{tmp}/k{k}'])
-        differ = subprocess.run(['diff', '-rq', f'{tmp}/k1', f'{tmp}/k16'], capture_output=True, text=True).stdout
-        suite_differ = len(differ.splitlines())
+        for name, extra in runs.items():
+            os.mkdir(f'{tmp}/{name}')
+            run(['release/baseline_tests', '--dump', f'{tmp}/{name}'] + extra)
+        suite_differ = {}
+        for name in ('k16', 'k4t4'):
+            differ = subprocess.run(['diff', '-rq', f'{tmp}/k1', f'{tmp}/{name}'], capture_output=True, text=True).stdout
+            suite_differ[name] = len(differ.splitlines())
     finally:
         shutil.rmtree(tmp)
     out = run(['scripts/kdiff.py'], timeout=3600)
     m = re.search(r'\d+ / \d+ projects differ.*', out)
     projects = [re.search(r'"project": "([^"]+)"', l).group(1) for l in out.splitlines() if l.startswith('{')]
-    print(f'kdiff (1 vs 16 checkers): suite {suite_differ} files differ, sources ' + (m.group(0) if m else '?') +
+    print(f'kdiff (1 vs 16 checkers): suite {suite_differ["k16"]} files differ (K4 T4: {suite_differ["k4t4"]}), sources ' +
+          (m.group(0) if m else '?') +
           (': ' + ', '.join(projects[:12]) if projects else ''), flush=True)
 
 def recycle():

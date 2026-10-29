@@ -66,8 +66,10 @@ wins first; land fast and gate in batches.
   human's laptop) to measure: v1 vs main vs `git revert 4f3fa414e 24820df46` at K1 on vscode.
 - **Correctness resumes** (the human, 2026-10-29: when the perf track completes or walls): cor3's queue
   (bugs/missing_checks.md, type_core.md, the 99-V4 leftovers), the bun worker's parser keys, then the lists.
-- **The shared graph as an option**: documentation.md and `--help` describe `--shared-graph` as above; the
-  monkeytype/frontend K7/K8 deep-cut storm (bugs/shared_graph.md) is its open perf bug.
+- **The shared graph is the default at K > 1** (worker flip, 2026-10-29: vision.md "Decisions"): one checker plain,
+  `TTTT_SHARED_GRAPH=0` plain at any K, `--shared-graph` gone. Its open perf items are now the default's: the 5-20%
+  loss on ordinary corpora on this box (the per-read premium, notes/shared_graph.md "The premium, attributed") and the
+  monkeytype/frontend K7/K8 deep-cut storm (bugs/shared_graph.md).
 
 ## Done (2026-10-28/29): the hub regime, the shared graph's finish line
 - **The shared graph at the laptop's 24 threads** (the next point on the break-even curve, hub_regime.md): flag
