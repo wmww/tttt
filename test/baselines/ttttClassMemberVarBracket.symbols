@@ -1,0 +1,26 @@
+//// [test/cases/ttttClassMemberVarBracket.ts] ////
+
+=== ttttClassMemberVarBracket.ts ===
+// A `var` or `let` followed by `[` is a class member (tsc's isClassMemberStart takes a keyword before `[`): a property
+// named var, TS1440, then an index signature; `var x` isn't one (TS1068). Seed 20261112, iterableArrayPattern2 delete-stmt
+class C {
+>C : Symbol(C, Decl(ttttClassMemberVarBracket.ts, 0, 0))
+
+    m() {}
+>m : Symbol(C.m, Decl(ttttClassMemberVarBracket.ts, 2, 9))
+
+    var [k: string]: number;
+>var : Symbol(C.var, Decl(ttttClassMemberVarBracket.ts, 3, 10))
+>k : Symbol(k, Decl(ttttClassMemberVarBracket.ts, 4, 9))
+
+    let [n: number]: string;
+>let : Symbol(C.let, Decl(ttttClassMemberVarBracket.ts, 4, 28))
+>n : Symbol(n, Decl(ttttClassMemberVarBracket.ts, 5, 9))
+}
+class D {
+>D : Symbol(D, Decl(ttttClassMemberVarBracket.ts, 6, 1))
+
+    var x = 1;
+>x : Symbol(x, Decl(ttttClassMemberVarBracket.ts, 8, 7))
+}
+

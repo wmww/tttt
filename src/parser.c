@@ -10267,7 +10267,10 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                             class_item_drop(ret);
                             return parse_fail(&p);
                         } else if (span_equals(name_span, "let") || span_equals(name_span, "var")) {
-                            if (vec_spanned_modifier_size(&modifiers.spanned)) {
+                            // (With modifiers, or before `[`, it is a class member all the same: tsc's isClassMemberStart
+                            // takes a keyword followed by `[`, `var [a, ...b] = x` in a class body left open is a
+                            // property `var` and an index signature)
+                            if (vec_spanned_modifier_size(&modifiers.spanned) || *p.pos == '[') {
                                 // If we have modifiers
                                 parse_error(&p, name_span, 1440, "Variable declaration not allowed at this location.");
                             } else {

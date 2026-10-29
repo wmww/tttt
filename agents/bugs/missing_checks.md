@@ -601,6 +601,35 @@ never-const (harness writes no errors baseline).
 - recursiveClassBaseType delete-stmt: missing TS2310 (the base cycle design). noCircularitySelfReferentialGetter2
   (TS2345 text), unionTypeWithIndexSignature never-const (TS2322 text): not looked at. [open]
 
+## Mutation seed 20261112 (2026-10-29, cor11: `scripts/mutate.py -n 8000 --seed 20261112`, 5 of 8000 differ; `--syntax` 19)
+Known: noCircularitySelfReferentialGetter2 (text TS2345), recursiveClassBaseType (TS2310, the base cycle design),
+exportSpecifierReferencingOuterDeclaration3 [tsgo]. New:
+- iterableArrayPattern2 delete-stmt (--syntax): a class body left open swallows `var [a, ...b] = x`: tsc's
+  isClassMemberStart takes a keyword followed by `[`, so `var` is a property (TS1440) and `[a, ...b]` an index
+  signature; tttt's parser bailed out (TS1068). Test ttttClassMemberVarBracket. [fixed PENDING] Left: tsgo's TS7006 and
+  TS7019 for that index signature's untyped parameters `a` and `...b` (tttt reports none). [open]
+- subtypeReductionWithAnyFunctionType_promoted return-void (TS2345 -> TS2322): `const p: (input: string) => boolean =
+  useMemo(() => { if (c) return; return x => x.length > 0; })`. The arrow is context sensitive (a block's returned
+  expression is, tsgo's hasContextSensitiveReturnExpression, tttt has it), and tsgo ends with T fixed to the return
+  type's inference `(input: string) => boolean`, so the argument fails (TS2345); tttt infers T =
+  `((x: string) => boolean) | undefined` from the argument and fails the declaration (TS2322). Where tsgo fixes T
+  (likely the inner arrow's contextual signature instantiated with the fixing mapper in the second pass) wasn't traced.
+  Repro: the declaration above with `declare function useMemo<T>(func: () => T): T`. [open]
+- sourceMapValidationStatements delete-stmt: `with (obj) { z = 10; }` with no `z` declared: tsgo reports TS2304 inside
+  the unchecked with body. Not checkWithStatement (it skips the body): most likely flow analysis of an identifier
+  reference walking back over the assignment, isMatchingReference's getResolvedSymbol, which reports. tttt never
+  resolves names in a with body. [open]
+- recursiveTypeInference2 delete-stmt: the TS2345 elaboration prints `children: ...` where tttt prints `children: any`
+  (printing depth). [text]
+- importDeclWithExportModifierInAmbientContext str-to-num (`declare module 42 {`): TS2708 comes only from tsgo's emit
+  resolver (the harness's TS-1 count mismatch), tttt reports it with the rest. [tsgo]
+- exportSpecifierReferencingOuterDeclaration1 str-to-num: `declare module 42 { export { X }; ... }`, a block in a script
+  after recovery: spurious TS2484 (the export conflicting with the global namespace X). Adversarial. [open]
+- Not looked at (--syntax): contextualTypeWithUnionTypeMembers delete-stmt (missing TS2454 after an object literal's
+  `}` is gone), classAbstractManyKeywords drop-modifier (TS1141 position), es2020IntlAPIs num-to-str (TS1121 ->
+  TS1005), coAndContraVariantInferences7 delete-stmt (TS1005 -> TS1136), exportSpecifierAndExportedMemberDeclaration
+  str-to-num (TS2694 -> TS2503), substitutionTypesInIndexedAccessTypes delete-stmt (text TS2322), 3 render. [open]
+
 ## Mutation seed 20261111 (2026-10-29, cor10: `scripts/mutate.py -n 8000 --seed 20261111 --tests multi,js`, 26 of 8000 differ)
 12 render, 3 text TS2322, 2 text TS2551, 1 text TS4118; known: importHelpersES6 (TS2354 position),
 parser.numericSeparators.decmialNegative (TS1005 dedupe), typeTagNoErasure (TS2719), commonJSAliasedExport (TS2339 on a
