@@ -1078,6 +1078,8 @@ static void program_load_module_ref_inner(Program* me, SourceFile* source, Modul
             cstr_eq(&memo->ref->path, &ref->path)
         ) {
             shared = memo->resolved;
+            // (The file's earlier ref of the name, loaded already: the pool's preresolved `first`, without the pool)
+            if (memo->ref != ref && program_load_module_ref_again(me, source, ref, memo->ref, shared, c_sv(""))) return;
         } else {
             shared = module_resolver_resolve_shared(resolver, cstr_sv(&ref->path), containing, mode);
             *memo = (struct ModuleRefMemo){ .source = source, .ref = ref, .mode = mode, .resolver = resolver, .resolved = shared };
