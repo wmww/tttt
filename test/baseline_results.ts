@@ -15764,6 +15764,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttNamespaceStringName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttNarrowImportedEnum': {
         errors: true,
         symbols: true,
@@ -16299,6 +16304,11 @@ const baselines = {
         types: true,
     },
     'ttttReadonlyUniqueSymbolName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttRecoveryNodeSpans': {
         errors: true,
         symbols: true,
         types: true,
