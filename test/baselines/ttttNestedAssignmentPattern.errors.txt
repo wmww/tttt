@@ -1,0 +1,43 @@
+ttttNestedAssignmentPattern.ts(8,3): error TS2464: A computed property name must be of type 'string', 'number', 'symbol', or 'any'.
+ttttNestedAssignmentPattern.ts(8,4): error TS2538: Type 'undefined' cannot be used as an index type.
+ttttNestedAssignmentPattern.ts(8,21): error TS2353: Object literal may only specify known properties, and 'bar' does not exist in type '{}'.
+ttttNestedAssignmentPattern.ts(9,24): error TS2353: Object literal may only specify known properties, and 'baz' does not exist in type '{ bar: number; }'.
+ttttNestedAssignmentPattern.ts(10,27): error TS2353: Object literal may only specify known properties, and 'baz' does not exist in type '{ bar: number; }'.
+ttttNestedAssignmentPattern.ts(11,37): error TS2353: Object literal may only specify known properties, and 'qux' does not exist in type '{ bar: number; }'.
+ttttNestedAssignmentPattern.ts(12,34): error TS2353: Object literal may only specify known properties, and 'qux' does not exist in type '{ bar: number; }'.
+ttttNestedAssignmentPattern.ts(15,22): error TS2353: Object literal may only specify known properties, and 'w' does not exist in type '{ bar: number; }'.
+
+
+==== ttttNestedAssignmentPattern.ts (8 errors) ====
+    // An object literal target nested in a destructuring assignment (an array literal's element, an object literal's
+    // property value) is a pattern type like the outermost one (tsc's checkObjectLiteral sets `pattern` on every target),
+    // so the literal assigned to it gets the excess property check TS2353. Seed 20261114, computedPropertiesInDestructuring1_ES6
+    let foo = undefined;
+    let bar4: number;
+    let b: number;
+    let rest: {} = {};
+    [{[foo]: bar4}] = [{bar: "bar"}];
+      ~~~~~
+!!! error TS2464: A computed property name must be of type 'string', 'number', 'symbol', or 'any'.
+       ~~~
+!!! error TS2538: Type 'undefined' cannot be used as an index type.
+                        ~~~
+!!! error TS2353: Object literal may only specify known properties, and 'bar' does not exist in type '{}'.
+    [{bar: b}] = [{bar: 1, baz: 2}];
+                           ~~~
+!!! error TS2353: Object literal may only specify known properties, and 'baz' does not exist in type '{ bar: number; }'.
+    [[{bar: b}]] = [[{bar: 1, baz: 2}]];
+                              ~~~
+!!! error TS2353: Object literal may only specify known properties, and 'baz' does not exist in type '{ bar: number; }'.
+    ({ x: [{bar: b}] } = { x: [{bar: 1, qux: 3}] });
+                                        ~~~
+!!! error TS2353: Object literal may only specify known properties, and 'qux' does not exist in type '{ bar: number; }'.
+    ({ y: {bar: b} } = { y: {bar: 1, qux: 3} });
+                                     ~~~
+!!! error TS2353: Object literal may only specify known properties, and 'qux' does not exist in type '{ bar: number; }'.
+    // A spread leaves it open; a default's literal is checked against the target, the assigned one isn't
+    [{bar: b, ...rest}] = [{bar: 1, zz: 2}];
+    [{bar: b} = {bar: 1, w: 2}] = [{bar: 1, w2: 2}];
+                         ~
+!!! error TS2353: Object literal may only specify known properties, and 'w' does not exist in type '{ bar: number; }'.
+    

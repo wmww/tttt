@@ -1,0 +1,128 @@
+//// [test/cases/ttttNestedAssignmentPattern.ts] ////
+
+=== ttttNestedAssignmentPattern.ts ===
+// An object literal target nested in a destructuring assignment (an array literal's element, an object literal's
+// property value) is a pattern type like the outermost one (tsc's checkObjectLiteral sets `pattern` on every target),
+// so the literal assigned to it gets the excess property check TS2353. Seed 20261114, computedPropertiesInDestructuring1_ES6
+let foo = undefined;
+>foo : any
+>undefined : undefined
+
+let bar4: number;
+>bar4 : number
+
+let b: number;
+>b : number
+
+let rest: {} = {};
+>rest : {}
+>{} : {}
+
+[{[foo]: bar4}] = [{bar: "bar"}];
+>[{[foo]: bar4}] = [{bar: "bar"}] : [{ bar: string; }]
+>[{[foo]: bar4}] : [{}]
+>{[foo]: bar4} : {}
+>[foo] : number
+>foo : undefined
+>bar4 : number
+>[{bar: "bar"}] : [{ bar: string; }]
+>{bar: "bar"} : { bar: string; }
+>bar : string
+>"bar" : "bar"
+
+[{bar: b}] = [{bar: 1, baz: 2}];
+>[{bar: b}] = [{bar: 1, baz: 2}] : [{ bar: number; baz: number; }]
+>[{bar: b}] : [{ bar: number; }]
+>{bar: b} : { bar: number; }
+>bar : number
+>b : number
+>[{bar: 1, baz: 2}] : [{ bar: number; baz: number; }]
+>{bar: 1, baz: 2} : { bar: number; baz: number; }
+>bar : number
+>1 : 1
+>baz : number
+>2 : 2
+
+[[{bar: b}]] = [[{bar: 1, baz: 2}]];
+>[[{bar: b}]] = [[{bar: 1, baz: 2}]] : [[{ bar: number; baz: number; }]]
+>[[{bar: b}]] : [[{ bar: number; }]]
+>[{bar: b}] : [{ bar: number; }]
+>{bar: b} : { bar: number; }
+>bar : number
+>b : number
+>[[{bar: 1, baz: 2}]] : [[{ bar: number; baz: number; }]]
+>[{bar: 1, baz: 2}] : [{ bar: number; baz: number; }]
+>{bar: 1, baz: 2} : { bar: number; baz: number; }
+>bar : number
+>1 : 1
+>baz : number
+>2 : 2
+
+({ x: [{bar: b}] } = { x: [{bar: 1, qux: 3}] });
+>({ x: [{bar: b}] } = { x: [{bar: 1, qux: 3}] }) : { x: [{ bar: number; qux: number; }]; }
+>{ x: [{bar: b}] } = { x: [{bar: 1, qux: 3}] } : { x: [{ bar: number; qux: number; }]; }
+>{ x: [{bar: b}] } : { x: [{ bar: number; }]; }
+>x : [{ bar: number; }]
+>[{bar: b}] : [{ bar: number; }]
+>{bar: b} : { bar: number; }
+>bar : number
+>b : number
+>{ x: [{bar: 1, qux: 3}] } : { x: [{ bar: number; qux: number; }]; }
+>x : [{ bar: number; qux: number; }]
+>[{bar: 1, qux: 3}] : [{ bar: number; qux: number; }]
+>{bar: 1, qux: 3} : { bar: number; qux: number; }
+>bar : number
+>1 : 1
+>qux : number
+>3 : 3
+
+({ y: {bar: b} } = { y: {bar: 1, qux: 3} });
+>({ y: {bar: b} } = { y: {bar: 1, qux: 3} }) : { y: { bar: number; qux: number; }; }
+>{ y: {bar: b} } = { y: {bar: 1, qux: 3} } : { y: { bar: number; qux: number; }; }
+>{ y: {bar: b} } : { y: { bar: number; }; }
+>y : { bar: number; }
+>{bar: b} : { bar: number; }
+>bar : number
+>b : number
+>{ y: {bar: 1, qux: 3} } : { y: { bar: number; qux: number; }; }
+>y : { bar: number; qux: number; }
+>{bar: 1, qux: 3} : { bar: number; qux: number; }
+>bar : number
+>1 : 1
+>qux : number
+>3 : 3
+
+// A spread leaves it open; a default's literal is checked against the target, the assigned one isn't
+[{bar: b, ...rest}] = [{bar: 1, zz: 2}];
+>[{bar: b, ...rest}] = [{bar: 1, zz: 2}] : [{ bar: number; zz: number; }]
+>[{bar: b, ...rest}] : [{ bar: number; }]
+>{bar: b, ...rest} : { bar: number; }
+>bar : number
+>b : number
+>rest : {}
+>[{bar: 1, zz: 2}] : [{ bar: number; zz: number; }]
+>{bar: 1, zz: 2} : { bar: number; zz: number; }
+>bar : number
+>1 : 1
+>zz : number
+>2 : 2
+
+[{bar: b} = {bar: 1, w: 2}] = [{bar: 1, w2: 2}];
+>[{bar: b} = {bar: 1, w: 2}] = [{bar: 1, w2: 2}] : [{ bar: number; w2: number; }]
+>[{bar: b} = {bar: 1, w: 2}] : [{ bar: number; w: number; }]
+>{bar: b} = {bar: 1, w: 2} : { bar: number; w: number; }
+>{bar: b} : { bar: number; }
+>bar : number
+>b : number
+>{bar: 1, w: 2} : { bar: number; w: number; }
+>bar : number
+>1 : 1
+>w : number
+>2 : 2
+>[{bar: 1, w2: 2}] : [{ bar: number; w2: number; }]
+>{bar: 1, w2: 2} : { bar: number; w2: number; }
+>bar : number
+>1 : 1
+>w2 : number
+>2 : 2
+

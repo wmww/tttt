@@ -1,0 +1,69 @@
+//// [test/cases/ttttNestedAssignmentPattern.ts] ////
+
+=== ttttNestedAssignmentPattern.ts ===
+// An object literal target nested in a destructuring assignment (an array literal's element, an object literal's
+// property value) is a pattern type like the outermost one (tsc's checkObjectLiteral sets `pattern` on every target),
+// so the literal assigned to it gets the excess property check TS2353. Seed 20261114, computedPropertiesInDestructuring1_ES6
+let foo = undefined;
+>foo : Symbol(foo, Decl(ttttNestedAssignmentPattern.ts, 3, 3))
+>undefined : Symbol(undefined)
+
+let bar4: number;
+>bar4 : Symbol(bar4, Decl(ttttNestedAssignmentPattern.ts, 4, 3))
+
+let b: number;
+>b : Symbol(b, Decl(ttttNestedAssignmentPattern.ts, 5, 3))
+
+let rest: {} = {};
+>rest : Symbol(rest, Decl(ttttNestedAssignmentPattern.ts, 6, 3))
+
+[{[foo]: bar4}] = [{bar: "bar"}];
+>[foo] : Symbol([foo], Decl(ttttNestedAssignmentPattern.ts, 7, 2))
+>foo : Symbol(foo, Decl(ttttNestedAssignmentPattern.ts, 3, 3))
+>bar4 : Symbol(bar4, Decl(ttttNestedAssignmentPattern.ts, 4, 3))
+>bar : Symbol(bar, Decl(ttttNestedAssignmentPattern.ts, 7, 20))
+
+[{bar: b}] = [{bar: 1, baz: 2}];
+>bar : Symbol(bar, Decl(ttttNestedAssignmentPattern.ts, 8, 2))
+>b : Symbol(b, Decl(ttttNestedAssignmentPattern.ts, 5, 3))
+>bar : Symbol(bar, Decl(ttttNestedAssignmentPattern.ts, 8, 15))
+>baz : Symbol(baz, Decl(ttttNestedAssignmentPattern.ts, 8, 22))
+
+[[{bar: b}]] = [[{bar: 1, baz: 2}]];
+>bar : Symbol(bar, Decl(ttttNestedAssignmentPattern.ts, 9, 3))
+>b : Symbol(b, Decl(ttttNestedAssignmentPattern.ts, 5, 3))
+>bar : Symbol(bar, Decl(ttttNestedAssignmentPattern.ts, 9, 18))
+>baz : Symbol(baz, Decl(ttttNestedAssignmentPattern.ts, 9, 25))
+
+({ x: [{bar: b}] } = { x: [{bar: 1, qux: 3}] });
+>x : Symbol(x, Decl(ttttNestedAssignmentPattern.ts, 10, 2))
+>bar : Symbol(bar, Decl(ttttNestedAssignmentPattern.ts, 10, 8))
+>b : Symbol(b, Decl(ttttNestedAssignmentPattern.ts, 5, 3))
+>x : Symbol(x, Decl(ttttNestedAssignmentPattern.ts, 10, 22))
+>bar : Symbol(bar, Decl(ttttNestedAssignmentPattern.ts, 10, 28))
+>qux : Symbol(qux, Decl(ttttNestedAssignmentPattern.ts, 10, 35))
+
+({ y: {bar: b} } = { y: {bar: 1, qux: 3} });
+>y : Symbol(y, Decl(ttttNestedAssignmentPattern.ts, 11, 2))
+>bar : Symbol(bar, Decl(ttttNestedAssignmentPattern.ts, 11, 7))
+>b : Symbol(b, Decl(ttttNestedAssignmentPattern.ts, 5, 3))
+>y : Symbol(y, Decl(ttttNestedAssignmentPattern.ts, 11, 20))
+>bar : Symbol(bar, Decl(ttttNestedAssignmentPattern.ts, 11, 25))
+>qux : Symbol(qux, Decl(ttttNestedAssignmentPattern.ts, 11, 32))
+
+// A spread leaves it open; a default's literal is checked against the target, the assigned one isn't
+[{bar: b, ...rest}] = [{bar: 1, zz: 2}];
+>bar : Symbol(bar, Decl(ttttNestedAssignmentPattern.ts, 13, 2))
+>b : Symbol(b, Decl(ttttNestedAssignmentPattern.ts, 5, 3))
+>rest : Symbol(rest, Decl(ttttNestedAssignmentPattern.ts, 6, 3))
+>bar : Symbol(bar, Decl(ttttNestedAssignmentPattern.ts, 13, 24))
+>zz : Symbol(zz, Decl(ttttNestedAssignmentPattern.ts, 13, 31))
+
+[{bar: b} = {bar: 1, w: 2}] = [{bar: 1, w2: 2}];
+>bar : Symbol(bar, Decl(ttttNestedAssignmentPattern.ts, 14, 2))
+>b : Symbol(b, Decl(ttttNestedAssignmentPattern.ts, 5, 3))
+>bar : Symbol(bar, Decl(ttttNestedAssignmentPattern.ts, 14, 13))
+>w : Symbol(w, Decl(ttttNestedAssignmentPattern.ts, 14, 20))
+>bar : Symbol(bar, Decl(ttttNestedAssignmentPattern.ts, 14, 32))
+>w2 : Symbol(w2, Decl(ttttNestedAssignmentPattern.ts, 14, 39))
+

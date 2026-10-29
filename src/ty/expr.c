@@ -3397,6 +3397,29 @@ static bool computed_key_opens_pattern(Checker* me, ObjectExprItem const* item) 
     return ty_is_related(me, key, ty_union(me, all, 3, nullptr, (TyList){0}), TY_RELATION_ASSIGNABLE);
 }
 
+// An object literal destructuring target's type as a pattern (tsc's checkObjectLiteral: `result.pattern = node`),
+// registered as an assignment's (see ty_is_assignment_pattern()); null when a spread or computed name leaves its
+// properties open
+static Ty const* object_target_pattern(Checker* me, Expr const* target, Ty const* type) {
+    if (!(type->flags & TYF_OBJECT) || type->kind != TY_ANONYMOUS) return nullptr;
+    for_each (i, vec_object_expr_item, &target->object) {
+        if (i->tag == OBJECT_ITEM_SPREAD || computed_key_opens_pattern(me, i)) return nullptr;
+    }
+    Ty const* ret = ty_pattern_clone(me, type);
+    // (An assignment's: tsc's SkipBindingPatterns doesn't skip it, see ty_is_assignment_pattern())
+    *intern_slot(me, &my links, (u64[]){ KEY_ASSIGNMENT_PATTERN, ret->id }, 2) = ret;
+    return ret;
+}
+
+// The type of an object literal target nested in a destructuring target (an array literal's element, an object
+// literal's property value: `[{ a: x }] = [{ a: 1, b: 2 }]`) is a pattern like the outermost one's (see
+// assignment_value_context()), so the literal assigned to it gets the pattern's excess property check (TS2353)
+static Ty const* nested_target_type(Checker* me, Expr const* parent, Expr const* value, Ty const* type) {
+    if (!parent->assignment_pattern || value->tag != EXPR_OBJECT || !value->assignment_pattern) return type;
+    Ty const* pattern = object_target_pattern(me, value, type);
+    return pattern ? pattern : type;
+}
+
 static Ty const* assignment_value_context(Checker* me, BinaryOpExpr const* binary, Ty const* left) {
     // A JSDoc `@type` of the assignment (tsgo's reparsed binary.Type, getContextualTypeForBinaryOperand)
     if (binary->jsdoc_type && !binary->jsdoc_type_borrowed) return ty_of_node(binary->jsdoc_type);
@@ -3438,13 +3461,8 @@ static Ty const* assignment_value_context(Checker* me, BinaryOpExpr const* binar
         // pattern_reads_references()): TYF_BINDING_PATTERN also means tsc's isFromBindingPattern, which goes by the
         // identity of two getContextualType answers: `({ a: n } = t0())` infers nothing, `({ promise: this.p } =
         // withResolvers())` infers from it like from any contextual type
-        bool open = false;
-        for_each (i, vec_object_expr_item, &binary->left.object) open |= i->tag == OBJECT_ITEM_SPREAD || computed_key_opens_pattern(me, i);
-        if (!open) {
-            assigned_context = ty_pattern_clone(me, left);
-            // (An assignment's: tsc's SkipBindingPatterns doesn't skip it, see ty_is_assignment_pattern())
-            *intern_slot(me, &my links, (u64[]){ KEY_ASSIGNMENT_PATTERN, assigned_context->id }, 2) = assigned_context;
-        }
+        Ty const* pattern = object_target_pattern(me, &binary->left, left);
+        if (pattern) assigned_context = pattern;
     }
     return assigned_context;
 }
@@ -5148,7 +5166,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
                     type = check_for_mutable_location(me, object_item_rare(i)->shorthand_default, member_ctx);
                     break;
                 }
-                type = check_for_mutable_location(me, &i->value, member_ctx);
+                type = nested_target_type(me, expr, &i->value, check_for_mutable_location(me, &i->value, member_ctx));
                 break;
         }
 
@@ -5593,7 +5611,7 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
             elements[count++] = ty_undefined_or_missing(me);
             continue;
         }
-        Ty const* element = check_for_mutable_location(me, i, element_ctx);
+        Ty const* element = nested_target_type(me, expr, i, check_for_mutable_location(me, i, element_ctx));
         // (tsc's checkArrayLiteral: in a tuple context, a context-sensitive element is an intra-expression inference site)
         if (element_context && !ctx.skip_sensitive && context_is_tuple_like(me, ctx.contextual, 0) && ty_expr_is_context_sensitive(i)) {
             ty_add_intra_expression_site(me, element, element_context);
