@@ -3656,9 +3656,9 @@ const baselines = {
         types: false,
     },
     'bun22-P1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun22-P2': {
         errors: false,
@@ -16546,6 +16546,11 @@ const baselines = {
         dts: true,
     },
     'ttttReturnMapperCommonSupertype': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttReturnMapperWidensFreshLiterals': {
         errors: true,
         symbols: true,
         types: true,
