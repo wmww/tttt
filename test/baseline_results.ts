@@ -15605,6 +15605,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttMappedTypeDuplicateExtraMembers': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttMappedTypeExtraMembers': {
         errors: true,
         symbols: true,
