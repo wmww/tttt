@@ -431,6 +431,21 @@ static Symbol const* export_equals_property_of(Symbol const* alias) {
     return target && target->decl_count && target->decls[0].kind == SYMBOL_DECL_EXPORT_EQUALS_PROPERTY ? target : nullptr;
 }
 
+// The declarations of the property `name` of what `export =` assigns, a union's members' in order (tsc's union property)
+static VecSpan export_equals_prop_declarations(Checker* checker, Ty const* assigned, Atom const* name) {
+    VecSpan ret = vec_span_init();
+    TyList members = assigned->kind == TY_UNION && !(assigned->flags & TYF_BOOLEAN) ? assigned->composite.types :
+        (TyList){ .data = &assigned, .len = 1 };
+    for (u32 i = 0; i < members.len; i++) {
+        Ty const* member = members.data[i];
+        Prop const* prop = (member->flags & TYF_OBJECT) ? ty_get_prop(checker, member, name) : nullptr;
+        while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target;
+        if (!prop) continue;
+        for (u32 k = 0; k < prop->decl->decl_span_count; k++) vec_span_push(&ret, prop->decl->decl_spans[k]);
+    }
+    return ret;
+}
+
 // An import in scope of the property `name` of what a module's `export =` names, when that is the found property
 // (tsgo's getAccessibleSymbolChain: an alias resolving to the symbol names it, `import { a as a2 }` makes `x.a` print
 // as `a2`). The innermost scope's
@@ -451,10 +466,9 @@ static Symbol const* export_equals_property_alias(BaselineTestCase* ctx, PropSym
             if (!target) continue;
             if (!csview_equals_sv(target->name, name)) continue;
             Ty const* assigned = ty_type_of_symbol(checker, target->decls[0].node);
-            if (!(assigned->flags & TYF_OBJECT)) continue;
-            Prop const* prop = ty_get_prop(checker, assigned, checker_atom(checker, name));
-            while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target;
-            if (prop && prop->decl->decl_span_count && span_eq(prop->decl->decl_spans[0], info->first_declaration)) found = alias;
+            VecSpan declarations = export_equals_prop_declarations(checker, assigned, checker_atom(checker, name));
+            if (vec_span_size(&declarations) && span_eq(*vec_span_at(&declarations, 0), info->first_declaration)) found = alias;
+            vec_span_drop(&declarations);
         }
         free(entries);
         if (found) return found;
@@ -1654,13 +1668,13 @@ static void port_statement_compile_test_info_inner(PortStatement const* me, Base
                 Symbol const* target = export_equals_property_of(i->symbol);
                 Checker* checker = current_checker;
                 Ty const* assigned = ty_type_of_symbol(checker, target->decls[0].node);
-                Prop const* prop = (assigned->flags & TYF_OBJECT) ? ty_get_prop(checker, assigned, checker_atom(checker, target->name)) : nullptr;
-                while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target;
-                if (prop && prop->decl->decl_span_count) {
-                    PropSymbolInfo info = { .member_count = 1, .first_declaration = prop->decl->decl_spans[0] };
+                VecSpan declarations = ty_export_equals_property_missing(checker, target) ? vec_span_init() :
+                    export_equals_prop_declarations(checker, assigned, checker_atom(checker, target->name));
+                if (!vec_span_size(&declarations)) {
+                    vec_span_drop(&declarations);
+                } else {
+                    PropSymbolInfo info = { .member_count = 1, .first_declaration = *vec_span_at(&declarations, 0) };
                     Symbol const* alias = export_equals_property_alias(ctx, &info, target->name);
-                    VecSpan declarations = vec_span_init();
-                    for (u32 k = 0; k < prop->decl->decl_span_count; k++) vec_span_push(&declarations, prop->decl->decl_spans[k]);
                     baseline_test_case_add_symbol(ctx, (BaselineSym){
                         .declarations = declarations,
                         .span = i->source_name,

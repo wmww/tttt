@@ -1905,12 +1905,22 @@ static Ty const* export_equals_property_type_of(Checker* me, Symbol const* symbo
         Ty const** types = malloc(sizeof(Ty const*) * members.len);
         panic_if(!types, "out of memory");
         u32 count = 0;
+        bool any_prop = false;
         for (u32 i = 0; i < members.len; i++) {
             Ty const* part = ty_prop_type_of(me, members.data[i], name);
+            any_prop |= part != nullptr;
+            // (A member with an index signature for the name has it partially, its value type: tsc's
+            // createUnionOrIntersectionProperty, `{ a: 1 } | { [k: string]: 2 }` has a: 1 | 2)
+            if (!part) {
+                Ty const* member = ty_apparent_type(me, members.data[i]);
+                IndexInfo const* info = member->flags & (TYF_OBJECT | TYF_INTERSECTION) ?
+                    ty_applicable_index_info_for_name(me, member, name) : nullptr;
+                if (info) part = info->value;
+            }
             if (!part) break;
             types[count++] = part;
         }
-        Ty const* ret = count == members.len ? ty_union(me, types, count, nullptr, (TyList){0}) : nullptr;
+        Ty const* ret = count == members.len && any_prop ? ty_union(me, types, count, nullptr, (TyList){0}) : nullptr;
         free(types);
         return ret;
     }

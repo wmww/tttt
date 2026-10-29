@@ -1,0 +1,29 @@
+a.ts(2,7): error TS2322: Type 'number' is not assignable to type 'boolean'.
+  Type 'number' is not assignable to type 'boolean'.
+a.ts(3,10): error TS2305: Module '"./m2"' has no exported member 'a'.
+a.ts(4,10): error TS2305: Module '"./m3"' has no exported member 'zz'.
+
+
+==== m1.ts (0 errors) ====
+    declare const v: { a: 1 } | { [k: string]: 2 };
+    export = v;
+==== m2.ts (0 errors) ====
+    declare const w: { a: 1 } | { b: 2 };
+    export = w;
+==== m3.ts (0 errors) ====
+    declare const u: { [k: string]: 2 };
+    export = u;
+==== a.ts (3 errors) ====
+    import { a as a1 } from "./m1";
+    const r1: boolean = a1;
+          ~~
+!!! error TS2322: Type 'number' is not assignable to type 'boolean'.
+!!! error TS2322:   Type 'number' is not assignable to type 'boolean'.
+    import { a as a2 } from "./m2";
+             ~
+!!! error TS2305: Module '"./m2"' has no exported member 'a'.
+    import { zz } from "./m3";
+             ~~
+!!! error TS2305: Module '"./m3"' has no exported member 'zz'.
+    const r3: boolean = zz;
+    

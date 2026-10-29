@@ -79,7 +79,7 @@ last line. The real cause is then elsewhere, and the entry says where. Show a ca
 - 06-C15: `yield* [[1], ["a"]]` in a `Generator<number[]>`. tsc elaborates the array literal element by element
   against the yielded type (`Type '[number]' is not assignable to type 'number'`), tttt reports the whole
   `string[] | number[]`: yield_typecheck() passed no expression to elaborate for `yield*`. TS2322 at another
-  position. [fixed COMMIT-C15] Left: `yield* [[1], ["a"]] as const` against `Generator<number[]>`, where tsc
+  position. [fixed 4badee3d8] Left: `yield* [[1], ["a"]] as const` against `Generator<number[]>`, where tsc
   elaborates both elements (an out-of-bounds index of the union of tuples is undefined to it, and the element's type is
   its const one, `readonly [1]`); tttt reports the first element only, as `number[]`. Text and count only. [open]
 - 09-C11b: an interface merged with two members of the same late-bound name of type string (`[s]: number`, `[s]:
@@ -93,7 +93,9 @@ last line. The real cause is then elsewhere, and the entry says where. Show a ca
 - 10-C19, 25-C13 and 28-C31b: a setter whose only parameter is `this: X` (TS2784). tsc takes it as the setter's
   value parameter, so the getter-setter type check and `new C().a = v` report TS2322; tttt skips it. [open]
 - 11-C10: a named import of `a` from an `export =` of a union with an index signature (`{ a: 1 } | { [k: string]: 2
-  }`). tsc finds the property through the union, tttt reports TS2305. TS2322 missing. [open]
+  }`). tsc finds the property through the union (a member's index signature makes it partial, not missing), tttt
+  reported TS2305: export_equals_property_type_of() wanted a real property in every member. TS2322 missing.
+  [fixed COMMIT-C10]
 - 12-C1a: `{ [K in keyof T]: T }` against `{ [K in keyof U]: T }`. tsc compares the constraints (keyof U to keyof
   T) and fails, tttt accepts. TS2322 missing. [open]
 - 12-C2b: `pipe1(<T,>(x: T) => [x, q] as [T, Q])` inside `outer<Q>`. tsc's returned signature keeps Q, so

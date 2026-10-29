@@ -1,0 +1,48 @@
+//// [test/cases/ttttExportEqualsUnionIndexProperty.ts] ////
+
+=== m1.ts ===
+declare const v: { a: 1 } | { [k: string]: 2 };
+>v : { a: 1; } | { [k: string]: 2; }
+>a : 1
+>k : string
+
+export = v;
+>v : { a: 1; } | { [k: string]: 2; }
+
+=== m2.ts ===
+declare const w: { a: 1 } | { b: 2 };
+>w : { a: 1; } | { b: 2; }
+>a : 1
+>b : 2
+
+export = w;
+>w : { a: 1; } | { b: 2; }
+
+=== m3.ts ===
+declare const u: { [k: string]: 2 };
+>u : { [k: string]: 2; }
+>k : string
+
+export = u;
+>u : { [k: string]: 2; }
+
+=== a.ts ===
+import { a as a1 } from "./m1";
+>a : 1 | 2
+>a1 : 1 | 2
+
+const r1: boolean = a1;
+>r1 : boolean
+>a1 : 1 | 2
+
+import { a as a2 } from "./m2";
+>a : any
+>a2 : any
+
+import { zz } from "./m3";
+>zz : any
+
+const r3: boolean = zz;
+>r3 : boolean
+>zz : any
+
