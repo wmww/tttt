@@ -903,9 +903,39 @@ static bool is_implicitly_excluded(csview segment) {
         csview_equals(segment, "jspm_packages");
 }
 
+// The length of the pattern's leading whole segments without a wildcard, up to and with their last `/`
+static isize glob_literal_prefix(csview pattern) {
+    if (!pattern.size) return 0;
+    char const* star = memchr(pattern.buf, '*', (size_t)pattern.size);
+    isize end = star ? star - pattern.buf : pattern.size;
+    char const* question = memchr(pattern.buf, '?', (size_t)end);
+    if (question) end = question - pattern.buf;
+    while (end > 0 && pattern.buf[end - 1] != '/') end--;
+    return end;
+}
+
+static bool glob_matches_rest(csview pattern, csview path, bool prefix);
+
 // Whether the absolute path matches the absolute pattern. With prefix, matching a leading part of the path is enough
 // (an excluded directory excludes what is in it)
+// (The pattern's literal segments are compared as bytes, one memcmp: a path is matched against every include and
+// exclude pattern, segment by segment the walk's main cost on repositories with many patterns. Equal bytes up to a `/`
+// are equal segments, and a difference in a literal segment fails the match wherever it is. A path that ends inside
+// the literal part takes the segment walk: `/a/b` matches `/a/b/**`)
 static bool glob_matches(csview pattern, csview path, bool prefix) {
+    isize literal = glob_literal_prefix(pattern);
+    if (literal) {
+        isize common = path.size < literal ? path.size : literal;
+        if (memcmp(pattern.buf, path.buf, (size_t)common)) return false;
+        if (path.size >= literal) {
+            return glob_matches_rest(csview_from_n(pattern.buf + literal, pattern.size - literal),
+                csview_from_n(path.buf + literal, path.size - literal), prefix);
+        }
+    }
+    return glob_matches_rest(pattern, path, prefix);
+}
+
+static bool glob_matches_rest(csview pattern, csview path, bool prefix) {
     if (!pattern.size) return prefix || !path.size;
     if (!path.size) {
         // Only `**` can match nothing
@@ -918,40 +948,55 @@ static bool glob_matches(csview pattern, csview path, bool prefix) {
     csview pattern_rest = pattern;
     csview segment = next_segment(&pattern_rest);
     if (csview_equals(segment, "**")) {
-        if (glob_matches(pattern_rest, path, prefix)) return true;
+        if (glob_matches_rest(pattern_rest, path, prefix)) return true;
         csview path_rest = path;
         csview name = next_segment(&path_rest);
         // `**` doesn't go into package directories or hidden ones
         if (is_implicitly_excluded(name) || (name.size && name.buf[0] == '.')) return false;
-        return glob_matches(pattern, path_rest, prefix);
+        return glob_matches_rest(pattern, path_rest, prefix);
     }
     csview path_rest = path;
     csview name = next_segment(&path_rest);
     bool has_wildcard = segment_is_wild(segment);
     if (has_wildcard && name.size && name.buf[0] == '.' && segment.buf[0] != '.') return false;
     if (!segment_matches(segment, name)) return false;
-    return glob_matches(pattern_rest, path_rest, prefix);
+    return glob_matches_rest(pattern_rest, path_rest, prefix);
 }
 
 // Whether a path inside the directory `dir` can match the pattern (tsc's directory patterns: don't walk what no
 // include can match)
+static bool glob_may_match_inside_rest(csview pattern, csview dir);
+// (The literal segments as one memcmp, like glob_matches())
 static bool glob_may_match_inside(csview pattern, csview dir) {
+    isize literal = glob_literal_prefix(pattern);
+    if (literal) {
+        isize common = dir.size < literal ? dir.size : literal;
+        if (memcmp(pattern.buf, dir.buf, (size_t)common)) return false;
+        if (dir.size >= literal) {
+            return glob_may_match_inside_rest(csview_from_n(pattern.buf + literal, pattern.size - literal),
+                csview_from_n(dir.buf + literal, dir.size - literal));
+        }
+    }
+    return glob_may_match_inside_rest(pattern, dir);
+}
+
+static bool glob_may_match_inside_rest(csview pattern, csview dir) {
     if (!dir.size) return pattern.size > 0;
     if (!pattern.size) return false;
     csview pattern_rest = pattern;
     csview segment = next_segment(&pattern_rest);
     csview dir_rest = dir;
     if (csview_equals(segment, "**")) {
-        if (glob_may_match_inside(pattern_rest, dir)) return true;
+        if (glob_may_match_inside_rest(pattern_rest, dir)) return true;
         csview name = next_segment(&dir_rest);
         if (is_implicitly_excluded(name) || (name.size && name.buf[0] == '.')) return false;
-        return glob_may_match_inside(pattern, dir_rest);
+        return glob_may_match_inside_rest(pattern, dir_rest);
     }
     csview name = next_segment(&dir_rest);
     bool has_wildcard = segment_is_wild(segment);
     if (has_wildcard && name.size && name.buf[0] == '.' && segment.buf[0] != '.') return false;
     if (!segment_matches(segment, name)) return false;
-    return glob_may_match_inside(pattern_rest, dir_rest);
+    return glob_may_match_inside_rest(pattern_rest, dir_rest);
 }
 
 // "src" means "src/**/*": a last segment without wildcard or extension is a directory
