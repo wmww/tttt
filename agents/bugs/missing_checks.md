@@ -618,7 +618,7 @@ Not fixed:
   TS2842 as the excess). The CLI shows neither (syntax errors stop it). [tsgo]
 - inferenceErasedSignatures extends-object (`set<K extends Object this>`), awaitedTypeJQuery delete-stmt: spans of a
   method or type argument list broken by recovery end after trivia (TS7010, TS2314). Test
-  ttttRecoveryTrailingTriviaSpans. [fixed cf255362f]
+  ttttRecoveryTrailingTriviaSpans. [fixed 0cdc358da]
 - recursiveTypesWithTypeof swap-stmts (text TS2403), distributiveConditionalTypeConstraints ann-string-number
   (elaboration TS2322): not looked at. [text]
 
@@ -631,7 +631,7 @@ Known: recursiveClassBaseType (TS2310), unionTypeWithIndexSignature (text TS2322
   [fixed 020c811ec] Left: the same inside an array pattern, `[{[foo]: bar4}] = [{bar: "bar"}]`: the nested object
   literal target isn't a pattern type in tttt (only the top-level one is cloned as a pattern in
   assignment_value_context), so its literal gets no excess property check: nested targets (array elements, property
-  values) are patterns too now (nested_target_type). Test ttttNestedAssignmentPattern. [fixed 8e3d0ec78]
+  values) are patterns too now (nested_target_type). Test ttttNestedAssignmentPattern. [fixed 144056b07]
 - useRegexpGroups num-to-str: `"a"02""`, the scanner's TS1121 before the parser's ',' expected at the same token.
   Test ttttOctalScannerErrorFirst. [fixed 8b85c6f16]
 - thislessFunctionsNotContextSensitive3 delete-stmt: `export {` in a member list is no modifier. Test
@@ -646,7 +646,7 @@ Not fixed:
   span_from_token takes `>>`. A one-character `>` broke bun43-X5d, where the expression parse rescanned `>>=`; needs a
   type-context flag in the parser. Done without the flag: ParserShared.greater_rescanned records where an expression's
   binary operator was looked for at a `>`, every other `>` is one character. Test ttttRecoveryTrailingTriviaSpans.
-  [fixed cf255362f]
+  [fixed 0cdc358da]
 - contextualTyping null-arg: `[function(null, s) { return s; }]` in a type assertion: after TS1359 and TS1138 tsgo's
   recovery reports TS2304/TS1005 for the rest of the line, tttt's swallows it. [open]
 - allowUnescapedParagraphAndLineSeparatorsInStringLiteral delete-stmt: the errors baseline's squiggles after a U+2028
