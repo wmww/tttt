@@ -33,6 +33,7 @@ ones in `paths.sh` (drizzle, zod, excalidraw, effect, nest, vscode; `ALL` is eve
 | `g2bench.sh BIN [RUNS]` | gate G2's table: best wall, CPU and peak RSS per `-p` corpus at K1, defaults, K4, shared K4, K12, shared K12 (`ONLY=` restricts) |
 | `tsan.sh [corpus...]` | the standing race check: a TSan build of the tree (`$TSAN_BUILD`, default `$OUT/btsan-<hash>`), every `-p` corpus (default `ALL`) at `THREADS` (default "4 12") with `TTTT_SHARED_GRAPH=1`; one line per run (clean / N report groups, output against `ref.X`), then every group over all runs; exit 1 if any. ~25 min for all, vscode T12 ~25 GB (`SKIP=vscode`); `TSAN_ENV=`, `EXTRA=` |
 | `tsan.py LOG... [--brief]` | groups ThreadSanitizer reports by the unordered pair (access, previous access), innermost non-TSan frames, with the runs each group occurs in and both stacks of its first report |
+| `rootcensus.py run [-f REGEX] [--out F]` / `report` | the root census (agents/notes/threading.md "The census"): a `-DTTTT_ROOT_CENSUS` build in /tmp/tttt-rootcensus run with `TTTT_DUP_CENSUS=1` at one thread, K1, the default K and K8 round robin: each type's root declaration under four rules and which checkers touched it; plain and flagged typecheck CPU next to it; the report models "share on second touch" (routed/plain) per project and at breadth |
 
 **Fingerprint coverage** (graph_debug.c's header has the details). Fingerprinted, clean results only (the taint counter
 around each computation; `TTTT_GRAPH_FINGERPRINT_TAINTED=1` compares tainted ones too, counted apart): members and

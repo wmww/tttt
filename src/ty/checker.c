@@ -991,6 +991,9 @@ Ty* ty_alloc(Checker* me, TyKind kind, u32 flags) {
         my next_type_id = type_directory_block(my lazy.directory);
     }
     lazy_slots_add_type(&my lazy, ret);
+#ifdef TTTT_ROOT_CENSUS
+    root_census_alloc(me, ret);
+#endif
     ret->kind = kind;
     ret->height = 0;
     ret->memo = 0;
@@ -5041,6 +5044,12 @@ static Span resolving_entry_span(Resolving const* entry) {
     }
     return span;
 }
+
+#ifdef TTTT_ROOT_CENSUS
+Span ty_resolving_entry_span(Resolving const* entry) {
+    return resolving_entry_span(entry);
+}
+#endif
 
 // The file a resolution entry's declaration is in, null when it can't say (program.c's history_dependent_matters())
 static SourceFile const* resolving_entry_file(Resolving const* entry) {

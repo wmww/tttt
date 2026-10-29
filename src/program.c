@@ -6549,7 +6549,13 @@ static void check_share(Program* me, u32 c, u32 count) {
         void hub_trace_file(Checker* checker, SourceFile const* source, bool begin);
         hub_trace_file(checker, source, true);
 #endif
+#ifdef TTTT_ROOT_CENSUS
+        if (debug_env.dup_census) root_census_file(checker, true);
+#endif
         check_file(me, checker, source, at);
+#ifdef TTTT_ROOT_CENSUS
+        if (debug_env.dup_census) root_census_file(checker, false);
+#endif
 #ifdef TTTT_HUB_TRACE
         hub_trace_file(checker, source, false);
 #endif
