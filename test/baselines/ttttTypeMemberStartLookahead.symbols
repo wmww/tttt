@@ -1,0 +1,25 @@
+//// [test/cases/ttttTypeMemberStartLookahead.ts] ////
+
+=== ttttTypeMemberStartLookahead.ts ===
+// An untyped property of a type member list is followed by what tsc's isTypeMemberStart accepts, or the list ends
+// (TS1131). The lookahead runs while the member's parser is pending: a debug build's check(!has_panding_child) held
+// only once it ran in that parser (vscode, from 93f638b2f)
+interface I {
+>I : Symbol(I, Decl(ttttTypeMemberStartLookahead.ts, 0, 0))
+
+    a
+>a : Symbol(I.a, Decl(ttttTypeMemberStartLookahead.ts, 3, 13))
+
+    b;
+>b : Symbol(I.b, Decl(ttttTypeMemberStartLookahead.ts, 4, 5))
+
+    c?
+>c : Symbol(I.c, Decl(ttttTypeMemberStartLookahead.ts, 5, 6))
+
+    f2 = 1
+}
+type T = { x, y }
+>T : Symbol(T, Decl(ttttTypeMemberStartLookahead.ts, 8, 1))
+>x : Symbol(x, Decl(ttttTypeMemberStartLookahead.ts, 9, 10))
+>y : Symbol(y, Decl(ttttTypeMemberStartLookahead.ts, 9, 13))
+

@@ -4908,7 +4908,9 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
                 if (bracketed) {
                     while (c < end && (*c == ' ' || *c == '\t')) c++;
                     // (tsc: parseExpected(EqualsToken), then a type, which is TS1110 when there's none)
-                    Parser e = parser(parent);
+                    // (The error's parser is made after the type's parse, which takes parent's child itself)
+                    Span error_at = span_null;
+                    bool type_expected = false;
                     if (c < end && *c == '=') {
                         c++;
                         TypeNode type;
@@ -4920,11 +4922,15 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
                             tag.default_start = before;
                         } else {
                             while (before < end && (*before == ' ' || *before == '\t')) before++;
-                            parse_error(&e, span_make(source, before, before + (before < end)), 1110, "Type expected.");
+                            error_at = span_make(source, before, before + (before < end));
+                            type_expected = true;
                         }
                     } else {
-                        parse_error(&e, span_make(source, c, c + (c < end)), 1005, "'=' expected.");
+                        error_at = span_make(source, c, c + (c < end));
                     }
+                    Parser e = parser(parent);
+                    if (type_expected) parse_error(&e, error_at, 1110, "Type expected.");
+                    else if (span_valid(error_at)) parse_error(&e, error_at, 1005, "'=' expected.");
                     jsdoc_keep_errors(&e);
                     parse_fail(&e);
                     while (c < end && *c != ']' && *c != '\n') c++;
@@ -4960,6 +4966,9 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
                 while (token_end < end && (is_identifier_char(*token_end) || (uint8_t)*token_end >= 0x80)) token_end++;
                 if (token_end == after && after < end) token_end++;
                 parse_error(&e, span_make(source, after, token_end), 1005, "'{' expected.");
+                // (Kept before the type's parse, which takes parent's child itself)
+                jsdoc_keep_errors(&e);
+                parse_fail(&e);
                 const char* type_start = after;
                 TypeNode type;
                 if (after < end && parse_jsdoc_bare_type(parent, &after, end, &type)) {
@@ -4969,8 +4978,6 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
                     c = after;
                 }
                 // (Without its `{`, no `}` is expected: parseExpected's false result is hasBrace)
-                jsdoc_keep_errors(&e);
-                parse_fail(&e);
             } else if ((tag.kind == JSDOC_TAG_TYPE || tag.kind == JSDOC_TAG_EXTENDS ||
                     tag.kind == JSDOC_TAG_IMPLEMENTS || tag.kind == JSDOC_TAG_THIS) && after < end && after > c &&
                 !memchr(c, '\n', (size_t)(after - c)) && *after != '@'
@@ -6796,7 +6803,21 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
         bool parsed_member = parse_list_member(&member_p, PARSING_TYPE_MEMBERS, true, true, &item);
         // (tsc's isTypeMemberStart rejects a name followed by something else than `(`, `<`, `?`, `:`, `,` or the end of
         // a statement, which only an untyped property of tttt's can be: `{ f2 = 1 }` is TS1131, the list ends)
-        if (parsed_member && item.tag == CLASS_ITEM_FIELD && !item.field.has_explicit_type && !is_type_member_start(&p)) {
+        // (The lookahead runs from the member's start in member_p, which p can't have a second child of meanwhile)
+        bool member_start_ok = true;
+        if (parsed_member && item.tag == CLASS_ITEM_FIELD && !item.field.has_explicit_type) {
+            char const* member_end = member_p.pos;
+            WhitespaceType whitespace = member_p.whitespace;
+            char const* whitespace_end = member_p.whitespace_end;
+            member_p.pos = member_start;
+            member_p.whitespace = p.whitespace;
+            member_p.whitespace_end = p.whitespace_end;
+            member_start_ok = is_type_member_start(&member_p);
+            member_p.pos = member_end;
+            member_p.whitespace = whitespace;
+            member_p.whitespace_end = whitespace_end;
+        }
+        if (!member_start_ok) {
             class_item_drop(&item);
             parsed_member = false;
             parse_fail(&member_p);
