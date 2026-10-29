@@ -1,0 +1,14 @@
+ttttNamespaceStringName.ts(4,11): error TS1003: Identifier expected.
+ttttNamespaceStringName.ts(4,17): error TS1005: ';' expected.
+
+
+==== ttttNamespaceStringName.ts (2 errors) ====
+    // `namespace "100" {}` (a string after `namespace`, not `module`): the name is missing (TS1003) and nothing is taken,
+    // so the string is an expression statement and the block after it wants a ';' (tsc's parseModuleBlock without its
+    // '{'). Seed 20261114, parseInvalidNames num-to-str
+    namespace "100" {}
+              ~~~~~
+!!! error TS1003: Identifier expected.
+                    ~
+!!! error TS1005: ';' expected.
+    

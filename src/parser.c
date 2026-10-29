@@ -16079,6 +16079,11 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
                 return parse_success(&p);
             } else if (is_string) {
                 parse_error(&p, span_from(name_anchor), 1003, "Identifier expected.");
+                // (The name is missing, the string not taken, nor is the body without its '{' (tsc's parseModuleBlock):
+                // the string is an expression statement, ';' expected at a `{` after it)
+                value_drop(&val);
+                p.pos = name_anchor.start;
+                return parse_success(&p);
             } else {
                 parse_error(&p, span_from(name_anchor), 2819, "Namespace name cannot be '", &val, "'.");
             }
