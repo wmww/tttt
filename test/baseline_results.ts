@@ -16406,7 +16406,7 @@ const baselines = {
     'ttttRecursiveGetterDeferredConditional': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ttttRecursiveReturnParenthesizedCallee': {
         errors: true,
