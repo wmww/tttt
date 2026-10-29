@@ -6088,6 +6088,15 @@ Ty const* prop_write_type(Checker* me, Prop const* const_prop) {
 // shared with the target, which is indistinguishable and cheaper, unless the mapper brings in type variables: `T := U`
 // in the method `then<U>(cb: (value: T) => P<U>)` of `P<U>` would capture them. The ones the mapper replaces are being
 // instantiated away (see ty_signature_instantiation()) and stay
+typedef struct SigClones {
+    TyList type_params;
+    TyMapper const* mapper;
+} SigClones;
+// (Its fields are a function of the key: the target's type parameters, as resolved, which are identities too, and the
+// signature's own mapper and flags)
+static SigClones const* make_sig_clones(Checker* me, TyList params, TyMapper const* outer, bool keep_mapped,
+    u64 const key[2]);
+
 static void clone_type_params(Checker* me, Signature* sig, SigResolved* r) {
     TyList params = r->type_params;
     TyMapper const* outer = r->mapper;
@@ -6102,6 +6111,18 @@ static void clone_type_params(Checker* me, Signature* sig, SigResolved* r) {
         any = mapped ? !keep_mapped : ty_param_is_bounded(params.data[i]);
     }
     if (!any) return;
+    // (An identity of the signature: made once, whoever resolves it, so a resolution kept privately has the same type
+    // parameters as the published one, and so does everything keyed by them)
+    u64 key[2] = { KEY_SIGNATURE_CLONES, (u64)(uintptr_t)sig };
+    SigClones const* known = intern_get(&my links, key, 2);
+    if (!known) known = make_sig_clones(me, params, outer, keep_mapped, key);
+    r->mapper = known->mapper;
+    r->type_params = known->type_params;
+}
+
+static SigClones const* make_sig_clones(Checker* me, TyList params, TyMapper const* outer, bool keep_mapped,
+    u64 const key[2]
+) {
     Ty const** fresh = arena_new_n(&my arena, Ty const*, params.len);
     Ty const** sources = arena_new_n(&my arena, Ty const*, outer->len + params.len);
     Ty const** targets = arena_new_n(&my arena, Ty const*, outer->len + params.len);
@@ -6126,8 +6147,10 @@ static void clone_type_params(Checker* me, Signature* sig, SigResolved* r) {
     for (u32 i = 0; i < params.len; i++) {
         if (fresh[i] != params.data[i]) ((Ty*)fresh[i])->param.state->clone_mapper = mapper;
     }
-    r->mapper = mapper;
-    r->type_params = (TyList){ .data = fresh, .len = params.len };
+    SigClones* made = arena_new(&my arena, SigClones);
+    made->mapper = mapper;
+    made->type_params = (TyList){ .data = fresh, .len = params.len };
+    return intern_set(me, &my links, intern_slot(me, &my links, key, 2), made);
 }
 
 // tsc's IsUntypedSignatureInJSFile: a function of a JavaScript file without JSDoc parameter types (or `@type`), not

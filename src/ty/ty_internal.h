@@ -194,6 +194,9 @@ enum {
     // --shared-graph: ty_signature_instantiation() of a signature whose resolution this worker keeps privately (its type
     // parameters are this worker's clones): the instance is its own too (a scratch kind)
     KEY_SIGNATURE_INSTANCE_OWN,
+    // Signature (an instantiation) -> SigClones: the fresh type parameters its resolution gives it and the mapper to them
+    // (members.c clone_type_params()): an identity, so a worker resolving the signature privately has the same ones
+    KEY_SIGNATURE_CLONES,
 };
 
 // The type parameters declared outside a root conditional type that it mentions (tsc's root.outerTypeParameters, less
