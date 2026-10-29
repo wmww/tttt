@@ -1,0 +1,49 @@
+//// [test/cases/ttttRecursiveGetterDeferredConditional.ts] ////
+
+=== ttttRecursiveGetterDeferredConditional.ts ===
+// A conditional type met while a getter's inferred return type is in flight (the variable it returns from circular):
+// tsgo resolves `Out<Box<Box<any>>>` to unknown (`o` is optional), tttt leaves it deferred and never relates it. Known
+// failing (seed 20261119, recursiveTypeInference2 add-optional: a spurious TS2769 on zod-like `.default([])`)
+type Out<T> = T extends { o: any } ? T["o"] : unknown;
+>Out : Out<T>
+>o : any
+
+interface Box<T> { o?: T; get(): Out<this>; }
+>o : T | undefined
+>get : () => Out<this>
+
+declare function box<T>(v: T): Box<T>;
+>box : <T>(v: T) => Box<T>
+>v : T
+
+declare function obj<T>(shape: T): Box<T>;
+>obj : <T>(shape: T) => Box<T>
+>shape : T
+
+const Tree = obj({
+>Tree : Box<{ name: number; readonly children: unknown; }>
+>obj({  name: 1,  get children() {    return box(Tree).get();  },}) : Box<{ name: number; readonly children: unknown; }>
+>obj : <T>(shape: T) => Box<T>
+>{  name: 1,  get children() {    return box(Tree).get();  },} : { name: number; readonly children: unknown; }
+
+  name: 1,
+>name : number
+>1 : 1
+
+  get children() {
+>children : unknown
+
+    return box(Tree).get();
+>box(Tree).get() : unknown
+>box(Tree).get : () => unknown
+>box(Tree) : Box<Box<{ name: number; readonly children: unknown; }>>
+>box : <T>(v: T) => Box<T>
+>Tree : Box<{ name: number; readonly children: unknown; }>
+>get : () => unknown
+
+  },
+});
+declare const o1: Out<Box<typeof Tree>>;
+>o1 : unknown
+>Tree : Box<{ name: number; readonly children: unknown; }>
+

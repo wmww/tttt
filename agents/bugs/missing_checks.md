@@ -601,6 +601,25 @@ never-const (harness writes no errors baseline).
 - recursiveClassBaseType delete-stmt: missing TS2310 (the base cycle design). noCircularitySelfReferentialGetter2
   (TS2345 text), unionTypeWithIndexSignature never-const (TS2322 text): not looked at. [open]
 
+## Mutation seed 20261119 (2026-10-29, cor14: `scripts/mutate.py -n 8000 --seed 20261119`, 8 of 8000 differ)
+Known: generatorTypeCheck46 (TS2488), distributiveConditionalBaseConstraint (elaboration TS2344 [text]),
+restElementWithInitializer2 x2 (tsgo's TS-1 pre/post-emit line [tsgo]). Fixed:
+- jsonRawJSON2 ann-string-number: a script's `interface RawJSON` redeclaring the es2026.json lib's `declare global`
+  one: TS2430 at the first declaration, the script's (globals merge before global augmentations); the harness shares
+  libs, whose augmentations were merged first. Test ttttGlobalAugmentationInterfaceFirst. [fixed 7fe119acc]
+- syntheticProtectedProperties member-typo: a spelling suggestion on `Base & Mock` with a protected and a public
+  `content` (the intersection's is public: TS2551), and its "declared here" by tsgo's value-declaration rule. Test
+  ttttIntersectionSuggestionVisibility. [fixed 2394d4a13]
+- isolatedDeclarationErrorsObjects ann-number-string: an accessor pair of differing types printed from the checker's
+  type reports TS9009 at the setter (serializeReturnTypeForSignature's inference fallback). Test
+  ttttIsolatedSetterReturnFallback. [fixed 3fa82438d] Left: a getter without annotation in such a pair. [open]
+Not fixed:
+- recursiveTypeInference2 add-optional: a spurious TS2769 on zod-like `array(Tree).default([])` in a recursive getter:
+  a conditional type met while the getter's inferred type is in flight (`Out<Box<Box<any>>>`, `o` optional) stays
+  deferred in tttt (never related: TTTT_DEBUG_RELATE shows no `Box<Box<any>>` -> `{ o: any }` query), tsgo resolves it
+  to unknown. Not traced further: which in-flight path makes the instantiation lazy. Known-failing test
+  ttttRecursiveGetterDeferredConditional (8 lines). zod v4's recursive getters are this shape. [open]
+
 ## Mutation seed 20261118 (2026-10-29, cor14: `scripts/mutate.py -n 8000 --seed 20261118`, 7 of 8000 differ)
 Known: infiniteRecursionDestructuringLoop (TS2339 [design]), unionTypeWithIndexSignature (text TS2322),
 symbolProperty18 (TS7022), conditionalContextualReturnSubstitutionCache drop-as (the related TS2208, seed 20261116's
