@@ -2824,6 +2824,12 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
     if (my tag == STATEMENT_DECL_ENUM) current_checker->current_node.error_span = my decl.enum_->name;
     if (my tag == STATEMENT_DECL_FUNCTION) current_checker->current_node.error_span = function_error_span(my decl.function.impl);
     if (my tag == STATEMENT_DECL_NAMESPACE && span_valid(my decl.namespace->name)) current_checker->current_node.error_span = my decl.namespace->name;
+    // (A return statement's at its keyword, TS2589 from relating what it returns: not an arrow's expression body)
+    if (my tag == STATEMENT_RETURN_EXPR && span_valid(my span) && span_sv(my span).size >= 6 &&
+        !memcmp(span_start_ptr(my span), "return", 6)
+    ) {
+        current_checker->current_node.error_span = span_make_in(my span, span_start_ptr(my span), span_start_ptr(my span) + 6);
+    }
     statement_typecheck_inner(me, ctx, errs);
     ty_leave_node(current_checker, saved);
 }

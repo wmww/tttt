@@ -1,0 +1,26 @@
+ttttReturnStatementErrorSpan.ts(14,5): error TS2589: Type instantiation is excessively deep and possibly infinite.
+ttttReturnStatementErrorSpan.ts(14,12): error TS2589: Type instantiation is excessively deep and possibly infinite.
+
+
+==== ttttReturnStatementErrorSpan.ts (2 errors) ====
+    // An error at a return statement as the current node (TS2589 relating what it returns) spans its `return` keyword
+    // (tsc's getErrorSpanForNode). Seed 20261114, circularInlineMappedGenericTupleTypeNoCrash str-to-num
+    
+    class Foo<Elements extends readonly unknown[]> {
+      public readonly elements: { [P in keyof Elements]: { bar: Elements[P] } };
+    
+      public constructor(
+        ...elements: { [P in keyof Elements]: { bar: Elements[P] } }
+      ) {
+        this.elements = elements;
+      }
+    
+      public add(): Foo<[...Elements, "abc"]> {
+        return new Foo<[...Elements, 42]>(...this.elements, { bar: "abc" });
+        ~~~~~~
+!!! error TS2589: Type instantiation is excessively deep and possibly infinite.
+               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2589: Type instantiation is excessively deep and possibly infinite.
+      }
+    }
+    

@@ -1,0 +1,50 @@
+//// [test/cases/ttttReturnStatementErrorSpan.ts] ////
+
+=== ttttReturnStatementErrorSpan.ts ===
+// An error at a return statement as the current node (TS2589 relating what it returns) spans its `return` keyword
+// (tsc's getErrorSpanForNode). Seed 20261114, circularInlineMappedGenericTupleTypeNoCrash str-to-num
+
+class Foo<Elements extends readonly unknown[]> {
+>Foo : Symbol(Foo, Decl(ttttReturnStatementErrorSpan.ts, 0, 0))
+>Elements : Symbol(Elements, Decl(ttttReturnStatementErrorSpan.ts, 3, 10))
+
+  public readonly elements: { [P in keyof Elements]: { bar: Elements[P] } };
+>elements : Symbol(Foo.elements, Decl(ttttReturnStatementErrorSpan.ts, 3, 48))
+>P : Symbol(P, Decl(ttttReturnStatementErrorSpan.ts, 4, 31))
+>Elements : Symbol(Elements, Decl(ttttReturnStatementErrorSpan.ts, 3, 10))
+>bar : Symbol(bar, Decl(ttttReturnStatementErrorSpan.ts, 4, 54))
+>Elements : Symbol(Elements, Decl(ttttReturnStatementErrorSpan.ts, 3, 10))
+>P : Symbol(P, Decl(ttttReturnStatementErrorSpan.ts, 4, 31))
+
+  public constructor(
+    ...elements: { [P in keyof Elements]: { bar: Elements[P] } }
+>elements : Symbol(elements, Decl(ttttReturnStatementErrorSpan.ts, 6, 21))
+>P : Symbol(P, Decl(ttttReturnStatementErrorSpan.ts, 7, 20))
+>Elements : Symbol(Elements, Decl(ttttReturnStatementErrorSpan.ts, 3, 10))
+>bar : Symbol(bar, Decl(ttttReturnStatementErrorSpan.ts, 7, 43))
+>Elements : Symbol(Elements, Decl(ttttReturnStatementErrorSpan.ts, 3, 10))
+>P : Symbol(P, Decl(ttttReturnStatementErrorSpan.ts, 7, 20))
+
+  ) {
+    this.elements = elements;
+>this.elements : Symbol(Foo.elements, Decl(ttttReturnStatementErrorSpan.ts, 3, 48))
+>this : Symbol(Foo, Decl(ttttReturnStatementErrorSpan.ts, 0, 0))
+>elements : Symbol(Foo.elements, Decl(ttttReturnStatementErrorSpan.ts, 3, 48))
+>elements : Symbol(elements, Decl(ttttReturnStatementErrorSpan.ts, 6, 21))
+  }
+
+  public add(): Foo<[...Elements, "abc"]> {
+>add : Symbol(Foo.add, Decl(ttttReturnStatementErrorSpan.ts, 10, 3))
+>Foo : Symbol(Foo, Decl(ttttReturnStatementErrorSpan.ts, 0, 0))
+>Elements : Symbol(Elements, Decl(ttttReturnStatementErrorSpan.ts, 3, 10))
+
+    return new Foo<[...Elements, 42]>(...this.elements, { bar: "abc" });
+>Foo : Symbol(Foo, Decl(ttttReturnStatementErrorSpan.ts, 0, 0))
+>Elements : Symbol(Elements, Decl(ttttReturnStatementErrorSpan.ts, 3, 10))
+>this.elements : Symbol(Foo.elements, Decl(ttttReturnStatementErrorSpan.ts, 3, 48))
+>this : Symbol(Foo, Decl(ttttReturnStatementErrorSpan.ts, 0, 0))
+>elements : Symbol(Foo.elements, Decl(ttttReturnStatementErrorSpan.ts, 3, 48))
+>bar : Symbol(bar, Decl(ttttReturnStatementErrorSpan.ts, 13, 57))
+  }
+}
+
