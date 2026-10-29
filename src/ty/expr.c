@@ -3448,15 +3448,46 @@ Ty const* ty_assigned_value_context(Checker* me, BinaryOpExpr const* assignment)
     return assignment_value_context(me, assignment, ty_expr_type(me, &assignment->left));
 }
 
+static bool is_logical_op(BinaryOp op) {
+    return op == BINARY_OP_AND_AND || op == BINARY_OP_OR_OR || op == BINARY_OP_EH_EH;
+}
+
+static bool truthy_tests_check(Expr const* cond, Expr const* target);
+
+// tsc's checkTestingKnownTruthyType's normal-mode checkExpression: a logical `cond`'s right operand, unless that is
+// logical itself (then checkTestingKnownTruthyTypes of it)
+static bool truthy_test_checks(Expr const* cond, Expr const* target) {
+    if (cond->tag != EXPR_BINARY_OP || !is_logical_op(cond->binary_op->op)) return false;
+    Expr const* location = &cond->binary_op->right;
+    if (location->tag == EXPR_BINARY_OP && is_logical_op(location->binary_op->op)) return truthy_tests_check(location, target);
+    return location->inner_span.file == target->inner_span.file && span_contains_span(expr_outer_span(location), target->inner_span);
+}
+
+// Whether tsc's checkTestingKnownTruthyTypes of `cond` (a conditional's condition, a `&&`'s left operand) checks
+// `target` in normal mode: the right operand of `cond` and of each `||`/`??` down its left operands (strictNullChecks)
+static bool truthy_tests_check(Expr const* cond, Expr const* target) {
+    if (!compiler_options()->strict_null_checks) return false;
+    for (u32 depth = 0; depth < 64; depth++) {
+        if (truthy_test_checks(cond, target)) return true;
+        if (cond->tag != EXPR_BINARY_OP || (cond->binary_op->op != BINARY_OP_OR_OR && cond->binary_op->op != BINARY_OP_EH_EH)) return false;
+        cond = &cond->binary_op->left;
+    }
+    return false;
+}
+
 // Whether `target` is `root` or below it through nodes that check that operand in the check mode they're checked in
-// (tsc's: parentheses, a conditional's three parts, a binary operator's left operand and a comma's right one, an
-// assignment's value, `as` and `void`; a logical operator's right operand, `!`, `satisfies`, a call's arguments and literals' elements check in
-// normal mode: bun's checks-of-a-value-assigned-on-a-loop-back-edge a3.ts), see Checker.type_only_root
+// (tsc's: parentheses, a conditional's three parts, a binary operator's operands (both of a logical operator, the left
+// one otherwise) and a comma's right one, an assignment's value, `as` and `void`; `!`, `satisfies`, a call's arguments
+// and literals' elements check in normal mode: bun's checks-of-a-value-assigned-on-a-loop-back-edge a3.ts), and not
+// in a part a known-truthy test checks again in normal mode (a conditional's condition, a `&&`'s left operand:
+// truthy_tests_check(); `f() || x === 1 ? a : b` reports, `f() || (x === 1 && g()) ? a : b` doesn't), see
+// Checker.type_only_root
 static bool type_only_reaches(Expr const* root, Expr const* target) {
     for (u32 depth = 0; depth < 64; depth++) {
         if (root == target) return true;
         switch (root->tag) {
             case EXPR_TERNARY:
+                if (truthy_tests_check(&root->ternary->condition, target)) return false;
                 return type_only_reaches(&root->ternary->condition, target) || type_only_reaches(&root->ternary->yes, target) ||
                     type_only_reaches(&root->ternary->no, target);
             case EXPR_BINARY_OP:
@@ -3465,7 +3496,11 @@ static bool type_only_reaches(Expr const* root, Expr const* target) {
                     root = &root->binary_op->right;
                     break;
                 }
-                if (root->binary_op->op == BINARY_OP_COMMA && type_only_reaches(&root->binary_op->right, target)) return true;
+                if (root->binary_op->op == BINARY_OP_AND_AND && truthy_tests_check(&root->binary_op->left, target)) return false;
+                if ((root->binary_op->op == BINARY_OP_COMMA || is_logical_op(root->binary_op->op)) &&
+                    type_only_reaches(&root->binary_op->right, target)) {
+                    return true;
+                }
                 root = &root->binary_op->left;
                 break;
             case EXPR_AS_TYPE:

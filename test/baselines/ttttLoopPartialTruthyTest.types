@@ -1,0 +1,293 @@
+//// [test/cases/ttttLoopPartialTruthyTest.ts] ////
+
+=== ttttLoopPartialTruthyTest.ts ===
+// A loop's partial types are checked again in normal mode where tsc's checkTestingKnownTruthyTypes calls
+// checkExpression: the right operand of a conditional's logical condition (and of each `||`/`??` down its left
+// operands, a logical right operand recursively), and of a `&&`'s logical left operand. Elsewhere an assigned value's
+// logical operands stay in CheckModeTypeOnly, whose equalities report nothing (opencode's scan.ts: `atBoundary ||
+// (indexable === "member" && /[.:]$/.test(word)) ? "closed" : false`)
+declare const more: boolean;
+>more : boolean
+
+declare const s: string;
+>s : string
+
+declare function f(): boolean;
+>f : () => boolean
+
+function e1() { let x: string | number = "a"; while (more) { x = f() || (x === 5 && /x/.test(s)) ? "b" : 5; } }
+>e1 : () => void
+>x : string | number
+>"a" : "a"
+>more : boolean
+>x = f() || (x === 5 && /x/.test(s)) ? "b" : 5 : "b" | 5
+>x : string | number
+>f() || (x === 5 && /x/.test(s)) ? "b" : 5 : "b" | 5
+>f() || (x === 5 && /x/.test(s)) : boolean
+>f() : boolean
+>f : () => boolean
+>(x === 5 && /x/.test(s)) : boolean
+>x === 5 && /x/.test(s) : boolean
+>x === 5 : boolean
+>x : string | number
+>5 : 5
+>/x/.test(s) : boolean
+>/x/.test : (string: string) => boolean
+>/x/ : RegExp
+>test : (string: string) => boolean
+>s : string
+>"b" : "b"
+>5 : 5
+
+function e2() { let x: string | number = "a"; while (more) { x = f() || x === 5 ? "b" : 5; } }
+>e2 : () => void
+>x : string | number
+>"a" : "a"
+>more : boolean
+>x = f() || x === 5 ? "b" : 5 : "b" | 5
+>x : string | number
+>f() || x === 5 ? "b" : 5 : "b" | 5
+>f() || x === 5 : boolean
+>f() : boolean
+>f : () => boolean
+>x === 5 : boolean
+>x : string | number
+>5 : 5
+>"b" : "b"
+>5 : 5
+
+function e3() { let x: string | number = "a"; while (more) { x = f() && x === 5 ? "b" : 5; } }
+>e3 : () => void
+>x : string | number
+>"a" : "a"
+>more : boolean
+>x = f() && x === 5 ? "b" : 5 : "b" | 5
+>x : string | number
+>f() && x === 5 ? "b" : 5 : "b" | 5
+>f() && x === 5 : boolean
+>f() : boolean
+>f : () => boolean
+>x === 5 : boolean
+>x : string | number
+>5 : 5
+>"b" : "b"
+>5 : 5
+
+function e4() { let x: string | number = "a"; let y = false; while (more) { x = (y = more && x === 5) ? "b" : 5; } }
+>e4 : () => void
+>x : string | number
+>"a" : "a"
+>y : boolean
+>false : false
+>more : boolean
+>x = (y = more && x === 5) ? "b" : 5 : "b" | 5
+>x : string | number
+>(y = more && x === 5) ? "b" : 5 : "b" | 5
+>(y = more && x === 5) : boolean
+>y = more && x === 5 : boolean
+>y : boolean
+>more && x === 5 : boolean
+>more : true
+>x === 5 : boolean
+>x : string | number
+>5 : 5
+>"b" : "b"
+>5 : 5
+
+function e5() { let x: string | number = "a"; let y = false; while (more) { x = (y = (more || x === 5) && more) ? "b" : 5; } }
+>e5 : () => void
+>x : string | number
+>"a" : "a"
+>y : boolean
+>false : false
+>more : boolean
+>x = (y = (more || x === 5) && more) ? "b" : 5 : "b" | 5
+>x : string | number
+>(y = (more || x === 5) && more) ? "b" : 5 : "b" | 5
+>(y = (more || x === 5) && more) : true
+>y = (more || x === 5) && more : true
+>y : boolean
+>(more || x === 5) && more : true
+>(more || x === 5) : true
+>more || x === 5 : true
+>more : true
+>x === 5 : boolean
+>x : string | number
+>5 : 5
+>more : true
+>"b" : "b"
+>5 : 5
+
+function e6() { let x: string | number = "a"; while (more) { x = (f() || x === 5) || more ? "b" : 5; } }
+>e6 : () => void
+>x : string | number
+>"a" : "a"
+>more : boolean
+>x = (f() || x === 5) || more ? "b" : 5 : "b" | 5
+>x : string | number
+>(f() || x === 5) || more ? "b" : 5 : "b" | 5
+>(f() || x === 5) || more : true
+>(f() || x === 5) : boolean
+>f() || x === 5 : boolean
+>f() : boolean
+>f : () => boolean
+>x === 5 : boolean
+>x : string | number
+>5 : 5
+>more : true
+>"b" : "b"
+>5 : 5
+
+function e7() { let x: string | number = "a"; while (more) { x = (s ?? x === 5) ? "b" : 5; } }
+>e7 : () => void
+>x : string | number
+>"a" : "a"
+>more : boolean
+>x = (s ?? x === 5) ? "b" : 5 : "b" | 5
+>x : string | number
+>(s ?? x === 5) ? "b" : 5 : "b" | 5
+>(s ?? x === 5) : string
+>s ?? x === 5 : string
+>s : string
+>x === 5 : boolean
+>x : string | number
+>5 : 5
+>"b" : "b"
+>5 : 5
+
+function e8() { let x: string | number = "a"; while (more) { x = f() || (more && x === 5) ? "b" : 5; } }
+>e8 : () => void
+>x : string | number
+>"a" : "a"
+>more : boolean
+>x = f() || (more && x === 5) ? "b" : 5 : "b" | 5
+>x : string | number
+>f() || (more && x === 5) ? "b" : 5 : "b" | 5
+>f() || (more && x === 5) : boolean
+>f() : boolean
+>f : () => boolean
+>(more && x === 5) : boolean
+>more && x === 5 : boolean
+>more : true
+>x === 5 : boolean
+>x : string | number
+>5 : 5
+>"b" : "b"
+>5 : 5
+
+function e9() { let x: string | number = "a"; let y = false; while (more) { x = (y = more || x === 5) ? "b" : 5; } }
+>e9 : () => void
+>x : string | number
+>"a" : "a"
+>y : boolean
+>false : false
+>more : boolean
+>x = (y = more || x === 5) ? "b" : 5 : "b" | 5
+>x : string | number
+>(y = more || x === 5) ? "b" : 5 : "b" | 5
+>(y = more || x === 5) : true
+>y = more || x === 5 : true
+>y : boolean
+>more || x === 5 : true
+>more : true
+>x === 5 : boolean
+>x : string | number
+>5 : 5
+>"b" : "b"
+>5 : 5
+
+function e10() { let x: string | number = "a"; while (more) { x = (x === 5 || f()) ? "b" : 5; } }
+>e10 : () => void
+>x : string | number
+>"a" : "a"
+>more : boolean
+>x = (x === 5 || f()) ? "b" : 5 : "b" | 5
+>x : string | number
+>(x === 5 || f()) ? "b" : 5 : "b" | 5
+>(x === 5 || f()) : boolean
+>x === 5 || f() : boolean
+>x === 5 : boolean
+>x : string | number
+>5 : 5
+>f() : boolean
+>f : () => boolean
+>"b" : "b"
+>5 : 5
+
+function e11() { let x: string | number = "a"; while (more) { x = ((x === 5 && f()) || f()) ? "b" : 5; } }
+>e11 : () => void
+>x : string | number
+>"a" : "a"
+>more : boolean
+>x = ((x === 5 && f()) || f()) ? "b" : 5 : "b" | 5
+>x : string | number
+>((x === 5 && f()) || f()) ? "b" : 5 : "b" | 5
+>((x === 5 && f()) || f()) : boolean
+>(x === 5 && f()) || f() : boolean
+>(x === 5 && f()) : boolean
+>x === 5 && f() : boolean
+>x === 5 : boolean
+>x : string | number
+>5 : 5
+>f() : boolean
+>f : () => boolean
+>f() : boolean
+>f : () => boolean
+>"b" : "b"
+>5 : 5
+
+function g() {
+>g : () => void
+
+  let x: false | "closed" | "member" = false;
+>x : "closed" | "member" | false
+>false : false
+>false : false
+
+  for (let i = 0; i < 10; i++) {
+>i : number
+>0 : 0
+>i < 10 : boolean
+>i : number
+>10 : 10
+>i++ : number
+>i : number
+
+    if (f()) { x = "closed"; continue; }
+>f() : boolean
+>f : () => boolean
+>x = "closed" : "closed"
+>x : "closed" | "member" | false
+>"closed" : "closed"
+
+    if (f()) x = f() || (x === "member" && /x/.test(s)) ? "closed" : false;
+>f() : boolean
+>f : () => boolean
+>x = f() || (x === "member" && /x/.test(s)) ? "closed" : false : "closed" | false
+>x : "closed" | "member" | false
+>f() || (x === "member" && /x/.test(s)) ? "closed" : false : "closed" | false
+>f() || (x === "member" && /x/.test(s)) : boolean
+>f() : boolean
+>f : () => boolean
+>(x === "member" && /x/.test(s)) : boolean
+>x === "member" && /x/.test(s) : boolean
+>x === "member" : boolean
+>x : "closed" | "member" | false
+>"member" : "member"
+>/x/.test(s) : boolean
+>/x/.test : (string: string) => boolean
+>/x/ : RegExp
+>test : (string: string) => boolean
+>s : string
+>"closed" : "closed"
+>false : false
+
+    if (f()) x = "member";
+>f() : boolean
+>f : () => boolean
+>x = "member" : "member"
+>x : "closed" | "member" | false
+>"member" : "member"
+  }
+}
+

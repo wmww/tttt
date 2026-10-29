@@ -1,0 +1,148 @@
+//// [test/cases/ttttLoopPartialTruthyTest.ts] ////
+
+=== ttttLoopPartialTruthyTest.ts ===
+// A loop's partial types are checked again in normal mode where tsc's checkTestingKnownTruthyTypes calls
+// checkExpression: the right operand of a conditional's logical condition (and of each `||`/`??` down its left
+// operands, a logical right operand recursively), and of a `&&`'s logical left operand. Elsewhere an assigned value's
+// logical operands stay in CheckModeTypeOnly, whose equalities report nothing (opencode's scan.ts: `atBoundary ||
+// (indexable === "member" && /[.:]$/.test(word)) ? "closed" : false`)
+declare const more: boolean;
+>more : Symbol(more, Decl(ttttLoopPartialTruthyTest.ts, 5, 13))
+
+declare const s: string;
+>s : Symbol(s, Decl(ttttLoopPartialTruthyTest.ts, 6, 13))
+
+declare function f(): boolean;
+>f : Symbol(f, Decl(ttttLoopPartialTruthyTest.ts, 6, 24))
+
+function e1() { let x: string | number = "a"; while (more) { x = f() || (x === 5 && /x/.test(s)) ? "b" : 5; } }
+>e1 : Symbol(e1, Decl(ttttLoopPartialTruthyTest.ts, 7, 30))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 8, 19))
+>more : Symbol(more, Decl(ttttLoopPartialTruthyTest.ts, 5, 13))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 8, 19))
+>f : Symbol(f, Decl(ttttLoopPartialTruthyTest.ts, 6, 24))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 8, 19))
+>/x/.test : Symbol(RegExp.test, Decl(lib.es5.d.ts, --, --))
+>test : Symbol(RegExp.test, Decl(lib.es5.d.ts, --, --))
+>s : Symbol(s, Decl(ttttLoopPartialTruthyTest.ts, 6, 13))
+
+function e2() { let x: string | number = "a"; while (more) { x = f() || x === 5 ? "b" : 5; } }
+>e2 : Symbol(e2, Decl(ttttLoopPartialTruthyTest.ts, 8, 111))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 9, 19))
+>more : Symbol(more, Decl(ttttLoopPartialTruthyTest.ts, 5, 13))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 9, 19))
+>f : Symbol(f, Decl(ttttLoopPartialTruthyTest.ts, 6, 24))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 9, 19))
+
+function e3() { let x: string | number = "a"; while (more) { x = f() && x === 5 ? "b" : 5; } }
+>e3 : Symbol(e3, Decl(ttttLoopPartialTruthyTest.ts, 9, 94))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 10, 19))
+>more : Symbol(more, Decl(ttttLoopPartialTruthyTest.ts, 5, 13))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 10, 19))
+>f : Symbol(f, Decl(ttttLoopPartialTruthyTest.ts, 6, 24))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 10, 19))
+
+function e4() { let x: string | number = "a"; let y = false; while (more) { x = (y = more && x === 5) ? "b" : 5; } }
+>e4 : Symbol(e4, Decl(ttttLoopPartialTruthyTest.ts, 10, 94))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 11, 19))
+>y : Symbol(y, Decl(ttttLoopPartialTruthyTest.ts, 11, 49))
+>more : Symbol(more, Decl(ttttLoopPartialTruthyTest.ts, 5, 13))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 11, 19))
+>y : Symbol(y, Decl(ttttLoopPartialTruthyTest.ts, 11, 49))
+>more : Symbol(more, Decl(ttttLoopPartialTruthyTest.ts, 5, 13))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 11, 19))
+
+function e5() { let x: string | number = "a"; let y = false; while (more) { x = (y = (more || x === 5) && more) ? "b" : 5; } }
+>e5 : Symbol(e5, Decl(ttttLoopPartialTruthyTest.ts, 11, 116))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 12, 19))
+>y : Symbol(y, Decl(ttttLoopPartialTruthyTest.ts, 12, 49))
+>more : Symbol(more, Decl(ttttLoopPartialTruthyTest.ts, 5, 13))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 12, 19))
+>y : Symbol(y, Decl(ttttLoopPartialTruthyTest.ts, 12, 49))
+>more : Symbol(more, Decl(ttttLoopPartialTruthyTest.ts, 5, 13))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 12, 19))
+>more : Symbol(more, Decl(ttttLoopPartialTruthyTest.ts, 5, 13))
+
+function e6() { let x: string | number = "a"; while (more) { x = (f() || x === 5) || more ? "b" : 5; } }
+>e6 : Symbol(e6, Decl(ttttLoopPartialTruthyTest.ts, 12, 126))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 13, 19))
+>more : Symbol(more, Decl(ttttLoopPartialTruthyTest.ts, 5, 13))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 13, 19))
+>f : Symbol(f, Decl(ttttLoopPartialTruthyTest.ts, 6, 24))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 13, 19))
+>more : Symbol(more, Decl(ttttLoopPartialTruthyTest.ts, 5, 13))
+
+function e7() { let x: string | number = "a"; while (more) { x = (s ?? x === 5) ? "b" : 5; } }
+>e7 : Symbol(e7, Decl(ttttLoopPartialTruthyTest.ts, 13, 104))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 14, 19))
+>more : Symbol(more, Decl(ttttLoopPartialTruthyTest.ts, 5, 13))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 14, 19))
+>s : Symbol(s, Decl(ttttLoopPartialTruthyTest.ts, 6, 13))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 14, 19))
+
+function e8() { let x: string | number = "a"; while (more) { x = f() || (more && x === 5) ? "b" : 5; } }
+>e8 : Symbol(e8, Decl(ttttLoopPartialTruthyTest.ts, 14, 94))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 15, 19))
+>more : Symbol(more, Decl(ttttLoopPartialTruthyTest.ts, 5, 13))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 15, 19))
+>f : Symbol(f, Decl(ttttLoopPartialTruthyTest.ts, 6, 24))
+>more : Symbol(more, Decl(ttttLoopPartialTruthyTest.ts, 5, 13))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 15, 19))
+
+function e9() { let x: string | number = "a"; let y = false; while (more) { x = (y = more || x === 5) ? "b" : 5; } }
+>e9 : Symbol(e9, Decl(ttttLoopPartialTruthyTest.ts, 15, 104))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 16, 19))
+>y : Symbol(y, Decl(ttttLoopPartialTruthyTest.ts, 16, 49))
+>more : Symbol(more, Decl(ttttLoopPartialTruthyTest.ts, 5, 13))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 16, 19))
+>y : Symbol(y, Decl(ttttLoopPartialTruthyTest.ts, 16, 49))
+>more : Symbol(more, Decl(ttttLoopPartialTruthyTest.ts, 5, 13))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 16, 19))
+
+function e10() { let x: string | number = "a"; while (more) { x = (x === 5 || f()) ? "b" : 5; } }
+>e10 : Symbol(e10, Decl(ttttLoopPartialTruthyTest.ts, 16, 116))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 17, 20))
+>more : Symbol(more, Decl(ttttLoopPartialTruthyTest.ts, 5, 13))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 17, 20))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 17, 20))
+>f : Symbol(f, Decl(ttttLoopPartialTruthyTest.ts, 6, 24))
+
+function e11() { let x: string | number = "a"; while (more) { x = ((x === 5 && f()) || f()) ? "b" : 5; } }
+>e11 : Symbol(e11, Decl(ttttLoopPartialTruthyTest.ts, 17, 97))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 18, 20))
+>more : Symbol(more, Decl(ttttLoopPartialTruthyTest.ts, 5, 13))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 18, 20))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 18, 20))
+>f : Symbol(f, Decl(ttttLoopPartialTruthyTest.ts, 6, 24))
+>f : Symbol(f, Decl(ttttLoopPartialTruthyTest.ts, 6, 24))
+
+function g() {
+>g : Symbol(g, Decl(ttttLoopPartialTruthyTest.ts, 18, 106))
+
+  let x: false | "closed" | "member" = false;
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 20, 5))
+
+  for (let i = 0; i < 10; i++) {
+>i : Symbol(i, Decl(ttttLoopPartialTruthyTest.ts, 21, 10))
+>i : Symbol(i, Decl(ttttLoopPartialTruthyTest.ts, 21, 10))
+>i : Symbol(i, Decl(ttttLoopPartialTruthyTest.ts, 21, 10))
+
+    if (f()) { x = "closed"; continue; }
+>f : Symbol(f, Decl(ttttLoopPartialTruthyTest.ts, 6, 24))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 20, 5))
+
+    if (f()) x = f() || (x === "member" && /x/.test(s)) ? "closed" : false;
+>f : Symbol(f, Decl(ttttLoopPartialTruthyTest.ts, 6, 24))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 20, 5))
+>f : Symbol(f, Decl(ttttLoopPartialTruthyTest.ts, 6, 24))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 20, 5))
+>/x/.test : Symbol(RegExp.test, Decl(lib.es5.d.ts, --, --))
+>test : Symbol(RegExp.test, Decl(lib.es5.d.ts, --, --))
+>s : Symbol(s, Decl(ttttLoopPartialTruthyTest.ts, 6, 13))
+
+    if (f()) x = "member";
+>f : Symbol(f, Decl(ttttLoopPartialTruthyTest.ts, 6, 24))
+>x : Symbol(x, Decl(ttttLoopPartialTruthyTest.ts, 20, 5))
+  }
+}
+

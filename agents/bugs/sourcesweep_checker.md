@@ -664,3 +664,11 @@ missing_checks.md, together with variances for a declared type against its insta
   never hits the limit, and reports the TS2322 the relation then finds at `validators`. Matching needs tsgo's
   instantiation count (what it caches and what it re-instantiates), the depth/instantiation-limit design family.
   Known-failing test ttttMonkeytypeInstantiationCount (reduce.py, 19 files). [design]
+
+## Regressions bisected 2026-10-29 (reg)
+- opencode/packages/core src/shell/scan.ts(2057), spurious TS2367 since 528301bb9: `indexable = atBoundary ||
+  (indexable === "member" && /[.:]$/.test(word)) ? "closed" : false` in a loop. type_only_reaches() took a logical
+  operator's right operand as checked in normal mode; tsgo passes CheckModeTypeOnly to both operands, and the normal-mode
+  check of a loop's partial types comes from checkTestingKnownTruthyTypes (a conditional's condition, a `&&`'s left
+  operand: the right operand of a logical `cond` and of each `||`/`??` down its left, recursing into a logical right
+  operand), truthy_tests_check(). Test ttttLoopPartialTruthyTest. [fixed HASH1]
