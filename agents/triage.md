@@ -263,3 +263,8 @@ intersection's property symbol to bugs/type_core.md.
   long alternations silently match nothing. [harness]
 
 - query/packages/vue-query's 4 spurious diagnostics: moved to sourcesweep_checker.md (reduced, known-failing test).
+
+- monkeytype/frontend (source sweep, sample 4, 2026-10-29): tttt reports TS2578 (unused `@ts-expect-error`) at
+  src/ts/components/pages/settings/SearchableAutoSetting.tsx:56 and TS2322 (`(args: { value: number; }) => string[] |
+  undefined` to `FieldValidateOrFn<...>`) at :59, tsc neither; the same at --checkers 1 and on main 3d349c30c (cor16).
+  Unreduced. [open]

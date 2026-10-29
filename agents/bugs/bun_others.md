@@ -69,7 +69,7 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   interface: 01-C6b TS2339 missing. tsc's collectModuleReferences lists a file's ModuleAugmentations only for a
   `declare module`, one in an ambient context or a .d.ts; the binder still makes the block a module symbol (the
   name's type is error, the body isn't checked as an augmentation's). NamespaceDecl.unmerged_augmentation; test
-  ttttUndeclaredModuleAugmentation. [fixed 1349c369a] Left: tsc binds every `module "./b"` block of one file into one
+  ttttUndeclaredModuleAugmentation. [fixed c470ae9ee] Left: tsc binds every `module "./b"` block of one file into one
   local symbol and merges it once, through its first declaration (mergeModuleAugmentation returns for the others), so
   an undeclared block first keeps a later `declare module "./b"` in that file from merging, and a declared one first
   merges the undeclared ones after it; tttt decides per block (no bun case; the symbols baseline lists one block's
@@ -82,7 +82,7 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   the read is TS2339 (missing in tttt). bindDeferredExpandoAssignment looks the name up in the assignment's container
   and block scope only, and a class's or member's decorator and a member's computed name have the class (or the
   method) as container; scope_add_nested_expando() now stops there. Test ttttExpandoInDecorator. Parameter
-  decorators (the function is the container: its parameters would be found) aren't modelled. [fixed ced6bf746]
+  decorators (the function is the container: its parameters would be found) aren't modelled. [fixed 0d43aae13]
 - `this` in a JS class's computed method name inside an object literal, 30-C19b (TS2339 missing on `this.g`). [open]
 - `this` in a decorator's arrow function of a nested class (`(z: this) => z.x`), 33-C4d: tsc's `this` there is the
   outer class's; tttt's is the inner class (spurious TS2339). [open]
@@ -136,7 +136,7 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   missing three times): narrowTypeByBinaryExpression hands the left side as written to narrowTypeByTruthiness, whose
   getCandidateDiscriminantPropertyAccess wants an access expression. narrow_by_binary() now asks for a discriminant
   only through an unparenthesized property target (`x.kind! = v` neither); test ttttAssignTargetParenDiscriminant.
-  [fixed b8d104926]
+  [fixed 00ed6535f]
 - 12-C1c: inside class C<T, U>, `c.m()` with `c: C<U, { a: 1 }>` and `m(): { [K in keyof T]: U }`: tsc's result is
   `{ a: { a: 1 } }` (the homomorphic mapped type over the class's own U, mapped through the instantiation again),
   tttt's `{ [K in keyof U]: { a: 1 } }`: TS2339 spurious. [open]
@@ -149,7 +149,7 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   an ExpressionWithTypeArguments (instantiation expression or heritage clause) naming an interface; tttt had only the
   head identifier's case. PropertyExpr.extends_interface (the walk), expr_property_access_errors() reports it; the
   symbols baseline resolves such an entity name like a heritage clause's when the checker couldn't access it. Test
-  ttttInstantiationExprInterfaceMember. [fixed 8446fde30]
+  ttttInstantiationExprInterfaceMember. [fixed f66c4c814]
 - Modules: 39-C4a and 39-C4b (`typeof import("./b/b")` default of an .mts under a `type: module` package: TS2339
   missing and spurious), 75-R02 (`default` of `typeof N` namespaces re-exported, spurious TS2339), 87-R08, 94-R04a,
   27-P4b (JSX intrinsic `div` with a module-scoped JSX namespace: TS2339 spurious, TS7026 missing). [open]
@@ -245,45 +245,45 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
 - +TS2304 on a computed name in a renaming element of a bodiless signature's parameter, 03-C11b (`declare function
   fe({ [undeclared]: z }: any)`), 34-C14b (a function type's): tsc's checkVariableLikeDeclaration returns at the renaming
   (TS2842) before checkComputedPropertyName, so the name is never resolved; binding_lookup_names() now discards what
-  looking it up reports there. Test ttttBodilessRenamingComputedName [fixed 9ac29def3].
+  looking it up reports there. Test ttttBodilessRenamingComputedName [fixed d548e09f0].
 - +TS2304 on a name an export specifier declares in a namespace's block (TS1194), 01-C11 (`namespace N { const a = 1;
   export { a as b }; b; }`), 33-C11a: tsc's resolveNameHelper skips a pure export specifier alias of the exports only
   in a source file or an ambient module declaration; scope_lookup's exports step took that rule everywhere. Test
-  ttttNamespaceExportSpecifierInScope [fixed 1cad0ca29].
+  ttttNamespaceExportSpecifierInScope [fixed d339b13de].
 - -TS2345 on `typeof N` of a namespace without values narrowed to never, 16-C5a (`typeof nn !== "object"`, `!nn`),
   16-C5b (a module whose exports are types only): tsc's namespace and module objects are anonymous object types, and
   getTypeFacts gives an empty one EmptyObjectStrictFacts (all but the nullish ones), so neither narrowing removes it.
   type_facts()' is_empty_anonymous_object() now counts a namespace's or enum's object without members (only there:
   tsc's isEmptyAnonymousObjectType, which intersections ask, looks at members already resolved only, bun19-P3).
-  Test ttttEmptyNamespaceObjectFacts [fixed 559a1672b].
+  Test ttttEmptyNamespaceObjectFacts [fixed 7685281ad].
 - -TS2345 from an inference to a class's static side, 22-C9 (`f<T>(a: D | T, b: T)` called `f(D, D2)`): tsc's
   inferFromMatchingTypes with isTypeCloselyMatchedBy matches `typeof D` with D (one symbol, the class's), so T is
   inferred from b alone, typeof D2, and a fails. infer.c's is_closely_matched() compared references' targets, type
   literals and aliases only; now also the symbol of a declared object type (class instance and static sides,
-  interfaces, namespace and enum objects). Test ttttInferClassStaticClosely [fixed 26ad4edf5].
+  interfaces, namespace and enum objects). Test ttttInferClassStaticClosely [fixed d4ad5c47f].
 - -TS2345 in an immediately invoked function with a `this` parameter, 25-P2 (`(function f(this: any, a) {})(1)`): tsc's
   getContextuallyTypedParameterType takes the argument at func.parameters.indexOf(parameter), `this` counted, so a
   gets none (`a?: undefined`) and the argument 1 fails. assign_iife_parameter_types() skipped `this` in the count.
-  Test ttttIifeThisParameterIndex [fixed 6c885b4ee].
+  Test ttttIifeThisParameterIndex [fixed ed6d7aed0].
 - +TS7006 in the attributes of a JSX tag typed any, 27-C5 (`<A cb={x => x.toFixed()} />`, IntrinsicAttributes with
   `cb?: (x: number) => void`): tsc's resolveUntypedCall checks the attributes while the element's signature is
   resolving, so getContextualTypeForArgumentAtIndex gets getEffectiveFirstArgumentForJsxSignature of
   resolvingSignature: IntrinsicAttributes & LibraryManagedAttributes<tag, unknown>. tttt checked them without a
   contextual type. ty_resolve_jsx_element() now checks them with ty_jsx_untyped_props(). Test
-  ttttJsxAnyTagAttributesContext [fixed 4593e2c05].
+  ttttJsxAnyTagAttributesContext [fixed e4f1d930d].
 - 34-C16 (`@dec class Q { @dec get x(): number; @dec set x(v: number) {} }`, importHelpers below ESNext): tttt said
   TS1005 '{' expected at the bodiless getter and TS2343 for __setFunctionName. tsc's checkAccessorDeclaration runs
   checkGrammarAccessor only when checkGrammarFunctionLikeDeclaration (the decorators' TS1206) said nothing, and
   getFirstTransformableStaticClassElement counts an accessor pair through its first accessor with decorators only
   (ClassElementOrClassElementParameterIsDecorated), here the getter, which can't be decorated without a body. Test
-  ttttDecoratedBodilessAccessor [fixed NEXT].
+  ttttDecoratedBodilessAccessor [fixed 581b67eac].
 - -TS2448: two mechanisms, the JSX factory (`React`, `Frag`) declared after the element that uses it (tsc resolves
   the factory at the element as a use: 01-C2b, 15-C3b, 27-C3a, 27-P7, 34-C2b) and `const arguments = 1` in a
   function body (tsc's reference to the implicit `arguments`: 25-C17c, 33-P4g, 51-L01, 51-L05, 77-R12b). The JSX
   half: markJsxAliasReferenced's resolveName has a not-found message under jsx: react, so checkResolvedBlockScopedVariable
   runs at the tag (the fragment), and getJSXFragmentType's, once per file, whenever jsxFragmentFactory is set;
   jsx_reference_factory() and jsx_lookup_factory() now check the found factory as a use. Tests
-  ttttJsxFactoryUsedBeforeDeclaration, ttttJsxFragmentFactoryUsedBeforeDeclaration [fixed ec0577ba4]. The `arguments`
+  ttttJsxFactoryUsedBeforeDeclaration, ttttJsxFragmentFactoryUsedBeforeDeclaration [fixed d29cc3195]. The `arguments`
   half (25-C17c, 33-P4g, 51-L01, 51-L05, 77-R12b): tsgo's checkUnmatchedJSDocParameters, for any function with an
   `@param` tag (TS files too), asks containsArgumentsReference, which visits every identifier spelled `arguments` in
   the body (declaration names and a binding pattern's property names included: `const arguments = 1`,
