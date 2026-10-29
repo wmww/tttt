@@ -1,0 +1,53 @@
+//// [test/cases/ttttExpandoInDecorator.ts] ////
+
+=== ttttExpandoInDecorator.ts ===
+// An expando assignment in a class decorator, a member decorator or a member computed name isn't bound (bun case
+// 30-C3): tsc's binder looks the name up in the container there, the class or the method, without f
+function f() {}
+>f : Symbol(f, Decl(ttttExpandoInDecorator.ts, 0, 0))
+
+@(f.a = 1 as any) class C {}
+>f : Symbol(f, Decl(ttttExpandoInDecorator.ts, 0, 0))
+>C : Symbol(C, Decl(ttttExpandoInDecorator.ts, 2, 15))
+
+class D {
+>D : Symbol(D, Decl(ttttExpandoInDecorator.ts, 3, 28))
+
+    @(f.b = 1 as any) p = 1;
+>f : Symbol(f, Decl(ttttExpandoInDecorator.ts, 0, 0))
+>p : Symbol(D.p, Decl(ttttExpandoInDecorator.ts, 4, 9))
+
+    @(f.c = 1 as any) m() {}
+>f : Symbol(f, Decl(ttttExpandoInDecorator.ts, 0, 0))
+>m : Symbol(D.m, Decl(ttttExpandoInDecorator.ts, 5, 28))
+
+    [f.d = "k"] = 2;
+>[f.d = "k"] : Symbol(D[f.d = "k"], Decl(ttttExpandoInDecorator.ts, 6, 28))
+>f : Symbol(f, Decl(ttttExpandoInDecorator.ts, 0, 0))
+
+    [f.e = "j"]() {}
+>[f.e = "j"] : Symbol(D[f.e = "j"], Decl(ttttExpandoInDecorator.ts, 7, 20))
+>f : Symbol(f, Decl(ttttExpandoInDecorator.ts, 0, 0))
+}
+@((() => { f.g = 1; }) as any) class E {}
+>f : Symbol(f, Decl(ttttExpandoInDecorator.ts, 0, 0))
+>E : Symbol(E, Decl(ttttExpandoInDecorator.ts, 9, 1))
+
+f.a; f.b; f.c; f.d; f.e; f.g;
+>f : Symbol(f, Decl(ttttExpandoInDecorator.ts, 0, 0))
+>f : Symbol(f, Decl(ttttExpandoInDecorator.ts, 0, 0))
+>f : Symbol(f, Decl(ttttExpandoInDecorator.ts, 0, 0))
+>f : Symbol(f, Decl(ttttExpandoInDecorator.ts, 0, 0))
+>f : Symbol(f, Decl(ttttExpandoInDecorator.ts, 0, 0))
+>f : Symbol(f, Decl(ttttExpandoInDecorator.ts, 0, 0))
+
+f.h = 1;
+>f.h : Symbol(f.h, Decl(ttttExpandoInDecorator.ts, 11, 29))
+>f : Symbol(f, Decl(ttttExpandoInDecorator.ts, 0, 0))
+>h : Symbol(f.h, Decl(ttttExpandoInDecorator.ts, 11, 29))
+
+f.h;
+>f.h : Symbol(f.h, Decl(ttttExpandoInDecorator.ts, 11, 29))
+>f : Symbol(f, Decl(ttttExpandoInDecorator.ts, 0, 0))
+>h : Symbol(f.h, Decl(ttttExpandoInDecorator.ts, 11, 29))
+

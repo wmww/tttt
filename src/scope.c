@@ -6741,6 +6741,12 @@ void scope_add_nested_expando(Scope* me, BinaryOpExpr* op) {
     ) {
         return;
     }
+    // Nor in a class's or member's decorator or a member's computed name: the container there is the class (or the
+    // method), whose locals don't have it (`@(f.a = 1) class C {}`)
+    for (Scope const* scope = me; scope; scope = scope->parent) {
+        if (scope->no_super == NO_SUPER_DECORATOR || scope->no_super == NO_SUPER_COMPUTED_NAME || scope_rare(scope)->decorator_of) return;
+        if (scope_is_var_container(scope)) break;
+    }
     add_expando(me, op);
 }
 

@@ -69,7 +69,7 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   interface: 01-C6b TS2339 missing. tsc's collectModuleReferences lists a file's ModuleAugmentations only for a
   `declare module`, one in an ambient context or a .d.ts; the binder still makes the block a module symbol (the
   name's type is error, the body isn't checked as an augmentation's). NamespaceDecl.unmerged_augmentation; test
-  ttttUndeclaredModuleAugmentation. [fixed NEXT] Left: tsc binds every `module "./b"` block of one file into one
+  ttttUndeclaredModuleAugmentation. [fixed 1349c369a] Left: tsc binds every `module "./b"` block of one file into one
   local symbol and merges it once, through its first declaration (mergeModuleAugmentation returns for the others), so
   an undeclared block first keeps a later `declare module "./b"` in that file from merging, and a declared one first
   merges the undeclared ones after it; tttt decides per block (no bun case; the symbols baseline lists one block's
@@ -79,7 +79,10 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   and `export * as ns` in a function body declares `f.ns`: 30-C17a, 30-C17b, 30-P21 (`a.b = 1` beside
   `exports.a`), 30-C16b, 51-L06b. tttt reports TS2339 on the read (spurious). [open]
 - An expando assignment inside a decorator expression, 30-C3 (`@(f.a = 1 as any)`): tsc's binder doesn't bind it,
-  the read is TS2339 (missing in tttt). [open]
+  the read is TS2339 (missing in tttt). bindDeferredExpandoAssignment looks the name up in the assignment's container
+  and block scope only, and a class's or member's decorator and a member's computed name have the class (or the
+  method) as container; scope_add_nested_expando() now stops there. Test ttttExpandoInDecorator. Parameter
+  decorators (the function is the container: its parameters would be found) aren't modelled. [fixed NEXT]
 - `this` in a JS class's computed method name inside an object literal, 30-C19b (TS2339 missing on `this.g`). [open]
 - `this` in a decorator's arrow function of a nested class (`(z: this) => z.x`), 33-C4d: tsc's `this` there is the
   outer class's; tttt's is the inner class (spurious TS2339). [open]

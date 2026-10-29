@@ -1,0 +1,57 @@
+ttttExpandoInDecorator.ts(4,5): error TS2339: Property 'a' does not exist on type '{ (): void; h: number; }'.
+ttttExpandoInDecorator.ts(6,9): error TS2339: Property 'b' does not exist on type '{ (): void; h: number; }'.
+ttttExpandoInDecorator.ts(7,9): error TS2339: Property 'c' does not exist on type '{ (): void; h: number; }'.
+ttttExpandoInDecorator.ts(8,5): error TS1166: A computed property name in a class property declaration must have a simple literal type or a 'unique symbol' type.
+ttttExpandoInDecorator.ts(8,8): error TS2339: Property 'd' does not exist on type '{ (): void; h: number; }'.
+ttttExpandoInDecorator.ts(9,8): error TS2339: Property 'e' does not exist on type '{ (): void; h: number; }'.
+ttttExpandoInDecorator.ts(11,14): error TS2339: Property 'g' does not exist on type '{ (): void; h: number; }'.
+ttttExpandoInDecorator.ts(12,3): error TS2339: Property 'a' does not exist on type '{ (): void; h: number; }'.
+ttttExpandoInDecorator.ts(12,8): error TS2339: Property 'b' does not exist on type '{ (): void; h: number; }'.
+ttttExpandoInDecorator.ts(12,13): error TS2339: Property 'c' does not exist on type '{ (): void; h: number; }'.
+ttttExpandoInDecorator.ts(12,18): error TS2339: Property 'd' does not exist on type '{ (): void; h: number; }'.
+ttttExpandoInDecorator.ts(12,23): error TS2339: Property 'e' does not exist on type '{ (): void; h: number; }'.
+ttttExpandoInDecorator.ts(12,28): error TS2339: Property 'g' does not exist on type '{ (): void; h: number; }'.
+
+
+==== ttttExpandoInDecorator.ts (13 errors) ====
+    // An expando assignment in a class decorator, a member decorator or a member computed name isn't bound (bun case
+    // 30-C3): tsc's binder looks the name up in the container there, the class or the method, without f
+    function f() {}
+    @(f.a = 1 as any) class C {}
+        ~
+!!! error TS2339: Property 'a' does not exist on type '{ (): void; h: number; }'.
+    class D {
+        @(f.b = 1 as any) p = 1;
+            ~
+!!! error TS2339: Property 'b' does not exist on type '{ (): void; h: number; }'.
+        @(f.c = 1 as any) m() {}
+            ~
+!!! error TS2339: Property 'c' does not exist on type '{ (): void; h: number; }'.
+        [f.d = "k"] = 2;
+        ~~~~~~~~~~~
+!!! error TS1166: A computed property name in a class property declaration must have a simple literal type or a 'unique symbol' type.
+           ~
+!!! error TS2339: Property 'd' does not exist on type '{ (): void; h: number; }'.
+        [f.e = "j"]() {}
+           ~
+!!! error TS2339: Property 'e' does not exist on type '{ (): void; h: number; }'.
+    }
+    @((() => { f.g = 1; }) as any) class E {}
+                 ~
+!!! error TS2339: Property 'g' does not exist on type '{ (): void; h: number; }'.
+    f.a; f.b; f.c; f.d; f.e; f.g;
+      ~
+!!! error TS2339: Property 'a' does not exist on type '{ (): void; h: number; }'.
+           ~
+!!! error TS2339: Property 'b' does not exist on type '{ (): void; h: number; }'.
+                ~
+!!! error TS2339: Property 'c' does not exist on type '{ (): void; h: number; }'.
+                     ~
+!!! error TS2339: Property 'd' does not exist on type '{ (): void; h: number; }'.
+                          ~
+!!! error TS2339: Property 'e' does not exist on type '{ (): void; h: number; }'.
+                               ~
+!!! error TS2339: Property 'g' does not exist on type '{ (): void; h: number; }'.
+    f.h = 1;
+    f.h;
+    

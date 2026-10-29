@@ -1,0 +1,103 @@
+//// [test/cases/ttttExpandoInDecorator.ts] ////
+
+=== ttttExpandoInDecorator.ts ===
+// An expando assignment in a class decorator, a member decorator or a member computed name isn't bound (bun case
+// 30-C3): tsc's binder looks the name up in the container there, the class or the method, without f
+function f() {}
+>f : { (): void; h: number; }
+
+@(f.a = 1 as any) class C {}
+>(f.a = 1 as any) : any
+>f.a = 1 as any : any
+>f.a : any
+>f : { (): void; h: number; }
+>a : any
+>1 as any : any
+>1 : 1
+>C : C
+
+class D {
+>D : D
+
+    @(f.b = 1 as any) p = 1;
+>(f.b = 1 as any) : any
+>f.b = 1 as any : any
+>f.b : any
+>f : { (): void; h: number; }
+>b : any
+>1 as any : any
+>1 : 1
+>p : number
+>1 : 1
+
+    @(f.c = 1 as any) m() {}
+>(f.c = 1 as any) : any
+>f.c = 1 as any : any
+>f.c : any
+>f : { (): void; h: number; }
+>c : any
+>1 as any : any
+>1 : 1
+>m : () => void
+
+    [f.d = "k"] = 2;
+>[f.d = "k"] : number
+>f.d = "k" : "k"
+>f.d : any
+>f : { (): void; h: number; }
+>d : any
+>"k" : "k"
+>2 : 2
+
+    [f.e = "j"]() {}
+>[f.e = "j"] : () => void
+>f.e = "j" : "j"
+>f.e : any
+>f : { (): void; h: number; }
+>e : any
+>"j" : "j"
+}
+@((() => { f.g = 1; }) as any) class E {}
+>((() => { f.g = 1; }) as any) : any
+>(() => { f.g = 1; }) as any : any
+>(() => { f.g = 1; }) : () => void
+>() => { f.g = 1; } : () => void
+>f.g = 1 : 1
+>f.g : any
+>f : { (): void; h: number; }
+>g : any
+>1 : 1
+>E : E
+
+f.a; f.b; f.c; f.d; f.e; f.g;
+>f.a : any
+>f : { (): void; h: number; }
+>a : any
+>f.b : any
+>f : { (): void; h: number; }
+>b : any
+>f.c : any
+>f : { (): void; h: number; }
+>c : any
+>f.d : any
+>f : { (): void; h: number; }
+>d : any
+>f.e : any
+>f : { (): void; h: number; }
+>e : any
+>f.g : any
+>f : { (): void; h: number; }
+>g : any
+
+f.h = 1;
+>f.h = 1 : 1
+>f.h : number
+>f : { (): void; h: number; }
+>h : number
+>1 : 1
+
+f.h;
+>f.h : number
+>f : { (): void; h: number; }
+>h : number
+
