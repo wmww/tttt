@@ -14538,6 +14538,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttImportSpecifierErrorSpan': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttImportSpecifierKeywordName': {
         errors: true,
         symbols: false,
@@ -15975,6 +15980,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttObjectLiteralAccessorParamDecorator': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttObjectLiteralCommaKeyDestructuring': {
         errors: true,
         symbols: true,
@@ -16368,6 +16378,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttRedeclaredMemberImplicitAny': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttReducedIntersectionPropCrossProduct': {
         errors: true,
         symbols: true,
@@ -16497,6 +16512,11 @@ const baselines = {
         types: true,
     },
     'ttttRootDirFromPlainJsImport': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttSatisfiesAssignmentTarget': {
         errors: true,
         symbols: true,
         types: true,
