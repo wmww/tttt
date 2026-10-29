@@ -71,6 +71,15 @@ at 1.00-1.08 and type-fest/zod/xstate/react still at or above 1.10. The human de
 (vision.md); this is the recorded cost on 8-core boxes. Raw runs: the agent's ab.py/ab.jsonl were in the coordinator's
 scratchpad (not kept).
 
+## The one-file .d.ts shape: two cuts (2026-10-29, worker tail, 464fe54c6 -> 0ccb798ad; this box, release builds)
+Callgrind instructions, base -> 8133f145f (inference visited sets) -> 0ccb798ad (hashed prop name index): immutable.d.ts
+one-file 3.160 -> 3.032 -> 3.000 G (-5.1%), store.d.ts 4.017 -> 4.017 -> 3.980 G (-0.9%), zod 4.464 -> 4.440 -> 4.404
+(-1.3%), drizzle 5.601 -> 5.591 -> 5.553 (-0.9%), type-fest 10.161 -> 10.154 -> 10.036 (-1.2%), vscode 79.43 ->
+79.07 -> 78.64 G (-1.0%) (`scripts/instrcount.sh --vs`). Wall, interleaved at load 8-14: imm typecheck K1 best of 21
+306 -> 283 ms, store 465 -> 458 ms; defaults (abbench -n 9) vitest/examples/lit 0.352 -> 0.325 s, zod 0.183 -> 0.181,
+drizzle 0.265 -> 0.263. bun `--threads=1` on the two files: 0.19 and 0.38 s. The diagnosis: notes/checker_speed.md "The
+one-file .d.ts shape".
+
 ## Instruction drift, attributed (2026-10-29, an attribution agent; callgrind, this box)
 A full `scripts/instrcount.sh` run on main (fast/tttt) read as a regression against test/instrcount.txt: tanstack-router
 +3.18%, type-fest +2.15%, valibot +2.12%, xstate +2.09%, vue +1.67%, vscode +0.54%. It wasn't one: the three saves of

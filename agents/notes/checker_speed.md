@@ -86,6 +86,57 @@ Tried and dropped (perf3):
   bogus -Wstringop-overflow under LTO (sw_load() inlined into props_related_impl(): "destination object is likely at
   address zero"), which -Werror makes fatal in pgobuild.sh only.
 
+## The one-file .d.ts shape (2026-10-29, 464fe54c6 -> 0ccb798ad, worker tail)
+The idle tail behind one indivisible file is one checker's speed on it: at the defaults vitest/examples/lit's
+typecheck span (367 ms) is immutable.d.ts alone (321-361 ms on one checker), ng-bootstrap's 287 ms is immutable's
+257-277. One-file projects of immutable.d.ts (`imm`) and solid-js's store.d.ts (`store`) (tsconfigs: footprint.md), K1
+release, this box: imm 316 ms typecheck against bun `--threads=1` 0.19 s wall, store 0.50 s against 0.38.
+
+Where it goes (cachegrind --cache-sim --branch-sim on a -g release build, functions bucketed by kind of work; share of
+instructions / D1 read misses / LL read misses / mispredictions):
+| | imm (3.16 G) | store (4.05 G) |
+|---|---|---|
+| inference walk (infer_*, visited) | 29 / 34 / 22 / 22% | 0 |
+| instantiation (instantiate*, mappers, signature_resolve) | 29 / 23 / 19 / 33% (59% of LL write misses) | 7 / 9 / 3 / 7% |
+| relation (related, caches, deep nesting) | 10 / 6 / 4 / 10% | 20 / 16 / 16 / 25% |
+| interning (intern_*, links) | 7 / 9 / 40 / 9% | 29 / 36 / 70 / 31% |
+| member lookup (ty_get_prop, members_find) | 6 / 6 / 2 / 12% | 2 / 1 / 0 / 6% |
+| constraints, simplification, conditionals | 0.5% | 14 / 10 / 4 / 9% |
+| unions, intersections | 1% | 12 / 11 / 1 / 9% |
+| malloc, memset | 4% | 2% |
+- imm: all of it sits below 108 variance measurements reached from ty_check_heritage -> compare_signatures ->
+  ty_instantiate_signature_in_context_of (947 calls): measuring Collection<K, V>'s variance relates two marker
+  instantiations of a ~100-method interface, method by method, each generic method inferring from the other's return
+  type (another collection) through every member. That is tsc's algorithm (tsgo takes 3.4 s here), and bun does it
+  in the same instructions; its lead is per instruction (footprint.md's counters).
+- store: 6.1 M intern operations for 581k types. By key (ops / inserts): KEY_SIMPLIFIED 1.83 M / 115k (94% hits: tsgo
+  keeps simplifiedForReading/Writing on the type), TYPE_VARIABLE_REDUCTION 1.03 M / 367k, INDEXED 0.75 M / 78k,
+  INTERSECTION_OF 0.74 M / 369k, DISTRIBUTIVE_CONSTRAINT 0.57 M / 38k, INTERSECTION 332k / 332k (every one new); the
+  links table grows to 2M slots. Base constraints of `KeyOf<W<W<T>[K1]>[K2]>`-style chains, tsc's checks too.
+
+Landed (output byte-identical; instructions by callgrind against the commit before):
+- 8133f145f, the inference visited set: a calloc'd open-addressing table per Inference, grown by rehash and probed
+  twice per object pair, was ~6% of imm. Now entries in insertion order plus a u32 index, taken from a thread-local pool
+  and cleared by the slots they used; visited_add() returns the entry visited_done() writes (bun's invoke_once does the
+  same). imm -4.0%, store 0, zod -0.55%, drizzle -0.18%, vscode -0.46%.
+- 0ccb798ad, the by-name prop index as an open-addressing table instead of a binary search (whose order branch
+  mispredicted every other step: 10% of imm's simulated mispredictions, 5% of zod's and drizzle's). imm -1.1%, store
+  -0.9%, zod -0.79%, drizzle -0.66%, type-fest -1.17%, vscode -0.55%; mispredictions imm -14%; arena type-fest +3%.
+  A branchless lower bound (cmov) cut the same mispredictions but added 0.8-1.5% instructions: dropped.
+- Wall together, release, load 8-14 (interleaved): imm typecheck 306 -> 283 ms (best of 21; median -8.6%), store 465 ->
+  458; at the defaults vitest/examples/lit -7.7%, zod -0.8%, drizzle -0.7% (abbench -n 9).
+
+Measured, not built:
+- KEY_SIMPLIFIED as a per-type shared word (tsgo's fields on the indexed access and conditional type): at most ~6% of
+  store's instructions (its lookups, 136 instructions each), but not among the top eight key kinds on drizzle, zod or
+  effect: one shape. It changes what the shared graph publishes (TK_SIMPLIFIED), so it would need sgcheck too.
+- KEY_VARIANCES lookups that hit (effect 343k ops for 421 inserts, ~0.5%): tsgo keeps variances on the symbol's links.
+- bun's infer_from_type_arguments_once (a walk between type arguments that changed nothing isn't repeated after 256
+  infer_types calls): not measured; imm's argument walks are mostly the first measurement of a variance.
+- What is left on imm is the representation (footprint.md "What remains is structural": per-instance members, the
+  type header) and code footprint (front end +150 M cycles against bun on the laptop); on store the intern tables'
+  volume.
+
 ## Relation-count leads against tsgo (cor4, 2026-10-22: react-hook-form after the source-only default constraint)
 Method: an instrumented tsgo printing every `recursiveTypeRelatedTo` past the cache (stack depths, recursion ids),
 against a pre-order print in tttt's `recursive_related()` (agents/notes/instrumenting_tsgo.md). On bulletproof-react
