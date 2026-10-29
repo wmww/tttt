@@ -259,6 +259,8 @@ void binder_destroy(Binder* me) {
     if (!me) return;
     suggest_memo_forget(my serial);
     free(my symbols);
+    free(my module_indexes);
+    free(my merged_generic_owners);
     free(my pattern_modules);
     free(my augmentations);
     free(my global_augmentations);
@@ -852,12 +854,33 @@ bool symbol_first_declared_elsewhere(Symbol const* symbol, SourceFile const* fil
     return symbol->decl_count > first && span_source(symbol->decls[first].full) != file;
 }
 
+static void push_index(u32** list, u32* count, u32* cap, u32 index) {
+    if (*count == *cap) {
+        *cap = *cap ? *cap * 2 : 256;
+        *list = realloc(*list, sizeof(u32) * *cap);
+        panic_if(!*list, "out of memory");
+    }
+    (*list)[(*count)++] = index;
+}
+
+// Binder.module_indexes brought up to the symbols made so far: their count (a loop that makes symbols calls it again
+// at its end, and so visits new modules after the old ones, in index order, as a loop over every symbol would)
+static u32 binder_modules(Binder* me) {
+    for (u32 i = my modules_scanned; i < my symbol_count; i++) {
+        if (my symbols[i]->is_module) push_index(&my module_indexes, &my module_count, &my module_cap, i);
+    }
+    my modules_scanned = my symbol_count;
+    return my module_count;
+}
+
 // A file with a declaration of a merged class or interface whose type parameters may be an earlier declaration's of
 // another file (scope_new_generic_merged() writes to those symbols) resolves after the others
 void binder_mark_serial_resolves(Binder* me) {
+    my merged_generic_owner_count = 0;
     for (u32 s = 0; s < my symbol_count; s++) {
         Symbol const* owner = my symbols[s];
         if (!(owner->flags & (SYMBOL_CLASS | SYMBOL_INTERFACE)) || owner->decl_count < 2) continue;
+        push_index(&my merged_generic_owners, &my merged_generic_owner_count, &my merged_generic_owner_cap, s);
         for (u32 i = 1; i < owner->decl_count; i++) {
             Generic const* generic = decl_generic(&owner->decls[i]);
             if (!generic || generic_empty((Generic*)generic)) continue;
@@ -871,8 +894,9 @@ void binder_mark_serial_resolves(Binder* me) {
 }
 
 void binder_generic_merge_pairs(Binder* me, void (*pair)(void* ctx, SourceFile* file, Span later, Span earlier), void* ctx) {
-    for (u32 s = 0; s < my symbol_count; s++) {
-        Symbol const* owner = my symbols[s];
+    // (binder_mark_serial_resolves()'s list: nothing changes a symbol between the two)
+    for (u32 k = 0; k < my merged_generic_owner_count; k++) {
+        Symbol const* owner = my symbols[my merged_generic_owners[k]];
         if (!(owner->flags & (SYMBOL_CLASS | SYMBOL_INTERFACE)) || owner->decl_count < 2) continue;
         for (u32 i = 1; i < owner->decl_count; i++) {
             Generic const* generic = decl_generic(&owner->decls[i]);
@@ -3162,9 +3186,9 @@ void binder_check_export_star_conflicts(Binder* me, ErrorCtx* errs) {
     // (One arena for every walk, emptied between them: an arena per module was a chunk mapped, faulted in and
     // unmapped per module)
     Arena arena = {0};
-    for (u32 i = 0; i < my symbol_count; i++) {
-        Symbol* module = my symbols[i];
-        if (!module->is_module || !module->module || !module->module->export_star_count) continue;
+    for (u32 k = 0; k < binder_modules(me); k++) {
+        Symbol* module = my symbols[my module_indexes[k]];
+        if (!module->module || !module->module->export_star_count) continue;
         ExportStarWalk walk = { .arena = arena, .errs = errs };
         export_star_visit(&walk, module_export_equals(module), true);
         free(walk.visited);
@@ -5225,17 +5249,12 @@ void binder_link(Binder* me) {
     // module augmentations)
     merge_into_umd_globals(me);
     link_step("conflicts, alias merges, UMD globals", &last);
-    for (u32 i = 0, count = my symbol_count; i < count; i++) {
-        if (my symbols[i]->is_module) bind_type_exports(me, my symbols[i]);
-    }
+    for (u32 k = 0, count = binder_modules(me); k < count; k++) bind_type_exports(me, my symbols[my module_indexes[k]]);
     link_step("type exports", &last);
     merge_augmentations(me);
     link_step("augmentations", &last);
     // Resolving makes placeholder symbols: by index
-    for (u32 i = 0; i < my symbol_count; i++) {
-        Symbol* symbol = my symbols[i];
-        if (symbol->is_module) module_resolved_exports(symbol);
-    }
+    for (u32 k = 0; k < binder_modules(me); k++) module_resolved_exports(my symbols[my module_indexes[k]]);
     link_step("resolved exports", &last);
     for (u32 i = 0; i < my symbol_count; i++) {
         link_prefetch_aliases(me, i);

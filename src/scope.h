@@ -672,6 +672,15 @@ typedef struct Binder {
     Symbol** symbols; // malloc'd, all of them: aliases get resolved eagerly
     u32 symbol_count;
     u32 symbol_cap;
+    // The indexes in symbols of the module symbols (is_module, a property a symbol has from its creation), in order, of
+    // the first modules_scanned symbols (binder_modules()): link's loops over the modules visit them rather than every
+    // symbol, a dependent miss each (openclaw/src/config: ~1M symbols, ~20k modules)
+    u32* module_indexes; // malloc'd
+    u32 module_count, module_cap, modules_scanned;
+    // binder_mark_serial_resolves()'s merged classes and interfaces (two declarations or more), for
+    // binder_generic_merge_pairs() (malloc'd; both run between link and the walk, when no symbol changes)
+    u32* merged_generic_owners;
+    u32 merged_generic_owner_count, merged_generic_owner_cap;
     // `declare module "m" {}` blocks in modules, in declaration order: each declares into a symbol of its own, which
     // binder_link() merges into the module it names (tsc's mergeModuleAugmentation)
     NamespaceDecl** augmentations; // malloc'd
