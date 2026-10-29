@@ -254,6 +254,18 @@ static DeferredBodies* deferred_bodies_of(SourceFile* file);
 static void function_impl_lookup_body(FunctionImpl* me, FlowBuilder* flow, FlowBuilder* outer, Scope* function_scope,
     bool is_iife, bool js_constructor_candidate, ErrorCtx* errs);
 
+// Whether the function is one of the class's own members (a method, accessor or constructor), not one of an object
+// literal in a member's body (`method() { return { set s(@dec v) {} } }`: no decorators there, tsc's nodeCanBeDecorated)
+static bool class_declares_function(ClassDecl const* class_decl, FunctionImpl const* function) {
+    for_each (i, vec_class_item, &class_decl->items) {
+        if ((i->tag == CLASS_ITEM_METHOD && &i->method.func == function) ||
+            (i->tag == CLASS_ITEM_CONSTRUCTOR && &i->constructor.func == function)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool this_is_any, Scope* names, ErrorCtx* errs) {
     // (a declaration or method too: what it returns is in the same context)
     if (scope_flow(names) && scope_flow(names)->contextual_depth) my syntactically_contextual = true;
@@ -267,7 +279,8 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         if (!vec_expr_size(decorators)) continue;
         // (What can't be decorated, tsc doesn't check: its names are still resolved for the baselines)
         ClassDecl const* class_decl = scope_enclosing_class(names);
-        bool decoratable = function_arg_decoratable(me, a, class_decl && !class_decl->is_expression);
+        bool decoratable = function_arg_decoratable(me, a, class_decl && !class_decl->is_expression &&
+            class_declares_function(class_decl, me));
         ErrorCtx* decorator_errs = decoratable ? errs : binder_discarded_errs(names->binder);
         // (Nor are they uses: `const a = 1; m(@dec(a) x)` leaves `a` unused without experimentalDecorators)
         unused_marking_suppressed += !decoratable;

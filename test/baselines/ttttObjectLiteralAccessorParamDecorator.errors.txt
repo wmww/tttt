@@ -1,0 +1,25 @@
+ttttObjectLiteralAccessorParamDecorator.ts(7,15): error TS1206: Decorators are not valid here.
+ttttObjectLiteralAccessorParamDecorator.ts(8,19): error TS1206: Decorators are not valid here.
+ttttObjectLiteralAccessorParamDecorator.ts(11,12): error TS2304: Cannot find name 'dec'.
+
+
+==== ttttObjectLiteralAccessorParamDecorator.ts (3 errors) ====
+    // A parameter decorator of an object literal's setter inside a class member's body can't decorate anything (TS1206)
+    // and isn't checked (no TS2304 for its name, tsc's checkDecorators doesn't look at it); a class's own setter's is.
+    // Seed 20261117, decoratorMetadataObjectLiteralMethodNoCrash delete-stmt
+    class C {
+        method() {
+            return {
+                m(@dec x: string) {},
+                  ~
+!!! error TS1206: Decorators are not valid here.
+                set s(@dec v: number) {}
+                      ~
+!!! error TS1206: Decorators are not valid here.
+            };
+        }
+        set t(@dec v: number) {}
+               ~~~
+!!! error TS2304: Cannot find name 'dec'.
+    }
+    

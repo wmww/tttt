@@ -1,0 +1,33 @@
+//// [test/cases/ttttObjectLiteralAccessorParamDecorator.ts] ////
+
+=== ttttObjectLiteralAccessorParamDecorator.ts ===
+// A parameter decorator of an object literal's setter inside a class member's body can't decorate anything (TS1206)
+// and isn't checked (no TS2304 for its name, tsc's checkDecorators doesn't look at it); a class's own setter's is.
+// Seed 20261117, decoratorMetadataObjectLiteralMethodNoCrash delete-stmt
+class C {
+>C : C
+
+    method() {
+>method : () => { m(x: string): void; s: number; }
+
+        return {
+>{            m(@dec x: string) {},            set s(@dec v: number) {}        } : { m(x: string): void; s: number; }
+
+            m(@dec x: string) {},
+>m : (x: string) => void
+>dec : any
+>x : string
+
+            set s(@dec v: number) {}
+>s : number
+>dec : any
+>v : number
+
+        };
+    }
+    set t(@dec v: number) {}
+>t : number
+>dec : any
+>v : number
+}
+
