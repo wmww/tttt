@@ -33,6 +33,13 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   zeros over the faulting page and warns once); only tttt's own declaration writes are guarded (`source_text_detach()`, a linear scan of every mapping per
   written file). Anything that drops or mutates `SourceFile.contents` must check `text_mapping` first. Correct: a
   `csview` text field. Oracle: the corpora and sweeps (the harness's mock fs never maps).
+- `debug_allocator.h` (debug builds): every block is handed out one word past glibc's start, so a block reachable only
+  through a static or thread-local pointer is an interior pointer to valgrind, reported "possibly lost" rather than
+  "still reachable". The debug suite (`scripts/test.sh -d`) shows four such process-lifetime caches on any test, none a
+  leak (checked 2026-10-29): the thread stack pool's `stacks.free`/`stacks.used` arrays (load_pool.c
+  worker_thread_create()/worker_thread_join(), 264-520 bytes), ast_alloc.c's chunk_count() table, and the parser's
+  per-thread scratch list (scratch_grow(), 4 MB). Correct: a valgrind client request (VALGRIND_MALLOCLIKE_BLOCK) or a
+  suppression file next to test.sh; tell a real leak by "definitely lost", or by a "possibly lost" whose stack isn't one of these.
 - `TTTT_TEXT_READ_BELOW` (source_file.c text_read_below()): a measuring knob that brings back the per-file mappings
   (files of N bytes or more), kept with the mapping machinery (slots, `text_sigbus()`, `source_text_detach()`) that the
   default no longer uses since c0bf36593. The read mode's cost: a checker recycle can't drop text pages (vscode keeps
