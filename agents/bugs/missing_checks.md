@@ -619,7 +619,7 @@ Not fixed:
   TS-1 (post-emit adds a TS2454 the pre-emit check doesn't have: emit order). [tsgo]
 - distributiveConditionalBaseConstraint drop-optional: TS2344's elaboration has one more line in tttt. [text]
 
-ttttSharedGraphTypeofCycleBase (bun 85-R16b; flip's known-failing test, 308bfacae): missing TS2502 at m.ts's `p: number`
+ttttSharedGraphTypeofCycleBase (bun 85-R16b; flip's known-failing test, 308bfacae; the one entry for it, fails at K1 too): missing TS2502 at m.ts's `p: number`
 (V's property). Traced (tsgotrace --suite): checking a.ts's `import { p } from "./m"` resolves the alias, which looks p
 up in `export = v`'s type V, resolving V's bases `B<typeof y>`; `typeof y` types a.ts's `y = p`, whose `p` is
 getTypeOfAlias(p): pushTypeResolution(p), resolveAlias(p) is circular (TS2303), and getTargetOfAliasDeclaration
@@ -635,7 +635,7 @@ Known: recursiveClassBaseType (TS2310, 3), globalThisGlobalExportAsGlobal, recur
 exportSpecifierReferencingOuterDeclaration3. Fixed:
 - contextualTypingGenericFunction2 delete-stmt: `export const a` as parameters, `const` a parameter of its own (two
   TS7006 '(Missing)', TS2300). Test ttttParameterModifierThenReservedWord. [fixed 8ff5b4867] Left: its types baseline,
-  the object literal in a bodiless declaration's parameter initializer typed contextually by tsgo, any in tttt. [open]
+  the object literal in a bodiless declaration's parameter initializer typed contextually by tsgo, any in tttt. Test ttttBodilessInitializerContext. [fixed 846be68bc]
 - excessPropertyChecksWithNestedIntersections, typeSatisfaction_contextualTyping2,
   declarationEmitTypeParameterNameReusedInOverloads delete-stmt: node ends under recovery. Test ttttRecoveryNodeEnds2.
   [fixed c5fa02a3a]
@@ -700,7 +700,7 @@ Not fixed:
   `,` the array literal wants (function expressions only: jsxTernaryWithObjectInAttribute broke when every list did).
   Test ttttParameterListAbortAtComma. [fixed 957142ee9] Left: contextually typed (the type assertion), tsgo's
   contextual check infers `never` from the missing body (getReturnTypeFromBody, no HasImplicitReturn), tttt `any`
-  (function_return_type's !body branch); types baseline only. [open]
+  (function_return_type's !body branch); types baseline only. Test ttttMissingBodyContextualReturn. [fixed b6758ecd8]
 - allowUnescapedParagraphAndLineSeparatorsInStringLiteral delete-stmt: the errors baseline's squiggles after a U+2028
   inside an unterminated string: tsc's line starts count U+2028/U+2029, the harness's rendering doesn't (positions
   agree). [text]

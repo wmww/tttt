@@ -578,8 +578,3 @@ output (checked with the old CLI), so these are tttt bugs the re-pin exposed, no
   isn't assignable to `(a: number) => void`. tttt's ParamShape has one `rest_element` for every position (call.c), and
   relate.c's type_at_position() likewise. Only reachable by augmenting Array (or a rest type with numeric-named
   properties); a fix would expand such properties into positional entries of the shape. [open]
-- **A cycle through an `export =` property and a base type misses tsgo's TS2502 at the property** (bun 85-R16b; test
-  ttttSharedGraphTypeofCycleBase, which fails at K1 for this alone): `interface V extends B<typeof y> { p: number }`,
-  `export = v` of a V, `import { p }` and `export const y = p` in the other file. tsgo reports TS2303 at the import,
-  TS7022 at y, TS2310 at V and TS2502 at `p: number`; tttt has all but the TS2502 (the property's type annotation
-  isn't on the resolution stack where tsgo's getTypeOfSymbol pushes the property). [open]
