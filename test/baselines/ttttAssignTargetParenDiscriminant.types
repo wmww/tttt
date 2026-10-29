@@ -1,0 +1,107 @@
+//// [test/cases/ttttAssignTargetParenDiscriminant.ts] ////
+
+=== ttttAssignTargetParenDiscriminant.ts ===
+// A parenthesized assignment target isn't a discriminant access (bun case 55-L08): `(x.kind) = v` in a condition
+// doesn't narrow x, where `x.kind = v` and a parenthesized condition `((x.kind))` do
+type U = { kind: 0; a: string } | { kind: 1; b: number };
+>U : U
+>kind : 0
+>a : string
+>kind : 1
+>b : number
+
+function f1(x: U, v: 0 | 1) {
+>f1 : (x: U, v: 0 | 1) => void
+>x : U
+>v : 0 | 1
+
+    if ((x.kind) = v) {
+>(x.kind) = v : 0 | 1
+>(x.kind) : 0 | 1
+>x.kind : 0 | 1
+>x : U
+>kind : 0 | 1
+>v : 0 | 1
+
+        x.b;
+>x.b : any
+>x : U
+>b : any
+
+    } else {
+        x.a;
+>x.a : any
+>x : U
+>a : any
+    }
+    if ((x["kind"]) ||= v) {
+>(x["kind"]) ||= v : 0 | 1
+>(x["kind"]) : 0 | 1
+>x["kind"] : 0 | 1
+>x : U
+>"kind" : "kind"
+>v : 0 | 1
+
+        x.b;
+>x.b : any
+>x : U
+>b : any
+    }
+    if (x.kind! = v) {
+>x.kind! = v : 0 | 1
+>x.kind! : 0 | 1
+>x.kind : 0 | 1
+>x : U
+>kind : 0 | 1
+>v : 0 | 1
+
+        x.b;
+>x.b : any
+>x : U
+>b : any
+    }
+}
+function f2(x: U, v: 0 | 1) {
+>f2 : (x: U, v: 0 | 1) => void
+>x : U
+>v : 0 | 1
+
+    if (x.kind = v) {
+>x.kind = v : 0 | 1
+>x.kind : 0 | 1
+>x : U
+>kind : 0 | 1
+>v : 0 | 1
+
+        x.b;
+>x.b : number
+>x : { kind: 1; b: number; }
+>b : number
+    }
+    if (((x.kind))) {
+>((x.kind)) : 0 | 1
+>(x.kind) : 0 | 1
+>x.kind : 0 | 1
+>x : U
+>kind : 0 | 1
+
+        x.b;
+>x.b : number
+>x : { kind: 1; b: number; }
+>b : number
+    }
+    if ((x).kind = v) {
+>(x).kind = v : 0 | 1
+>(x).kind : 0 | 1
+>(x) : U
+>x : U
+>kind : 0 | 1
+>v : 0 | 1
+
+        x.b;
+>x.b : number
+>x : { kind: 1; b: number; }
+>b : number
+    }
+}
+

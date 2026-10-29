@@ -1,0 +1,51 @@
+ttttAssignTargetParenDiscriminant.ts(6,11): error TS2339: Property 'b' does not exist on type 'U'.
+  Property 'b' does not exist on type '{ kind: 0; a: string; }'.
+ttttAssignTargetParenDiscriminant.ts(8,11): error TS2339: Property 'a' does not exist on type 'U'.
+  Property 'a' does not exist on type '{ kind: 1; b: number; }'.
+ttttAssignTargetParenDiscriminant.ts(11,11): error TS2339: Property 'b' does not exist on type 'U'.
+  Property 'b' does not exist on type '{ kind: 0; a: string; }'.
+ttttAssignTargetParenDiscriminant.ts(14,11): error TS2339: Property 'b' does not exist on type 'U'.
+  Property 'b' does not exist on type '{ kind: 0; a: string; }'.
+
+
+==== ttttAssignTargetParenDiscriminant.ts (4 errors) ====
+    // A parenthesized assignment target isn't a discriminant access (bun case 55-L08): `(x.kind) = v` in a condition
+    // doesn't narrow x, where `x.kind = v` and a parenthesized condition `((x.kind))` do
+    type U = { kind: 0; a: string } | { kind: 1; b: number };
+    function f1(x: U, v: 0 | 1) {
+        if ((x.kind) = v) {
+            x.b;
+              ~
+!!! error TS2339: Property 'b' does not exist on type 'U'.
+!!! error TS2339:   Property 'b' does not exist on type '{ kind: 0; a: string; }'.
+        } else {
+            x.a;
+              ~
+!!! error TS2339: Property 'a' does not exist on type 'U'.
+!!! error TS2339:   Property 'a' does not exist on type '{ kind: 1; b: number; }'.
+        }
+        if ((x["kind"]) ||= v) {
+            x.b;
+              ~
+!!! error TS2339: Property 'b' does not exist on type 'U'.
+!!! error TS2339:   Property 'b' does not exist on type '{ kind: 0; a: string; }'.
+        }
+        if (x.kind! = v) {
+            x.b;
+              ~
+!!! error TS2339: Property 'b' does not exist on type 'U'.
+!!! error TS2339:   Property 'b' does not exist on type '{ kind: 0; a: string; }'.
+        }
+    }
+    function f2(x: U, v: 0 | 1) {
+        if (x.kind = v) {
+            x.b;
+        }
+        if (((x.kind))) {
+            x.b;
+        }
+        if ((x).kind = v) {
+            x.b;
+        }
+    }
+    

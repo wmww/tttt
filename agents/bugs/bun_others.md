@@ -122,8 +122,11 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   through a cycle: TS2430 and TS2322 missing), 08-C13b and 08-C13d (a declaration's computed names reading its own
   type), 89-R13: which member resolution sees an unfinished type and what it reports (TS2339, TS2615, TS2502, TS2310,
   TS7053) differ. [open]
-- A parenthesized destructuring target, 55-L08 (`(x.kind) = v` in a condition): tsc doesn't narrow by it (TS2339
-  missing three times). [open]
+- A parenthesized assignment target, 55-L08 (`(x.kind) = v` in a condition): tsc doesn't narrow by it (TS2339
+  missing three times): narrowTypeByBinaryExpression hands the left side as written to narrowTypeByTruthiness, whose
+  getCandidateDiscriminantPropertyAccess wants an access expression. narrow_by_binary() now asks for a discriminant
+  only through an unparenthesized property target (`x.kind! = v` neither); test ttttAssignTargetParenDiscriminant.
+  [fixed NEXT]
 - 12-C1c: inside class C<T, U>, `c.m()` with `c: C<U, { a: 1 }>` and `m(): { [K in keyof T]: U }`: tsc's result is
   `{ a: { a: 1 } }` (the homomorphic mapped type over the class's own U, mapped through the instantiation again),
   tttt's `{ [K in keyof U]: { a: 1 } }`: TS2339 spurious. [open]

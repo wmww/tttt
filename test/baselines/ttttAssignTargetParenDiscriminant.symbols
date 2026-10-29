@@ -1,0 +1,89 @@
+//// [test/cases/ttttAssignTargetParenDiscriminant.ts] ////
+
+=== ttttAssignTargetParenDiscriminant.ts ===
+// A parenthesized assignment target isn't a discriminant access (bun case 55-L08): `(x.kind) = v` in a condition
+// doesn't narrow x, where `x.kind = v` and a parenthesized condition `((x.kind))` do
+type U = { kind: 0; a: string } | { kind: 1; b: number };
+>U : Symbol(U, Decl(ttttAssignTargetParenDiscriminant.ts, 0, 0))
+>kind : Symbol(kind, Decl(ttttAssignTargetParenDiscriminant.ts, 2, 10))
+>a : Symbol(a, Decl(ttttAssignTargetParenDiscriminant.ts, 2, 19))
+>kind : Symbol(kind, Decl(ttttAssignTargetParenDiscriminant.ts, 2, 35))
+>b : Symbol(b, Decl(ttttAssignTargetParenDiscriminant.ts, 2, 44))
+
+function f1(x: U, v: 0 | 1) {
+>f1 : Symbol(f1, Decl(ttttAssignTargetParenDiscriminant.ts, 2, 57))
+>x : Symbol(x, Decl(ttttAssignTargetParenDiscriminant.ts, 3, 12))
+>U : Symbol(U, Decl(ttttAssignTargetParenDiscriminant.ts, 0, 0))
+>v : Symbol(v, Decl(ttttAssignTargetParenDiscriminant.ts, 3, 17))
+
+    if ((x.kind) = v) {
+>x.kind : Symbol(kind, Decl(ttttAssignTargetParenDiscriminant.ts, 2, 10), Decl(ttttAssignTargetParenDiscriminant.ts, 2, 35))
+>x : Symbol(x, Decl(ttttAssignTargetParenDiscriminant.ts, 3, 12))
+>kind : Symbol(kind, Decl(ttttAssignTargetParenDiscriminant.ts, 2, 10), Decl(ttttAssignTargetParenDiscriminant.ts, 2, 35))
+>v : Symbol(v, Decl(ttttAssignTargetParenDiscriminant.ts, 3, 17))
+
+        x.b;
+>x : Symbol(x, Decl(ttttAssignTargetParenDiscriminant.ts, 3, 12))
+
+    } else {
+        x.a;
+>x : Symbol(x, Decl(ttttAssignTargetParenDiscriminant.ts, 3, 12))
+    }
+    if ((x["kind"]) ||= v) {
+>x : Symbol(x, Decl(ttttAssignTargetParenDiscriminant.ts, 3, 12))
+>"kind" : Symbol(kind, Decl(ttttAssignTargetParenDiscriminant.ts, 2, 10), Decl(ttttAssignTargetParenDiscriminant.ts, 2, 35))
+>v : Symbol(v, Decl(ttttAssignTargetParenDiscriminant.ts, 3, 17))
+
+        x.b;
+>x : Symbol(x, Decl(ttttAssignTargetParenDiscriminant.ts, 3, 12))
+    }
+    if (x.kind! = v) {
+>x.kind : Symbol(kind, Decl(ttttAssignTargetParenDiscriminant.ts, 2, 10), Decl(ttttAssignTargetParenDiscriminant.ts, 2, 35))
+>x : Symbol(x, Decl(ttttAssignTargetParenDiscriminant.ts, 3, 12))
+>kind : Symbol(kind, Decl(ttttAssignTargetParenDiscriminant.ts, 2, 10), Decl(ttttAssignTargetParenDiscriminant.ts, 2, 35))
+>v : Symbol(v, Decl(ttttAssignTargetParenDiscriminant.ts, 3, 17))
+
+        x.b;
+>x : Symbol(x, Decl(ttttAssignTargetParenDiscriminant.ts, 3, 12))
+    }
+}
+function f2(x: U, v: 0 | 1) {
+>f2 : Symbol(f2, Decl(ttttAssignTargetParenDiscriminant.ts, 15, 1))
+>x : Symbol(x, Decl(ttttAssignTargetParenDiscriminant.ts, 16, 12))
+>U : Symbol(U, Decl(ttttAssignTargetParenDiscriminant.ts, 0, 0))
+>v : Symbol(v, Decl(ttttAssignTargetParenDiscriminant.ts, 16, 17))
+
+    if (x.kind = v) {
+>x.kind : Symbol(kind, Decl(ttttAssignTargetParenDiscriminant.ts, 2, 10), Decl(ttttAssignTargetParenDiscriminant.ts, 2, 35))
+>x : Symbol(x, Decl(ttttAssignTargetParenDiscriminant.ts, 16, 12))
+>kind : Symbol(kind, Decl(ttttAssignTargetParenDiscriminant.ts, 2, 10), Decl(ttttAssignTargetParenDiscriminant.ts, 2, 35))
+>v : Symbol(v, Decl(ttttAssignTargetParenDiscriminant.ts, 16, 17))
+
+        x.b;
+>x.b : Symbol(b, Decl(ttttAssignTargetParenDiscriminant.ts, 2, 44))
+>x : Symbol(x, Decl(ttttAssignTargetParenDiscriminant.ts, 16, 12))
+>b : Symbol(b, Decl(ttttAssignTargetParenDiscriminant.ts, 2, 44))
+    }
+    if (((x.kind))) {
+>x.kind : Symbol(kind, Decl(ttttAssignTargetParenDiscriminant.ts, 2, 10), Decl(ttttAssignTargetParenDiscriminant.ts, 2, 35))
+>x : Symbol(x, Decl(ttttAssignTargetParenDiscriminant.ts, 16, 12))
+>kind : Symbol(kind, Decl(ttttAssignTargetParenDiscriminant.ts, 2, 10), Decl(ttttAssignTargetParenDiscriminant.ts, 2, 35))
+
+        x.b;
+>x.b : Symbol(b, Decl(ttttAssignTargetParenDiscriminant.ts, 2, 44))
+>x : Symbol(x, Decl(ttttAssignTargetParenDiscriminant.ts, 16, 12))
+>b : Symbol(b, Decl(ttttAssignTargetParenDiscriminant.ts, 2, 44))
+    }
+    if ((x).kind = v) {
+>(x).kind : Symbol(kind, Decl(ttttAssignTargetParenDiscriminant.ts, 2, 10), Decl(ttttAssignTargetParenDiscriminant.ts, 2, 35))
+>x : Symbol(x, Decl(ttttAssignTargetParenDiscriminant.ts, 16, 12))
+>kind : Symbol(kind, Decl(ttttAssignTargetParenDiscriminant.ts, 2, 10), Decl(ttttAssignTargetParenDiscriminant.ts, 2, 35))
+>v : Symbol(v, Decl(ttttAssignTargetParenDiscriminant.ts, 16, 17))
+
+        x.b;
+>x.b : Symbol(b, Decl(ttttAssignTargetParenDiscriminant.ts, 2, 44))
+>x : Symbol(x, Decl(ttttAssignTargetParenDiscriminant.ts, 16, 12))
+>b : Symbol(b, Decl(ttttAssignTargetParenDiscriminant.ts, 2, 44))
+    }
+}
+

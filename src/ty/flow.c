@@ -2411,7 +2411,7 @@ static Ty const* narrow_prop_by_facts(FlowQuery* q, Ty const* prop_type, void co
 
 // Conditions
 
-static Ty const* narrow_by_truthiness(FlowQuery* q, Ty const* type, Expr const* expr, bool assume_true) {
+static Ty const* narrow_by_truthiness_of(FlowQuery* q, Ty const* type, Expr const* expr, bool assume_true, bool discriminant) {
     Checker* me = q->me;
     if (query_matches(q, expr)) {
         return adjusted_type_with_facts(me, type, assume_true ? TF_TRUTHY : TF_FALSY);
@@ -2419,12 +2419,16 @@ static Ty const* narrow_by_truthiness(FlowQuery* q, Ty const* type, Expr const* 
     if (compiler_options()->strict_null_checks && assume_true && chain_contains_reference(me, expr, q->reference, true)) {
         type = adjusted_type_with_facts(me, type, TF_NE_UNDEFINED_OR_NULL);
     }
-    DiscriminantAccess access = discriminant_access(q, expr, type);
+    DiscriminantAccess access = discriminant ? discriminant_access(q, expr, type) : (DiscriminantAccess){0};
     if (access.name) {
         u32 facts = assume_true ? TF_TRUTHY : TF_FALSY;
         return narrow_by_discriminant(q, type, access, narrow_prop_by_facts, &facts);
     }
     return type;
+}
+
+static Ty const* narrow_by_truthiness(FlowQuery* q, Ty const* type, Expr const* expr, bool assume_true) {
+    return narrow_by_truthiness_of(q, type, expr, assume_true, true);
 }
 
 static Ty const* narrow_by_optionality(FlowQuery* q, Ty const* type, Expr const* expr, bool assume_present) {
@@ -2998,7 +3002,11 @@ static Ty const* narrow_by_binary(FlowQuery* q, Ty const* type, Expr const* expr
         case BINARY_OP_OR_OR_EQUAL:
         case BINARY_OP_AND_AND_EQUAL:
         case BINARY_OP_EH_EH_EQUAL:
-            return narrow_by_truthiness(q, narrow_type(q, type, &binary->right, assume_true, false), &binary->left, assume_true);
+            // (The target as written: a discriminant only through an unparenthesized access, `(x.kind) = v` and
+            // `x.kind! = v` don't narrow x, tsc's getCandidateDiscriminantPropertyAccess, which a condition reaches with
+            // its parentheses and `!` skipped by narrowType)
+            return narrow_by_truthiness_of(q, narrow_type(q, type, &binary->right, assume_true, false), &binary->left, assume_true,
+                binary->left.tag == EXPR_PROPERTY && !expr_is_perenthisized(&binary->left));
         case BINARY_OP_DOUBLE_EQUAL:
         case BINARY_OP_NOT_EQUAL:
         case BINARY_OP_TRIPLE_EQUAL:

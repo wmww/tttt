@@ -21,7 +21,7 @@ dokploy, chatbox, angular-components, react-navigation, telegraf, commitlint, as
   mapped `{ [_ in K]: {} }` at K = "mutationKey" says no), so the applicability check gets anyFunctionType, passes, and
   the second pass checks the arrow fully under the getter overload; tttt said yes for any instantiated mapped type and
   made a return-only signature, which failed. infer.c's tsc_could_contain_type_variables_uncached now asks the
-  mapper's targets. [open]
+  mapper's targets. [fixed 33fa87a6b]
 
 ## Older leftovers (2026-10-08..09), still mismatching
 - tsc's TS2322 message truncation (`PromiseLike<...>` elision in long union-of-signature types) differs from tttt's. [text]
