@@ -33,6 +33,12 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   zeros over the faulting page and warns once); only tttt's own declaration writes are guarded (`source_text_detach()`, a linear scan of every mapping per
   written file). Anything that drops or mutates `SourceFile.contents` must check `text_mapping` first. Correct: a
   `csview` text field. Oracle: the corpora and sweeps (the harness's mock fs never maps).
+- `TTTT_TEXT_READ_BELOW` (source_file.c text_read_below()): a measuring knob that brings back the per-file mappings
+  (files of N bytes or more), kept with the mapping machinery (slots, `text_sigbus()`, `source_text_detach()`) that the
+  default no longer uses since ad1fe7dcf. The read mode's cost: a checker recycle can't drop text pages (vscode keeps
+  106 MB the mapped mode dropped, openclaw/src/config 59 MB; peak RSS at `--checker-memory 1G`/`2G`, 32 recycles,
+  vscode 2.69 -> 2.72-2.78 GB, +1.5..3.5%; openclaw within its recycle-count noise). Remove the knob and the machinery
+  once the laptop agrees, or give texts back per file if recycle-mode memory ever matters.
 - `check_share()` / `checker_memory()` (program.c, ty/checker.c): checker recycling assumes no diagnostic depends on a
   checker's history; false in a few places (bugs/sourcesweep_checker.md "History dependences recycling exposes"; the
   undefinedProperties member order was one until 2026-10-21). `checker_memory()` leaves out LazyMemo pages (real memory the budget doesn't
