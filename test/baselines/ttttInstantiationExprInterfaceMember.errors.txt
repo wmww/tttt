@@ -1,0 +1,36 @@
+ttttInstantiationExprInterfaceMember.ts(5,12): error TS2689: Cannot extend an interface 'NI.Inner'. Did you mean 'implements'?
+ttttInstantiationExprInterfaceMember.ts(6,12): error TS2689: Cannot extend an interface 'NI.Deep.I'. Did you mean 'implements'?
+ttttInstantiationExprInterfaceMember.ts(7,12): error TS2689: Cannot extend an interface 'Top'. Did you mean 'implements'?
+ttttInstantiationExprInterfaceMember.ts(8,17): error TS2689: Cannot extend an interface 'NI.Inner'. Did you mean 'implements'?
+ttttInstantiationExprInterfaceMember.ts(9,17): error TS2689: Cannot extend an interface 'NI.Deep.I'. Did you mean 'implements'?
+ttttInstantiationExprInterfaceMember.ts(10,15): error TS2339: Property 'Missing' does not exist on type 'typeof NI'.
+ttttInstantiationExprInterfaceMember.ts(11,16): error TS2339: Property 'Inner' does not exist on type 'typeof NI'.
+
+
+==== ttttInstantiationExprInterfaceMember.ts (7 errors) ====
+    // A namespace member access in an instantiation expression or extends clause naming an interface is TS2689 at the
+    // access, not TS2339 (bun case 06-C16, tsc's checkAndReportErrorForExtendingInterface from the property access)
+    namespace NI { export interface Inner<T> { } export const v = 1; export namespace Deep { export interface I {} } }
+    interface Top<T> {}
+    const x1 = NI.Inner<string>;
+               ~~~~~~~~
+!!! error TS2689: Cannot extend an interface 'NI.Inner'. Did you mean 'implements'?
+    const x2 = NI.Deep.I<string>;
+               ~~~~~~~
+!!! error TS2689: Cannot extend an interface 'NI.Deep.I'. Did you mean 'implements'?
+    const x3 = Top<string>;
+               ~~~
+!!! error TS2689: Cannot extend an interface 'Top'. Did you mean 'implements'?
+    class C extends NI.Inner<number> {}
+                    ~~~~~~~~
+!!! error TS2689: Cannot extend an interface 'NI.Inner'. Did you mean 'implements'?
+    class D extends NI.Deep.I {}
+                    ~~~~~~~
+!!! error TS2689: Cannot extend an interface 'NI.Deep.I'. Did you mean 'implements'?
+    const x4 = NI.Missing<string>;
+                  ~~~~~~~
+!!! error TS2339: Property 'Missing' does not exist on type 'typeof NI'.
+    const x5 = (NI.Inner)<string>;
+                   ~~~~~
+!!! error TS2339: Property 'Inner' does not exist on type 'typeof NI'.
+    

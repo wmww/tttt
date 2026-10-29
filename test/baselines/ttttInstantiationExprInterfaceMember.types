@@ -1,0 +1,61 @@
+//// [test/cases/ttttInstantiationExprInterfaceMember.ts] ////
+
+=== ttttInstantiationExprInterfaceMember.ts ===
+// A namespace member access in an instantiation expression or extends clause naming an interface is TS2689 at the
+// access, not TS2339 (bun case 06-C16, tsc's checkAndReportErrorForExtendingInterface from the property access)
+namespace NI { export interface Inner<T> { } export const v = 1; export namespace Deep { export interface I {} } }
+>NI : typeof NI
+>v : 1
+>1 : 1
+
+interface Top<T> {}
+const x1 = NI.Inner<string>;
+>x1 : any
+>NI.Inner<string> : any
+>NI.Inner : any
+>NI : typeof NI
+>Inner : any
+
+const x2 = NI.Deep.I<string>;
+>x2 : any
+>NI.Deep.I<string> : any
+>NI.Deep.I : any
+>NI.Deep : any
+>NI : typeof NI
+>Deep : any
+>I : any
+
+const x3 = Top<string>;
+>x3 : any
+>Top<string> : any
+>Top : any
+
+class C extends NI.Inner<number> {}
+>C : C
+>NI.Inner : any
+>NI : typeof NI
+>Inner : any
+
+class D extends NI.Deep.I {}
+>D : D
+>NI.Deep.I : any
+>NI.Deep : any
+>NI : typeof NI
+>Deep : any
+>I : any
+
+const x4 = NI.Missing<string>;
+>x4 : any
+>NI.Missing<string> : any
+>NI.Missing : any
+>NI : typeof NI
+>Missing : any
+
+const x5 = (NI.Inner)<string>;
+>x5 : any
+>(NI.Inner)<string> : any
+>(NI.Inner) : any
+>NI.Inner : any
+>NI : typeof NI
+>Inner : any
+

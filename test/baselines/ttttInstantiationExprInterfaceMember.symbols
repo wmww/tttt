@@ -1,0 +1,48 @@
+//// [test/cases/ttttInstantiationExprInterfaceMember.ts] ////
+
+=== ttttInstantiationExprInterfaceMember.ts ===
+// A namespace member access in an instantiation expression or extends clause naming an interface is TS2689 at the
+// access, not TS2339 (bun case 06-C16, tsc's checkAndReportErrorForExtendingInterface from the property access)
+namespace NI { export interface Inner<T> { } export const v = 1; export namespace Deep { export interface I {} } }
+>NI : Symbol(NI, Decl(ttttInstantiationExprInterfaceMember.ts, 0, 0))
+>Inner : Symbol(Inner, Decl(ttttInstantiationExprInterfaceMember.ts, 2, 14))
+>T : Symbol(T, Decl(ttttInstantiationExprInterfaceMember.ts, 2, 38))
+>v : Symbol(v, Decl(ttttInstantiationExprInterfaceMember.ts, 2, 57))
+>Deep : Symbol(Deep, Decl(ttttInstantiationExprInterfaceMember.ts, 2, 64))
+>I : Symbol(I, Decl(ttttInstantiationExprInterfaceMember.ts, 2, 88))
+
+interface Top<T> {}
+>Top : Symbol(Top, Decl(ttttInstantiationExprInterfaceMember.ts, 2, 114))
+>T : Symbol(T, Decl(ttttInstantiationExprInterfaceMember.ts, 3, 14))
+
+const x1 = NI.Inner<string>;
+>x1 : Symbol(x1, Decl(ttttInstantiationExprInterfaceMember.ts, 4, 5))
+>NI : Symbol(NI, Decl(ttttInstantiationExprInterfaceMember.ts, 0, 0))
+
+const x2 = NI.Deep.I<string>;
+>x2 : Symbol(x2, Decl(ttttInstantiationExprInterfaceMember.ts, 5, 5))
+>NI.Deep : Symbol(NI.Deep, Decl(ttttInstantiationExprInterfaceMember.ts, 2, 64))
+>NI : Symbol(NI, Decl(ttttInstantiationExprInterfaceMember.ts, 0, 0))
+>Deep : Symbol(NI.Deep, Decl(ttttInstantiationExprInterfaceMember.ts, 2, 64))
+
+const x3 = Top<string>;
+>x3 : Symbol(x3, Decl(ttttInstantiationExprInterfaceMember.ts, 6, 5))
+
+class C extends NI.Inner<number> {}
+>C : Symbol(C, Decl(ttttInstantiationExprInterfaceMember.ts, 6, 23))
+>NI : Symbol(NI, Decl(ttttInstantiationExprInterfaceMember.ts, 0, 0))
+
+class D extends NI.Deep.I {}
+>D : Symbol(D, Decl(ttttInstantiationExprInterfaceMember.ts, 7, 35))
+>NI.Deep : Symbol(NI.Deep, Decl(ttttInstantiationExprInterfaceMember.ts, 2, 64))
+>NI : Symbol(NI, Decl(ttttInstantiationExprInterfaceMember.ts, 0, 0))
+>Deep : Symbol(NI.Deep, Decl(ttttInstantiationExprInterfaceMember.ts, 2, 64))
+
+const x4 = NI.Missing<string>;
+>x4 : Symbol(x4, Decl(ttttInstantiationExprInterfaceMember.ts, 9, 5))
+>NI : Symbol(NI, Decl(ttttInstantiationExprInterfaceMember.ts, 0, 0))
+
+const x5 = (NI.Inner)<string>;
+>x5 : Symbol(x5, Decl(ttttInstantiationExprInterfaceMember.ts, 10, 5))
+>NI : Symbol(NI, Decl(ttttInstantiationExprInterfaceMember.ts, 0, 0))
+

@@ -2196,6 +2196,12 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             my property->read_target = read_target;
             my property->nested_read_target = nested_read_target;
             my property->compound_like_target = compound_like_target;
+            if (my property->form == PROPERTY_EXPR_DOT) {
+                Expr const* head = me;
+                while (head->tag == EXPR_PROPERTY && head->property->form == PROPERTY_EXPR_DOT) head = &head->property->expr;
+                Expr const* entity = head->tag == EXPR_IDENTIFIER ? identifier_extends_entity(&head->identifier) : nullptr;
+                if (entity && entity != head && entity_names_interface(names, entity)) my property->extends_interface = true;
+            }
             {
                 PropertyContext context = { .enclosing_class = scope_enclosing_class(names) };
                 ThisRef this_ref = scope_get_this(names, false);
@@ -4791,6 +4797,27 @@ void expr_property_access_errors(Expr const* me, Ty const* expr_type, bool parti
     for (intptr_t i = 0; i < vec_error_size(&found.errors); i++) {
         Error const* error = vec_error_at(&found.errors, i);
         no_property |= is_no_property_code(error->ts_code) && span_eq(error->span, name_span);
+    }
+    // In the entity name of an instantiation expression or heritage clause that names an interface, what the
+    // namespace lacks is the interface used as a value, said at the access (tsc's checkAndReportErrorForExtendingInterface)
+    if (no_property && my property->extends_interface) {
+        Expr const* head = me;
+        while (head->tag == EXPR_PROPERTY && head->property->form == PROPERTY_EXPR_DOT) head = &head->property->expr;
+        Expr const* entity = identifier_extends_entity(&head->identifier);
+        intptr_t kept = 0;
+        for (intptr_t i = 0; i < vec_error_size(&found.errors); i++) {
+            Error* error = vec_error_at_mut(&found.errors, i);
+            if (is_no_property_code(error->ts_code) && span_eq(error->span, name_span)) {
+                error_drop(error);
+            } else {
+                if (kept != i) found.errors.data[kept] = *error;
+                kept++;
+            }
+        }
+        found.errors.size = kept;
+        no_property = false;
+        error_ctx_error_d(&found, expr_outer_span(me), 2689, "Cannot extend an interface '", expr_outer_span(entity),
+            "'. Did you mean 'implements'?");
     }
     if (no_property) {
         if (ty_flow_partial_no_property(checker, my property)) {

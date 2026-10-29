@@ -3343,7 +3343,19 @@ static bool expr_compile_test_info_head(Expr* me, BaselineTestCase* ctx) {
 }
 
 void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
+    // An instantiation expression's entity name that the checker couldn't access (`NI.Deep.I<T>` with Deep a namespace
+    // of types only): tsc's getSymbolAtLocation resolves it as an entity name, like a heritage clause's
+    // (isInNameOfExpressionWithTypeArgumentsOrHeritageTypeReference)
+    u32 overrides = ctx->symbol_override_count;
+    bool entity = my tag == EXPR_GENERIC_PARAMS && !my generic_params->heritage &&
+        !expr_is_perenthisized(&my generic_params->expr) && (expr_get_type(&my generic_params->expr)->flags & TYF_ERROR);
+    if (entity) heritage_entity_overrides(&my generic_params->expr, ctx);
     if (expr_compile_test_info_head(me, ctx)) expr_compile_test_info_inner(me, ctx);
+    while (entity && ctx->symbol_override_count > overrides) {
+        ctx->symbol_override_count--;
+        cstr_drop(&ctx->symbol_overrides[ctx->symbol_override_count].text);
+        vec_span_drop(&ctx->symbol_overrides[ctx->symbol_override_count].declarations);
+    }
 }
 
 void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {

@@ -656,6 +656,9 @@ typedef struct PropertyExpr {
     bool constraint_position : 1; // Like IdentifierExpr.constraint_position
     // Part of the entity name of a `typeof a.b` type (tsc's QualifiedName): also sees a namespace's type-only exports
     bool qualified_name : 1;
+    // Part of the entity name of an instantiation expression or `extends` clause (`NI.Inner<T>`) that names an
+    // interface: a property it lacks is TS2689 there (tsc's checkAndReportErrorForExtendingInterface). Set by the walk
+    bool extends_interface : 1;
     bool compound_like_target : 1; // Like IdentifierExpr.compound_like_target
     bool method_call : 1; // The callee of a call or new (tsc's isMethodAccessForCall): the object widens
     bool non_null_operand : 1; // The operand of `a.b!` (unparenthesized), like IdentifierExpr.non_null_operand

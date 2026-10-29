@@ -82,7 +82,7 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   the read is TS2339 (missing in tttt). bindDeferredExpandoAssignment looks the name up in the assignment's container
   and block scope only, and a class's or member's decorator and a member's computed name have the class (or the
   method) as container; scope_add_nested_expando() now stops there. Test ttttExpandoInDecorator. Parameter
-  decorators (the function is the container: its parameters would be found) aren't modelled. [fixed NEXT]
+  decorators (the function is the container: its parameters would be found) aren't modelled. [fixed ced6bf746]
 - `this` in a JS class's computed method name inside an object literal, 30-C19b (TS2339 missing on `this.g`). [open]
 - `this` in a decorator's arrow function of a nested class (`(z: this) => z.x`), 33-C4d: tsc's `this` there is the
   outer class's; tttt's is the inner class (spurious TS2339). [open]
@@ -144,7 +144,12 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   mapped type has `a` (the type-only re-export's value is in the namespace's keys), tttt's is `{}`: TS2339
   spurious. [open]
 - 06-C16, `NI.Inner<string>` as an expression with `Inner` an interface: tsc says TS2689 ("Cannot extend an
-  interface", its expression-with-type-arguments check), tttt TS2339 on `typeof NI`. [open]
+  interface", its expression-with-type-arguments check), tttt TS2339 on `typeof NI`. checkPropertyAccessExpression's
+  missing-property path tries checkAndReportErrorForExtendingInterface first, at the access, for an entity name under
+  an ExpressionWithTypeArguments (instantiation expression or heritage clause) naming an interface; tttt had only the
+  head identifier's case. PropertyExpr.extends_interface (the walk), expr_property_access_errors() reports it; the
+  symbols baseline resolves such an entity name like a heritage clause's when the checker couldn't access it. Test
+  ttttInstantiationExprInterfaceMember. [fixed NEXT]
 - Modules: 39-C4a and 39-C4b (`typeof import("./b/b")` default of an .mts under a `type: module` package: TS2339
   missing and spurious), 75-R02 (`default` of `typeof N` namespaces re-exported, spurious TS2339), 87-R08, 94-R04a,
   27-P4b (JSX intrinsic `div` with a module-scoped JSX namespace: TS2339 spurious, TS7026 missing). [open]
