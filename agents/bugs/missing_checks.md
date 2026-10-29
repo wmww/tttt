@@ -608,6 +608,11 @@ symbolProperty18 (TS7022), conditionalContextualReturnSubstitutionCache drop-as 
 - nonPrimitiveAndEmptyObject delete-stmt: `const { fooProps = {} } = foo` with `fooProps?: BarProps & object` and an
   empty BarProps is `{}` in tsgo (mutual strict subtypes, tsgo's union order decides), `BarProps & object` in tttt
   (ty_binding_element_type's mutual-subtype guard). Test ttttBindingDefaultMutualSubtype. [fixed ceab20e12]
+- `--syntax` (9 of 8000): objectRestBindingContextualInference delete-stmt, a missing TS2554 in an initializer of a
+  bodiless signature's pattern parameter (the parameter list swallowed the next statement): an element of an
+  unannotated pattern asks for the parameter's type, the initializer's, checked and reported unless it has a quick
+  type. Test ttttBodilessPatternInitializerChecked. [fixed 152e4cc95] The rest known (render: the U+2028 squiggles
+  [text], objectFreezeLiteralsDontWiden's TS-1 [tsgo]).
 Not fixed:
 - declarationEmitNestedAnonymousMappedType drop-as: tsgo's baseline has TS2313's related TS2751 "Circularity
   originates in type at this location", tttt not; the CLI (projdiff, noEmit) is byte-identical: the harness's emit
