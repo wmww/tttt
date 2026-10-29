@@ -329,72 +329,35 @@ static Prop* builder_find_prop(MembersBuilder* me, Atom const* name) {
     return at >= 0 ? my props[at] : nullptr;
 }
 
-typedef struct NameIndexPair {
-    uintptr_t name;
-    u32 index;
-} NameIndexPair;
-
-static inline bool name_index_pair_less(NameIndexPair x, NameIndexPair y) {
-    return x.name != y.name ? x.name < y.name : x.index < y.index;
-}
-
-// Sorts (name, index) pairs by name and then index, i.e. props by name (atom address) stably, without qsort()'s
-// indirect calls: big tuples (200+ elements on type-fest) made that 8% of the corpus. Insertion sorted runs of 16, then
-// merged
-static void sort_name_index_pairs(NameIndexPair* pairs, u32 len) {
-    enum { RUN = 16 };
-    for (u32 start = 0; start < len; start += RUN) {
-        u32 end = start + RUN < len ? start + RUN : len;
-        for (u32 i = start + 1; i < end; i++) {
-            NameIndexPair p = pairs[i];
-            u32 j = i;
-            for (; j > start && name_index_pair_less(p, pairs[j - 1]); j--) pairs[j] = pairs[j - 1];
-            pairs[j] = p;
-        }
-    }
-    if (len <= RUN) return;
-    NameIndexPair* tmp = malloc(sizeof(NameIndexPair) * len);
-    panic_if(!tmp, "out of memory");
-    NameIndexPair* src = pairs;
-    NameIndexPair* dst = tmp;
-    for (u32 width = RUN; width < len; width *= 2) {
-        for (u32 lo = 0; lo < len; lo += 2 * width) {
-            u32 mid = lo + width < len ? lo + width : len, hi = lo + 2 * width < len ? lo + 2 * width : len;
-            u32 i = lo, j = mid, k = lo;
-            while (i < mid && j < hi) dst[k++] = name_index_pair_less(src[j], src[i]) ? src[j++] : src[i++];
-            while (i < mid) dst[k++] = src[i++];
-            while (j < hi) dst[k++] = src[j++];
-        }
-        NameIndexPair* t = src;
-        src = dst;
-        dst = t;
-    }
-    if (src != pairs) memcpy(pairs, src, sizeof(NameIndexPair) * len);
-    free(tmp);
-}
-
 // A new name index of `count` props
 static PropNameIndex const* prop_name_index_new(Checker* me, Prop* const* props, u32 count) {
-    NameIndexPair stack[64];
-    NameIndexPair* pairs = count <= c_arraylen(stack) ? stack : malloc(sizeof(NameIndexPair) * count);
-    panic_if(!pairs, "out of memory");
-    for (u32 i = 0; i < count; i++) pairs[i] = (NameIndexPair){ (uintptr_t)props[i]->name, i };
-    sort_name_index_pairs(pairs, count);
-    PropNameIndex* ret = arena_alloc(&my arena, sizeof(PropNameIndex) + sizeof(Atom const*) * count);
-    u32* order = arena_new_n(&my arena, u32, count);
-    for (u32 k = 0; k < count; k++) {
-        ret->names[k] = (Atom const*)pairs[k].name;
-        order[k] = pairs[k].index;
+    u32 bits = 1;
+    while (((u32)1 << bits) < 2 * count) bits++;
+    u32 cap = (u32)1 << bits;
+    PropNameIndex* ret = arena_alloc(&my arena, sizeof(PropNameIndex) + sizeof(Atom const*) * cap);
+    u32* order = arena_new_n(&my arena, u32, cap);
+    ret->count = count;
+    ret->shift = 64 - bits;
+    memset(ret->names, 0, sizeof(Atom const*) * cap);
+    for (u32 i = 0; i < count; i++) {
+        u32 at = prop_name_index_slot(ret, props[i]->name);
+        if (ret->names[at]) continue; // (A name twice: its first)
+        ret->names[at] = props[i]->name;
+        order[at] = i;
     }
     ret->order = order;
-    if (pairs != stack) free(pairs);
     return ret;
 }
 
-// Whether `index` (made for some `count` props) is that of `props`: their names are its creator's, in the same order
+// Whether `index` (made for some props) is that of `props`: their names are its creator's, in the same order
 static bool prop_name_index_fits(PropNameIndex const* index, Prop* const* props, u32 count) {
-    for (u32 k = 0; k < count; k++) {
-        if (props[index->order[k]]->name != index->names[k]) return false;
+    if (index->count != count) return false;
+    for (u32 i = 0; i < count; i++) {
+        u32 at = prop_name_index_slot(index, props[i]->name);
+        if (!index->names[at]) return false;
+        // (A name twice: the index has its first, which must be the first here too)
+        u32 k = index->order[at];
+        if (k != i && (k > i || props[k]->name != props[i]->name)) return false;
     }
     return true;
 }
@@ -5721,14 +5684,8 @@ static i32 members_find(Members const* members, Atom const* name) {
         if (filter && !(filter & ty_prop_filter_bit(name))) return -1;
     } else if (members->by_name) {
         PropNameIndex const* index = members->by_name;
-        u32 lo = 0, hi = members->prop_count;
-        while (lo < hi) {
-            u32 mid = lo + (hi - lo) / 2;
-            Atom const* mid_name = index->names[mid];
-            if (mid_name == name) return (i32)index->order[mid];
-            if ((uintptr_t)mid_name < (uintptr_t)name) lo = mid + 1; else hi = mid;
-        }
-        return -1;
+        u32 at = prop_name_index_slot(index, name);
+        return index->names[at] ? (i32)index->order[at] : -1;
     }
     for (u32 i = 0; i < members->prop_count; i++) {
         if (members_prop_name(members, i) == name) return (i32)i;
@@ -5753,14 +5710,8 @@ Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name) {
         if (filter && !(filter & ty_prop_filter_bit(name))) return nullptr;
     } else if (members->by_name) {
         PropNameIndex const* index = members->by_name;
-        u32 lo = 0, hi = members->prop_count;
-        while (lo < hi) {
-            u32 mid = lo + (hi - lo) / 2;
-            Atom const* mid_name = index->names[mid];
-            if (mid_name == name) return members_prop(me, members, index->order[mid]);
-            if ((uintptr_t)mid_name < (uintptr_t)name) lo = mid + 1; else hi = mid;
-        }
-        return nullptr;
+        u32 at = prop_name_index_slot(index, name);
+        return index->names[at] ? members_prop(me, members, index->order[at]) : nullptr;
     }
     // (The array and count in registers: the slots' acquire loads would reload them every step)
     Prop* const* props = members->lazy_props;

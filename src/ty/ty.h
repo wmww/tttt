@@ -970,13 +970,25 @@ struct Members {
     struct MembersRare const* rare;
 };
 
-// The names of a Members' props sorted by atom address (a name twice in its order in `props`), and where in `props`
-// each one is: what ty_get_prop() searches. Immutable. The names stay in one array that every instantiation of a type
-// shares (the lookup reads no Prop until it has found it); members.c's builder_name_index()
+// The names of a Members' props in an open-addressing table by atom address, and where in `props` each one is: what
+// ty_get_prop() probes (a name twice in `props` finds its first). Immutable. The table stays in one allocation that
+// every instantiation of a type shares (the lookup reads no Prop until it has found it); members.c's
+// prop_name_index_new(). A hash rather than a sorted array's binary search: one or two predictable probes where the
+// search took ~6 steps that mispredicted about every other one
 typedef struct PropNameIndex {
-    u32 const* order; // order[k]: the index in props of names[k]
-    Atom const* names[];
+    u32 const* order; // order[k]: the index in props of names[k] (for the slots that have a name)
+    u32 count; // The names
+    u32 shift; // 64 - log2 of the slots, at least twice the names
+    Atom const* names[]; // Null: an empty slot
 } PropNameIndex;
+
+// The slot of `name` in `index`, or of the empty slot ending its probe
+static inline u32 prop_name_index_slot(PropNameIndex const* index, Atom const* name) {
+    u32 mask = (u32)(((u64)1 << (64 - index->shift)) - 1);
+    u32 at = (u32)(((uintptr_t)name * 0x9E3779B97F4A7C15ull) >> index->shift);
+    while (index->names[at] && index->names[at] != name) at = (at + 1) & mask;
+    return at;
+}
 
 static inline u64 ty_prop_filter_bit(Atom const* name) {
     return 1ull << (((uintptr_t)name * 0x9E3779B97F4A7C15ull) >> 58);
