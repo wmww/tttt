@@ -16155,6 +16155,10 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
                 // the string is an expression statement, ';' expected at a `{` after it)
                 value_drop(&val);
                 p.pos = name_anchor.start;
+                // (A namespace of that missing name all the same: tsc's symbols baseline shows its `(Missing)`)
+                ret->name = span_make(p.shared->source, token_full_start(&p), token_full_start(&p));
+                ret->module_keyword = is_module_keyword;
+                ret->full_span = span_from(a);
                 return parse_success(&p);
             } else {
                 parse_error(&p, span_from(name_anchor), 2819, "Namespace name cannot be '", &val, "'.");

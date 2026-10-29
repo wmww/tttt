@@ -1987,8 +1987,9 @@ static void check_export_merge(Scope* me, Span block, Symbol* local, bool resolv
                     "' cannot include a default export declaration. Consider adding a separate 'export default ",
                     decl->name, "' declaration instead.");
             } else if (spaces & common && (s == 1 || decl->flags)) {
+                // (A name recovery left missing is "(Missing)": declarationNameToString)
                 error_ctx_error_d(binder_errs(my binder), decl->name, 2395, "Individual declarations in merged declaration '",
-                    decl->name, "' must be all exported or all local.");
+                    decl->name.size ? span_sv(decl->name) : c_sv("(Missing)"), "' must be all exported or all local.");
             }
         }
     }
@@ -2024,7 +2025,7 @@ static void check_export_context_merges(Scope* me, Span block) {
                 continue;
             }
             error_ctx_error_d(binder_errs(my binder), decl->name, 2395, "Individual declarations in merged declaration '",
-                decl->name, "' must be all exported or all local.");
+                decl->name.size ? span_sv(decl->name) : c_sv("(Missing)"), "' must be all exported or all local.");
         }
     }
 }

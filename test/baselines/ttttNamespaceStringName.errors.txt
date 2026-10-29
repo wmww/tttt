@@ -1,14 +1,35 @@
-ttttNamespaceStringName.ts(4,11): error TS1003: Identifier expected.
-ttttNamespaceStringName.ts(4,17): error TS1005: ';' expected.
+ttttNamespaceStringName.ts(5,10): error TS2395: Individual declarations in merged declaration '(Missing)' must be all exported or all local.
+ttttNamespaceStringName.ts(5,11): error TS1003: Identifier expected.
+ttttNamespaceStringName.ts(5,17): error TS1005: ';' expected.
+ttttNamespaceStringName.ts(6,17): error TS2395: Individual declarations in merged declaration '(Missing)' must be all exported or all local.
+ttttNamespaceStringName.ts(6,18): error TS1003: Identifier expected.
+ttttNamespaceStringName.ts(6,22): error TS1005: ';' expected.
+ttttNamespaceStringName.ts(7,10): error TS2395: Individual declarations in merged declaration '(Missing)' must be all exported or all local.
+ttttNamespaceStringName.ts(7,11): error TS1003: Identifier expected.
 
 
-==== ttttNamespaceStringName.ts (2 errors) ====
+==== ttttNamespaceStringName.ts (8 errors) ====
     // `namespace "100" {}` (a string after `namespace`, not `module`): the name is missing (TS1003) and nothing is taken,
     // so the string is an expression statement and the block after it wants a ';' (tsc's parseModuleBlock without its
-    // '{'). Seed 20261114, parseInvalidNames num-to-str
+    // '{'). The namespace of the missing name is still declared: the symbols baseline's `(Missing)`. Seed 20261114,
+    // parseInvalidNames num-to-str
     namespace "100" {}
+             
+!!! error TS2395: Individual declarations in merged declaration '(Missing)' must be all exported or all local.
               ~~~~~
 !!! error TS1003: Identifier expected.
                     ~
 !!! error TS1005: ';' expected.
+    export namespace 'x' { var a; }
+                    
+!!! error TS2395: Individual declarations in merged declaration '(Missing)' must be all exported or all local.
+                     ~~~
+!!! error TS1003: Identifier expected.
+                         ~
+!!! error TS1005: ';' expected.
+    namespace "y"
+             
+!!! error TS2395: Individual declarations in merged declaration '(Missing)' must be all exported or all local.
+              ~~~
+!!! error TS1003: Identifier expected.
     
