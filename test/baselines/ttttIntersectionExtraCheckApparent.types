@@ -1,0 +1,35 @@
+//// [test/cases/ttttIntersectionExtraCheckApparent.ts] ////
+
+=== ttttIntersectionExtraCheckApparent.ts ===
+// An intersection source's extra property check runs only when its apparent type is structured (tsc's
+// isSourceIntersectionNeedingExtraCheck): `T & null` is null, comparable to Map by its T alone, while `T & {}` is `{}`
+// and lacks Set's properties (webpack's FileSystemInfo.js, a narrowed `T | undefined` asserted to `Set | Map`)
+function f<T>(m: T | undefined) {
+>f : <T>(m: T | undefined) => void
+>m : T | undefined
+
+  if (m !== undefined) {
+>m !== undefined : boolean
+>m : T | undefined
+>undefined : undefined
+
+    const k = (m as Set<string> | Map<string, any>).keys();
+>k : MapIterator<string>
+>(m as Set<string> | Map<string, any>).keys() : MapIterator<string>
+>(m as Set<string> | Map<string, any>).keys : (() => MapIterator<string>) | (() => SetIterator<string>)
+>(m as Set<string> | Map<string, any>) : Map<string, any> | Set<string>
+>m as Set<string> | Map<string, any> : Map<string, any> | Set<string>
+>m : T & ({} | null)
+>keys : (() => MapIterator<string>) | (() => SetIterator<string>)
+  }
+}
+function g<T>(m: T & {}) {
+>g : <T>(m: T & {}) => void
+>m : T & {}
+
+  const k = m as Set<string>;
+>k : Set<string>
+>m as Set<string> : Set<string>
+>m : T & {}
+}
+

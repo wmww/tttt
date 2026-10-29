@@ -1,0 +1,37 @@
+//// [test/cases/ttttIntersectionExtraCheckApparent.ts] ////
+
+=== ttttIntersectionExtraCheckApparent.ts ===
+// An intersection source's extra property check runs only when its apparent type is structured (tsc's
+// isSourceIntersectionNeedingExtraCheck): `T & null` is null, comparable to Map by its T alone, while `T & {}` is `{}`
+// and lacks Set's properties (webpack's FileSystemInfo.js, a narrowed `T | undefined` asserted to `Set | Map`)
+function f<T>(m: T | undefined) {
+>f : Symbol(f, Decl(ttttIntersectionExtraCheckApparent.ts, 0, 0))
+>T : Symbol(T, Decl(ttttIntersectionExtraCheckApparent.ts, 3, 11))
+>m : Symbol(m, Decl(ttttIntersectionExtraCheckApparent.ts, 3, 14))
+>T : Symbol(T, Decl(ttttIntersectionExtraCheckApparent.ts, 3, 11))
+
+  if (m !== undefined) {
+>m : Symbol(m, Decl(ttttIntersectionExtraCheckApparent.ts, 3, 14))
+>undefined : Symbol(undefined)
+
+    const k = (m as Set<string> | Map<string, any>).keys();
+>k : Symbol(k, Decl(ttttIntersectionExtraCheckApparent.ts, 5, 9))
+>(m as Set<string> | Map<string, any>).keys : Symbol(keys, Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --))
+>m : Symbol(m, Decl(ttttIntersectionExtraCheckApparent.ts, 3, 14))
+>Set : Symbol(Set, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2025.collection.d.ts, --, --))
+>Map : Symbol(Map, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2026.collection.d.ts, --, --))
+>keys : Symbol(keys, Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --))
+  }
+}
+function g<T>(m: T & {}) {
+>g : Symbol(g, Decl(ttttIntersectionExtraCheckApparent.ts, 7, 1))
+>T : Symbol(T, Decl(ttttIntersectionExtraCheckApparent.ts, 8, 11))
+>m : Symbol(m, Decl(ttttIntersectionExtraCheckApparent.ts, 8, 14))
+>T : Symbol(T, Decl(ttttIntersectionExtraCheckApparent.ts, 8, 11))
+
+  const k = m as Set<string>;
+>k : Symbol(k, Decl(ttttIntersectionExtraCheckApparent.ts, 9, 7))
+>m : Symbol(m, Decl(ttttIntersectionExtraCheckApparent.ts, 8, 14))
+>Set : Symbol(Set, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2025.collection.d.ts, --, --))
+}
+

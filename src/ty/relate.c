@@ -6386,10 +6386,15 @@ static Ternary structured_related_members(
                 bool required_known = related_member && (related_member->flags & TYF_OBJECT) &&
                     related_member->kind != TY_INTERSECTION && related_member->kind != TY_UNION &&
                     !(non_augmenting_normalized(me, related_member)->flags & TYF_ANY);
-                IState saved_props = passing(st);
-                related &= props_related_impl(me, st, apparent_type(me, source), target, report, false, true,
-                    required_known ? nullptr : source);
-                istate_swap(st, saved_props);
+                // (Only for a structured apparent type: tsc's isSourceIntersectionNeedingExtraCheck. `T & null` is
+                // null, comparable to `Map<K, V>` by its T alone)
+                Ty const* apparent = apparent_type(me, source);
+                if (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION | TYF_UNION)) {
+                    IState saved_props = passing(st);
+                    related &= props_related_impl(me, st, apparent, target, report, false, true,
+                        required_known ? nullptr : source);
+                    istate_swap(st, saved_props);
+                }
             }
             return related;
         }
