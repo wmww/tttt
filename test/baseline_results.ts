@@ -15623,6 +15623,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttMissingOperandConditional': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttMissingPropertyEscapedName': {
         errors: true,
         symbols: true,
@@ -16243,6 +16248,11 @@ const baselines = {
         types: true,
     },
     'ttttRequiredTypeParamUndefinedFacts': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttReservedParameterNameUnused': {
         errors: true,
         symbols: true,
         types: true,
@@ -17143,6 +17153,11 @@ const baselines = {
     },
     'ttttUnusedTypeOnlyNamespaceImport': {
         errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUnusedUnderJsdocParseError': {
+        errors: false,
         symbols: true,
         types: true,
     },
