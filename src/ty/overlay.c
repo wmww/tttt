@@ -407,6 +407,22 @@ static int force_shadow = -1;
     return force;
 }
 
+// TTTT_GRAPH_FORCE_POISON=N: a taint event at the end of every N-th clean computation of a word in each worker (its
+// value is then poisoned, or kept private), the taint rules' oracle: any computation may meet an event, and the
+// output must not move. It does (2026-10-29, worker race: zod at K8, 1 in 100: 4 of 4 runs differ, some by thousands
+// of lines; 1 in 1000: 1 of 4; agents/bugs/shared_graph.md)
+static int force_poison = -1;
+static thread_local unsigned force_poison_count;
+[[gnu::cold]] static bool force_poison_now(void) {
+    int every = __atomic_load_n(&force_poison, __ATOMIC_RELAXED);
+    if (every < 0) {
+        char const* env = getenv("TTTT_GRAPH_FORCE_POISON");
+        every = env ? atoi(env) : 0;
+        __atomic_store_n(&force_poison, every, __ATOMIC_RELAXED);
+    }
+    return every > 0 && ++force_poison_count % (unsigned)every == 0;
+}
+
 uintptr_t sw_finish(Checker* me, SharedWord* w, uint8_t* state, uintptr_t value, uint64_t taint) {
     check(value != SW_EMPTY && value != SW_POISON);
     if (!my graph) {
@@ -420,6 +436,9 @@ uintptr_t sw_finish(Checker* me, SharedWord* w, uint8_t* state, uintptr_t value,
     // (A private value is kept only for a poisoned word, or by a shadowed worker)
     uintptr_t seen = sw_load(w);
     if ((seen == SW_POISON || o->copies || my graph_shadowed) && o->map.len) map_remove(o, (uintptr_t)w);
+    if (__builtin_expect(__atomic_load_n(&force_poison, __ATOMIC_RELAXED) != 0, 0) && graph_taint_now == taint && force_poison_now()) {
+        TAINT_EVENT(TAINT_READ_TAINTED);
+    }
     bool clean = graph_taint_now == taint;
     bool debug = __builtin_expect(__atomic_load_n(&debug_publish, __ATOMIC_RELAXED) > 0, 0);
     // (Tested before the CAS: a final word's line isn't taken exclusively by a CAS that can't win)
@@ -450,6 +469,9 @@ uintptr_t sw_finish(Checker* me, SharedWord* w, uint8_t* state, uintptr_t value,
     }
     // A tainted value whose word another worker published meanwhile: this worker keeps its own, and goes by its Overlay
     // first until its file ends (program.c retires it then)
+    // (A forced one (TTTT_GRAPH_FORCE_SHADOW) was clean: the event a tainted one met, so the frames around it are tainted
+    // as they would be)
+    if (clean) TAINT_EVENT(TAINT_READ_TAINTED);
     o->stats.shadowed++;
     map_put(o, (uintptr_t)w, value);
     my graph_shadowed = true;

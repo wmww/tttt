@@ -23,6 +23,42 @@ scripts/sharedgraph/sgcheck_projects.txt, load 8-15): main at ab39dce20 12 of 34
     event, so its body's locals were published clean and another checker skipped their evaluation (test
     ttttSharedGraphLazyGetterThis). [fixed e598f8660]
 
+- **dokploy/apps/dokploy K16 round robin, once (the landing gate, 2026-10-29)**: `pages/invitation.tsx(123,12): error
+  TS2339: Property 'error' does not exist on type 'Data<(Omit<{ token: null; user: {...} }, "user"> & ...) | (Omit<...>
+  & ...)> | Error$1<...> | (Omit<...> & ...) | (Omit<...> & ...)'` (`const { error } = await authClient.signUp.email({...})`,
+  better-auth). Not reproduced since (worker race): ~1100 flagged runs at K12/16/24/32 rr, 4-6 jobs at once (load
+  15-45), 200 seeded schedules (TTTT_GRAPH_SEED, rate 16), plus `sgcheck --load`. The shape: better-fetch's
+  `BetterFetchResponse<T, E, Throw> = Throw extends true ? T : Data<T> | Error$1<E>` came out with Throw = `boolean`
+  (T's members beside Data and Error$1), where K1 has `false`. Throw is `FetchOptions["throw"] extends true ? true :
+  COpts["fetchOptions"] extends { throw: true } ? true : false`: `boolean` is what a check type of `any` gives, or the
+  conditional's *constraint* (ty_conditional_resolve()'s for_constraint: `true` narrows `boolean | undefined`), i.e. the
+  call's return type left generic in the signature's FetchOptions and read through its constraint: a mapper whose
+  sources are another worker's clones of FetchOptions (720b23760's family). Candidate mechanisms found by forcing them,
+  each of which breaks the output at scale (so the rare natural case is one of them, but which is not shown):
+  - **Shadowed workers** (overlay.c sw_finish(): a tainted loser keeps its value): with `TTTT_GRAPH_FORCE_SHADOW=1`
+    (now with the taint event a natural tainted loser has met) dokploy K16 rr differs in 8/24 runs, zod and drizzle K8
+    in 2-3/4, and the differing files are mostly *not* the shadowed ones: the shadowed worker's value in hand (returned
+    by sw_finish() to its callers, no event) flows into frames it starts later, which are clean and publish. dokploy's
+    natural runs shadow 1-30 words (`graph: shadowed worker N retired after F` 1-2 a run; pages/register.tsx, the
+    other signUp.email caller, among the retired files). Tried and not kept (patch in the worker's scratch, the design
+    here): an event at every computation start of a shadowed worker (graph_taint_start() at the ~15 frame starts and
+    the memo log) and the shadowed file's diagnostics dropped (stamped Errors) and checked again by a fresh worker;
+    the forced runs still differ, because the start events poison everything the shadowed worker finishes first and
+    the poison path is itself unsound (next).
+  - **The poison path** (a tainted computation poisons its word, every worker keeps its own): `TTTT_GRAPH_FORCE_POISON=N`
+    (overlay.c, new: an event at the end of every N-th clean word computation) must not move the output and does: zod
+    K8 1/10: 4/4 runs differ (3-529 lines), 1/30: 3/4, 1/100: 0/4 here (4/4 in another build's timing), seeded
+    schedules too (seed 3 at 1/100: string.test.ts TS2349, `[z.string, z.coerce.string]` no longer reduced to one
+    callable member); `TTTT_GRAPH_RECHECK=1` then finds schemas.ts and string.test.ts differing *in the graph* (a fresh
+    checker on the finished graph): published values are wrong, not just the worker's history. The fingerprint oracle
+    flags property `~standard`'s type (`ZodStandardSchemaWithJSON<this>`, its `this` mapped to a check marker where
+    K1 maps it to the reference) inside variance measurements, but its key may not separate the two owners: unproven.
+    The likely hole is the same as the shadow's: a value kept privately (poisoned, or clean but finishing after a
+    poison) is in hand in the computing worker and reaches frames started after its event, which publish.
+  Next: bisect the forced-poison divergence with seeds (deterministic: `TTTT_GRAPH_FORCE_POISON=30 TTTT_GRAPH_SEED=S
+  TTTT_SHARED_GRAPH=1 release/tttt --threads 8 --checkers 8 --checker-memory off -p zod`) by kind (poison only one
+  word kind at a time) and then by the first published value the recheck-in-graph disagrees with. Every fix here is
+  a taint rule; the forced knobs are the gate (`TTTT_GRAPH_FORCE_POISON=30 scripts/sgcheck.py -f zod -k 8`). [open]
 - **openbot/apps/auth-api: private names raced** (hub_regime.md's 75 TS2345s): ty_private_name() returned its own
   `#x` atom when another checker's was published first; the class's members carried the winner's, so lookups missed
   them (TS18014, TS6133, `unknown`/`{}` through Effect chains). 10/10 runs before, 0/60 after. [fixed b9a8bc824]

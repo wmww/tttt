@@ -18,6 +18,8 @@ exit N`/`plain signal N` when plain crashes there).
   scripts/sgcheck.py                        # the default list (scripts/sharedgraph/sgcheck_projects.txt), K 4,8,16, 3 runs
   scripts/sgcheck.py -f 'auth-api|drizzle' -n 10 -k 8
   scripts/sgcheck.py --projects FILE --deals rr
+  scripts/sgcheck.py -f 'dokploy/apps/dokploy' -k 16 --deals rr -n 50 --load 3   # under load: 3 plain zod loops beside
+  TTTT_GRAPH_FORCE_POISON=30 scripts/sgcheck.py -f zod -k 8   # the taint rules' oracle (src/ty/overlay.c): must not move
 
 Projects are source sweep projects (REPO/path, under thirdparty/sources) or `-p` corpus names (realworld.py's), read
 through their physical paths. Runs go through tttt_run (address-space limit, timeout, the memory budget: each run takes
@@ -25,7 +27,7 @@ through their physical paths. Runs go through tttt_run (address-space limit, tim
 outputs are kept in a scratch directory printed at the end (deleted when nothing differs). Exit 1 when any flagged run
 differs from the reference or crashes. ~25 min for the default list at 3 runs on a quiet 16-vCPU box.
 """
-import argparse, concurrent.futures, difflib, os, re, shutil, sys, tempfile, threading
+import argparse, concurrent.futures, difflib, os, re, shutil, subprocess, sys, tempfile, threading
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import tttt_run
@@ -142,6 +144,10 @@ def main():
     ap.add_argument('--bin', default=os.path.join(ROOT, 'release/tttt'))
     ap.add_argument('--timeout', type=int, default=600)
     ap.add_argument('--mem-gb', type=float, default=8, help="each run's address space beyond the threads' (tttt_run)")
+    ap.add_argument('--load', type=int, default=0, metavar='N',
+                    help='N loops of plain runs of --load-corpus beside the checks (default threads, niced): the landing '
+                         "gate's load, under which dokploy's one race showed (agents/bugs/shared_graph.md)")
+    ap.add_argument('--load-corpus', default='zod', help='the corpus the --load loops check (default zod)')
     ap.add_argument('-v', '--verbose', action='store_true', help='a line for every project, not only the differing ones')
     args = ap.parse_args()
     args.k = [int(x) for x in args.k.split(',')]
@@ -158,6 +164,18 @@ def main():
     projects = [p for p in projects if p not in BUILD_CORPORA]
     out_dir = tempfile.mkdtemp(prefix='sgcheck-')
     checker = Checker(args, out_dir)
+    load_done = threading.Event()
+    load_threads = []
+    def load_loop():
+        cwd, p = project_args(args.load_corpus)
+        env = dict(os.environ, TTTT_SHARED_GRAPH='0')
+        while not load_done.is_set():
+            subprocess.run(['nice', '-n', '10', args.bin, '--noEmit', '-p', p], cwd=cwd, env=env,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=args.timeout)
+    for _ in range(args.load):
+        t = threading.Thread(target=load_loop, daemon=True)
+        t.start()
+        load_threads.append(t)
     bad, total_runs, bad_runs = [], 0, 0
     with concurrent.futures.ThreadPoolExecutor(args.jobs) as ex:
         futures = {ex.submit(checker.project, p): p for p in projects}
@@ -182,6 +200,9 @@ def main():
                 print(f'{p}: {", ".join(cells)}', flush=True)
                 for n in notes:
                     print(f'    {n}', flush=True)
+    load_done.set()
+    for t in load_threads:
+        t.join()
     print(f'\n{len(projects)} projects, {total_runs} flagged runs: {bad_runs} differ from plain K1'
           f'{" (" + str(len(bad)) + " projects: " + " ".join(bad) + ")" if bad else ""}')
     if bad:

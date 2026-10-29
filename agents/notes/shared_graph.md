@@ -380,7 +380,7 @@ are). Checkers are recycled after 1/128 of the total cost. Its CPU at default th
 time (vscode 43 CPU s vs 14 single): sharing costs it too, it just has more cores busy.
 
 ## Tools left behind
-`TTTT_GRAPH_STATS=1` (per kind: shared hits, shared misses, published...; variance slots published, adopted,
+`TTTT_GRAPH_FORCE_POISON=N` and `TTTT_GRAPH_FORCE_SHADOW=1` (the taint rules' oracles: an event forced at every N-th clean word computation, a clean loser kept like a tainted one; the output must not move, and on 2026-10-29 it does: bugs/shared_graph.md, dokploy's entry), `scripts/sgcheck.py --load N` (plain loops beside the checks), `TTTT_GRAPH_STATS=1` (per kind: shared hits, shared misses, published...; variance slots published, adopted,
 unpoisoned...), `TTTT_TAINT_LOG=1` in a `-DTTTT_TAINT_SITES` build (every taint event's site as it happens), `TTTT_GRAPH_NO_CACHE=1` (shared hits not
 kept in the checker's own tables: the A/B of 75f79d714), `TTTT_GRAPH_WORK=1` (cycles per word computation by outcome), `TTTT_GRAPH_LEAD=1` /
 `TTTT_GRAPH_NO_LEAD=1`, `TTTT_GRAPH_SHARE_RELATIONS=0`, `TTTT_GRAPH_BUDGET_MB` (graph-wide recycle, default 800),
