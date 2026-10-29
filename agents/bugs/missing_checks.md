@@ -638,8 +638,12 @@ exportSpecifierReferencingOuterDeclaration3 [tsgo]. New:
   expression is, tsgo's hasContextSensitiveReturnExpression, tttt has it), and tsgo ends with T fixed to the return
   type's inference `(input: string) => boolean`, so the argument fails (TS2345); tttt infers T =
   `((x: string) => boolean) | undefined` from the argument and fails the declaration (TS2322). Where tsgo fixes T
-  (likely the inner arrow's contextual signature instantiated with the fixing mapper in the second pass) wasn't traced.
-  Repro: the declaration above with `declare function useMemo<T>(func: () => T): T`. [open]
+  wasn't found. Traced (tsgotrace --funcs getInferredType): T isn't fixed during the argument's check, only at the end
+  of inferTypeArguments, so the argument's return type gives T no candidate there. It hinges on the other return: `if
+  (c) return 1;` or `return null` too, but `if (c) return (y: string) => 1` (all functions) is TS2322 in both. Suspect:
+  the first pass's return-only type (`1 | anyFunctionType`, NonInferrableType) and what inferFromTypes makes of a union
+  with a non-inferrable member. Repro: the declaration above with `declare function useMemo<T>(func: () => T): T`.
+  [open]
 - sourceMapValidationStatements delete-stmt: `with (obj) { z = 10; }` with no `z` declared: tsgo reports TS2304 inside
   the unchecked with body. Not checkWithStatement (it skips the body): most likely flow analysis of an identifier
   reference walking back over the assignment, isMatchingReference's getResolvedSymbol, which reports. tttt never
