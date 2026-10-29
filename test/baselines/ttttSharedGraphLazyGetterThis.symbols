@@ -1,0 +1,55 @@
+//// [test/cases/ttttSharedGraphLazyGetterThis.ts] ////
+
+=== state.ts ===
+declare class State<T> { constructor(record: T); }
+>State : Symbol(State, Decl(state.ts, 0, 0))
+>T : Symbol(T, Decl(state.ts, 0, 20))
+>record : Symbol(record, Decl(state.ts, 0, 37))
+>T : Symbol(T, Decl(state.ts, 0, 20))
+
+export interface S { live: number | null; ready: boolean; end: number }
+>S : Symbol(S, Decl(state.ts, 0, 50))
+>live : Symbol(S.live, Decl(state.ts, 1, 20))
+>ready : Symbol(S.ready, Decl(state.ts, 1, 41))
+>end : Symbol(S.end, Decl(state.ts, 1, 57))
+
+export const s = new State<S>({
+>s : Symbol(s, Decl(state.ts, 2, 12))
+>State : Symbol(State, Decl(state.ts, 0, 0))
+>S : Symbol(S, Decl(state.ts, 0, 50))
+
+  live: null,
+>live : Symbol(live, Decl(state.ts, 2, 31))
+
+  ready: false,
+>ready : Symbol(ready, Decl(state.ts, 3, 13))
+
+  get end() {
+>end : Symbol(end, Decl(state.ts, 4, 15))
+
+    const end = this.live > 0 ? this.live : this.ready ? 1 : 0;
+>end : Symbol(end, Decl(state.ts, 6, 9))
+>this.live : Symbol(S.live, Decl(state.ts, 1, 20))
+>this : Symbol(S, Decl(state.ts, 0, 50))
+>live : Symbol(S.live, Decl(state.ts, 1, 20))
+>this.live : Symbol(S.live, Decl(state.ts, 1, 20))
+>this : Symbol(S, Decl(state.ts, 0, 50))
+>live : Symbol(S.live, Decl(state.ts, 1, 20))
+>this.ready : Symbol(S.ready, Decl(state.ts, 1, 41))
+>this : Symbol(S, Decl(state.ts, 0, 50))
+>ready : Symbol(S.ready, Decl(state.ts, 1, 41))
+
+    return end;
+>end : Symbol(end, Decl(state.ts, 6, 9))
+
+  },
+});
+=== user.ts ===
+import { s } from './state';
+>s : Symbol(s, Decl(user.ts, 0, 8))
+
+export class P { static state = s; }
+>P : Symbol(P, Decl(user.ts, 0, 28))
+>state : Symbol(P.state, Decl(user.ts, 1, 16))
+>s : Symbol(s, Decl(user.ts, 0, 8))
+

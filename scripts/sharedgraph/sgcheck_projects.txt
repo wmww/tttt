@@ -44,6 +44,10 @@ inbox-zero/apps/web
 openscience/backend/cli
 nest/packages/microservices/test
 better-drizzle
+# (2026-10-29, the default's first full gate: graph bugs kdiff found that this list missed)
+youtube-enhancer
+vidstack-player
+vidstack-player/packages/vidstack
 tsc
 type-fest
 valibot

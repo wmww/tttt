@@ -1499,8 +1499,13 @@ Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function) {
     // (tsc's getContextualThisParameterType: the containing literal or assigned object with noImplicitThis, or in JS)
     bool in_js = span_source(function->full_span) && span_source(function->full_span)->is_js;
     if (!compiler_options()->no_implicit_this && !in_js) return nullptr;
-    if (my lazy_getter == function && !my lazy_getter_nested) return ty_intrinsic(me, TY_ANY);
     if (my lazy_getter == function) {
+        // (Which `this` the body sees is this worker's state, the call resolution in flight that types the getter
+        // first: what is computed from it is that history's, never a clean value. vidstack's player-state.ts: a local
+        // of a getter typed under it, published, let another checker skip the evaluation whose expression memos tsc
+        // keeps, TS2531 at K16)
+        TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
+        if (!my lazy_getter_nested) return ty_intrinsic(me, TY_ANY);
         Expr const* literal = function_impl_rare(function)->this_literal;
         return ty_widened_for_declaration(me, ty_expr_type(me, literal), true);
     }

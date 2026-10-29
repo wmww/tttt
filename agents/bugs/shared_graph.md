@@ -1,12 +1,27 @@
-# --shared-graph (TTTT_SHARED_GRAPH=1): flagged output against plain one checker
+# The shared graph (the default at K > 1 since 2026-10-29): its output against plain one checker
 
-Flag-only: the default path has none of these (tsgo's output and plain tttt's are checker-count independent), so the
-open ones are tagged `[note]` and don't count in the headline; they block turning the flag on by default. The gate is
-`scripts/sgcheck.py` (flagged runs at K 1/4/8/16, the scheduler's deal and a program-order round robin, against plain
-K1 byte for byte). Census 2026-10-29 (K8, both deals, 3 runs each, the 43 hub projects and 15 corpora of
+Graph-only: plain (`TTTT_SHARED_GRAPH=0`) has none of these (tsgo's output and plain tttt's are checker-count
+independent). Since the graph is the default, an open one is a real bug (`[open]`), no longer a `[note]`. The gates:
+`scripts/sgcheck.py` (graph runs at K 4/8/16, the scheduler's deal and a program-order round robin, against plain K1
+byte for byte), `scripts/kdiff.py` (K16 against K1 on the source sweep), buncases (1 and 4 checkers) and the suite's K16
+and K4 T4 dumps (oracles.py kdiff). Census 2026-10-29 (K8, both deals, 3 runs each, the 43 hub projects and 15 corpora of
 scripts/sharedgraph/sgcheck_projects.txt, load 8-15): main at ab39dce20 12 of 348 runs differ in 5 projects
 (auth-api 3, folo renderer 2, better-drizzle 5, drizzle 1, effect 1); wt-sg after b9a8bc824 6 runs in 3 projects
 (better-drizzle 4, drizzle 1, effect 1), after c76f0abbe better-drizzle 0/21.
+
+- **Found by the default's first full gate (2026-10-29, worker flip)**, none on sgcheck's list (now on it):
+  - bun 85-R16b (K2, 17 of 20 runs): a lowered generic reference node (KEY_UNION_NODE) was published whatever its
+    taint, so `B<typeof y>` lowered inside y's cycle carried that history's y (test ttttSharedGraphTypeofCycleBase).
+    [fixed 308bfacae]
+  - youtube-enhancer migrate-translation.ts TS2578 (every K > 1): the walk nesting order cut zod's
+    ZodObject<Writeable<{...}>> where the ids don't (a homomorphic mapped type over an object literal's type: its
+    properties are made before it); also at K1 under TTTT_NESTING_ORDER=walk (test ttttSharedGraphWalkMappedLiteral).
+    The walk still disagrees with the ids at ~900 decisions there, all case 5 (sharing_design.md section 6) and
+    none moving the output. [fixed 9990e5259]
+  - vidstack-player (and packages/vidstack) player-state.ts TS2531 (K16, deterministic at T1): an object literal getter
+    typed by a call's resolution sees `this` as any (Checker.lazy_getter, in-flight per-worker state) without a taint
+    event, so its body's locals were published clean and another checker skipped their evaluation (test
+    ttttSharedGraphLazyGetterThis). [fixed, next commit]
 
 - **openbot/apps/auth-api: private names raced** (hub_regime.md's 75 TS2345s): ty_private_name() returned its own
   `#x` atom when another checker's was published first; the class's members carried the winner's, so lookups missed
