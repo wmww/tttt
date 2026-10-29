@@ -601,6 +601,34 @@ never-const (harness writes no errors baseline).
 - recursiveClassBaseType delete-stmt: missing TS2310 (the base cycle design). noCircularitySelfReferentialGetter2
   (TS2345 text), unionTypeWithIndexSignature never-const (TS2322 text): not looked at. [open]
 
+## Mutation seed 20261114 (2026-10-29, cor12: `scripts/mutate.py -n 8000 --seed 20261114`, 3 of 8000 differ; `--syntax` 13)
+Known: recursiveClassBaseType (TS2310), unionTypeWithIndexSignature (text TS2322). Fixed:
+- circularInlineMappedGenericTupleTypeNoCrash str-to-num: TS2589 at a return statement as the current node spans its
+  `return` keyword (getErrorSpanForNode). Test ttttReturnStatementErrorSpan. [fixed 2dfa45459]
+- computedPropertiesInDestructuring1_ES6 undefined-init: `({[foo]: bar} = {bar: "bar"})` with foo undefined, TS2353:
+  only a non-literal property-key computed name opens an assignment pattern. Test ttttAssignmentPatternComputedName.
+  [fixed 020c811ec] Left: the same inside an array pattern, `[{[foo]: bar4}] = [{bar: "bar"}]`: the nested object
+  literal target isn't a pattern type in tttt (only the top-level one is cloned as a pattern in
+  assignment_value_context), so its literal gets no excess property check. [open]
+- useRegexpGroups num-to-str: `"a"02""`, the scanner's TS1121 before the parser's ',' expected at the same token.
+  Test ttttOctalScannerErrorFirst. [fixed 8b85c6f16]
+- thislessFunctionsNotContextSensitive3 delete-stmt: `export {` in a member list is no modifier. Test
+  ttttObjectLiteralExportBrace. [fixed 70b783cb9]
+- parseInvalidNames num-to-str: `namespace "100" {}`, the string not taken after the missing name. Test
+  ttttNamespaceStringName (errors only: tsgo's symbols baseline shows the missing name's `(Missing)` symbol, tttt's
+  walk doesn't [open]). [fixed 9f85e491a]
+- fallFromLastCase2 add-optional, contextualComputedNonBindablePropertyType delete-stmt, inferTypesWithExtends1
+  drop-as: node ends under recovery (TS7029, TS2464, TS7039 spans). Test ttttRecoveryNodeSpans. [fixed 32baaef64]
+Not fixed:
+- infiniteConstraints drop-prop: '(' expected at `>>;` spans one character in tsgo (its scanner reads `>` alone); tttt's
+  span_from_token takes `>>`. A one-character `>` broke bun43-X5d, where the expression parse rescanned `>>=`; needs a
+  type-context flag in the parser. [open]
+- contextualTyping null-arg: `[function(null, s) { return s; }]` in a type assertion: after TS1359 and TS1138 tsgo's
+  recovery reports TS2304/TS1005 for the rest of the line, tttt's swallows it. [open]
+- allowUnescapedParagraphAndLineSeparatorsInStringLiteral delete-stmt: the errors baseline's squiggles after a U+2028
+  inside an unterminated string: tsc's line starts count U+2028/U+2029, the harness's rendering doesn't (positions
+  agree). [text]
+
 ## Mutation seed 20261113 (2026-10-29, cor11: `scripts/mutate.py -n 8000 --seed 20261113 --syntax`, 16 of 8000 differ)
 Known: generatorTypeCheck46 (TS2488 from the early pass [design]), recursiveClassBaseType (TS2310),
 importDeclWithExportModifierInAmbientContext (TS2708 from tsgo's emit resolver [tsgo]). Fixed:
