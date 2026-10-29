@@ -40,6 +40,21 @@ there (`nproc` 24): its section below; it is the one to read for core scaling.
   `--tsBuildInfoFile`); its walls right after `oracles.py`'s other oracles are inflated: rerun alone. A project whose
   `.tsbuildinfo` is committed makes tsc skip checking (webcmd).
 
+## Instruction drift, attributed (2026-10-29, an attribution agent; callgrind, this box)
+A full `scripts/instrcount.sh` run on main (fast/tttt) read as a regression against test/instrcount.txt: tanstack-router
++3.18%, type-fest +2.15%, valibot +2.12%, xstate +2.09%, vue +1.67%, vscode +0.54%. It wasn't one: the three saves of
+2026-10-28 (09df26d73, 61683a2b1, c4243c800) had rewritten only drizzle, effect, nest, react, tsc, vscode and zod, so
+the other lines dated from 44fbc714c (2026-10-24), 412 source commits back. Release builds bisected over that range
+(counts in G, type-fest / tanstack-router): 44fbc714c 9.992 / 4.542; a86dc3437 10.054 / 4.555; ed02bc573 10.058 /
+4.558; f9be547cd 10.103 / 4.592; 8b1777931 10.141 / 4.618; main d8491e6de 10.159 / 4.627. Total +1.67% / +1.87% on
+release builds (the fast build's +2.3% / +3.1% adds PGO+BOLT retraining noise). The only commit pair that stands out is
+the 8-byte intern slots (c64f2ce5f, f9be547cd: +0.45% / +0.75%; a deliberate trade, 28-32% fewer LL misses, 15-38 MB
+less RSS, zod measured +0.65% at the time). The rest is correctness fixes spread evenly: +0.6% / +0.3% over the first
+162 commits, +0.2% / +0.6% over the next 111, +0.18% / +0.19% over the 103 since 8b1777931 (the batch this run
+covered). Nothing to revert. Consequences: the file is re-saved in full at this commit so every line shares one
+baseline; instrcount.sh warns on a partial `--save`; an intern-slot A/B (`scripts/abbench.sh` ed02bc573 vs f9be547cd on
+type-fest) is the check if that trade is ever doubted.
+
 ## Checker footprint at K1 (2026-10-28, worker foot, 7713f7dfa -> 796d25fb7; this box, release and fast builds)
 Census and method: agents/notes/footprint.md. Arena K1 (`--time`) imm(utable.d.ts one-file) 227 -> 217 MB, zod 284 ->
 265, drizzle 299 -> 271, effect 298 -> 287, store.d.ts 144 -> 143, type-fest 475 -> ~451. Peak RSS K1 (fast builds,

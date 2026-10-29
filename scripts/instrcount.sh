@@ -76,6 +76,11 @@ save() {
     sort "$tmp" > "$REF"
     rm -f "$tmp"
     echo "saved to $REF"
+    # A save of some corpora leaves the others' lines at an older commit's counts: the next full run then compares
+    # against mixed baselines (2026-10-29: five corpora's lines were 412 commits old and read as a +2-3% regression)
+    local kept
+    kept=$(awk -v t="$tool" -v names=" ${!RESULT[*]} " '$3 == t && index(names, " " $1 " ") == 0' "$REF" | wc -l)
+    test "$kept" = 0 || echo "instrcount.sh: partial save: $kept other line(s) of $REF keep an older commit's counts; run --save with no corpus names before judging a drift" >&2
 }
 declare -A C=(
     [tsc]=thirdparty/corpora/TypeScript6/src/compiler
