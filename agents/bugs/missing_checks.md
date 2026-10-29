@@ -643,7 +643,9 @@ exportSpecifierReferencingOuterDeclaration3 [tsgo]. New:
   (c) return 1;` or `return null` too, but `if (c) return (y: string) => 1` (all functions) is TS2322 in both. Suspect:
   the first pass's return-only type (`1 | anyFunctionType`, NonInferrableType) and what inferFromTypes makes of a union
   with a non-inferrable member. Repro: the declaration above with `declare function useMemo<T>(func: () => T): T`.
-  [open]
+  Found (instrumented tsgo): no second pass at all; the first applicability check relates the cached return-only type
+  `() => {} | undefined`, which fails, where tttt related anyFunctionType. Test ttttReturnOnlyTypeApplicability.
+  [fixed 074270ae7]
 - sourceMapValidationStatements delete-stmt: `with (obj) { z = 10; }` with no `z` declared: tsgo reports TS2304 inside
   the unchecked with body. Not checkWithStatement (it skips the body): most likely flow analysis of an identifier
   reference walking back over the assignment, isMatchingReference's getResolvedSymbol, which reports. tttt never
