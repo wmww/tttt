@@ -697,7 +697,18 @@ type annotation.".
 -TS6133 (missing), 13 cases: 03-SC8, 04-C4, 04-C6, 32-C11, 43-C8c, 43-P4a, 54-L06, 54-L07a, 54-L08, 71-R09a, 80-R17a,
 80-R17b, 97-M1. First: 03-SC8 a.ts:2 "'…' is declared but its value is never read.". 71-R09a and 97-M1: a namespace used as a value
 (TS2708) marked the import referenced [fixed 29895013c]; 43-C8c/43-P4a/54-L07a/80-R17a/80-R17b are JSDoc `{@link}`
-marking, 03-SC8 an `export {}` inside a function body: not looked into.
+marking, 03-SC8 an `export {}` inside a function body. The JSDoc `{@link}` group, probed against tsgo 2026-10-29
+(cor14): tsgo resolves link names (checkJSDocComments) only in the main text and the top-level tags' comments of the
+JSDoc of a node checkSourceElement visits, parsed eagerly only when the comment has @see/@link. Not marked used:
+a link inside a tag's type expression (`@throws {@link M}`, `@returns {@link L}`: the braces are the type), a link
+in a nested tag (a @typedef's @property, a @callback's or @overload's @param/@returns, `@param o.a` under `@param
+o`), a JSDoc before an expression statement starting with `(` (the parenthesized expression takes it), before an
+arrow or function expression, an argument, an array element, an object literal property, or after `return`; and,
+unexplained, a one-line `{ /** {@link H} */ m: number }` interface member or enum member (multi-line ones are
+used); `Foo\u0046` resolves as `FooF`. Marked: parameters, statements in blocks, class members, `@param x {@link
+K}`'s comment, `@throws {@link M} desc {@link N}`'s N. tttt's unused_mark_jsdoc_links() scans the whole file's
+text for `@link NAME` (hacks.md): the fix is to resolve links from the JSDoc of the walked source elements with the
+JSDoc parser's tag structure, not a text scan. [open]
 
 +TS2307 (spurious), 11 cases: 01-C10, 28-C21a, 36-C10b, 36-C11, 40-C13c, 40-P1, 41-P3a, 41-P3b, 42-C11, 42-P2, 59-L09.
 First: 01-C10 a.ts:1 "Cannot find module '…' or its corresponding type declarations.".

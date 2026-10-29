@@ -618,7 +618,7 @@ Not fixed:
   a conditional type met while the getter's inferred type is in flight (`Out<Box<Box<any>>>`, `o` optional) stays
   deferred in tttt (never related: TTTT_DEBUG_RELATE shows no `Box<Box<any>>` -> `{ o: any }` query), tsgo resolves it
   to unknown. Not traced further: which in-flight path makes the instantiation lazy. Known-failing test
-  ttttRecursiveGetterDeferredConditional (8 lines). zod v4's recursive getters are this shape. [open]
+  ttttRecursiveGetterDeferredConditional. zod v4's recursive getters are this shape. [fixed 85d876ec4]
 
 ## Mutation seed 20261118 (2026-10-29, cor14: `scripts/mutate.py -n 8000 --seed 20261118`, 7 of 8000 differ)
 Known: infiniteRecursionDestructuringLoop (TS2339 [design]), unionTypeWithIndexSignature (text TS2322),
