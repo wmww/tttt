@@ -1,0 +1,96 @@
+ttttAccessorTypedPropertySymbol.ts(4,3): error TS2300: Duplicate identifier 'y'.
+ttttAccessorTypedPropertySymbol.ts(4,3): error TS2687: All declarations of 'y' must have identical modifiers.
+ttttAccessorTypedPropertySymbol.ts(5,12): error TS2300: Duplicate identifier 'y'.
+ttttAccessorTypedPropertySymbol.ts(5,12): error TS2687: All declarations of 'y' must have identical modifiers.
+ttttAccessorTypedPropertySymbol.ts(8,12): error TS2300: Duplicate identifier 'y'.
+ttttAccessorTypedPropertySymbol.ts(8,12): error TS2687: All declarations of 'y' must have identical modifiers.
+ttttAccessorTypedPropertySymbol.ts(9,3): error TS2300: Duplicate identifier 'y'.
+ttttAccessorTypedPropertySymbol.ts(9,3): error TS2687: All declarations of 'y' must have identical modifiers.
+ttttAccessorTypedPropertySymbol.ts(9,3): error TS2717: Subsequent property declarations must have the same type.  Property 'y' must be of type 'number', but here has type 'number | undefined'.
+ttttAccessorTypedPropertySymbol.ts(12,3): error TS2300: Duplicate identifier 'a'.
+ttttAccessorTypedPropertySymbol.ts(12,3): error TS2564: Property 'a' has no initializer and is not definitely assigned in the constructor.
+ttttAccessorTypedPropertySymbol.ts(12,3): error TS2687: All declarations of 'a' must have identical modifiers.
+ttttAccessorTypedPropertySymbol.ts(13,7): error TS2300: Duplicate identifier 'a'.
+ttttAccessorTypedPropertySymbol.ts(14,3): error TS2300: Duplicate identifier 'a'.
+ttttAccessorTypedPropertySymbol.ts(14,3): error TS2564: Property 'a' has no initializer and is not definitely assigned in the constructor.
+ttttAccessorTypedPropertySymbol.ts(14,3): error TS2687: All declarations of 'a' must have identical modifiers.
+ttttAccessorTypedPropertySymbol.ts(14,3): error TS2717: Subsequent property declarations must have the same type.  Property 'a' must be of type 'number', but here has type 'boolean'.
+ttttAccessorTypedPropertySymbol.ts(17,3): error TS2300: Duplicate identifier 'b'.
+ttttAccessorTypedPropertySymbol.ts(17,3): error TS2564: Property 'b' has no initializer and is not definitely assigned in the constructor.
+ttttAccessorTypedPropertySymbol.ts(18,3): error TS2300: Duplicate identifier 'b'.
+ttttAccessorTypedPropertySymbol.ts(18,3): error TS2564: Property 'b' has no initializer and is not definitely assigned in the constructor.
+ttttAccessorTypedPropertySymbol.ts(18,3): error TS2717: Subsequent property declarations must have the same type.  Property 'b' must be of type 'boolean', but here has type 'number'.
+ttttAccessorTypedPropertySymbol.ts(19,7): error TS2300: Duplicate identifier 'b'.
+
+
+==== ttttAccessorTypedPropertySymbol.ts (23 errors) ====
+    // A property symbol with accessors (an auto-accessor's too) is typed by them, whatever declaration came first: a later
+    // field is TS2717 against the accessor type, an auto-accessor after an optional field is not
+    class C {
+      y?: number = 2;
+      ~
+!!! error TS2300: Duplicate identifier 'y'.
+      ~
+!!! error TS2687: All declarations of 'y' must have identical modifiers.
+      accessor y: number = 3;
+               ~
+!!! error TS2300: Duplicate identifier 'y'.
+               ~
+!!! error TS2687: All declarations of 'y' must have identical modifiers.
+    }
+    class D {
+      accessor y: number = 3;
+               ~
+!!! error TS2300: Duplicate identifier 'y'.
+               ~
+!!! error TS2687: All declarations of 'y' must have identical modifiers.
+      y?: number = 2;
+      ~
+!!! error TS2300: Duplicate identifier 'y'.
+      ~
+!!! error TS2687: All declarations of 'y' must have identical modifiers.
+      ~
+!!! error TS2717: Subsequent property declarations must have the same type.  Property 'y' must be of type 'number', but here has type 'number | undefined'.
+!!! related TS6203 ttttAccessorTypedPropertySymbol.ts:8:12: 'y' was also declared here.
+    }
+    class E {
+      a?: string;
+      ~
+!!! error TS2300: Duplicate identifier 'a'.
+      ~
+!!! error TS2564: Property 'a' has no initializer and is not definitely assigned in the constructor.
+      ~
+!!! error TS2687: All declarations of 'a' must have identical modifiers.
+      get a(): number { return 1; }
+          ~
+!!! error TS2300: Duplicate identifier 'a'.
+      a: boolean;
+      ~
+!!! error TS2300: Duplicate identifier 'a'.
+      ~
+!!! error TS2564: Property 'a' has no initializer and is not definitely assigned in the constructor.
+      ~
+!!! error TS2687: All declarations of 'a' must have identical modifiers.
+      ~
+!!! error TS2717: Subsequent property declarations must have the same type.  Property 'a' must be of type 'number', but here has type 'boolean'.
+!!! related TS6203 ttttAccessorTypedPropertySymbol.ts:12:3: 'a' was also declared here.
+    }
+    class F {
+      b: string;
+      ~
+!!! error TS2300: Duplicate identifier 'b'.
+      ~
+!!! error TS2564: Property 'b' has no initializer and is not definitely assigned in the constructor.
+      b: number;
+      ~
+!!! error TS2300: Duplicate identifier 'b'.
+      ~
+!!! error TS2564: Property 'b' has no initializer and is not definitely assigned in the constructor.
+      ~
+!!! error TS2717: Subsequent property declarations must have the same type.  Property 'b' must be of type 'boolean', but here has type 'number'.
+!!! related TS6203 ttttAccessorTypedPropertySymbol.ts:17:3: 'b' was also declared here.
+      set b(v: boolean) {}
+          ~
+!!! error TS2300: Duplicate identifier 'b'.
+    }
+    

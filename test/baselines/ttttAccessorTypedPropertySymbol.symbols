@@ -1,0 +1,49 @@
+//// [test/cases/ttttAccessorTypedPropertySymbol.ts] ////
+
+=== ttttAccessorTypedPropertySymbol.ts ===
+// A property symbol with accessors (an auto-accessor's too) is typed by them, whatever declaration came first: a later
+// field is TS2717 against the accessor type, an auto-accessor after an optional field is not
+class C {
+>C : Symbol(C, Decl(ttttAccessorTypedPropertySymbol.ts, 0, 0))
+
+  y?: number = 2;
+>y : Symbol(C.y, Decl(ttttAccessorTypedPropertySymbol.ts, 2, 9), Decl(ttttAccessorTypedPropertySymbol.ts, 3, 17))
+
+  accessor y: number = 3;
+>y : Symbol(C.y, Decl(ttttAccessorTypedPropertySymbol.ts, 2, 9), Decl(ttttAccessorTypedPropertySymbol.ts, 3, 17))
+}
+class D {
+>D : Symbol(D, Decl(ttttAccessorTypedPropertySymbol.ts, 5, 1))
+
+  accessor y: number = 3;
+>y : Symbol(D.y, Decl(ttttAccessorTypedPropertySymbol.ts, 6, 9), Decl(ttttAccessorTypedPropertySymbol.ts, 7, 25))
+
+  y?: number = 2;
+>y : Symbol(D.y, Decl(ttttAccessorTypedPropertySymbol.ts, 6, 9), Decl(ttttAccessorTypedPropertySymbol.ts, 7, 25))
+}
+class E {
+>E : Symbol(E, Decl(ttttAccessorTypedPropertySymbol.ts, 9, 1))
+
+  a?: string;
+>a : Symbol(E.a, Decl(ttttAccessorTypedPropertySymbol.ts, 10, 9), Decl(ttttAccessorTypedPropertySymbol.ts, 11, 13), Decl(ttttAccessorTypedPropertySymbol.ts, 12, 31))
+
+  get a(): number { return 1; }
+>a : Symbol(E.a, Decl(ttttAccessorTypedPropertySymbol.ts, 10, 9), Decl(ttttAccessorTypedPropertySymbol.ts, 11, 13), Decl(ttttAccessorTypedPropertySymbol.ts, 12, 31))
+
+  a: boolean;
+>a : Symbol(E.a, Decl(ttttAccessorTypedPropertySymbol.ts, 10, 9), Decl(ttttAccessorTypedPropertySymbol.ts, 11, 13), Decl(ttttAccessorTypedPropertySymbol.ts, 12, 31))
+}
+class F {
+>F : Symbol(F, Decl(ttttAccessorTypedPropertySymbol.ts, 14, 1))
+
+  b: string;
+>b : Symbol(F.b, Decl(ttttAccessorTypedPropertySymbol.ts, 15, 9), Decl(ttttAccessorTypedPropertySymbol.ts, 16, 12), Decl(ttttAccessorTypedPropertySymbol.ts, 17, 12))
+
+  b: number;
+>b : Symbol(F.b, Decl(ttttAccessorTypedPropertySymbol.ts, 15, 9), Decl(ttttAccessorTypedPropertySymbol.ts, 16, 12), Decl(ttttAccessorTypedPropertySymbol.ts, 17, 12))
+
+  set b(v: boolean) {}
+>b : Symbol(F.b, Decl(ttttAccessorTypedPropertySymbol.ts, 15, 9), Decl(ttttAccessorTypedPropertySymbol.ts, 16, 12), Decl(ttttAccessorTypedPropertySymbol.ts, 17, 12))
+>v : Symbol(v, Decl(ttttAccessorTypedPropertySymbol.ts, 18, 8))
+}
+

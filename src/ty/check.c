@@ -4278,7 +4278,16 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
         if (r->entry < 0 || !item || item->tag != CLASS_ITEM_FIELD) continue;
         DupRecord const* first = first_records[r->entry];
         if (first == r || !first->member) continue;
-        ClassItem* first_item = (ClassItem*)first->member;
+        // (A symbol with accessors, an auto-accessor's included, is typed by them whatever came first: tsc's
+        // getTypeOfSymbol takes getTypeOfAccessors before the valueDeclaration's type)
+        DupRecord const* typing = first;
+        for_each (a, vec_dup_record, &records) {
+            if (a->entry == r->entry && a->check_kind == 2 && a->member) {
+                typing = a;
+                break;
+            }
+        }
+        ClassItem* first_item = (ClassItem*)typing->member;
         // (A field's type has undefined when it's optional: addOptionality of its declaration)
         Ty const* first_type = class_item_get_type(first_item);
         if (first_item->tag == CLASS_ITEM_FIELD) first_type = with_optionality(me, first_type, first_item->field.is_optional);

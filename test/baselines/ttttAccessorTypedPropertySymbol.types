@@ -1,0 +1,54 @@
+//// [test/cases/ttttAccessorTypedPropertySymbol.ts] ////
+
+=== ttttAccessorTypedPropertySymbol.ts ===
+// A property symbol with accessors (an auto-accessor's too) is typed by them, whatever declaration came first: a later
+// field is TS2717 against the accessor type, an auto-accessor after an optional field is not
+class C {
+>C : C
+
+  y?: number = 2;
+>y : number
+>2 : 2
+
+  accessor y: number = 3;
+>y : number
+>3 : 3
+}
+class D {
+>D : D
+
+  accessor y: number = 3;
+>y : number
+>3 : 3
+
+  y?: number = 2;
+>y : number
+>2 : 2
+}
+class E {
+>E : E
+
+  a?: string;
+>a : number
+
+  get a(): number { return 1; }
+>a : number
+>1 : 1
+
+  a: boolean;
+>a : number
+}
+class F {
+>F : F
+
+  b: string;
+>b : boolean
+
+  b: number;
+>b : boolean
+
+  set b(v: boolean) {}
+>b : boolean
+>v : boolean
+}
+
