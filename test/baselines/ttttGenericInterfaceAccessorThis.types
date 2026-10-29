@@ -1,0 +1,42 @@
+//// [test/cases/ttttGenericInterfaceAccessorThis.ts] ////
+
+=== ttttGenericInterfaceAccessorThis.ts ===
+// A generic interface has a `this` type even when only an accessor mentions it (31-P3's follow-up): tsc's
+// getDeclaredTypeOfClassOrInterface asks isThislessInterface only of an interface without type parameters
+interface G<T> { get x(): this; v: T }
+>x : this
+>v : T
+
+declare const g: G<number>;
+>g : G<number>
+
+const r = g.x;
+>r : G<number>
+>g.x : G<number>
+>g : G<number>
+>x : G<number>
+
+interface H { get x(): this }
+>x : error
+
+declare const h: H;
+>h : H
+
+const s = h.x;
+>s : error
+>h.x : error
+>h : H
+>x : any
+
+interface K<T> extends G<T> { w: T }
+>w : T
+
+declare const k: K<string>;
+>k : K<string>
+
+const t = k.x;
+>t : K<string>
+>k.x : K<string>
+>k : K<string>
+>x : K<string>
+

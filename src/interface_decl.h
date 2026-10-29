@@ -24,6 +24,9 @@ typedef struct InterfaceDecl {
     // A `this` keyword is written somewhere in it (tsc's NodeFlags.ContainsThis): set by the parser (which counts any
     // `this`, like tsc's binder), and by the resolve walk for a `this` type
     bool contains_this;
+    // An accessor of it mentions a `this` type, which doesn't make the interface contain one (see
+    // interface_member_lookup_names()): what a generic interface's `this` type is there (lower.c's declared_type)
+    bool accessor_this;
 } InterfaceDecl;
 
 void interface_decl_drop(InterfaceDecl* me);

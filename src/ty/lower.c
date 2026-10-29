@@ -172,6 +172,23 @@ static bool interface_has_this(Symbol const* symbol, u32 depth) {
     return false;
 }
 
+// An accessor of one of its declarations, or of an interface it extends, mentions a `this` type
+// (InterfaceDecl.accessor_this)
+static bool interface_accessor_this(Symbol const* symbol, u32 depth) {
+    if (depth > 32) return false;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        if (symbol->decls[i].kind != SYMBOL_DECL_INTERFACE) continue;
+        InterfaceDecl const* interface_decl = symbol->decls[i].node;
+        if (interface_decl->accessor_this) return true;
+        for_each (extends, vec_spanned_type, &interface_decl->extends) {
+            if (extends->type.tag != TYPE_IDENTIFIER || identifier_type_import_ref(extends->type.identifier)) continue;
+            Symbol const* base = extends->type.identifier->target;
+            if (base && base != symbol && (base->flags & SYMBOL_INTERFACE) && interface_accessor_this(base, depth + 1)) return true;
+        }
+    }
+    return false;
+}
+
 // The type parameters of the scopes a declaration is in (tsc's getOuterTypeParameters), outermost first
 TyList ty_outer_type_params(Checker* me, OuterGenerics const* outer) {
     if (!outer) return (TyList){0};
@@ -208,8 +225,13 @@ static Ty const* make_declared(Checker* me, Symbol const* symbol, TyDeclaredKind
             memcpy(data + outer.len, local.data, local.len * sizeof(*data));
             ret->declared.type_params = (TyList){ .data = data, .len = outer.len + local.len };
         }
-        // (A class merged with an interface is a class: tsc's getDeclaredTypeOfClassOrInterface)
-        if (kind == TY_DECLARED_CLASS_INSTANCE || (symbol->flags & SYMBOL_CLASS) || interface_has_this(symbol, 0)) {
+        // (A class merged with an interface is a class, and a generic interface has a `this` type whether it mentions
+        // `this` or not: tsc's getDeclaredTypeOfClassOrInterface asks isThislessInterface only of one without type
+        // parameters. Only an accessor can mention it then, which doesn't make its interface contain `this`:
+        // `interface G<T> { get x(): this }`. The others' would go unused, so they don't get one)
+        if (kind == TY_DECLARED_CLASS_INSTANCE || (symbol->flags & SYMBOL_CLASS) ||
+            (ret->declared.type_params.len && interface_accessor_this(symbol, 0)) || interface_has_this(symbol, 0)
+        ) {
             ret->declared.this_param = ty_this_type_param(me, ret);
         }
         ret->declared.raw = arena_new(&my arena, TyObjectState);

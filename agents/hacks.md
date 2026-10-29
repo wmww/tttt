@@ -545,6 +545,12 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   SortItem<output<T>> (generic keys) against `{ [K in keyof A | keyof B]: (A & B)[K] }`.
 
 ## Type core (`src/ty/`)
+- **A generic interface gets a `this` type only when an accessor mentions one** (lower.c declared type,
+  interface_accessor_this()): tsc gives every interface with type parameters a thisType; tttt only one that mentions
+  `this` (interface_has_this()) or, generic, whose own or interface bases' accessors do (InterfaceDecl.accessor_this),
+  the only place a thisless interface can: the others' would never be read and cost type-fest +0.8% instructions.
+  Bases are followed through local interface names only (an imported or aliased base with such an accessor is
+  missed). Correct: every generic interface, if the cost can be removed.
 - **A signature re-entered while its parameters are being typed** (members.c sig_resolving_record(),
   function_signature_params()): the re-entry gets every parameter, the one in flight as any and the later ones typed
   inside the cycle. Correct: tsc's lazy parameter types (getTypeOfSymbol per parameter when asked), where an argument

@@ -121,7 +121,10 @@ void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* 
         (InterfaceDecl*)scope_rare(names)->this_ref.interface : nullptr;
     bool contains_this = interface && interface->contains_this;
     interface_member_lookup_names_inner(me, names, errs);
-    if (interface) interface->contains_this = contains_this;
+    if (interface) {
+        if (interface->contains_this && !contains_this) interface->accessor_this = true;
+        interface->contains_this = contains_this;
+    }
 }
 
 static void interface_member_lookup_names_inner(InterfaceMember* me, Scope* names, ErrorCtx* errs) {

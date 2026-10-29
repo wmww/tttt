@@ -131,8 +131,9 @@ last line. The real cause is then elsewhere, and the entry says where. Show a ca
   tttt doesn't. TS2322 missing. [open]
 - 31-P3: `interface I { get x(): this }`, `const r: null = i.x`. tsc reports nothing, tttt reports I to null.
   An accessor is a `this` container that doesn't propagate ContainsThis to its interface (tsc's binder), so I is
-  thisless and the getter's `this` is the error type. A generic interface's `this` still prints as the reference
-  (tttt makes no this_param for a thisless generic interface; types-only). TS2322 spurious. [fixed 43774737d]
+  thisless and the getter's `this` is the error type. TS2322 spurious. [fixed 43774737d] A generic interface's `this`
+  printed as the reference (tttt made no this_param for a thisless generic interface, tsc's getDeclaredTypeOfClassOrInterface
+  makes one for any with type parameters; types-only): test ttttGenericInterfaceAccessorThis [fixed NEXT].
 - 32-C17: `const s = (Symbol)()`. tsc makes no unique symbol for a parenthesized callee, so `typeof s` is symbol, while
   tttt's is unique. TS2322 spurious. [open]
 - 33-C17b: an object literal method `x()` and then `get x()`/`set x(v)`. A method excludes everything, so the binder
