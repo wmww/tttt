@@ -5,16 +5,17 @@ plain tttt's doesn't either (scripts/kdiff.py, checkerdiff.py), so every flagged
 checker prints: any run that differs is a shared-graph bug (a published value that depends on history, a race, a
 nesting-order dependence), however rarely it shows.
 
-Per project: one plain reference run (`--threads 1 --checkers 1`), then RUNS flagged runs per (K, deal), each
+Per project: one plain reference run (`--threads 1 --checkers 1`, TTTT_SHARED_GRAPH=0), then RUNS flagged runs per (K, deal), each
 `--threads K --checkers K`, compared byte for byte (stdout and exit code) with the reference. Deals:
   def   the scheduler's own (program_set_checkers()'s byte runs, costliest file first)
   rr    program order round robin: file i to checker i % K (TTTT_DUP_DEAL, TTTT_NO_COSTLIEST_FIRST=1); the deal under
         which openbot/apps/auth-api's private-name race showed in every run (hub_regime.md)
-At K1 the two deals are one. A flagged run that differs is attributed: plain at the same K and deal is run once, and
+At K1 the two deals are one, and since 2026-10-29 one checker has no graph (program_typecheck()): K1 compares plain
+with plain, so it is no longer in the default list. A flagged run that differs is attributed: plain at the same K and deal is run once, and
 when it differs too the difference is plain tttt's (a kdiff bug, `plain too`), not the flag's (`plain
 exit N`/`plain signal N` when plain crashes there).
 
-  scripts/sgcheck.py                        # the default list (scripts/sharedgraph/sgcheck_projects.txt), K 1,4,8,16, 3 runs
+  scripts/sgcheck.py                        # the default list (scripts/sharedgraph/sgcheck_projects.txt), K 4,8,16, 3 runs
   scripts/sgcheck.py -f 'auth-api|drizzle' -n 10 -k 8
   scripts/sgcheck.py --projects FILE --deals rr
 
@@ -57,7 +58,7 @@ class Checker:
     def run(self, project, k, deal, flag, deal_file=None, graph_file=None):
         cwd, p = project_args(project)
         env = dict(os.environ)
-        env.pop('TTTT_SHARED_GRAPH', None)
+        env['TTTT_SHARED_GRAPH'] = '0'  # plain (the default is the graph since 2026-10-29)
         if flag:
             env['TTTT_SHARED_GRAPH'] = '1'
         if deal == 'rr' and k > 1:
@@ -134,7 +135,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--projects', default=DEFAULT_LIST, help='a file of projects, one per line (# comments)')
     ap.add_argument('-f', '--filter', help='regex the project must match (re.search)')
-    ap.add_argument('-k', default='1,4,8,16', help='checker counts (default 1,4,8,16)')
+    ap.add_argument('-k', default='4,8,16', help='checker counts (default 4,8,16; K1 has no graph)')
     ap.add_argument('--deals', default='def,rr', help='deals, among def and rr (default both)')
     ap.add_argument('-n', '--runs', type=int, default=3, help='flagged runs per (K, deal) (default 3)')
     ap.add_argument('-j', '--jobs', type=int, default=4, help='projects at once (default 4)')

@@ -79,7 +79,7 @@ def run_one(args, binary, project, mode, deal_file, census=False, flag=False, gr
     cwd, p = project_args(project)
     margs, env_add = mode_args(mode, deal_file, kdef)
     env = dict(os.environ)
-    env.pop('TTTT_SHARED_GRAPH', None)
+    env['TTTT_SHARED_GRAPH'] = '0'  # plain (the default is the graph since 2026-10-29)
     env.update(env_add)
     env['TTTT_SYNC_EXIT'] = '1'
     if census:

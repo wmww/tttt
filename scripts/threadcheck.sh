@@ -6,7 +6,7 @@
 #   scripts/threadcheck.sh webpack zod     # some
 #   THREADS=2 CHECKERS=8 scripts/threadcheck.sh
 # thirdparty/ensure-corpora.sh runs only when a corpus it checks is missing; TTTT_NO_ENSURE=1 errors out then instead
-# (worktrees). The environment goes through to tttt (TTTT_SHARED_GRAPH=1...)
+# (worktrees). The environment goes through to tttt: K > 1 runs the shared graph, the default (TTTT_SHARED_GRAPH=0: plain)
 set -uo pipefail
 cd "$( dirname "${BASH_SOURCE[0]}" )/.."
 ninja -C release tttt > /dev/null || exit 1

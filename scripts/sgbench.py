@@ -30,7 +30,7 @@ def one(args, project, mode, flag, scratch):
     cwd, p = project_args(project)
     path = os.path.realpath(os.path.join(cwd, p))
     env = dict(os.environ)
-    env.pop('TTTT_SHARED_GRAPH', None)
+    env['TTTT_SHARED_GRAPH'] = '0'  # plain (the default is the graph since 2026-10-29)
     env['TTTT_SYNC_EXIT'] = '1'
     if flag:
         env['TTTT_SHARED_GRAPH'] = '1'

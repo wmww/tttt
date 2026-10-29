@@ -69,7 +69,7 @@ def site_kind(sites, site):
 def run(binary, project, k, threads, flag=False):
     env = dict(os.environ, TTTT_VARIANCE_CENSUS='1')
     if flag: env['TTTT_SHARED_GRAPH'] = '1'
-    else: env.pop('TTTT_SHARED_GRAPH', None)
+    else: env['TTTT_SHARED_GRAPH'] = '0'  # plain
     p = subprocess.run([binary, '--threads', str(threads), '--checkers', str(k), '-q', '--keep-going', '--noEmit', '-p', project],
                        env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True, errors='replace')
     rows = []

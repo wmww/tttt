@@ -13,7 +13,8 @@ byte-identical.
   scripts/checkerdiff.py -k 1 -m 0         # a fresh checker per file against one that never recycles
 
 thirdparty/ensure-corpora.sh runs only when a corpus it checks is missing; TTTT_NO_ENSURE=1 errors out then instead
-(worktrees, whose corpora are the shared checkouts). The environment goes through to tttt (TTTT_SHARED_GRAPH=1...).
+(worktrees, whose corpora are the shared checkouts). The environment goes through to tttt: K > 1 runs the shared graph,
+the default, against one plain checker (TTTT_SHARED_GRAPH=0: plain at K too).
 """
 import argparse
 import collections

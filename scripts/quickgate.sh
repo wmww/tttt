@@ -11,7 +11,9 @@
 #                test/baseline_results.ts: "new passed/failed" are then this change's, not main's unsaved drift
 #   -p REGEX     also scripts/sourcesweep.py -f REGEX (every matching project matches tsc) and
 #                scripts/kdiff.py -k 16 -f REGEX (no project differs between 1 and 16 checkers): the touched project
-#   -k           also scripts/threadcheck.sh and scripts/checkerdiff.py on drizzle zod
+#   -k           also scripts/threadcheck.sh and scripts/checkerdiff.py on drizzle zod, and scripts/sgcheck.py (the shared
+#                graph, the default mode at K > 1, against one plain checker) at K4 and K16, both deals, one run, on
+#                zod, drizzle and three hubs (openbot/packages/i18n, dokploy/apps/dokploy, karakeep/packages/trpc)
 #
 #   scripts/quickgate.sh                   # ~3 min on a busy box (callgrind of two binaries; ~1 min with --no-instr)
 #   scripts/quickgate.sh -p '^trpc/' -k --vs-main
@@ -28,7 +30,7 @@ PROJECT=
 KCHECK=
 NOINSTR=
 VSMAIN=
-usage() { sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+usage() { sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 while test $# -gt 0; do
     case "$1" in
         -p) PROJECT="$2"; shift 2 ;;
@@ -76,6 +78,8 @@ fi
 if test -n "$KCHECK"; then
     start threadcheck "${N[@]}" env TTTT_NO_ENSURE=1 scripts/threadcheck.sh drizzle zod
     start checkerdiff "${N[@]}" env TTTT_NO_ENSURE=1 scripts/checkerdiff.py drizzle zod
+    start sgcheck "${N[@]}" scripts/sgcheck.py -k 4,16 -n 1 -j 2 \
+        -f '^(zod|drizzle|openbot/packages/i18n|dokploy/apps/dokploy|karakeep/packages/trpc)$'
 fi
 for n in "${NAMES[@]}"; do
     pid_var="PID_${n//-/_}"
@@ -122,7 +126,7 @@ for n in "${NAMES[@]}"; do
         kdiff)
             d=$(plain kdiff | tail -1)
             if test "$rc" = 0; then verdict kdiff PASS "$d"; else verdict kdiff FAIL "$d"; fi ;;
-        threadcheck|checkerdiff)
+        threadcheck|checkerdiff|sgcheck)
             d=$(plain "$n" | tail -1)
             if test "$rc" = 0; then verdict "$n" PASS "$d"; else verdict "$n" FAIL "$d"; fi ;;
     esac
