@@ -14320,7 +14320,8 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
             if (path_expr.tag == EXPR_IDENTIFIER) port_statement_rare_mut(&statement)->missing_specifier = path_expr.inner_span;
             // The checker's (tsc's checkExternalImportOrExportDeclaration: any specifier that isn't missing, a
             // missing operand's binary expression `* }` included)
-            port_statement_rare_mut(&statement)->non_string_specifier = expr_outer_span(&path_expr);
+            // (At its error span, tsc's getErrorSpanForNode: a class expression's name, `import class D {}`)
+            port_statement_rare_mut(&statement)->non_string_specifier = expr_error_span(&path_expr);
             if (path_expr.tag != EXPR_IDENTIFIER) {
                 port_statement_rare_mut(&statement)->bad_specifier = ast_new(Expr, path_expr);
                 path_expr = expr_implicit_any(span_null);

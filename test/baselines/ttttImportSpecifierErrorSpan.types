@@ -1,0 +1,16 @@
+//// [test/cases/ttttImportSpecifierErrorSpan.ts] ////
+
+=== ttttImportSpecifierErrorSpan.ts ===
+// A module specifier that isn't a string literal (tsc's parseModuleSpecifier takes any expression) is TS1141 at its
+// error span (getErrorSpanForNode): a class expression's name. Seed 20261117 --syntax, classAbstractManyKeywords
+// drop-modifier
+import class D {}
+>class D {} : typeof D
+>D : typeof D
+
+import (1 + 2);
+>import (1 + 2) : Promise<any>
+>1 + 2 : number
+>1 : 1
+>2 : 2
+
