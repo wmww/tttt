@@ -73,20 +73,40 @@ scripts/sharedgraph/sgcheck_projects.txt, load 8-15): main at ab39dce20 12 of 34
     tainted (reads of them events, the absence of a parameter's KEY_CONTEXT_PARAM read through its function's
     KEY_CONTEXT_CHECKED). It fixed the case it was bisected on, but the oracle as a whole didn't move (zod K8 forced
     runs still differ in most seeds), it cost +13% check instructions at K8 on drizzle (+5% zod, +4% effect;
-    variance slots published 232 -> 18 on zod) and it made `--force-shadow` on dokploy worse (8/8 against main's 3/6).
-  - **Records that mint identities, kept privately** (the family under the rest): a private declared type, signature
-    resolution or members record has its own type parameters (`this`, clones); published memos and identities keyed by
-    a stable key (a function's KEY_FUNCTION_FREE_PARAMS, an anonymous instance's mapper and flags, a union pair whose
-    members are such identities) hold the publisher's, so a worker with the private record gets inconsistent objects:
-    instantiate_anonymous() kept the wrong pairs (`(value: string) => boolean` instances with COULD_CONTAIN flags), two
-    `Promise<ParsePayload<unknown>>` in one union, `this["_output"]` left uninstantiated in zod v3's `_parse` relations.
-    Making such identities private is worse (a worker then has two objects for one key: tried, the forced runs went
-    from tens to thousands of lines). What would close it: records that mint identities never private (their type
-    parameters hash-consed by declaration and position, so a private record reuses the shared ones), the shape of
-    KEY_SIGNATURE_INSTANCE_OWN applied to every memo keyed by a record's owner. [open]
-  The natural dokploy difference wasn't seen again: 30 runs K16 rr under `--load 4`, the default list at K4/8/16 both
-  deals x2 (732 runs) all identical. The oracles are `scripts/sgcheck.py --force-poison N` and `--force-shadow`; they
-  are not in quickgate (they don't pass: zod K8 --force-poison 30 3/4, dokploy K16 rr --force-shadow 4/6 at fea36a257).
+    variance slots published 232 -> 18 on zod) and it made `--force-shadow` on dokploy worse (8/8 against main's 3/6). (Its oracle didn't move because most of
+    that divergence was the knob's artifact, next entry. With the artifact gone and the clones shared, the forced
+    oracles are at zero without this rule: the value-in-hand window is not shown to be a hole. [note])
+  - **Records that mint identities, kept privately** (race2 called it the family under the rest; corrected by worker
+    race3 the same day): the symptoms race2 bisected (instantiate_anonymous keeping the wrong pairs, two
+    `Promise<ParsePayload<unknown>>` in one union, `this["_output"]` left uninstantiated, "Type 'this' is not
+    assignable to type 'this'") were **the knob's own artifact**: TTTT_GRAPH_FORCE_POISON/SHADOW fired at the end of an
+    interface's or class's declared-type word, which ty_declared_type_of() publishes whatever its taint by rule (the
+    design's "identities are published whatever their taint": nothing can fall between its `taint = graph_taint_now`
+    and the CAS, and a clean loser always adopts), so the knobs gave each worker its own ZodLiteral and `this`, a state
+    no schedule reaches. Not a design hole: the knobs now skip identity words (sw_finish_identity(), 06400fecf); then
+    `--force-poison 30` and `10` on zod, drizzle, effect, excalidraw K8 both deals are 0/80 and 0/80, `--force-shadow`
+    zod/drizzle K8 0/40 (main: zod 7/8 at 30). [fixed 06400fecf]
+  - **The real residue: signature clones minted per resolution** (clone_type_params(), members.c): a generic
+    signature's instantiation got fresh type parameters in every resolution, so a resolution kept privately (poisoned,
+    or a shadowed loser) had its own clones while words on the same signature that another worker published (its
+    return type `ret`, its predicate, memos keyed by it) held the publisher's: a mapper from one set never matched the
+    other. dokploy K16 rr `--force-shadow` 3/30 after 06400fecf (drizzle relational `one()` typed non-null: TS18047,
+    TS2322 at pages/api/providers/gitea/helper.ts(28,3)), 0/30 once the clones are an identity keyed by the signature
+    (KEY_SIGNATURE_CLONES: the clones and their mapper published first-wins; a private resolution keeps only its values
+    private). KEY_SIGNATURE_INSTANCE_OWN and sig_res_is_own() (720b23760, fea36a257) are kept though no longer needed
+    in principle (zod K8: 19 OWN lookups a run). [fixed 54bdd0378]
+  The natural dokploy difference above: the clones are its likely mechanism. Its shape is a generic call's return type
+  left in the signature's own type parameters and read through their constraint (Throw = `boolean`), which is exactly
+  what a split between `sig->res` (this worker's private resolution, its own clones) and `sig->ret` (published by
+  another worker, in that worker's clones) gives: instantiating the published return type by this worker's mapper
+  leaves the foreign clones in place. A natural private resolution needs a taint event inside it or a lost race with a
+  tainted value (dokploy's run shadows 1-30 words: better-auth's signUp.email callers among the retired files). Not
+  shown on the natural case (it never reproduced); the forced oracle shows the mechanism moves dokploy's output.
+  Earlier state of this paragraph: 30 natural runs K16 rr under `--load 4` and the default list at K4/8/16 both deals
+  x2 (732 runs) identical; the forced oracles failed until 06400fecf/54bdd0378 and are now in quickgate -k
+  (`--force-poison 30` on zod and drizzle K8). After 54bdd0378: the default list K4/8/16 both deals x2 0/732, dokploy
+  K16 rr under `--load 4` 0/50. Likely fixed by 54bdd0378; not provable without a natural repro, so kept open until
+  the census has run on it for a while. [open]
 - **openbot/apps/auth-api: private names raced** (hub_regime.md's 75 TS2345s): ty_private_name() returned its own
   `#x` atom when another checker's was published first; the class's members carried the winner's, so lookups missed
   them (TS18014, TS6133, `unknown`/`{}` through Effect chains). 10/10 runs before, 0/60 after. [fixed b9a8bc824]
@@ -237,6 +257,14 @@ lazy parts (a signature instance's resolution). Default build: the macros are em
     done-ness peeks with no event (TAINT_IF(TAINT_PEEK, ...)): a peek's answer published as the identity's value is a
     hole by the design's rule; an event there alone doesn't fix it, the identity is published anyway (the forced-poison
     oracle's "records that mint identities" entry above). [note]
+    Closed (worker race3, 2026-10-29): literal_instance_is_itself()'s peek isn't a hole. It reads only published values
+    and this worker's own (sw_peek: another worker's in flight is never seen), so its answer is one a sequential checker
+    with this worker's history gives; plain K1 is history-dependent the same way (whether the literal's members were
+    resolved yet). The identity it decides is published once, first-wins, so every worker uses the same object for the
+    key afterwards: the graph picks one history's answer, as for any identity. An event wouldn't change that (the identity
+    is published anyway). The free-params pairs are syntactic (ty_function_free_params()), and the type parameters
+    they name are hash-consed (symbols' KEY_TYPE_PARAM, and since 54bdd0378 a signature's clones), so the pairs are the
+    same objects in every worker. The forced oracles at zero (06400fecf, 54bdd0378) agree. [note]
   - **ty_erased_signature (relate.c), `found` after a peek** (nest platform-fastify and microservices tests, 4 runs):
     the one-step erasure is chosen when `sig` isn't resolved yet in this worker (a done-ness peek), and it shares its
     key (sig, any...) with ty_signature_instantiation(sig, anys), which the resolved path makes. So which object a

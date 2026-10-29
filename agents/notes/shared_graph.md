@@ -41,8 +41,16 @@ threads busy at 2.2 GB on vscode: the existence proof that sharing can pay.
   So does every memo keyed by a record's owner whose value holds the record's identities (KEY_BASE_SIGNATURE,
   KEY_CANONICAL_SIGNATURE: not cached over a private resolution since fea36a257, sig_res_is_own()), and a memo whose
   computation read such a record before its own lookup (its window starts at the miss). Keeping identities private
-  instead is unsound: a worker then holds two objects for one key (tried 2026-10-29, worker race2). The open part:
-  bugs/shared_graph.md, the forced-poison entry.
+  instead is unsound: a worker then holds two objects for one key (tried 2026-10-29, worker race2). The rule that
+  follows (race3, 2026-10-29): **a record's values may be private, the identities it mints never are**. Every
+  identity a record that can be kept private makes is hash-consed by a key that is a function of the declaration (or
+  of a parent identity): a symbol's type parameters (KEY_TYPE_PARAM), a generic's list (KEY_GENERIC_PARAMS), an
+  interface's or class's declared type and its `this` (the declared word, published untainted by rule), a static side
+  and a distributed twin (CAS on the owner), markers, restrictive params, clone classes, and a signature's clones
+  (KEY_SIGNATURE_CLONES since 54bdd0378: before it a private resolution had clones of its own, "Identities and the
+  forced knobs" below). Not hash-consed, and scratch by design: inference's renamed type parameters
+  (unique_type_params(), fresh per call like tsc's), KEY_MAPPED_KEY_PARAM's stand-in (each worker its own; nothing
+  seen), a stray `infer X` (TS1338) and a mapped type without a key symbol (members.c).
 - **Why deterministic**: a clean value is a function of published clean values and hash-consed identities, so any
   worker computing that key cleanly computes the same value. A worker's view is a history a sequential checker could
   have had (the class recycling, stealing and K already produce).
@@ -87,6 +95,53 @@ with and without the shared graph".
 - The laptop bench (measurements.md "The 12-core box at 5f2cd699"): no wall win at the defaults; vue 2x slower
   (contention, K1 unchanged), type-fest, effect, valibot slower; drizzle and excalidraw faster; memory vscode 1581 ->
   2924 MB at K12.
+
+## Identities and the forced knobs (2026-10-29, worker race3)
+The forced oracles (`TTTT_GRAPH_FORCE_POISON=N`: an event at the end of every N-th clean word computation;
+`TTTT_GRAPH_FORCE_SHADOW=1`: a clean loser kept like a tainted one) failed by thousands of lines (zod K8 7/8 runs at
+1/30, dokploy K16 rr shadow 2/6 at 10-17k lines), which race2 read as a design hole ("records that mint identities").
+Most of it was the knobs: they fired on the declared-type word of an interface or class, an identity the design
+publishes whatever its taint (ty_declared_type_of()'s `identity`), where no real event can fall and a clean loser
+always adopts. Forced there, each worker made its own declared type and `this` ("Type 'this' is not assignable to type
+'this'"). sw_finish_identity() exempts such words (06400fecf). What was left was real: a private signature resolution
+had clones of its own (dokploy shadow 3/30), closed by KEY_SIGNATURE_CLONES (54bdd0378). After both: force-poison 30
+and 10 on zod, drizzle, effect, excalidraw K8 both deals 0/80 each, force-shadow zod/drizzle K8 0/40, dokploy K16 rr
+0/30; `--force-poison 30` on zod and drizzle is in quickgate -k. A forced knob must only simulate an event a real
+schedule can produce: a word finished with the counter reset (an identity) is not one.
+
+## Design: the forbidden-write check (escapes), not built (2026-10-29, worker race3)
+The complement of TTTT_GRAPH_CHECKS' forbidden reads: an object made where only this worker may see it, reached from
+a value another worker can see. It would have caught the signature clones (54bdd0378) on the first run with any private
+resolution, instead of needing a forced schedule; TTTT_DEBUG_PUBLISH (overlay.c) is its shallow ancestor (arena ranges
+of private word computations, checked at four SigResolved/Members fields, one level deep, a linear range scan).
+- **Owner at creation.** Each worker paints its arena with the outcome of the innermost computation that allocated it:
+  a byte per 16 arena bytes (a side map per ArenaChunk, debug build only; drizzle K8 ~300 MB of arenas -> ~19 MB),
+  0 = not finished yet, 1 = public (published, adopted: an adopter's own copy is garbage but unreferenced), 2 =
+  private (poisoned, private after poison, shadowed, a tainted memo's computation, a scratch-kind value). At a
+  computation's end (sw_finish/sw_abandon, a memo's put and its flush verdict, a variance frame's end, an intern
+  memo's miss-to-put window) the range since its start is painted where still 0 (nested ones painted first keep
+  theirs), so lookup is O(1).
+- **Identities are public whatever their range**: the values of shared-table entries (intern_publish(),
+  ty_link_publish(), the CAS sites: static types, distributed twins, declared words) go into a pointer set when
+  published; an identity made in a private range is exactly what the rule allows, *if its fields are a function of
+  its key*: so the walk does descend into an identity's immutable fields (not its lazy words).
+- **The check at every publication** (sw_finish's winning CAS, intern_publish() of an identity, graph_memo_flush()'s
+  published entries, a variance slot, relation_publish()'s entry): walk the value's reachable records through their
+  fields fixed at creation (fingerprint.inc's walkers are the template: fp_ty_inner's per-kind fields, fp_prop,
+  fp_signature, fp_members; plus TyMapper, MappedInfo, IndexInfo, SigResolved, TyParamState.clone_of/clone_mapper),
+  never into a SharedWord (checked at its own publication). A per-run "verified" pointer set stops the walk
+  (published objects are immutable), so each object is walked once. A reached object painted 2 that isn't in the
+  identity set panics (TTTT_GRAPH_CHECKS=2) or is reported once per (publication site, object kind, allocating
+  site): the allocating site is recorded with the paint (the innermost claim's word and its site, as
+  debug_finish() knows).
+- **What it would find first, by reading**: KEY_MAPPED_KEY_PARAM's per-worker stand-in (a scratch kind) reaching a
+  published template instantiation; inference's renamed parameters (unique_type_params()) reaching a published
+  inferred return; instance Props/Signatures of a private Members held by a published memo keyed by the owner
+  (KEY_ARRAY_THIS_PROPS, KEY_THISLESS_SIGNATURES keyed by raw Members). Each is either a real leak or a scratch-only
+  object that needs an allowlist entry with its reason.
+- **Cost**: about a day and a half (the walkers ~0.5, painting at the ~8 finish points ~0.5, triage of the first
+  reports ~0.5); default build untouched (all under the -DTTTT_GRAPH_CHECKS macro family). Gate: quiet on the
+  sgcheck list at K8 natural and under --force-poison 30 / --force-shadow.
 
 ## The perf accounting (2026-10-21, 16-vCPU box, callgrind; why it's parked)
 Work in G instructions (typecheck and worker threads):
@@ -385,7 +440,7 @@ are). Checkers are recycled after 1/128 of the total cost. Its CPU at default th
 time (vscode 43 CPU s vs 14 single): sharing costs it too, it just has more cores busy.
 
 ## Tools left behind
-`TTTT_GRAPH_FORCE_POISON=N` and `TTTT_GRAPH_FORCE_SHADOW=1` (the taint rules' oracles: an event forced at every N-th clean word computation, a clean loser kept like a tainted one; the output must not move, and on 2026-10-29 it does: bugs/shared_graph.md, dokploy's entry; `scripts/sgcheck.py --force-poison N` / `--force-shadow`; to bisect one: `TTTT_GRAPH_SEED=1 TTTT_GRAPH_SEED_RATE=1000000000` (workers one after another) with `TTTT_GRAPH_FORCE_POISON_AT=A,B,...` / `_RANGE=LO:HI` over a global candidate count and `_TRACE=1` for each forced event's stack), `scripts/sgcheck.py --load N` (plain loops beside the checks), `TTTT_GRAPH_STATS=1` (per kind: shared hits, shared misses, published...; variance slots published, adopted,
+`TTTT_GRAPH_FORCE_POISON=N` and `TTTT_GRAPH_FORCE_SHADOW=1` (the taint rules' oracles: an event forced at every N-th clean word computation, a clean loser kept like a tainted one, identity words exempt; the output must not move, 0 differing since 54bdd0378, `--force-poison 30` in quickgate -k; `scripts/sgcheck.py --force-poison N` / `--force-shadow`; to bisect one: `TTTT_GRAPH_SEED=1 TTTT_GRAPH_SEED_RATE=1000000000` (workers one after another) with `TTTT_GRAPH_FORCE_POISON_AT=A,B,...` / `_RANGE=LO:HI` over a global candidate count and `_TRACE=1` for each forced event's stack), `scripts/sgcheck.py --load N` (plain loops beside the checks), `TTTT_GRAPH_STATS=1` (per kind: shared hits, shared misses, published...; variance slots published, adopted,
 unpoisoned...), `TTTT_TAINT_LOG=1` in a `-DTTTT_TAINT_SITES` build (every taint event's site as it happens), `TTTT_GRAPH_NO_CACHE=1` (shared hits not
 kept in the checker's own tables: the A/B of 75f79d714), `TTTT_GRAPH_WORK=1` (cycles per word computation by outcome), `TTTT_GRAPH_LEAD=1` /
 `TTTT_GRAPH_NO_LEAD=1`, `TTTT_GRAPH_SHARE_RELATIONS=0`, `TTTT_GRAPH_BUDGET_MB` (graph-wide recycle, default 800),

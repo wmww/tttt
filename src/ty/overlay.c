@@ -410,8 +410,8 @@ static int force_shadow = -1;
 
 // TTTT_GRAPH_FORCE_POISON=N: a taint event at the end of every N-th clean computation of a word in each worker (its
 // value is then poisoned, or kept private), the taint rules' oracle: any computation may meet an event, and the
-// output must not move. It does (2026-10-29, worker race: zod at K8, 1 in 100: 4 of 4 runs differ, some by thousands
-// of lines; 1 in 1000: 1 of 4; agents/bugs/shared_graph.md)
+// output must not move (0 differing on zod, drizzle, effect, excalidraw at K8 since the identity words are exempt and
+// a signature's clones are an identity: agents/notes/shared_graph.md "Identities and the forced knobs")
 static int force_poison = -1;
 static _Atomic u64 force_poison_count;
 static u64 force_poison_lo, force_poison_hi = UINT64_MAX;
