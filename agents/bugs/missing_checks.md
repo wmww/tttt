@@ -601,6 +601,35 @@ never-const (harness writes no errors baseline).
 - recursiveClassBaseType delete-stmt: missing TS2310 (the base cycle design). noCircularitySelfReferentialGetter2
   (TS2345 text), unionTypeWithIndexSignature never-const (TS2322 text): not looked at. [open]
 
+## Mutation seed 20261117 (2026-10-29, cor13: `scripts/mutate.py -n 8000 --seed 20261117`, 4 of 8000 differ; `--syntax` 9)
+Known: generatorTypeCheck46 (TS2488), unionTypeWithIndexSignature (text TS2322). Fixed:
+- decoratorMetadataObjectLiteralMethodNoCrash delete-stmt: an object literal setter's parameter decorator in a class
+  method's body resolved with errors (TS2304). Test ttttObjectLiteralAccessorParamDecorator. [fixed 3e769d32d]
+- referenceSatisfiesExpression undefined-init: `(e satisfies number) = v` checked against e's declared type, not the
+  expression's (flow) type. Test ttttSatisfiesAssignmentTarget. [fixed fbe43ed30]
+- signatureCombiningRestParameters1 delete-stmt: TS7008 at a property signature declared again. Test
+  ttttRedeclaredMemberImplicitAny. [fixed 5027885ee]
+- classAbstractManyKeywords drop-modifier: TS1141 of `import class D {}` at the class expression's name. Test
+  ttttImportSpecifierErrorSpan. [fixed 0e6ba0baf]
+Not fixed:
+- neverReturningFunctions1 delete-stmt: an open parameter list swallows `export type ComponentDefinition<T ...> = ...`:
+  tsgo's TS2300 'T' (a type parameter list's duplicate inside recovery) missing, its '(Missing)' TS2300 one column
+  earlier than tttt's. Deep recovery, not traced. [open]
+- objectFreezeLiteralsDontWiden, typeSatisfaction_propNameConstraining delete-stmt: tsgo's baseline has the harness's
+  TS-1 (post-emit adds a TS2454 the pre-emit check doesn't have: emit order). [tsgo]
+- distributiveConditionalBaseConstraint drop-optional: TS2344's elaboration has one more line in tttt. [text]
+
+ttttSharedGraphTypeofCycleBase (bun 85-R16b; flip's known-failing test, 308bfacae): missing TS2502 at m.ts's `p: number`
+(V's property). Traced (tsgotrace --suite): checking a.ts's `import { p } from "./m"` resolves the alias, which looks p
+up in `export = v`'s type V, resolving V's bases `B<typeof y>`; `typeof y` types a.ts's `y = p`, whose `p` is
+getTypeOfAlias(p): pushTypeResolution(p), resolveAlias(p) is circular (TS2303), and getTargetOfAliasDeclaration
+looks p up in V again, whose base resolution is in flight: the cycle marks every entry from V's bases up, p's alias
+type included, and p's popTypeResolution reports reportCircularityError(exportSymbol = V.p): TS2502, as it is
+annotated. tttt resolves import aliases at link (no getTypeOfAlias entry on the resolution stack, the alias simply
+circular), so nothing is in flight to fail and V.p is never named. Fixing it means an alias-value-type resolution
+entry whose evaluation repeats getTargetOfAliasDeclaration's member lookup; the other 15 missing TS2502 bun cases
+(bun_others.md) are other mechanisms (lazy parameter typing, notes/reentrancy.md). [design]
+
 ## Mutation seed 20261116 (2026-10-29, cor13: `scripts/mutate.py -n 8000 --seed 20261116`, 6 of 8000 differ; `--syntax` 12)
 Known: recursiveClassBaseType (TS2310, 3), globalThisGlobalExportAsGlobal, recursiveTypeInferenceReturnTypeConstraint,
 exportSpecifierReferencingOuterDeclaration3. Fixed:
