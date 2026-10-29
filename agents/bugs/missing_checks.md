@@ -278,7 +278,7 @@ tsc keeps one local symbol per block for a name's exported and local declaration
 - A NUL byte inside the file is an invalid character (at_eof() in parser.c, 2026-10-14) in the token scanner and the
   list loops; other `*p.pos` stops (keyword lookahead, JSON values) still take it as an end, harmlessly as far as
   probed (they see no token, the list skips it). [fixed 2026-10-14]
-- A class member starting with `<` (`class D { <T>() {} }`): tsc says '=>' expected at the `{`, tttt TS2304/TS1109. [open]
+- A class member starting with `<` (`class D { <T>() {} }`): tsc says '=>' expected at the `{`, tttt TS2304/TS1109. A parameter list after type parameters then `{` is an arrow missing its `=>`. Test ttttGenericArrowMissingArrow. [fixed 07580c722]
 - Object literal grammar errors in destructuring assignment targets (TS1255 `!`, TS1042 modifiers, TS1162 `?`): tsc
   reports checkGrammarObjectLiteralExpression's errors for a target exactly when checkObjectLiteral runs on it, i.e.
   when the right side asks for its contextual type: `({ a!: a } = { a: 1 })` reports, `= x` and `for ({ a!: a } of
