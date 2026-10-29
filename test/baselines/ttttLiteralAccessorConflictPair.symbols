@@ -1,0 +1,30 @@
+//// [test/cases/ttttLiteralAccessorConflictPair.ts] ////
+
+=== ttttLiteralAccessorConflictPair.ts ===
+// An object literal's getter takes its setter's annotation as return type only when the binder put them in one symbol:
+// after `x()` conflicted with `set x`, that symbol is both accessors and `get x` conflicts too (tsgo's declareSymbolEx),
+// so its `return "0"` isn't checked against number (seed 20261113, duplicateIdentifierChecks num-to-str)
+const o8 = {
+>o8 : Symbol(o8, Decl(ttttLiteralAccessorConflictPair.ts, 3, 5))
+
+    set x(value: number) { },
+>x : Symbol(x, Decl(ttttLiteralAccessorConflictPair.ts, 3, 12))
+>value : Symbol(value, Decl(ttttLiteralAccessorConflictPair.ts, 4, 10))
+
+    x() { return 0 },
+>x : Symbol(x, Decl(ttttLiteralAccessorConflictPair.ts, 4, 29))
+
+    get x() { return "0" }
+>x : Symbol(x, Decl(ttttLiteralAccessorConflictPair.ts, 5, 21))
+}
+const o9 = {
+>o9 : Symbol(o9, Decl(ttttLiteralAccessorConflictPair.ts, 8, 5))
+
+    set x(value: number) { },
+>x : Symbol(x, Decl(ttttLiteralAccessorConflictPair.ts, 8, 12), Decl(ttttLiteralAccessorConflictPair.ts, 9, 29))
+>value : Symbol(value, Decl(ttttLiteralAccessorConflictPair.ts, 9, 10))
+
+    get x() { return "0" }
+>x : Symbol(x, Decl(ttttLiteralAccessorConflictPair.ts, 8, 12), Decl(ttttLiteralAccessorConflictPair.ts, 9, 29))
+}
+

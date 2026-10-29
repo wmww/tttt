@@ -1896,6 +1896,36 @@ void expr_lookup_names_unchecked(Expr* me, Scope* names, ErrorCtx* errs) {
     error_ctx_drop(&scratch);
 }
 
+// The getter a written setter's name shares its symbol with (tsc's binder: the table's symbol of the name takes the
+// members its excludes allow, a conflicting one is a symbol of its own, and an accessor conflicting with what isn't its
+// other half makes the table's symbol both accessors, so later accessors conflict too: object_bind_members()). Null if
+// the setter isn't the table's or no getter joined it: `set x(v: number) {}, x() {}, get x() { return "0" }` are three
+static ObjectExprItem const* literal_symbol_getter(ObjectExpr const* object, ObjectExprItem const* setter) {
+    enum { PROPERTY = 1, METHOD = 2, GET = 4, SET = 8, VALUE = PROPERTY | METHOD | GET | SET };
+    uint8_t flags = 0;
+    bool setter_in = false;
+    ObjectExprItem const* getter = nullptr;
+    for_each (i, vec_object_expr_item, object) {
+        if (i->computed_key || !span_valid(i->name_span) || !cstr_eq(&i->name_string, &setter->name_string)) continue;
+        uint8_t includes, excludes;
+        switch (i->tag) {
+            case OBJECT_ITEM_PROPERTY: case OBJECT_ITEM_SHORTHAND: includes = PROPERTY; excludes = METHOD; break;
+            case OBJECT_ITEM_METHOD: includes = METHOD; excludes = VALUE; break;
+            case OBJECT_ITEM_GETTER: includes = GET; excludes = VALUE & ~(SET | PROPERTY); break;
+            case OBJECT_ITEM_SETTER: includes = SET; excludes = VALUE & ~(GET | PROPERTY); break;
+            default: continue;
+        }
+        if (!(flags & excludes)) {
+            flags |= includes;
+            if (i == setter) setter_in = true;
+            if (i->tag == OBJECT_ITEM_GETTER && !getter) getter = i;
+        } else if ((flags & (GET | SET)) && (flags & (GET | SET)) != (includes & (GET | SET))) {
+            flags |= GET | SET;
+        }
+    }
+    return setter_in ? getter : nullptr;
+}
+
 void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
     lazy_type_bind(&my lazy_type, LAZY_TYPE_EXPR);
 
@@ -2444,16 +2474,18 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 }
                 // (A computed name pairs when late bound, an entity name or a literal, by its text like a class's)
                 Expr const* own_key = i->computed_key;
-                if (i->tag == OBJECT_ITEM_SETTER && (!own_key || own_key->tag == EXPR_LITERAL || expr_is_entity_name(own_key))) {
+                if (i->tag == OBJECT_ITEM_SETTER && own_key && (own_key->tag == EXPR_LITERAL || expr_is_entity_name(own_key))) {
                     for_each (other, vec_object_expr_item, &my object) {
-                        if (other->tag == OBJECT_ITEM_GETTER && !other->computed_key == !own_key && (own_key ?
-                            csview_equals_sv(span_sv(expr_outer_span(other->computed_key)), span_sv(expr_outer_span(own_key))) :
-                            cstr_eq(&other->name_string, &i->name_string))
+                        if (other->tag == OBJECT_ITEM_GETTER && other->computed_key &&
+                            csview_equals_sv(span_sv(expr_outer_span(other->computed_key)), span_sv(expr_outer_span(own_key)))
                         ) {
                             function_impl_pair_setter(i->value.function, other->value.function, own_key);
                             break;
                         }
                     }
+                } else if (i->tag == OBJECT_ITEM_SETTER && !own_key) {
+                    ObjectExprItem const* getter = literal_symbol_getter(&my object, i);
+                    if (getter) function_impl_pair_setter(i->value.function, getter->value.function, nullptr);
                 }
                 flow->assignment_target = assignment_target; // A pattern: the values are the targets
                 i->pseudo_contextual = flow->contextual_depth > 0;

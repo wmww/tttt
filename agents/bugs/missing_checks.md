@@ -607,7 +607,7 @@ importDeclWithExportModifierInAmbientContext (TS2708 from tsgo's emit resolver [
 - controlFlowParameter drop-as: `{ [(a = "")]: b } = {}`: the initializer is padded with computed names of literal type
   too (padObjectLiteralType). Test ttttPadComputedBindingName. [fixed 618de31ef]
 - controlFlowGenericTypes drop-as: `iSpec[null!` (an element access by never) lost TS18048: the non-null check comes
-  first whatever the index, and the access is the non-nullable object's. Test ttttNeverIndexNonNull. [fixed PENDING]
+  first whatever the index, and the access is the non-nullable object's. Test ttttNeverIndexNonNull. [fixed 918409650]
 Not looked at:
 - mixinPrivateAndProtected delete-stmt: missing TS2339 on `never` with the "reduced to never because property 'pvt'
   exists in multiple constituents and is private in some" elaboration (a mixin intersection). [open]
@@ -615,8 +615,11 @@ Not looked at:
 - conditionalTypeContextualTypeSimplificationsSuceeds extends-object (TS2464 -> TS7031), objectRestBindingContextualInference
   delete-stmt (missing TS7006 '(Missing)' and TS2554), distributiveConditionalBaseConstraint drop-optional (TS2344
   elaboration), parseInvalidNames num-to-str (missing TS1005), exportSpecifierAndLocalMemberDeclaration str-to-num
-  (TS2694 -> TS2503), duplicateIdentifierChecks num-to-str (spurious TS2322 on an object literal's `get x() { return
-  "0" }` next to `x()` and a setter), 3 render. [open]
+  (TS2694 -> TS2503), 3 render. [open]
+- duplicateIdentifierChecks num-to-str: `set x(v: number) {}, x() {}, get x() { return "0" }` in an object literal: the
+  method's conflict makes the table's symbol both accessors, so `get x` is a symbol of its own without the setter's
+  annotation as return type; tttt's name-lookup paired them (spurious TS2322). literal_symbol_getter (expr.c) pairs by
+  the binder's symbols now. Test ttttLiteralAccessorConflictPair. [fixed PENDING]
 
 ## Mutation seed 20261112 (2026-10-29, cor11: `scripts/mutate.py -n 8000 --seed 20261112`, 5 of 8000 differ; `--syntax` 19)
 Known: noCircularitySelfReferentialGetter2 (text TS2345), recursiveClassBaseType (TS2310, the base cycle design),

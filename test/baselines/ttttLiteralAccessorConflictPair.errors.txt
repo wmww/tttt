@@ -1,0 +1,31 @@
+ttttLiteralAccessorConflictPair.ts(5,9): error TS2300: Duplicate identifier 'x'.
+ttttLiteralAccessorConflictPair.ts(6,5): error TS1119: An object literal cannot have property and accessor with the same name.
+ttttLiteralAccessorConflictPair.ts(6,5): error TS2300: Duplicate identifier 'x'.
+ttttLiteralAccessorConflictPair.ts(7,9): error TS2300: Duplicate identifier 'x'.
+ttttLiteralAccessorConflictPair.ts(11,15): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== ttttLiteralAccessorConflictPair.ts (5 errors) ====
+    // An object literal's getter takes its setter's annotation as return type only when the binder put them in one symbol:
+    // after `x()` conflicted with `set x`, that symbol is both accessors and `get x` conflicts too (tsgo's declareSymbolEx),
+    // so its `return "0"` isn't checked against number (seed 20261113, duplicateIdentifierChecks num-to-str)
+    const o8 = {
+        set x(value: number) { },
+            ~
+!!! error TS2300: Duplicate identifier 'x'.
+        x() { return 0 },
+        ~
+!!! error TS1119: An object literal cannot have property and accessor with the same name.
+        ~
+!!! error TS2300: Duplicate identifier 'x'.
+        get x() { return "0" }
+            ~
+!!! error TS2300: Duplicate identifier 'x'.
+    }
+    const o9 = {
+        set x(value: number) { },
+        get x() { return "0" }
+                  ~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    }
+    
