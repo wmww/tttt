@@ -3841,7 +3841,7 @@ static void yield_typecheck(Expr const* me, ErrorCtx* errs) {
     TyIterationTypes const* declared = ty_generator_context(checker, generator);
     if (declared) {
         ty_check_assignable_expr(checker, yielded, declared->yield_type, span,
-            yield->op == UNARY_OP_YIELD_STAR || yield->expr.tag == EXPR_IMPLICIT_ANY ? nullptr : &yield->expr, errs);
+            yield->expr.tag == EXPR_IMPLICIT_ANY ? nullptr : &yield->expr, errs);
     }
 }
 

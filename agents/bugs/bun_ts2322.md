@@ -78,7 +78,10 @@ last line. The real cause is then elsewhere, and the entry says where. Show a ca
   contextually types the arrow's parameter from the failing overload, tttt reports TS7006. TS2322 missing. [open]
 - 06-C15: `yield* [[1], ["a"]]` in a `Generator<number[]>`. tsc elaborates the array literal element by element
   against the yielded type (`Type '[number]' is not assignable to type 'number'`), tttt reports the whole
-  `string[] | number[]`. TS2322 at another position. [open]
+  `string[] | number[]`: yield_typecheck() passed no expression to elaborate for `yield*`. TS2322 at another
+  position. [fixed COMMIT-C15] Left: `yield* [[1], ["a"]] as const` against `Generator<number[]>`, where tsc
+  elaborates both elements (an out-of-bounds index of the union of tuples is undefined to it, and the element's type is
+  its const one, `readonly [1]`); tttt reports the first element only, as `number[]`. Text and count only. [open]
 - 09-C11b: an interface merged with two members of the same late-bound name of type string (`[s]: number`, `[s]:
   string`). tsc makes a string index signature of the union, tttt nothing. TS2322 missing. [open]
 - 09-P4: `D<keyof T>` with `D<X> = X extends PropertyKey ? 1 : 2` stays deferred in tsc (its constraint is `1 | 2`),
@@ -116,7 +119,7 @@ last line. The real cause is then elsewhere, and the entry says where. Show a ca
 - 22-P1: `k || f("b", b => ...)` with `f<A extends B, B>(y: B, cb: (b: B) => void): A | B` and `k = "a"`. tsc infers
   B as string (widened), not "b", so the callback's TS2322 shows; tttt kept the literal: tsc's returnMapper is the
   cloned return context's fixing mapper, so the fresh "a" (k's type) widens to string and "b" isn't a literal of
-  that context; return_inference_mapper() kept literals. [fixed COMMIT-P1]
+  that context; return_inference_mapper() kept literals. [fixed d819d114b]
 - 25-C9a and 25-C9b: a compound-like assignment through a `!` or an array destructuring target (`[x] = s + s`, `x! =
   x + 1`). tsc's isInCompoundLikeAssignment passes through NonNull and array literals (GetAssignmentTarget), so the
   target's type is its base literal type. tttt's compound_like_target stopped at them; it also widened a property

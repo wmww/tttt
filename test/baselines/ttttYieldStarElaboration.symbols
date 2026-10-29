@@ -1,0 +1,71 @@
+//// [test/cases/ttttYieldStarElaboration.ts] ////
+
+=== ttttYieldStarElaboration.ts ===
+// A yield* operand is elaborated against the yield type like any assigned expression (tsc's checkYieldExpression
+// passes node.Expression to checkTypeAssignableToAndOptionallyElaborate): an array literal element by element
+function* g1(): Generator<number[]> { yield* [[1], ["a"]]; }
+>g1 : Symbol(g1, Decl(ttttYieldStarElaboration.ts, 0, 0))
+>Generator : Symbol(Generator, Decl(lib.es2015.generator.d.ts, --, --))
+
+function* g2(): Generator<number> { yield* [1, "a"]; }
+>g2 : Symbol(g2, Decl(ttttYieldStarElaboration.ts, 2, 60))
+>Generator : Symbol(Generator, Decl(lib.es2015.generator.d.ts, --, --))
+
+function* g3(): Generator<number> { yield* ["a"]; }
+>g3 : Symbol(g3, Decl(ttttYieldStarElaboration.ts, 3, 54))
+>Generator : Symbol(Generator, Decl(lib.es2015.generator.d.ts, --, --))
+
+function* g4(): Generator<{ a: number }> { yield* [{ a: "x" }]; }
+>g4 : Symbol(g4, Decl(ttttYieldStarElaboration.ts, 4, 51))
+>Generator : Symbol(Generator, Decl(lib.es2015.generator.d.ts, --, --))
+>a : Symbol(a, Decl(ttttYieldStarElaboration.ts, 5, 27))
+>a : Symbol(a, Decl(ttttYieldStarElaboration.ts, 5, 52))
+
+declare const xs: string[];
+>xs : Symbol(xs, Decl(ttttYieldStarElaboration.ts, 6, 13))
+
+function* g5(): Generator<number> { yield* xs; }
+>g5 : Symbol(g5, Decl(ttttYieldStarElaboration.ts, 6, 27))
+>Generator : Symbol(Generator, Decl(lib.es2015.generator.d.ts, --, --))
+>xs : Symbol(xs, Decl(ttttYieldStarElaboration.ts, 6, 13))
+
+async function* g6(): AsyncGenerator<number> { yield* [1, "a"]; }
+>g6 : Symbol(g6, Decl(ttttYieldStarElaboration.ts, 7, 48))
+>AsyncGenerator : Symbol(AsyncGenerator, Decl(lib.es2018.asyncgenerator.d.ts, --, --))
+
+declare const c: boolean;
+>c : Symbol(c, Decl(ttttYieldStarElaboration.ts, 9, 13))
+
+function* h1(): Generator<number[]> { yield* c ? [[1]] : [["a"]]; }
+>h1 : Symbol(h1, Decl(ttttYieldStarElaboration.ts, 9, 25))
+>Generator : Symbol(Generator, Decl(lib.es2015.generator.d.ts, --, --))
+>c : Symbol(c, Decl(ttttYieldStarElaboration.ts, 9, 13))
+
+function* h2(): Generator<{ a: number }[]> { yield* [[{ a: "x" }]]; }
+>h2 : Symbol(h2, Decl(ttttYieldStarElaboration.ts, 10, 67))
+>Generator : Symbol(Generator, Decl(lib.es2015.generator.d.ts, --, --))
+>a : Symbol(a, Decl(ttttYieldStarElaboration.ts, 11, 27))
+>a : Symbol(a, Decl(ttttYieldStarElaboration.ts, 11, 55))
+
+function* h3(): Generator<[number, string]> { yield* [[1, 2]]; }
+>h3 : Symbol(h3, Decl(ttttYieldStarElaboration.ts, 11, 69))
+>Generator : Symbol(Generator, Decl(lib.es2015.generator.d.ts, --, --))
+
+function* h4(): Generator<number[]> { yield* ([[1], ["a"]]); }
+>h4 : Symbol(h4, Decl(ttttYieldStarElaboration.ts, 12, 64))
+>Generator : Symbol(Generator, Decl(lib.es2015.generator.d.ts, --, --))
+
+async function* h6(): AsyncGenerator<number[]> { yield* [[1], ["a"]]; }
+>h6 : Symbol(h6, Decl(ttttYieldStarElaboration.ts, 13, 62))
+>AsyncGenerator : Symbol(AsyncGenerator, Decl(lib.es2018.asyncgenerator.d.ts, --, --))
+
+function* h7(): Generator<string> { yield* "abc"; yield* [..."abc", 1]; }
+>h7 : Symbol(h7, Decl(ttttYieldStarElaboration.ts, 14, 71))
+>Generator : Symbol(Generator, Decl(lib.es2015.generator.d.ts, --, --))
+
+function* h8(): Generator<(x: number) => void> { yield* [(x: string) => {}]; }
+>h8 : Symbol(h8, Decl(ttttYieldStarElaboration.ts, 15, 73))
+>Generator : Symbol(Generator, Decl(lib.es2015.generator.d.ts, --, --))
+>x : Symbol(x, Decl(ttttYieldStarElaboration.ts, 16, 27))
+>x : Symbol(x, Decl(ttttYieldStarElaboration.ts, 16, 58))
+

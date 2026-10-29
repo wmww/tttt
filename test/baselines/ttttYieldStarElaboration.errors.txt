@@ -1,0 +1,92 @@
+ttttYieldStarElaboration.ts(3,47): error TS2322: Type '[number]' is not assignable to type 'number'.
+ttttYieldStarElaboration.ts(3,52): error TS2322: Type '[string]' is not assignable to type 'number'.
+ttttYieldStarElaboration.ts(4,44): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+ttttYieldStarElaboration.ts(5,44): error TS2322: Type 'string' is not assignable to type 'number'.
+ttttYieldStarElaboration.ts(6,51): error TS2322: Type '{ a: string; }' is not assignable to type '{ a: number; }'.
+  Types of property 'a' are incompatible.
+    Type 'string' is not assignable to type 'number'.
+ttttYieldStarElaboration.ts(8,44): error TS2322: Type 'string' is not assignable to type 'number'.
+ttttYieldStarElaboration.ts(9,55): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+ttttYieldStarElaboration.ts(11,46): error TS2322: Type 'string[] | number[]' is not assignable to type 'number[]'.
+  Type 'string[]' is not assignable to type 'number[]'.
+    Type 'string' is not assignable to type 'number'.
+ttttYieldStarElaboration.ts(12,54): error TS2741: Property 'a' is missing in type '[{ a: string; }]' but required in type '{ a: number; }'.
+ttttYieldStarElaboration.ts(13,54): error TS2322: Type '[number, number]' is not assignable to type '[number, string]'.
+  Type at position 1 in source is not compatible with type at position 1 in target.
+    Type 'number' is not assignable to type 'string'.
+ttttYieldStarElaboration.ts(14,48): error TS2322: Type '[number]' is not assignable to type 'number'.
+ttttYieldStarElaboration.ts(14,53): error TS2322: Type '[string]' is not assignable to type 'number'.
+ttttYieldStarElaboration.ts(15,58): error TS2322: Type '[number]' is not assignable to type 'number'.
+ttttYieldStarElaboration.ts(15,63): error TS2322: Type '[string]' is not assignable to type 'number'.
+ttttYieldStarElaboration.ts(16,58): error TS2322: Type 'string | number' is not assignable to type 'string'.
+  Type 'number' is not assignable to type 'string'.
+ttttYieldStarElaboration.ts(17,57): error TS2322: Type '(x: string) => void' is not assignable to type '(x: number) => void'.
+  Types of parameters 'x' and 'x' are incompatible.
+    Type 'number' is not assignable to type 'string'.
+
+
+==== ttttYieldStarElaboration.ts (16 errors) ====
+    // A yield* operand is elaborated against the yield type like any assigned expression (tsc's checkYieldExpression
+    // passes node.Expression to checkTypeAssignableToAndOptionallyElaborate): an array literal element by element
+    function* g1(): Generator<number[]> { yield* [[1], ["a"]]; }
+                                                  ~~~
+!!! error TS2322: Type '[number]' is not assignable to type 'number'.
+                                                       ~~~~~
+!!! error TS2322: Type '[string]' is not assignable to type 'number'.
+    function* g2(): Generator<number> { yield* [1, "a"]; }
+                                               ~~~~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'number'.
+!!! error TS2322:   Type 'string' is not assignable to type 'number'.
+    function* g3(): Generator<number> { yield* ["a"]; }
+                                               ~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    function* g4(): Generator<{ a: number }> { yield* [{ a: "x" }]; }
+                                                      ~~~~~~~~~~~~
+!!! error TS2322: Type '{ a: string; }' is not assignable to type '{ a: number; }'.
+!!! error TS2322:   Types of property 'a' are incompatible.
+!!! error TS2322:     Type 'string' is not assignable to type 'number'.
+    declare const xs: string[];
+    function* g5(): Generator<number> { yield* xs; }
+                                               ~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    async function* g6(): AsyncGenerator<number> { yield* [1, "a"]; }
+                                                          ~~~~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'number'.
+!!! error TS2322:   Type 'string' is not assignable to type 'number'.
+    declare const c: boolean;
+    function* h1(): Generator<number[]> { yield* c ? [[1]] : [["a"]]; }
+                                                 ~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'string[] | number[]' is not assignable to type 'number[]'.
+!!! error TS2322:   Type 'string[]' is not assignable to type 'number[]'.
+!!! error TS2322:     Type 'string' is not assignable to type 'number'.
+    function* h2(): Generator<{ a: number }[]> { yield* [[{ a: "x" }]]; }
+                                                         ~~~~~~~~~~~~
+!!! error TS2741: Property 'a' is missing in type '[{ a: string; }]' but required in type '{ a: number; }'.
+!!! related TS2728 ttttYieldStarElaboration.ts:12:29: 'a' is declared here.
+    function* h3(): Generator<[number, string]> { yield* [[1, 2]]; }
+                                                         ~~~~~~~~
+!!! error TS2322: Type '[number, number]' is not assignable to type '[number, string]'.
+!!! error TS2322:   Type at position 1 in source is not compatible with type at position 1 in target.
+!!! error TS2322:     Type 'number' is not assignable to type 'string'.
+    function* h4(): Generator<number[]> { yield* ([[1], ["a"]]); }
+                                                   ~~~
+!!! error TS2322: Type '[number]' is not assignable to type 'number'.
+                                                        ~~~~~
+!!! error TS2322: Type '[string]' is not assignable to type 'number'.
+    async function* h6(): AsyncGenerator<number[]> { yield* [[1], ["a"]]; }
+                                                             ~~~
+!!! error TS2322: Type '[number]' is not assignable to type 'number'.
+                                                                  ~~~~~
+!!! error TS2322: Type '[string]' is not assignable to type 'number'.
+    function* h7(): Generator<string> { yield* "abc"; yield* [..."abc", 1]; }
+                                                             ~~~~~~~~~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'string'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string'.
+    function* h8(): Generator<(x: number) => void> { yield* [(x: string) => {}]; }
+                                                            ~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type '(x: string) => void' is not assignable to type '(x: number) => void'.
+!!! error TS2322:   Types of parameters 'x' and 'x' are incompatible.
+!!! error TS2322:     Type 'number' is not assignable to type 'string'.
+    

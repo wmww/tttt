@@ -1,0 +1,121 @@
+//// [test/cases/ttttYieldStarElaboration.ts] ////
+
+=== ttttYieldStarElaboration.ts ===
+// A yield* operand is elaborated against the yield type like any assigned expression (tsc's checkYieldExpression
+// passes node.Expression to checkTypeAssignableToAndOptionallyElaborate): an array literal element by element
+function* g1(): Generator<number[]> { yield* [[1], ["a"]]; }
+>g1 : () => Generator<number[]>
+>yield* [[1], ["a"]] : undefined
+>[[1], ["a"]] : (string[] | number[])[]
+>[1] : number[]
+>1 : 1
+>["a"] : string[]
+>"a" : "a"
+
+function* g2(): Generator<number> { yield* [1, "a"]; }
+>g2 : () => Generator<number>
+>yield* [1, "a"] : undefined
+>[1, "a"] : (string | number)[]
+>1 : 1
+>"a" : "a"
+
+function* g3(): Generator<number> { yield* ["a"]; }
+>g3 : () => Generator<number>
+>yield* ["a"] : undefined
+>["a"] : string[]
+>"a" : "a"
+
+function* g4(): Generator<{ a: number }> { yield* [{ a: "x" }]; }
+>g4 : () => Generator<{ a: number; }>
+>a : number
+>yield* [{ a: "x" }] : undefined
+>[{ a: "x" }] : { a: string; }[]
+>{ a: "x" } : { a: string; }
+>a : string
+>"x" : "x"
+
+declare const xs: string[];
+>xs : string[]
+
+function* g5(): Generator<number> { yield* xs; }
+>g5 : () => Generator<number>
+>yield* xs : undefined
+>xs : string[]
+
+async function* g6(): AsyncGenerator<number> { yield* [1, "a"]; }
+>g6 : () => AsyncGenerator<number>
+>yield* [1, "a"] : undefined
+>[1, "a"] : (string | number)[]
+>1 : 1
+>"a" : "a"
+
+declare const c: boolean;
+>c : boolean
+
+function* h1(): Generator<number[]> { yield* c ? [[1]] : [["a"]]; }
+>h1 : () => Generator<number[]>
+>yield* c ? [[1]] : [["a"]] : undefined
+>c ? [[1]] : [["a"]] : string[][] | number[][]
+>c : boolean
+>[[1]] : number[][]
+>[1] : number[]
+>1 : 1
+>[["a"]] : string[][]
+>["a"] : string[]
+>"a" : "a"
+
+function* h2(): Generator<{ a: number }[]> { yield* [[{ a: "x" }]]; }
+>h2 : () => Generator<{ a: number; }[]>
+>a : number
+>yield* [[{ a: "x" }]] : undefined
+>[[{ a: "x" }]] : { a: string; }[][]
+>[{ a: "x" }] : { a: string; }[]
+>{ a: "x" } : { a: string; }
+>a : string
+>"x" : "x"
+
+function* h3(): Generator<[number, string]> { yield* [[1, 2]]; }
+>h3 : () => Generator<[number, string]>
+>yield* [[1, 2]] : undefined
+>[[1, 2]] : [number, number][]
+>[1, 2] : [number, number]
+>1 : 1
+>2 : 2
+
+function* h4(): Generator<number[]> { yield* ([[1], ["a"]]); }
+>h4 : () => Generator<number[]>
+>yield* ([[1], ["a"]]) : undefined
+>([[1], ["a"]]) : (string[] | number[])[]
+>[[1], ["a"]] : (string[] | number[])[]
+>[1] : number[]
+>1 : 1
+>["a"] : string[]
+>"a" : "a"
+
+async function* h6(): AsyncGenerator<number[]> { yield* [[1], ["a"]]; }
+>h6 : () => AsyncGenerator<number[]>
+>yield* [[1], ["a"]] : undefined
+>[[1], ["a"]] : (string[] | number[])[]
+>[1] : number[]
+>1 : 1
+>["a"] : string[]
+>"a" : "a"
+
+function* h7(): Generator<string> { yield* "abc"; yield* [..."abc", 1]; }
+>h7 : () => Generator<string>
+>yield* "abc" : undefined
+>"abc" : "abc"
+>yield* [..."abc", 1] : undefined
+>[..."abc", 1] : (string | number)[]
+>..."abc" : string
+>"abc" : "abc"
+>1 : 1
+
+function* h8(): Generator<(x: number) => void> { yield* [(x: string) => {}]; }
+>h8 : () => Generator<(x: number) => void>
+>x : number
+>yield* [(x: string) => {}] : undefined
+>[(x: string) => {}] : ((x: string) => void)[]
+>(x: string) => {} : (x: string) => void
+>x : string
+
