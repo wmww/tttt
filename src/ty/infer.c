@@ -452,6 +452,11 @@ static bool tsc_could_contain_type_variables_uncached(Ty const* ty) {
         ty->anonymous.rest_of_binding;
 }
 
+// tsc's couldContainTypeVariables: tttt's flag, or what tsc says yes to not knowing better
+bool ty_tsc_could_contain_type_variables(Ty const* ty) {
+    return (ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || tsc_could_contain_type_variables(ty);
+}
+
 static void force_source_parts(Checker* me, Ty const* source, Ty const* target, u32 depth);
 
 // From the return type (or type predicate) of `source` to that of `target` (tsc's applyToReturnTypes)

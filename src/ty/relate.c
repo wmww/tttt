@@ -2552,7 +2552,10 @@ static Signature const* canonical_signature(Checker* me, Signature const* sig) {
 static Ternary signatures_related(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool construct, bool report
 ) {
-    if (source == my global_types[GLOBAL_ANY_FUNCTION] || target == my global_types[GLOBAL_ANY_FUNCTION]) return TERNARY_TRUE;
+    // (The anyFunctionType wildcard is a subtype of every function type, and nothing else is one of it: `1 |
+    // anyFunctionType`, a skipped `() => { if (c) return 1; return x => x; }`'s returns, isn't reduced to the wildcard)
+    if (source == my global_types[GLOBAL_ANY_FUNCTION]) return TERNARY_TRUE;
+    if (target == my global_types[GLOBAL_ANY_FUNCTION]) return TERNARY_FALSE;
     Members const* source_members = ty_members(me, source);
     Members const* target_members = ty_members(me, target);
     Signature* const* source_sigs = construct ? source_members->construct : source_members->call;

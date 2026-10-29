@@ -428,11 +428,19 @@ static bool first_pass_typed_arg(Arg const* arg, bool skip_sensitive, bool skip_
 // parameter whose type the skipping inference made `never` or a primitive (letrec's `T extends Record<string, unknown>
 // ? LetrecTypedBuilder<T> : never` with T unknown so far isn't the overload), nor one with required properties
 // (d3's `cross(a, b, (x, y) => ...)` isn't `cross(...iterables: Iterable<T>[])`). The type it doesn't fit, else null
+// What tsc's applicability check under SkipContextSensitive types a context-sensitive function as: anyFunctionType, or
+// the return-only type the first pass's inference made (cached per function, tsc's contextFreeTypes), or one made now
+// against the instantiated parameter: `() => { if (c) return; return x => x.length > 0; }` is `() => {} | undefined`,
+// which doesn't fit `() => (input: string) => boolean` (TS2345 for the whole argument, not the call's return type)
+static Ty const* skipped_function_type(Checker* me, Arg const* arg, Ty const* target) {
+    return ty_check_expr_skipping_sensitive(me, arg->expr, target, false);
+}
+
 static Ty const* skipped_function_unfit(Checker* me, ParamShape const* shape, Arg const* arg, u32 i, TyRelation relation) {
     if (!arg->context_sensitive || arg->expr->tag != EXPR_FUNCTION || arg->spread || arg->part_of_spread) return nullptr;
     Ty const* target = i < shape->count ? shape->types[i] : shape->rest_element;
     if (!target) return nullptr;
-    return ty_is_related(me, ty_any_function_type(me), target, relation) ? nullptr : target;
+    return ty_is_related(me, skipped_function_type(me, arg, target), target, relation) ? nullptr : target;
 }
 
 static void check_args_from(
@@ -1825,7 +1833,7 @@ static i32 first_unfit_argument_skipping(
             if (i >= shape->count && shape->rest_variadic) break;
             Ty const* unfit = skip_sensitive ? skipped_function_unfit(me, shape, arg, i, relation) : nullptr;
             if (unfit) {
-                *arg_type = ty_any_function_type(me);
+                *arg_type = skipped_function_type(me, arg, unfit);
                 *param_type = unfit;
                 return (i32)i;
             }

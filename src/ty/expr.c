@@ -206,7 +206,9 @@ static Ty const* return_only_type(Checker* me, FunctionImpl const* function, Ty 
     if (!context_sig) return ty_any_function_type(me);
     signature_resolve(me, context_sig);
     Ty const* context_ret = signature_return_type(me, context_sig);
-    if (!(context_ret->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return ty_any_function_type(me);
+    // (tsc's couldContainTypeVariables, which says yes to any function or type literal's type: `() => (x: string) =>
+    // boolean`, the applicability check's instantiated parameter, gets the type the inference made, or one now)
+    if (!ty_tsc_could_contain_type_variables(context_ret)) return ty_any_function_type(me);
     u64 key[2] = { KEY_CONTEXT_FREE, (u64)(uintptr_t)function };
     void const* known = intern_get(&my links, key, 2);
     if (known) return known;
