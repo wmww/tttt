@@ -1,0 +1,67 @@
+ttttParameterListAbortAtComma.ts(4,19): error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+ttttParameterListAbortAtComma.ts(4,19): error TS1359: Identifier expected. 'null' is a reserved word that cannot be used here.
+ttttParameterListAbortAtComma.ts(4,23): error TS1138: Parameter declaration expected.
+ttttParameterListAbortAtComma.ts(4,25): error TS2304: Cannot find name 's'.
+ttttParameterListAbortAtComma.ts(4,26): error TS1005: ',' expected.
+ttttParameterListAbortAtComma.ts(4,37): error TS1005: ':' expected.
+ttttParameterListAbortAtComma.ts(4,37): error TS2304: Cannot find name 's'.
+ttttParameterListAbortAtComma.ts(4,38): error TS1005: ',' expected.
+ttttParameterListAbortAtComma.ts(5,12): error TS1138: Parameter declaration expected.
+ttttParameterListAbortAtComma.ts(5,14): error TS7006: Parameter 's' implicitly has an 'any' type.
+ttttParameterListAbortAtComma.ts(6,11): error TS2695: Left side of comma operator is unused and has no side effects.
+ttttParameterListAbortAtComma.ts(6,20): error TS7006: Parameter 'x' implicitly has an 'any' type.
+ttttParameterListAbortAtComma.ts(6,23): error TS1138: Parameter declaration expected.
+ttttParameterListAbortAtComma.ts(6,25): error TS2304: Cannot find name 'y'.
+ttttParameterListAbortAtComma.ts(6,28): error TS1005: ',' expected.
+ttttParameterListAbortAtComma.ts(6,37): error TS1005: ':' expected.
+ttttParameterListAbortAtComma.ts(6,37): error TS2304: Cannot find name 'y'.
+ttttParameterListAbortAtComma.ts(6,38): error TS1005: ',' expected.
+ttttParameterListAbortAtComma.ts(6,41): error TS1005: ',' expected.
+
+
+==== ttttParameterListAbortAtComma.ts (19 errors) ====
+    // A parameter list that meets a `,` where a parameter should be (TS1138) gives up when a list around it wants the
+    // `,` (tsc's abortParsingListOrMoveToNextToken): in an array literal `function(null, s)` ends at `null`, `s` is the
+    // next element. At statement level nothing wants it and the list skips it. Seed 20261114, contextualTyping null-arg
+    var a = [function(null, s) { return s; }];
+                      
+!!! error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+                      ~~~~
+!!! error TS1359: Identifier expected. 'null' is a reserved word that cannot be used here.
+                          ~
+!!! error TS1138: Parameter declaration expected.
+                            ~
+!!! error TS2304: Cannot find name 's'.
+                             ~
+!!! error TS1005: ',' expected.
+                                        ~
+!!! error TS1005: ':' expected.
+                                        ~
+!!! error TS2304: Cannot find name 's'.
+                                         ~
+!!! error TS1005: ',' expected.
+    function f(, s) { return s; }
+               ~
+!!! error TS1138: Parameter declaration expected.
+                 ~
+!!! error TS7006: Parameter 's' implicitly has an 'any' type.
+    var b = [(function(x, , y) { return y; })];
+              ~~~~~~~~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+                       ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+                          ~
+!!! error TS1138: Parameter declaration expected.
+                            ~
+!!! error TS2304: Cannot find name 'y'.
+                               ~
+!!! error TS1005: ',' expected.
+                                        ~
+!!! error TS1005: ':' expected.
+                                        ~
+!!! error TS2304: Cannot find name 'y'.
+                                         ~
+!!! error TS1005: ',' expected.
+                                            ~
+!!! error TS1005: ',' expected.
+    

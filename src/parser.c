@@ -210,6 +210,8 @@ typedef struct ParserShared {
     // Where an expression's binary operator was looked for at a `>` last: tsc's reScanGreaterToken made `>>`, `>=`,
     // `>>>=`... one token there; anywhere else its scanner reads `>` alone (span_from_token())
     const char* greater_rescanned;
+    // The parameters parse_function_args() parses next are a function expression's (set and cleared around one call)
+    bool expression_args;
     u32 errors_attempted; // Every parse_error() call, the ones dropped too (a position that already has one)
     // A parse error was reported (or deduplicated) since the last node finished: tsgo's hasParseError, which its
     // finishNode moves onto the node as ThisNodeHasError (note_error_node())
@@ -7726,6 +7728,9 @@ static bool parse_function_args_inner(
     // (In a type or an ambient context, the initializers in the parameters, a binding pattern's too, are never checked:
     // only TS2371, tsc's checkVariableLikeDeclaration, and no parameter type from them. Their grammar errors are
     // dropped)
+    // (A function expression's: parse_non_arrow_function_inner() sets it for this call)
+    bool expression_args = parent->shared->expression_args;
+    parent->shared->expression_args = false;
     bool unchecked_initializers = parse_type_return_syntax || parent->shared->type_member_args || parent->shared->in_ambient;
     parent->shared->type_member_args = false;
     // Without `abstract`/`new` a parameter list starts at its `(` or type parameters (member names come here first)
@@ -7798,7 +7803,12 @@ static bool parse_function_args_inner(
 
         // (A `]` ends the list too, its `)` then missing: tsc's isListTerminator for Parameters)
         while (!at_eof(&p, p.pos) && *p.pos != ')' && *p.pos != ']') {
-            if (hop_char(&p, ',')) {
+            if (*p.pos == ',' && expression_args) {
+                // (tsc's parseDelimitedList: TS1138, then the list gives up if a list around it wants the `,`, `[f(null,
+                // s)]`'s array literal, else skips it: abortParsingListOrMoveToNextToken. Only a function expression's
+                // so far: elsewhere a speculative parse that should fail goes on, jsxTernaryWithObjectInAttribute)
+                if (list_abort_or_skip(&p, PARSING_PARAMETERS)) break;
+            } else if (hop_char(&p, ',')) {
                 parse_error(&p, span_from_previous_char(&p), 1138, "Parameter declaration expected.");
             } else {
                 InitializedBinding initializer = {0};
@@ -8937,7 +8947,7 @@ static bool parse_non_arrow_function_inner(Parser* parent, FunctionFlags flags, 
                 ret->ret_explicit = true;
             }
         }
-    } else if (!parse_function_args(&p, false, false, true, true, ret)) {
+    } else if (!(p.shared->expression_args = flags.expression, parse_function_args(&p, false, false, true, true, ret))) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
@@ -8952,6 +8962,8 @@ static bool parse_non_arrow_function_inner(Parser* parent, FunctionFlags flags, 
         else parse_error(&p, span_from_token(&p), 1144, "'{' or ';' expected.");
         ret->body_ = (Block){0};
         ret->body_missing = true;
+        // (The function then ends with its last token, not the trivia after it)
+        unhop_trivia(&p);
     }
 
     ret->full_span = span_from(a);

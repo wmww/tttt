@@ -1,0 +1,33 @@
+//// [test/cases/ttttParameterListAbortAtComma.ts] ////
+
+=== ttttParameterListAbortAtComma.ts ===
+// A parameter list that meets a `,` where a parameter should be (TS1138) gives up when a list around it wants the
+// `,` (tsc's abortParsingListOrMoveToNextToken): in an array literal `function(null, s)` ends at `null`, `s` is the
+// next element. At statement level nothing wants it and the list skips it. Seed 20261114, contextualTyping null-arg
+var a = [function(null, s) { return s; }];
+>a : any[]
+>[function(null, s) { return s; }] : any[]
+>function(null : (: any) => any
+> : any
+>s : any
+>{ return s; } : { return: any; }
+>return : any
+>s : any
+
+function f(, s) { return s; }
+>f : (s: any) => any
+>s : any
+>s : any
+
+var b = [(function(x, , y) { return y; })];
+>b : any[]
+>[(function(x, , y) { return y; })] : any[]
+>(function(x, , y) : any
+>function(x, , y : any
+>function(x, : (x: any) => any
+>x : any
+>y : any
+>{ return y; } : { return: any; }
+>return : any
+>y : any
+
