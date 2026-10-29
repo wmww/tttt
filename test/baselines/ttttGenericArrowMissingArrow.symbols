@@ -1,0 +1,51 @@
+//// [test/cases/ttttGenericArrowMissingArrow.ts] ////
+
+=== ttttGenericArrowMissingArrow.ts ===
+// A parameter list after type parameters followed by `{` is an arrow function missing its `=>` (tsc's
+// parseParenthesizedArrowFunctionExpression takes `{` even when the lookahead was unsure), not a type assertion.
+// In a class body the `<` ends the member list (TS1068) and the rest is such an arrow function
+class D { <T>() {} }
+>D : Symbol(D, Decl(ttttGenericArrowMissingArrow.ts, 0, 0))
+>T : Symbol(T, Decl(ttttGenericArrowMissingArrow.ts, 3, 11))
+
+class E { <T>(x: T) { return x; } y = 1; }
+>E : Symbol(E, Decl(ttttGenericArrowMissingArrow.ts, 3, 20))
+>T : Symbol(T, Decl(ttttGenericArrowMissingArrow.ts, 4, 11))
+>x : Symbol(x, Decl(ttttGenericArrowMissingArrow.ts, 4, 14))
+>T : Symbol(T, Decl(ttttGenericArrowMissingArrow.ts, 4, 11))
+>x : Symbol(x, Decl(ttttGenericArrowMissingArrow.ts, 4, 14))
+
+<T>() {};
+>T : Symbol(T, Decl(ttttGenericArrowMissingArrow.ts, 5, 1))
+
+var a = <T>(x: T) {};
+>a : Symbol(a, Decl(ttttGenericArrowMissingArrow.ts, 6, 3))
+>T : Symbol(T, Decl(ttttGenericArrowMissingArrow.ts, 6, 9))
+>x : Symbol(x, Decl(ttttGenericArrowMissingArrow.ts, 6, 12))
+>T : Symbol(T, Decl(ttttGenericArrowMissingArrow.ts, 6, 9))
+
+var f = async <T>(x: T) {};
+>f : Symbol(f, Decl(ttttGenericArrowMissingArrow.ts, 7, 3))
+>T : Symbol(T, Decl(ttttGenericArrowMissingArrow.ts, 7, 15))
+>x : Symbol(x, Decl(ttttGenericArrowMissingArrow.ts, 7, 18))
+>T : Symbol(T, Decl(ttttGenericArrowMissingArrow.ts, 7, 15))
+
+var g = <T,>(x) : number {};
+>g : Symbol(g, Decl(ttttGenericArrowMissingArrow.ts, 8, 3))
+>T : Symbol(T, Decl(ttttGenericArrowMissingArrow.ts, 8, 9))
+>x : Symbol(x, Decl(ttttGenericArrowMissingArrow.ts, 8, 13))
+
+declare var foo: any;
+>foo : Symbol(foo, Decl(ttttGenericArrowMissingArrow.ts, 9, 11))
+
+<any>(foo)
+>any : Symbol(any, Decl(ttttGenericArrowMissingArrow.ts, 10, 1))
+>foo : Symbol(foo, Decl(ttttGenericArrowMissingArrow.ts, 10, 6))
+
+{ foo(); }
+>foo : Symbol(foo, Decl(ttttGenericArrowMissingArrow.ts, 10, 6))
+
+var h = <string>(foo) + 1;
+>h : Symbol(h, Decl(ttttGenericArrowMissingArrow.ts, 12, 3))
+>foo : Symbol(foo, Decl(ttttGenericArrowMissingArrow.ts, 9, 11))
+

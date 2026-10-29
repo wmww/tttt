@@ -1,0 +1,56 @@
+//// [test/cases/ttttGenericArrowMissingArrow.ts] ////
+
+=== ttttGenericArrowMissingArrow.ts ===
+// A parameter list after type parameters followed by `{` is an arrow function missing its `=>` (tsc's
+// parseParenthesizedArrowFunctionExpression takes `{` even when the lookahead was unsure), not a type assertion.
+// In a class body the `<` ends the member list (TS1068) and the rest is such an arrow function
+class D { <T>() {} }
+>D : D
+><T>() {} : <T>() => void
+
+class E { <T>(x: T) { return x; } y = 1; }
+>E : E
+><T>(x: T) { return x; } : <T>(x: T) => T
+>x : T
+>x : T
+>y = 1 : 1
+>y : any
+>1 : 1
+
+<T>() {};
+><T>() {} : <T>() => void
+
+var a = <T>(x: T) {};
+>a : <T>(x: T) => void
+><T>(x: T) {} : <T>(x: T) => void
+>x : T
+
+var f = async <T>(x: T) {};
+>f : <T>(x: T) => Promise<void>
+>async <T>(x: T) {} : <T>(x: T) => Promise<void>
+>x : T
+
+var g = <T,>(x) : number {};
+>g : <T>(x: any) => number
+><T,>(x) : number {} : <T>(x: any) => number
+>x : any
+
+declare var foo: any;
+>foo : any
+
+<any>(foo)
+><any>(foo){ foo(); } : <any>(foo: any) => void
+>foo : any
+
+{ foo(); }
+>foo() : any
+>foo : any
+
+var h = <string>(foo) + 1;
+>h : string
+><string>(foo) + 1 : string
+><string>(foo) : string
+>(foo) : any
+>foo : any
+>1 : 1
+

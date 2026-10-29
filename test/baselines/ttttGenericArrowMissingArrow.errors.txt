@@ -1,0 +1,68 @@
+ttttGenericArrowMissingArrow.ts(4,11): error TS1068: Unexpected token. A constructor, method, accessor, or property was expected.
+ttttGenericArrowMissingArrow.ts(4,17): error TS1005: '=>' expected.
+ttttGenericArrowMissingArrow.ts(4,20): error TS1128: Declaration or statement expected.
+ttttGenericArrowMissingArrow.ts(5,11): error TS1068: Unexpected token. A constructor, method, accessor, or property was expected.
+ttttGenericArrowMissingArrow.ts(5,21): error TS1005: '=>' expected.
+ttttGenericArrowMissingArrow.ts(5,35): error TS1005: ';' expected.
+ttttGenericArrowMissingArrow.ts(5,35): error TS2304: Cannot find name 'y'.
+ttttGenericArrowMissingArrow.ts(5,42): error TS1128: Declaration or statement expected.
+ttttGenericArrowMissingArrow.ts(6,7): error TS1005: '=>' expected.
+ttttGenericArrowMissingArrow.ts(7,19): error TS1005: '=>' expected.
+ttttGenericArrowMissingArrow.ts(8,25): error TS1005: '=>' expected.
+ttttGenericArrowMissingArrow.ts(9,14): error TS7006: Parameter 'x' implicitly has an 'any' type.
+ttttGenericArrowMissingArrow.ts(9,19): error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+ttttGenericArrowMissingArrow.ts(9,26): error TS1005: '=>' expected.
+ttttGenericArrowMissingArrow.ts(11,2): error TS2368: Type parameter name cannot be 'any'.
+ttttGenericArrowMissingArrow.ts(11,7): error TS7006: Parameter 'foo' implicitly has an 'any' type.
+ttttGenericArrowMissingArrow.ts(12,1): error TS1005: '=>' expected.
+
+
+==== ttttGenericArrowMissingArrow.ts (17 errors) ====
+    // A parameter list after type parameters followed by `{` is an arrow function missing its `=>` (tsc's
+    // parseParenthesizedArrowFunctionExpression takes `{` even when the lookahead was unsure), not a type assertion.
+    // In a class body the `<` ends the member list (TS1068) and the rest is such an arrow function
+    class D { <T>() {} }
+              ~
+!!! error TS1068: Unexpected token. A constructor, method, accessor, or property was expected.
+                    ~
+!!! error TS1005: '=>' expected.
+                       ~
+!!! error TS1128: Declaration or statement expected.
+    class E { <T>(x: T) { return x; } y = 1; }
+              ~
+!!! error TS1068: Unexpected token. A constructor, method, accessor, or property was expected.
+                        ~
+!!! error TS1005: '=>' expected.
+                                      ~
+!!! error TS1005: ';' expected.
+                                      ~
+!!! error TS2304: Cannot find name 'y'.
+                                             ~
+!!! error TS1128: Declaration or statement expected.
+    <T>() {};
+          ~
+!!! error TS1005: '=>' expected.
+    var a = <T>(x: T) {};
+                      ~
+!!! error TS1005: '=>' expected.
+    var f = async <T>(x: T) {};
+                            ~
+!!! error TS1005: '=>' expected.
+    var g = <T,>(x) : number {};
+                 ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+                      ~~~~~~
+!!! error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+                             ~
+!!! error TS1005: '=>' expected.
+    declare var foo: any;
+    <any>(foo)
+     ~~~
+!!! error TS2368: Type parameter name cannot be 'any'.
+          ~~~
+!!! error TS7006: Parameter 'foo' implicitly has an 'any' type.
+    { foo(); }
+    ~
+!!! error TS1005: '=>' expected.
+    var h = <string>(foo) + 1;
+    

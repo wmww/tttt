@@ -8341,7 +8341,8 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
         // tsc's parseParenthesizedArrowFunctionExpression takes a parameter list followed by `{` as an arrow function
         // missing its `=>` even when the tri-state lookahead was unsure (`(x) { }`)
         // (only where tsc's parseAssignmentExpressionOrHigher looks for arrow functions: not in `extends (B) {}`)
-        if (is_definitely_function || (*p.pos == '{' && *a.start == '(' && !span_valid(lone_arg_name) &&
+        // (after type parameters too: `<T>(x: T) {`)
+        if (is_definitely_function || (*p.pos == '{' && (*a.start == '(' || *a.start == '<') && !span_valid(lone_arg_name) &&
                 !ctx.reject_operators && ctx.min_precedence < ternary_precedence)
         ) {
             expected_token_error(&p, "=>");
