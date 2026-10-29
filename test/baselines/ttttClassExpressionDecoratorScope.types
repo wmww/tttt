@@ -1,0 +1,47 @@
+//// [test/cases/ttttClassExpressionDecoratorScope.ts] ////
+
+=== ttttClassExpressionDecoratorScope.ts ===
+// A class expression's decorators resolve inside it (its type parameters in scope); a class declaration's outside it
+// (tsc's resolveNameHelper moves a declaration's decorator to the class's parent); a member's see the class's. bun 01-C3
+declare function dec(...a: any[]): any;
+>dec : (...a: any[]) => any
+>a : any[]
+
+const c2 = @dec((x: T) => x) class<T> {};
+>c2 : typeof c2
+>@dec((x: T) => x) class<T> {} : typeof c2
+>dec((x: T) => x) : any
+>dec : (...a: any[]) => any
+>(x: T) => x : (x: T) => T
+>x : T
+>x : T
+
+@dec((x: U) => x) class D<U> {}
+>dec((x: U) => x) : any
+>dec : (...a: any[]) => any
+>(x: U) => x : (x: U) => U
+>x : U
+>x : U
+>D : D<U>
+
+class E<V> { @dec((x: V) => x) m() {} }
+>E : E<V>
+>dec((x: V) => x) : any
+>dec : (...a: any[]) => any
+>(x: V) => x : (x: V) => V
+>x : V
+>x : V
+>m : () => void
+
+class F<W> { m(@dec((x: W) => x) p: number) {} }
+>F : F<W>
+>m : (p: number) => void
+>dec((x: W) => x) : any
+>dec : (...a: any[]) => any
+>(x: W) => x : (x: W) => W
+>x : W
+>x : W
+>p : number
+
+export {};
+

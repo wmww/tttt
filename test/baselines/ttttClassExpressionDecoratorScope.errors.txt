@@ -1,0 +1,18 @@
+ttttClassExpressionDecoratorScope.ts(5,10): error TS2304: Cannot find name 'U'.
+ttttClassExpressionDecoratorScope.ts(7,16): error TS1206: Decorators are not valid here.
+
+
+==== ttttClassExpressionDecoratorScope.ts (2 errors) ====
+    // A class expression's decorators resolve inside it (its type parameters in scope); a class declaration's outside it
+    // (tsc's resolveNameHelper moves a declaration's decorator to the class's parent); a member's see the class's. bun 01-C3
+    declare function dec(...a: any[]): any;
+    const c2 = @dec((x: T) => x) class<T> {};
+    @dec((x: U) => x) class D<U> {}
+             ~
+!!! error TS2304: Cannot find name 'U'.
+    class E<V> { @dec((x: V) => x) m() {} }
+    class F<W> { m(@dec((x: W) => x) p: number) {} }
+                   ~
+!!! error TS1206: Decorators are not valid here.
+    export {};
+    

@@ -700,6 +700,28 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
     type_flow_restore(saved_flow);
 }
 
+// The class's decorators: a declaration's are resolved outside the class (tsc's resolveNameHelper moves a class
+// declaration's decorator to the class's parent), a class expression's inside it, where its type parameters are
+// (`@dec((x: T) => x) class<T> {}`): `at` is that scope, `names` the class's own
+static void class_decl_lookup_decorators(ClassDecl* me, Scope* names, Scope* at, ErrorCtx* errs) {
+    if (!vec_expr_size(&my decorators)) return;
+    {
+        ScopePendingMark pending_mark = scope_pending_mark(at->binder);
+        Scope* scope = scope_new(at, SCOPE_BLOCK);
+        scope_rare_mut(scope)->decorator_of = me;
+        // (Not ambient for the class's own `declare`: tsc's parseDeclaration parses the decorators with the modifiers,
+        // before it enters the ambient context, `@dec(() => {}) declare class C {}` has no TS1183)
+        if (names->self == my symbol && names->parent) scope->ambient = names->parent->ambient;
+        // (A class expression can't have legacy decorators: TS1206, and tsc's checkDecorators never looks at them)
+        bool invalid = compiler_options()->experimental_decorators && my is_expression;
+        for_each (i, vec_expr, &my decorators) {
+            expr_lookup_names(i, scope, invalid ? nullptr : errs);
+        }
+        scope_release(scope, pending_mark);
+    }
+
+}
+
 static void class_decl_lookup_names_in_owner(ClassDecl* me, Scope* names, ErrorCtx* errs) {
     // A `declare` field without a type or initializer may take the base class property's type, which needs the class
     // (field_type_from_assignments())
@@ -723,20 +745,7 @@ static void class_decl_lookup_names_in_owner(ClassDecl* me, Scope* names, ErrorC
             report_emit_name_collisions(names, "WeakSet", true);
         }
     }
-    if (vec_expr_size(&my decorators)) {
-        ScopePendingMark pending_mark = scope_pending_mark(names->binder);
-        Scope* scope = scope_new(names, SCOPE_BLOCK);
-        scope_rare_mut(scope)->decorator_of = me;
-        // (Not ambient for the class's own `declare`: tsc's parseDeclaration parses the decorators with the modifiers,
-        // before it enters the ambient context, `@dec(() => {}) declare class C {}` has no TS1183)
-        if (names->self == my symbol && names->parent) scope->ambient = names->parent->ambient;
-        // (A class expression can't have legacy decorators: TS1206, and tsc's checkDecorators never looks at them)
-        bool invalid = compiler_options()->experimental_decorators && my is_expression;
-        for_each (i, vec_expr, &my decorators) {
-            expr_lookup_names(i, scope, invalid ? nullptr : errs);
-        }
-        scope_release(scope, pending_mark);
-    }
+    if (!my is_expression) class_decl_lookup_decorators(me, names, names, errs);
 
     my outer_class = scope_enclosing_class(names);
     unused_register(names, UNUSED_CLASS, me);
@@ -748,7 +757,9 @@ static void class_decl_lookup_names_in_owner(ClassDecl* me, Scope* names, ErrorC
         names = strict_scope = scope_new(names, SCOPE_BLOCK);
         names->strict = names->class_strict = true;
     }
+    Scope* outer_names = strict_scope ? strict_scope->parent : names;
     names = scope_new_generic_merged(names, &my generic, my symbol, me, class_decl_display_name(me), errs);
+    if (my is_expression) class_decl_lookup_decorators(me, outer_names, names, errs);
 
     for_each (i, vec_class_item, &my items) {
         if (i->tag == CLASS_ITEM_CONSTRUCTOR) {

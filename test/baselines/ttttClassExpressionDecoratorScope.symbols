@@ -1,0 +1,46 @@
+//// [test/cases/ttttClassExpressionDecoratorScope.ts] ////
+
+=== ttttClassExpressionDecoratorScope.ts ===
+// A class expression's decorators resolve inside it (its type parameters in scope); a class declaration's outside it
+// (tsc's resolveNameHelper moves a declaration's decorator to the class's parent); a member's see the class's. bun 01-C3
+declare function dec(...a: any[]): any;
+>dec : Symbol(dec, Decl(ttttClassExpressionDecoratorScope.ts, 0, 0))
+>a : Symbol(a, Decl(ttttClassExpressionDecoratorScope.ts, 2, 21))
+
+const c2 = @dec((x: T) => x) class<T> {};
+>c2 : Symbol(c2, Decl(ttttClassExpressionDecoratorScope.ts, 3, 5))
+>dec : Symbol(dec, Decl(ttttClassExpressionDecoratorScope.ts, 0, 0))
+>x : Symbol(x, Decl(ttttClassExpressionDecoratorScope.ts, 3, 17))
+>T : Symbol(T, Decl(ttttClassExpressionDecoratorScope.ts, 3, 35))
+>x : Symbol(x, Decl(ttttClassExpressionDecoratorScope.ts, 3, 17))
+>T : Symbol(T, Decl(ttttClassExpressionDecoratorScope.ts, 3, 35))
+
+@dec((x: U) => x) class D<U> {}
+>dec : Symbol(dec, Decl(ttttClassExpressionDecoratorScope.ts, 0, 0))
+>x : Symbol(x, Decl(ttttClassExpressionDecoratorScope.ts, 4, 6))
+>U : Symbol(U)
+>x : Symbol(x, Decl(ttttClassExpressionDecoratorScope.ts, 4, 6))
+>D : Symbol(D, Decl(ttttClassExpressionDecoratorScope.ts, 3, 41))
+>U : Symbol(U, Decl(ttttClassExpressionDecoratorScope.ts, 4, 26))
+
+class E<V> { @dec((x: V) => x) m() {} }
+>E : Symbol(E, Decl(ttttClassExpressionDecoratorScope.ts, 4, 31))
+>V : Symbol(V, Decl(ttttClassExpressionDecoratorScope.ts, 5, 8))
+>dec : Symbol(dec, Decl(ttttClassExpressionDecoratorScope.ts, 0, 0))
+>x : Symbol(x, Decl(ttttClassExpressionDecoratorScope.ts, 5, 19))
+>V : Symbol(V, Decl(ttttClassExpressionDecoratorScope.ts, 5, 8))
+>x : Symbol(x, Decl(ttttClassExpressionDecoratorScope.ts, 5, 19))
+>m : Symbol(E.m, Decl(ttttClassExpressionDecoratorScope.ts, 5, 12))
+
+class F<W> { m(@dec((x: W) => x) p: number) {} }
+>F : Symbol(F, Decl(ttttClassExpressionDecoratorScope.ts, 5, 39))
+>W : Symbol(W, Decl(ttttClassExpressionDecoratorScope.ts, 6, 8))
+>m : Symbol(F.m, Decl(ttttClassExpressionDecoratorScope.ts, 6, 12))
+>dec : Symbol(dec, Decl(ttttClassExpressionDecoratorScope.ts, 0, 0))
+>x : Symbol(x, Decl(ttttClassExpressionDecoratorScope.ts, 6, 21))
+>W : Symbol(W, Decl(ttttClassExpressionDecoratorScope.ts, 6, 8))
+>x : Symbol(x, Decl(ttttClassExpressionDecoratorScope.ts, 6, 21))
+>p : Symbol(p, Decl(ttttClassExpressionDecoratorScope.ts, 6, 15))
+
+export {};
+
