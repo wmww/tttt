@@ -1003,6 +1003,8 @@ Symbol* binder_require_symbol(Binder* me);
 
 // Whether the scope's own tables (its locals, its container's exports) have the symbol
 bool scope_declares_symbol(Scope const* me, Symbol const* symbol);
+// The same with symbol_name_hash(symbol->name) given: a walk up the scopes hashes the name once
+bool scope_declares_symbol_hashed(Scope const* me, Symbol const* symbol, u64 hash);
 // A type parameter of a class that `me` is in the base class expression of (ScopeRare.base_expression_of)
 bool scope_hides_base_expression_type_parameter(Scope const* me, Symbol const* symbol);
 // Lookup by meaning, seeing through aliases. The symbol found may be an alias, see symbol_declaration()

@@ -5376,8 +5376,9 @@ static bool symbol_has_meaning(Symbol const* me, u32 meaning) {
 
 bool scope_hides_base_expression_type_parameter(Scope const* me, Symbol const* symbol) {
     if (!symbol || !(symbol->flags & SYMBOL_TYPE_PARAMETER)) return false;
+    u64 hash = symbol_name_hash(symbol->name);
     for (Scope const* scope = me; scope; scope = scope->parent) {
-        if (scope_declares_symbol(scope, symbol)) return false;
+        if (scope_declares_symbol_hashed(scope, symbol, hash)) return false;
         // (And a class's computed member name doesn't see the class's type parameters as types either: tsc's
         // resolveNameHelper at a ComputedPropertyName returns nothing for them, so `[O]` is TS2304, not TS2693)
         Generic const* generics[2] = { scope_rare(scope)->base_expression_of, scope_rare(scope)->computed_name_of };
@@ -5392,7 +5393,10 @@ bool scope_hides_base_expression_type_parameter(Scope const* me, Symbol const* s
 }
 
 bool scope_declares_symbol(Scope const* me, Symbol const* symbol) {
-    u64 hash = symbol_name_hash(symbol->name);
+    return scope_declares_symbol_hashed(me, symbol, symbol_name_hash(symbol->name));
+}
+
+bool scope_declares_symbol_hashed(Scope const* me, Symbol const* symbol, u64 hash) {
     SymbolTable const* table = my kind == SCOPE_GLOBAL ? &my binder->globals : scope_locals(me);
     if ((table->count || table->parent) && symbol_table_lookup(table, symbol->name, hash) == symbol) return true;
     return my container && my container->exports && symbol_table_lookup(my container->exports, symbol->name, hash) == symbol;
@@ -6181,8 +6185,9 @@ ClassItem const* scope_invalid_initializer_field(Scope const* me, csview name, S
     while (with_locals && !scope_rare(with_locals)->constructor_local_count) with_locals = with_locals->parent;
     if (!with_locals) return nullptr;
     ClassItem const* ret = nullptr;
+    u64 hash = found ? symbol_name_hash(found->name) : 0;
     for (Scope const* scope = me; scope; scope = scope->parent) {
-        if (found && scope_declares_symbol(scope, found)) break;
+        if (found && scope_declares_symbol_hashed(scope, found, hash)) break;
         // (tsc keeps the outermost one when fields are nested in class expressions)
         for (u32 i = 0; i < scope_rare(scope)->constructor_local_count; i++) {
             if (csview_equals_sv(span_sv(scope_rare(scope)->constructor_locals[i]), name)) {

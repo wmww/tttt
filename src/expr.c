@@ -295,7 +295,8 @@ __attribute__((always_inline)) static inline void check_symbol_declared_before_u
     } else {
         // Used first: fine if the use is deferred until after the declaration ran
         bool through_computed_name = false;
-        for (Scope const* i = names; i && !scope_declares_symbol(i, symbol); i = i->parent) {
+        u64 hash = symbol_name_hash(symbol->name);
+        for (Scope const* i = names; i && !scope_declares_symbol_hashed(i, symbol, hash); i = i->parent) {
             // (Not an immediately invoked one, async or not, which runs right there: tsc 6.0)
             if (i->kind == SCOPE_FUNCTION && !(i->function && i->function->is_iife)) return;
             // A computed member name runs with the class, the members don't. Neither do their decorators (and their
@@ -1488,7 +1489,8 @@ static void identifier_mark_assigned(IdentifierExpr const* me, Scope const* name
     Symbol* symbol = (Symbol*)my target; // Local: this file's walk owns it
     if (!symbol || !symbol->is_local || !(symbol->flags & SYMBOL_VARIABLE)) return;
     if (scope_flow(names)->unmarked_assignments) return;
-    for (Scope const* i = names; i && !scope_declares_symbol(i, symbol); i = i->parent) {
+    u64 hash = symbol_name_hash(symbol->name);
+    for (Scope const* i = names; i && !scope_declares_symbol_hashed(i, symbol, hash); i = i->parent) {
         if (i->kind == SCOPE_ENUM) return;
     }
     symbol->is_assigned = true;

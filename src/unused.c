@@ -69,8 +69,9 @@ void unused_mark_referenced(Scope const* scope, Symbol* found, u32 meaning) {
     if ((__atomic_load_n(&found->referenced, __ATOMIC_RELAXED) & meaning) == meaning) return;
     // tsc's lastSelfReferenceLocation: the outermost declaration the use is in, below the scope that has the symbol
     Symbol const* self = nullptr;
+    u64 hash = symbol_name_hash(found->name);
     for (Scope const* i = scope; i; i = i->parent) {
-        if (scope_declares_symbol(i, found)) break;
+        if (scope_declares_symbol_hashed(i, found, hash)) break;
         if (i->self) self = i->self;
     }
     // (Atomic: files are resolved on several threads, and a global is anyone's, plan 45)
