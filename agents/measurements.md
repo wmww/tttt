@@ -3,6 +3,18 @@ The latest of each kind of measurement. **Replace a section when re-measuring** 
 append history, git has it. Older sections (oracle tallies, stage logs, superseded perf tables) were
 condensed on 2026-10-20 into "Past conclusions" below; the full log is `git show a9c5e07da:agents/measurements.md`.
 
+## The root census: share on second touch, modeled (2026-10-29, 663af2717 + 7f519a118, this box, --threads 1)
+`nice -n 10 scripts/sharedgraph/rootcensus.py run --rounds 3` (sgcheck's 58; vscode `--rounds 2 --mem-gb 40`), then
+`rootcensus.py report`. Medians, default K (8; vscode 16, tsc 4; the three K1-rerun projects left out):
+- Hubs (42): plain check CPU K/K1 2.25, flag/plain 0.736, tau (flag K / plain K1) 1.55. Routed/plain, inner rule:
+  static 0.717, dynamic 0.845. Routed against the better of plain and the flag: 0.969 / 1.104.
+- Corpora (13): plain K/K1 1.25, flag/plain 1.061, tau 1.31; hot share 0.58 static, 0.42 dynamic. Routed/plain
+  0.998 / 1.011, against the better mode 1.004 / 1.028.
+- K8 round robin: hubs flag 0.658, dynamic routed 0.780 (1.113 of the better mode); corpora flag 1.021, dynamic
+  routed 0.973 (1.008).
+
+The method, the table and the verdict (don't build) are in agents/notes/threading.md "The census".
+
 ## Machine and caveats
 AMD EPYC-Turin, 16 vCPUs = 8 cores x 2 SMT threads (KVM, shared with other agents: load often 10-40), 60 GB
 (4 vCPUs and 31 GB until about 2026-10-20: older sections say which); Ubuntu 26.04, GCC 15.2, node 22.22. The oracle (tsc)
