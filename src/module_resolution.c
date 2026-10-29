@@ -810,9 +810,15 @@ static JsonValue const* version_paths_of(PackageJson const* package) {
 // ---- `paths` and friends ----
 
 // Whether name matches "prefix*suffix" (or the pattern exactly); the text the star stands for
+static bool pattern_matches_at(csview pattern, isize at, csview name, csview* star, isize* prefix_len);
 static bool pattern_matches(csview pattern, csview name, csview* star, isize* prefix_len) {
     isize at = csview_find_sv(pattern, c_sv("*"));
-    if (at == c_NPOS) {
+    return pattern_matches_at(pattern, at == c_NPOS ? -1 : at, name, star, prefix_len);
+}
+
+// With the pattern's first `*` at `at` (-1: none)
+static bool pattern_matches_at(csview pattern, isize at, csview name, csview* star, isize* prefix_len) {
+    if (at < 0) {
         *star = c_sv("");
         *prefix_len = INTPTR_MAX; // An exact match beats any pattern
         return csview_equals_sv(pattern, name);
@@ -890,7 +896,9 @@ static Search load_using_paths_option(State* me, csview name, int extensions, Lo
     for (isize i = 0; i < options->path_count; i++) {
         csview star;
         isize prefix_len;
-        if (pattern_matches(cstr_sv(&options->paths[i].pattern), name, &star, &prefix_len) && prefix_len > best_prefix) {
+        if (pattern_matches_at(cstr_sv(&options->paths[i].pattern), options->paths[i].star, name, &star, &prefix_len) &&
+            prefix_len > best_prefix
+        ) {
             best = &options->paths[i];
             best_star = star;
             best_prefix = prefix_len;

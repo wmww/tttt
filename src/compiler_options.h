@@ -155,6 +155,7 @@ void str_list_drop(StrList* me);
 // One entry of `paths`: "@app/*": ["src/*", "generated/*"]
 typedef struct PathMapping {
     cstr pattern;
+    isize star; // Where pattern's first `*` is, -1 without one (every resolution of a bare name scans every pattern)
     StrList substitutions;
 } PathMapping;
 

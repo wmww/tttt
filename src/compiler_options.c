@@ -189,7 +189,9 @@ void compiler_options_add_path(CompilerOptions* me, csview pattern, StrList subs
         }
     }
     my paths = realloc(my paths, sizeof(PathMapping) * (size_t)(my path_count + 1));
-    my paths[my path_count++] = (PathMapping){ .pattern = cstr_from_sv(pattern), .substitutions = substitutions };
+    char const* star = memchr(pattern.buf, '*', (size_t)pattern.size);
+    my paths[my path_count++] = (PathMapping){ .pattern = cstr_from_sv(pattern), .star = star ? star - pattern.buf : -1,
+        .substitutions = substitutions };
 }
 
 CompilerOptionSetResult compiler_options_set(CompilerOptions* me, csview name, csview value) {
