@@ -2731,6 +2731,8 @@ static bool parse_modifier_list_ex(Parser* parent, bool is_member, bool permit_c
                     if (!is_member) {
                         goto loop_end;
                     }
+                    // (Not `export *`: tsc's canFollowExportModifier)
+                    if (*p.pos == '*' && span_equals(mod.span, "export")) goto loop_end;
                     break;
 
                 case '@': // `export @decorator class`
@@ -2747,6 +2749,9 @@ static bool parse_modifier_list_ex(Parser* parent, bool is_member, bool permit_c
 
                 case '{': // `constructor(public { x })`, `export {}`; `static {` is a static block
                     if (is_member && span_equals(mod.span, "static") && !p.shared->modifiers_in_type) goto loop_end;
+                    // (A member's `export {` is a name and a brace: tsc's canFollowExportModifier takes no `{`, the
+                    // export declaration a statement starts with is parsed before modifiers are)
+                    if (is_member && span_equals(mod.span, "export")) goto loop_end;
                     break;
 
                 case '(':

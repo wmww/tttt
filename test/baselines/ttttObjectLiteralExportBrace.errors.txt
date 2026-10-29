@@ -1,0 +1,38 @@
+ttttObjectLiteralExportBrace.ts(8,1): error TS2353: Object literal may only specify known properties, and 'const' does not exist in type '{ a?: number | undefined; }'.
+ttttObjectLiteralExportBrace.ts(8,7): error TS1005: ':' expected.
+ttttObjectLiteralExportBrace.ts(8,7): error TS2304: Cannot find name 'b'.
+ttttObjectLiteralExportBrace.ts(10,3): error TS1005: ',' expected.
+ttttObjectLiteralExportBrace.ts(12,8): error TS1005: ':' expected.
+ttttObjectLiteralExportBrace.ts(12,10): error TS1005: ',' expected.
+ttttObjectLiteralExportBrace.ts(13,1): error TS1005: '}' expected.
+
+
+==== ttttObjectLiteralExportBrace.ts (7 errors) ====
+    // In a member list `export {` is a name and a brace, not a modifier (tsc's canFollowExportModifier takes no `{` or
+    // `*`): an object literal left open before `export {};` reads `export` as a property, ':' expected (seed 20261114,
+    // thislessFunctionsNotContextSensitive3 delete-stmt)
+    declare function f(x: { a?: number }): void;
+    f({
+      a: 1,
+    
+    const b = f({
+    ~~~~~
+!!! error TS2353: Object literal may only specify known properties, and 'const' does not exist in type '{ a?: number | undefined; }'.
+          ~
+!!! error TS1005: ':' expected.
+          ~
+!!! error TS2304: Cannot find name 'b'.
+      a: 2,
+    });
+      ~
+!!! error TS1005: ',' expected.
+    
+    export {};
+           ~
+!!! error TS1005: ':' expected.
+             ~
+!!! error TS1005: ',' expected.
+    
+    
+!!! error TS1005: '}' expected.
+!!! related TS1007 ttttObjectLiteralExportBrace.ts:5:3: The parser expected to find a '}' to match the '{' token here.

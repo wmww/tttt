@@ -1,0 +1,38 @@
+//// [test/cases/ttttObjectLiteralExportBrace.ts] ////
+
+=== ttttObjectLiteralExportBrace.ts ===
+// In a member list `export {` is a name and a brace, not a modifier (tsc's canFollowExportModifier takes no `{` or
+// `*`): an object literal left open before `export {};` reads `export` as a property, ':' expected (seed 20261114,
+// thislessFunctionsNotContextSensitive3 delete-stmt)
+declare function f(x: { a?: number }): void;
+>f : (x: { a?: number; }) => void
+>x : { a?: number; }
+>a : number | undefined
+
+f({
+>f({  a: 1,const b = f({  a: 2,});export {}; : void
+>f : (x: { a?: number; }) => void
+>{  a: 1,const b = f({  a: 2,});export {}; : { a: number; const: void; export: {}; }
+
+  a: 1,
+>a : number
+>1 : 1
+
+const b = f({
+>const : void
+>b = f({  a: 2,}) : void
+>b : any
+>f({  a: 2,}) : void
+>f : (x: { a?: number; }) => void
+>{  a: 2,} : { a: number; }
+
+  a: 2,
+>a : number
+>2 : 2
+
+});
+
+export {};
+>export : {}
+>{} : {}
+
