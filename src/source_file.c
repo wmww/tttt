@@ -756,18 +756,20 @@ static struct {
     u32 live;
 } texts = { .lock = PTHREAD_MUTEX_INITIALIZER };
 
-// Small files are read() into packed read-write chunks instead, each thread its own: a mapping each would be a syscall
-// taking the mm lock for writing (while other threads fault pages) and a page of memory for ~1.4 KB of text (nest: 2230
-// of its 2309 files are under 16 KB, 44% of the bytes; vscode: 8.7k of 12.8k mmaps). Their pages stay (a copy can't be
-// dropped and read back, source_texts_release()), which the packing pays for. TTTT_TEXT_READ_BELOW=N: the size limit
-// (default 16 KB, 0: every file mapped)
+// Files are read() into packed read-write chunks rather than mapped: a mapping each was a syscall taking the mm lock for
+// writing, which waits for every other thread's page faults and populates and makes the ones after it wait (the load
+// pool's threads were blocked in source_text_map()'s mmap() for ~25% of their parse time on vscode and openclaw at 16
+// threads, when only files under 16 KB were read: load+parse files -18% / -11% read), and a page of memory for ~1.4 KB of
+// text (nest: 2230 of its 2309 files are under 16 KB). Their pages stay (a copy can't be dropped and read back,
+// source_texts_release(): only a recycle released them; peak RSS within noise on nest, nitro, faker, vscode and
+// openclaw). TTTT_TEXT_READ_BELOW=N: map files of N bytes or more (0: every file)
 #define TEXT_READ_CHUNK ((size_t)256 << 10)
 static size_t text_read_below(void) {
     static _Atomic i64 below = -1;
     i64 ret = atomic_load_explicit(&below, memory_order_relaxed);
     if (ret < 0) {
         char const* env = getenv("TTTT_TEXT_READ_BELOW");
-        ret = env ? (i64)strtoull(env, nullptr, 0) : 16 * 1024;
+        ret = env ? (i64)strtoull(env, nullptr, 0) : INT64_MAX;
         atomic_store_explicit(&below, ret, memory_order_relaxed);
     }
     return (size_t)ret;
@@ -828,20 +830,51 @@ static void text_sigbus_install(void) {
     sigaction(SIGBUS, &action, nullptr);
 }
 
+// Where read chunks come from: reserved segments carved under a lock, so that taking one is no mmap() (which takes the
+// mm lock for writing, waiting for every other thread's faults and populates: vscode took 422 chunks)
+static struct {
+    pthread_mutex_t lock;
+    char* pos;
+    char* end;
+} text_reads = { .lock = PTHREAD_MUTEX_INITIALIZER };
+
+// bytes (page-rounded) of reserved read-write memory, populated; null if there's no address space left
+static char* text_read_take(size_t bytes) {
+    pthread_mutex_lock(&text_reads.lock);
+    if ((size_t)(text_reads.end - text_reads.pos) < bytes) {
+        size_t reserve = bytes > TEXT_SEGMENT ? bytes : TEXT_SEGMENT;
+        // (The rest of the previous segment is lost)
+        void* base = mmap(nullptr, reserve, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+        if (base == MAP_FAILED) {
+            pthread_mutex_unlock(&text_reads.lock);
+            return nullptr;
+        }
+        vma_name(base, reserve, "text");
+        text_reads.pos = base;
+        text_reads.end = (char*)base + reserve;
+    }
+    char* ret = text_reads.pos;
+    text_reads.pos += bytes;
+    pthread_mutex_unlock(&text_reads.lock);
+    // (Populated: a read() faulting on its pages one at a time made the load phase 20-40% slower on vscode, with the
+    // other threads' mmap()s of big files then)
+    madvise(ret, bytes, MADV_POPULATE_WRITE);
+    return ret;
+}
+
 // The calling thread's read chunk (each thread packs its own: threads writing into the same pages would fault on them
 // together)
 static thread_local char* text_read_at;
 static thread_local size_t text_read_left;
 
-// size + 1 bytes (the last one zero, a terminator) of the thread's read chunk
+// size + 1 bytes (the last one zero, a terminator) of the thread's read chunk, or of their own for a file of more than a
+// quarter of a chunk (which bounds a chunk's unused end)
 static char* text_read_slot(size_t size) {
     size_t need = (size + 1 + 7) & ~(size_t)7;
+    if (need > TEXT_READ_CHUNK / 4) return text_read_take(text_page_round(need));
     if (text_read_left < need) {
-        // (Populated: a read() faulting on its pages waits for the mm lock behind the other threads' mmap()s of the
-        // big files, which made the load phase 20-40% slower on vscode)
-        void* chunk = mmap(nullptr, TEXT_READ_CHUNK, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_POPULATE, -1, 0);
-        if (chunk == MAP_FAILED) return nullptr;
-        vma_name(chunk, TEXT_READ_CHUNK, "text");
+        char* chunk = text_read_take(TEXT_READ_CHUNK);
+        if (!chunk) return nullptr;
         text_read_at = chunk;
         text_read_left = TEXT_READ_CHUNK;
     }

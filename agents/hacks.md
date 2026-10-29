@@ -26,7 +26,8 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   size-checked debug build (a header word per block). Oracle: the suite under a build that poisons and verifies.
   Also: dropped arenas' addresses are never reused (virtual space grows by every AST a process ever parsed: the test
   harness, `-b`), `ast_owns()` assumes 47-bit user addresses, and free blocks left when a file ends are lost (3%).
-- `source_text_map()` (source_file.c): source text is a MAP_PRIVATE mapping of the file wrapped in a hand-built long
+- `source_text_map()` (source_file.c): source text is read into packed per-thread chunks (by default; a MAP_PRIVATE mapping
+  of the file under `TTTT_TEXT_READ_BELOW`, the rest of this entry is about that mode) wrapped in a hand-built long
   `cstr` (STC's private layout: `cstr_l_set_cap`), and `source_texts_release()` drops its pages at every recycle. A
   file changed by another process mid-run is read changed, a truncated one reads as ending there (`text_sigbus()` maps
   zeros over the faulting page and warns once); only tttt's own declaration writes are guarded (`source_text_detach()`, a linear scan of every mapping per
