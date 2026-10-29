@@ -915,6 +915,7 @@ static isize glob_literal_prefix(csview pattern) {
 }
 
 static bool glob_matches_rest(csview pattern, csview path, bool prefix);
+static bool glob_matches_any_depth(csview pattern, csview path);
 
 // Whether the absolute path matches the absolute pattern. With prefix, matching a leading part of the path is enough
 // (an excluded directory excludes what is in it)
@@ -928,11 +929,34 @@ static bool glob_matches(csview pattern, csview path, bool prefix) {
         isize common = path.size < literal ? path.size : literal;
         if (memcmp(pattern.buf, path.buf, (size_t)common)) return false;
         if (path.size >= literal) {
-            return glob_matches_rest(csview_from_n(pattern.buf + literal, pattern.size - literal),
-                csview_from_n(path.buf + literal, path.size - literal), prefix);
+            pattern = csview_from_n(pattern.buf + literal, pattern.size - literal);
+            path = csview_from_n(path.buf + literal, path.size - literal);
+            return prefix ? glob_matches_rest(pattern, path, prefix) : glob_matches_any_depth(pattern, path);
         }
     }
     return glob_matches_rest(pattern, path, prefix);
+}
+
+// glob_matches_rest() without prefix, in one pass for the usual `**/*.ts`: `**` then one last segment. `**` takes
+// any directories but package and hidden ones, so the path's directories are checked once and its file name against
+// the segment (the recursion tried the segment at every depth, where only the last one can end the match)
+static bool glob_matches_any_depth(csview pattern, csview path) {
+    if (pattern.size < 4 || memcmp(pattern.buf, "**/", 3) || memchr(pattern.buf + 3, '/', (size_t)pattern.size - 3) ||
+        (pattern.size == 5 && pattern.buf[3] == '*' && pattern.buf[4] == '*') || !path.size
+    ) {
+        return glob_matches_rest(pattern, path, false);
+    }
+    csview segment = csview_from_n(pattern.buf + 3, pattern.size - 3);
+    csview rest = path;
+    for (;;) {
+        csview name = next_segment(&rest);
+        if (!rest.size) {
+            // The file name
+            if (segment_is_wild(segment) && name.size && name.buf[0] == '.' && segment.buf[0] != '.') return false;
+            return segment_matches(segment, name);
+        }
+        if (is_implicitly_excluded(name) || (name.size && name.buf[0] == '.')) return false;
+    }
 }
 
 static bool glob_matches_rest(csview pattern, csview path, bool prefix) {
