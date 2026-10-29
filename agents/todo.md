@@ -40,12 +40,19 @@ than bun canary on real projects, judged on their private set (perf work needs a
 check, not the bench, and no machine-specific tuning: vision.md "Decisions"); memory where cheap; easy, measured
 wins first; land fast and gate in batches.
 
-## Now (2026-10-30 evening): correctness on two workers; the threading plan awaits the human's go
-- **Threading** (notes/threading.md): the human has the four options and the recommendation (share-on-second-touch at
-  declaration granularity, measured first). When they say go: a one-day census worker (no src changes) computing per
-  project the share of each checker's types/instructions rooted at declarations reached by >= 2 checkers and the
-  premium if only those were shared (hub's hubtrace + TTTT_DUP_CENSUS), then a prototype inside graph.c/overlay.c
-  gated by sgcheck/TSan/GRAPH_CHECKS and sgbench on the 58.
+## Now (2026-10-29 box time, 2026-10-31 wall): the threading census is running; correctness on the second worker
+- **Threading** (notes/threading.md): the human gave the go for the plan's step 1 on 2026-10-29. Worker `census`
+  (/tmp/wt-census) measures per project the share of each checker's types and instructions rooted at declarations
+  reached by >= 2 checkers, and the modeled premium if only those were shared (plain, flag, routed), over sgcheck's 58
+  and the corpora; verdict by the plan's rule (hubs high, corpora low: build the share-on-second-touch prototype inside
+  graph.c/overlay.c, gated by sgcheck/TSan/GRAPH_CHECKS and sgbench; corpora also hot: the idea dies). Results go into
+  threading.md "The census".
+- **Two regressions found by the batch9 oracle run** (worker `reg`): openclaw's spurious TS2352 (0d3156599 uncovered a
+  missing comparable path: mapped source vs type-parameter target, Maybe) and opencode's spurious TS2367 (528301bb9:
+  a parenthesized `&&` on the right of `||` stays in tsc's TypeOnly mode). Fixes, not reverts.
+- **Instruction drift** since the last save (8b1777931, 103 commits): tanstack-router +3.2%, type-fest/valibot/xstate
+  +2.1%, vue +1.7%, vscode +0.5%; zod/drizzle (the gated pair) +0.4/+0.1. An attribution agent is bisecting type-fest
+  and tanstack-router; add type-fest to quickgate's instrcount pair when it reports.
 - **Correctness** (cor5: type_core/missing_checks probes, the 99-V4 leftovers; bun7: mutation-testing findings, then
   flagflip's cells and the own failing tests): continuous. The vscode regression since v1 is recovered except the
   huge pages, removed for good (vision.md).
