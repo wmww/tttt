@@ -913,3 +913,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   --shared-graph whether it is known can be history. Correct: a structural fact for it (the literal's/function's
   inferred return type made part of its key, or decided without the peek). Shown by: a `-DTTTT_GRAPH_CHECKS` build's
   "read the return type of" report (openscience/backend/cli only, output unaffected).
+- `identifier_type_span()` (several_types.c, type_args_end()): a type reference's span (TS2314, TS2315's) ends at a
+  `>` found by scanning the text after its last type argument (the reference keeps no end of its own); bounded by
+  trivia since cf255362f, but a `>` inside a comment there would still be taken. Correct: the parser records the
+  reference's end (its `>` or last token).

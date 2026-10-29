@@ -617,7 +617,8 @@ Not fixed:
   and so drops it (the baseline's TS-1 "Pre-emit (9) and post-emit (8) diagnostic counts do not match" names the
   TS2842 as the excess). The CLI shows neither (syntax errors stop it). [tsgo]
 - inferenceErasedSignatures extends-object (`set<K extends Object this>`), awaitedTypeJQuery delete-stmt: spans of a
-  method or type argument list broken by recovery end after trivia (TS7010, TS2314). [open]
+  method or type argument list broken by recovery end after trivia (TS7010, TS2314). Test
+  ttttRecoveryTrailingTriviaSpans. [fixed cf255362f]
 - recursiveTypesWithTypeof swap-stmts (text TS2403), distributiveConditionalTypeConstraints ann-string-number
   (elaboration TS2322): not looked at. [text]
 
@@ -643,7 +644,9 @@ Known: recursiveClassBaseType (TS2310), unionTypeWithIndexSignature (text TS2322
 Not fixed:
 - infiniteConstraints drop-prop: '(' expected at `>>;` spans one character in tsgo (its scanner reads `>` alone); tttt's
   span_from_token takes `>>`. A one-character `>` broke bun43-X5d, where the expression parse rescanned `>>=`; needs a
-  type-context flag in the parser. [open]
+  type-context flag in the parser. Done without the flag: ParserShared.greater_rescanned records where an expression's
+  binary operator was looked for at a `>`, every other `>` is one character. Test ttttRecoveryTrailingTriviaSpans.
+  [fixed cf255362f]
 - contextualTyping null-arg: `[function(null, s) { return s; }]` in a type assertion: after TS1359 and TS1138 tsgo's
   recovery reports TS2304/TS1005 for the rest of the line, tttt's swallows it. [open]
 - allowUnescapedParagraphAndLineSeparatorsInStringLiteral delete-stmt: the errors baseline's squiggles after a U+2028
