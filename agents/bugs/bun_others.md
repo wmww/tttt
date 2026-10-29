@@ -77,7 +77,8 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
 - `this` in a decorator's arrow function of a nested class (`(z: this) => z.x`), 33-C4d: tsc's `this` there is the
   outer class's; tttt's is the inner class (spurious TS2339). [open]
 - Bigint literal property names in destructuring assignments, 53-L04 and 57-L03: tsc reports TS1539 and TS2538 and
-  reads nothing, tttt reads the property `1` (spurious TS2339, missing TS2538; TS1539 is corF's). [open]
+  reads nothing, tttt reads the property `1` (spurious TS2339, missing TS2538; TS1539 is corF's). The key is "1n" (tsgo's
+  getLiteralTypeFromPropertyName), TS2538 only where it's missing; TS1539 when the target is checked; 87-R08 too. [fixed 01be1e916]
 - Accessors with a `this` parameter, 58-L01 (`get x(this)`, `set x(this, v)`): tsc's `this` in such an accessor body
   is any (no TS2339, no TS7006 for an implicit `this`); tttt types it as the class. [open]
 - Private names: `o.#a` on a type literal `{ #a: number }` (30-C9b, TS18016 then nothing in tsc): tttt reports

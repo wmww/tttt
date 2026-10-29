@@ -130,7 +130,7 @@ last line. The real cause is then elsewhere, and the entry says where. Show a ca
 - 42-C9: `" 1"` against `${bigint}`. tsc's isValidBigIntString accepts the leading U+2028 as white space.
   TS2322 spurious. [open]
 - 53-L04: a bigint literal property name (`{ 1n: s } = o`) in a destructuring assignment. tsc looks up the property
-  "1n" and checks it, tttt reports TS2339 for '1'. TS2322 missing. [open]
+  "1n" and checks it, tttt reports TS2339 for '1'. TS2322 missing. [fixed 01be1e916]
 - 57-L13a: a user `interface Iterable<T> {}` with lib es5. tsc's JSX children elaboration (TS2746, TS2745) still
   works, tttt's differs from the second element on. TS2322 missing and spurious. [open]
 - 60-L19a and 60-L19b: a class's static `prototype` declared as an accessor, or private, protected or readonly.
