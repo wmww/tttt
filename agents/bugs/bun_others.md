@@ -264,7 +264,13 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
 - -TS2345 in an immediately invoked function with a `this` parameter, 25-P2 (`(function f(this: any, a) {})(1)`): tsc's
   getContextuallyTypedParameterType takes the argument at func.parameters.indexOf(parameter), `this` counted, so a
   gets none (`a?: undefined`) and the argument 1 fails. assign_iife_parameter_types() skipped `this` in the count.
-  Test ttttIifeThisParameterIndex [fixed NEXT].
+  Test ttttIifeThisParameterIndex [fixed 6c885b4ee].
+- +TS7006 in the attributes of a JSX tag typed any, 27-C5 (`<A cb={x => x.toFixed()} />`, IntrinsicAttributes with
+  `cb?: (x: number) => void`): tsc's resolveUntypedCall checks the attributes while the element's signature is
+  resolving, so getContextualTypeForArgumentAtIndex gets getEffectiveFirstArgumentForJsxSignature of
+  resolvingSignature: IntrinsicAttributes & LibraryManagedAttributes<tag, unknown>. tttt checked them without a
+  contextual type. ty_resolve_jsx_element() now checks them with ty_jsx_untyped_props(). Test
+  ttttJsxAnyTagAttributesContext [fixed NEXT].
 - -TS2448: two mechanisms, the JSX factory (`React`, `Frag`) declared after the element that uses it (tsc resolves
   the factory at the element as a use: 01-C2b, 15-C3b, 27-C3a, 27-P7, 34-C2b) and `const arguments = 1` in a
   function body (tsc's reference to the implicit `arguments`: 25-C17c, 33-P4g, 51-L01, 51-L05, 77-R12b). The JSX

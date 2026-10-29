@@ -1,0 +1,33 @@
+//// [test/cases/ttttJsxAnyTagAttributesContext.tsx] ////
+
+=== ttttJsxAnyTagAttributesContext.tsx ===
+// The attributes of a tag typed any are contextually typed by IntrinsicAttributes (bun case 27-C5: tsc's
+// resolveUntypedCall checks them while the signature is resolving, getJsxPropsTypeFromCallSignature of it)
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicAttributes { cb?: (x: number) => void } interface IntrinsicElements {} }
+>JSX : Symbol(JSX, Decl(ttttJsxAnyTagAttributesContext.tsx, 0, 0))
+>Element : Symbol(Element, Decl(ttttJsxAnyTagAttributesContext.tsx, 2, 23))
+>e : Symbol(Element.e, Decl(ttttJsxAnyTagAttributesContext.tsx, 2, 43))
+>IntrinsicAttributes : Symbol(IntrinsicAttributes, Decl(ttttJsxAnyTagAttributesContext.tsx, 2, 50))
+>cb : Symbol(IntrinsicAttributes.cb, Decl(ttttJsxAnyTagAttributesContext.tsx, 2, 82))
+>x : Symbol(x, Decl(ttttJsxAnyTagAttributesContext.tsx, 2, 89))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(ttttJsxAnyTagAttributesContext.tsx, 2, 109))
+
+declare const A: any;
+>A : Symbol(A, Decl(ttttJsxAnyTagAttributesContext.tsx, 3, 13))
+
+const a = <A cb={x => x.toFixed()} />;
+>a : Symbol(a, Decl(ttttJsxAnyTagAttributesContext.tsx, 4, 5))
+>A : Symbol(A, Decl(ttttJsxAnyTagAttributesContext.tsx, 3, 13))
+>cb : Symbol(cb, Decl(ttttJsxAnyTagAttributesContext.tsx, 4, 12))
+>x : Symbol(x, Decl(ttttJsxAnyTagAttributesContext.tsx, 4, 17))
+>x.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttJsxAnyTagAttributesContext.tsx, 4, 17))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+
+const b = <A other={y => y} />;
+>b : Symbol(b, Decl(ttttJsxAnyTagAttributesContext.tsx, 5, 5))
+>A : Symbol(A, Decl(ttttJsxAnyTagAttributesContext.tsx, 3, 13))
+>other : Symbol(other, Decl(ttttJsxAnyTagAttributesContext.tsx, 5, 12))
+>y : Symbol(y, Decl(ttttJsxAnyTagAttributesContext.tsx, 5, 20))
+>y : Symbol(y, Decl(ttttJsxAnyTagAttributesContext.tsx, 5, 20))
+

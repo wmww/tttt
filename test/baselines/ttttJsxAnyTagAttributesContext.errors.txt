@@ -1,0 +1,13 @@
+ttttJsxAnyTagAttributesContext.tsx(6,21): error TS7006: Parameter 'y' implicitly has an 'any' type.
+
+
+==== ttttJsxAnyTagAttributesContext.tsx (1 errors) ====
+    // The attributes of a tag typed any are contextually typed by IntrinsicAttributes (bun case 27-C5: tsc's
+    // resolveUntypedCall checks them while the signature is resolving, getJsxPropsTypeFromCallSignature of it)
+    declare namespace JSX { interface Element { e: 1 } interface IntrinsicAttributes { cb?: (x: number) => void } interface IntrinsicElements {} }
+    declare const A: any;
+    const a = <A cb={x => x.toFixed()} />;
+    const b = <A other={y => y} />;
+                        ~
+!!! error TS7006: Parameter 'y' implicitly has an 'any' type.
+    

@@ -3561,7 +3561,12 @@ JsxResolution ty_resolve_jsx_element(Checker* me, JsxElement const* element, Err
     if (!tag_type) return ret;
     Ty const* apparent = jsx_apparent_type(me, tag_type);
     Span at = element->fragment ? element->opening_span : element->tag_name.inner_span;
-    if ((tag_type->flags & TYF_ANY) || (apparent->flags & TYF_ANY) || (tag_type->flags & TYF_STRING)) return ret;
+    if ((tag_type->flags & TYF_ANY) || (apparent->flags & TYF_ANY)) {
+        // (The attributes are checked with the untyped tag's contextual type: ty_jsx_untyped_props())
+        if (!element->fragment) (void)ty_check_expr(me, &element->attributes, ty_jsx_untyped_props(me, element));
+        return ret;
+    }
+    if (tag_type->flags & TYF_STRING) return ret;
     Signature* const* signatures = nullptr;
     u32 count = 0;
     if (apparent->kind == TY_UNION) {

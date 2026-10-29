@@ -163,6 +163,15 @@ static Ty const* managed_attributes(Checker* me, JsxElement const* element, Ty c
     return ret ? ret : props;
 }
 
+// The attributes' contextual type of a tag typed any: tsc's resolveUntypedCall checks them while the element's
+// signature is resolving, getEffectiveFirstArgumentForJsxSignature of that resolvingSignature (no parameters, a Mixed
+// reference): IntrinsicAttributes & LibraryManagedAttributes<tag, unknown>. `<A cb={x => x.toFixed()} />` with A any
+// and IntrinsicAttributes' `cb?: (x: number) => void` types x as number
+Ty const* ty_jsx_untyped_props(Checker* me, JsxElement const* element) {
+    Ty const* intrinsic_attributes = ty_jsx_type(me, element, c_sv("IntrinsicAttributes"));
+    return intersect(me, intrinsic_attributes, managed_attributes(me, element, ty_intrinsic(me, TY_UNKNOWN_)));
+}
+
 // tsc's getEffectiveFirstArgumentForJsxSignature: what the attributes are checked against for a signature of the tag.
 // A function component's props are its first parameter, a class component's the property of its instance type that
 // JSX.ElementAttributesProperty names (else its constructor's first parameter), with IntrinsicClassAttributes

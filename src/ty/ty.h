@@ -2758,6 +2758,7 @@ int ty_js_assignment_implicit_any(Checker* me, Symbol const* member, Expr const*
 bool ty_is_empty_array_literal_type(Checker* me, Ty const* type); // lower.c
 bool ty_jsx_skips_head(Checker* me, Ty const* source, Ty const* target);
 bool ty_jsx_tag_arity_fits(Checker* me, struct JsxElement const* element, Ty const* tag_type, ErrorCtx* errs);
+Ty const* ty_jsx_untyped_props(Checker* me, struct JsxElement const* element); // jsx.c
 Ty const* ty_jsx_signature_props(Checker* me, struct JsxElement const* element, Signature const* sig, TyMapper const* mapper, bool class_component);
 typedef struct JsxResolution {
     Signature const* sig; // What the element resolved to, null if the tag isn't typed or nothing fit

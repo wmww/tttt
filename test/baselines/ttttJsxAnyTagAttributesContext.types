@@ -1,0 +1,34 @@
+//// [test/cases/ttttJsxAnyTagAttributesContext.tsx] ////
+
+=== ttttJsxAnyTagAttributesContext.tsx ===
+// The attributes of a tag typed any are contextually typed by IntrinsicAttributes (bun case 27-C5: tsc's
+// resolveUntypedCall checks them while the signature is resolving, getJsxPropsTypeFromCallSignature of it)
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicAttributes { cb?: (x: number) => void } interface IntrinsicElements {} }
+>e : 1
+>cb : ((x: number) => void) | undefined
+>x : number
+
+declare const A: any;
+>A : any
+
+const a = <A cb={x => x.toFixed()} />;
+>a : JSX.Element
+><A cb={x => x.toFixed()} /> : JSX.Element
+>A : any
+>cb : (x: number) => string
+>x => x.toFixed() : (x: number) => string
+>x : number
+>x.toFixed() : string
+>x.toFixed : (fractionDigits?: number) => string
+>x : number
+>toFixed : (fractionDigits?: number) => string
+
+const b = <A other={y => y} />;
+>b : JSX.Element
+><A other={y => y} /> : JSX.Element
+>A : any
+>other : (y: any) => any
+>y => y : (y: any) => any
+>y : any
+>y : any
+
