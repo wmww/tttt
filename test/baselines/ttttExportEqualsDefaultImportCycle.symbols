@@ -1,0 +1,42 @@
+//// [test/cases/ttttExportEqualsDefaultImportCycle.ts] ////
+
+=== a.ts ===
+import d from "./b";
+>d : Symbol(d, Decl(a.ts, 0, 6))
+
+export default d;
+>d : Symbol(d, Decl(a.ts, 0, 6))
+
+const n: number = d;
+>n : Symbol(n, Decl(a.ts, 2, 5))
+>d : Symbol(d, Decl(a.ts, 0, 6))
+
+=== b.ts ===
+import a = require("./a");
+>a : Symbol(a, Decl(b.ts, 0, 0))
+
+export = a;
+>a : Symbol(a, Decl(b.ts, 0, 0))
+
+=== f.ts ===
+const v = 42;
+>v : Symbol(v, Decl(f.ts, 0, 5))
+
+export default v;
+>v : Symbol(v, Decl(f.ts, 0, 5))
+
+=== g.ts ===
+import f = require("./f");
+>f : Symbol(f, Decl(g.ts, 0, 0))
+
+export = f;
+>f : Symbol(f, Decl(g.ts, 0, 0))
+
+=== u.ts ===
+import h from "./g";
+>h : Symbol(h, Decl(u.ts, 0, 6))
+
+const s: string = h;
+>s : Symbol(s, Decl(u.ts, 1, 5))
+>h : Symbol(h, Decl(u.ts, 0, 6))
+

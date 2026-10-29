@@ -3729,6 +3729,16 @@ static bool cjs_imports_esm(PortItem const* item, Symbol const* module) {
 // tsc's getTargetofModuleDefault: `import d from "m"`, `import { default as d }`, `export { default } from "m"`
 static Symbol* resolve_default_target(PortItem* item, Symbol* module, Symbol* assigned, ErrorCtx* errs) {
     SourceFile const* file = module->is_module ? module->module->file : nullptr;
+    // tsc's resolveExportByName looks `default` up among the properties of what an `export =` assigns
+    // (getPropertyOfType of its type), whatever is made of it after: a module's type resolves every export alias
+    // (`export = a` of `import a = require("./a")`, imported back into a.ts whose `export default d` is that import:
+    // TS2303, bun case 94-R04a)
+    if (assigned && symbol_get_export(module, c_sv("export="))) {
+        // (`import a = require()` is a symbol of its own whose members are the module's)
+        Symbol* assigned_target = symbol_resolve_alias(assigned);
+        Symbol* assigned_module = assigned_target ? (Symbol*)symbol_members(assigned_target) : nullptr;
+        if (assigned_module && assigned_module->is_module) resolve_module_type_members(assigned_module);
+    }
     Symbol* found = symbol_get_export(module, c_sv("default"));
     // In Node.js an ES module's import of JSON (a .json file or a .d.json.ts declaration) has only a default, the
     // module itself (tsc's isOnlyImportableAsDefault in getTargetOfImportClause)

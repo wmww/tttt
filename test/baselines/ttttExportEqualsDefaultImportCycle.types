@@ -1,0 +1,43 @@
+//// [test/cases/ttttExportEqualsDefaultImportCycle.ts] ////
+
+=== a.ts ===
+import d from "./b";
+>d : any
+
+export default d;
+>d : any
+
+const n: number = d;
+>n : number
+>d : any
+
+=== b.ts ===
+import a = require("./a");
+>a : typeof a
+
+export = a;
+>a : typeof a
+
+=== f.ts ===
+const v = 42;
+>v : 42
+>42 : 42
+
+export default v;
+>v : 42
+
+=== g.ts ===
+import f = require("./f");
+>f : typeof f
+
+export = f;
+>f : typeof f
+
+=== u.ts ===
+import h from "./g";
+>h : typeof h
+
+const s: string = h;
+>s : string
+>h : typeof h
+

@@ -1,0 +1,28 @@
+a.ts(1,8): error TS2303: Circular definition of import alias 'd'.
+a.ts(2,1): error TS2303: Circular definition of import alias 'd'.
+u.ts(2,7): error TS2322: Type 'typeof import("f")' is not assignable to type 'string'.
+
+
+==== a.ts (2 errors) ====
+    import d from "./b";
+           ~
+!!! error TS2303: Circular definition of import alias 'd'.
+    export default d;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'd'.
+    const n: number = d;
+==== b.ts (0 errors) ====
+    import a = require("./a");
+    export = a;
+==== f.ts (0 errors) ====
+    const v = 42;
+    export default v;
+==== g.ts (0 errors) ====
+    import f = require("./f");
+    export = f;
+==== u.ts (1 errors) ====
+    import h from "./g";
+    const s: string = h;
+          ~
+!!! error TS2322: Type 'typeof import("f")' is not assignable to type 'string'.
+    
