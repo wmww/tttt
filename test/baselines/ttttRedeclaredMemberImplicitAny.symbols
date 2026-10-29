@@ -1,0 +1,26 @@
+//// [test/cases/ttttRedeclaredMemberImplicitAny.ts] ////
+
+=== ttttRedeclaredMemberImplicitAny.ts ===
+// An untyped property signature declared again (in one type literal, or in a later declaration of a merged
+// interface) is TS7008 once, at its symbol's first declaration: tsc reports implicit any while widening the
+// valueDeclaration's type. Seed 20261117 --syntax, signatureCombiningRestParameters1 delete-stmt
+type A = { x; x; y: number; y };
+>A : Symbol(A, Decl(ttttRedeclaredMemberImplicitAny.ts, 0, 0))
+>x : Symbol(x, Decl(ttttRedeclaredMemberImplicitAny.ts, 3, 10), Decl(ttttRedeclaredMemberImplicitAny.ts, 3, 13))
+>x : Symbol(x, Decl(ttttRedeclaredMemberImplicitAny.ts, 3, 10), Decl(ttttRedeclaredMemberImplicitAny.ts, 3, 13))
+>y : Symbol(y, Decl(ttttRedeclaredMemberImplicitAny.ts, 3, 16), Decl(ttttRedeclaredMemberImplicitAny.ts, 3, 27))
+>y : Symbol(y, Decl(ttttRedeclaredMemberImplicitAny.ts, 3, 16), Decl(ttttRedeclaredMemberImplicitAny.ts, 3, 27))
+
+interface I { z; }
+>I : Symbol(I, Decl(ttttRedeclaredMemberImplicitAny.ts, 3, 32), Decl(ttttRedeclaredMemberImplicitAny.ts, 4, 18))
+>z : Symbol(I.z, Decl(ttttRedeclaredMemberImplicitAny.ts, 4, 13), Decl(ttttRedeclaredMemberImplicitAny.ts, 5, 13))
+
+interface I { z; }
+>I : Symbol(I, Decl(ttttRedeclaredMemberImplicitAny.ts, 3, 32), Decl(ttttRedeclaredMemberImplicitAny.ts, 4, 18))
+>z : Symbol(I.z, Decl(ttttRedeclaredMemberImplicitAny.ts, 4, 13), Decl(ttttRedeclaredMemberImplicitAny.ts, 5, 13))
+
+type M = { m(): void; m };
+>M : Symbol(M, Decl(ttttRedeclaredMemberImplicitAny.ts, 5, 18))
+>m : Symbol(m, Decl(ttttRedeclaredMemberImplicitAny.ts, 6, 10))
+>m : Symbol(m, Decl(ttttRedeclaredMemberImplicitAny.ts, 6, 21))
+

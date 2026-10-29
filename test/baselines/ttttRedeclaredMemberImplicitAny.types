@@ -1,0 +1,24 @@
+//// [test/cases/ttttRedeclaredMemberImplicitAny.ts] ////
+
+=== ttttRedeclaredMemberImplicitAny.ts ===
+// An untyped property signature declared again (in one type literal, or in a later declaration of a merged
+// interface) is TS7008 once, at its symbol's first declaration: tsc reports implicit any while widening the
+// valueDeclaration's type. Seed 20261117 --syntax, signatureCombiningRestParameters1 delete-stmt
+type A = { x; x; y: number; y };
+>A : A
+>x : any
+>x : any
+>y : number
+>y : number
+
+interface I { z; }
+>z : any
+
+interface I { z; }
+>z : any
+
+type M = { m(): void; m };
+>M : M
+>m : () => void
+>m : any
+

@@ -159,7 +159,7 @@ void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* 
 // Where tsc's diagnostics about the member go: its name, a method signature's whole signature with its `;` or `,`
 // (getErrorSpanForNode has no case for it)
 Span interface_member_error_span(InterfaceMember const* me);
-void interface_member_typecheck(InterfaceMember* me, bool is_in_class, bool in_type_literal, ErrorCtx* errs);
+void interface_member_typecheck(InterfaceMember* me, bool is_in_class, bool in_type_literal, bool redeclared, ErrorCtx* errs);
 
 #define g_class_key InterfaceMember, interface_member
 #define g_no_clone

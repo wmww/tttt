@@ -71,9 +71,34 @@ static void interface_check_overload_optionality(Interface const* me, Symbol con
     }
 }
 
+// A property signature (not a method or an accessor, whose symbol a later property doesn't join: `{ m(): void; m }`
+// is TS7008 at the property) of the member's name
+static bool declares_property(InterfaceMember const* i, InterfaceMember const* member) {
+    return i->key.tag == INTERFACE_KEY_NAME && !i->is_method && !i->key.name_is_member_function && !i->accessor &&
+        cstr_eq(&i->key.name_string, &member->key.name_string);
+}
+
+// Whether a named member of the interface isn't its property's first declaration: an earlier member of the name in
+// this declaration or an earlier one of the merged symbol, a property (see interface_member_check_implicit_any())
+static bool member_redeclared(Interface const* me, Symbol const* merged, InterfaceMember const* member) {
+    if (member->key.tag != INTERFACE_KEY_NAME || !member->implicit_any) return false;
+    for (InterfaceMember const* i = my members.data; i < member; i++) {
+        if (declares_property(i, member)) return true;
+    }
+    for (u32 d = 0; merged && d < merged->decl_count; d++) {
+        if (merged->decls[d].kind != SYMBOL_DECL_INTERFACE) continue;
+        Interface const* earlier = &((InterfaceDecl const*)merged->decls[d].node)->type.interface;
+        if (earlier == me) break;
+        for_each (i, vec_interface_member, &earlier->members) {
+            if (declares_property(i, member)) return true;
+        }
+    }
+    return false;
+}
+
 void interface_typecheck(Interface const* me, Symbol const* merged, ErrorCtx* errs) {
     for_each (i, vec_interface_member, &my members) {
-        interface_member_typecheck(i, false, my type_literal, errs);
+        interface_member_typecheck(i, false, my type_literal, member_redeclared(me, merged, i), errs);
         // (A mapped type's other members, after TS7061, are only recovery: tsc's checkMappedType never visits them)
         if (my type_literal && i->key.tag == INTERFACE_KEY_MAPPED && i == my members.data) break;
     }

@@ -198,9 +198,11 @@ Span interface_member_error_span(InterfaceMember const* me) {
 }
 
 // tsc's reportImplicitAny of a property signature, and of a method signature's return type
-static void interface_member_check_implicit_any(InterfaceMember const* me, ErrorCtx* errs) {
+// `redeclared`: not its property symbol's first declaration, whose type the symbol has (tsc reports implicit any while
+// widening the valueDeclaration's type only: `{ x; x }` is one TS7008)
+static void interface_member_check_implicit_any(InterfaceMember const* me, bool redeclared, ErrorCtx* errs) {
     // (A JSDoc type literal's member in a checked JavaScript file too: `@type {{ a }}`)
-    if (my implicit_any && compiler_options()->no_implicit_any && span_source(my key.span)) {
+    if (my implicit_any && !redeclared && compiler_options()->no_implicit_any && span_source(my key.span)) {
         // (A missing name is tsc's declarationNameToString of a missing identifier)
         csview name = my key.span.size ? span_sv(my key.span) : c_sv("(Missing)");
         error_ctx_error_d(errs, my key.span, 7008, "Member '", name, "' implicitly has an 'any' type.");
@@ -228,7 +230,7 @@ static void interface_member_check_implicit_any(InterfaceMember const* me, Error
     }
 }
 
-void interface_member_typecheck(InterfaceMember* me, bool is_in_class, bool in_type_literal, ErrorCtx* errs) {
+void interface_member_typecheck(InterfaceMember* me, bool is_in_class, bool in_type_literal, bool redeclared, ErrorCtx* errs) {
     switch (my key.tag) {
         case INTERFACE_KEY_NAME:
             // tsc's checkPropertySignature, checkMethodDeclaration
@@ -236,7 +238,7 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, bool in_t
                 error_ctx_error_d(errs, interface_member_error_span(me), 18016,
                     "Private identifiers are not allowed outside class bodies.");
             }
-            interface_member_check_implicit_any(me, errs);
+            interface_member_check_implicit_any(me, redeclared, errs);
             // (A getter's body, TS1183, is checked all the same: tsc's checkAccessorDeclaration)
             if (my accessor && my accessor->getter_body) function_impl_typecheck(my accessor->getter_body->function, errs);
             // (A setter's pattern parameter: TS2842 for an unused renaming, tsc's checkSignatureDeclaration)
@@ -342,7 +344,7 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, bool in_t
                 }
             }
             expr_typecheck_type_only_site(my key.expr, errs);
-            if (!is_in_class) interface_member_check_implicit_any(me, errs);
+            if (!is_in_class) interface_member_check_implicit_any(me, false, errs);
             break;
 
         case INTERFACE_KEY_MAPPED:

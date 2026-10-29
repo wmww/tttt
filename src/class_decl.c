@@ -2854,7 +2854,7 @@ void class_decl_typecheck_members(ClassDecl* me, ErrorCtx* errs) {
             }   break;
 
             case CLASS_ITEM_INTERFACE_MEMBER:
-                interface_member_typecheck(&i->interface_memeber, true, false, errs);
+                interface_member_typecheck(&i->interface_memeber, true, false, false, errs);
                 break;
 
             case CLASS_ITEM_STATIC_BLOCK:
