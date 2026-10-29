@@ -277,6 +277,14 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   getFirstTransformableStaticClassElement counts an accessor pair through its first accessor with decorators only
   (ClassElementOrClassElementParameterIsDecorated), here the getter, which can't be decorated without a body. Test
   ttttDecoratedBodilessAccessor [fixed 581b67eac].
+- -TS7006 leads (cor16, analysed, not fixed): 15-C4a (`const p1: { 2: (x: number) => void } = { [+2]: x => {} }`):
+  tsc's binder names a `[+2]` member "+2" (getPropertyNameForPropertyNameNode: a signed numeric literal keeps its
+  operator), and getContextualTypeForObjectLiteralElement looks that name up (hasBindableName: `+2` isn't dynamic), so
+  the property `2` gives no context; then index signatures by the literal 2. tttt looks the key's type up (2).
+  15-C2 (`const [a = x => {}] = t` with `t: T extends [F1, F2]`): tsc's getContextualTypeForBindingElement asks
+  getTypeOfPropertyOfContextualType of the parent type as is, and a type parameter isn't a structured type there (no
+  constraint), so x is implicitly any; tttt's contextual property lookup takes a type variable's constraint
+  (get_prop_context_with_missing, right for getApparentTypeOfContextualType's paths only). [open]
 - -TS2448: two mechanisms, the JSX factory (`React`, `Frag`) declared after the element that uses it (tsc resolves
   the factory at the element as a use: 01-C2b, 15-C3b, 27-C3a, 27-P7, 34-C2b) and `const arguments = 1` in a
   function body (tsc's reference to the implicit `arguments`: 25-C17c, 33-P4g, 51-L01, 51-L05, 77-R12b). The JSX

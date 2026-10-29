@@ -673,7 +673,7 @@ str-to-num (`declare module 42 {`), conditionalTypeContextualTypeSimplifications
 seed 20261122's leftover below), allowUnescapedParagraphAndLineSeparatorsInStringLiteral delete-stmt (render). Fixed:
 - bigintWithLib add-arg: `new BigInt(123, 1)` (call signatures only, strict false) is TS2554 and TS2350 in tsc, whose
   resolveCall returns the overload failure candidate when nothing fits; tttt's new-as-call resolution left no
-  signature then. Test ttttNewNonVoidFailedCall [fixed NEXT].
+  signature then. Test ttttNewNonVoidFailedCall [fixed ead9f4267].
 
 ## Mutation seed 20261122 (2026-10-29, cor16: `scripts/mutate.py -n 8000 --seed 20261122`, 5 of 8000 differ; `--syntax` 12)
 Known: recursiveClassBaseType (TS2310, 2: mut5311's family), unicodeLineSeparatorInMultilineComment [tsgo],
