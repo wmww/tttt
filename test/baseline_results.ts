@@ -12086,6 +12086,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAccessorTypedPropertySymbol': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAccessorWriteTypeCircularity': {
         errors: true,
         symbols: true,
@@ -16294,6 +16299,11 @@ const baselines = {
         types: true,
     },
     'ttttRestUnionGenericCallArg': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttRestUnionTupleLiteralArg': {
         errors: true,
         symbols: true,
         types: true,
