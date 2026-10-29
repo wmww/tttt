@@ -36,6 +36,10 @@ static int rank_compare(Rank const* a, Rank const* b) {
 
 typedef struct LoadEntry {
     cstr path;
+    // LoadState. Leaving LOAD_QUEUED and LOAD_PARSING happens under the pool's lock; LOAD_DONE is left only by the
+    // loader, which takes a parsed file without the lock (load_pool_take()). Nothing writes rank, file or errs once the
+    // entry is past LOAD_QUEUED but the worker that parses it, before its release store of LOAD_DONE
+    _Atomic int state;
     bool is_stdlib;
     bool sized; // In a heap (or not to be, if taken before): its size is known
     i64 size; // The size function's guess
@@ -44,7 +48,6 @@ typedef struct LoadEntry {
     Rank rank;
     isize order; // Queue order, between equal ranks
     bool is_helped; // Parsed by the loader while it waited for another
-    LoadState state;
     double queued_at, ranked_at; // (TTTT_LOAD_POOL_INLINE: when it was queued, and its rank last improved)
     SourceFile* file; // LOAD_DONE: the worker's file, null if unreadable
     ErrorCtx errs; // LOAD_DONE: the file's parse errors
@@ -72,6 +75,15 @@ typedef struct Heap {
 #define g_val LoadEntryPtr, load_entry_ptr
 #include <cleat/generic/hmap.h>
 
+// The entries by path, sharded by the path's hash with a lock each, apart from the pool's lock: every worker queues
+// each file's imports and the loader takes every file, and with one lock for the lookups too the loader spent 17-50% of
+// vscode's and openclaw's load+parse waiting for it at 16 threads (the workers 10-20% of their parse time)
+enum { POOL_SHARDS = 64 };
+typedef struct PoolShard {
+    pthread_mutex_t lock;
+    HMapLoadEntryPtr by_path;
+} __attribute__((aligned(64))) PoolShard;
+
 typedef struct LoadPool {
     LoadPoolParse parse;
     LoadPoolDrop drop;
@@ -79,8 +91,8 @@ typedef struct LoadPool {
     pthread_mutex_t lock; // Everything below
     pthread_cond_t work; // Something was queued, or stop
     pthread_cond_t done; // A file was parsed
-    VecLoadEntryPtr entries; // In queue order
-    HMapLoadEntryPtr by_path;
+    PoolShard shards[POOL_SHARDS];
+    _Atomic isize entry_count; // Each entry's order: queue order, roughly
     // The queued entries (and ones taken since), min-heaps. Files of at least BIG_FILE bytes first, biggest first: one
     // big file started late would be the loader's critical path (tsc's checker.ts, lib.dom.d.ts). Then the rest by rank
     // (the order the loader will want them in: by size, small roots sat queued until the loader parsed them itself)
@@ -268,14 +280,14 @@ static void load_pool_schedule(LoadPool* me, LoadEntry* entry) {
 static LoadEntry* load_pool_next(LoadPool* me) {
     while (my big.count) {
         LoadEntry* entry = heap_pop(&my big).entry;
-        if (entry->state != LOAD_QUEUED) continue;
-        entry->state = LOAD_PARSING;
+        if (atomic_load_explicit(&entry->state, memory_order_relaxed) != LOAD_QUEUED) continue;
+        atomic_store_explicit(&entry->state, LOAD_PARSING, memory_order_relaxed);
         return entry;
     }
     while (my ranked.count) {
         HeapItem item = heap_pop(&my ranked);
-        if (item.entry->state != LOAD_QUEUED || rank_compare(&item.rank, &item.entry->rank)) continue;
-        item.entry->state = LOAD_PARSING;
+        if (atomic_load_explicit(&item.entry->state, memory_order_relaxed) != LOAD_QUEUED || rank_compare(&item.rank, &item.entry->rank)) continue;
+        atomic_store_explicit(&item.entry->state, LOAD_PARSING, memory_order_relaxed);
         return item.entry;
     }
     return nullptr;
@@ -316,7 +328,7 @@ static void load_pool_run(LoadPool* me, LoadEntry* entry) {
     my busy_ms += (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
     if (entry->is_helped) my helped_ms += (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
     entry->file = file;
-    entry->state = LOAD_DONE;
+    atomic_store_explicit(&entry->state, LOAD_DONE, memory_order_release);
     // (The loader, waiting, wants its file, or queued work to help with meanwhile)
     if (my loader_waiting && (entry == my loader_awaits || load_pool_has_work(me))) {
         my loader_waiting = false;
@@ -344,7 +356,7 @@ static bool load_pool_size_batch(LoadPool* me) {
     pthread_mutex_lock(&my lock);
     isize scheduled = 0;
     for (isize i = 0; i < count; i++) {
-        if (batch[i]->state == LOAD_QUEUED) {
+        if (atomic_load_explicit(&batch[i]->state, memory_order_relaxed) == LOAD_QUEUED) {
             load_pool_schedule(me, batch[i]);
             scheduled++;
         }
@@ -436,6 +448,7 @@ LoadPool* load_pool_new(
     });
     my helpers = (ParseHelpers){ .ctx = me, .offer = pool_offer, .retract = pool_retract };
     pthread_mutex_init(&my lock, nullptr);
+    for (u32 i = 0; i < POOL_SHARDS; i++) pthread_mutex_init(&my shards[i].lock, nullptr);
     pthread_cond_init(&my work, nullptr);
     pthread_cond_init(&my done, nullptr);
     my threads = c_new_n(pthread_t, threads);
@@ -450,38 +463,60 @@ LoadPool* load_pool_new(
     return me;
 }
 
-// Under the lock
-static LoadEntry* load_pool_add(LoadPool* me, csview path, bool is_stdlib, i64 size, LoadState state) {
-    isize order = vec_load_entry_ptr_size(&my entries);
-    LoadEntry* entry = c_new(LoadEntry, {
-        .path = cstr_from_sv(path), .is_stdlib = is_stdlib, .size = size,
-        .rank = next_rank(order), .order = order, .state = state,
-    });
-    vec_load_entry_ptr_push(&my entries, entry);
-    hmap_load_entry_ptr_insert(&my by_path, cstr_from_sv(path), entry);
+static PoolShard* pool_shard(LoadPool* me, csview path) {
+    uint32_t hash = 2166136261u;
+    for (isize i = 0; i < path.size; i++) hash = (hash ^ (uint8_t)path.buf[i]) * 16777619u;
+    return &my shards[hash % POOL_SHARDS];
+}
+
+// The entry for path, null if there's none
+static LoadEntry* pool_find(LoadPool* me, csview path) {
+    PoolShard* shard = pool_shard(me, path);
+    pthread_mutex_lock(&shard->lock);
+    auto found = hmap_load_entry_ptr_get(&shard->by_path, path);
+    LoadEntry* ret = found ? found->second : nullptr;
+    pthread_mutex_unlock(&shard->lock);
+    return ret;
+}
+
+// The entry for path, made in state (and *added set) if there's none. Its rank is the next one this thread queues,
+// either way (rank: that rank for an entry that was there)
+static LoadEntry* pool_find_or_add(LoadPool* me, csview path, bool is_stdlib, LoadState state, bool* added, Rank* rank) {
+    PoolShard* shard = pool_shard(me, path);
+    pthread_mutex_lock(&shard->lock);
+    auto found = hmap_load_entry_ptr_get(&shard->by_path, path);
+    LoadEntry* entry;
+    if (found) {
+        entry = found->second;
+        *rank = next_rank(entry->order);
+        *added = false;
+    } else {
+        isize order = atomic_fetch_add_explicit(&my entry_count, 1, memory_order_relaxed);
+        entry = c_new(LoadEntry, { .path = cstr_from_sv(path), .is_stdlib = is_stdlib, .rank = next_rank(order), .order = order });
+        atomic_init(&entry->state, state);
+        hmap_load_entry_ptr_insert(&shard->by_path, cstr_from_sv(path), entry);
+        *rank = entry->rank;
+        *added = true;
+    }
+    pthread_mutex_unlock(&shard->lock);
     return entry;
 }
 
-// Under the lock. A new path waits for its size (a stat) in the unsized list, which workers take in batches
-// A path the loader will want sooner than its rank says moves up (an import of a later root from an earlier one)
-// Returns whether it made work for a worker
-static bool load_pool_queue_locked(LoadPool* me, csview path, bool is_stdlib) {
-    auto found = hmap_load_entry_ptr_get(&my by_path, path);
-    if (found) {
-        LoadEntry* entry = found->second;
-        Rank rank = next_rank(entry->order);
-        if (entry->state == LOAD_QUEUED && rank_compare(&rank, &entry->rank) < 0) {
-            entry->rank = rank;
-            entry->ranked_at = wall_ms();
-            if (entry->sized && entry->size < BIG_FILE) heap_push(&my ranked, entry);
-        }
-        return false;
+// Under the lock: a found entry the loader will want sooner than its rank says moves up (an import of a later root from
+// an earlier one)
+static void load_pool_rerank_locked(LoadPool* me, LoadEntry* entry, Rank const* rank) {
+    if (atomic_load_explicit(&entry->state, memory_order_relaxed) == LOAD_QUEUED && rank_compare(rank, &entry->rank) < 0) {
+        entry->rank = *rank;
+        entry->ranked_at = wall_ms();
+        if (entry->sized && entry->size < BIG_FILE) heap_push(&my ranked, entry);
     }
-    LoadEntry* entry = load_pool_add(me, path, is_stdlib, 0, LOAD_QUEUED);
+}
+
+// Under the lock: a new entry waits for its size (a stat) in the unsized list, which workers take in batches
+static void load_pool_schedule_new_locked(LoadPool* me, LoadEntry* entry) {
     entry->queued_at = entry->ranked_at = wall_ms();
     if (my size) vec_load_entry_ptr_push(&my unsized, entry);
     else load_pool_schedule(me, entry);
-    return true;
 }
 
 // Under the lock, which it releases: wakes workers for `added` new paths (unsized ones are sized SIZE_BATCH at a time:
@@ -495,36 +530,79 @@ static void load_pool_queued(LoadPool* me, isize added) {
     if (wake_loader) pthread_cond_signal(&my done);
 }
 
-void load_pool_queue(LoadPool* me, csview path, bool is_stdlib) {
-    pthread_mutex_lock(&my lock);
-    load_pool_queued(me, load_pool_queue_locked(me, path, is_stdlib));
+// Queues the paths: each looked up (or added) under its shard's lock, then what the pool's own state needs of them
+// (new entries to size and schedule, queued ones to rerank) under the pool's lock, once, and only if there is any
+void load_pool_queue_each(LoadPool* me, csview const* paths, bool const* is_stdlib, isize count) {
+    enum { STEP = 64 };
+    for (isize from = 0; from < count; from += STEP) {
+        isize n = count - from < STEP ? count - from : STEP;
+        LoadEntry* entries[STEP];
+        Rank ranks[STEP];
+        bool added[STEP];
+        isize pending = 0, new_count = 0;
+        for (isize i = 0; i < n; i++) {
+            LoadEntry* entry = pool_find_or_add(me, paths[from + i], is_stdlib[from + i], LOAD_QUEUED, &added[pending], &ranks[pending]);
+            // (Past LOAD_QUEUED nothing more to do: it never goes back)
+            if (!added[pending] && atomic_load_explicit(&entry->state, memory_order_relaxed) != LOAD_QUEUED) continue;
+            new_count += added[pending];
+            entries[pending++] = entry;
+        }
+        if (!pending) continue;
+        pthread_mutex_lock(&my lock);
+        for (isize i = 0; i < pending; i++) {
+            if (added[i]) load_pool_schedule_new_locked(me, entries[i]);
+            else load_pool_rerank_locked(me, entries[i], &ranks[i]);
+        }
+        load_pool_queued(me, new_count);
+    }
 }
 
-void load_pool_queue_each(LoadPool* me, csview const* paths, bool const* is_stdlib, isize count) {
-    if (!count) return;
-    pthread_mutex_lock(&my lock);
-    isize added = 0;
-    for (isize i = 0; i < count; i++) added += load_pool_queue_locked(me, paths[i], is_stdlib[i]);
-    load_pool_queued(me, added);
+void load_pool_queue(LoadPool* me, csview path, bool is_stdlib) {
+    load_pool_queue_each(me, &path, &is_stdlib, 1);
 }
 
 void load_pool_queue_many(LoadPool* me, csview const* paths, isize count, bool is_stdlib) {
-    pthread_mutex_lock(&my lock);
-    isize added = 0;
-    for (isize i = 0; i < count; i++) added += load_pool_queue_locked(me, paths[i], is_stdlib);
-    load_pool_queued(me, added);
+    enum { STEP = 64 };
+    bool flags[STEP];
+    for (isize i = 0; i < STEP; i++) flags[i] = is_stdlib;
+    for (isize from = 0; from < count; from += STEP) load_pool_queue_each(me, paths + from, flags, count - from < STEP ? count - from : STEP);
 }
 
 SourceFile* load_pool_take(LoadPool* me, csview path, bool is_stdlib, ErrorCtx* errs) {
+    LoadEntry* entry = pool_find(me, path);
+    // A parsed file is taken without the pool's lock: only the loader leaves LOAD_DONE, and nothing changes what a worker
+    // wrote before it stored LOAD_DONE
+    if (entry && atomic_load_explicit(&entry->state, memory_order_acquire) == LOAD_DONE) {
+        SourceFile* ret = nullptr;
+        if (entry->file && entry->is_stdlib == is_stdlib) {
+            ret = entry->file;
+            entry->file = nullptr;
+            my taken++;
+        } else {
+            // (A file parsed as the other kind stays the pool's, dropped at the end)
+            my inline_parses++;
+        }
+        atomic_store_explicit(&entry->state, LOAD_TAKEN, memory_order_relaxed);
+        current_rank = entry->rank;
+        current_children = 0;
+        if (ret) error_ctx_merge(errs, &entry->errs);
+        return ret;
+    }
+    bool found = entry != nullptr;
+    if (!found) {
+        bool added;
+        Rank rank;
+        entry = pool_find_or_add(me, path, is_stdlib, LOAD_TAKEN, &added, &rank);
+        // (Queued by a worker meanwhile: as if found)
+        found = !added;
+    }
     pthread_mutex_lock(&my lock);
-    auto found = hmap_load_entry_ptr_get(&my by_path, path);
-    LoadEntry* entry = found ? found->second : load_pool_add(me, path, is_stdlib, 0, LOAD_TAKEN);
     my inline_unqueued += !found;
-    if (entry->state == LOAD_PARSING) {
+    if (atomic_load_explicit(&entry->state, memory_order_relaxed) == LOAD_PARSING) {
         struct timespec start, end;
         timespec_get(&start, TIME_UTC);
         // (Rather than idle, the loader parses what's queued, like a worker)
-        while (entry->state == LOAD_PARSING) {
+        while (atomic_load_explicit(&entry->state, memory_order_relaxed) == LOAD_PARSING) {
             if (pool_help(me)) continue;
             LoadEntry* other = load_pool_next(me);
             if (other) {
@@ -543,9 +621,10 @@ SourceFile* load_pool_take(LoadPool* me, csview path, bool is_stdlib, ErrorCtx* 
         my wait_ms += waited;
         if (waited > 2 && getenv("TTTT_LOAD_POOL_WAITS")) eprintln("waited ", waited, " ms for ", path);
     }
+    LoadState state = atomic_load_explicit(&entry->state, memory_order_relaxed);
     SourceFile* ret = nullptr;
     // (A file parsed as the other kind stays the pool's, dropped at the end)
-    if (entry->state == LOAD_DONE && entry->file && entry->is_stdlib == is_stdlib) {
+    if (state == LOAD_DONE && entry->file && entry->is_stdlib == is_stdlib) {
         ret = entry->file;
         entry->file = nullptr;
         my taken++;
@@ -554,15 +633,15 @@ SourceFile* load_pool_take(LoadPool* me, csview path, bool is_stdlib, ErrorCtx* 
         if (found && getenv("TTTT_LOAD_POOL_INLINE")) {
             cstr rank = cstr_null;
             for (u32 i = 0; i < entry->rank.depth; i++) cstr_append_d(&rank, DEFAULT_DISPLAY, i ? "." : "", (i64)entry->rank.at[i]);
-            eprintln("load pool: the loader parses ", path, " (rank ", rank, " of ", vec_load_entry_ptr_size(&my entries),
+            eprintln("load pool: the loader parses ", path, " (rank ", rank, " of ", atomic_load(&my entry_count),
                 ", ", entry->size, " bytes, queued ", wall_ms() - entry->queued_at, " ms ago, ranked ",
                 wall_ms() - entry->ranked_at, " ms ago, ",
-                entry->state == LOAD_QUEUED ? entry->sized ? "waiting" : "unsized" : "parsed as the other kind", ")");
+                state == LOAD_QUEUED ? entry->sized ? "waiting" : "unsized" : "parsed as the other kind", ")");
             cstr_drop(&rank);
         }
     }
-    bool had_errors = entry->state == LOAD_DONE && ret;
-    entry->state = LOAD_TAKEN;
+    bool had_errors = state == LOAD_DONE && ret;
+    atomic_store_explicit(&entry->state, LOAD_TAKEN, memory_order_relaxed);
     current_rank = entry->rank;
     current_children = 0;
     pthread_mutex_unlock(&my lock);
@@ -572,11 +651,10 @@ SourceFile* load_pool_take(LoadPool* me, csview path, bool is_stdlib, ErrorCtx* 
 }
 
 bool load_pool_in_flight(LoadPool* me, csview path) {
-    pthread_mutex_lock(&my lock);
-    auto found = hmap_load_entry_ptr_get(&my by_path, path);
-    bool ret = found && (found->second->state == LOAD_PARSING || found->second->state == LOAD_QUEUED);
-    pthread_mutex_unlock(&my lock);
-    return ret;
+    LoadEntry* entry = pool_find(me, path);
+    if (!entry) return false;
+    LoadState state = atomic_load_explicit(&entry->state, memory_order_relaxed);
+    return state == LOAD_PARSING || state == LOAD_QUEUED;
 }
 
 void load_pool_note_inline(LoadPool* me, double ms) {
@@ -595,19 +673,24 @@ void load_pool_destroy(LoadPool* me) {
     for (u32 t = 0; t < my thread_count; t++) worker_thread_join(my threads[t]);
     free(my threads);
     isize wasted = 0, never = 0;
-    for_each (i, vec_load_entry_ptr, &my entries) {
-        LoadEntry* entry = *i;
-        if (entry->file) {
-            wasted++;
-            my drop(my ctx, entry->file);
+    for (u32 s = 0; s < POOL_SHARDS; s++) {
+        PoolShard* shard = &my shards[s];
+        for_each (i, hmap_load_entry_ptr, &shard->by_path) {
+            LoadEntry* entry = i->second;
+            if (entry->file) {
+                wasted++;
+                my drop(my ctx, entry->file);
+            }
+            never += atomic_load_explicit(&entry->state, memory_order_relaxed) == LOAD_QUEUED;
+            error_ctx_drop(&entry->errs);
+            cstr_drop(&entry->path);
+            free(entry);
         }
-        never += entry->state == LOAD_QUEUED;
-        error_ctx_drop(&entry->errs);
-        cstr_drop(&entry->path);
-        free(entry);
+        hmap_load_entry_ptr_drop(&shard->by_path);
+        pthread_mutex_destroy(&shard->lock);
     }
     if (my stats) {
-        eprintln("load pool: ", my thread_count, " threads, ", vec_load_entry_ptr_size(&my entries), " paths, ", my taken,
+        eprintln("load pool: ", my thread_count, " threads, ", atomic_load(&my entry_count), " paths, ", my taken,
             " preparsed files taken, ", my inline_parses, " parsed by the loader (", my inline_unqueued, " never queued), ", wasted, " parsed for nothing, ", never,
             " never started");
         eprintln("load pool: the loader waited ", my wait_ms, " ms (parsing queued files for ", my helped_ms,
@@ -617,11 +700,9 @@ void load_pool_destroy(LoadPool* me) {
         // (CPU time, which a loaded machine's preemption and lock waits don't inflate: what the loader did)
         eprintln("load pool: the loader's CPU time ", thread_cpu_ms() - my loader_cpu_at, " ms");
     }
-    vec_load_entry_ptr_drop(&my entries);
     free(my big.items);
     free(my ranked.items);
     vec_load_entry_ptr_drop(&my unsized);
-    hmap_load_entry_ptr_drop(&my by_path);
     pthread_cond_destroy(&my work);
     pthread_cond_destroy(&my done);
     pthread_mutex_destroy(&my lock);
