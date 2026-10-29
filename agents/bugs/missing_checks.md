@@ -605,9 +605,9 @@ never-const (harness writes no errors baseline).
 Known: generatorTypeCheck46 (TS2488 from the early pass [design]), recursiveClassBaseType (TS2310),
 importDeclWithExportModifierInAmbientContext (TS2708 from tsgo's emit resolver [tsgo]). Fixed:
 - controlFlowParameter drop-as: `{ [(a = "")]: b } = {}`: the initializer is padded with computed names of literal type
-  too (padObjectLiteralType). Test ttttPadComputedBindingName. [fixed 618de31ef]
+  too (padObjectLiteralType). Test ttttPadComputedBindingName. [fixed ab4270462]
 - controlFlowGenericTypes drop-as: `iSpec[null!` (an element access by never) lost TS18048: the non-null check comes
-  first whatever the index, and the access is the non-nullable object's. Test ttttNeverIndexNonNull. [fixed 918409650]
+  first whatever the index, and the access is the non-nullable object's. Test ttttNeverIndexNonNull. [fixed 4d479601f]
 Not looked at:
 - mixinPrivateAndProtected delete-stmt: missing TS2339 on `never` with the "reduced to never because property 'pvt'
   exists in multiple constituents and is private in some" elaboration (a mixin intersection). [open]
@@ -624,14 +624,14 @@ Not looked at:
 - duplicateIdentifierChecks num-to-str: `set x(v: number) {}, x() {}, get x() { return "0" }` in an object literal: the
   method's conflict makes the table's symbol both accessors, so `get x` is a symbol of its own without the setter's
   annotation as return type; tttt's name-lookup paired them (spurious TS2322). literal_symbol_getter (expr.c) pairs by
-  the binder's symbols now. Test ttttLiteralAccessorConflictPair. [fixed f50a35ffb]
+  the binder's symbols now. Test ttttLiteralAccessorConflictPair. [fixed be979cfbf]
 
 ## Mutation seed 20261112 (2026-10-29, cor11: `scripts/mutate.py -n 8000 --seed 20261112`, 5 of 8000 differ; `--syntax` 19)
 Known: noCircularitySelfReferentialGetter2 (text TS2345), recursiveClassBaseType (TS2310, the base cycle design),
 exportSpecifierReferencingOuterDeclaration3 [tsgo]. New:
 - iterableArrayPattern2 delete-stmt (--syntax): a class body left open swallows `var [a, ...b] = x`: tsc's
   isClassMemberStart takes a keyword followed by `[`, so `var` is a property (TS1440) and `[a, ...b]` an index
-  signature; tttt's parser bailed out (TS1068). Test ttttClassMemberVarBracket. [fixed ec36ec676] Left: tsgo's TS7006 and
+  signature; tttt's parser bailed out (TS1068). Test ttttClassMemberVarBracket. [fixed 62df40f74] Left: tsgo's TS7006 and
   TS7019 for that index signature's untyped parameters `a` and `...b` (tttt reports none). [open]
 - subtypeReductionWithAnyFunctionType_promoted return-void (TS2345 -> TS2322): `const p: (input: string) => boolean =
   useMemo(() => { if (c) return; return x => x.length > 0; })`. The arrow is context sensitive (a block's returned
@@ -672,17 +672,17 @@ never `module.exports`), declarationsForIndirectTypeAliasReference (tsgo's doubl
   doesn't normalize the member to any: it does, B relates, but structuredTypeRelatedTo's extra check of an intersection
   source (isSourceIntersectionNeedingExtraCheck, propertiesRelatedTo with optionalsOnly) asks getUnmatchedProperty
   first, required properties included; props_related_impl skipped that for optionals_only. Fixed there (the line shows
-  the intersection, not its apparent type: bun18-C6a passes too). Test ttttAnyBaseClassInIntersection. [fixed c492f8e6f]
+  the intersection, not its apparent type: bun18-C6a passes too). Test ttttAnyBaseClassInIntersection. [fixed 42fdc8fbd]
 - arbitraryModuleNamespaceIdentifiers_syntax drop-as: `export { "invalid 3" };` (no `from`) is no error in tsgo
   (checkExportSpecifier checks a string *name* with allowStringLiteral true, only a string propertyName without a module
   specifier is TS1003); tttt's parser reported TS1003 for both. Now only a string before `as`. Test
-  ttttExportStringNameNoFrom. [fixed a008343a8]
+  ttttExportStringNameNoFrom. [fixed f3b722ab8]
 - jsTypedefMergedWithModuleExportProperty delete-stmt (tsgo's TS2693 x2, tttt's TS4081/TS2309): a JS `@typedef T`
   merged with `module.exports.T = T` once the `const T` is gone. The alias `T` finds itself by its typedef meaning (tsc's
   getTargetOfAliasLikeExpression, dontResolveAlias) and is its own target, with no value meaning (getSymbolFlags'
   `target === symbol` stop); tttt's resolve_alias_target_in() made it unresolved (every meaning), and
   check_module_exports counted every CommonJS alias a value (TS2309). commonjs_alias_is_own_target() decides it from the
-  tables. Test ttttJsTypedefAliasOwnTarget. [fixed b9e3ed045]
+  tables. Test ttttJsTypedefAliasOwnTarget. [fixed 4966e4249]
 
 ## Mutation seed 20261110 (2026-10-29, cor10: `scripts/mutate.py -n 8000 --seed 20261110`, 4 of 8000 differ)
 - complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound delete-stmt: the sticky errorNode (above). [fixed b088fd3d7]

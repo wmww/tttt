@@ -3001,7 +3001,7 @@ const baselines = {
         types: true,
     },
     'bun18-C6a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -6231,9 +6231,9 @@ const baselines = {
         types: true,
     },
     'bun33-C17b': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun33-C18a': {
         errors: true,
@@ -12249,7 +12249,7 @@ const baselines = {
         types: true,
     },
     'ttttAnyBaseClassInIntersection': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -12638,6 +12638,11 @@ const baselines = {
         types: true,
     },
     'ttttClassMemberCommaKeyGrammar': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttClassMemberVarBracket': {
         errors: true,
         symbols: true,
         types: true,
@@ -14156,6 +14161,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttExportStringNameNoFrom': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttExportedAndLocalFunctionDuplicate': {
         errors: true,
         symbols: true,
@@ -14776,6 +14786,16 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttIntersectionExtraCheckApparent': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttIntersectionExtraCheckMembers': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttIntersectionGenericLiteralNeverReduced': {
         errors: true,
         symbols: true,
@@ -15078,6 +15098,12 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
+    },
+    'ttttJsTypedefAliasOwnTarget': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
     },
     'ttttJsTypedefNoNameDropsGrammarErrors': {
         errors: true,
@@ -15385,6 +15411,11 @@ const baselines = {
         types: true,
     },
     'ttttListEndOfFile': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttLiteralAccessorConflictPair': {
         errors: true,
         symbols: true,
         types: true,
@@ -15764,6 +15795,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttNeverIndexNonNull': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttNeverIndexRecord': {
         errors: true,
         symbols: true,
@@ -16057,6 +16093,11 @@ const baselines = {
         types: true,
     },
     'ttttPackageTypeInvalidEmitFormat': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttPadComputedBindingName': {
         errors: true,
         symbols: true,
         types: true,
