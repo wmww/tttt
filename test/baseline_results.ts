@@ -3236,7 +3236,7 @@ const baselines = {
         types: true,
     },
     'bun20-C3b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -7436,7 +7436,7 @@ const baselines = {
         types: true,
     },
     'bun39-C19a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -7621,7 +7621,7 @@ const baselines = {
         types: true,
     },
     'bun41-C10a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -7681,7 +7681,7 @@ const baselines = {
         types: true,
     },
     'bun42-C14a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15356,6 +15356,11 @@ const baselines = {
         types: true,
     },
     'ttttLoopPartialArithmetic': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttLoopPartialCallArgument': {
         errors: true,
         symbols: true,
         types: true,
