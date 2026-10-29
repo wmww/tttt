@@ -1933,6 +1933,14 @@ static bool hop_token(Parser* parent) {
             }
             break;
 
+        case '?':
+            // (`?.` is one token unless a digit follows, tsc's scanner)
+            if (parent->pos[1] == '.' && !(parent->pos[2] >= '0' && parent->pos[2] <= '9')) {
+                parent->pos += 2;
+                return true;
+            }
+            break;
+
         default: break;
     }
 
@@ -7973,7 +7981,9 @@ static bool parse_function_args_inner(
 
                 Span question_span = span_null;
                 // (A `this` parameter has a type annotation and nothing else: tsc's parseParameterWorker)
-                if (!this_param && hop_char(&p, '?')) {
+                // (Not a `?.` token, tsc's scanner: `(a?.b)` expects a `,` at it)
+                bool question_dot = p.pos[0] == '?' && p.pos[1] == '.' && !(p.pos[2] >= '0' && p.pos[2] <= '9');
+                if (!this_param && !question_dot && hop_char(&p, '?')) {
                     explicit_optional = true;
                     question_span = span_from_previous_char(&p);
                     js_syntax_error(&p, question_span, 8009, "The '?' modifier can only be used in TypeScript files.");

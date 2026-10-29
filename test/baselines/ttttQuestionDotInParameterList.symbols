@@ -1,0 +1,22 @@
+//// [test/cases/ttttQuestionDotInParameterList.ts] ////
+
+=== ttttQuestionDotInParameterList.ts ===
+// `?.` after a parameter name is one token (tsc's scanner), not the optional marker: `,` expected at it, spanning both
+// characters; `?.5` is `?` then a number
+type T = {
+>T : Symbol(T, Decl(ttttQuestionDotInParameterList.ts, 0, 0))
+
+    m: 1
+>m : Symbol(m, Decl(ttttQuestionDotInParameterList.ts, 2, 10))
+
+if (fixed.thing?.name !== "Correct") {
+>if : Symbol(if, Decl(ttttQuestionDotInParameterList.ts, 3, 8))
+>fixed : Symbol(fixed, Decl(ttttQuestionDotInParameterList.ts, 4, 4))
+>thing : Symbol(thing, Decl(ttttQuestionDotInParameterList.ts, 4, 10))
+>name : Symbol(name, Decl(ttttQuestionDotInParameterList.ts, 4, 17))
+}
+declare function f(a?.5): void;
+>f : Symbol(f, Decl(ttttQuestionDotInParameterList.ts, 5, 1))
+>a : Symbol(a, Decl(ttttQuestionDotInParameterList.ts, 6, 19))
+> : Symbol((Missing), Decl(ttttQuestionDotInParameterList.ts, 6, 21))
+

@@ -1,0 +1,44 @@
+ttttQuestionDotInParameterList.ts(5,1): error TS7010: 'if', which lacks return-type annotation, implicitly has an 'any' return type.
+ttttQuestionDotInParameterList.ts(5,5): error TS7006: Parameter 'fixed' implicitly has an 'any' type.
+ttttQuestionDotInParameterList.ts(5,10): error TS1005: ',' expected.
+ttttQuestionDotInParameterList.ts(5,11): error TS7006: Parameter 'thing' implicitly has an 'any' type.
+ttttQuestionDotInParameterList.ts(5,16): error TS1005: ',' expected.
+ttttQuestionDotInParameterList.ts(5,18): error TS7006: Parameter 'name' implicitly has an 'any' type.
+ttttQuestionDotInParameterList.ts(5,23): error TS1005: ',' expected.
+ttttQuestionDotInParameterList.ts(5,36): error TS1005: ';' expected.
+ttttQuestionDotInParameterList.ts(7,20): error TS7006: Parameter 'a' implicitly has an 'any' type.
+ttttQuestionDotInParameterList.ts(7,22): error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+ttttQuestionDotInParameterList.ts(7,22): error TS1005: ',' expected.
+
+
+==== ttttQuestionDotInParameterList.ts (11 errors) ====
+    // `?.` after a parameter name is one token (tsc's scanner), not the optional marker: `,` expected at it, spanning both
+    // characters; `?.5` is `?` then a number
+    type T = {
+        m: 1
+    if (fixed.thing?.name !== "Correct") {
+    ~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7010: 'if', which lacks return-type annotation, implicitly has an 'any' return type.
+        ~~~~~
+!!! error TS7006: Parameter 'fixed' implicitly has an 'any' type.
+             ~
+!!! error TS1005: ',' expected.
+              ~~~~~
+!!! error TS7006: Parameter 'thing' implicitly has an 'any' type.
+                   ~~
+!!! error TS1005: ',' expected.
+                     ~~~~
+!!! error TS7006: Parameter 'name' implicitly has an 'any' type.
+                          ~~~
+!!! error TS1005: ',' expected.
+                                       ~
+!!! error TS1005: ';' expected.
+    }
+    declare function f(a?.5): void;
+                       ~~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                         
+!!! error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+                         ~~
+!!! error TS1005: ',' expected.
+    
