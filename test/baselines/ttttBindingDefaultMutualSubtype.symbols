@@ -1,0 +1,63 @@
+//// [test/cases/ttttBindingDefaultMutualSubtype.ts] ////
+
+=== ttttBindingDefaultMutualSubtype.ts ===
+// A binding element's default that is a mutual strict subtype of the element's type: the subtype reduction's union
+// order decides which one removeSubtypes drops. `B & object` (B empty) and a fresh `{}` are mutual subtypes and
+// tsgo keeps `{}`; with a weak W the fresh `{}` is no supertype of `W & object`, which stays.
+// Seed 20261118, nonPrimitiveAndEmptyObject delete-stmt
+interface B {}
+>B : Symbol(B, Decl(ttttBindingDefaultMutualSubtype.ts, 0, 0))
+
+interface W { w?: string }
+>W : Symbol(W, Decl(ttttBindingDefaultMutualSubtype.ts, 4, 14))
+>w : Symbol(W.w, Decl(ttttBindingDefaultMutualSubtype.ts, 5, 13))
+
+declare const bo: B & object;
+>bo : Symbol(bo, Decl(ttttBindingDefaultMutualSubtype.ts, 6, 13))
+>B : Symbol(B, Decl(ttttBindingDefaultMutualSubtype.ts, 0, 0))
+
+declare const wo: W & object;
+>wo : Symbol(wo, Decl(ttttBindingDefaultMutualSubtype.ts, 7, 13))
+>W : Symbol(W, Decl(ttttBindingDefaultMutualSubtype.ts, 4, 14))
+
+declare const b: B;
+>b : Symbol(b, Decl(ttttBindingDefaultMutualSubtype.ts, 8, 13))
+>B : Symbol(B, Decl(ttttBindingDefaultMutualSubtype.ts, 0, 0))
+
+var a1 = [bo, {}];
+>a1 : Symbol(a1, Decl(ttttBindingDefaultMutualSubtype.ts, 9, 3))
+>bo : Symbol(bo, Decl(ttttBindingDefaultMutualSubtype.ts, 6, 13))
+
+var a2 = [{}, bo];
+>a2 : Symbol(a2, Decl(ttttBindingDefaultMutualSubtype.ts, 10, 3))
+>bo : Symbol(bo, Decl(ttttBindingDefaultMutualSubtype.ts, 6, 13))
+
+var a3 = [wo, {}];
+>a3 : Symbol(a3, Decl(ttttBindingDefaultMutualSubtype.ts, 11, 3))
+>wo : Symbol(wo, Decl(ttttBindingDefaultMutualSubtype.ts, 7, 13))
+
+var a4 = [b, {}];
+>a4 : Symbol(a4, Decl(ttttBindingDefaultMutualSubtype.ts, 12, 3))
+>b : Symbol(b, Decl(ttttBindingDefaultMutualSubtype.ts, 8, 13))
+
+declare const foo: { p?: B, q?: W & object, r?: B & object };
+>foo : Symbol(foo, Decl(ttttBindingDefaultMutualSubtype.ts, 13, 13))
+>p : Symbol(p, Decl(ttttBindingDefaultMutualSubtype.ts, 13, 20))
+>B : Symbol(B, Decl(ttttBindingDefaultMutualSubtype.ts, 0, 0))
+>q : Symbol(q, Decl(ttttBindingDefaultMutualSubtype.ts, 13, 27))
+>W : Symbol(W, Decl(ttttBindingDefaultMutualSubtype.ts, 4, 14))
+>r : Symbol(r, Decl(ttttBindingDefaultMutualSubtype.ts, 13, 43))
+>B : Symbol(B, Decl(ttttBindingDefaultMutualSubtype.ts, 0, 0))
+
+const { p = {}, q = {}, r = {} } = foo;
+>p : Symbol(p, Decl(ttttBindingDefaultMutualSubtype.ts, 14, 7))
+>q : Symbol(q, Decl(ttttBindingDefaultMutualSubtype.ts, 14, 15))
+>r : Symbol(r, Decl(ttttBindingDefaultMutualSubtype.ts, 14, 23))
+>foo : Symbol(foo, Decl(ttttBindingDefaultMutualSubtype.ts, 13, 13))
+
+r.barProp;
+>r : Symbol(r, Decl(ttttBindingDefaultMutualSubtype.ts, 14, 23))
+
+q.barProp;
+>q : Symbol(q, Decl(ttttBindingDefaultMutualSubtype.ts, 14, 15))
+

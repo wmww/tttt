@@ -1,0 +1,69 @@
+//// [test/cases/ttttBindingDefaultMutualSubtype.ts] ////
+
+=== ttttBindingDefaultMutualSubtype.ts ===
+// A binding element's default that is a mutual strict subtype of the element's type: the subtype reduction's union
+// order decides which one removeSubtypes drops. `B & object` (B empty) and a fresh `{}` are mutual subtypes and
+// tsgo keeps `{}`; with a weak W the fresh `{}` is no supertype of `W & object`, which stays.
+// Seed 20261118, nonPrimitiveAndEmptyObject delete-stmt
+interface B {}
+interface W { w?: string }
+>w : string | undefined
+
+declare const bo: B & object;
+>bo : B & object
+
+declare const wo: W & object;
+>wo : W & object
+
+declare const b: B;
+>b : B
+
+var a1 = [bo, {}];
+>a1 : {}[]
+>[bo, {}] : {}[]
+>bo : B & object
+>{} : {}
+
+var a2 = [{}, bo];
+>a2 : {}[]
+>[{}, bo] : {}[]
+>{} : {}
+>bo : B & object
+
+var a3 = [wo, {}];
+>a3 : (W & object)[]
+>[wo, {}] : (W & object)[]
+>wo : W & object
+>{} : {}
+
+var a4 = [b, {}];
+>a4 : B[]
+>[b, {}] : B[]
+>b : B
+>{} : {}
+
+declare const foo: { p?: B, q?: W & object, r?: B & object };
+>foo : { p?: B; q?: W & object; r?: B & object; }
+>p : B | undefined
+>q : (W & object) | undefined
+>r : (B & object) | undefined
+
+const { p = {}, q = {}, r = {} } = foo;
+>p : B
+>{} : {}
+>q : W & object
+>{} : {}
+>r : {}
+>{} : {}
+>foo : { p?: B; q?: W & object; r?: B & object; }
+
+r.barProp;
+>r.barProp : any
+>r : {}
+>barProp : any
+
+q.barProp;
+>q.barProp : any
+>q : W & object
+>barProp : any
+

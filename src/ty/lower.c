@@ -4307,10 +4307,10 @@ static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
         // (Of mutual subtypes, two function types alike, the reduction below keeps the first in union order)
         if (!(ret->flags & TYF_ANY) && !(types[0]->flags & TYF_NEVER) &&
             ty_is_related(me, ty_regular(me, default_type), types[0], TY_RELATION_STRICT_SUBTYPE) &&
-            // (A default object literal that is a mutual subtype is created after the element's type, so tsc's
-            // removeSubtypes looks at it first and drops it: `{ p = {} }` of `P & object` keeps `P & object`)
-            !((default_type->flags & TYF_OBJECT) && !(default_type->kind == TY_ANONYMOUS && default_type->anonymous.object_literal) &&
-                ty_is_related(me, types[0], ty_regular(me, default_type), TY_RELATION_STRICT_SUBTYPE))
+            // (An object default that is a mutual subtype is left to the reduction below, whose union order decides
+            // which one removeSubtypes looks at first and drops: `{ p = {} }` of `P & object` keeps `{}` for an empty
+            // P, `P & object` for a weak one, where the fresh `{}` is no supertype)
+            !((default_type->flags & TYF_OBJECT) && ty_is_related(me, types[0], ty_regular(me, default_type), TY_RELATION_STRICT_SUBTYPE))
         ) {
             return types[0];
         }
