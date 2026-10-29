@@ -6195,6 +6195,9 @@ static void report_renamed_bodiless_elements(Checker* me, Binding const* pattern
                 continue;
             }
             if (span_eq(i->source_span, i->target.content_span)) continue;
+            // (A computed key not usable as a property name isn't in the pattern's type: tsc's
+            // getTypeFromObjectBindingPattern skips the element, mutation seed 20261122's mut5487)
+            if (i->computed_key && !ty_literal_name(me, ty_binding_computed_key_type(me, i))) continue;
             ty_error_at(me, i->target.content_span, 7031, cstr_d("Binding element '", span_name_text(i->target.content_span),
                 "' implicitly has an 'any' type."));
         }

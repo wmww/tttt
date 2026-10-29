@@ -32,3 +32,25 @@ declare function fe2({ [missing5]: { e } }: any): void;
 >missing5 : any
 >e : any
 
+// A pattern that types its parameter checks the name when the type is asked for: by an implementation's overload
+// check (mutation seed 20261122's mut5487), or a call. Its element is implicitly any only under a key usable as a name
+const k = "a";
+>k : "a"
+>"a" : "a"
+
+function fd({ [missing6]: f });
+>fd : ({ [missing6]: f }: {}) => any
+>missing6 : any
+>f : any
+
+function fd() {}
+>fd : ({ [missing6]: f }: {}) => any
+
+function fg({ [k]: g });
+>fg : ({ [k]: g }: { a: any; }) => any
+>k : "a"
+>g : any
+
+function fg() {}
+>fg : ({ [k]: g }: { a: any; }) => any
+

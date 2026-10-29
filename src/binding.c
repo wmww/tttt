@@ -194,10 +194,13 @@ void binding_lookup_names(Binding* me, Scope* names, ErrorCtx* errs) {
             for_each (i, vec_object_binding_item, &my object) {
                 if (i->computed_key) {
                     // (A renaming in a parameter of a signature without a body isn't checked beyond TS2842, its
-                    // computed name neither: tsc's checkVariableLikeDeclaration returns first, `({ [k]: a }) => void`
-                    // says nothing of an undeclared k)
+                    // computed name neither: tsc's checkVariableLikeDeclaration returns first, `({ [k]: a }: any) =>
+                    // void` says nothing of an undeclared k. Unless the parameter is typed by its pattern: then
+                    // getTypeFromObjectBindingPattern checks the name whenever the parameter's type is asked for, by a
+                    // call or an implementation's overload check; an unasked ambient one says nothing, not modelled)
                     FlowBuilder const* flow = scope_flow(names);
-                    Scope const* function_scope = flow && flow->parameter_initializing ? flow->parameter_function_scope : nullptr;
+                    Scope const* function_scope = flow && flow->parameter_initializing && flow->parameter_initializing->has_explicit_type ?
+                        flow->parameter_function_scope : nullptr;
                     bool unchecked = function_scope && function_scope->function && !function_scope->function->has_body &&
                         i->target.tag == BINDING_IDENTIFIER && (!i->target.rest || i->target.rest_property_name);
                     expr_lookup_names(i->computed_key, names, unchecked ? binder_discarded_errs(names->binder) : errs);

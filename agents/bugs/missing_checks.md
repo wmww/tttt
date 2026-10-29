@@ -667,6 +667,25 @@ circular), so nothing is in flight to fail and V.p is never named. Fixing it mea
 entry whose evaluation repeats getTargetOfAliasDeclaration's member lookup; the other 15 missing TS2502 bun cases
 (bun_others.md) are other mechanisms (lazy parameter typing, notes/reentrancy.md). [design]
 
+## Mutation seed 20261122 (2026-10-29, cor16: `scripts/mutate.py -n 8000 --seed 20261122`, 5 of 8000 differ; `--syntax` 12)
+Known: recursiveClassBaseType (TS2310, 2: mut5311's family), unicodeLineSeparatorInMultilineComment [tsgo],
+exportSpecifierReferencingOuterDeclaration3 and importDeclWithExportModifierAndExportAssignmentInAmbientContext
+str-to-num (`declare module 42 {`, the 20261121 block-scope family). Fixed:
+- conditionalTypeContextualTypeSimplificationsSuceeds extends-object (--syntax, mut5487): a bodiless non-ambient
+  function whose unannotated pattern has a renaming under a computed key `[K in keyof` (recovery). The key's names are
+  resolved with errors there, since the pattern types the parameter and the overload check asks for it (cor16's first
+  version of 03-C11b's fix had dropped them: now only for an annotated parameter), and the element isn't implicitly any
+  (report_renamed_bodiless_elements(): a key not usable as a name isn't in getTypeFromObjectBindingPattern's type).
+  Test ttttBodilessRenamingComputedName [fixed NEXT]. Left: the key's TS2464 (an `in` expression's boolean), which
+  tsc's checkComputedPropertyName says when the parameter's type is asked for. [open]
+- Render only [text]: conditionalContextualReturnSubstitutionCache extends-object (a second related TS2208 "This type
+  parameter might need an `extends ...` constraint" naming the whole conditional), mappedTypeConstraints2 drop-as (the
+  related TS2751 "Circularity originates in type at this location" missing on a TS2313), and two `--syntax` ones.
+- circularBaseConstraint delete-stmt (--syntax): TS5114 "Instantiations of type 'B' appear infinitely circular" in
+  tsc where tttt says TS2589, the limit family. [design]
+- stringMappingSpecialCasing delete-stmt (--syntax): TS18004 for a shorthand `Capitalized` in recovery's object
+  literal, missing. [open]
+
 ## Mutation seed 20261121 (2026-10-29, cor15: `scripts/mutate.py -n 8000 --seed 20261121`, 8 of 8000 differ)
 Known: generatorTypeCheck46 (TS2488), globalThisGlobalExportAsGlobal (TS2303). Fixed:
 - destructuringAssignmentWithExportedName delete-stmt: `export { x }` of an undeclared x is TS2304 and TS2552 at

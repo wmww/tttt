@@ -3,9 +3,15 @@ ttttBodilessRenamingComputedName.ts(5,41): error TS2842: 'b' is an unused renami
 ttttBodilessRenamingComputedName.ts(6,35): error TS2842: 'c' is an unused renaming of '[missing3]'. Did you intend to use it as a type annotation?
 ttttBodilessRenamingComputedName.ts(7,18): error TS2304: Cannot find name 'missing4'.
 ttttBodilessRenamingComputedName.ts(8,25): error TS2304: Cannot find name 'missing5'.
+ttttBodilessRenamingComputedName.ts(12,10): error TS7010: 'fd', which lacks return-type annotation, implicitly has an 'any' return type.
+ttttBodilessRenamingComputedName.ts(12,16): error TS2304: Cannot find name 'missing6'.
+ttttBodilessRenamingComputedName.ts(12,27): error TS2842: 'f' is an unused renaming of '[missing6]'. Did you intend to use it as a type annotation?
+ttttBodilessRenamingComputedName.ts(14,10): error TS7010: 'fg', which lacks return-type annotation, implicitly has an 'any' return type.
+ttttBodilessRenamingComputedName.ts(14,20): error TS2842: 'g' is an unused renaming of '[k]'. Did you intend to use it as a type annotation?
+ttttBodilessRenamingComputedName.ts(14,20): error TS7031: Binding element 'g' implicitly has an 'any' type.
 
 
-==== ttttBodilessRenamingComputedName.ts (5 errors) ====
+==== ttttBodilessRenamingComputedName.ts (11 errors) ====
     // A renaming with a computed name in a parameter of a signature without a body says nothing about the name (bun cases
     // 03-C11b, 34-C14b; a function type's too, which the harness's declaration emit reports anyway): tsc's
     // checkVariableLikeDeclaration returns at the renaming (TS2842) before checkComputedPropertyName
@@ -24,4 +30,25 @@ ttttBodilessRenamingComputedName.ts(8,25): error TS2304: Cannot find name 'missi
     declare function fe2({ [missing5]: { e } }: any): void;
                             ~~~~~~~~
 !!! error TS2304: Cannot find name 'missing5'.
+    // A pattern that types its parameter checks the name when the type is asked for: by an implementation's overload
+    // check (mutation seed 20261122's mut5487), or a call. Its element is implicitly any only under a key usable as a name
+    const k = "a";
+    function fd({ [missing6]: f });
+             ~~
+!!! error TS7010: 'fd', which lacks return-type annotation, implicitly has an 'any' return type.
+                   ~~~~~~~~
+!!! error TS2304: Cannot find name 'missing6'.
+                              ~
+!!! error TS2842: 'f' is an unused renaming of '[missing6]'. Did you intend to use it as a type annotation?
+!!! related TS2843 ttttBodilessRenamingComputedName.ts:12:30: We can only write a type for '[missing6]' by adding a type for the entire parameter here.
+    function fd() {}
+    function fg({ [k]: g });
+             ~~
+!!! error TS7010: 'fg', which lacks return-type annotation, implicitly has an 'any' return type.
+                       ~
+!!! error TS2842: 'g' is an unused renaming of '[k]'. Did you intend to use it as a type annotation?
+!!! related TS2843 ttttBodilessRenamingComputedName.ts:14:23: We can only write a type for '[k]' by adding a type for the entire parameter here.
+                       ~
+!!! error TS7031: Binding element 'g' implicitly has an 'any' type.
+    function fg() {}
     

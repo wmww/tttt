@@ -26,3 +26,23 @@ declare function fe2({ [missing5]: { e } }: any): void;
 >fe2 : Symbol(fe2, Decl(ttttBodilessRenamingComputedName.ts, 6, 51))
 >e : Symbol(e, Decl(ttttBodilessRenamingComputedName.ts, 7, 36))
 
+// A pattern that types its parameter checks the name when the type is asked for: by an implementation's overload
+// check (mutation seed 20261122's mut5487), or a call. Its element is implicitly any only under a key usable as a name
+const k = "a";
+>k : Symbol(k, Decl(ttttBodilessRenamingComputedName.ts, 10, 5))
+
+function fd({ [missing6]: f });
+>fd : Symbol(fd, Decl(ttttBodilessRenamingComputedName.ts, 10, 14), Decl(ttttBodilessRenamingComputedName.ts, 11, 31))
+>f : Symbol(f, Decl(ttttBodilessRenamingComputedName.ts, 11, 13))
+
+function fd() {}
+>fd : Symbol(fd, Decl(ttttBodilessRenamingComputedName.ts, 10, 14), Decl(ttttBodilessRenamingComputedName.ts, 11, 31))
+
+function fg({ [k]: g });
+>fg : Symbol(fg, Decl(ttttBodilessRenamingComputedName.ts, 12, 16), Decl(ttttBodilessRenamingComputedName.ts, 13, 24))
+>k : Symbol(k, Decl(ttttBodilessRenamingComputedName.ts, 10, 5))
+>g : Symbol(g, Decl(ttttBodilessRenamingComputedName.ts, 13, 13))
+
+function fg() {}
+>fg : Symbol(fg, Decl(ttttBodilessRenamingComputedName.ts, 12, 16), Decl(ttttBodilessRenamingComputedName.ts, 13, 24))
+
