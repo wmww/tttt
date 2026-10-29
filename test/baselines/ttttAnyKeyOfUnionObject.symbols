@@ -1,0 +1,80 @@
+//// [test/cases/ttttAnyKeyOfUnionObject.ts] ////
+
+=== ttttAnyKeyOfUnionObject.ts ===
+// An any (or error) key of a union or intersection of objects is TS2538 unless the whole has an applicable index
+// signature: tsc's getPropertyTypeForIndexType on the union, not member by member
+declare const k: any;
+>k : Symbol(k, Decl(ttttAnyKeyOfUnionObject.ts, 2, 13))
+
+declare const s: string;
+>s : Symbol(s, Decl(ttttAnyKeyOfUnionObject.ts, 3, 13))
+
+declare const ab: { n: number } | { n: string };
+>ab : Symbol(ab, Decl(ttttAnyKeyOfUnionObject.ts, 4, 13))
+>n : Symbol(n, Decl(ttttAnyKeyOfUnionObject.ts, 4, 19))
+>n : Symbol(n, Decl(ttttAnyKeyOfUnionObject.ts, 4, 35))
+
+const { [k]: a1 } = ab;
+>k : Symbol(k, Decl(ttttAnyKeyOfUnionObject.ts, 2, 13))
+>a1 : Symbol(a1, Decl(ttttAnyKeyOfUnionObject.ts, 5, 7))
+>ab : Symbol(ab, Decl(ttttAnyKeyOfUnionObject.ts, 4, 13))
+
+const { [k]: a2 } = { n: 1 };
+>k : Symbol(k, Decl(ttttAnyKeyOfUnionObject.ts, 2, 13))
+>a2 : Symbol(a2, Decl(ttttAnyKeyOfUnionObject.ts, 6, 7))
+>n : Symbol(n, Decl(ttttAnyKeyOfUnionObject.ts, 6, 21))
+
+const { [s]: a3 } = ab;
+>s : Symbol(s, Decl(ttttAnyKeyOfUnionObject.ts, 3, 13))
+>a3 : Symbol(a3, Decl(ttttAnyKeyOfUnionObject.ts, 7, 7))
+>ab : Symbol(ab, Decl(ttttAnyKeyOfUnionObject.ts, 4, 13))
+
+declare const r: Record<string, number>;
+>r : Symbol(r, Decl(ttttAnyKeyOfUnionObject.ts, 8, 13))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+const { [k]: a4 } = r;
+>k : Symbol(k, Decl(ttttAnyKeyOfUnionObject.ts, 2, 13))
+>a4 : Symbol(a4, Decl(ttttAnyKeyOfUnionObject.ts, 9, 7))
+>r : Symbol(r, Decl(ttttAnyKeyOfUnionObject.ts, 8, 13))
+
+const { [missing]: a5 } = { n: 1 };
+>a5 : Symbol(a5, Decl(ttttAnyKeyOfUnionObject.ts, 10, 7))
+>n : Symbol(n, Decl(ttttAnyKeyOfUnionObject.ts, 10, 27))
+
+const x = ab[k];
+>x : Symbol(x, Decl(ttttAnyKeyOfUnionObject.ts, 11, 5))
+>ab : Symbol(ab, Decl(ttttAnyKeyOfUnionObject.ts, 4, 13))
+>k : Symbol(k, Decl(ttttAnyKeyOfUnionObject.ts, 2, 13))
+
+type T1 = ({ n: number } | { n: string })[any];
+>T1 : Symbol(T1, Decl(ttttAnyKeyOfUnionObject.ts, 11, 16))
+>n : Symbol(n, Decl(ttttAnyKeyOfUnionObject.ts, 12, 12))
+>n : Symbol(n, Decl(ttttAnyKeyOfUnionObject.ts, 12, 28))
+
+type T2 = (string | { n: string })[any];
+>T2 : Symbol(T2, Decl(ttttAnyKeyOfUnionObject.ts, 12, 47))
+>n : Symbol(n, Decl(ttttAnyKeyOfUnionObject.ts, 13, 21))
+
+type T3 = (Record<string, 1> | Record<string, 2>)[any];
+>T3 : Symbol(T3, Decl(ttttAnyKeyOfUnionObject.ts, 13, 40))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+type T4 = ({ a: 1 } & { b: 2 })[any];
+>T4 : Symbol(T4, Decl(ttttAnyKeyOfUnionObject.ts, 14, 55))
+>a : Symbol(a, Decl(ttttAnyKeyOfUnionObject.ts, 15, 12))
+>b : Symbol(b, Decl(ttttAnyKeyOfUnionObject.ts, 15, 23))
+
+const { [k]: a6 } = "str" as string | { n: string };
+>k : Symbol(k, Decl(ttttAnyKeyOfUnionObject.ts, 2, 13))
+>a6 : Symbol(a6, Decl(ttttAnyKeyOfUnionObject.ts, 16, 7))
+>n : Symbol(n, Decl(ttttAnyKeyOfUnionObject.ts, 16, 39))
+
+const { [k]: a7 } = r as Record<string, 1> | Record<string, 2>;
+>k : Symbol(k, Decl(ttttAnyKeyOfUnionObject.ts, 2, 13))
+>a7 : Symbol(a7, Decl(ttttAnyKeyOfUnionObject.ts, 17, 7))
+>r : Symbol(r, Decl(ttttAnyKeyOfUnionObject.ts, 8, 13))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+

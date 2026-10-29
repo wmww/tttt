@@ -1,0 +1,52 @@
+ttttAnyKeyOfUnionObject.ts(6,10): error TS2538: Type 'any' cannot be used as an index type.
+ttttAnyKeyOfUnionObject.ts(7,10): error TS2538: Type 'any' cannot be used as an index type.
+ttttAnyKeyOfUnionObject.ts(8,10): error TS2537: Type '{ n: number; } | { n: string; }' has no matching index signature for type 'string'.
+ttttAnyKeyOfUnionObject.ts(11,10): error TS2304: Cannot find name 'missing'.
+ttttAnyKeyOfUnionObject.ts(11,10): error TS2538: Type 'any' cannot be used as an index type.
+ttttAnyKeyOfUnionObject.ts(12,11): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ n: number; } | { n: string; }'.
+ttttAnyKeyOfUnionObject.ts(13,43): error TS2538: Type 'any' cannot be used as an index type.
+ttttAnyKeyOfUnionObject.ts(14,36): error TS2538: Type 'any' cannot be used as an index type.
+ttttAnyKeyOfUnionObject.ts(16,33): error TS2538: Type 'any' cannot be used as an index type.
+ttttAnyKeyOfUnionObject.ts(17,10): error TS2538: Type 'any' cannot be used as an index type.
+
+
+==== ttttAnyKeyOfUnionObject.ts (10 errors) ====
+    // An any (or error) key of a union or intersection of objects is TS2538 unless the whole has an applicable index
+    // signature: tsc's getPropertyTypeForIndexType on the union, not member by member
+    declare const k: any;
+    declare const s: string;
+    declare const ab: { n: number } | { n: string };
+    const { [k]: a1 } = ab;
+             ~
+!!! error TS2538: Type 'any' cannot be used as an index type.
+    const { [k]: a2 } = { n: 1 };
+             ~
+!!! error TS2538: Type 'any' cannot be used as an index type.
+    const { [s]: a3 } = ab;
+             ~
+!!! error TS2537: Type '{ n: number; } | { n: string; }' has no matching index signature for type 'string'.
+    declare const r: Record<string, number>;
+    const { [k]: a4 } = r;
+    const { [missing]: a5 } = { n: 1 };
+             ~~~~~~~
+!!! error TS2304: Cannot find name 'missing'.
+             ~~~~~~~
+!!! error TS2538: Type 'any' cannot be used as an index type.
+    const x = ab[k];
+              ~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ n: number; } | { n: string; }'.
+    type T1 = ({ n: number } | { n: string })[any];
+                                              ~~~
+!!! error TS2538: Type 'any' cannot be used as an index type.
+    type T2 = (string | { n: string })[any];
+                                       ~~~
+!!! error TS2538: Type 'any' cannot be used as an index type.
+    type T3 = (Record<string, 1> | Record<string, 2>)[any];
+    type T4 = ({ a: 1 } & { b: 2 })[any];
+                                    ~~~
+!!! error TS2538: Type 'any' cannot be used as an index type.
+    const { [k]: a6 } = "str" as string | { n: string };
+             ~
+!!! error TS2538: Type 'any' cannot be used as an index type.
+    const { [k]: a7 } = r as Record<string, 1> | Record<string, 2>;
+    

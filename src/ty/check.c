@@ -2300,6 +2300,20 @@ void ty_check_property_access(
     check_access(me, object, index, object_span, index_span, object_is_named, error_if_not_found, 0, errs);
 }
 
+// Whether an applicable index info for `index` is there, a union's in every member, an intersection's in one (tsc's
+// resolved union and intersection members)
+static bool composite_has_index_info(Checker* me, Ty const* type, Ty const* index, u32 depth) {
+    if ((type->kind != TY_UNION && type->kind != TY_INTERSECTION) || depth > 8) return ty_applicable_index_info(me, type, index) != nullptr;
+    bool any = false;
+    for (u32 i = 0; i < type->composite.types.len; i++) {
+        Ty const* member = ty_apparent_type(me, type->composite.types.data[i]);
+        bool has = composite_has_index_info(me, member, index, depth + 1);
+        if (type->kind == TY_UNION && !has) return false;
+        any |= has;
+    }
+    return any;
+}
+
 // One member of the index of a non-generic `O[K]` type (tsc's getPropertyTypeForIndexType with an access node)
 static void check_indexed_access_part(Checker* me, Ty const* apparent, Ty const* index, Span index_span, ErrorCtx* errs) {
     if (index->flags & TYF_NEVER) return;
@@ -2311,7 +2325,10 @@ static void check_indexed_access_part(Checker* me, Ty const* apparent, Ty const*
     if (is_key && (index->flags & TYF_ANY)) {
         // Any indexes what has an index signature (any is assignable to every key type), else it's no key at all
         // (tsc's getPropertyTypeForIndexType falls through to TS2538)
-        if (!(apparent->flags & TYF_OBJECT) || ty_applicable_index_info(me, apparent, index)) return;
+        // (A union or intersection of objects too: tsc looks for the index info of the whole, `{ a: 1 } | { b: 2 }`
+        // has none)
+        bool objects = (apparent->flags & TYF_OBJECT) || apparent->kind == TY_UNION || apparent->kind == TY_INTERSECTION;
+        if (!objects || composite_has_index_info(me, apparent, index, 0)) return;
         is_key = false;
     }
     // (A negative element of a tuple without a rest element isn't its number index signature's: tsc's

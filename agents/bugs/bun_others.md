@@ -156,7 +156,7 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
 - 54-L02a, a misplaced `export { x as y }` in a function body: resolved by a checker under deferred bodies,
   triage.md [open] (TS2304 both ways). [dup]
 - A JSDoc link to a shadowed name keeps the outer import used (ttttHackJsdocLinkShadowed, hacks.md
-  `unused_mark_jsdoc_links()`). [fixed COMMIT-LINK]
+  `unused_mark_jsdoc_links()`). [fixed 1d4d6a45b]
 
 - **corH's codes (spurious TS2345, TS2353, TS2344, TS2719, TS2488), what is left after 2026-10-23's fixes**:
   - Circularity tsc finds by re-entering below a call barrier, keeping the nested call's result: 72-R15b (+TS2345 at
@@ -207,7 +207,7 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
   `{@link Foo\u0046}` (43-C8c), JSDoc on a named tuple member (54-L08) or on an expression statement (80-R17a,
   80-R17b), `@typedef`/`@callback` tags' property/param descriptions in a TS file (54-L06), member names after `#`
   that are keywords (54-L07a: `a#delete` and `c#default` use, `b#foo`, `d#of`, `e.delete` don't). Needs the links
-  resolved from parsed, attached JSDoc. [fixed COMMIT-LINK] (resolved at the walked source elements by a scanner
+  resolved from parsed, attached JSDoc. [fixed 1d4d6a45b] (resolved at the walked source elements by a scanner
   of tsgo's JSDoc tag structure, hacks.md `unused_mark_jsdoc_links_before()`)
 
 - 83-R10a: functions inside heritage elements tsc never checks (TS2500/TS2499, clauses after TS1172/TS1174/TS1175)
@@ -710,7 +710,7 @@ unexplained, a one-line `{ /** {@link H} */ m: number }` interface member or enu
 used); `Foo\u0046` resolves as `FooF`. Marked: parameters, statements in blocks, class members, `@param x {@link
 K}`'s comment, `@throws {@link M} desc {@link N}`'s N. tttt's unused_mark_jsdoc_links() scanned the whole file's
 text for `@link NAME`; links are now resolved at the walked source elements (hacks.md
-`unused_mark_jsdoc_links_before()`). [fixed COMMIT-LINK] Found on the way: in a JavaScript file the nested
+`unused_mark_jsdoc_links_before()`). [fixed 1d4d6a45b] Found on the way: in a JavaScript file the nested
 @property/@param tags' links do count (tsgo reparses them into declarations), a nested @returns' don't; a named tuple
 member's JSDoc counts (multi-line); a TS comment is only parsed when one of the JSDoc comments before the token has
 `@see`/`@link` followed by whitespace, `}`, `*` or the end (`{@link\fFoo}` isn't, scanJSDocCommentForTags); a

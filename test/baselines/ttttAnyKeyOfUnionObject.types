@@ -1,0 +1,84 @@
+//// [test/cases/ttttAnyKeyOfUnionObject.ts] ////
+
+=== ttttAnyKeyOfUnionObject.ts ===
+// An any (or error) key of a union or intersection of objects is TS2538 unless the whole has an applicable index
+// signature: tsc's getPropertyTypeForIndexType on the union, not member by member
+declare const k: any;
+>k : any
+
+declare const s: string;
+>s : string
+
+declare const ab: { n: number } | { n: string };
+>ab : { n: number; } | { n: string; }
+>n : number
+>n : string
+
+const { [k]: a1 } = ab;
+>k : any
+>a1 : any
+>ab : { n: number; } | { n: string; }
+
+const { [k]: a2 } = { n: 1 };
+>k : any
+>a2 : any
+>{ n: 1 } : { n: number; }
+>n : number
+>1 : 1
+
+const { [s]: a3 } = ab;
+>s : string
+>a3 : any
+>ab : { n: number; } | { n: string; }
+
+declare const r: Record<string, number>;
+>r : Record<string, number>
+
+const { [k]: a4 } = r;
+>k : any
+>a4 : number
+>r : Record<string, number>
+
+const { [missing]: a5 } = { n: 1 };
+>missing : any
+>a5 : any
+>{ n: 1 } : { n: number; }
+>n : number
+>1 : 1
+
+const x = ab[k];
+>x : any
+>ab[k] : any
+>ab : { n: number; } | { n: string; }
+>k : any
+
+type T1 = ({ n: number } | { n: string })[any];
+>T1 : any
+>n : number
+>n : string
+
+type T2 = (string | { n: string })[any];
+>T2 : any
+>n : string
+
+type T3 = (Record<string, 1> | Record<string, 2>)[any];
+>T3 : 1 | 2
+
+type T4 = ({ a: 1 } & { b: 2 })[any];
+>T4 : any
+>a : 1
+>b : 2
+
+const { [k]: a6 } = "str" as string | { n: string };
+>k : any
+>a6 : any
+>"str" as string | { n: string } : string | { n: string; }
+>"str" : "str"
+>n : string
+
+const { [k]: a7 } = r as Record<string, 1> | Record<string, 2>;
+>k : any
+>a7 : 1 | 2
+>r as Record<string, 1> | Record<string, 2> : Record<string, 1> | Record<string, 2>
+>r : Record<string, number>
+
