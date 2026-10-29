@@ -12248,6 +12248,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAnyBaseClassInIntersection': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
     'ttttAnyIntersectionDisjointDomains': {
         errors: true,
         symbols: true,
