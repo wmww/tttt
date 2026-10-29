@@ -879,6 +879,21 @@ static Ty const* contextual_named_prop_type(Checker* me, Ty const* contextual, A
     return context_map(me, contextual, get_prop_context, &k);
 }
 
+// The name tsc's binder gives a `[+2]` member, "+2" (getDeclarationName keeps a signed numeric literal's operator,
+// which getPropertyNameForPropertyNameNode drops for `+`), and getContextualTypeForObjectLiteralElement looks up:
+// neither the property `2` nor a numeric index signature gives it a contextual type. Null for any other key
+static Atom const* plus_numeric_key_context_name(Checker* me, Expr const* key) {
+    if (!key || key->tag != EXPR_UNARY_OP || key->unary_op->op != UNARY_OP_PLUS) return nullptr;
+    Expr const* operand = &key->unary_op->expr;
+    if (operand->tag != EXPR_LITERAL || operand->literal.tag != VALUE_NUMBER || expr_is_perenthisized(operand)) return nullptr;
+    Atom const* digits = ty_literal_name(me, ty_literal(me, &operand->literal));
+    cstr name = cstr_from("+");
+    cstr_append_sv(&name, atom_sv(digits));
+    Atom const* ret = checker_atom(me, cstr_sv(&name));
+    cstr_drop(&name);
+    return ret;
+}
+
 typedef struct ElementContextArg {
     u32 index;
     u32 length; // Of the array literal, UINT32_MAX if unknown
@@ -1982,6 +1997,8 @@ static Ty const* derive_anchor_context(Checker* me, ContextAnchor const* anchor,
             Ty const* parent = anchor_literal_context(me, anchor->parent, anchor->literal, read, depth + 1);
             if (!parent) return nullptr;
             ObjectExprItem const* item = anchor->item;
+            Atom const* plus_name = plus_numeric_key_context_name(me, item->computed_key);
+            if (plus_name) return contextual_named_prop_type(me, parent, plus_name);
             if (item->computed_key) return contextual_prop_type(me, parent, ty_expr_type(me, item->computed_key));
             return contextual_named_prop_type(me, parent, checker_atom(me, cstr_sv(&item->name_string)));
         }
@@ -5125,7 +5142,11 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         if ((ctx.contextual || ctx.sig_contextual) && !is_accessor) {
             // (tsc asks for it from the value's checkExpression: what goes wrong making it is the value's)
             CurrentNode saved_node = ty_enter_expr(me, &i->value);
-            if (name) {
+            Atom const* plus_name = plus_numeric_key_context_name(me, i->computed_key);
+            if (plus_name) {
+                if (ctx.contextual) member_context = contextual_named_prop_type(me, ctx.contextual, plus_name);
+                if (ctx.sig_contextual) member_sig_context = contextual_named_prop_type(me, ctx.sig_contextual, plus_name);
+            } else if (name) {
                 if (ctx.contextual) member_context = contextual_named_prop_type(me, ctx.contextual, name);
                 if (ctx.sig_contextual) member_sig_context = contextual_named_prop_type(me, ctx.sig_contextual, name);
             } else if (key_type) {

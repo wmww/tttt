@@ -1,0 +1,75 @@
+//// [test/cases/ttttPlusNumericKeyContext.ts] ////
+
+=== ttttPlusNumericKeyContext.ts ===
+// tsc's binder names a `[+2]` member "+2", the name its contextual type is looked up by: neither the property `2` nor
+// a numeric index signature types `x`; `[-2]` is "-2", and a `"+2"` property does
+const p1: { 2: (x: number) => void } = { [+2]: x => {} };
+>p1 : Symbol(p1, Decl(ttttPlusNumericKeyContext.ts, 2, 5))
+>2 : Symbol(2, Decl(ttttPlusNumericKeyContext.ts, 2, 11))
+>x : Symbol(x, Decl(ttttPlusNumericKeyContext.ts, 2, 16))
+>[+2] : Symbol([+2], Decl(ttttPlusNumericKeyContext.ts, 2, 40))
+>x : Symbol(x, Decl(ttttPlusNumericKeyContext.ts, 2, 46))
+
+const p2: { 2: (x: number) => void } = { [2]: x => {} };
+>p2 : Symbol(p2, Decl(ttttPlusNumericKeyContext.ts, 3, 5))
+>2 : Symbol(2, Decl(ttttPlusNumericKeyContext.ts, 3, 11))
+>x : Symbol(x, Decl(ttttPlusNumericKeyContext.ts, 3, 16))
+>[2] : Symbol([2], Decl(ttttPlusNumericKeyContext.ts, 3, 40))
+>2 : Symbol([2], Decl(ttttPlusNumericKeyContext.ts, 3, 40))
+>x : Symbol(x, Decl(ttttPlusNumericKeyContext.ts, 3, 45))
+
+const p3: { [k: number]: (x: number) => void } = { [+2]: x => {} };
+>p3 : Symbol(p3, Decl(ttttPlusNumericKeyContext.ts, 4, 5))
+>k : Symbol(k, Decl(ttttPlusNumericKeyContext.ts, 4, 13))
+>x : Symbol(x, Decl(ttttPlusNumericKeyContext.ts, 4, 26))
+>[+2] : Symbol([+2], Decl(ttttPlusNumericKeyContext.ts, 4, 50))
+>x : Symbol(x, Decl(ttttPlusNumericKeyContext.ts, 4, 56))
+
+const p4: { "-2": (x: number) => void } = { [-2]: x => {} };
+>p4 : Symbol(p4, Decl(ttttPlusNumericKeyContext.ts, 5, 5))
+>"-2" : Symbol("-2", Decl(ttttPlusNumericKeyContext.ts, 5, 11))
+>x : Symbol(x, Decl(ttttPlusNumericKeyContext.ts, 5, 19))
+>[-2] : Symbol([-2], Decl(ttttPlusNumericKeyContext.ts, 5, 43))
+>x : Symbol(x, Decl(ttttPlusNumericKeyContext.ts, 5, 49))
+
+const p5: { "+2": (x: number) => void } = { [+2]: x => {} };
+>p5 : Symbol(p5, Decl(ttttPlusNumericKeyContext.ts, 6, 5))
+>"+2" : Symbol("+2", Decl(ttttPlusNumericKeyContext.ts, 6, 11))
+>x : Symbol(x, Decl(ttttPlusNumericKeyContext.ts, 6, 19))
+>[+2] : Symbol([+2], Decl(ttttPlusNumericKeyContext.ts, 6, 43))
+>x : Symbol(x, Decl(ttttPlusNumericKeyContext.ts, 6, 49))
+
+const p6: { 2: (x: number) => void } = { [+(2)]: x => {} };
+>p6 : Symbol(p6, Decl(ttttPlusNumericKeyContext.ts, 7, 5))
+>2 : Symbol(2, Decl(ttttPlusNumericKeyContext.ts, 7, 11))
+>x : Symbol(x, Decl(ttttPlusNumericKeyContext.ts, 7, 16))
+>[+(2)] : Symbol([+(2)], Decl(ttttPlusNumericKeyContext.ts, 7, 40))
+>x : Symbol(x, Decl(ttttPlusNumericKeyContext.ts, 7, 48))
+
+declare function f<T>(o: { 16: (x: number) => T }): T;
+>f : Symbol(f, Decl(ttttPlusNumericKeyContext.ts, 7, 59))
+>T : Symbol(T, Decl(ttttPlusNumericKeyContext.ts, 8, 19))
+>o : Symbol(o, Decl(ttttPlusNumericKeyContext.ts, 8, 22))
+>16 : Symbol(16, Decl(ttttPlusNumericKeyContext.ts, 8, 26))
+>x : Symbol(x, Decl(ttttPlusNumericKeyContext.ts, 8, 32))
+>T : Symbol(T, Decl(ttttPlusNumericKeyContext.ts, 8, 19))
+>T : Symbol(T, Decl(ttttPlusNumericKeyContext.ts, 8, 19))
+
+f({ [+0x10]: x => x });
+>f : Symbol(f, Decl(ttttPlusNumericKeyContext.ts, 7, 59))
+>[+0x10] : Symbol([+0x10], Decl(ttttPlusNumericKeyContext.ts, 9, 3))
+>x : Symbol(x, Decl(ttttPlusNumericKeyContext.ts, 9, 12))
+>x : Symbol(x, Decl(ttttPlusNumericKeyContext.ts, 9, 12))
+
+f({ [0x10]: x => x });
+>f : Symbol(f, Decl(ttttPlusNumericKeyContext.ts, 7, 59))
+>[0x10] : Symbol([0x10], Decl(ttttPlusNumericKeyContext.ts, 10, 3))
+>0x10 : Symbol([0x10], Decl(ttttPlusNumericKeyContext.ts, 10, 3))
+>x : Symbol(x, Decl(ttttPlusNumericKeyContext.ts, 10, 11))
+>x : Symbol(x, Decl(ttttPlusNumericKeyContext.ts, 10, 11))
+
+const o = { [+2]: 1, [-3]: "a" };
+>o : Symbol(o, Decl(ttttPlusNumericKeyContext.ts, 11, 5))
+>[+2] : Symbol([+2], Decl(ttttPlusNumericKeyContext.ts, 11, 11))
+>[-3] : Symbol([-3], Decl(ttttPlusNumericKeyContext.ts, 11, 20))
+

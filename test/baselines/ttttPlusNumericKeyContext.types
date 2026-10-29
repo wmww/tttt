@@ -1,0 +1,110 @@
+//// [test/cases/ttttPlusNumericKeyContext.ts] ////
+
+=== ttttPlusNumericKeyContext.ts ===
+// tsc's binder names a `[+2]` member "+2", the name its contextual type is looked up by: neither the property `2` nor
+// a numeric index signature types `x`; `[-2]` is "-2", and a `"+2"` property does
+const p1: { 2: (x: number) => void } = { [+2]: x => {} };
+>p1 : { 2: (x: number) => void; }
+>2 : (x: number) => void
+>x : number
+>{ [+2]: x => {} } : { 2: (x: any) => void; }
+>[+2] : (x: any) => void
+>+2 : 2
+>2 : 2
+>x => {} : (x: any) => void
+>x : any
+
+const p2: { 2: (x: number) => void } = { [2]: x => {} };
+>p2 : { 2: (x: number) => void; }
+>2 : (x: number) => void
+>x : number
+>{ [2]: x => {} } : { 2: (x: number) => void; }
+>[2] : (x: number) => void
+>2 : 2
+>x => {} : (x: number) => void
+>x : number
+
+const p3: { [k: number]: (x: number) => void } = { [+2]: x => {} };
+>p3 : { [k: number]: (x: number) => void; }
+>k : number
+>x : number
+>{ [+2]: x => {} } : { 2: (x: any) => void; }
+>[+2] : (x: any) => void
+>+2 : 2
+>2 : 2
+>x => {} : (x: any) => void
+>x : any
+
+const p4: { "-2": (x: number) => void } = { [-2]: x => {} };
+>p4 : { "-2": (x: number) => void; }
+>"-2" : (x: number) => void
+>x : number
+>{ [-2]: x => {} } : { [-2]: (x: number) => void; }
+>[-2] : (x: number) => void
+>-2 : -2
+>2 : 2
+>x => {} : (x: number) => void
+>x : number
+
+const p5: { "+2": (x: number) => void } = { [+2]: x => {} };
+>p5 : { "+2": (x: number) => void; }
+>"+2" : (x: number) => void
+>x : number
+>{ [+2]: x => {} } : { 2: (x: number) => void; }
+>[+2] : (x: number) => void
+>+2 : 2
+>2 : 2
+>x => {} : (x: number) => void
+>x : number
+
+const p6: { 2: (x: number) => void } = { [+(2)]: x => {} };
+>p6 : { 2: (x: number) => void; }
+>2 : (x: number) => void
+>x : number
+>{ [+(2)]: x => {} } : { [x: number]: (x: any) => void; }
+>[+(2)] : (x: any) => void
+>+(2) : number
+>(2) : 2
+>2 : 2
+>x => {} : (x: any) => void
+>x : any
+
+declare function f<T>(o: { 16: (x: number) => T }): T;
+>f : <T>(o: { 16: (x: number) => T; }) => T
+>o : { 16: (x: number) => T; }
+>16 : (x: number) => T
+>x : number
+
+f({ [+0x10]: x => x });
+>f({ [+0x10]: x => x }) : any
+>f : <T>(o: { 16: (x: number) => T; }) => T
+>{ [+0x10]: x => x } : { 16: (x: any) => any; }
+>[+0x10] : (x: any) => any
+>+0x10 : 16
+>0x10 : 16
+>x => x : (x: any) => any
+>x : any
+>x : any
+
+f({ [0x10]: x => x });
+>f({ [0x10]: x => x }) : number
+>f : <T>(o: { 16: (x: number) => T; }) => T
+>{ [0x10]: x => x } : { 16: (x: number) => number; }
+>[0x10] : (x: number) => number
+>0x10 : 16
+>x => x : (x: number) => number
+>x : number
+>x : number
+
+const o = { [+2]: 1, [-3]: "a" };
+>o : { 2: number; [-3]: string; }
+>{ [+2]: 1, [-3]: "a" } : { 2: number; [-3]: string; }
+>[+2] : number
+>+2 : 2
+>2 : 2
+>1 : 1
+>[-3] : string
+>-3 : -3
+>3 : 3
+>"a" : "a"
+

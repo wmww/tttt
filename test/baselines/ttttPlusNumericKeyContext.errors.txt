@@ -1,0 +1,35 @@
+ttttPlusNumericKeyContext.ts(3,48): error TS7006: Parameter 'x' implicitly has an 'any' type.
+ttttPlusNumericKeyContext.ts(5,58): error TS7006: Parameter 'x' implicitly has an 'any' type.
+ttttPlusNumericKeyContext.ts(7,45): error TS2353: Object literal may only specify known properties, and '[+2]' does not exist in type '{ "+2": (x: number) => void; }'.
+ttttPlusNumericKeyContext.ts(8,7): error TS2741: Property '2' is missing in type '{ [x: number]: (x: any) => void; }' but required in type '{ 2: (x: number) => void; }'.
+ttttPlusNumericKeyContext.ts(8,50): error TS7006: Parameter 'x' implicitly has an 'any' type.
+ttttPlusNumericKeyContext.ts(10,14): error TS7006: Parameter 'x' implicitly has an 'any' type.
+
+
+==== ttttPlusNumericKeyContext.ts (6 errors) ====
+    // tsc's binder names a `[+2]` member "+2", the name its contextual type is looked up by: neither the property `2` nor
+    // a numeric index signature types `x`; `[-2]` is "-2", and a `"+2"` property does
+    const p1: { 2: (x: number) => void } = { [+2]: x => {} };
+                                                   ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+    const p2: { 2: (x: number) => void } = { [2]: x => {} };
+    const p3: { [k: number]: (x: number) => void } = { [+2]: x => {} };
+                                                             ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+    const p4: { "-2": (x: number) => void } = { [-2]: x => {} };
+    const p5: { "+2": (x: number) => void } = { [+2]: x => {} };
+                                                ~~~~
+!!! error TS2353: Object literal may only specify known properties, and '[+2]' does not exist in type '{ "+2": (x: number) => void; }'.
+    const p6: { 2: (x: number) => void } = { [+(2)]: x => {} };
+          ~~
+!!! error TS2741: Property '2' is missing in type '{ [x: number]: (x: any) => void; }' but required in type '{ 2: (x: number) => void; }'.
+!!! related TS2728 ttttPlusNumericKeyContext.ts:8:13: '2' is declared here.
+                                                     ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+    declare function f<T>(o: { 16: (x: number) => T }): T;
+    f({ [+0x10]: x => x });
+                 ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+    f({ [0x10]: x => x });
+    const o = { [+2]: 1, [-3]: "a" };
+    
