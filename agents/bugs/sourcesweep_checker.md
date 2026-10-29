@@ -7,6 +7,19 @@ missing cache) blow-up. (Pruned 2026-10-12: entries for repos that fully match n
 dokploy, chatbox, angular-components, react-navigation, telegraf, commitlint, astro, react-router, rxjs, angular-cli; again
 2026-10-16 against a full sweep: 7 projects left: pixijs, better-auth, es-toolkit, knip, arktype, monkeytype, redux-toolkit.)
 
+## query/packages/vue-query (2026-10-29, cor15; was triage.md)
+- 4 spurious (TS7006 `data`, then TS2344 from it) in `mutationOptions.test-d.ts` 238/239 and 274/275: the getter
+  overload `mutationOptions(() => ({ mutationFn, onSuccess: (data) => ... }))` without mutationKey. Reduced to
+  test ttttOverloadGetterContextSensitive (known failing): overloads `(o: Omit<MO<T>, 'k'>)` then `(o: () =>
+  Omit<MO<T>, 'k'>)`, MO with an optional property the literal lacks. tttt's subtype pass rejects the getter overload
+  (the returnOnly signature's widened object literal lacks optional properties, requireOptionalProperties), its
+  assignable pass takes the object overload first with the arrow as anyFunctionType, then checks the arrow fully
+  under it: no contextual signature, so `data` is assigned any for good. tsgo picks the getter overload with `data:
+  number`; its reltrace log (scripts/reltrace.py) shows no anyFunctionType relation at all, so the difference is in
+  how the first pass treats the context-sensitive arrow under a parameter without call signatures (an early reject
+  of the object overload, or the subtype pass accepting the getter one). Not traced further: start with
+  `scripts/tsgotrace.py --funcs chooseOverload,getSignatureApplicabilityError` on the test. [open]
+
 ## Older leftovers (2026-10-08..09), still mismatching
 - tsc's TS2322 message truncation (`PromiseLike<...>` elision in long union-of-signature types) differs from tttt's. [text]
 

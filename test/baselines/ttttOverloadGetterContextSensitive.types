@@ -1,0 +1,63 @@
+//// [test/cases/ttttOverloadGetterContextSensitive.ts] ////
+
+=== ttttOverloadGetterContextSensitive.ts ===
+// vue-query's mutationOptions getter overload (sourcesweep): the arrow's inner parameter is typed by the failing
+// object overload first in tttt (data: any, TS7006), by the getter overload in tsgo (known failing, sourcesweep_checker.md)
+interface MO<TData = unknown> {
+    mutationFn?: () => Promise<TData>;
+>mutationFn : (() => Promise<TData>) | undefined
+
+    mutationKey?: readonly unknown[];
+>mutationKey : readonly unknown[] | undefined
+
+    onSuccess?: (data: TData) => unknown;
+>onSuccess : ((data: TData) => unknown) | undefined
+>data : TData
+
+    extra?: number;
+>extra : number | undefined
+}
+type WithRequired<T, K extends keyof T> = T & { [_ in K]: {} };
+>WithRequired : WithRequired<T, K>
+
+declare function mo<TData = unknown>(o: WithRequired<MO<TData>, 'mutationKey'>): void;
+>mo : { <TData = unknown>(o: WithRequired<MO<TData>, 'mutationKey'>): void; <TData_1 = unknown>(o: () => WithRequired<MO<TData_1>, 'mutationKey'>): void; <TData_1 = unknown>(o: Omit<MO<TData_1>, 'mutationKey'>): void; <TData_1 = unknown>(o: () => Omit<MO<TData_1>, 'mutationKey'>): void; }
+>o : WithRequired<MO<TData>, "mutationKey">
+
+declare function mo<TData = unknown>(o: () => WithRequired<MO<TData>, 'mutationKey'>): void;
+>mo : { <TData_1 = unknown>(o: WithRequired<MO<TData_1>, 'mutationKey'>): void; <TData = unknown>(o: () => WithRequired<MO<TData>, 'mutationKey'>): void; <TData_1 = unknown>(o: Omit<MO<TData_1>, 'mutationKey'>): void; <TData_1 = unknown>(o: () => Omit<MO<TData_1>, 'mutationKey'>): void; }
+>o : () => WithRequired<MO<TData>, 'mutationKey'>
+
+declare function mo<TData = unknown>(o: Omit<MO<TData>, 'mutationKey'>): void;
+>mo : { <TData_1 = unknown>(o: WithRequired<MO<TData_1>, 'mutationKey'>): void; <TData_1 = unknown>(o: () => WithRequired<MO<TData_1>, 'mutationKey'>): void; <TData = unknown>(o: Omit<MO<TData>, 'mutationKey'>): void; <TData_1 = unknown>(o: () => Omit<MO<TData_1>, 'mutationKey'>): void; }
+>o : Omit<MO<TData>, "mutationKey">
+
+declare function mo<TData = unknown>(o: () => Omit<MO<TData>, 'mutationKey'>): void;
+>mo : { <TData_1 = unknown>(o: WithRequired<MO<TData_1>, 'mutationKey'>): void; <TData_1 = unknown>(o: () => WithRequired<MO<TData_1>, 'mutationKey'>): void; <TData_1 = unknown>(o: Omit<MO<TData_1>, 'mutationKey'>): void; <TData = unknown>(o: () => Omit<MO<TData>, 'mutationKey'>): void; }
+>o : () => Omit<MO<TData>, 'mutationKey'>
+
+mo(() => ({
+>mo(() => ({    mutationFn: () => Promise.resolve(5),    onSuccess: (data) => { const n: number = data; },})) : void
+>mo : { <TData = unknown>(o: WithRequired<MO<TData>, 'mutationKey'>): void; <TData = unknown>(o: () => WithRequired<MO<TData>, 'mutationKey'>): void; <TData = unknown>(o: Omit<MO<TData>, 'mutationKey'>): void; <TData = unknown>(o: () => Omit<MO<TData>, 'mutationKey'>): void; }
+>() => ({    mutationFn: () => Promise.resolve(5),    onSuccess: (data) => { const n: number = data; },}) : () => { mutationFn: () => Promise<number>; onSuccess: (data: number) => void; }
+>({    mutationFn: () => Promise.resolve(5),    onSuccess: (data) => { const n: number = data; },}) : { mutationFn: () => Promise<number>; onSuccess: (data: number) => void; }
+>{    mutationFn: () => Promise.resolve(5),    onSuccess: (data) => { const n: number = data; },} : { mutationFn: () => Promise<number>; onSuccess: (data: number) => void; }
+
+    mutationFn: () => Promise.resolve(5),
+>mutationFn : () => Promise<number>
+>() => Promise.resolve(5) : () => Promise<number>
+>Promise.resolve(5) : Promise<number>
+>Promise.resolve : { (): Promise<void>; <T>(value: T): Promise<Awaited<T>>; <T>(value: T | PromiseLike<T>): Promise<Awaited<T>>; }
+>Promise : PromiseConstructor
+>resolve : { (): Promise<void>; <T>(value: T): Promise<Awaited<T>>; <T>(value: T | PromiseLike<T>): Promise<Awaited<T>>; }
+>5 : 5
+
+    onSuccess: (data) => { const n: number = data; },
+>onSuccess : (data: number) => void
+>(data) => { const n: number = data; } : (data: number) => void
+>data : number
+>n : number
+>data : number
+
+}));
+

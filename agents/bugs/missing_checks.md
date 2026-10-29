@@ -671,7 +671,13 @@ entry whose evaluation repeats getTargetOfAliasDeclaration's member lookup; the 
 Known: generatorTypeCheck46 (TS2488), globalThisGlobalExportAsGlobal (TS2303). Fixed:
 - destructuringAssignmentWithExportedName delete-stmt: `export { x }` of an undeclared x is TS2304 and TS2552 at
   the same place in tsc (resolveAlias without a suggestion, markExportSpecifierAliasReferenced with one). Test
-  ttttExportSpecifierNotFoundTwice. [fixed COMMIT-EX]
+  ttttExportSpecifierNotFoundTwice. [fixed 3fc4c1984]
+- --syntax leftovers, recovery-only and not fixed: readonlyAssignmentInSubclassOfClassExpression drop-as (a spurious
+  TS2337 in tttt's recovery of `extends (class {} () => ...)`), doubleUnderscoreMappedTypes delete-stmt (a missing
+  TS18004 for a shorthand with an initializer inside a pattern tsc recovers differently),
+  exportSpecifierAndLocalMemberDeclaration str-to-num (`declare module 42 {`: an `export { Y as X }` in the block binds
+  into the script's scope in tsc, TS2694 rather than tttt's TS2503), contextualTypeBasedOnIntersectionWithAnyInTheMix5
+  add-optional (`this?:` parameter: TS2554 rather than tttt's TS2684). [open]
 - unicodeLineSeparatorInMultilineComment never-const: tsgo's suite runner reports nothing for `/* a<U+2028>b */ const
   x: never = 1`, its CLI does (projdiff byte-identical): a harness artifact. [tsgo]
 

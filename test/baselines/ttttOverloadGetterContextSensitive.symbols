@@ -1,0 +1,83 @@
+//// [test/cases/ttttOverloadGetterContextSensitive.ts] ////
+
+=== ttttOverloadGetterContextSensitive.ts ===
+// vue-query's mutationOptions getter overload (sourcesweep): the arrow's inner parameter is typed by the failing
+// object overload first in tttt (data: any, TS7006), by the getter overload in tsgo (known failing, sourcesweep_checker.md)
+interface MO<TData = unknown> {
+>MO : Symbol(MO, Decl(ttttOverloadGetterContextSensitive.ts, 0, 0))
+>TData : Symbol(TData, Decl(ttttOverloadGetterContextSensitive.ts, 2, 13))
+
+    mutationFn?: () => Promise<TData>;
+>mutationFn : Symbol(MO.mutationFn, Decl(ttttOverloadGetterContextSensitive.ts, 2, 31))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>TData : Symbol(TData, Decl(ttttOverloadGetterContextSensitive.ts, 2, 13))
+
+    mutationKey?: readonly unknown[];
+>mutationKey : Symbol(MO.mutationKey, Decl(ttttOverloadGetterContextSensitive.ts, 3, 38))
+
+    onSuccess?: (data: TData) => unknown;
+>onSuccess : Symbol(MO.onSuccess, Decl(ttttOverloadGetterContextSensitive.ts, 4, 37))
+>data : Symbol(data, Decl(ttttOverloadGetterContextSensitive.ts, 5, 17))
+>TData : Symbol(TData, Decl(ttttOverloadGetterContextSensitive.ts, 2, 13))
+
+    extra?: number;
+>extra : Symbol(MO.extra, Decl(ttttOverloadGetterContextSensitive.ts, 5, 41))
+}
+type WithRequired<T, K extends keyof T> = T & { [_ in K]: {} };
+>WithRequired : Symbol(WithRequired, Decl(ttttOverloadGetterContextSensitive.ts, 7, 1))
+>T : Symbol(T, Decl(ttttOverloadGetterContextSensitive.ts, 8, 18))
+>K : Symbol(K, Decl(ttttOverloadGetterContextSensitive.ts, 8, 20))
+>T : Symbol(T, Decl(ttttOverloadGetterContextSensitive.ts, 8, 18))
+>T : Symbol(T, Decl(ttttOverloadGetterContextSensitive.ts, 8, 18))
+>_ : Symbol(_, Decl(ttttOverloadGetterContextSensitive.ts, 8, 49))
+>K : Symbol(K, Decl(ttttOverloadGetterContextSensitive.ts, 8, 20))
+
+declare function mo<TData = unknown>(o: WithRequired<MO<TData>, 'mutationKey'>): void;
+>mo : Symbol(mo, Decl(ttttOverloadGetterContextSensitive.ts, 8, 63), Decl(ttttOverloadGetterContextSensitive.ts, 9, 86), Decl(ttttOverloadGetterContextSensitive.ts, 10, 92), Decl(ttttOverloadGetterContextSensitive.ts, 11, 78))
+>TData : Symbol(TData, Decl(ttttOverloadGetterContextSensitive.ts, 9, 20))
+>o : Symbol(o, Decl(ttttOverloadGetterContextSensitive.ts, 9, 37))
+>WithRequired : Symbol(WithRequired, Decl(ttttOverloadGetterContextSensitive.ts, 7, 1))
+>MO : Symbol(MO, Decl(ttttOverloadGetterContextSensitive.ts, 0, 0))
+>TData : Symbol(TData, Decl(ttttOverloadGetterContextSensitive.ts, 9, 20))
+
+declare function mo<TData = unknown>(o: () => WithRequired<MO<TData>, 'mutationKey'>): void;
+>mo : Symbol(mo, Decl(ttttOverloadGetterContextSensitive.ts, 8, 63), Decl(ttttOverloadGetterContextSensitive.ts, 9, 86), Decl(ttttOverloadGetterContextSensitive.ts, 10, 92), Decl(ttttOverloadGetterContextSensitive.ts, 11, 78))
+>TData : Symbol(TData, Decl(ttttOverloadGetterContextSensitive.ts, 10, 20))
+>o : Symbol(o, Decl(ttttOverloadGetterContextSensitive.ts, 10, 37))
+>WithRequired : Symbol(WithRequired, Decl(ttttOverloadGetterContextSensitive.ts, 7, 1))
+>MO : Symbol(MO, Decl(ttttOverloadGetterContextSensitive.ts, 0, 0))
+>TData : Symbol(TData, Decl(ttttOverloadGetterContextSensitive.ts, 10, 20))
+
+declare function mo<TData = unknown>(o: Omit<MO<TData>, 'mutationKey'>): void;
+>mo : Symbol(mo, Decl(ttttOverloadGetterContextSensitive.ts, 8, 63), Decl(ttttOverloadGetterContextSensitive.ts, 9, 86), Decl(ttttOverloadGetterContextSensitive.ts, 10, 92), Decl(ttttOverloadGetterContextSensitive.ts, 11, 78))
+>TData : Symbol(TData, Decl(ttttOverloadGetterContextSensitive.ts, 11, 20))
+>o : Symbol(o, Decl(ttttOverloadGetterContextSensitive.ts, 11, 37))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>MO : Symbol(MO, Decl(ttttOverloadGetterContextSensitive.ts, 0, 0))
+>TData : Symbol(TData, Decl(ttttOverloadGetterContextSensitive.ts, 11, 20))
+
+declare function mo<TData = unknown>(o: () => Omit<MO<TData>, 'mutationKey'>): void;
+>mo : Symbol(mo, Decl(ttttOverloadGetterContextSensitive.ts, 8, 63), Decl(ttttOverloadGetterContextSensitive.ts, 9, 86), Decl(ttttOverloadGetterContextSensitive.ts, 10, 92), Decl(ttttOverloadGetterContextSensitive.ts, 11, 78))
+>TData : Symbol(TData, Decl(ttttOverloadGetterContextSensitive.ts, 12, 20))
+>o : Symbol(o, Decl(ttttOverloadGetterContextSensitive.ts, 12, 37))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>MO : Symbol(MO, Decl(ttttOverloadGetterContextSensitive.ts, 0, 0))
+>TData : Symbol(TData, Decl(ttttOverloadGetterContextSensitive.ts, 12, 20))
+
+mo(() => ({
+>mo : Symbol(mo, Decl(ttttOverloadGetterContextSensitive.ts, 8, 63), Decl(ttttOverloadGetterContextSensitive.ts, 9, 86), Decl(ttttOverloadGetterContextSensitive.ts, 10, 92), Decl(ttttOverloadGetterContextSensitive.ts, 11, 78))
+
+    mutationFn: () => Promise.resolve(5),
+>mutationFn : Symbol(mutationFn, Decl(ttttOverloadGetterContextSensitive.ts, 13, 11))
+>Promise.resolve : Symbol(PromiseConstructor.resolve, Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>resolve : Symbol(PromiseConstructor.resolve, Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --))
+
+    onSuccess: (data) => { const n: number = data; },
+>onSuccess : Symbol(onSuccess, Decl(ttttOverloadGetterContextSensitive.ts, 14, 41))
+>data : Symbol(data, Decl(ttttOverloadGetterContextSensitive.ts, 15, 16))
+>n : Symbol(n, Decl(ttttOverloadGetterContextSensitive.ts, 15, 32))
+>data : Symbol(data, Decl(ttttOverloadGetterContextSensitive.ts, 15, 16))
+
+}));
+

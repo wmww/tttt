@@ -262,6 +262,4 @@ intersection's property symbol to bugs/type_core.md.
   nothing (cor7, 2026-10-31; `-f @file` works). A fixed-size buffer in the filter's parsing; CLAUDE.md already warns that
   long alternations silently match nothing. [harness]
 
-- **query/packages/vue-query: 4 spurious diagnostics** (TS7006, TS2344) in `src/__tests__/mutationOptions.test-d.ts`
-  lines 238, 239, 274, 275 (sourcesweep --sample 4; present at 588cc154c and before, found by fe4 2026-10-29). No bugs
-  entry yet: a checker item (the vue-query/TanStack mutation options generics). [open]
+- query/packages/vue-query's 4 spurious diagnostics: moved to sourcesweep_checker.md (reduced, known-failing test).
