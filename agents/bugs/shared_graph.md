@@ -55,10 +55,38 @@ scripts/sharedgraph/sgcheck_projects.txt, load 8-15): main at ab39dce20 12 of 34
     K1 maps it to the reference) inside variance measurements, but its key may not separate the two owners: unproven.
     The likely hole is the same as the shadow's: a value kept privately (poisoned, or clean but finishing after a
     poison) is in hand in the computing worker and reaches frames started after its event, which publish.
-  Next: bisect the forced-poison divergence with seeds (deterministic: `TTTT_GRAPH_FORCE_POISON=30 TTTT_GRAPH_SEED=S
-  TTTT_SHARED_GRAPH=1 release/tttt --threads 8 --checkers 8 --checker-memory off -p zod`) by kind (poison only one
-  word kind at a time) and then by the first published value the recheck-in-graph disagrees with. Every fix here is
-  a taint rule; the forced knobs are the gate (`TTTT_GRAPH_FORCE_POISON=30 scripts/sgcheck.py -f zod -k 8`). [open]
+  Bisected (worker race2, 2026-10-29; the knobs: overlay.c's TTTT_GRAPH_FORCE_POISON_AT/_RANGE/_TRACE, a global
+  candidate count, and `TTTT_GRAPH_SEED=1 TTTT_GRAPH_SEED_RATE=1000000000`, which runs the workers one after another so
+  one forced event doesn't reshuffle the schedule; a delta-debugging loop over the AT list finds 3-13 events that move
+  zod K8's output). Four cases looked at, two fixed (7826dac81), two leaks of one family left:
+  - **KEY_BASE_SIGNATURE / KEY_CANONICAL_SIGNATURE read across a private resolution**: keyed by the signature, made of
+    its resolved type parameters; a worker whose resolution was private read another's mapper, `Ch` stayed uninferred,
+    zod's `ProtoOf<ZodType>["refine"]` stayed deferred (schemas.ts(212,5) TS2322, two TS7006). [fixed 7826dac81]
+  - **KEY_CONDITIONAL_INSTANCE published whatever its taint** (identity-valued since 4a19f6240): a tainted resolution
+    (deferred) reached every worker; the fingerprint oracle names it. Taint-tracked now; react-navigation (4a19f6240's
+    reason) identical at K16 T1/T16. [fixed 7826dac81]
+  - **A memo computed from a private record read before its own lookup** (the value-in-hand hole): its window starts at
+    the miss, after the read's event (base_signature_mapper() read `sig_res()` first; the general shape). Tried (patch
+    in the coordinator's scratchpad, race2/scratch-rule-wip.patch, not kept): a "scratch base" (the counter at the start
+    of the innermost key-only computation: a top-level statement or deferred check, a word's claim, a declaration's
+    evaluation) and every memo put, node link set, expression memo and scratch intern entry after an event since it
+    tainted (reads of them events, the absence of a parameter's KEY_CONTEXT_PARAM read through its function's
+    KEY_CONTEXT_CHECKED). It fixed the case it was bisected on, but the oracle as a whole didn't move (zod K8 forced
+    runs still differ in most seeds), it cost +13% check instructions at K8 on drizzle (+5% zod, +4% effect;
+    variance slots published 232 -> 18 on zod) and it made `--force-shadow` on dokploy worse (8/8 against main's 3/6).
+  - **Records that mint identities, kept privately** (the family under the rest): a private declared type, signature
+    resolution or members record has its own type parameters (`this`, clones); published memos and identities keyed by
+    a stable key (a function's KEY_FUNCTION_FREE_PARAMS, an anonymous instance's mapper and flags, a union pair whose
+    members are such identities) hold the publisher's, so a worker with the private record gets inconsistent objects:
+    instantiate_anonymous() kept the wrong pairs (`(value: string) => boolean` instances with COULD_CONTAIN flags), two
+    `Promise<ParsePayload<unknown>>` in one union, `this["_output"]` left uninstantiated in zod v3's `_parse` relations.
+    Making such identities private is worse (a worker then has two objects for one key: tried, the forced runs went
+    from tens to thousands of lines). What would close it: records that mint identities never private (their type
+    parameters hash-consed by declaration and position, so a private record reuses the shared ones), the shape of
+    KEY_SIGNATURE_INSTANCE_OWN applied to every memo keyed by a record's owner. [open]
+  The natural dokploy difference wasn't seen again: 30 runs K16 rr under `--load 4`, the default list at K4/8/16 both
+  deals x2 (732 runs) all identical. The oracles are `scripts/sgcheck.py --force-poison N` and `--force-shadow`; they
+  are not in quickgate (they don't pass: zod K8 --force-poison 30 3/4, dokploy K16 rr --force-shadow 4/6 at 7826dac81).
 - **openbot/apps/auth-api: private names raced** (hub_regime.md's 75 TS2345s): ty_private_name() returned its own
   `#x` atom when another checker's was published first; the class's members carried the winner's, so lookups missed
   them (TS18014, TS6133, `unknown`/`{}` through Effect chains). 10/10 runs before, 0/60 after. [fixed b9a8bc824]
@@ -203,7 +231,12 @@ lazy parts (a signature instance's resolution). Default build: the macros are em
     the miss to the publication includes instantiating the target's alias arguments (a nested instantiation that meets
     a taint event) and literal_instance_is_itself() (reads the literal's members). The alias arguments are part of the
     published value, so a history-dependent nested result would be published with it; no output shows it (the census
-    is clean outside residue C). Over-approximate or a display-level residue: not resolved. [note]
+    is clean outside residue C). Over-approximate or a display-level residue: not resolved. Also published: the
+    instance's flags and pair list by ty_function_free_params()/merged_overloads_free_params(), which hold the type
+    parameters of whichever worker's record made them, and literal_instance_is_itself()'s answer, which rests on
+    done-ness peeks with no event (TAINT_IF(TAINT_PEEK, ...)): a peek's answer published as the identity's value is a
+    hole by the design's rule; an event there alone doesn't fix it, the identity is published anyway (the forced-poison
+    oracle's "records that mint identities" entry above). [note]
   - **ty_erased_signature (relate.c), `found` after a peek** (nest platform-fastify and microservices tests, 4 runs):
     the one-step erasure is chosen when `sig` isn't resolved yet in this worker (a done-ness peek), and it shares its
     key (sig, any...) with ty_signature_instantiation(sig, anys), which the resolved path makes. So which object a

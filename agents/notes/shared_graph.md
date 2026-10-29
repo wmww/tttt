@@ -38,6 +38,11 @@ threads busy at 2.2 GB on vscode: the existence proof that sharing can pay.
   built from a record this worker resolved privately (a signature's type parameters, its clones) is this worker's
   only (KEY_SIGNATURE_INSTANCE_OWN, bugs/shared_graph.md: effect's and folo's residues, 2026-10-29). Any other
   identity whose fields come from a resolved record has the same shape.
+  So does every memo keyed by a record's owner whose value holds the record's identities (KEY_BASE_SIGNATURE,
+  KEY_CANONICAL_SIGNATURE: not cached over a private resolution since 7826dac81, sig_res_is_own()), and a memo whose
+  computation read such a record before its own lookup (its window starts at the miss). Keeping identities private
+  instead is unsound: a worker then holds two objects for one key (tried 2026-10-29, worker race2). The open part:
+  bugs/shared_graph.md, the forced-poison entry.
 - **Why deterministic**: a clean value is a function of published clean values and hash-consed identities, so any
   worker computing that key cleanly computes the same value. A worker's view is a history a sequential checker could
   have had (the class recycling, stealing and K already produce).
@@ -380,7 +385,7 @@ are). Checkers are recycled after 1/128 of the total cost. Its CPU at default th
 time (vscode 43 CPU s vs 14 single): sharing costs it too, it just has more cores busy.
 
 ## Tools left behind
-`TTTT_GRAPH_FORCE_POISON=N` and `TTTT_GRAPH_FORCE_SHADOW=1` (the taint rules' oracles: an event forced at every N-th clean word computation, a clean loser kept like a tainted one; the output must not move, and on 2026-10-29 it does: bugs/shared_graph.md, dokploy's entry), `scripts/sgcheck.py --load N` (plain loops beside the checks), `TTTT_GRAPH_STATS=1` (per kind: shared hits, shared misses, published...; variance slots published, adopted,
+`TTTT_GRAPH_FORCE_POISON=N` and `TTTT_GRAPH_FORCE_SHADOW=1` (the taint rules' oracles: an event forced at every N-th clean word computation, a clean loser kept like a tainted one; the output must not move, and on 2026-10-29 it does: bugs/shared_graph.md, dokploy's entry; `scripts/sgcheck.py --force-poison N` / `--force-shadow`; to bisect one: `TTTT_GRAPH_SEED=1 TTTT_GRAPH_SEED_RATE=1000000000` (workers one after another) with `TTTT_GRAPH_FORCE_POISON_AT=A,B,...` / `_RANGE=LO:HI` over a global candidate count and `_TRACE=1` for each forced event's stack), `scripts/sgcheck.py --load N` (plain loops beside the checks), `TTTT_GRAPH_STATS=1` (per kind: shared hits, shared misses, published...; variance slots published, adopted,
 unpoisoned...), `TTTT_TAINT_LOG=1` in a `-DTTTT_TAINT_SITES` build (every taint event's site as it happens), `TTTT_GRAPH_NO_CACHE=1` (shared hits not
 kept in the checker's own tables: the A/B of 75f79d714), `TTTT_GRAPH_WORK=1` (cycles per word computation by outcome), `TTTT_GRAPH_LEAD=1` /
 `TTTT_GRAPH_NO_LEAD=1`, `TTTT_GRAPH_SHARE_RELATIONS=0`, `TTTT_GRAPH_BUDGET_MB` (graph-wide recycle, default 800),

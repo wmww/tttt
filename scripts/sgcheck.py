@@ -19,7 +19,8 @@ exit N`/`plain signal N` when plain crashes there).
   scripts/sgcheck.py -f 'auth-api|drizzle' -n 10 -k 8
   scripts/sgcheck.py --projects FILE --deals rr
   scripts/sgcheck.py -f 'dokploy/apps/dokploy' -k 16 --deals rr -n 50 --load 3   # under load: 3 plain zod loops beside
-  TTTT_GRAPH_FORCE_POISON=30 scripts/sgcheck.py -f zod -k 8   # the taint rules' oracle (src/ty/overlay.c): must not move
+  scripts/sgcheck.py -f zod -k 8 --force-poison 30   # the taint rules' oracles (src/ty/overlay.c): must not move,
+  scripts/sgcheck.py -f dokploy/apps/dokploy -k 16 --deals rr --force-shadow   # and do (agents/bugs/shared_graph.md)
 
 Projects are source sweep projects (REPO/path, under thirdparty/sources) or `-p` corpus names (realworld.py's), read
 through their physical paths. Runs go through tttt_run (address-space limit, timeout, the memory budget: each run takes
@@ -63,6 +64,12 @@ class Checker:
         env['TTTT_SHARED_GRAPH'] = '0'  # plain (the default is the graph since 2026-10-29)
         if flag:
             env['TTTT_SHARED_GRAPH'] = '1'
+            # (The taint rules' oracles, src/ty/overlay.c: a taint event forced at every N-th clean word computation, a
+            # clean loser kept like a tainted one; neither may move the output)
+            if self.args.force_poison:
+                env['TTTT_GRAPH_FORCE_POISON'] = str(self.args.force_poison)
+            if self.args.force_shadow:
+                env['TTTT_GRAPH_FORCE_SHADOW'] = '1'
         if deal == 'rr' and k > 1:
             env['TTTT_DUP_DEAL'] = deal_file
             env['TTTT_NO_COSTLIEST_FIRST'] = '1'
@@ -148,6 +155,9 @@ def main():
                     help='N loops of plain runs of --load-corpus beside the checks (default threads, niced): the landing '
                          "gate's load, under which dokploy's one race showed (agents/bugs/shared_graph.md)")
     ap.add_argument('--load-corpus', default='zod', help='the corpus the --load loops check (default zod)')
+    ap.add_argument('--force-poison', type=int, default=0, metavar='N',
+                    help='flagged runs with TTTT_GRAPH_FORCE_POISON=N (a forced taint event every N-th clean word computation)')
+    ap.add_argument('--force-shadow', action='store_true', help='flagged runs with TTTT_GRAPH_FORCE_SHADOW=1')
     ap.add_argument('-v', '--verbose', action='store_true', help='a line for every project, not only the differing ones')
     args = ap.parse_args()
     args.k = [int(x) for x in args.k.split(',')]
