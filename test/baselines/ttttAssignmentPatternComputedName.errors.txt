@@ -1,0 +1,37 @@
+ttttAssignmentPatternComputedName.ts(8,3): error TS2464: A computed property name must be of type 'string', 'number', 'symbol', or 'any'.
+ttttAssignmentPatternComputedName.ts(8,4): error TS2538: Type 'undefined' cannot be used as an index type.
+ttttAssignmentPatternComputedName.ts(8,18): error TS2353: Object literal may only specify known properties, and 'bar' does not exist in type '{}'.
+ttttAssignmentPatternComputedName.ts(9,22): error TS2353: Object literal may only specify known properties, and 'b' does not exist in type '{ a: any; }'.
+ttttAssignmentPatternComputedName.ts(10,4): error TS2537: Type '{ bar: string; c: number; }' has no matching index signature for type 'string'.
+ttttAssignmentPatternComputedName.ts(11,24): error TS2353: Object literal may only specify known properties, and 'd' does not exist in type '{ [s]: any; }'.
+ttttAssignmentPatternComputedName.ts(12,22): error TS2353: Object literal may only specify known properties, and 'e' does not exist in type '{ 1: any; }'.
+
+
+==== ttttAssignmentPatternComputedName.ts (7 errors) ====
+    // A destructuring assignment's computed name leaves its object literal pattern open (no excess property check on the
+    // assigned literal) only when its type is a property key type but no literal (tsc's patternWithComputedProperties):
+    // `[undefined]` (TS2464) and literal or unique symbol names keep it. Seed 20261114, computedPropertiesInDestructuring1_ES6
+    let foo = undefined;
+    let bar: any, x: any;
+    declare const k: string;
+    declare const s: unique symbol;
+    ({[foo]: bar} = {bar: "bar"});
+      ~~~~~
+!!! error TS2464: A computed property name must be of type 'string', 'number', 'symbol', or 'any'.
+       ~~~
+!!! error TS2538: Type 'undefined' cannot be used as an index type.
+                     ~~~
+!!! error TS2353: Object literal may only specify known properties, and 'bar' does not exist in type '{}'.
+    ({["a"]: x} = {a: 1, b: 2});
+                         ~
+!!! error TS2353: Object literal may only specify known properties, and 'b' does not exist in type '{ a: any; }'.
+    ({[k]: bar} = {bar: "bar", c: 1});
+       ~
+!!! error TS2537: Type '{ bar: string; c: number; }' has no matching index signature for type 'string'.
+    ({[s]: bar} = {[s]: 1, d: 2});
+                           ~
+!!! error TS2353: Object literal may only specify known properties, and 'd' does not exist in type '{ [s]: any; }'.
+    ({[1]: bar} = {1: 1, e: 2});
+                         ~
+!!! error TS2353: Object literal may only specify known properties, and 'e' does not exist in type '{ 1: any; }'.
+    

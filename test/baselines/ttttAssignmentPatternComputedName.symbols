@@ -1,0 +1,55 @@
+//// [test/cases/ttttAssignmentPatternComputedName.ts] ////
+
+=== ttttAssignmentPatternComputedName.ts ===
+// A destructuring assignment's computed name leaves its object literal pattern open (no excess property check on the
+// assigned literal) only when its type is a property key type but no literal (tsc's patternWithComputedProperties):
+// `[undefined]` (TS2464) and literal or unique symbol names keep it. Seed 20261114, computedPropertiesInDestructuring1_ES6
+let foo = undefined;
+>foo : Symbol(foo, Decl(ttttAssignmentPatternComputedName.ts, 3, 3))
+>undefined : Symbol(undefined)
+
+let bar: any, x: any;
+>bar : Symbol(bar, Decl(ttttAssignmentPatternComputedName.ts, 4, 3))
+>x : Symbol(x, Decl(ttttAssignmentPatternComputedName.ts, 4, 13))
+
+declare const k: string;
+>k : Symbol(k, Decl(ttttAssignmentPatternComputedName.ts, 5, 13))
+
+declare const s: unique symbol;
+>s : Symbol(s, Decl(ttttAssignmentPatternComputedName.ts, 6, 13))
+
+({[foo]: bar} = {bar: "bar"});
+>[foo] : Symbol([foo], Decl(ttttAssignmentPatternComputedName.ts, 7, 2))
+>foo : Symbol(foo, Decl(ttttAssignmentPatternComputedName.ts, 3, 3))
+>bar : Symbol(bar, Decl(ttttAssignmentPatternComputedName.ts, 4, 3))
+>bar : Symbol(bar, Decl(ttttAssignmentPatternComputedName.ts, 7, 17))
+
+({["a"]: x} = {a: 1, b: 2});
+>["a"] : Symbol(["a"], Decl(ttttAssignmentPatternComputedName.ts, 8, 2))
+>"a" : Symbol(["a"], Decl(ttttAssignmentPatternComputedName.ts, 8, 2))
+>x : Symbol(x, Decl(ttttAssignmentPatternComputedName.ts, 4, 13))
+>a : Symbol(a, Decl(ttttAssignmentPatternComputedName.ts, 8, 15))
+>b : Symbol(b, Decl(ttttAssignmentPatternComputedName.ts, 8, 20))
+
+({[k]: bar} = {bar: "bar", c: 1});
+>[k] : Symbol([k], Decl(ttttAssignmentPatternComputedName.ts, 9, 2))
+>k : Symbol(k, Decl(ttttAssignmentPatternComputedName.ts, 5, 13))
+>bar : Symbol(bar, Decl(ttttAssignmentPatternComputedName.ts, 4, 3))
+>bar : Symbol(bar, Decl(ttttAssignmentPatternComputedName.ts, 9, 15))
+>c : Symbol(c, Decl(ttttAssignmentPatternComputedName.ts, 9, 26))
+
+({[s]: bar} = {[s]: 1, d: 2});
+>[s] : Symbol([s], Decl(ttttAssignmentPatternComputedName.ts, 10, 2))
+>s : Symbol(s, Decl(ttttAssignmentPatternComputedName.ts, 6, 13))
+>bar : Symbol(bar, Decl(ttttAssignmentPatternComputedName.ts, 4, 3))
+>[s] : Symbol([s], Decl(ttttAssignmentPatternComputedName.ts, 10, 15))
+>s : Symbol(s, Decl(ttttAssignmentPatternComputedName.ts, 6, 13))
+>d : Symbol(d, Decl(ttttAssignmentPatternComputedName.ts, 10, 22))
+
+({[1]: bar} = {1: 1, e: 2});
+>[1] : Symbol([1], Decl(ttttAssignmentPatternComputedName.ts, 11, 2))
+>1 : Symbol([1], Decl(ttttAssignmentPatternComputedName.ts, 11, 2))
+>bar : Symbol(bar, Decl(ttttAssignmentPatternComputedName.ts, 4, 3))
+>1 : Symbol(1, Decl(ttttAssignmentPatternComputedName.ts, 11, 15))
+>e : Symbol(e, Decl(ttttAssignmentPatternComputedName.ts, 11, 20))
+

@@ -1,0 +1,84 @@
+//// [test/cases/ttttAssignmentPatternComputedName.ts] ////
+
+=== ttttAssignmentPatternComputedName.ts ===
+// A destructuring assignment's computed name leaves its object literal pattern open (no excess property check on the
+// assigned literal) only when its type is a property key type but no literal (tsc's patternWithComputedProperties):
+// `[undefined]` (TS2464) and literal or unique symbol names keep it. Seed 20261114, computedPropertiesInDestructuring1_ES6
+let foo = undefined;
+>foo : any
+>undefined : undefined
+
+let bar: any, x: any;
+>bar : any
+>x : any
+
+declare const k: string;
+>k : string
+
+declare const s: unique symbol;
+>s : unique symbol
+
+({[foo]: bar} = {bar: "bar"});
+>({[foo]: bar} = {bar: "bar"}) : { bar: string; }
+>{[foo]: bar} = {bar: "bar"} : { bar: string; }
+>{[foo]: bar} : {}
+>[foo] : any
+>foo : undefined
+>bar : any
+>{bar: "bar"} : { bar: string; }
+>bar : string
+>"bar" : "bar"
+
+({["a"]: x} = {a: 1, b: 2});
+>({["a"]: x} = {a: 1, b: 2}) : { a: number; b: number; }
+>{["a"]: x} = {a: 1, b: 2} : { a: number; b: number; }
+>{["a"]: x} : { a: any; }
+>["a"] : any
+>"a" : "a"
+>x : any
+>{a: 1, b: 2} : { a: number; b: number; }
+>a : number
+>1 : 1
+>b : number
+>2 : 2
+
+({[k]: bar} = {bar: "bar", c: 1});
+>({[k]: bar} = {bar: "bar", c: 1}) : { bar: string; c: number; }
+>{[k]: bar} = {bar: "bar", c: 1} : { bar: string; c: number; }
+>{[k]: bar} : { [k]: any; }
+>[k] : any
+>k : string
+>bar : any
+>{bar: "bar", c: 1} : { bar: string; c: number; }
+>bar : string
+>"bar" : "bar"
+>c : number
+>1 : 1
+
+({[s]: bar} = {[s]: 1, d: 2});
+>({[s]: bar} = {[s]: 1, d: 2}) : { [s]: number; d: number; }
+>{[s]: bar} = {[s]: 1, d: 2} : { [s]: number; d: number; }
+>{[s]: bar} : { [s]: any; }
+>[s] : any
+>s : unique symbol
+>bar : any
+>{[s]: 1, d: 2} : { [s]: number; d: number; }
+>[s] : number
+>s : unique symbol
+>1 : 1
+>d : number
+>2 : 2
+
+({[1]: bar} = {1: 1, e: 2});
+>({[1]: bar} = {1: 1, e: 2}) : { 1: number; e: number; }
+>{[1]: bar} = {1: 1, e: 2} : { 1: number; e: number; }
+>{[1]: bar} : { 1: any; }
+>[1] : any
+>1 : 1
+>bar : any
+>{1: 1, e: 2} : { 1: number; e: number; }
+>1 : number
+>1 : 1
+>e : number
+>2 : 2
+

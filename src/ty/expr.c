@@ -3385,6 +3385,18 @@ static bool pattern_reads_references(Expr const* target) {
     }
 }
 
+// A computed name of a destructuring assignment's object literal that leaves its properties open (tsc's
+// patternWithComputedProperties in checkObjectLiteral): a key type that is no literal or unique symbol but a property
+// key type. A literal one is a property; one that isn't a key at all (`[undefined]`, TS2464) neither, so the assigned
+// literal's other properties are still excess
+static bool computed_key_opens_pattern(Checker* me, ObjectExprItem const* item) {
+    if (!item->computed_key) return false;
+    Ty const* key = ty_expr_type(me, item->computed_key);
+    if (key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL)) return false;
+    Ty const* all[3] = { ty_intrinsic(me, TY_STRING), ty_intrinsic(me, TY_NUMBER), ty_intrinsic(me, TY_ES_SYMBOL) };
+    return ty_is_related(me, key, ty_union(me, all, 3, nullptr, (TyList){0}), TY_RELATION_ASSIGNABLE);
+}
+
 static Ty const* assignment_value_context(Checker* me, BinaryOpExpr const* binary, Ty const* left) {
     // A JSDoc `@type` of the assignment (tsgo's reparsed binary.Type, getContextualTypeForBinaryOperand)
     if (binary->jsdoc_type && !binary->jsdoc_type_borrowed) return ty_of_node(binary->jsdoc_type);
@@ -3427,7 +3439,7 @@ static Ty const* assignment_value_context(Checker* me, BinaryOpExpr const* binar
         // identity of two getContextualType answers: `({ a: n } = t0())` infers nothing, `({ promise: this.p } =
         // withResolvers())` infers from it like from any contextual type
         bool open = false;
-        for_each (i, vec_object_expr_item, &binary->left.object) open |= i->tag == OBJECT_ITEM_SPREAD || i->computed_key;
+        for_each (i, vec_object_expr_item, &binary->left.object) open |= i->tag == OBJECT_ITEM_SPREAD || computed_key_opens_pattern(me, i);
         if (!open) {
             assigned_context = ty_pattern_clone(me, left);
             // (An assignment's: tsc's SkipBindingPatterns doesn't skip it, see ty_is_assignment_pattern())
