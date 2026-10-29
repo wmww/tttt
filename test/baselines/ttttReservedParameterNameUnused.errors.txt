@@ -1,0 +1,30 @@
+ttttReservedParameterNameUnused.ts(4,12): error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+ttttReservedParameterNameUnused.ts(4,12): error TS1359: Identifier expected. 'null' is a reserved word that cannot be used here.
+ttttReservedParameterNameUnused.ts(7,12): error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+ttttReservedParameterNameUnused.ts(7,12): error TS1359: Identifier expected. 'null' is a reserved word that cannot be used here.
+ttttReservedParameterNameUnused.ts(8,13): error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+ttttReservedParameterNameUnused.ts(8,13): error TS1359: Identifier expected. 'null' is a reserved word that cannot be used here.
+
+
+==== ttttReservedParameterNameUnused.ts (6 errors) ====
+    // A reserved word where a parameter name goes is TS1359 and a missing identifier, which takes ThisNodeHasError
+    // (createIdentifierWithDiagnostic): the parameter's TS6133 is hidden
+    var o = {
+        method(null) {
+               
+!!! error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+               ~~~~
+!!! error TS1359: Identifier expected. 'null' is a reserved word that cannot be used here.
+        },
+    };
+    function f(null) {}
+               
+!!! error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+               ~~~~
+!!! error TS1359: Identifier expected. 'null' is a reserved word that cannot be used here.
+    class C { m(null) {} }
+                
+!!! error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+                ~~~~
+!!! error TS1359: Identifier expected. 'null' is a reserved word that cannot be used here.
+    

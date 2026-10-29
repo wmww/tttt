@@ -1,0 +1,24 @@
+//// [test/cases/ttttReservedParameterNameUnused.ts] ////
+
+=== ttttReservedParameterNameUnused.ts ===
+// A reserved word where a parameter name goes is TS1359 and a missing identifier, which takes ThisNodeHasError
+// (createIdentifierWithDiagnostic): the parameter's TS6133 is hidden
+var o = {
+>o : { method(: any): void; }
+>{    method(null) {    },} : { method(: any): void; }
+
+    method(null) {
+>method : (: any) => void
+> : any
+
+    },
+};
+function f(null) {}
+>f : (: any) => void
+> : any
+
+class C { m(null) {} }
+>C : C
+>m : (: any) => void
+> : any
+

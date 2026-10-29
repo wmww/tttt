@@ -894,7 +894,8 @@ static Error* parse_error_inner(Parser* me, Span span, unsigned ts_code, cstr me
     note_error_attempt(me);
     // What is expected there is missing: tsgo's createMissingNode finishes a node of no width at the token's full start
     // right away, which takes the flag
-    if ((ts_code == 1109 || ts_code == 1110 || ts_code == 1003) && span_source(span)) note_missing_node(me, span_start_ptr(span));
+    // (TS1359 too: createIdentifierWithDiagnostic makes a missing identifier after a reserved word, `f(null)`)
+    if ((ts_code == 1109 || ts_code == 1110 || ts_code == 1003 || ts_code == 1359) && span_source(span)) note_missing_node(me, span_start_ptr(span));
     int invalid = span_source(span) && !in_literal ? invalid_char_size(me, span_start_ptr(span)) : 0;
     if (invalid && ts_code != 1127) {
         cstr_drop(&message);
