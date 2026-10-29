@@ -1,0 +1,61 @@
+//// [test/cases/ttttMissingBodyContextualReturn.ts] ////
+
+=== ttttMissingBodyContextualReturn.ts ===
+// A function expression whose `{` is missing has an empty, missing block: a signature's return type is any then
+// (getReturnTypeOfSignature checks NodeIsMissing), but its contextual check infers it from the block
+// (contextuallyCheckFunctionExpressionOrObjectLiteralMethod -> getReturnTypeFromBody), whose end no flow reaches
+// (the binder sets endFlowNode only for a present body): never. Seed 20261114, contextualTyping null-arg
+var f = <(n: number, s: string) => string>(function(a, s) );
+>f : Symbol(f, Decl(ttttMissingBodyContextualReturn.ts, 4, 3))
+>n : Symbol(n, Decl(ttttMissingBodyContextualReturn.ts, 4, 10))
+>s : Symbol(s, Decl(ttttMissingBodyContextualReturn.ts, 4, 20))
+>a : Symbol(a, Decl(ttttMissingBodyContextualReturn.ts, 4, 52))
+>s : Symbol(s, Decl(ttttMissingBodyContextualReturn.ts, 4, 54))
+
+declare function g(cb: (x: number) => string): void;
+>g : Symbol(g, Decl(ttttMissingBodyContextualReturn.ts, 4, 60))
+>cb : Symbol(cb, Decl(ttttMissingBodyContextualReturn.ts, 5, 19))
+>x : Symbol(x, Decl(ttttMissingBodyContextualReturn.ts, 5, 24))
+
+g(function(x) );
+>g : Symbol(g, Decl(ttttMissingBodyContextualReturn.ts, 4, 60))
+>x : Symbol(x, Decl(ttttMissingBodyContextualReturn.ts, 6, 11))
+
+let c: (x: number) => void = function(x);
+>c : Symbol(c, Decl(ttttMissingBodyContextualReturn.ts, 7, 3))
+>x : Symbol(x, Decl(ttttMissingBodyContextualReturn.ts, 7, 8))
+>x : Symbol(x, Decl(ttttMissingBodyContextualReturn.ts, 7, 38))
+
+let a1: (x: number) => Promise<string> = async function(x);
+>a1 : Symbol(a1, Decl(ttttMissingBodyContextualReturn.ts, 8, 3))
+>x : Symbol(x, Decl(ttttMissingBodyContextualReturn.ts, 8, 9))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>x : Symbol(x, Decl(ttttMissingBodyContextualReturn.ts, 8, 56))
+
+let g1: () => Iterator<number> = function*();
+>g1 : Symbol(g1, Decl(ttttMissingBodyContextualReturn.ts, 9, 3))
+>Iterator : Symbol(Iterator, Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2025.iterator.d.ts, --, --))
+
+declare function inf<T>(cb: (x: number) => T): T;
+>inf : Symbol(inf, Decl(ttttMissingBodyContextualReturn.ts, 9, 45))
+>T : Symbol(T, Decl(ttttMissingBodyContextualReturn.ts, 10, 21))
+>cb : Symbol(cb, Decl(ttttMissingBodyContextualReturn.ts, 10, 24))
+>x : Symbol(x, Decl(ttttMissingBodyContextualReturn.ts, 10, 29))
+>T : Symbol(T, Decl(ttttMissingBodyContextualReturn.ts, 10, 21))
+>T : Symbol(T, Decl(ttttMissingBodyContextualReturn.ts, 10, 21))
+
+let r = inf(function(x));
+>r : Symbol(r, Decl(ttttMissingBodyContextualReturn.ts, 11, 3))
+>inf : Symbol(inf, Decl(ttttMissingBodyContextualReturn.ts, 9, 45))
+>x : Symbol(x, Decl(ttttMissingBodyContextualReturn.ts, 11, 21))
+
+// Without a contextual signature: any
+var q = function(x: number);
+>q : Symbol(q, Decl(ttttMissingBodyContextualReturn.ts, 13, 3))
+>x : Symbol(x, Decl(ttttMissingBodyContextualReturn.ts, 13, 17))
+
+var o = { m(x: number) };
+>o : Symbol(o, Decl(ttttMissingBodyContextualReturn.ts, 14, 3))
+>m : Symbol(m, Decl(ttttMissingBodyContextualReturn.ts, 14, 9))
+>x : Symbol(x, Decl(ttttMissingBodyContextualReturn.ts, 14, 12))
+

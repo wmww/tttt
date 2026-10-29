@@ -1,0 +1,68 @@
+//// [test/cases/ttttMissingBodyContextualReturn.ts] ////
+
+=== ttttMissingBodyContextualReturn.ts ===
+// A function expression whose `{` is missing has an empty, missing block: a signature's return type is any then
+// (getReturnTypeOfSignature checks NodeIsMissing), but its contextual check infers it from the block
+// (contextuallyCheckFunctionExpressionOrObjectLiteralMethod -> getReturnTypeFromBody), whose end no flow reaches
+// (the binder sets endFlowNode only for a present body): never. Seed 20261114, contextualTyping null-arg
+var f = <(n: number, s: string) => string>(function(a, s) );
+>f : (n: number, s: string) => string
+><(n: number, s: string) => string>(function(a, s) ) : (n: number, s: string) => string
+>n : number
+>s : string
+>(function(a, s) ) : (a: number, s: string) => never
+>function(a, s) : (a: number, s: string) => never
+>a : number
+>s : string
+
+declare function g(cb: (x: number) => string): void;
+>g : (cb: (x: number) => string) => void
+>cb : (x: number) => string
+>x : number
+
+g(function(x) );
+>g(function(x) ) : void
+>g : (cb: (x: number) => string) => void
+>function(x) : (x: number) => never
+>x : number
+
+let c: (x: number) => void = function(x);
+>c : (x: number) => void
+>x : number
+>function(x) : (x: number) => never
+>x : number
+
+let a1: (x: number) => Promise<string> = async function(x);
+>a1 : (x: number) => Promise<string>
+>x : number
+>async function(x) : (x: number) => Promise<never>
+>x : number
+
+let g1: () => Iterator<number> = function*();
+>g1 : () => Iterator<number>
+>function*() : () => Generator<never, never, any>
+
+declare function inf<T>(cb: (x: number) => T): T;
+>inf : <T>(cb: (x: number) => T) => T
+>cb : (x: number) => T
+>x : number
+
+let r = inf(function(x));
+>r : never
+>inf(function(x)) : never
+>inf : <T>(cb: (x: number) => T) => T
+>function(x) : (x: number) => never
+>x : number
+
+// Without a contextual signature: any
+var q = function(x: number);
+>q : (x: number) => any
+>function(x: number) : (x: number) => any
+>x : number
+
+var o = { m(x: number) };
+>o : { m(x: number): any; }
+>{ m(x: number) } : { m(x: number): any; }
+>m : (x: number) => any
+>x : number
+

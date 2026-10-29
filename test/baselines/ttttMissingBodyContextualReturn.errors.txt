@@ -1,0 +1,40 @@
+ttttMissingBodyContextualReturn.ts(5,59): error TS1005: '{' expected.
+ttttMissingBodyContextualReturn.ts(7,15): error TS1005: '{' expected.
+ttttMissingBodyContextualReturn.ts(8,41): error TS1005: '{' expected.
+ttttMissingBodyContextualReturn.ts(9,59): error TS1005: '{' expected.
+ttttMissingBodyContextualReturn.ts(10,45): error TS1005: '{' expected.
+ttttMissingBodyContextualReturn.ts(12,24): error TS1005: '{' expected.
+ttttMissingBodyContextualReturn.ts(14,28): error TS1005: '{' expected.
+
+
+==== ttttMissingBodyContextualReturn.ts (7 errors) ====
+    // A function expression whose `{` is missing has an empty, missing block: a signature's return type is any then
+    // (getReturnTypeOfSignature checks NodeIsMissing), but its contextual check infers it from the block
+    // (contextuallyCheckFunctionExpressionOrObjectLiteralMethod -> getReturnTypeFromBody), whose end no flow reaches
+    // (the binder sets endFlowNode only for a present body): never. Seed 20261114, contextualTyping null-arg
+    var f = <(n: number, s: string) => string>(function(a, s) );
+                                                              ~
+!!! error TS1005: '{' expected.
+    declare function g(cb: (x: number) => string): void;
+    g(function(x) );
+                  ~
+!!! error TS1005: '{' expected.
+    let c: (x: number) => void = function(x);
+                                            ~
+!!! error TS1005: '{' expected.
+    let a1: (x: number) => Promise<string> = async function(x);
+                                                              ~
+!!! error TS1005: '{' expected.
+    let g1: () => Iterator<number> = function*();
+                                                ~
+!!! error TS1005: '{' expected.
+    declare function inf<T>(cb: (x: number) => T): T;
+    let r = inf(function(x));
+                           ~
+!!! error TS1005: '{' expected.
+    // Without a contextual signature: any
+    var q = function(x: number);
+                               ~
+!!! error TS1005: '{' expected.
+    var o = { m(x: number) };
+    

@@ -320,7 +320,8 @@ bool ty_is_recursive_return(Checker* me, Expr const* returned) {
 static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
     // (Before the return expressions, like tsc's checkAndAggregateReturnExpressionTypes asks functionHasImplicitReturn
     // first: an exhaustiveness check makes its case expressions' literal types, which then come first in unions)
-    FlowReachability end = function->is_generator ? FLOW_REACH_NO : ty_function_end_reachability(me, function);
+    // (A missing body has no end flow: tsc's binder sets endFlowNode only when NodeIsPresent(body))
+    FlowReachability end = function->is_generator || function->body_missing ? FLOW_REACH_NO : ty_function_end_reachability(me, function);
     Ty const* outer_context = function_impl_enter_return_context(function);
     TyBuf returned = {0};
     FunctionImpl const* outer_inference_of = my return_inference_of;
@@ -483,8 +484,11 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     // (A getter without an annotation is its setter's parameter annotation, body or not: tsc's getTypeOfAccessors)
     if (!function->ret_explicit && function_impl_setter_type(function)) return ty_from_node(me, function_impl_setter_type(function), function_lower_ctx);
     // (A getter whose body the parser lost has an empty one, which tsc's getTypeOfAccessors infers from: void. A
-    // signature's return type is any then, getReturnTypeOfSignature checks NodeIsMissing)
-    bool body = function->has_body || (function->body_missing && function->accessor == 1);
+    // signature's return type is any then, getReturnTypeOfSignature checks NodeIsMissing, but a contextual check
+    // infers it from the missing block, whose end no flow reaches: never, contextuallyCheckFunctionExpressionOr-
+    // ObjectLiteralMethod calls getReturnTypeFromBody)
+    bool body = function->has_body || (function->body_missing && (function->accessor == 1 ||
+        (!function->accessor && (contextual_check || ty_link_get(me, KEY_FUNCTION_RETURN, function)))));
     if (function->ret_explicit || !body) return ty_from_node(me, &function->ret, function_lower_ctx);
     if (function_impl_rare(function)->jsdoc_signature_type) {
         Ty const* tagged = ty_jsdoc_tag_return_type(me, function);
