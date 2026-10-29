@@ -40,36 +40,21 @@ than bun canary on real projects, judged on their private set (perf work needs a
 check, not the bench, and no machine-specific tuning: vision.md "Decisions"); memory where cheap; easy, measured
 wins first; land fast and gate in batches.
 
-## Now (2026-10-29 box time, 2026-10-31 wall): the threading census is running; correctness on the second worker
-- **Threading** (notes/threading.md "The census"): the plan's step 1 is closed negative on 2026-10-29: share on second
-  touch loses to the better of plain and the flag everywhere (the corpora route most types hot). Open, for the human:
-  bring the flag's per-read premium down to make it the one mode (option 2, the only lever the census leaves), or keep
-  plain and drop the flag. Meanwhile worker `tail` is on the idle tail's shape (below).
-- **The idle tail's shape** (worker `tail`): a checked `.d.ts` bounds the parallel run on 188 of 300 projects; on the
-  one-file shapes (immutable.d.ts, store.d.ts) tttt is 2x bun at one thread (0.38 vs 0.19 s), memory-bound 31-43%
-  against bun's 28%, bad speculation twice bun's. Mode-independent: whatever it finds speeds plain, the flag and K1.
-- **Two regressions found by the batch9 oracle run** (fixed by worker `reg`: 8268d000e, 3213e6320): openclaw's spurious TS2352 (0d3156599 uncovered a
-  missing comparable path: mapped source vs type-parameter target, Maybe) and opencode's spurious TS2367 (528301bb9:
-  a parenthesized `&&` on the right of `||` stays in tsc's TypeOnly mode). Fixes, not reverts.
-- **Instruction drift** since the last save (8b1777931, 103 commits): tanstack-router +3.2%, type-fest/valibot/xstate
-  +2.1%, vue +1.7%, vscode +0.5%; zod/drizzle (the gated pair) +0.4/+0.1. Attributed (measurements.md
-  "Instruction drift, attributed"): a stale partial baseline, not a regression; the file is re-saved in full at 4f003017f.
-- **Correctness** (cor5: type_core/missing_checks probes, the 99-V4 leftovers; bun7: mutation-testing findings, then
-  flagflip's cells and the own failing tests): continuous. The vscode regression since v1 is recovered except the
-  huge pages, removed for good (vision.md).
-- **Instruction drift**: +0.6..0.8% per day of correctness landings (nest +1.8%, attributed to parser recovery
-  branches and inlining churn: bun7's report); the batch count at every save keeps it visible.
-
-- **vscode since v1** (measurements.md "vscode since v1: the regression attributed", bugs/perf_leads.md): worker rehuge
-  brings the arena/AST huge pages back with a kernel-configuration guard (THP enabled/defrag; v1's free-block budget
-  as the fallback) and makes a5a0b7100's second inference cheaper; the huge text page needs a THP-`always` box (the
-  human's laptop) to measure: v1 vs main vs `git revert 4f3fa414e 24820df46` at K1 on vscode.
-- **Correctness resumes** (the human, 2026-10-29: when the perf track completes or walls): cor3's queue
-  (bugs/missing_checks.md, type_core.md, the 99-V4 leftovers), the bun worker's parser keys, then the lists.
-- **The shared graph is the default at K > 1** (worker flip, 2026-10-29: vision.md "Decisions"): one checker plain,
-  `TTTT_SHARED_GRAPH=0` plain at any K, `--shared-graph` gone. Its open perf items are now the default's: the 5-20%
-  loss on ordinary corpora on this box (the per-read premium, notes/shared_graph.md "The premium, attributed") and the
-  monkeytype/frontend K7/K8 deep-cut storm (bugs/shared_graph.md).
+## Now (2026-10-29 box time, 2026-10-31 wall): the shared graph is the default; correctness and safe perf wins
+- **The shared graph is the default at K > 1** (vision.md Decisions; 7c91df2df; plain = `TTTT_SHARED_GRAPH=0`, one
+  checker never has a graph). The default-on gate found three graph bugs (fixed: 308bfacae, 9990e5259, e598f8660) and
+  one rare K16 round-robin difference on dokploy seen once under load (worker `race`, /tmp/wt-race: reproduce with the
+  GRAPH_CHECKS/FINGERPRINT builds under load, fix at the read with a taint event; bugs/shared_graph.md).
+- **Perf, safe wins only (the human, 2026-10-31)**: no threading redesign, no big trade-offs; moderate refactors for a
+  purpose are fine. Done: tail (the one-file .d.ts shape -13%), fe3 (front-end instructions -5..-22% at T1), fe4 (the
+  front end's threads: whole runs -3..-7% at the defaults on five of six shapes). Next perf worker, when a slot is free:
+  the loader's own per-file work (~100 ms CPU on vscode/openclaw: program_add_made_source, the files map, include
+  reasons), after a fresh timeline (front_end.md "Thread-level pass" resume); lower value: nitro's module-refs split,
+  link's augmentations step.
+- **Correctness** (worker `cor15`): the JSDoc `{@link}` TS6133 fix, seeds 20261120/21, the next bun root-cause groups;
+  triage.md has vue-query's 4 spurious diagnostics (unwritten).
+- **Release**: the human cuts v2 when they feel like it; keep the oracles green and the headline saved
+  (`bugcount.py --save` per full run).
 
 ## Done (2026-10-28/29): the hub regime, the shared graph's finish line
 - **The shared graph at the laptop's 24 threads** (the next point on the break-even curve, hub_regime.md): flag
