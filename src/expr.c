@@ -730,6 +730,9 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
             return;
         }
     }
+    // `{ a = 1 }` outside a pattern (TS1312): the name is checked for nothing, not even its use before its declaration
+    // (tsc's checkShorthandPropertyAssignment checks the initializer instead); what it finds is what the symbols say
+    if (my target && my shorthand_unchecked) return;
     if (my target) {
         ClassItem const* field = scope_invalid_initializer_field(names, span_sv(identifier_expr_name(me)), my symbol);
         if (field) {
@@ -903,6 +906,8 @@ static bool symbol_deprecated(Symbol const* symbol) {
 }
 
 void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
+    // (`{ a = 1 }` outside a pattern: the name isn't checked, see identifier_expr_lookup_names())
+    if (my shorthand_unchecked) return;
     report_invalid_assignment_target(me, errs);
     // A reference to a deprecated declaration: a suggestion (tsc's checkIdentifier, addDeprecatedSuggestion). Not a
     // function's, which tsc decides by the call's signature (isUncalledFunctionReference, TS6387): not done

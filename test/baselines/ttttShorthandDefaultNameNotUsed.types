@@ -1,0 +1,28 @@
+//// [test/cases/ttttShorthandDefaultNameNotUsed.ts] ////
+
+=== ttttShorthandDefaultNameNotUsed.ts ===
+// A shorthand property with an initializer outside a destructuring target (TS1312) checks only the initializer: its
+// name isn't a use, not even before its declaration (no TS2448)
+const Category = {
+>Category : { name: string; Category: number; }
+>{    name: "a",    Category = 1,} : { name: string; Category: number; }
+
+    name: "a",
+>name : string
+>"a" : "a"
+
+    Category = 1,
+>Category : { name: string; Category: number; }
+>1 : 1
+
+};
+const other = { later = 2 };
+>other : { later: number; }
+>{ later = 2 } : { later: number; }
+>later : number
+>2 : 2
+
+let later = 1;
+>later : number
+>1 : 1
+
