@@ -1,0 +1,29 @@
+ttttClassExpressionBaseCircular.ts(7,7): error TS2310: Type 'Derived1' recursively references itself as a base type.
+ttttClassExpressionBaseCircular.ts(7,7): error TS2506: 'Derived1' is referenced directly or indirectly in its own base expression.
+ttttClassExpressionBaseCircular.ts(8,5): error TS2416: Property 'root' in type '(Anonymous class)' is not assignable to the same property in base type 'Base1'.
+  Type '() => undefined' is not assignable to type '() => Derived1'.
+    Type 'undefined' is not assignable to type 'Derived1'.
+
+
+==== ttttClassExpressionBaseCircular.ts (3 errors) ====
+    // A class expression in `extends` is checked while the base constructor type resolves (tsgo's checkClassExpression):
+    // relating its `root` to the base's resolves Derived1's base types again, TS2310/TS2506 (known failing, type_core.md)
+    abstract class Base1 {
+        abstract root(): Derived1;
+    }
+    
+    class Derived1 extends class extends Base1 {
+          ~~~~~~~~
+!!! error TS2310: Type 'Derived1' recursively references itself as a base type.
+          ~~~~~~~~
+!!! error TS2506: 'Derived1' is referenced directly or indirectly in its own base expression.
+        root() {
+        ~~~~
+!!! error TS2416: Property 'root' in type '(Anonymous class)' is not assignable to the same property in base type 'Base1'.
+!!! error TS2416:   Type '() => undefined' is not assignable to type '() => Derived1'.
+!!! error TS2416:     Type 'undefined' is not assignable to type 'Derived1'.
+            return undefined;
+        }
+    }
+    { }
+    

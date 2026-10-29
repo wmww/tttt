@@ -306,6 +306,8 @@ def line_col(path, pos, cache={}):
 
 
 def where(field):
+    if field.count('|') < 2:
+        return '(no node)'  # (a function whose first argument isn't a node: getBaseConstructorTypeOfClass(t))
     path, pos, end = field.rsplit('|', 2)
     return line_col(path, int(pos)) if path != '-' else '(no file)'
 

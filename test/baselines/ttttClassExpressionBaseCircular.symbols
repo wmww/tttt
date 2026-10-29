@@ -1,0 +1,26 @@
+//// [test/cases/ttttClassExpressionBaseCircular.ts] ////
+
+=== ttttClassExpressionBaseCircular.ts ===
+// A class expression in `extends` is checked while the base constructor type resolves (tsgo's checkClassExpression):
+// relating its `root` to the base's resolves Derived1's base types again, TS2310/TS2506 (known failing, type_core.md)
+abstract class Base1 {
+>Base1 : Symbol(Base1, Decl(ttttClassExpressionBaseCircular.ts, 0, 0))
+
+    abstract root(): Derived1;
+>root : Symbol(Base1.root, Decl(ttttClassExpressionBaseCircular.ts, 2, 22))
+>Derived1 : Symbol(Derived1, Decl(ttttClassExpressionBaseCircular.ts, 4, 1))
+}
+
+class Derived1 extends class extends Base1 {
+>Derived1 : Symbol(Derived1, Decl(ttttClassExpressionBaseCircular.ts, 4, 1))
+>Base1 : Symbol(Base1, Decl(ttttClassExpressionBaseCircular.ts, 0, 0))
+
+    root() {
+>root : Symbol((Anonymous class).root, Decl(ttttClassExpressionBaseCircular.ts, 6, 44))
+
+        return undefined;
+>undefined : Symbol(undefined)
+    }
+}
+{ }
+

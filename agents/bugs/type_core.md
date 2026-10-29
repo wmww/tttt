@@ -258,6 +258,14 @@ passing tests).
   deferred type's branches, which also instantiates with `tail`) skips instantiate_conditional()'s cache and
   allocates its deferred result unintern'd in ty_conditional(); risky for type counts and every recursive alias
   (type-fest, effect): perfsweep and the sweeps. Test ttttTailRecursionFreshConditional (known failing). [design]
+- A class expression in a class's `extends` is checked in full while the base constructor type resolves (tsgo's
+  checkClassExpression runs checkClassLikeDeclaration there): `class D extends class extends B { root() { return
+  undefined } } {}` with `B.root(): D` relates the expression's instance type to B, `undefined` to D asks
+  isWeakType(D), which resolves D's base types: circular, TS2310 and TS2506 at D. tttt checks the class expression
+  later, outside the resolution, and its relation of undefined to D doesn't resolve D's members: nothing reported.
+  Found by mutation seed 20261120 (mut5311, recursiveClassBaseType without its `as any`). Needs the class
+  expression's checks (or at least the base type relation) inside the base constructor resolution, with tsc's
+  order of member resolution in the relation. Test ttttClassExpressionBaseCircular (known failing). [design]
 
 ## Classes and declarations
 - Mixin leftovers: a class extending a base that constructs `any` should get tsc's anyBaseTypeIndexInfo
