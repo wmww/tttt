@@ -56,9 +56,9 @@ const baselines = {
         types: true,
     },
     'bun01-C3': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun01-C4a': {
         errors: false,
@@ -3196,9 +3196,9 @@ const baselines = {
         types: true,
     },
     'bun20-C15': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun20-C16a': {
         errors: true,
@@ -8516,7 +8516,7 @@ const baselines = {
         types: false,
     },
     'bun53-L04': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8861,7 +8861,7 @@ const baselines = {
         types: true,
     },
     'bun57-L03': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -10231,7 +10231,7 @@ const baselines = {
         types: true,
     },
     'bun87-R08': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -12071,6 +12071,11 @@ const baselines = {
         symbols: false,
         types: false,
     },
+    'ttttAccessibilityPropertyName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAccessorCircularityReports': {
         errors: true,
         symbols: true,
@@ -12652,6 +12657,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttClassExpressionDecoratorScope': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttClassExtendingAnyNormalizesToAny': {
         errors: true,
         symbols: true,
@@ -12903,6 +12913,11 @@ const baselines = {
         types: true,
     },
     'ttttConstructorAssignedFieldCycle': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttConstructorNarrowingSymbol': {
         errors: true,
         symbols: true,
         types: true,
