@@ -14221,6 +14221,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttExportSpecifierNotFoundTwice': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttExportStarUnresolvedSame': {
         errors: true,
         symbols: true,
