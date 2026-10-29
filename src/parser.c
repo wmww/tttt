@@ -9621,6 +9621,13 @@ static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
         }
 
         if (span_valid(question) && count < 32) ret->key.index->optional_params |= 1u << count;
+        if (!has_type && !has_initializer && span_valid(name)) {
+            u32 k = (u32)vec_span_size(&ret->key.index->untyped_params);
+            if (span_valid(rest) && k < 32) ret->key.index->untyped_rest |= 1u << k;
+            char const* end = span_valid(question) ? span_end_ptr(question) : span_end_ptr(name);
+            vec_span_push(&ret->key.index->untyped_params, span_make(p.shared->source, param_start.start, end));
+            vec_span_push(&ret->key.index->untyped_names, name);
+        }
         if (count == 0) {
             ret->key.index->name = name;
             ret->key.index->decl = span_make(p.shared->source, param_start.start, span_end_ptr(name));

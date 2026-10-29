@@ -19,6 +19,8 @@ void interface_member_drop(InterfaceMember* me) {
             type_drop(&my key.index->type);
             vec_span_drop(&my key.index->more_names);
             vec_span_drop(&my key.index->more_decls);
+            vec_span_drop(&my key.index->untyped_params);
+            vec_span_drop(&my key.index->untyped_names);
             for (isize i = 0; i < vec_span_size(&my key.index->initialized); i++) {
                 expr_drop(my key.index->initializer_values[i]);
                 ast_delete(my key.index->initializer_values[i]);
@@ -267,6 +269,19 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, bool in_t
             // (tsc's checkVariableLikeDeclaration of a parameter of a signature without a body)
             for_each (i, vec_span, &my key.index->initialized) {
                 error_ctx_error_d(errs, *i, 2371, "A parameter initializer is only allowed in a function or constructor implementation.");
+            }
+            // (And its parameters' types: one without an annotation or initializer is implicitly any, tsc's
+            // reportImplicitAny from checkParameter, whatever the parser reported)
+            if (compiler_options()->no_implicit_any) {
+                for (isize k = 0; k < vec_span_size(&my key.index->untyped_params); k++) {
+                    Span param = *vec_span_at(&my key.index->untyped_params, k);
+                    Span param_name = *vec_span_at(&my key.index->untyped_names, k);
+                    if (k < 32 && (my key.index->untyped_rest >> k & 1)) {
+                        error_ctx_error_d(errs, param, 7019, "Rest parameter '", span_name_text(param_name), "' implicitly has an 'any[]' type.");
+                    } else {
+                        error_ctx_error_d(errs, param, 7006, "Parameter '", span_name_text(param_name), "' implicitly has an 'any' type.");
+                    }
+                }
             }
             // tsc's checkGrammarIndexSignatureParameters after what the parser reported (the parameter list's shape)
             if (my key.index->grammar_reported) break;

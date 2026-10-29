@@ -804,6 +804,21 @@ static void accessor_member_compile_test_info(InterfaceMember const* me, Span sc
     if (accessor && accessor->getter_body) function_impl_compile_test_info(accessor->getter_body->function, ctx);
 }
 
+// An index signature parameter's type: its annotation's, else an initializer's widened type (tsc's
+// getWidenedTypeForVariableLikeDeclaration), else any
+static Ty const* index_param_type(InterfaceIndexKey const* index, Span name, TypeNode const* type) {
+    if (!type->parsed) {
+        for (isize j = 0; j < vec_span_size(&index->initialized); j++) {
+            Span param = *vec_span_at(&index->initialized, j);
+            if (span_start_ptr(name) >= span_start_ptr(param) && span_end_ptr(name) <= span_end_ptr(param)) {
+                Checker* checker = current_checker;
+                return ty_widened_literal(checker, ty_expr_type(checker, index->initializer_values[j]));
+            }
+        }
+    }
+    return ty_of_node(type);
+}
+
 void interface_member_compile_test_info(InterfaceMember const* me, Span scope, BaselineTestCase* ctx) {
     switch (my key.tag) {
         case INTERFACE_KEY_NAME: {
@@ -932,7 +947,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                     .span = my key.index->name, .declarations = vec_span_single(my key.index->decl),
                 });
                 baseline_test_case_add_type(ctx, my key.index->name,
-                    optional_member_type(ty_of_node(&my key.index->type), my key.index->optional_params & 1));
+                    optional_member_type(index_param_type(my key.index, my key.index->name, &my key.index->type), my key.index->optional_params & 1));
             }
             type_compile_test_info(&my key.index->type, ctx);
             index_initializers_compile_test_info(my key.index, span_valid(my key.index->decl) ? span_start_ptr(my key.index->decl) : nullptr,
@@ -943,7 +958,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .span = name, .declarations = vec_span_single(*vec_span_at(&my key.index->more_decls, k)),
                 });
-                baseline_test_case_add_type(ctx, name, optional_member_type(ty_of_node(type), k + 1 < 32 && (my key.index->optional_params >> (k + 1) & 1)));
+                baseline_test_case_add_type(ctx, name, optional_member_type(index_param_type(my key.index, name, type), k + 1 < 32 && (my key.index->optional_params >> (k + 1) & 1)));
                 type_compile_test_info(type, ctx);
                 index_initializers_compile_test_info(my key.index, span_start_ptr(*vec_span_at(&my key.index->more_decls, k)),
                     k + 1 < vec_span_size(&my key.index->more_decls) ? span_start_ptr(*vec_span_at(&my key.index->more_decls, k + 1)) : nullptr, ctx);

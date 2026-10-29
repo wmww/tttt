@@ -1,0 +1,59 @@
+ttttIndexSignatureUntypedParams.ts(5,6): error TS7006: Parameter 'c' implicitly has an 'any' type.
+ttttIndexSignatureUntypedParams.ts(5,9): error TS7006: Parameter 'd' implicitly has an 'any' type.
+ttttIndexSignatureUntypedParams.ts(6,6): error TS7019: Rest parameter 'f' implicitly has an 'any[]' type.
+ttttIndexSignatureUntypedParams.ts(7,6): error TS7006: Parameter 'g' implicitly has an 'any' type.
+ttttIndexSignatureUntypedParams.ts(8,6): error TS2369: A parameter property is only allowed in a constructor implementation.
+ttttIndexSignatureUntypedParams.ts(8,6): error TS7006: Parameter 'h' implicitly has an 'any' type.
+ttttIndexSignatureUntypedParams.ts(8,16): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+ttttIndexSignatureUntypedParams.ts(10,13): error TS7006: Parameter 'm' implicitly has an 'any' type.
+ttttIndexSignatureUntypedParams.ts(12,5): error TS1440: Variable declaration not allowed at this location.
+ttttIndexSignatureUntypedParams.ts(12,5): error TS7008: Member 'var' implicitly has an 'any' type.
+ttttIndexSignatureUntypedParams.ts(12,10): error TS7006: Parameter 'a' implicitly has an 'any' type.
+ttttIndexSignatureUntypedParams.ts(12,13): error TS7019: Rest parameter 'b' implicitly has an 'any[]' type.
+ttttIndexSignatureUntypedParams.ts(12,19): error TS1005: ';' expected.
+ttttIndexSignatureUntypedParams.ts(12,21): error TS7008: Member 'x' implicitly has an 'any' type.
+
+
+==== ttttIndexSignatureUntypedParams.ts (14 errors) ====
+    // An index signature's parameters without a type annotation (or initializer) are implicitly any (tsc's checkParameter:
+    // TS7006, TS7019 for a rest), next to the grammar errors (seed 20261112's iterableArrayPattern2: `var [a, ...b] = x` in an
+    // open class body is a property `var` and an index signature)
+    interface I {
+        [c, d]: number;
+         ~
+!!! error TS7006: Parameter 'c' implicitly has an 'any' type.
+            ~
+!!! error TS7006: Parameter 'd' implicitly has an 'any' type.
+        [...f]: number;
+         ~~~~
+!!! error TS7019: Rest parameter 'f' implicitly has an 'any[]' type.
+        [g?]: number;
+         ~~
+!!! error TS7006: Parameter 'g' implicitly has an 'any' type.
+        [public h, k = 1]: number;
+         ~~~~~~~~
+!!! error TS2369: A parameter property is only allowed in a constructor implementation.
+         ~~~~~~~~
+!!! error TS7006: Parameter 'h' implicitly has an 'any' type.
+                   ~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    }
+    type T = { [m, n: string]: number };
+                ~
+!!! error TS7006: Parameter 'm' implicitly has an 'any' type.
+    class C {
+        var [a, ...b] = x;
+        ~~~
+!!! error TS1440: Variable declaration not allowed at this location.
+        ~~~
+!!! error TS7008: Member 'var' implicitly has an 'any' type.
+             ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                ~~~~
+!!! error TS7019: Rest parameter 'b' implicitly has an 'any[]' type.
+                      ~
+!!! error TS1005: ';' expected.
+                        ~
+!!! error TS7008: Member 'x' implicitly has an 'any' type.
+    }
+    

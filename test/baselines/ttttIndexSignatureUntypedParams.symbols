@@ -1,0 +1,38 @@
+//// [test/cases/ttttIndexSignatureUntypedParams.ts] ////
+
+=== ttttIndexSignatureUntypedParams.ts ===
+// An index signature's parameters without a type annotation (or initializer) are implicitly any (tsc's checkParameter:
+// TS7006, TS7019 for a rest), next to the grammar errors (seed 20261112's iterableArrayPattern2: `var [a, ...b] = x` in an
+// open class body is a property `var` and an index signature)
+interface I {
+>I : Symbol(I, Decl(ttttIndexSignatureUntypedParams.ts, 0, 0))
+
+    [c, d]: number;
+>c : Symbol(c, Decl(ttttIndexSignatureUntypedParams.ts, 4, 5))
+>d : Symbol(d, Decl(ttttIndexSignatureUntypedParams.ts, 4, 7))
+
+    [...f]: number;
+>f : Symbol(f, Decl(ttttIndexSignatureUntypedParams.ts, 5, 5))
+
+    [g?]: number;
+>g : Symbol(g, Decl(ttttIndexSignatureUntypedParams.ts, 6, 5))
+
+    [public h, k = 1]: number;
+>h : Symbol(h, Decl(ttttIndexSignatureUntypedParams.ts, 7, 5))
+>k : Symbol(k, Decl(ttttIndexSignatureUntypedParams.ts, 7, 14))
+}
+type T = { [m, n: string]: number };
+>T : Symbol(T, Decl(ttttIndexSignatureUntypedParams.ts, 8, 1))
+>m : Symbol(m, Decl(ttttIndexSignatureUntypedParams.ts, 9, 12))
+>n : Symbol(n, Decl(ttttIndexSignatureUntypedParams.ts, 9, 14))
+
+class C {
+>C : Symbol(C, Decl(ttttIndexSignatureUntypedParams.ts, 9, 36))
+
+    var [a, ...b] = x;
+>var : Symbol(C.var, Decl(ttttIndexSignatureUntypedParams.ts, 10, 9))
+>a : Symbol(a, Decl(ttttIndexSignatureUntypedParams.ts, 11, 9))
+>b : Symbol(b, Decl(ttttIndexSignatureUntypedParams.ts, 11, 11))
+>x : Symbol(C.x, Decl(ttttIndexSignatureUntypedParams.ts, 11, 19))
+}
+

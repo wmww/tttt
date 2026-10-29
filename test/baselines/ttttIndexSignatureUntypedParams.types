@@ -1,0 +1,37 @@
+//// [test/cases/ttttIndexSignatureUntypedParams.ts] ////
+
+=== ttttIndexSignatureUntypedParams.ts ===
+// An index signature's parameters without a type annotation (or initializer) are implicitly any (tsc's checkParameter:
+// TS7006, TS7019 for a rest), next to the grammar errors (seed 20261112's iterableArrayPattern2: `var [a, ...b] = x` in an
+// open class body is a property `var` and an index signature)
+interface I {
+    [c, d]: number;
+>c : any
+>d : any
+
+    [...f]: number;
+>f : any[]
+
+    [g?]: number;
+>g : any
+
+    [public h, k = 1]: number;
+>h : any
+>k : number
+>1 : 1
+}
+type T = { [m, n: string]: number };
+>T : T
+>m : any
+>n : string
+
+class C {
+>C : C
+
+    var [a, ...b] = x;
+>var : any
+>a : any
+>b : any[]
+>x : any
+}
+

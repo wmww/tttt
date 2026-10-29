@@ -621,7 +621,7 @@ Not looked at:
   (PropertyExcludes is none), which the test traversal takes from the owner's props (none for a mapped type): left.
   Fixed: type.c skips the duplicate/modifier/index checks when the first member is mapped, and the
   symbols traversal (ctx->mapped_extra) merges same-name extra members. Test ttttMappedTypeDuplicateExtraMembers.
-  [fixed]
+  [fixed 9daa13858]
 - conditionalTypeContextualTypeSimplificationsSuceeds extends-object (TS2464 -> TS7031), objectRestBindingContextualInference
   delete-stmt (missing TS7006 '(Missing)' and TS2554), distributiveConditionalBaseConstraint drop-optional (TS2344
   elaboration), parseInvalidNames num-to-str (missing TS1005), exportSpecifierAndLocalMemberDeclaration str-to-num
@@ -637,7 +637,9 @@ exportSpecifierReferencingOuterDeclaration3 [tsgo]. New:
 - iterableArrayPattern2 delete-stmt (--syntax): a class body left open swallows `var [a, ...b] = x`: tsc's
   isClassMemberStart takes a keyword followed by `[`, so `var` is a property (TS1440) and `[a, ...b]` an index
   signature; tttt's parser bailed out (TS1068). Test ttttClassMemberVarBracket. [fixed 62df40f74] Left: tsgo's TS7006 and
-  TS7019 for that index signature's untyped parameters `a` and `...b` (tttt reports none). [open]
+  TS7019 for that index signature's untyped parameters `a` and `...b` (tttt reported none): the parser records them
+  (InterfaceIndexKey.untyped_params), interface_member_typecheck reports them. Test ttttIndexSignatureUntypedParams.
+  [fixed]
 - subtypeReductionWithAnyFunctionType_promoted return-void (TS2345 -> TS2322): `const p: (input: string) => boolean =
   useMemo(() => { if (c) return; return x => x.length > 0; })`. The arrow is context sensitive (a block's returned
   expression is, tsgo's hasContextSensitiveReturnExpression, tttt has it), and tsgo ends with T fixed to the return

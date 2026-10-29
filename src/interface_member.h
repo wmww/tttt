@@ -23,6 +23,11 @@ typedef struct InterfaceIndexKey {
     bool has_value_type;
     // Which parameters (bit k: the k-th) are written `x?` (TS1019), whose types tsc's baseline shows with undefined
     u32 optional_params;
+    // The parameters with neither a type annotation nor an initializer (each from its modifiers or `...` to its name or
+    // `?`) and their names, implicitly any under noImplicitAny (TS7006, TS7019 for a rest: bit k of untyped_rest)
+    VecSpan untyped_params;
+    VecSpan untyped_names;
+    u32 untyped_rest;
 } InterfaceIndexKey;
 
 typedef struct InterfaceMappedKey {
