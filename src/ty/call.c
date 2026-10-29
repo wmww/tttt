@@ -1321,7 +1321,15 @@ static Ty const* rest_arg_contextual(Checker* me, ParamShape const* shape, Args 
         // A rest type that isn't a tuple gives `T[i]` (with a `const T`, each argument is in a const context), by
         // position even with spreads among the arguments (tsc's getSpreadArgumentType): `f11(1, ...u)` keeps 1
         Value index = value_number((double)(i - from));
-        return ty_indexed(me, shape->rest_variadic, ty_literal(me, &index));
+        Ty const* key = ty_literal(me, &index);
+        // (A union of tuples isn't deferred: getPropertyTypeForIndexType's AccessFlagsContextual takes the element of
+        // each member without reductions, getTypeOfPropertyOfContextualType, so `[string, number] | [unknown, string]`
+        // gives `string` for 0, not `unknown`, and a literal argument stays a literal in the spread tuple)
+        if (shape->rest_variadic->kind == TY_UNION && !ty_is_generic_object(me, shape->rest_variadic)) {
+            Ty const* contextual = ty_contextual_prop_type(me, shape->rest_variadic, key);
+            if (contextual) return contextual;
+        }
+        return ty_indexed(me, shape->rest_variadic, key);
     }
     // A tuple's elements after a variadic one count from the end, spread arguments counting one each (tsc's
     // getContextualTypeForElementExpression without spread indices): `pipe(1, ...xs, (...v) => {})` against

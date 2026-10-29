@@ -1,0 +1,55 @@
+//// [test/cases/ttttRestUnionTupleLiteralArg.ts] ////
+
+=== ttttRestUnionTupleLiteralArg.ts ===
+// A rest parameter typed by a union of tuples gives each argument its contextual type without reductions
+// (getTypeOfPropertyOfContextualType): `string | unknown` at 0 may be primitive, so the literal 0 stays a literal in the
+// spread tuple the error prints
+class EventEmitter<ET> {
+>EventEmitter : Symbol(EventEmitter, Decl(ttttRestUnionTupleLiteralArg.ts, 0, 0))
+>ET : Symbol(ET, Decl(ttttRestUnionTupleLiteralArg.ts, 3, 19))
+
+    off<K extends keyof ET>(...args: [K, number] | [unknown, string]): void {}
+>off : Symbol(EventEmitter.off, Decl(ttttRestUnionTupleLiteralArg.ts, 3, 24))
+>K : Symbol(K, Decl(ttttRestUnionTupleLiteralArg.ts, 4, 8))
+>ET : Symbol(ET, Decl(ttttRestUnionTupleLiteralArg.ts, 3, 19))
+>args : Symbol(args, Decl(ttttRestUnionTupleLiteralArg.ts, 4, 28))
+>K : Symbol(K, Decl(ttttRestUnionTupleLiteralArg.ts, 4, 8))
+}
+function once<ET, T extends EventEmitter<ET>>(emittingObject: T, eventName: keyof ET): void {
+>once : Symbol(once, Decl(ttttRestUnionTupleLiteralArg.ts, 5, 1))
+>ET : Symbol(ET, Decl(ttttRestUnionTupleLiteralArg.ts, 6, 14))
+>T : Symbol(T, Decl(ttttRestUnionTupleLiteralArg.ts, 6, 17))
+>EventEmitter : Symbol(EventEmitter, Decl(ttttRestUnionTupleLiteralArg.ts, 0, 0))
+>ET : Symbol(ET, Decl(ttttRestUnionTupleLiteralArg.ts, 6, 14))
+>emittingObject : Symbol(emittingObject, Decl(ttttRestUnionTupleLiteralArg.ts, 6, 46))
+>T : Symbol(T, Decl(ttttRestUnionTupleLiteralArg.ts, 6, 17))
+>eventName : Symbol(eventName, Decl(ttttRestUnionTupleLiteralArg.ts, 6, 64))
+>ET : Symbol(ET, Decl(ttttRestUnionTupleLiteralArg.ts, 6, 14))
+
+    emittingObject.off(0, eventName);
+>emittingObject.off : Symbol(EventEmitter.off, Decl(ttttRestUnionTupleLiteralArg.ts, 3, 24))
+>emittingObject : Symbol(emittingObject, Decl(ttttRestUnionTupleLiteralArg.ts, 6, 46))
+>off : Symbol(EventEmitter.off, Decl(ttttRestUnionTupleLiteralArg.ts, 3, 24))
+>eventName : Symbol(eventName, Decl(ttttRestUnionTupleLiteralArg.ts, 6, 64))
+}
+declare function f<K extends string>(...args: [K, number] | [unknown, string]): void;
+>f : Symbol(f, Decl(ttttRestUnionTupleLiteralArg.ts, 8, 1))
+>K : Symbol(K, Decl(ttttRestUnionTupleLiteralArg.ts, 9, 19))
+>args : Symbol(args, Decl(ttttRestUnionTupleLiteralArg.ts, 9, 37))
+>K : Symbol(K, Decl(ttttRestUnionTupleLiteralArg.ts, 9, 19))
+
+declare const s: string | number | symbol;
+>s : Symbol(s, Decl(ttttRestUnionTupleLiteralArg.ts, 10, 13))
+
+f(0, s);
+>f : Symbol(f, Decl(ttttRestUnionTupleLiteralArg.ts, 8, 1))
+>s : Symbol(s, Decl(ttttRestUnionTupleLiteralArg.ts, 10, 13))
+
+declare function g(...args: [string, number] | [unknown, string]): void;
+>g : Symbol(g, Decl(ttttRestUnionTupleLiteralArg.ts, 11, 8))
+>args : Symbol(args, Decl(ttttRestUnionTupleLiteralArg.ts, 12, 19))
+
+g(0, s);
+>g : Symbol(g, Decl(ttttRestUnionTupleLiteralArg.ts, 11, 8))
+>s : Symbol(s, Decl(ttttRestUnionTupleLiteralArg.ts, 10, 13))
+
