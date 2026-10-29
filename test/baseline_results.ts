@@ -16410,6 +16410,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttReturnStatementErrorSpan': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttReturnTypeUniqueUnresolved': {
         errors: true,
         symbols: true,
@@ -17319,6 +17324,11 @@ const baselines = {
     },
     'ttttWidenedNullableLiteralNotLiteral': {
         errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttWithBodyFlowTarget': {
+        errors: false,
         symbols: true,
         types: true,
     },
