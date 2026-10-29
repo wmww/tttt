@@ -1,0 +1,160 @@
+a.js(5,9): error TS6133: 'a' is declared but its value is never read.
+a.js(6,17): error TS1109: Expression expected.
+a.js(7,9): error TS6133: 'c' is declared but its value is never read.
+a.js(10,23): error TS1110: Type expected.
+a.js(12,9): error TS6133: 'e' is declared but its value is never read.
+a.js(15,24): error TS1005: '}' expected.
+a.js(16,14): error TS6133: 'inner' is declared but its value is never read.
+a.js(16,20): error TS6133: 'x' is declared but its value is never read.
+a.js(17,9): error TS6133: 'f' is declared but its value is never read.
+a.js(19,17): error TS1110: Type expected.
+a.js(22,27): error TS6196: 'T' is declared but never used.
+a.js(23,19): error TS2552: Cannot find name 'strin'. Did you mean 'string'?
+a.js(23,25): error TS1005: '}' expected.
+a.js(25,9): error TS6133: 'g' is declared but its value is never read.
+a.js(27,37): error TS6133: 'h' is declared but its value is never read.
+a.js(27,40): error TS6133: 'i' is declared but its value is never read.
+a.js(27,40): error TS7006: Parameter 'i' implicitly has an 'any' type.
+a.js(29,16): error TS1110: Type expected.
+a.js(31,5): error TS6133: '#q' is declared but its value is never read.
+a.js(34,19): error TS1110: Type expected.
+a.js(36,9): error TS6133: 'l' is declared but its value is never read.
+a.js(39,9): error TS6133: 'm' is declared but its value is never read.
+a.js(39,16): error TS1128: Declaration or statement expected.
+a.js(43,19): error TS6196: 'T' is declared but never used.
+a.js(43,21): error TS1069: Unexpected token. A type parameter name was expected without curly braces.
+a.js(44,14): error TS6133: 't' is declared but its value is never read.
+a.js(45,9): error TS6133: 'o' is declared but its value is never read.
+a.js(47,25): error TS1110: Type expected.
+a.js(48,13): error TS1110: Type expected.
+a.js(49,17): error TS6133: 'r' is declared but its value is never read.
+a.js(49,17): error TS7006: Parameter 'r' implicitly has an 'any' type.
+a.js(51,17): error TS1110: Type expected.
+a.js(55,23): error TS1110: Type expected.
+
+
+==== a.js (33 errors) ====
+    // A JSDoc type tsgo's reparser moves into the host (@type, @param, @returns) keeps its ThisNodeHasError: a missing
+    // type there (`{}`, `{string|}`) hides the host's and its enclosing declarations' unused diagnostics; an error
+    // after the type ('}' expected), in @typedef or @template doesn't (known failing: agents/bugs/bun_others.md)
+    function j01() {
+        let a = 1;
+            ~
+!!! error TS6133: 'a' is declared but its value is never read.
+        let b = (1 +);
+                    ~
+!!! error TS1109: Expression expected.
+        let c = 2;
+            ~
+!!! error TS6133: 'c' is declared but its value is never read.
+    }
+    function j02() {
+        /** @type {string|} */
+                          ~
+!!! error TS1110: Type expected.
+        let d = "";
+        let e = 1;
+            ~
+!!! error TS6133: 'e' is declared but its value is never read.
+    }
+    function j03() {
+        /** @param {number x */
+                           ~
+!!! error TS1005: '}' expected.
+        function inner(x) {}
+                 ~~~~~
+!!! error TS6133: 'inner' is declared but its value is never read.
+                       ~
+!!! error TS6133: 'x' is declared but its value is never read.
+        let f = 1;
+            ~
+!!! error TS6133: 'f' is declared but its value is never read.
+    }
+    /** @type {{ a: }} */
+                    ~
+!!! error TS1110: Type expected.
+    const j04 = { a: 1 };
+    function j05() {
+        /** @typedef {Object} T
+                              ~
+!!! error TS6196: 'T' is declared but never used.
+         * @property {strin g} p
+                      ~~~~~
+!!! error TS2552: Cannot find name 'strin'. Did you mean 'string'?
+                            ~
+!!! error TS1005: '}' expected.
+         */
+        let g = 1;
+            ~
+!!! error TS6133: 'g' is declared but its value is never read.
+    }
+    function j06(/** @type {number?} */ h, i) {}
+                                        ~
+!!! error TS6133: 'h' is declared but its value is never read.
+                                           ~
+!!! error TS6133: 'i' is declared but its value is never read.
+                                           ~
+!!! error TS7006: Parameter 'i' implicitly has an 'any' type.
+    class j07 {
+        /** @type {} */
+                   ~
+!!! error TS1110: Type expected.
+        #p = 1;
+        #q = 2;
+        ~~
+!!! error TS6133: '#q' is declared but its value is never read.
+    }
+    function j08() {
+        /** @returns {} */
+                      ~
+!!! error TS1110: Type expected.
+        function k() {}
+        let l = 1;
+            ~
+!!! error TS6133: 'l' is declared but its value is never read.
+    }
+    function j09() {
+        let m = 1; )
+            ~
+!!! error TS6133: 'm' is declared but its value is never read.
+                   ~
+!!! error TS1128: Declaration or statement expected.
+        let n = 2;
+    }
+    function j10() {
+        /** @template T, */
+                      ~
+!!! error TS6196: 'T' is declared but never used.
+                        ~
+!!! error TS1069: Unexpected token. A type parameter name was expected without curly braces.
+        function t() {}
+                 ~
+!!! error TS6133: 't' is declared but its value is never read.
+        let o = 1;
+            ~
+!!! error TS6133: 'o' is declared but its value is never read.
+    }
+    function j11(/** @type {} */ p) {}
+                            ~
+!!! error TS1110: Type expected.
+    /** @param {} q */
+                ~
+!!! error TS1110: Type expected.
+    function j12(q, r) {}
+                    ~
+!!! error TS6133: 'r' is declared but its value is never read.
+                    ~
+!!! error TS7006: Parameter 'r' implicitly has an 'any' type.
+    function j13() {
+        /** @param {} s */
+                    ~
+!!! error TS1110: Type expected.
+        function inner2(s) {}
+    }
+    function j14() {
+        /** @type {string|} */
+                          ~
+!!! error TS1110: Type expected.
+        let u = "", v = 1;
+    }
+    

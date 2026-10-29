@@ -1,0 +1,144 @@
+//// [test/cases/ttttUnusedUnderJsdocParseError.ts] ////
+
+=== a.js ===
+// A JSDoc type tsgo's reparser moves into the host (@type, @param, @returns) keeps its ThisNodeHasError: a missing
+// type there (`{}`, `{string|}`) hides the host's and its enclosing declarations' unused diagnostics; an error
+// after the type ('}' expected), in @typedef or @template doesn't (known failing: agents/bugs/bun_others.md)
+function j01() {
+>j01 : () => void
+
+    let a = 1;
+>a : number
+>1 : 1
+
+    let b = (1 +);
+>b : any
+>(1 +) : any
+>1 + : any
+>1 : 1
+> : any
+
+    let c = 2;
+>c : number
+>2 : 2
+}
+function j02() {
+>j02 : () => void
+
+    /** @type {string|} */
+    let d = "";
+>d : any
+>"" : ""
+
+    let e = 1;
+>e : number
+>1 : 1
+}
+function j03() {
+>j03 : () => void
+
+    /** @param {number x */
+    function inner(x) {}
+>inner : (x: number) => void
+>x : number
+
+    let f = 1;
+>f : number
+>1 : 1
+}
+/** @type {{ a: }} */
+const j04 = { a: 1 };
+>j04 : { a: any; }
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+
+function j05() {
+>j05 : () => void
+
+    /** @typedef {Object} T
+     * @property {strin g} p
+     */
+    let g = 1;
+>g : number
+>1 : 1
+}
+function j06(/** @type {number?} */ h, i) {}
+>j06 : (h: number | null, i: any) => void
+>h : number | null
+>i : any
+
+class j07 {
+>j07 : j07
+
+    /** @type {} */
+    #p = 1;
+>#p : any
+>1 : 1
+
+    #q = 2;
+>#q : number
+>2 : 2
+}
+function j08() {
+>j08 : () => void
+
+    /** @returns {} */
+    function k() {}
+>k : () => any
+
+    let l = 1;
+>l : number
+>1 : 1
+}
+function j09() {
+>j09 : () => void
+
+    let m = 1; )
+>m : number
+>1 : 1
+
+    let n = 2;
+>n : number
+>2 : 2
+}
+function j10() {
+>j10 : () => void
+
+    /** @template T, */
+    function t() {}
+>t : <T>() => void
+
+    let o = 1;
+>o : number
+>1 : 1
+}
+function j11(/** @type {} */ p) {}
+>j11 : (p: any) => void
+>p : any
+
+/** @param {} q */
+function j12(q, r) {}
+>j12 : (q: any, r: any) => void
+>q : any
+>r : any
+
+function j13() {
+>j13 : () => void
+
+    /** @param {} s */
+    function inner2(s) {}
+>inner2 : (s: any) => void
+>s : any
+}
+function j14() {
+>j14 : () => void
+
+    /** @type {string|} */
+    let u = "", v = 1;
+>u : any
+>"" : ""
+>v : number
+>1 : 1
+}
+

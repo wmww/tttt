@@ -1,0 +1,124 @@
+//// [test/cases/ttttUnusedUnderJsdocParseError.ts] ////
+
+=== a.js ===
+// A JSDoc type tsgo's reparser moves into the host (@type, @param, @returns) keeps its ThisNodeHasError: a missing
+// type there (`{}`, `{string|}`) hides the host's and its enclosing declarations' unused diagnostics; an error
+// after the type ('}' expected), in @typedef or @template doesn't (known failing: agents/bugs/bun_others.md)
+function j01() {
+>j01 : Symbol(j01, Decl(a.js, 0, 0))
+
+    let a = 1;
+>a : Symbol(a, Decl(a.js, 4, 7))
+
+    let b = (1 +);
+>b : Symbol(b, Decl(a.js, 5, 7))
+
+    let c = 2;
+>c : Symbol(c, Decl(a.js, 6, 7))
+}
+function j02() {
+>j02 : Symbol(j02, Decl(a.js, 7, 1))
+
+    /** @type {string|} */
+    let d = "";
+>d : Symbol(d, Decl(a.js, 10, 7))
+
+    let e = 1;
+>e : Symbol(e, Decl(a.js, 11, 7))
+}
+function j03() {
+>j03 : Symbol(j03, Decl(a.js, 12, 1))
+
+    /** @param {number x */
+    function inner(x) {}
+>inner : Symbol(inner, Decl(a.js, 13, 16))
+>x : Symbol(x, Decl(a.js, 15, 19))
+
+    let f = 1;
+>f : Symbol(f, Decl(a.js, 16, 7))
+}
+/** @type {{ a: }} */
+const j04 = { a: 1 };
+>j04 : Symbol(j04, Decl(a.js, 19, 5))
+>a : Symbol(a, Decl(a.js, 19, 13))
+
+function j05() {
+>j05 : Symbol(j05, Decl(a.js, 19, 21))
+
+    /** @typedef {Object} T
+     * @property {strin g} p
+     */
+    let g = 1;
+>g : Symbol(g, Decl(a.js, 24, 7))
+}
+function j06(/** @type {number?} */ h, i) {}
+>j06 : Symbol(j06, Decl(a.js, 25, 1))
+>h : Symbol(h, Decl(a.js, 26, 13))
+>i : Symbol(i, Decl(a.js, 26, 38))
+
+class j07 {
+>j07 : Symbol(j07, Decl(a.js, 26, 44))
+
+    /** @type {} */
+    #p = 1;
+>#p : Symbol(j07.#p, Decl(a.js, 27, 11))
+
+    #q = 2;
+>#q : Symbol(j07.#q, Decl(a.js, 29, 11))
+}
+function j08() {
+>j08 : Symbol(j08, Decl(a.js, 31, 1))
+
+    /** @returns {} */
+    function k() {}
+>k : Symbol(k, Decl(a.js, 32, 16))
+
+    let l = 1;
+>l : Symbol(l, Decl(a.js, 35, 7))
+}
+function j09() {
+>j09 : Symbol(j09, Decl(a.js, 36, 1))
+
+    let m = 1; )
+>m : Symbol(m, Decl(a.js, 38, 7))
+
+    let n = 2;
+>n : Symbol(n, Decl(a.js, 39, 7))
+}
+function j10() {
+>j10 : Symbol(j10, Decl(a.js, 40, 1))
+
+    /** @template T, */
+    function t() {}
+>t : Symbol(t, Decl(a.js, 41, 16))
+
+    let o = 1;
+>o : Symbol(o, Decl(a.js, 44, 7))
+}
+function j11(/** @type {} */ p) {}
+>j11 : Symbol(j11, Decl(a.js, 45, 1))
+>p : Symbol(p, Decl(a.js, 46, 13))
+
+/** @param {} q */
+function j12(q, r) {}
+>j12 : Symbol(j12, Decl(a.js, 46, 34))
+>q : Symbol(q, Decl(a.js, 48, 13))
+>r : Symbol(r, Decl(a.js, 48, 15))
+
+function j13() {
+>j13 : Symbol(j13, Decl(a.js, 48, 21))
+
+    /** @param {} s */
+    function inner2(s) {}
+>inner2 : Symbol(inner2, Decl(a.js, 49, 16))
+>s : Symbol(s, Decl(a.js, 51, 20))
+}
+function j14() {
+>j14 : Symbol(j14, Decl(a.js, 52, 1))
+
+    /** @type {string|} */
+    let u = "", v = 1;
+>u : Symbol(u, Decl(a.js, 55, 7))
+>v : Symbol(v, Decl(a.js, 55, 15))
+}
+

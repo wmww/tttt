@@ -618,6 +618,20 @@ files not being external modules; each with a `test/cases/tttt*.ts` repro.
   skipped tokens (`) let r`) aren't in tttt's AST either, and ast_walk.c walks expressions only. Granularity: a tttt child that isn't a tsgo node (a
   wrapper, a succeeding lookahead) records a slightly different span than tsgo's node; none seen in the probes.
   [fixed d77440699]
+- **Unused checks under a JSDoc parse error** (bun12 probe set, ttttUnusedUnderJsdocParseError, known failing): tsgo's
+  reparser moves `@type`, `@param` and `@returns` types into the host declaration, flags and all, so a missing type
+  in one (`@type {}`, `@type {string|}`, `@returns {}`, `@param {} q`, an inline `/** @type {} */ p`: TS1110, whose
+  missing node takes ThisNodeHasError) hides the host's TS6133/TS6199 and every enclosing declaration's (the binder
+  ORs it up the reparsed tree). Not hidden: an error after the type finished (`@param {number x`: '}' expected), a
+  `@typedef`'s `@property` (`strin g`), `@template T,`. tttt drops every JSDoc error node (parse_jsdoc_type_expression()
+  ends in parse_fail()), and its JSDoc types' spans lie in the comment, outside the host's location. Design: keep the
+  error nodes of a reparsed tag's type (TYPE, PARAM, RETURNS, THIS) by re-pushing them on the parent after the
+  parse_fail (pending state saved and restored), which covers JSDoc inside an enclosing function's span; and for the
+  host itself, have jsdoc_take_type()'s callers push a zero-width error node at the target's start (binding
+  content_span, field name, function start) when the tag's type had one (a JsDocTag.type_error set from the
+  entries inside type_span), so unused.c's span rule needs no change. About ten call sites
+  (jsdoc_apply_type_to_binding(), jsdoc_apply_function()'s param/returns/type, the class field one, the variable
+  statement ones). Low real-world weight (JS, a malformed JSDoc type and noUnused* together). [open]
 - A class field's or enum member's missing initializer (`private x = ;`, `x: U = ;`, `enum E { A = }`): tsgo has an
   initializer (a missing expression: no TS7008, no TS2564, `> : any` in the types baseline); tttt's
   EXPR_IMPLICIT_ANY with `missing` reads as none at ~15 `field.value.tag == EXPR_IMPLICIT_ANY` sites (class_decl.c,
