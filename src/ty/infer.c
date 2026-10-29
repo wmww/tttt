@@ -67,8 +67,11 @@ static VisitedSet* visited_take(void) {
     return set;
 }
 
+// VisitEntry.at's top bit: the pair's walk was cut short by circularity (record_circular())
+enum { VISITED_CIRCULAR = 1u << 31 };
+
 static void visited_clear(VisitedSet* set) {
-    for (u32 i = 0; i < set->len; i++) set->index[set->entries[i].at] = 0;
+    for (u32 i = 0; i < set->len; i++) set->index[set->entries[i].at & ~VISITED_CIRCULAR] = 0;
     set->len = 0;
 }
 
@@ -94,7 +97,7 @@ static void visited_index_grow(VisitedSet* set) {
         u32 at = visit_key_hash(set->entries[i].key) & (cap - 1);
         while (set->index[at]) at = (at + 1) & (cap - 1);
         set->index[at] = i + 1;
-        set->entries[i].at = at;
+        set->entries[i].at = at | (set->entries[i].at & VISITED_CIRCULAR);
     }
 }
 
@@ -123,27 +126,27 @@ static u32 visited_entry(Inference* inf, VisitKey key, bool* existed) {
     return e;
 }
 
-enum { VISITED_SEEN = UINT32_MAX };
+enum { VISITED_NO_ENTRY = UINT32_MAX };
 
-// The pair's new entry, or VISITED_SEEN if the pair was there already; then what its walk inferred at counts as
-// inferred here too (tsc's invokeOnce: `inferencePriority = min(inferencePriority, status)`), so a source seen before is
-// still used up for a naked type parameter beside the target
-static u32 visited_add(Inference* inf, Ty const* source, Ty const* target) {
+// The pair's entry (VISITED_NO_ENTRY for a zero pair, which is always new and stores nothing). `*seen` if the pair was
+// there already; then what its walk inferred at counts as inferred here too (tsc's invokeOnce: `inferencePriority =
+// min(inferencePriority, status)`), so a source seen before is still used up for a naked type parameter beside the
+// target
+static u32 visited_add(Inference* inf, Ty const* source, Ty const* target, bool* seen) {
     VisitKey key = visited_key(inf, source, target);
-    // (A zero pair: no entry, as if new; nothing stores its priority)
-    if (!key.pair) return VISITED_SEEN - 1;
-    bool existed;
-    u32 e = visited_entry(inf, key, &existed);
-    if (!existed) return e;
+    *seen = false;
+    if (!key.pair) return VISITED_NO_ENTRY;
+    u32 e = visited_entry(inf, key, seen);
+    if (!*seen) return e;
     u32 priority = inf->visited->entries[e].priority;
     if (priority < inf->hit_priority) inf->hit_priority = priority;
-    return VISITED_SEEN;
+    return e;
 }
 
 // After the walk of the pair visited_add() added as `entry`: what it inferred at (the best priority since `saved`,
 // which the caller reset hit_priority from)
 static void visited_done(Inference* inf, u32 entry, u32 saved) {
-    if (entry != VISITED_SEEN - 1) inf->visited->entries[entry].priority = inf->hit_priority;
+    if (entry != VISITED_NO_ENTRY) inf->visited->entries[entry].priority = inf->hit_priority;
     if (saved < inf->hit_priority) inf->hit_priority = saved;
 }
 
@@ -1831,14 +1834,32 @@ static Ty const* empty_object_from_string_literals(Checker* me, Ty const* ty) {
     return ret;
 }
 
-// A pair whose walk was cut short: seen again, it is circular too (tsc's invokeOnce visited status)
-static void record_circular(Inference* inf, Ty const* source, Ty const* target) {
+// A pair whose walk was cut short: seen again, it is circular too (tsc's invokeOnce visited status). A flag on its
+// visited entry (`entry`, visited_add()'s): a list scanned at every pair seen again was ~6% of checking immutable.d.ts.
+// The list is left for a key the entry doesn't have (a zero pair)
+static void record_circular(Inference* inf, u32 entry, Ty const* source, Ty const* target) {
+    VisitKey key = visited_key(inf, source, target);
+    if (entry != VISITED_NO_ENTRY && visit_key_eq(inf->visited->entries[entry].key, key)) {
+        inf->visited->entries[entry].at |= VISITED_CIRCULAR;
+        return;
+    }
     if (inf->circular_len == inf->circular_cap) {
         inf->circular_cap = inf->circular_cap ? inf->circular_cap * 2 : 8;
         inf->circular = realloc(inf->circular, sizeof(VisitKey) * inf->circular_cap);
         panic_if(!inf->circular, "out of memory");
     }
-    inf->circular[inf->circular_len++] = visited_key(inf, source, target);
+    inf->circular[inf->circular_len++] = key;
+}
+
+// Whether the pair met again at `entry` (visited_add()'s) is one record_circular() recorded
+static bool visited_is_circular(Inference const* inf, u32 entry, Ty const* source, Ty const* target) {
+    if (entry != VISITED_NO_ENTRY && (inf->visited->entries[entry].at & VISITED_CIRCULAR)) return true;
+    if (!inf->circular_len) return false;
+    VisitKey key = visited_key(inf, source, target);
+    for (u32 i = 0; i < inf->circular_len; i++) {
+        if (visit_key_eq(inf->circular[i], key)) return true;
+    }
+    return false;
 }
 
 static bool tsc_could_contain_type_variables(Ty const* ty);
@@ -2011,12 +2032,13 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         // Once per pair, and not while both sides keep nesting (tsc's invokeOnce around inferToConditionalType): `any`
         // to a recursive conditional alias (`ElementsType<Tail, [...]>`) would walk every level of it
         // (A pair seen before passes on whether its walk was cut short, tsc's invokeOnce visited status)
-        if (visited_add(inf, source, target) == VISITED_SEEN || inf->object_depth >= INFER_MAX_DEPTH) {
+        bool seen;
+        u32 entry = visited_add(inf, source, target, &seen);
+        if (seen || inf->object_depth >= INFER_MAX_DEPTH) {
             for (u32 i = 0; i < inf->object_depth && !inf->circularity; i++) {
                 inf->circularity = inf->object_sources[i] == source && inf->object_targets[i] == target;
             }
-            VisitKey key = visited_key(inf, source, target);
-            for (u32 i = 0; i < inf->circular_len && !inf->circularity; i++) inf->circularity = visit_key_eq(inf->circular[i], key);
+            if (!inf->circularity) inf->circularity = visited_is_circular(inf, entry, source, target);
             inf->depth--;
             return;
         }
@@ -2033,7 +2055,7 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
             // Cut short: a circularity (tsc's InferencePriority.Circularity), which keeps the sources that led here from
             // counting as used up for a naked type parameter beside it
             inf->expanding = saved_expanding;
-            record_circular(inf, source, target);
+            record_circular(inf, entry, source, target);
             inf->circularity = true;
             inf->depth--;
             return;
@@ -2070,7 +2092,7 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         }
         inf->object_depth--;
         inf->expanding = saved_expanding;
-        if (inf->circularity) record_circular(inf, source, target);
+        if (inf->circularity) record_circular(inf, entry, source, target);
         inf->circularity |= outer_circularity;
     } else if (target->kind == TY_UNION) {
         infer_to_union(me, inf, source, target);
@@ -2216,13 +2238,13 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         // `Promise<IteratorResult<X>>` inside `Promise<AsyncGenerator<X>>` against `Promise<AsyncIterable<T>>` is two
         // Promises deep on both sides and infers nothing: sixb's readValues)
         bool walked = same_reference || (source->flags & (TYF_OBJECT | TYF_INTERSECTION));
-        u32 entry = walked ? visited_add(inf, source, target) : VISITED_SEEN;
-        if (walked && entry == VISITED_SEEN) {
+        bool seen = false;
+        u32 entry = walked ? visited_add(inf, source, target, &seen) : VISITED_NO_ENTRY;
+        if (walked && seen) {
             for (u32 i = 0; i < inf->object_depth && !inf->circularity; i++) {
                 inf->circularity = inf->object_sources[i] == source && inf->object_targets[i] == target;
             }
-            VisitKey key = visited_key(inf, source, target);
-            for (u32 i = 0; i < inf->circular_len && !inf->circularity; i++) inf->circularity = visit_key_eq(inf->circular[i], key);
+            if (!inf->circularity) inf->circularity = visited_is_circular(inf, entry, source, target);
         } else if (walked) {
             u32 saved_hit = inf->hit_priority;
             inf->hit_priority = UINT32_MAX;
@@ -2251,7 +2273,7 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
                 inf->circularity = true;
             }
             inf->expanding = saved_expanding;
-            if (inf->circularity) record_circular(inf, source, target);
+            if (inf->circularity) record_circular(inf, entry, source, target);
             inf->circularity |= outer_circularity;
             visited_done(inf, entry, saved_hit);
         }
