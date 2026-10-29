@@ -103,6 +103,7 @@ typedef struct LoadPool {
     i64 (*size)(void* ctx, csview path);
     void* size_ctx;
     bool stop;
+    bool stopped; // load_pool_stop()
     // Workers waiting on `work`, and whether the loader waits on `done` (for loader_awaits): wakeups go only to threads
     // that sleep and have something to do, after the lock is released (nest: every queued path signalled `work` under
     // the lock, and every parsed file broadcast `done`; the woken thread went straight to sleep again on the lock)
@@ -661,8 +662,9 @@ void load_pool_note_inline(LoadPool* me, double ms) {
     my inline_ms += ms;
 }
 
-void load_pool_destroy(LoadPool* me) {
-    if (!me) return;
+void load_pool_stop(LoadPool* me) {
+    if (!me || my stopped) return;
+    my stopped = true;
     struct timespec now;
     timespec_get(&now, TIME_UTC);
     double lifetime = (double)now.tv_sec * 1e3 + (double)now.tv_nsec / 1e6 - my started_at;
@@ -672,22 +674,18 @@ void load_pool_destroy(LoadPool* me) {
     pthread_mutex_unlock(&my lock);
     for (u32 t = 0; t < my thread_count; t++) worker_thread_join(my threads[t]);
     free(my threads);
+    my threads = nullptr;
     isize wasted = 0, never = 0;
     for (u32 s = 0; s < POOL_SHARDS; s++) {
-        PoolShard* shard = &my shards[s];
-        for_each (i, hmap_load_entry_ptr, &shard->by_path) {
+        for_each (i, hmap_load_entry_ptr, &my shards[s].by_path) {
             LoadEntry* entry = i->second;
             if (entry->file) {
                 wasted++;
                 my drop(my ctx, entry->file);
+                entry->file = nullptr;
             }
             never += atomic_load_explicit(&entry->state, memory_order_relaxed) == LOAD_QUEUED;
-            error_ctx_drop(&entry->errs);
-            cstr_drop(&entry->path);
-            free(entry);
         }
-        hmap_load_entry_ptr_drop(&shard->by_path);
-        pthread_mutex_destroy(&shard->lock);
     }
     if (my stats) {
         eprintln("load pool: ", my thread_count, " threads, ", atomic_load(&my entry_count), " paths, ", my taken,
@@ -699,6 +697,22 @@ void load_pool_destroy(LoadPool* me) {
             lifetime, " ms: ", lifetime - my wait_ms - my inline_ms);
         // (CPU time, which a loaded machine's preemption and lock waits don't inflate: what the loader did)
         eprintln("load pool: the loader's CPU time ", thread_cpu_ms() - my loader_cpu_at, " ms");
+    }
+}
+
+void load_pool_destroy(LoadPool* me) {
+    if (!me) return;
+    load_pool_stop(me);
+    for (u32 s = 0; s < POOL_SHARDS; s++) {
+        PoolShard* shard = &my shards[s];
+        for_each (i, hmap_load_entry_ptr, &shard->by_path) {
+            LoadEntry* entry = i->second;
+            error_ctx_drop(&entry->errs);
+            cstr_drop(&entry->path);
+            free(entry);
+        }
+        hmap_load_entry_ptr_drop(&shard->by_path);
+        pthread_mutex_destroy(&shard->lock);
     }
     free(my big.items);
     free(my ranked.items);

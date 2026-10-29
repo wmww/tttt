@@ -23,7 +23,10 @@ typedef void (*LoadPoolDrop)(void* ctx, SourceFile* file);
 LoadPool* load_pool_new(
     u32 threads, LoadPoolParse parse, LoadPoolDrop drop, void* ctx, i64 (*size)(void* ctx, csview path), void* size_ctx
 );
-// Stops the workers and drops what nobody took
+// Stops the workers, drops the files nobody took and prints TTTT_LOAD_POOL_STATS. The loader's thread: what is left
+// (the entries) is load_pool_destroy()'s, which any thread may run later
+void load_pool_stop(LoadPool* me);
+// load_pool_stop() if it wasn't, and frees the pool
 void load_pool_destroy(LoadPool* me);
 
 // Queues a path unless it's already known (queued, parsed or taken). Any thread

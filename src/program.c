@@ -114,6 +114,7 @@ typedef struct Program {
     // program_resolve_names()'s releases (program_release_run()), off the critical path: joined by program_drop()
     pthread_t release_thread;
     bool release_started;
+    LoadPool* stopped_pool; // The load pool, stopped, its entries for the release thread to free
     double loader_parse_ms; // TTTT_LOAD_POOL_STATS without a pool: program_make_source()'s time
     cstr cwd; // program_cwd()
     Binder* binder;
@@ -378,6 +379,7 @@ static void member_refs_clear(Program* me);
 
 static void program_drop(Program* me) {
     program_join_releases(me);
+    load_pool_destroy(my stopped_pool);
     load_pool_destroy(my pool);
     program_free_preresolved(me);
     content_mapper_host_drop(atomic_load(&my content_mapper_host));
@@ -4991,6 +4993,9 @@ static void program_link_module_refs(Program* me) {
 // imports, the source texts' pages (vscode: ~25 ms at the end of the front end, serial, run next to the check instead)
 static void* program_release_run(void* arg) {
     Program* me = arg;
+    // (vscode: 11k entries, ~4 ms of frees)
+    load_pool_destroy(my stopped_pool);
+    my stopped_pool = nullptr;
     program_free_preresolved(me);
     module_resolver_forget_resolutions(my resolver);
     for (u32 i = 0; i < my reference_count && my reference_resolvers; i++) module_resolver_forget_resolutions(my reference_resolvers[i]);
@@ -5009,7 +5014,8 @@ void program_resolve_names(Program* me) {
     CHANGE_PHASE(PROGRAM_PHASE_LOADING, PROGRAM_PHASE_RESOLVING_NAMES);
     // Loading is over: what the pool parsed for nothing goes
     if (!my pool && getenv("TTTT_LOAD_POOL_STATS")) eprintln("load: no pool, the loader read and parsed for ", my loader_parse_ms, " ms");
-    load_pool_destroy(my pool);
+    load_pool_stop(my pool);
+    my stopped_pool = my pool;
     my pool = nullptr;
     program_verify_options(me);
     my errs->phase = ERROR_PHASE_RESOLVE_NAMES;
