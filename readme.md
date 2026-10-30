@@ -1,23 +1,19 @@
 # The Tess TypeScript Type checker
 
-A high speed [TypeScript](https://www.typescriptlang.org/) type checker written in C, using [cleat](https://codeberg.org/sphi/cleat).
+A high speed [TypeScript](https://www.typescriptlang.org/) type checker written in C. tttt is a drop-in replacement for `tsc --noEmit`, it understands the same flags and tsconfigs. See `tttt --help` for more info.
 
-Install (Linux x86-64, glibc 2.38+; other platforms are coming):
+To use in your project:
 ```bash
 npm install --save-dev tttt-ts
-npx tttt -p path/to/project
+npx tttt
+# or ./node_modules/tttt-ts-linux-x64/bin/tttt for faster startup
 ```
-or download a release's tarball from GitHub (binary and its lib files: keep `bin/` and `thirdparty/` together).
 
-Build dependencies:
-- GCC 13+ (tested up to GCC 16)
-- meson+ninja
-- llvm-bolt
+Or install globally/[download from GitHub](https://github.com/wmww/tttt/releases).
 
-Build and run:
+To build from source:
 ```bash
+# install GCC 13+, meson, ninja and (on Linux) llvm-bolt
 scripts/fastbuild.sh
-fast/tttt -p path/to/project # or run from your project directory without arguments
+fast/tttt -p path/to/project
 ```
-
-tttt is meant as a drop-in `tsc` for checking: the same command lines and tsconfigs. Every run behaves like `tsc --noEmit`, except that a project whose config has `emitDeclarationOnly` gets its `.d.ts` and `.d.ts.map` files written like `tsc` does. See `release/tttt --help` for more info.
