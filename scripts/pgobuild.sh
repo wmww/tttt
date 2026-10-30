@@ -122,8 +122,9 @@ TRAIN=(
     thirdparty/corpora/excalidraw/tsconfig.corpus.json
     thirdparty/corpora/webpack
 )
-# (Fetched only when one is missing: a small box holds just these)
-for P in "${TRAIN[@]}"; do test -e "$P" || { thirdparty/ensure-corpora.sh >&2; break; }; done
+# (Only these are fetched, when one is missing: ensure-corpora.sh without names fetches every corpus, ~9 GB against these ~2.4 GB, which a
+# build from source shouldn't download)
+for P in "${TRAIN[@]}"; do test -e "$P" || { thirdparty/ensure-corpora.sh drizzle zod effect excalidraw webpack >&2; break; }; done
 # (A training run dies with this script)
 TRAINING=
 trap 'test -z "$TRAINING" || kill $TRAINING 2>/dev/null || true' EXIT
