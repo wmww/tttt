@@ -1,4 +1,62 @@
 # Releases: building and packaging (per platform, then npm)
+How tttt's release binaries are made and checked, one section per platform (first written for v3, 2026-10-29/30),
+then the npm packaging. The ports themselves are in macos.md, windows.md and arm64.md.
+
+## Linux (x86-64 and arm64): `scripts/release/build-linux.sh OUTDIR`
+Run it on a machine of the target architecture, from a tree whose src, thirdparty and meson.build are committed (it
+refuses otherwise: build-info.txt names the commit). Needs podman (or `CONTAINER=docker`), llvm-bolt, the corpora
+(`thirdparty/ensure-corpora.sh`) and network for the images. ~10 min on 24-32 cores. Writes
+`OUTDIR/linux-{x64,arm64}/tttt` and `build-info.txt` only when every check passes. Work dirs: `relbuild/` (ignored).
+
+- **glibc floor 2.28** (RHEL 8, Debian 10, Ubuntu 20.04 and later): an AlmaLinux 8 image
+  (`scripts/release/Containerfile.linux`: glibc 2.28) is exported as a sysroot (`relbuild/sysroot`: lib, lib64,
+  usr/include, usr/lib, usr/lib64), and the LTO + PGO build (`scripts/pgobuild.sh`, training included) runs on the host
+  with the host's GCC against it (`--sysroot` plus `-B`/`-L` to its usr/lib64: Arch's and Ubuntu's GCC find their crt
+  and library directories by paths --sysroot doesn't prefix). A binary binds the symbol versions of the glibc it links
+  against, so linking against the oldest supported glibc is the whole trick; nothing hot changes (the newer versions
+  the host build binds are the C23 `__isoc23_strtol` family, `fmod@2.38`, `exp`/`log@2.29` and 2.34's pthread move).
+  libgcc is linked in (`-static-libgcc`); NEEDED is libc, libm and libpthread (a stub since 2.34), plus the loader on
+  aarch64. glibc itself stays dynamic: a static glibc breaks NSS/dlopen and gains nothing here.
+- The host's libgcov.a (linked into the PGO-instrumented binary only) calls `__isoc23_strtol`: build-linux.sh links a
+  one-function archive supplying it, which the release binary never pulls in (checked: no `__isoc23` symbol).
+- `--container-gcc` builds inside the container with its gcc-toolset-14 instead (a host without a usable GCC). The
+  repo is then mounted at its own path in the container (the profile's paths match), the corpora read-only.
+- **BOLT runs on the host** (`scripts/boltbuild.sh` with `PGO_BIN=relbuild/pgo/tttt`): the container image has no
+  llvm-bolt, and the instrumented copy, linked against 2.28, runs on any newer glibc. BOLT doesn't touch the dynamic
+  symbol versions.
+- **Checks** (any failure is fatal): `objdump -T` versions <= GLIBC_2.28 and the NEEDED list; output (stdout and exit
+  code, `--noEmit --pretty false -p`) byte-identical to a plain `-O3` host build on the 14 instrcount corpora at the
+  defaults and at `--checkers 1 --threads 1` (that is how GCC 15's aarch64 ext-dce miscompile was found: arm64.md);
+  smoke runs in `debian:10` (glibc 2.28) and `ubuntu:26.04` containers from an unrelated directory (a tiny project with
+  an error, and zod) against the host's output.
+- Symbols are kept (not stripped), like v2's binary: crash reports stay readable and size isn't a concern.
+
+## What the old glibc needed (v3)
+- b95d0f2f6 didn't compile against glibc 2.28's headers: `MAP_ANONYMOUS` in span.c (strict `-std=c2x` hides it in
+  headers older than POSIX.1-2024's), `SYS_pidfd_open` / `SYS_close_range` in main.c (glibc 2.32 / 2.34 headers),
+  and `posix_spawn_file_actions_addchdir_np` in content_mapper.c (glibc 2.29: now a weak reference with a `/bin/sh -c
+  'cd ...'` fallback where the running glibc lacks it); and silently, `MADV_POPULATE_WRITE` in prelude.c (below). Keep new libc calls in mind: a function newer than 2.28 needs
+  a weak reference and a fallback, or the floor moves (say so in the release notes).
+- GCC 14 (the container's) has no `-fno-ext-dce` (pgobuild.sh passes it only where the compiler accepts it), and its
+  LTO + PGO raises a `-Wstringop-overflow` false positive at load_pool.c's pool_find_or_add() (atomic_init on
+  c_new()'s result, "likely at address zero"), fatal under werror: build-linux.sh passes `-Wno-stringop-overflow`
+  (a warning flag, no codegen change; passed in the sysroot mode too).
+- Older kernels: `pidfd_open` (5.3) and `close_range` (5.9) answer ENOSYS on RHEL 8's 4.18: the exit reaper is
+  simply not used there (the process exits normally).
+
+## Compiler choice (v3)
+The container's GCC 14 against the host's GCC 16 (x86-64, both LTO + PGO + BOLT, same source, `instrcount.sh --bin`
+at K1 on the 14 corpora): **+1.6% instructions** (geomean; react +3.1%, drizzle +2.4%, type-fest +0.8%). The host's
+GCC 16 against the 2.28 sysroot: **-0.00%** (every corpus within 0.25%), walls within noise. So v3 ships the sysroot
+build (the benchmarked compiler) on both architectures; `--container-gcc` stays as the fallback. A first container
+build also showed +35% sys time and +5% page faults: glibc 2.28's headers don't define `MADV_POPULATE_WRITE`, and
+`pages_populate()` compiled to nothing (prelude.c now defines it). **Header-gated features are the risk of an old
+sysroot**: grep `#ifdef` on kernel/libc constants when adding one, and keep the identity check and an A/B of sys time.
+Numbers: measurements.md ("Release v3 Linux builds").
+
+## Arm64
+The same script on an arm64 Linux box (Ubuntu's llvm-bolt 21 works, arm64.md); the image is built natively there
+(AlmaLinux publishes arm64 images under the same tag). Install podman and uidmap (rootless needs subuid entries).
 
 ## macOS arm64
 `scripts/release/build-macos.sh OUTDIR [COMMIT]` on an Apple Silicon Mac (macos.md's setup: Command Line Tools,

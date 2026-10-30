@@ -88,7 +88,11 @@ if test -z "$CLANG"; then
     # (-fno-ext-dce: GCC 15's extension elimination miscompiles LTO + PGO on aarch64: a Span's i32 size passed on as a
     # csview's 64-bit size kept Span.file in the upper half, so no private name `#x` matched its declaration and
     # webpack crashed; agents/notes/arm64.md. Off everywhere: the pass exists on x86 too)
-    CARGS=(-fno-reorder-blocks-and-partition -fno-ext-dce "${CARGS[@]}")
+    # (GCC 14 has no ext-dce pass and rejects the flag: the Linux release builds with gcc-toolset-14,
+    # agents/notes/release.md)
+    EXT_DCE=
+    ! echo 'int x;' | $CC -fno-ext-dce -x c -c -o /dev/null - 2>/dev/null || EXT_DCE=-fno-ext-dce
+    CARGS=(-fno-reorder-blocks-and-partition $EXT_DCE "${CARGS[@]}")
     GEN=(-Db_pgo=generate "-Dc_args=$(array "${CARGS[@]}")" "-Dc_link_args=$LINK")
     USE=(-Db_pgo=use "-Dc_args=$(array -Wno-missing-profile "${CARGS[@]}")")
 else

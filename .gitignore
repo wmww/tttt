@@ -20,3 +20,5 @@ bolt
 fast
 build-sites
 build-g
+relbuild
+!/scripts/release

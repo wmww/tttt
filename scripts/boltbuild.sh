@@ -8,6 +8,7 @@
 #   scripts/boltbuild.sh            # rebuild only when pgo/tttt, llvm-bolt or this script changed
 #   scripts/boltbuild.sh --force    # retrain anyway
 #   BOLT_DIR=bolt-x BOLT_EXTRA=-plt=hot PGO_DIR=... scripts/boltbuild.sh   # an experiment (pgobuild.sh's knobs)
+#   PGO_BIN=pgo-x/tttt BOLT_DIR=bolt-x scripts/boltbuild.sh   # BOLT another pgobuild.sh build (no pgobuild.sh run)
 #   BOLT=llvm-bolt-21 scripts/boltbuild.sh   # (llvm-bolt, merge-fdata from PATH by default, or the BOLT's directory)
 #
 # No perf needed: an instrumented copy of pgo/tttt counts every edge and writes a profile per process at exit. The
@@ -26,7 +27,9 @@ fi
 MERGE_FDATA=$(dirname "$(command -v "$LLVM_BOLT")")/merge-fdata
 command -v "$MERGE_FDATA" > /dev/null || MERGE_FDATA=merge-fdata
 
-PGO=$(scripts/pgobuild.sh)
+# (PGO_BIN: an LTO + PGO binary built elsewhere, pgobuild.sh's flags: the Linux release's, linked in an old-glibc
+# container, scripts/release/build-linux.sh)
+PGO=${PGO_BIN:-$(scripts/pgobuild.sh)}
 mkdir -p $B
 exec 9> $B/.lock
 flock 9

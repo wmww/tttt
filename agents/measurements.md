@@ -4,6 +4,15 @@ append history, git has it. Older sections (oracle tallies, stage logs, supersed
 condensed on 2026-10-20 into "Past conclusions" below; the full log is `git show a9c5e07da:agents/measurements.md`.
 
 
+## Release v3 Linux builds: compiler and sysroot (2026-10-30, b95d0f2f6 + the glibc 2.28 fixes, rel-linux)
+Release binaries (LTO + PGO + BOLT, linked against glibc 2.28: notes/release.md) against each box's host fast build of
+b95d0f2f6 (`abbuild.sh b95d0f2f6 --fast`), `instrcount.sh --bin` (K1, 14 corpora). x86-64 (this box, perf): the
+container's GCC 14.2 (gcc-toolset-14) **+1.64% geomean** (react +3.1%, drizzle +2.4%, xstate +1.9%, type-fest +0.8%);
+the host's GCC 16.2 with the 2.28 sysroot **-0.00%** (all within 0.25%). arm64 (the VM, callgrind): host GCC 15.2 with
+the sysroot within +0.1% on every corpus. Walls (`abbench.sh -n 7`, zod/drizzle/vscode): within +-2% both boxes
+(x86 at load 9-12: noise). Before prelude.c defined `MADV_POPULATE_WRITE` (2.28's headers don't), the container
+build ran +31-38% sys and +3-6% minor faults (pages_populate() a no-op). Shipped: the sysroot builds.
+
 ## arm64 Linux: vscode against bun and tsgo (2026-10-29, main 4cfa18295, the arm64 port)
 **Box**: arm64 VM, 32 vCPU Neoverse V2 (one thread per core), 128 GB, 4 KB pages, Ubuntu 26.04, GCC 15.2, nothing
 else running. fast/tttt (PGO + BOLT, `-fno-ext-dce`: notes/arm64.md), tsgo 7.1.0-beta built there with Go 1.27.2
