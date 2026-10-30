@@ -17,7 +17,12 @@ cd "$( dirname "${BASH_SOURCE[0]}" )"
 TS_COMMIT=3e9236361fa97a9e6c685f4833ac457ae2d8c50a
 TS_VERSION="7.1.0-beta (${TS_COMMIT:0:8})"
 GO_VERSION=go1.27.2
-GO_SHA256=ecbadb99091a3f46e31f5f934b068b1864eafa7995211b39eaddf76996045fe5
+# The toolchain for this machine (go.dev/dl/?mode=json lists the checksums)
+case "$(uname -m)" in
+    x86_64) GO_ARCH=amd64 GO_SHA256=ecbadb99091a3f46e31f5f934b068b1864eafa7995211b39eaddf76996045fe5 ;;
+    aarch64) GO_ARCH=arm64 GO_SHA256=94f3e30b8e374bc285e7dadc11e0865726b9bc6e85b841ccceaabc0214c6b7c8 ;;
+    *) echo "ensure-typescript: no Go checksum for $(uname -m): add one" >&2; exit 1 ;;
+esac
 
 EOL="\x1b[0m\n"
 BLUE="\x1b[34m"
@@ -59,7 +64,7 @@ if test "$(go/bin/go version 2>/dev/null | cut -d' ' -f3)" != $GO_VERSION; then
     printf "${BLUE}Fetching $GO_VERSION...$EOL"
     rm -rf go
     TMP="$(mktemp -d)"
-    curl -sSL "https://go.dev/dl/$GO_VERSION.linux-amd64.tar.gz" -o "$TMP/go.tar.gz"
+    curl -sSL "https://go.dev/dl/$GO_VERSION.linux-$GO_ARCH.tar.gz" -o "$TMP/go.tar.gz"
     echo "$GO_SHA256  $TMP/go.tar.gz" | sha256sum --check --quiet
     tar -C . -xzf "$TMP/go.tar.gz"
     rm -rf "$TMP"
