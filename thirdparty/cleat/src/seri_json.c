@@ -35,8 +35,8 @@ static_failable json_serialize_token(SeriSerializer* ser, SeriToken t) {
     switch (t.tag) {
         case SERI_TOKEN_NULL: cstr_append_lit(my target, "null"); goto success;
         case SERI_TOKEN_BOOL: cstr_append_sv(my target, t.b ? c_sv("true") : c_sv("false")); goto success;
-        case SERI_TOKEN_INT: cstr_append_fmt(my target,"%zd", t.i); goto success;
-        case SERI_TOKEN_UINT: cstr_append_fmt(my target,"%zu", t.u); goto success;
+        case SERI_TOKEN_INT: cstr_append_fmt(my target,"%lld", (long long)t.i); goto success;
+        case SERI_TOKEN_UINT: cstr_append_fmt(my target,"%llu", (unsigned long long)t.u); goto success;
 
         case SERI_TOKEN_FLOAT:
             if (isfinite(t.f)) {

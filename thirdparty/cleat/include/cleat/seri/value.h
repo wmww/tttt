@@ -173,7 +173,7 @@ static inline i64 seri_value_vec_size(SeriValue const* vec) {
 static_inline_failable seri_value_vec_at(SeriValue const* me, i64 i, returns SeriValue const*) {
     FailableResult result = seri_value_check_type(me, SERI_VALUE_VEC);
     if (result.error) return result;
-    if (i < 0 || i >= me->l.size) return err_fmt("vec index %ld out of range", i);
+    if (i < 0 || i >= me->l.size) return err_fmt("vec index %lld out of range", (long long)i);
     *_OUTPUT_PARAM = &me->l.data[i];
     return (FailableResult){nullptr};
 }

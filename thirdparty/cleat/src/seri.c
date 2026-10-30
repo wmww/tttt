@@ -161,8 +161,8 @@ failable serialize_seri_value_map(SeriSerializer* me, HMapSeriValue const* map) 
 static_inline_failable deserialize_value_stringish(SeriDeserializer* me, returns cstr) {
     try (SeriToken token, deserialize_token(me, &token)) bubble;
     switch (token.tag) {
-        case SERI_TOKEN_INT: return ok(cstr_from_fmt("%ld", token.i));
-        case SERI_TOKEN_UINT: return ok(cstr_from_fmt("%lu", token.u));
+        case SERI_TOKEN_INT: return ok(cstr_from_fmt("%lld", (long long)token.i));
+        case SERI_TOKEN_UINT: return ok(cstr_from_fmt("%llu", (unsigned long long)token.u));
         case SERI_TOKEN_CSVIEW: return ok(cstr_from_sv(token.sv));
         case SERI_TOKEN_CSTR: return ok(token.s);
         default: {

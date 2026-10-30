@@ -83,20 +83,20 @@ static void stdout_test_output_run_finished(void* data, u64 passed, u64 failed, 
     } else if (failed == 0) {
         if (skipped > 0) {
             printf(
-                "%s%zu test%s passed%s\n",
-                color_good, passed, passed > 1 ? "s" : "", color_normal
+                "%s%llu test%s passed%s\n",
+                color_good, (unsigned long long)passed, passed > 1 ? "s" : "", color_normal
             );
         } else {
             printf(
-                "%sAll %zu test%s passed%s\n",
-                color_good, passed, passed > 1 ? "s" : "", color_normal
+                "%sAll %llu test%s passed%s\n",
+                color_good, (unsigned long long)passed, passed > 1 ? "s" : "", color_normal
             );
         }
     } else {
         printf(
-            "%zu test%s passed, %s%zu test%s failed%s\n",
-            passed, passed > 1 ? "s" : "",
-            color_error, failed, failed > 1 ? "s" : "", color_normal
+            "%llu test%s passed, %s%llu test%s failed%s\n",
+            (unsigned long long)passed, passed > 1 ? "s" : "",
+            color_error, (unsigned long long)failed, failed > 1 ? "s" : "", color_normal
         );
     }
     printf("\n");

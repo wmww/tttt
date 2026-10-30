@@ -1,0 +1,184 @@
+diff --git cleat/include/cleat/display_dispatch.h cleat/include/cleat/display_dispatch.h
+index 19c3c1d7b..d4a51bca7 100644
+--- cleat/include/cleat/display_dispatch.h
++++ cleat/include/cleat/display_dispatch.h
+@@ -65,14 +65,18 @@ void default_log_fatal_abort(csview file, i64 line, csview label, DisplayCtx d);
+ )
+ #define panic_if(cond, ...) if (cond) panic(__VA_ARGS__)
+ 
++// Patched (cleat-int64-patch.txt): long and long long rather than i64 and u64, so every 64-bit integer type displays
++// whichever of them int64_t is (long on Linux, long long on macOS; size_t and ptrdiff_t are long on both)
+ #define CORE_DISPLAYABLES \
+     char*:          cstr_raw_display, \
+     char const*:    cstr_raw_display, \
+     void*:          void_ptr_display, \
+     cstr:           cstr_display, \
+     csview:         debuggable_sv_display, \
+-    i64:            i64_display, \
+-    u64:            u64_display, \
++    long:           i64_display, \
++    unsigned long:  u64_display, \
++    long long:      i64_display, \
++    unsigned long long: u64_display, \
+     i32:            i64_display, \
+     u32:            i64_display, \
+     char:           char_display, \
+diff --git cleat/include/cleat/display_functions.h cleat/include/cleat/display_functions.h
+index 1d7bd051e..c1b3fe716 100644
+--- cleat/include/cleat/display_functions.h
++++ cleat/include/cleat/display_functions.h
+@@ -2,6 +2,7 @@
+ 
+ #include "display_minimal.h"
+ #include "types.h"
++#include <inttypes.h>
+ 
+ DisplayCtx string_debug_display(csview sv, DisplayCtx d);
+ DisplayCtx fmt_display(DisplayCtx d, const char* fmt, ...) __attribute__((format (printf, 2, 3)));
+@@ -24,8 +25,8 @@ static inline DisplayCtx cstr_raw_display(char const* s, DisplayCtx d) {
+ 
+ impl_display_class(cstr, cstr, static inline) { return debuggable_sv_display(cstr_sv(me), d); }
+ 
+-static inline DisplayCtx i64_display     (i64    i, DisplayCtx d) { cstr_append_fmt(&d.target, "%zd", i); return d; }
+-static inline DisplayCtx u64_display     (u64    u, DisplayCtx d) { cstr_append_fmt(&d.target, "%zu", u); return d; }
++static inline DisplayCtx i64_display     (i64    i, DisplayCtx d) { cstr_append_fmt(&d.target, "%" PRId64, i); return d; }
++static inline DisplayCtx u64_display     (u64    u, DisplayCtx d) { cstr_append_fmt(&d.target, "%" PRIu64, u); return d; }
+ static inline DisplayCtx i32_display     (i32    i, DisplayCtx d) { return i64_display(i, d); }
+ static inline DisplayCtx u32_display     (u32    u, DisplayCtx d) { return u64_display(u, d); }
+ static inline DisplayCtx f64_display     (f64    f, DisplayCtx d) { cstr_append_fmt(&d.target, "%.12g", f); return d; }
+diff --git cleat/include/cleat/seri/value.h cleat/include/cleat/seri/value.h
+index 100dcdad6..566dc1df4 100644
+--- cleat/include/cleat/seri/value.h
++++ cleat/include/cleat/seri/value.h
+@@ -173,7 +173,7 @@ static inline i64 seri_value_vec_size(SeriValue const* vec) {
+ static_inline_failable seri_value_vec_at(SeriValue const* me, i64 i, returns SeriValue const*) {
+     FailableResult result = seri_value_check_type(me, SERI_VALUE_VEC);
+     if (result.error) return result;
+-    if (i < 0 || i >= me->l.size) return err_fmt("vec index %ld out of range", i);
++    if (i < 0 || i >= me->l.size) return err_fmt("vec index %lld out of range", (long long)i);
+     *_OUTPUT_PARAM = &me->l.data[i];
+     return (FailableResult){nullptr};
+ }
+diff --git cleat/src/real_filesystem.c cleat/src/real_filesystem.c
+index 43375bdf7..1920f374c 100644
+--- cleat/src/real_filesystem.c
++++ cleat/src/real_filesystem.c
+@@ -2,7 +2,10 @@
+ #include <stdio.h>
+ #include <string.h>
+ #include <errno.h>
++#include <limits.h>
++#ifdef __linux__
+ #include <linux/limits.h>
++#endif
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #include <dirent.h>
+diff --git cleat/src/seri.c cleat/src/seri.c
+index 579f1ef5e..2434e0ab4 100644
+--- cleat/src/seri.c
++++ cleat/src/seri.c
+@@ -161,8 +161,8 @@ failable serialize_seri_value_map(SeriSerializer* me, HMapSeriValue const* map)
+ static_inline_failable deserialize_value_stringish(SeriDeserializer* me, returns cstr) {
+     try (SeriToken token, deserialize_token(me, &token)) bubble;
+     switch (token.tag) {
+-        case SERI_TOKEN_INT: return ok(cstr_from_fmt("%ld", token.i));
+-        case SERI_TOKEN_UINT: return ok(cstr_from_fmt("%lu", token.u));
++        case SERI_TOKEN_INT: return ok(cstr_from_fmt("%lld", (long long)token.i));
++        case SERI_TOKEN_UINT: return ok(cstr_from_fmt("%llu", (unsigned long long)token.u));
+         case SERI_TOKEN_CSVIEW: return ok(cstr_from_sv(token.sv));
+         case SERI_TOKEN_CSTR: return ok(token.s);
+         default: {
+diff --git cleat/src/seri_json.c cleat/src/seri_json.c
+index b14ee641d..44f5efb84 100644
+--- cleat/src/seri_json.c
++++ cleat/src/seri_json.c
+@@ -35,8 +35,8 @@ static_failable json_serialize_token(SeriSerializer* ser, SeriToken t) {
+     switch (t.tag) {
+         case SERI_TOKEN_NULL: cstr_append_lit(my target, "null"); goto success;
+         case SERI_TOKEN_BOOL: cstr_append_sv(my target, t.b ? c_sv("true") : c_sv("false")); goto success;
+-        case SERI_TOKEN_INT: cstr_append_fmt(my target,"%zd", t.i); goto success;
+-        case SERI_TOKEN_UINT: cstr_append_fmt(my target,"%zu", t.u); goto success;
++        case SERI_TOKEN_INT: cstr_append_fmt(my target,"%lld", (long long)t.i); goto success;
++        case SERI_TOKEN_UINT: cstr_append_fmt(my target,"%llu", (unsigned long long)t.u); goto success;
+ 
+         case SERI_TOKEN_FLOAT:
+             if (isfinite(t.f)) {
+diff --git cleat/src/stdout_test_output.c cleat/src/stdout_test_output.c
+index 09d31af37..875b079b2 100644
+--- cleat/src/stdout_test_output.c
++++ cleat/src/stdout_test_output.c
+@@ -83,20 +83,20 @@ static void stdout_test_output_run_finished(void* data, u64 passed, u64 failed,
+     } else if (failed == 0) {
+         if (skipped > 0) {
+             printf(
+-                "%s%zu test%s passed%s\n",
+-                color_good, passed, passed > 1 ? "s" : "", color_normal
++                "%s%llu test%s passed%s\n",
++                color_good, (unsigned long long)passed, passed > 1 ? "s" : "", color_normal
+             );
+         } else {
+             printf(
+-                "%sAll %zu test%s passed%s\n",
+-                color_good, passed, passed > 1 ? "s" : "", color_normal
++                "%sAll %llu test%s passed%s\n",
++                color_good, (unsigned long long)passed, passed > 1 ? "s" : "", color_normal
+             );
+         }
+     } else {
+         printf(
+-            "%zu test%s passed, %s%zu test%s failed%s\n",
+-            passed, passed > 1 ? "s" : "",
+-            color_error, failed, failed > 1 ? "s" : "", color_normal
++            "%llu test%s passed, %s%llu test%s failed%s\n",
++            (unsigned long long)passed, passed > 1 ? "s" : "",
++            color_error, (unsigned long long)failed, failed > 1 ? "s" : "", color_normal
+         );
+     }
+     printf("\n");
+diff --git cleat/src/test_docs_code.c cleat/src/test_docs_code.c
+index 15185c9d1..772edbd86 100644
+--- cleat/src/test_docs_code.c
++++ cleat/src/test_docs_code.c
+@@ -52,7 +52,7 @@ void test_docs_code_register_markdown_file(csview test_module, csview path, Test
+                 language = csview_without_prefix(trimmed, "```");
+                 start_line = line_index;
+             } else {
+-                cstr test_name = cstr_from_fmt("code block on line %ld", start_line);
++                cstr test_name = cstr_from_fmt("code block on line %lld", (long long)start_line);
+                 register_test(
+                     test_module,
+                     cstr_sv(&test_name),
+@@ -88,8 +88,8 @@ void test_docs_code_register_markdown_file(csview test_module, csview path, Test
+                         test_module,
+                         c_sv("links valid"),
+                         cstr_from_fmt(
+-                            "%.*s:%ld: broken link to %s",
+-                            c_SV(path), start_line, cstr_str(&link_relative)
++                            "%.*s:%lld: broken link to %s",
++                            c_SV(path), (long long)start_line, cstr_str(&link_relative)
+                         )
+                     );
+                 }
+@@ -104,7 +104,7 @@ void test_docs_code_register_markdown_file(csview test_module, csview path, Test
+         register_test_problem(
+             test_module,
+             c_sv("parsing doc file"),
+-            cstr_from_fmt("%.*s:%ld: unclosed code block", c_SV(path), start_line)
++            cstr_from_fmt("%.*s:%lld: unclosed code block", c_SV(path), (long long)start_line)
+         );
+     }
+ }
+diff --git cleat/src/uri.c cleat/src/uri.c
+index db7652412..87fd22dac 100644
+--- cleat/src/uri.c
++++ cleat/src/uri.c
+@@ -42,7 +42,7 @@ failable existing_file_uri_encode_append(csview path, i64 line, cstr* target) {
+         cstr_drop(&absolute);
+         return err_fmt("could not find %.*s", c_SV(path));
+     }
+-    if (line >= 0) cstr_append_fmt(&absolute, ":%ld", line);
++    if (line >= 0) cstr_append_fmt(&absolute, ":%lld", (long long)line);
+     uri_encode_append(c_sv("file://"), cstr_sv(&absolute), target);
+     cstr_drop(&absolute);
+     return ok;

@@ -42,7 +42,7 @@ failable existing_file_uri_encode_append(csview path, i64 line, cstr* target) {
         cstr_drop(&absolute);
         return err_fmt("could not find %.*s", c_SV(path));
     }
-    if (line >= 0) cstr_append_fmt(&absolute, ":%ld", line);
+    if (line >= 0) cstr_append_fmt(&absolute, ":%lld", (long long)line);
     uri_encode_append(c_sv("file://"), cstr_sv(&absolute), target);
     cstr_drop(&absolute);
     return ok;

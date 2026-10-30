@@ -65,14 +65,18 @@ void default_log_fatal_abort(csview file, i64 line, csview label, DisplayCtx d);
 )
 #define panic_if(cond, ...) if (cond) panic(__VA_ARGS__)
 
+// Patched (cleat-int64-patch.txt): long and long long rather than i64 and u64, so every 64-bit integer type displays
+// whichever of them int64_t is (long on Linux, long long on macOS; size_t and ptrdiff_t are long on both)
 #define CORE_DISPLAYABLES \
     char*:          cstr_raw_display, \
     char const*:    cstr_raw_display, \
     void*:          void_ptr_display, \
     cstr:           cstr_display, \
     csview:         debuggable_sv_display, \
-    i64:            i64_display, \
-    u64:            u64_display, \
+    long:           i64_display, \
+    unsigned long:  u64_display, \
+    long long:      i64_display, \
+    unsigned long long: u64_display, \
     i32:            i64_display, \
     u32:            i64_display, \
     char:           char_display, \

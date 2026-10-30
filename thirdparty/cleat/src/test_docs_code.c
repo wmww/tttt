@@ -52,7 +52,7 @@ void test_docs_code_register_markdown_file(csview test_module, csview path, Test
                 language = csview_without_prefix(trimmed, "```");
                 start_line = line_index;
             } else {
-                cstr test_name = cstr_from_fmt("code block on line %ld", start_line);
+                cstr test_name = cstr_from_fmt("code block on line %lld", (long long)start_line);
                 register_test(
                     test_module,
                     cstr_sv(&test_name),
@@ -88,8 +88,8 @@ void test_docs_code_register_markdown_file(csview test_module, csview path, Test
                         test_module,
                         c_sv("links valid"),
                         cstr_from_fmt(
-                            "%.*s:%ld: broken link to %s",
-                            c_SV(path), start_line, cstr_str(&link_relative)
+                            "%.*s:%lld: broken link to %s",
+                            c_SV(path), (long long)start_line, cstr_str(&link_relative)
                         )
                     );
                 }
@@ -104,7 +104,7 @@ void test_docs_code_register_markdown_file(csview test_module, csview path, Test
         register_test_problem(
             test_module,
             c_sv("parsing doc file"),
-            cstr_from_fmt("%.*s:%ld: unclosed code block", c_SV(path), start_line)
+            cstr_from_fmt("%.*s:%lld: unclosed code block", c_SV(path), (long long)start_line)
         );
     }
 }

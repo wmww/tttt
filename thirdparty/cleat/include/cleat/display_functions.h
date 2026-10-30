@@ -2,6 +2,7 @@
 
 #include "display_minimal.h"
 #include "types.h"
+#include <inttypes.h>
 
 DisplayCtx string_debug_display(csview sv, DisplayCtx d);
 DisplayCtx fmt_display(DisplayCtx d, const char* fmt, ...) __attribute__((format (printf, 2, 3)));
@@ -24,8 +25,8 @@ static inline DisplayCtx cstr_raw_display(char const* s, DisplayCtx d) {
 
 impl_display_class(cstr, cstr, static inline) { return debuggable_sv_display(cstr_sv(me), d); }
 
-static inline DisplayCtx i64_display     (i64    i, DisplayCtx d) { cstr_append_fmt(&d.target, "%zd", i); return d; }
-static inline DisplayCtx u64_display     (u64    u, DisplayCtx d) { cstr_append_fmt(&d.target, "%zu", u); return d; }
+static inline DisplayCtx i64_display     (i64    i, DisplayCtx d) { cstr_append_fmt(&d.target, "%" PRId64, i); return d; }
+static inline DisplayCtx u64_display     (u64    u, DisplayCtx d) { cstr_append_fmt(&d.target, "%" PRIu64, u); return d; }
 static inline DisplayCtx i32_display     (i32    i, DisplayCtx d) { return i64_display(i, d); }
 static inline DisplayCtx u32_display     (u32    u, DisplayCtx d) { return u64_display(u, d); }
 static inline DisplayCtx f64_display     (f64    f, DisplayCtx d) { cstr_append_fmt(&d.target, "%.12g", f); return d; }
