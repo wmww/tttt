@@ -193,7 +193,11 @@ static DeferredSignatureName* deferred_signature_name(DeferredBody* body, Binder
         body->signature_names = grown;
         body->signature_name_cap = cap;
     }
-    body->signature_names[body->signature_name_count] = (DeferredSignatureName){ .name = name };
+    // (Its own copy: a caller may look up a temporary, mark_link_name()'s cstr for a JSDoc `{@link Name}`, and the
+    // materialization reads it from another thread long after; that read a dead stack slot, TSan on vscode)
+    char* copy = arena_new_n(binder_arena(binder), char, name.size > 0 ? name.size : 1);
+    if (name.size > 0) memcpy(copy, name.buf, (size_t)name.size);
+    body->signature_names[body->signature_name_count] = (DeferredSignatureName){ .name = { copy, name.size } };
     return &body->signature_names[body->signature_name_count++];
 }
 
