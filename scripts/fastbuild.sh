@@ -25,7 +25,16 @@ case "${1:-}" in
 esac
 
 test -z "$FORCE" || scripts/pgobuild.sh --force > /dev/null
-# (macOS: BOLT rewrites ELF only, so the pipeline ends at pgo/tttt, Apple clang's LTO + PGO: agents/notes/macos.md)
+# (macOS and Windows: BOLT rewrites ELF only, so the pipeline ends at pgo/tttt, clang's LTO + PGO: agents/notes/macos.md,
+# windows.md. Windows: fast/tttt.exe, a copy, MSYS2's ln makes no symlink without Developer Mode)
+case "$(uname -s)" in
+    MINGW*|MSYS*)
+        BIN=$(scripts/pgobuild.sh $FORCE)
+        mkdir -p fast
+        cp -f "$BIN" fast/tttt.exe.new && mv -f fast/tttt.exe.new fast/tttt.exe
+        echo fast/tttt.exe
+        exit 0 ;;
+esac
 if test "$(uname -s)" = Darwin; then BIN=$(scripts/pgobuild.sh $FORCE); else BIN=$(scripts/boltbuild.sh $FORCE); fi
 mkdir -p fast
 # (Replaced atomically: a run of fast/tttt in flight keeps its binary)

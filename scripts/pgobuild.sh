@@ -23,16 +23,22 @@ FORCE=
 test "${1:-}" != --force || FORCE=1
 
 # The stamp: every source the build reads (the embedded libs too), the compiler, the build files and this script (the training set)
-# (macOS: Apple clang, as fast as Homebrew's GCC 16 after PGO and twice as quick to train: agents/notes/macos.md)
-if test "$(uname -s)" = Darwin; then CC=${CC:-clang}; else CC=${CC:-gcc}; fi
+# (macOS: Apple clang, as fast as Homebrew's GCC 16 after PGO and twice as quick to train: agents/notes/macos.md.
+# Windows: MSYS2's CLANG64 clang, agents/notes/windows.md; the binary is tttt.exe there)
+X=
+case "$(uname -s)" in
+    Darwin) CC=${CC:-clang} ;;
+    MINGW*|MSYS*) CC=${CC:-clang}; X=.exe ;;
+    *) CC=${CC:-gcc} ;;
+esac
 CLANG=
 case "$($CC --version | head -1)" in *clang*) CLANG=1 ;; esac
 STAMP=$( { $CC --version | head -1
            find src thirdparty/cleat thirdparty/lib -type f \( -name '*.c' -o -name '*.h' -o -name '*.d.ts' -o -name meson.build \
                -o -name embedded_libs.py \) | LC_ALL=C sort | xargs cat
            cat meson.build thirdparty/meson.build "$0"; echo "${PGO_CFLAGS:-}|${PGO_LDFLAGS:-}"; } | sha256sum | cut -d' ' -f1)
-if test -z "$FORCE" && test -x $B/tttt && test "$(cat $B/.stamp 2>/dev/null)" = "$STAMP"; then
-    echo $B/tttt
+if test -z "$FORCE" && test -x $B/tttt$X && test "$(cat $B/.stamp 2>/dev/null)" = "$STAMP"; then
+    echo $B/tttt$X
     exit 0
 fi
 # One build at a time, and none while a tttt of this build runs: a training run orphaned by a killed build (an
@@ -43,7 +49,7 @@ exec 9> $B/.lock
 # (macOS has no flock(1): unlocked there)
 ! command -v flock > /dev/null || flock 9
 rm -f $B/.stamp
-EXE=$(realpath $B/tttt 2>/dev/null || true)
+EXE=$(test -n "$X" || realpath $B/tttt 2>/dev/null || true)
 while test -n "$EXE"; do
     BUSY=
     for P in $(pgrep -x tttt || true); do
@@ -68,9 +74,10 @@ array() { local a=() x; for x in "$@"; do a+=("'$x'"); done; (IFS=,; echo "[${a[
 LINK=$(array -Wl,--emit-relocs -Wl,-z,now ${PGO_LDFLAGS:-})
 # shellcheck disable=SC2086
 CARGS=(-fno-plt ${PGO_CFLAGS:-})
-# macOS (Mach-O, ld64): no BOLT to keep relocations for, no -z now, and Mach-O calls through stubs regardless
+# macOS (Mach-O, ld64) and Windows (PE, lld): no BOLT to keep relocations for, no -z now; Mach-O calls through stubs
+# regardless, and a PE's imports go through its import table (-fno-plt means nothing there)
 DARWIN=
-if test "$(uname -s)" = Darwin; then
+if test "$(uname -s)" = Darwin || test -n "$X"; then
     DARWIN=1
     # shellcheck disable=SC2086
     LINK=$(array ${PGO_LDFLAGS:-})
@@ -86,7 +93,9 @@ if test -z "$CLANG"; then
     USE=(-Db_pgo=use "-Dc_args=$(array -Wno-missing-profile "${CARGS[@]}")")
 else
     # (Not meson's b_pgo: clang's raw profiles need llvm-profdata, the one of clang's own version)
-    PROF=$(realpath $B)/profraw
+    # (Windows: a path clang reads as given, C:/..., not MSYS2's /c/...: ninja runs it unconverted)
+    native() { if test -n "$X"; then cygpath -m "$1"; else echo "$1"; fi; }
+    PROF=$(native "$(realpath $B)")/profraw
     PROFDATA=llvm-profdata-$($CC --version | sed -n 's/.*clang version \([0-9]*\).*/\1/p;q')
     command -v "$PROFDATA" > /dev/null || PROFDATA=llvm-profdata
     # (Apple clang's is in the Command Line Tools, off the PATH)
@@ -95,7 +104,7 @@ else
     # shellcheck disable=SC2086
     GEN=(-Db_pgo=off "-Dc_args=$(array "${CARGS[@]}" -fprofile-generate=$PROF)"
          "-Dc_link_args=$(array $(test -n "$DARWIN" || echo -Wl,--emit-relocs -Wl,-z,now) ${PGO_LDFLAGS:-} -fprofile-generate=$PROF)")
-    USE=("-Dc_args=$(array "${CARGS[@]}" -fprofile-use=$(realpath $B)/tttt.profdata -Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date)" "-Dc_link_args=$LINK")
+    USE=("-Dc_args=$(array "${CARGS[@]}" -fprofile-use=$(native "$(realpath $B)")/tttt.profdata -Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date)" "-Dc_link_args=$LINK")
     rm -rf "$PROF"
 fi
 if test ! -e $B/build.ninja; then
@@ -104,7 +113,7 @@ else
     meson configure $B "${GEN[@]}" >&2
 fi
 find $B -name '*.gcda' -delete
-ninja -C $B tttt >&2
+ninja -C $B tttt$X >&2
 
 TRAIN=(
     thirdparty/corpora/drizzle/drizzle-orm/tsconfig.corpus.json
@@ -128,13 +137,13 @@ train() {
 }
 for P in "${TRAIN[@]}"; do
     echo "pgobuild: training on $P" >&2
-    train $B/tttt --threads 1 --checkers 1 --noEmit -p "$P"
-    train $B/tttt --noEmit -p "$P"
+    train $B/tttt$X --threads 1 --checkers 1 --noEmit -p "$P"
+    train $B/tttt$X --noEmit -p "$P"
 done
 
 # Functions the training never reached have no profile: that's -Wmissing-profile, which -Werror would make fatal
 test -z "$CLANG" || "$PROFDATA" merge -o $B/tttt.profdata "$PROF" >&2
 meson configure $B "${USE[@]}" >&2
-ninja -C $B tttt >&2
+ninja -C $B tttt$X >&2
 echo "$STAMP" > $B/.stamp
-echo $B/tttt
+echo $B/tttt$X
