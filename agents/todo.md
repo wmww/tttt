@@ -57,11 +57,6 @@ wins first; land fast and gate in batches.
   link's augmentations step.
 - **Correctness** (worker `cor15`): the JSDoc `{@link}` TS6133 fix, seeds 20261120/21, the next bun root-cause groups;
   triage.md has vue-query's 4 spurious diagnostics (unwritten).
-- **Release freeze (2026-10-29 box time)**: the human is cutting the release; cor17's final fixes landed (main after
-  b3c6f1cb5's rebase); only verification runs now (full oracles, sgcheck all + forced, TSan, the instruction counts and
-  the headline at the release commit); new code lands only after the release unless a verification run finds a blocker.
-  Decision taken: the check-time alias cycles (bun_ts2322.md's A/B) stay as they are (option B) until a real project
-  shows one; every instance is a contrived self- or mutual import.
 - **The libs' fixed cost, if tiny-project latency ever matters** (measurements.md "The standard library in the
   binary"): per run, parsing and binding the default libs is ~13-18 ms CPU / ~8-10 ms wall of a ~37 ms one-file run
   and <=3% of a real project's CPU (off the critical path at the defaults); not worth a build-time AST. The options,
@@ -73,8 +68,16 @@ wins first; land fast and gate in batches.
   host's parseCache), the cheap one: each `-b` program parses its libs again today, and the embedded texts are already
   shared. The bigger fixed cost on a tiny file is the checker's first resolution of the lib's global types (~22 ms
   of typecheck on a 4-line file), which none of these removes.
-- **Release**: the human cuts v2 when they feel like it; keep the oracles green and the headline saved
-  (`bugcount.py --save` per full run).
+- **Release v3: every platform from one pipeline** (v2 shipped 2026-10-29: GitHub tarballs of binary + thirdparty/lib,
+  and npm `tttt-ts@2.0.0`, Linux x86-64 only, glibc >= 2.38 because it was built on Arch). The human plans the
+  build for the next release: Linux x86-64 and arm64 built against an old glibc (e.g. a glibc 2.28 container with a
+  current GCC toolset; the binary only binds symbol versions, so no perf cost: the C23 `__isoc23_strtol` family,
+  `fmod@2.38` and the 2.34 pthread move are the new symbols, none hot), macOS arm64, Windows later. npm: today one
+  package whose `bin` is the ELF itself (scripts/npmpack.sh); for several platforms the esbuild layout (a wrapper with
+  per-platform `optionalDependencies` carrying os/cpu/libc), keeping the native binary as the bin or a JS shim's
+  node start-up (tens of ms) dominates small runs. The libs are compiled in since 418884466, so a package is just the binary.
+  Publishing is the human's (a 2FA npm account): the `tttt-ts@0.0.0-stage` placeholder npm's staged publishing left
+  is worth deprecating. Keep the oracles green and the headline saved (`bugcount.py --save` per full run).
 
 - **macOS arm64 follow-ups** (agents/notes/macos.md; the port landed 2026-10-29, output identical to Linux on the
   suite and six corpora). Open: (1) memory on macOS: peak footprint is 1.1-1.9x bun's on five of six corpora there,

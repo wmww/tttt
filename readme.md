@@ -2,6 +2,13 @@
 
 A high speed [TypeScript](https://www.typescriptlang.org/) type checker written in C, using [cleat](https://codeberg.org/sphi/cleat).
 
+Install (Linux x86-64, glibc 2.38+; other platforms are coming):
+```bash
+npm install --save-dev tttt-ts
+npx tttt -p path/to/project
+```
+or download a release's tarball from GitHub (binary and its lib files: keep `bin/` and `thirdparty/` together).
+
 Build dependencies:
 - GCC 13+ (tested up to GCC 16)
 - meson+ninja
