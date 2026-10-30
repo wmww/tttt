@@ -66,7 +66,10 @@ LINK=$(array -Wl,--emit-relocs -Wl,-z,now ${PGO_LDFLAGS:-})
 # shellcheck disable=SC2086
 CARGS=(-fno-plt ${PGO_CFLAGS:-})
 if test -z "$CLANG"; then
-    CARGS=(-fno-reorder-blocks-and-partition "${CARGS[@]}")
+    # (-fno-ext-dce: GCC 15's extension elimination miscompiles LTO + PGO on aarch64: a Span's i32 size passed on as a
+    # csview's 64-bit size kept Span.file in the upper half, so no private name `#x` matched its declaration and
+    # webpack crashed; agents/notes/arm64.md. Off everywhere: the pass exists on x86 too)
+    CARGS=(-fno-reorder-blocks-and-partition -fno-ext-dce "${CARGS[@]}")
     GEN=(-Db_pgo=generate "-Dc_args=$(array "${CARGS[@]}")" "-Dc_link_args=$LINK")
     USE=(-Db_pgo=use "-Dc_args=$(array -Wno-missing-profile "${CARGS[@]}")")
 else
