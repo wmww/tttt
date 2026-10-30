@@ -25,6 +25,10 @@ problem() {
     if test "$FAKE" = 1; then echo "warning (NPMPACK_FAKE): $*"; else echo "error: $*"; exit 1; fi
 }
 
+# The platform packages' names: PREFIX + platform. Scoped under the publisher's user (v3 on): npm's spam filter
+# refused the unscoped tttt-ts-win32-x64 after three new unscoped siblings went up in minutes, and a scope keeps the
+# names from being squatted. Keep it in step with launcher.js and install.js (their PREFIX).
+PREFIX=@wmww/tttt-ts-
 # platform  npm-os  npm-cpu  binary-path-in-package  `file` pattern  description
 PLATFORMS=(
     "linux-x64    linux  x64   bin/tttt   ELF.64-bit.LSB.*x86-64       Linux x64 (glibc 2.28 or newer)"
@@ -73,7 +77,7 @@ TS_VERSION=
 OPTIONAL=
 for line in "${PLATFORMS[@]}"; do
     read -r PLAT OS CPU SUB PATTERN DESC <<<"$line"
-    NAME=tttt-ts-$PLAT
+    NAME=$PREFIX$PLAT
     SRC=$BINDIR/$PLAT/$(basename "$SUB")
     test -f "$SRC" || { echo "error: missing $SRC"; exit 1; }
     KIND=$(file -bL "$SRC")
@@ -89,7 +93,7 @@ for line in "${PLATFORMS[@]}"; do
     if test "$PLAT" = linux-x64 && test "$(uname -sm)" = "Linux x86_64"; then
         TS_VERSION=$("$SRC" --version | sed 's/^Version //')
     fi
-    PKG=$OUT/$NAME
+    PKG=$OUT/tttt-ts-$PLAT
     mkdir -p "$PKG/$(dirname "$SUB")"
     install -m755 "$SRC" "$PKG/$SUB"
     cp "$OUT/LICENSE" "$PKG/"
@@ -164,7 +168,7 @@ npx tttt -p path/to/project   # or run from your project directory without argum
 ## Platforms
 
 Linux x64 and arm64 (glibc 2.28 or newer: not musl/Alpine), macOS arm64 (13 or newer) and Windows x64 (10 or newer).
-The binary comes in a platform package (\`tttt-ts-linux-x64\`, ...) that npm installs as an optional dependency, the
+The binary comes in a platform package (\`${PREFIX}linux-x64\`, ...) that npm installs as an optional dependency, the
 one matching your machine only, so don't install with \`--omit=optional\`. On other platforms tttt can be built from
 source (https://github.com/wmww/tttt); \`TTTT_BINARY=/path/to/tttt\` makes this package's \`tttt\` run that build.
 
@@ -190,7 +194,9 @@ rm -rf "$LICENSES" "$OUT/LICENSE"
 } > "$OUT/publish.sh"
 for d in "$OUT"/tttt-ts-* "$OUT/tttt-ts"; do
     (cd "$OUT" && npm pack "./$(basename "$d")" --pack-destination "$OUT" >/dev/null 2>&1)
-    TGZ=$OUT/$(basename "$d")-$VERSION.tgz
+    # (npm pack names a scoped package's tarball SCOPE-NAME-VERSION.tgz)
+    NAME=$(node -p "require('$d/package.json').name")
+    TGZ=$OUT/$(sed 's/^@//; s|/|-|' <<<"$NAME")-$VERSION.tgz
     test -f "$TGZ" || { echo "error: npm pack $d made no $TGZ"; exit 1; }
     echo "npm publish $TGZ --access public" >> "$OUT/publish.sh"
     printf '%-28s %8s KB\n' "$(basename "$TGZ")" "$(( $(stat -c %s "$TGZ") / 1024 ))"

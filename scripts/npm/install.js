@@ -15,9 +15,9 @@ const path = require('path');
 const childProcess = require('child_process');
 
 const PLATFORMS = {
-  'linux x64': 'tttt-ts-linux-x64',
-  'linux arm64': 'tttt-ts-linux-arm64',
-  'darwin arm64': 'tttt-ts-darwin-arm64',
+  'linux x64': '@wmww/tttt-ts-linux-x64',
+  'linux arm64': '@wmww/tttt-ts-linux-arm64',
+  'darwin arm64': '@wmww/tttt-ts-darwin-arm64',
 };
 
 function note(message) {

@@ -87,7 +87,7 @@ P=$(project npm-ignore-scripts "$APPROVED"); (cd "$P" && npm i --ignore-scripts 
 (cd "$P" && check_install npm-ignore-scripts node_modules/.bin/tttt launcher)
 for flag in --omit=optional --no-optional; do
     P=$(project "npm$flag" "$APPROVED"); (cd "$P" && npm i --foreground-scripts $flag "tttt-ts@$VERSION" >"$S/log" 2>&1) || fail "npm install $flag: $(tail -3 "$S/log")"
-    test -e "$P/node_modules/tttt-ts-linux-x64" && fail "npm $flag: the platform package was installed anyway"
+    test -e "$P/node_modules/@wmww/tttt-ts-linux-x64" && fail "npm $flag: the platform package was installed anyway"
     grep -q 'tttt-ts-linux-x64 is not installed' "$S/log" && pass "npm $flag: postinstall notes the missing package" || fail "npm $flag: no postinstall note"
     out=$(cd "$P" && node_modules/.bin/tttt --version 2>&1); e=$?
     test $e = 1 && grep -q 'tttt-ts-linux-x64 is not installed' <<<"$out" && grep -q -- '--omit=optional' <<<"$out" \
@@ -139,14 +139,14 @@ test $e = 1 && grep -q 'darwin x64' <<<"$out" && pass "launcher: Intel macOS exp
 out=$(cd "$S/p/npm--omit=optional" && fake '{"musl":true}' node_modules/.bin/tttt --version 2>&1); e=$?
 test $e = 1 && grep -q 'musl' <<<"$out" && pass "launcher: musl explained (glibc package skipped by npm)" || fail "launcher: musl: exit $e: $out"
 cp -r "$S/p/npm-default" "$S/p/npm-mismatch"
-sed -i "s/\"version\": \"$VERSION\"/\"version\": \"0.0.1\"/" "$S/p/npm-mismatch/node_modules/tttt-ts-linux-x64/package.json"
+sed -i "s/\"version\": \"$VERSION\"/\"version\": \"0.0.1\"/" "$S/p/npm-mismatch/node_modules/@wmww/tttt-ts-linux-x64/package.json"
 out=$("$S/p/npm-mismatch/node_modules/.bin/tttt" --version 2>&1); e=$?
 test $e = 1 && grep -q 'version mismatch' <<<"$out" && pass "launcher: version mismatch explained" || fail "launcher: mismatch: exit $e: $out"
 for plat in linux-arm64 darwin-arm64 win32-x64; do
     os=${plat%-*}; cpu=${plat#*-}
     P=$(project "npm-$plat"); (cd "$P" && npm i --os="$os" --cpu="$cpu" "tttt-ts@$VERSION" >"$S/log" 2>&1) || fail "npm --os=$os: $(tail -3 "$S/log")"
-    ls "$P/node_modules" | grep -q "^tttt-ts-$plat$" && test "$(ls "$P/node_modules" | grep -c '^tttt-ts-')" = 1 \
-        && pass "npm --os=$os --cpu=$cpu: installs only tttt-ts-$plat" || fail "npm --os=$os --cpu=$cpu: installed $(ls "$P/node_modules" | tr '\n' ' ')"
+    ls "$P/node_modules/@wmww" | grep -q "^tttt-ts-$plat$" && test "$(ls "$P/node_modules/@wmww" | grep -c '^tttt-ts-')" = 1 \
+        && pass "npm --os=$os --cpu=$cpu: installs only @wmww/tttt-ts-$plat" || fail "npm --os=$os --cpu=$cpu: installed $(ls "$P/node_modules/@wmww" | tr '\n' ' ')"
     # (A stand-in prints its platform; a real release binary runs under binfmt emulation where the host has it (qemu
     # with the cross toolchain's sysroot for arm64, wine for win32: its first run's chatter goes to stderr) and prints
     # its version; a darwin one fails to start, its path in the launcher's message)

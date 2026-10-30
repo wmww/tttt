@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // tttt-ts's `bin` (packed as bin/tttt): finds the native binary in the platform package npm installed as an optional
-// dependency (tttt-ts-linux-x64, ...) and runs it with our arguments, stdio inherited, its exit code and signal passed
+// dependency (@wmww/tttt-ts-linux-x64, ...: npmpack-platforms.sh's PREFIX) and runs it with our arguments, stdio inherited, its exit code and signal passed
 // on. install.js replaces this file with the binary itself where it may and can (npm with tttt-ts's script allowed,
 // Yarn 1; Linux and macOS), so those installs never start node; this file is what runs otherwise: npm 12 and pnpm 10
 // block dependencies' install scripts by default, --ignore-scripts, pnpm and Yarn 2+ always, and on Windows (npm's
@@ -8,10 +8,10 @@
 // that binary instead (a source build on an unsupported platform).
 'use strict';
 const PLATFORMS = {
-  'linux x64': ['tttt-ts-linux-x64', 'bin/tttt'],
-  'linux arm64': ['tttt-ts-linux-arm64', 'bin/tttt'],
-  'darwin arm64': ['tttt-ts-darwin-arm64', 'bin/tttt'],
-  'win32 x64': ['tttt-ts-win32-x64', 'tttt.exe'],
+  'linux x64': ['@wmww/tttt-ts-linux-x64', 'bin/tttt'],
+  'linux arm64': ['@wmww/tttt-ts-linux-arm64', 'bin/tttt'],
+  'darwin arm64': ['@wmww/tttt-ts-darwin-arm64', 'bin/tttt'],
+  'win32 x64': ['@wmww/tttt-ts-win32-x64', 'tttt.exe'],
 };
 const SUPPORTED = 'Linux x64 and arm64 (glibc 2.28 or newer), macOS arm64 (13 or newer) and Windows x64 (10 or newer)';
 const FROM_SOURCE = 'tttt can be built from source (https://github.com/wmww/tttt); set TTTT_BINARY to the built binary to run it through this package';
