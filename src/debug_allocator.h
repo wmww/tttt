@@ -13,7 +13,9 @@
 //
 // Must be included before any STC or cleat header, so nothing has already been compiled against the real functions.
 
+#include <stdalign.h>
 #include <stdatomic.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,8 +23,10 @@
 // Atomic: the load pool and checker threads allocate too (relaxed: only the total matters)
 extern _Atomic intptr_t debug_allocation_count;
 
-// Seems to cause problems (especially in release mode) if not a word multiple
-#define DEBUG_ALLOCATOR_OFFSET (sizeof(intptr_t))
+// malloc's alignment (16 on x86-64 and aarch64), which the compiler relies on: an 8-byte offset made every block
+// 8-aligned, and the release harness at --threads > 1 crashed in load_pool_run() on a movapd that GCC's vectorizer
+// emitted for LoadPool's two adjacent double counters (x86 only: aarch64's vector loads take any alignment)
+#define DEBUG_ALLOCATOR_OFFSET (alignof(max_align_t))
 
 // A zero-size allocation returns null rather than a real block, which the standard permits. STC's container _drop()
 // functions skip freeing when capacity is zero, so anything that allocates zero bytes and records a zero capacity
