@@ -11,6 +11,9 @@
 source "$(dirname "${BASH_SOURCE[0]}")/paths.sh"
 cd "$OUT" || exit 1
 B=${TSAN_BUILD:-$OUT/btsan-$(echo "$ROOT" | md5sum | cut -c1-8)}
+# (On aarch64 GCC's libtsan dies of SIGILL in its first pthread_cond_wait: call_pthread_cancel_with_cleanup branches
+# into glibc's BTI-guarded sigsetjmp with a jump BTI rejects (GCC 15.2, glibc 2.43). Clang's runtime works)
+if test -z "${CC:-}" && test "$(uname -m)" = aarch64; then export CC=clang; fi
 if test ! -e "$B/build.ninja"; then
   meson setup "$B" "$ROOT" --buildtype release -Db_sanitize=thread -Dc_args=-g > "$OUT/tsan-build.log" 2>&1 ||
     { cat "$OUT/tsan-build.log" >&2; exit 1; }
