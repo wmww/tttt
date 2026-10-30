@@ -7,6 +7,13 @@ missing cache) blow-up. (Pruned 2026-10-12: entries for repos that fully match n
 dokploy, chatbox, angular-components, react-navigation, telegraf, commitlint, astro, react-router, rxjs, angular-cli; again
 2026-10-16 against a full sweep: 7 projects left: pixijs, better-auth, es-toolkit, knip, arktype, monkeytype, redux-toolkit.)
 
+## openclaw at K16: extra elaboration lines (K-dependence, 2026-10-30, the v3 Linux worker's kdiff on the arm VM)
+- **openclaw/extensions/codex and openclaw/test print extra elaboration lines at `--checkers 16` only** (the
+  `githubPublications.taskReceipts` chain; `scripts/kdiff.py -k 16` at b95d0f2f6, plain release build, 3 / 3840 projects
+  differ: these two and rxjs, which is known). Probably downstream of the kysely `{[x: string]: any}` install drift
+  openclaw shows against tsc's cache, but tsgo's output doesn't depend on K, so any K-dependence is ours. Not reduced;
+  `scripts/projdiff.py` on the project gives the K1/K16 pair, TTTT_CHECK_ONLY the file. [open]
+
 ## query/packages/vue-query (2026-10-29, cor15; was triage.md)
 - 4 spurious (TS7006 `data`, then TS2344 from it) in `mutationOptions.test-d.ts` 238/239 and 274/275: the getter
   overload `mutationOptions(() => ({ mutationFn, onSuccess: (data) => ... }))` without mutationKey. Reduced to
