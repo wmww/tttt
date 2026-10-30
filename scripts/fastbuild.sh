@@ -25,9 +25,11 @@ case "${1:-}" in
 esac
 
 test -z "$FORCE" || scripts/pgobuild.sh --force > /dev/null
-BIN=$(scripts/boltbuild.sh $FORCE)
+# (macOS: BOLT rewrites ELF only, so the pipeline ends at pgo/tttt, Apple clang's LTO + PGO: agents/notes/macos.md)
+if test "$(uname -s)" = Darwin; then BIN=$(scripts/pgobuild.sh $FORCE); else BIN=$(scripts/boltbuild.sh $FORCE); fi
 mkdir -p fast
 # (Replaced atomically: a run of fast/tttt in flight keeps its binary)
 ln -sfn "../$BIN" fast/tttt.new
-mv -T fast/tttt.new fast/tttt
+# (-T is GNU's; BSD mv's -h doesn't follow a symlink to a directory either)
+if test "$(uname -s)" = Darwin; then mv -fh fast/tttt.new fast/tttt; else mv -T fast/tttt.new fast/tttt; fi
 echo fast/tttt

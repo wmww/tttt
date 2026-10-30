@@ -185,7 +185,7 @@ def main():
     try:
         proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                               timeout=args.timeout, cwd=cwd,
-                              preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
+                              preexec_fn=(lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit))) if limit else None)
         status = 'exit ' + str(proc.returncode) if proc.returncode >= 0 else 'KILLED BY SIGNAL ' + str(-proc.returncode)
         out = proc.stdout
         if proc.returncode not in (0, 1, 2) and tttt_run.status_of(proc.returncode, out) == 'memory':
@@ -193,7 +193,7 @@ def main():
     except subprocess.TimeoutExpired as e:
         status, out = 'TIMEOUT', e.stdout or b''
     wall = time.time() - start
-    rss = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss // 1024
+    rss = tttt_run.maxrss_kb(resource.getrusage(resource.RUSAGE_CHILDREN)) // 1024
     text = re.sub(r'\x1b\[[0-9;]*m', '', out.decode(errors='replace'))
     # per tree and corpus: concurrent runs (sub-agents in worktrees, several corpora) don't overwrite each other
     tree = os.path.basename(ROOT)

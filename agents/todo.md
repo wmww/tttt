@@ -76,6 +76,15 @@ wins first; land fast and gate in batches.
 - **Release**: the human cuts v2 when they feel like it; keep the oracles green and the headline saved
   (`bugcount.py --save` per full run).
 
+- **macOS arm64 follow-ups** (agents/notes/macos.md; the port landed 2026-10-29, output identical to Linux on the
+  suite and six corpora). Open: (1) memory on macOS: peak footprint is 1.1-1.9x bun's on five of six corpora there,
+  and macOS's libmalloc is untuned (no mallopt) and unmeasured against an alternative; (2) physical_cores() counts
+  efficiency cores like performance ones (hw.physicalcpu): on real M-series hardware a checker on an E core may be
+  the critical path, hw.perflevel0.physicalcpu is the alternative, untested (the VM has no E cores); (3) the exit
+  teardown runs in process (no clone/pidfd reaper): measure its share of wall on vscode on real hardware; (4) the
+  Linux-only tooling (valgrind, perf, bwrap: instrcount, clidiff, dtsdiff, bench.sh) has no macOS counterpart; a
+  `bench.sh` that runs on both would be the cheapest next step.
+
 ## Done (2026-10-28/29): the hub regime, the shared graph's finish line
 - **The shared graph at the laptop's 24 threads** (the next point on the break-even curve, hub_regime.md): flag
   against plain at the defaults and at `--threads 24 --checkers 24` on zod, drizzle, effect, vscode, dokploy/apps/

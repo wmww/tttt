@@ -3,6 +3,12 @@ The latest of each kind of measurement. **Replace a section when re-measuring** 
 append history, git has it. Older sections (oracle tallies, stage logs, superseded perf tables) were
 condensed on 2026-10-20 into "Past conclusions" below; the full log is `git show a9c5e07da:agents/measurements.md`.
 
+
+## macOS arm64 against tsgo and bun (2026-10-29, a 4 vCPU / 8 GB M-series VM)
+fast/tttt (Apple clang LTO + PGO) vs tsgo 7.1.0-beta darwin and `bun check` 1.4.3 on six corpora: the table and
+method are in agents/notes/macos.md. Defaults: tsc-compiler 0.111 s (tsgo 0.374, bun 0.170), zod 0.132 (0.740,
+0.253), drizzle 0.176 (1.032, 0.372), effect 0.248 (1.039, 0.491), excalidraw 0.157 (1.018, 0.296), webpack 0.562
+(0.788, 0.454: the one-checker rerun).
 ## The standard library in the binary: cost, and the libs' share of a run (2026-10-29, worker embedlibs, 3f52b5877 against the branch on it, 1688c1158; this box)
 **The embedded libs cost nothing measurable** (fastbuild.sh PGO + BOLT, `abbuild.sh 3f52b5877 --fast` against the branch).
 The binary grows 12.4 -> 16.5 MB: the libs (4.0 MB of string literals) land in .rodata (the non-exec R segment, 0.6 ->

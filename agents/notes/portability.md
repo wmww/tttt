@@ -21,3 +21,5 @@ the taint prototype. The dependences are Linux kernel configuration and box stat
   (checker.c) lack MAP_NORESERVE, so `vm.overcommit_memory=2` could refuse them: untested, a one-line fix each.
 - **Removed 2026-10-28**: the huge text page (THP-dependent, laptop-only win) and the opt-in `--huge-pages` path with
   its /proc/buddyinfo budget (measurements.md "The 12-core box at df95ec2f": faults -3.6x, wall within noise).
+
+macOS arm64 (2026-10-29): the Linux-only interfaces behind #ifdefs and what they became there: agents/notes/macos.md.

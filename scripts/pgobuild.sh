@@ -23,7 +23,8 @@ FORCE=
 test "${1:-}" != --force || FORCE=1
 
 # The stamp: every source the build reads (the embedded libs too), the compiler, the build files and this script (the training set)
-CC=${CC:-gcc}
+# (macOS: Apple clang, as fast as Homebrew's GCC 16 after PGO and twice as quick to train: agents/notes/macos.md)
+if test "$(uname -s)" = Darwin; then CC=${CC:-clang}; else CC=${CC:-gcc}; fi
 CLANG=
 case "$($CC --version | head -1)" in *clang*) CLANG=1 ;; esac
 STAMP=$( { $CC --version | head -1
@@ -39,7 +40,8 @@ fi
 # corrupted")
 mkdir -p $B
 exec 9> $B/.lock
-flock 9
+# (macOS has no flock(1): unlocked there)
+! command -v flock > /dev/null || flock 9
 rm -f $B/.stamp
 EXE=$(realpath $B/tttt 2>/dev/null || true)
 while test -n "$EXE"; do
@@ -66,6 +68,15 @@ array() { local a=() x; for x in "$@"; do a+=("'$x'"); done; (IFS=,; echo "[${a[
 LINK=$(array -Wl,--emit-relocs -Wl,-z,now ${PGO_LDFLAGS:-})
 # shellcheck disable=SC2086
 CARGS=(-fno-plt ${PGO_CFLAGS:-})
+# macOS (Mach-O, ld64): no BOLT to keep relocations for, no -z now, and Mach-O calls through stubs regardless
+DARWIN=
+if test "$(uname -s)" = Darwin; then
+    DARWIN=1
+    # shellcheck disable=SC2086
+    LINK=$(array ${PGO_LDFLAGS:-})
+    # shellcheck disable=SC2086
+    CARGS=(${PGO_CFLAGS:-})
+fi
 if test -z "$CLANG"; then
     # (-fno-ext-dce: GCC 15's extension elimination miscompiles LTO + PGO on aarch64: a Span's i32 size passed on as a
     # csview's 64-bit size kept Span.file in the upper half, so no private name `#x` matched its declaration and
@@ -75,13 +86,16 @@ if test -z "$CLANG"; then
     USE=(-Db_pgo=use "-Dc_args=$(array -Wno-missing-profile "${CARGS[@]}")")
 else
     # (Not meson's b_pgo: clang's raw profiles need llvm-profdata, the one of clang's own version)
-    PROF=$(realpath -m $B/profraw)
+    PROF=$(realpath $B)/profraw
     PROFDATA=llvm-profdata-$($CC --version | sed -n 's/.*clang version \([0-9]*\).*/\1/p;q')
     command -v "$PROFDATA" > /dev/null || PROFDATA=llvm-profdata
+    # (Apple clang's is in the Command Line Tools, off the PATH)
+    command -v "$PROFDATA" > /dev/null || PROFDATA=$(xcrun -f llvm-profdata 2>/dev/null || echo llvm-profdata)
+    # shellcheck disable=SC2086
     # shellcheck disable=SC2086
     GEN=(-Db_pgo=off "-Dc_args=$(array "${CARGS[@]}" -fprofile-generate=$PROF)"
-         "-Dc_link_args=$(array -Wl,--emit-relocs -Wl,-z,now ${PGO_LDFLAGS:-} -fprofile-generate=$PROF)")
-    USE=("-Dc_args=$(array "${CARGS[@]}" -fprofile-use=$(realpath -m $B)/tttt.profdata -Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date)" "-Dc_link_args=$LINK")
+         "-Dc_link_args=$(array $(test -n "$DARWIN" || echo -Wl,--emit-relocs -Wl,-z,now) ${PGO_LDFLAGS:-} -fprofile-generate=$PROF)")
+    USE=("-Dc_args=$(array "${CARGS[@]}" -fprofile-use=$(realpath $B)/tttt.profdata -Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date)" "-Dc_link_args=$LINK")
     rm -rf "$PROF"
 fi
 if test ! -e $B/build.ninja; then
@@ -92,7 +106,6 @@ fi
 find $B -name '*.gcda' -delete
 ninja -C $B tttt >&2
 
-thirdparty/ensure-corpora.sh >&2
 TRAIN=(
     thirdparty/corpora/drizzle/drizzle-orm/tsconfig.corpus.json
     thirdparty/corpora/zod/packages/zod/tsconfig.test.json
@@ -100,6 +113,8 @@ TRAIN=(
     thirdparty/corpora/excalidraw/tsconfig.corpus.json
     thirdparty/corpora/webpack
 )
+# (Fetched only when one is missing: a small box holds just these)
+for P in "${TRAIN[@]}"; do test -e "$P" || { thirdparty/ensure-corpora.sh >&2; break; }; done
 # (A training run dies with this script)
 TRAINING=
 trap 'test -z "$TRAINING" || kill $TRAINING 2>/dev/null || true' EXIT

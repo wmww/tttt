@@ -45,6 +45,7 @@ import resource
 import shutil
 import signal
 import subprocess
+import sys
 import threading
 import time
 
@@ -107,8 +108,16 @@ _budget = _Budget()
 
 
 def limit_bytes(mem_gb, threads=None):
+    # (macOS refuses an RLIMIT_AS below the address space a process already reserves, and enforces none: no limit)
+    if sys.platform == 'darwin':
+        return None
     threads = threads or os.cpu_count() or 1
     return int((mem_gb + THREAD_GB * threads) * (1 << 30))
+
+
+def maxrss_kb(usage):
+    """A getrusage() result's peak resident set in KB (Linux reports KB, macOS bytes)"""
+    return usage.ru_maxrss // 1024 if sys.platform == 'darwin' else usage.ru_maxrss
 
 
 def threads_of(cmd):
