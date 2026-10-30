@@ -26,6 +26,11 @@
 #include <sys/wait.h>
 
 extern char** environ;
+#ifdef __GLIBC__
+// (glibc 2.29's: weak, so a binary built against an older glibc (the release build's 2.28 floor) binds it where the
+// running glibc has it and spawns through sh's cd where it doesn't)
+extern int posix_spawn_file_actions_addchdir_np(posix_spawn_file_actions_t*, char const*) __attribute__((weak));
+#endif
 #endif
 
 void content_mapper_drop(ContentMapper* me) {
@@ -496,8 +501,20 @@ static void conn_start(MapperConn* conn, ContentMapper const* mapper) {
         conn_fail(conn, 18084, cstr_from("The content mapper process could not be started or initialized."));
         return;
     }
-    char** argv = calloc((size_t)mapper->exec.count + 2, sizeof(char*));
+    struct stat st;
+    bool chdir_to = cstr_size(&mapper->package_dir) && stat(cstr_str(&mapper->package_dir), &st) == 0 && S_ISDIR(st.st_mode);
+    bool via_shell = false;
+#ifdef __GLIBC__
+    via_shell = chdir_to && !posix_spawn_file_actions_addchdir_np;
+#endif
+    char** argv = calloc((size_t)mapper->exec.count + 6, sizeof(char*));
     isize argc = 0;
+    if (via_shell) {
+        argv[argc++] = (char*)"/bin/sh";
+        argv[argc++] = (char*)"-c";
+        argv[argc++] = (char*)"cd -- \"$0\" && exec \"$@\"";
+        argv[argc++] = (char*)cstr_str(&mapper->package_dir);
+    }
     if (launcher) argv[argc++] = (char*)launcher;
     for (isize i = 0; i < mapper->exec.count; i++) argv[argc++] = (char*)cstr_str(&mapper->exec.items[i]);
     posix_spawn_file_actions_t actions;
@@ -506,10 +523,7 @@ static void conn_start(MapperConn* conn, ContentMapper const* mapper) {
     posix_spawn_file_actions_adddup2(&actions, fds[1], STDOUT_FILENO);
     // (tsgo discards a mapper's stderr unless it logs)
     posix_spawn_file_actions_addopen(&actions, STDERR_FILENO, "/dev/null", O_WRONLY, 0);
-    struct stat st;
-    if (cstr_size(&mapper->package_dir) && stat(cstr_str(&mapper->package_dir), &st) == 0 && S_ISDIR(st.st_mode)) {
-        posix_spawn_file_actions_addchdir_np(&actions, cstr_str(&mapper->package_dir));
-    }
+    if (chdir_to && !via_shell) posix_spawn_file_actions_addchdir_np(&actions, cstr_str(&mapper->package_dir));
     pid_t pid;
     int spawned = posix_spawnp(&pid, argv[0], &actions, nullptr, argv, environ);
     posix_spawn_file_actions_destroy(&actions);

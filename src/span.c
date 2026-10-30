@@ -1,3 +1,5 @@
+// (MAP_ANONYMOUS, which strict -std=c2x hides from glibc headers older than POSIX.1-2024's: the release build's 2.28)
+#define _DEFAULT_SOURCE
 #include "string_helpers.h"
 #include "span.h"
 #include "math_helpers.h"

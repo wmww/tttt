@@ -1898,6 +1898,15 @@ static void raise_stack_limit(void) {
 // tears down in the process, for measuring sys. Not under valgrind, sanitizers or a debug build, nor with leak checks.
 // Linux only: macOS has neither clone() nor pidfds)
 #ifdef __linux__
+// (glibc headers before 2.32 and 2.34 name neither: the release build's floor is glibc 2.28. The numbers are the
+// generic syscall table's, x86-64's and aarch64's alike; an older kernel answers ENOSYS: no reaper, or a reaper that
+// keeps its copies of the descriptors until the process is gone)
+#ifndef SYS_pidfd_open
+#define SYS_pidfd_open 434
+#endif
+#ifndef SYS_close_range
+#define SYS_close_range 436
+#endif
 static int exit_reaper(void* arg) {
     int pidfd = (int)(intptr_t)arg;
     syscall(SYS_close_range, 0, (unsigned)pidfd - 1, 0);

@@ -75,6 +75,12 @@ size_t page_size(void) {
     return page;
 }
 
+// (Linux 5.14's. glibc headers before 2.35 don't name it, and the release build links against glibc 2.28's: without
+// this the populate silently compiled to nothing there (+35% sys time, +5% page faults). The value is every
+// architecture's; an older kernel answers EINVAL and the pages fault in as they are touched)
+#if defined __linux__ && !defined MADV_POPULATE_WRITE
+#define MADV_POPULATE_WRITE 23
+#endif
 void pages_populate(void* addr, size_t len) {
 #ifdef MADV_POPULATE_WRITE
     madvise(addr, len, MADV_POPULATE_WRITE);
