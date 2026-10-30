@@ -19,16 +19,16 @@
 
 #define ARENA_CHUNK_SIZE (8 * 1024 * 1024)
 
-// Faults the next pages of a chunk in with one call rather than a trap per 4 KB page (vscode: names -4%, check -2.5%).
+// Faults the next pages of a chunk in with one call rather than a trap per page (vscode: names -4%, check -2.5%).
 // Chunks are bumped through in order, so those pages are about to be written anyway. As many as the chunk has used
 // (64 KB to 1 MB): a short-lived arena that allocates a few KB doesn't fault a MB in (nest's export star walks made 253
 // arenas of a few KB, populated 1 MB each: 55% of its link)
 [[gnu::noinline]] static void arena_populate(ArenaChunk* chunk) {
-    uintptr_t from = ((uintptr_t)chunk->data + chunk->populated) & ~(uintptr_t)4095;
+    uintptr_t from = page_round_down((uintptr_t)chunk->data + chunk->populated);
     size_t ahead = chunk->used / 4;
     size_t step = ahead < ((size_t)64 << 10) ? (size_t)64 << 10 : ahead > ((size_t)1 << 20) ? (size_t)1 << 20 : ahead;
     size_t to = chunk->used + step < chunk->cap ? chunk->used + step : chunk->cap;
-    uintptr_t end = ((uintptr_t)chunk->data + to) & ~(uintptr_t)4095;
+    uintptr_t end = page_round_down((uintptr_t)chunk->data + to);
     if (end > from) madvise((void*)from, end - from, MADV_POPULATE_WRITE);
     chunk->populated = to;
 }
@@ -803,7 +803,7 @@ bool intern_has(InternTable const* table, u64 const* words, u32 count, void cons
 }
 
 static u64 link_key(u32 kind, void const* subject) {
-    // (User space addresses are below 2^47)
+    // (User space addresses are below 2^48: USER_ADDRESS_BITS)
     return (u64)(kind + 1) << 56 | (u64)(uintptr_t)subject;
 }
 

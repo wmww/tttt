@@ -54,12 +54,15 @@ void* ast_materialize_alloc(size_t size, bool align16);
 
 // Arenas take their addresses out of segments of 1 << AST_SEGMENT_SHIFT bytes (256 MB)
 #define AST_SEGMENT_SHIFT 28
-extern uint8_t ast_segment_map[(size_t)1 << (47 - AST_SEGMENT_SHIFT)];
+// User space addresses are below 2^48: x86-64 (4-level paging) gives 47 bits, aarch64 48; either kernel goes past 48
+// (5-level paging, 52-bit VAs) only for an mmap() hint that asks for it
+#define USER_ADDRESS_BITS 48
+extern uint8_t ast_segment_map[(size_t)1 << (USER_ADDRESS_BITS - AST_SEGMENT_SHIFT)];
 
 // Whether p was handed out by some AstArena
 static inline bool ast_owns(void const* p) {
     uintptr_t index = (uintptr_t)p >> AST_SEGMENT_SHIFT;
-    return index < ((uintptr_t)1 << (47 - AST_SEGMENT_SHIFT)) && ast_segment_map[index];
+    return index < ((uintptr_t)1 << (USER_ADDRESS_BITS - AST_SEGMENT_SHIFT)) && ast_segment_map[index];
 }
 
 void* ast_malloc(isize size);

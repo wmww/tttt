@@ -66,7 +66,6 @@ static OverlayStats stat_total;
 static pthread_mutex_t stat_lock = PTHREAD_MUTEX_INITIALIZER;
 
 // TTTT_GRAPH_WORK=1 (overlay.h): a stack of the claims' start cycles per thread
-#include <x86intrin.h>
 #include <time.h>
 static int work_on = -1;
 static _Atomic u64 work_base;
@@ -91,7 +90,7 @@ static u32 work_bin(u64 start) {
     return ms < 25 ? 0 : ms < 50 ? 1 : ms < 100 ? 2 : ms < 200 ? 3 : 4;
 }
 [[gnu::noinline, gnu::cold]] static void work_push(SharedWord const* w) {
-    u64 now = __rdtsc();
+    u64 now = cycle_counter();
     u64 zero = 0;
     if (atomic_compare_exchange_strong(&work_base, &zero, now)) timespec_get(&work_base_ts, TIME_UTC);
     if (work_depth == work_cap) {
@@ -101,7 +100,7 @@ static u32 work_bin(u64 start) {
     work_stack[work_depth++] = (WorkFrame){ w, now, 0 };
 }
 [[gnu::noinline, gnu::cold]] static void work_pop(Overlay* o, SharedWord const* w, u32 outcome) {
-    u64 now = __rdtsc();
+    u64 now = cycle_counter();
     // (The frame of `w`, innermost; frames above it that never finished are dropped into it)
     u32 i = work_depth;
     while (i-- > 0 && work_stack[i].w != w) {}
@@ -585,7 +584,7 @@ void overlay_print_stats(Checker* const* live, u32 count) {
         struct timespec now_ts;
         timespec_get(&now_ts, TIME_UTC);
         double ms = (double)(now_ts.tv_sec - work_base_ts.tv_sec) * 1e3 + (double)(now_ts.tv_nsec - work_base_ts.tv_nsec) / 1e6;
-        fprintf(stderr, "graph: word work: TSC %.0f cycles per ms (bins assume 3e6)\n", (double)(__rdtsc() - atomic_load(&work_base)) / ms);
+        fprintf(stderr, "graph: word work: %.0f counter ticks per ms (bins assume 3e6)\n", (double)(cycle_counter() - atomic_load(&work_base)) / ms);
         eprintln("graph: word work (G cycles, exclusive; computations; bins 0-25/25-50/50-100/100-200/200+ ms):");
         for (u32 k = 0; k < SW_OUTS; k++) {
             u64 sum = 0;

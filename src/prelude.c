@@ -59,6 +59,17 @@ static void read_debug_env() {
     };
 }
 
+size_t page_size(void) {
+    static _Atomic size_t cached;
+    size_t page = atomic_load_explicit(&cached, memory_order_relaxed);
+    if (!page) {
+        long got = sysconf(_SC_PAGESIZE);
+        page = got > 0 ? (size_t)got : 4096;
+        atomic_store_explicit(&cached, page, memory_order_relaxed);
+    }
+    return page;
+}
+
 u64 process_resident_bytes(void) {
     static _Atomic int statm = -1;
     int fd = atomic_load_explicit(&statm, memory_order_relaxed);
@@ -75,7 +86,7 @@ u64 process_resident_bytes(void) {
     text[len] = 0;
     unsigned long long size = 0, resident = 0;
     if (sscanf(text, "%llu %llu", &size, &resident) != 2) return 0;
-    return (u64)resident * (u64)sysconf(_SC_PAGESIZE);
+    return (u64)resident * (u64)page_size();
 }
 
 // A cgroup file's number, UINT64_MAX for "max" or unreadable
@@ -210,7 +221,7 @@ void* zero_pages_alloc(ZeroPages* me, size_t bytes) {
     pthread_mutex_lock(&my lock);
     if (bytes > ZERO_PAGES_OWN) {
         ret = zero_pages_map(me, bytes + 64);
-        from = (char*)((uintptr_t)ret & ~(uintptr_t)4095);
+        from = (char*)page_round_down((uintptr_t)ret);
         to = ret + bytes;
     } else {
         if ((size_t)(my end - my at) < bytes) {
@@ -221,14 +232,14 @@ void* zero_pages_alloc(ZeroPages* me, size_t bytes) {
         my at += bytes;
         if (my at > my populated) {
             // (256 KB ahead: a madvise() per memo page was 50k of them on vscode; a megabyte ahead held 5-7 MB more peak RSS on zod and drizzle)
-            from = (char*)((uintptr_t)my populated & ~(uintptr_t)4095);
+            from = (char*)page_round_down((uintptr_t)my populated);
             to = my at + ZERO_PAGES_AHEAD < my end ? my at + ZERO_PAGES_AHEAD : my end;
             my populated = to;
         }
     }
     pthread_mutex_unlock(&my lock);
     // (Outside the lock: another thread handed a page of this range before it is faulted in only reads the zero page)
-    if (from) madvise(from, (size_t)(((uintptr_t)to + 4095) & ~(uintptr_t)4095) - (uintptr_t)from, MADV_POPULATE_WRITE);
+    if (from) madvise(from, (size_t)(page_round_up((uintptr_t)to) - (uintptr_t)from), MADV_POPULATE_WRITE);
     return ret;
 }
 

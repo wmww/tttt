@@ -5,7 +5,6 @@
 #include "scope.h"
 #include "binding.h"
 #include "source_file.h"
-#include <x86intrin.h>
 
 // One thread (taintstats.sh runs --threads 1)
 static u64 taint_count;
@@ -61,7 +60,7 @@ static u32 inflight_len;
 static u64 attributed;
 
 TaintFrame taint_begin(void) {
-    return (TaintFrame){ .taint = taint_count, .start = __rdtsc(), .reports = report_count, .attributed = attributed };
+    return (TaintFrame){ .taint = taint_count, .start = cycle_counter(), .reports = report_count, .attributed = attributed };
 }
 
 static void sweep_full(void);
@@ -391,7 +390,7 @@ static void complete(unsigned kind, TaintFrame frame, u64 key, void const* subje
     }
     KindStats* s = &stats[kind];
     s->entries++;
-    u64 inclusive = __rdtsc() - frame.start;
+    u64 inclusive = cycle_counter() - frame.start;
     u64 inner = attributed - frame.attributed;
     u64 cycles = inclusive > inner ? inclusive - inner : 0;
     attributed += cycles;
@@ -621,7 +620,7 @@ static u64 first_tsc;
 
 void taint_checker_new(void* checker) {
     (void)checker;
-    if (!first_tsc) first_tsc = __rdtsc();
+    if (!first_tsc) first_tsc = cycle_counter();
     checker_serial++;
     map_clear(&ty_fps);
     map_clear(&tainted);
@@ -704,7 +703,7 @@ void taint_print(void) {
         }
     }
     eprintln("taint-checkers ", checker_serial);
-    fprintf(stderr, "taint-total %llu %llu\n", (unsigned long long)(__rdtsc() - first_tsc), (unsigned long long)attributed);
+    fprintf(stderr, "taint-total %llu %llu\n", (unsigned long long)(cycle_counter() - first_tsc), (unsigned long long)attributed);
 }
 
 #else

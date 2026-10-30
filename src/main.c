@@ -135,7 +135,7 @@ static long resident_mb() {
     long size = 0, resident = 0;
     if (fscanf(statm, "%ld %ld", &size, &resident) != 2) resident = 0;
     fclose(statm);
-    return resident * 4096 / (1024 * 1024);
+    return (long)((u64)resident * page_size() / (1024 * 1024));
 }
 
 // Reports the time since *last under the given name and resets *last. Reading and parsing can't be told apart, since
@@ -1908,7 +1908,8 @@ static int exit_reaper(void* arg) {
     syscall(SYS_close_range, 0, (unsigned)pidfd - 1, 0);
     syscall(SYS_close_range, (unsigned)pidfd + 1, ~0u, 0);
     struct pollfd wait = { .fd = pidfd, .events = POLLIN };
-    while (syscall(SYS_poll, &wait, 1, -1) < 0) {}
+    // (ppoll with no timeout and no mask: aarch64 has no poll syscall)
+    while (syscall(SYS_ppoll, &wait, 1, nullptr, nullptr, 0) < 0) {}
     syscall(SYS_exit, 0);
     return 0;
 }

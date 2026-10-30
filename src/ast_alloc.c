@@ -11,7 +11,8 @@
 // took. A dropped arena's whole pages go back to the system and its addresses are never handed out again.
 #define AST_SEGMENT ((size_t)1 << AST_SEGMENT_SHIFT)
 #define AST_SLAB ((size_t)64 << 20)
-#define AST_PAGE ((uintptr_t)4096)
+// (The kernel's page: madvise() and mprotect() round a length up to it, so rounding to less would drop a neighbour's bytes)
+#define AST_PAGE ((uintptr_t)page_size())
 #define AST_POPULATE ((size_t)2 << 20)
 #define AST_SMALL_PAGES ((size_t)4 << 20)
 #define AST_SMALL_STEP ((size_t)256 << 10)
@@ -19,7 +20,7 @@
 #define AST_FREE_MAX 1024
 static_assert(AST_FREE_MAX / 8 + 1 <= 3 * 64);
 
-uint8_t ast_segment_map[(size_t)1 << (47 - AST_SEGMENT_SHIFT)];
+uint8_t ast_segment_map[(size_t)1 << (USER_ADDRESS_BITS - AST_SEGMENT_SHIFT)];
 
 struct AstRange {
     char* start;
@@ -106,7 +107,7 @@ static char* take_slab(size_t size, char** end) {
 // A materialization slab's 2 MB chunks are given back whole, when the last materialization in one is dropped (made
 // for huge pages, which dropping part of splits; those were removed 2026-10-28, the chunk-wise give-back stays). Per
 // segment, a count per chunk: the materializations with a range in it, plus one while a thread's next materialization may start in it (AstThread.cursor_chunk)
-static _Atomic(u32)* _Atomic chunk_counts[(size_t)1 << (47 - AST_SEGMENT_SHIFT)];
+static _Atomic(u32)* _Atomic chunk_counts[(size_t)1 << (USER_ADDRESS_BITS - AST_SEGMENT_SHIFT)];
 
 static inline char* chunk_of(char const* p) {
     return (char*)((uintptr_t)p & ~(uintptr_t)(AST_POPULATE - 1));

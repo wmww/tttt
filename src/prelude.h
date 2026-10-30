@@ -78,6 +78,27 @@ static inline double wall_ms(void) {
     timespec_get(&now, TIME_UTC);
     return (double)now.tv_sec * 1e3 + (double)now.tv_nsec / 1e6;
 }
+// A cheap, monotonic per-core tick counter for debug instrumentation (TTTT_GRAPH_WORK, the taint prototype): the TSC
+// on x86-64 (core clock), the virtual counter on aarch64 (a fixed rate, CNTFRQ_EL0: often 1 GHz or less, so ticks are
+// not cycles there), wall nanoseconds elsewhere
+static inline u64 cycle_counter(void) {
+#if defined(__x86_64__) || defined(__i386__)
+    return __builtin_ia32_rdtsc();
+#elif defined(__aarch64__)
+    u64 ticks;
+    __asm__ volatile("mrs %0, cntvct_el0" : "=r"(ticks));
+    return ticks;
+#else
+    struct timespec now;
+    timespec_get(&now, TIME_UTC);
+    return (u64)now.tv_sec * 1000000000u + (u64)now.tv_nsec;
+#endif
+}
+// The kernel's page size (4 KB on x86-64; 4, 16 or 64 KB on aarch64 depending on the kernel), read once per process
+size_t page_size(void);
+static inline uintptr_t page_round_up(uintptr_t x) { return (x + page_size() - 1) & ~(uintptr_t)(page_size() - 1); }
+static inline uintptr_t page_round_down(uintptr_t x) { return x & ~(uintptr_t)(page_size() - 1); }
+
 // The process's resident set, bytes (/proc/self/statm; 0 if unreadable). A read of an fd kept open: cheap enough per file
 u64 process_resident_bytes(void);
 // The memory the system could give the process now, bytes: /proc/meminfo's MemAvailable, and when it runs in cgroups
