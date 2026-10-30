@@ -15,8 +15,6 @@ typedef union arc_js_object ArcObject;
 Program* program_new(ErrorCtx* errs, Fs const* fs);
 void program_destroy(Program* me);
 
-// The directory the standard library files (es5.d.ts & co.) are loaded from
-void program_set_lib_dir(Program* me, csview dir);
 // How the program's module resolution follows symlinks (see module_resolution.h), before loading anything
 void program_set_realpath(Program* me, cstr (*realpath)(void* ctx, csview path), void* ctx);
 // How big the file at path is, a guess (0 if unknown): with threads, the biggest files are parsed first

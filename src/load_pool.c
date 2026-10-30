@@ -6,6 +6,7 @@
 #endif
 #include "parser.h"
 #include "error.h"
+#include "embedded_libs.h"
 #include <pthread.h>
 #include <sys/resource.h>
 #include <sys/mman.h>
@@ -356,7 +357,11 @@ static bool load_pool_size_batch(LoadPool* me) {
     }
     pthread_mutex_unlock(&my lock);
     // (path and size are this batch's until it's in the heap: nobody else writes them)
-    for (isize i = 0; i < count; i++) batch[i]->size = my size(my size_ctx, cstr_sv(&batch[i]->path));
+    // (An embedded lib has no file to stat: its size is the binary's)
+    for (isize i = 0; i < count; i++) {
+        EmbeddedLib const* lib = embedded_lib_at(cstr_sv(&batch[i]->path));
+        batch[i]->size = lib ? (i64)lib->size : my size(my size_ctx, cstr_sv(&batch[i]->path));
+    }
     pthread_mutex_lock(&my lock);
     isize scheduled = 0;
     for (isize i = 0; i < count; i++) {

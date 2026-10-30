@@ -150,7 +150,8 @@ typedef struct SourceFile {
     cstr contents;
     // Whether contents holds "@link" anywhere: 0 not asked yet, 1 no, 2 yes (source_file_has_link_tag(), benign race: idempotent)
     uint8_t has_link_tag;
-    // Not 0: contents is a private read-only mapping of the file (source_text_map()), unmapped by source_file_drop()
+    // Not 0: contents is a private read-only mapping of the file (source_text_map()), unmapped by source_file_drop(), or
+    // SOURCE_TEXT_STATIC: text in the binary (an embedded lib), never dropped
     u32 text_mapping;
     // Offset of the first character of each line, for span_line_index(), made on the first use (source_file_lines()):
     // the count, then the offsets. Diagnostics are sorted and printed by line, counting newlines from the start of the
@@ -475,6 +476,10 @@ void source_file_drop(SourceFile* me);
 // (SourceFile.text_mapping), 0 (out untouched) if it can't be mapped or the mapping has no terminator after it
 u32 source_text_map(csview path, cstr* out);
 void source_text_unmap(u32 id);
+// The text_mapping of a text in the binary (an embedded lib, embedded_libs.h): nothing to unmap
+#define SOURCE_TEXT_STATIC UINT32_MAX
+// text (size bytes, then a zero) wrapped like a mapping: a cstr that must never be dropped or changed. SOURCE_TEXT_STATIC
+u32 source_text_static(char const* text, u32 size, cstr* out);
 // Drops every mapped text's pages from the process: they stay in the page cache, reading faults them back. When a
 // checker is recycled (what it read is mostly what it won't read again)
 void source_texts_release(void);

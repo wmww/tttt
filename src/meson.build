@@ -85,6 +85,17 @@ core_files = files(
     'ty/jsx.c',
 )
 
+# The standard library in the binary (embedded_libs.h): regenerated when a file of thirdparty/lib changes, or one is
+# added or removed (the depfile names the directory too)
+embedded_libs = custom_target(
+    'embedded_libs',
+    output: 'embedded_libs.c',
+    command: [find_program('python3'), files('embedded_libs.py'), meson.current_source_dir() / '..' / 'thirdparty' / 'lib',
+        '@OUTPUT@', '@DEPFILE@'],
+    depfile: 'embedded_libs.c.d',
+)
+core_files += embedded_libs
+
 main_files = core_files + files('main.c')
 
 test_files = core_files + files(

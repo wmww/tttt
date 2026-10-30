@@ -11,10 +11,6 @@ if get_option('buildtype').startswith('debug')
     add_project_arguments('-DINCLUDE_VALGRIND', language : 'c')
 endif
 
-# Where main.c's set_lib_dir() finds the standard library when the binary isn't in a build directory of the repo
-# (`meson setup /tmp/x`): the source tree's thirdparty/lib
-add_project_arguments('-DTTTT_SOURCE_LIB_DIR="' + meson.current_source_dir() / 'thirdparty' / 'lib' + '"', language : 'c')
-
 # clang (unlike GCC) warns about designated initializers that leave fields out under -Wextra, which -Werror makes
 # fatal in the vendored STC (csview.h's `{.buf = ...}` literals) and our own code alike: leaving fields to zero is C's
 # rule and this code's style
@@ -67,7 +63,8 @@ executable(
     baseline_test_files,
     include_directories: src_inc,
     dependencies: deps,
-    c_args: cleat_c_args + ['-DDEBUG_ALLOCATOR'],
+    # (The source tree: where the suite's content mapper launcher is, thirdparty/typescript/built)
+    c_args: cleat_c_args + ['-DDEBUG_ALLOCATOR', '-DTTTT_SOURCE_DIR="' + meson.current_source_dir() + '"'],
     link_args: link_args,
 )
 

@@ -1187,9 +1187,6 @@ static BaselineTestCase run_baseline_test_case_with(
     CompilerOptions const* options = program_options(program);
     if (options->lib_replacement) program_follow_lib_references(program);
     if ((!options->skip_default_lib_check && !options->skip_lib_check && !options->no_check) || options->lib_replacement) {
-        // (In the test's file system: a directory of its own that no test path names)
-        mount_test_lib_folder(&ret, c_sv("thirdparty/lib"), c_sv("/.tttt-default-lib"));
-        program_set_lib_dir(program, c_sv("/.tttt-default-lib"));
         for (csview rest = cstr_sv(&ret.lib_list); rest.size;) {
             isize end = csview_find_sv(rest, c_sv(","));
             csview single = csview_trim_whitespace(csview_slice(rest, 0, end));

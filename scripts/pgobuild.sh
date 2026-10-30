@@ -22,12 +22,13 @@ B=${PGO_DIR:-pgo}
 FORCE=
 test "${1:-}" != --force || FORCE=1
 
-# The stamp: every source the build reads, the compiler, the build files and this script (the training set)
+# The stamp: every source the build reads (the embedded libs too), the compiler, the build files and this script (the training set)
 CC=${CC:-gcc}
 CLANG=
 case "$($CC --version | head -1)" in *clang*) CLANG=1 ;; esac
 STAMP=$( { $CC --version | head -1
-           find src thirdparty/cleat -type f \( -name '*.c' -o -name '*.h' -o -name meson.build \) | LC_ALL=C sort | xargs cat
+           find src thirdparty/cleat thirdparty/lib -type f \( -name '*.c' -o -name '*.h' -o -name '*.d.ts' -o -name meson.build \
+               -o -name embedded_libs.py \) | LC_ALL=C sort | xargs cat
            cat meson.build thirdparty/meson.build "$0"; echo "${PGO_CFLAGS:-}|${PGO_LDFLAGS:-}"; } | sha256sum | cut -d' ' -f1)
 if test -z "$FORCE" && test -x $B/tttt && test "$(cat $B/.stamp 2>/dev/null)" = "$STAMP"; then
     echo $B/tttt

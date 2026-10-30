@@ -177,7 +177,7 @@ int main(int argc, const char** argv) {
     suite.get->dump_dir = dump_dir;
     // tsgo's suite serves its Go test mappers in process: tttt runs them as a process (plan 56, test/oracle)
     char const* launcher = getenv("TTTT_CONTENT_MAPPER_LAUNCHER");
-    content_mapper_set_launcher(launcher ? launcher : TTTT_SOURCE_LIB_DIR "/../typescript/built/tttt-test-mapper");
+    content_mapper_set_launcher(launcher ? launcher : TTTT_SOURCE_DIR "/thirdparty/typescript/built/tttt-test-mapper");
     cstr lib_dir = cstr_d(tests_dir, "/lib");
     baseline_test_lib_dir = cstr_sv(&lib_dir);
     baseline_test_suite_run(suite.get, summary_only, show_errs, show_syms, show_typs);

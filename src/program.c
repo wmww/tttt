@@ -30,6 +30,7 @@
 #include "project.h"
 #include "symbol_chain.h"
 #include "cached_fs.h"
+#include "embedded_libs.h"
 #include <time.h>
 #include <pthread.h>
 #include <setjmp.h>
@@ -57,9 +58,6 @@ typedef uint8_t PackageFlag; // Program.packages: whether a declaration file of 
 #define g_pro_key SvStr, svstr
 #define g_val PackageFlag, package_flag
 #include <cleat/generic/hmap.h>
-
-// Where the standard library is unless program_set_lib_dir() says otherwise (the repo root is the working directory)
-static const csview default_lib_dir = c_sv_const_init("thirdparty/lib");
 
 typedef enum {
     PROGRAM_PHASE_LOADING = 0, // Files may be loaded
@@ -105,7 +103,6 @@ typedef struct Program {
     ContentMapperHost* _Atomic content_mapper_host;
     bool loading_stdlib; // If we're loading standard library files instead of normal files
     bool follow_lib_references; // program_follow_lib_references()
-    cstr lib_dir; // cstr_null: default_lib_dir
     ErrorCtx* errs; // unowned
     Fs const* fs; // cached_fs's
     CachedFs* cached_fs;
@@ -412,7 +409,6 @@ static void program_drop(Program* me) {
     member_refs_clear(me);
     for (u32 i = 0; i < my reference_count; i++) module_resolver_destroy(my reference_resolvers[i]);
     free(my reference_resolvers);
-    cstr_drop(&my lib_dir);
     cstr_drop(&my cwd);
     compiler_options_drop(&my options);
     if (my config_source) {
@@ -678,10 +674,6 @@ void program_set_references(Program* me, ProjectRedirects const* redirects) {
         if (my realpath) module_resolver_set_realpath(resolver, my realpath, my realpath_ctx);
         my reference_resolvers[i] = resolver;
     }
-}
-
-void program_set_lib_dir(Program* me, csview dir) {
-    cstr_assign_sv(&my lib_dir, dir);
 }
 
 // The file a `/// <reference lib="NAME" />` loads (tsc's libMap: "esnext.bigint" is lib.es2020.bigint.d.ts)
@@ -1312,7 +1304,9 @@ static SourceFile* program_load_reference_path(
     Program* me, Span path_span, csview path, SourceDirectiveStatement* directive
 ) {
     check(span_valid(path_span));
-    csview dir = dirname_of(cstr_sv(&span_source(path_span)->canonical_path));
+    // (An embedded lib's references are in EMBEDDED_LIB_DIR: absolute, embedded_lib_at() finds them)
+    SourceFile const* from = span_source(path_span);
+    csview dir = dirname_of(cstr_sv(from->text_mapping == SOURCE_TEXT_STATIC ? &from->absolute_path : &from->canonical_path));
     // (A drive root `c:/` is rooted too: one of the current directory, see path_is_drive_rooted())
     bool rooted = (path.size && path.buf[0] == '/') || path_is_drive_rooted(path);
     cstr full = rooted ? cstr_from_sv(path) : cstr_d(dir, "/", path);
@@ -1321,7 +1315,11 @@ static SourceFile* program_load_reference_path(
     bool extension = path_has_extension(path);
     for (isize i = extension ? 0 : 1; i < (extension ? 1 : (isize)c_arraylen(extensions)) && !ret; i++) {
         cstr candidate = cstr_d(full, extensions[i]);
-        csview source = fs_is_reg_file(my fs, cstr_sv(&candidate)) ? cstr_sv(&candidate) : c_sv("");
+        cstr key_storage = cstr_null;
+        bool embedded = from->text_mapping == SOURCE_TEXT_STATIC &&
+            embedded_lib_at(program_key_view(me, cstr_sv(&candidate), &key_storage));
+        cstr_drop(&key_storage);
+        csview source = embedded || fs_is_reg_file(my fs, cstr_sv(&candidate)) ? cstr_sv(&candidate) : c_sv("");
         // A referenced project's source is its output; when it hasn't been built that's TS6305 (tsc's
         // getSourceFileFromReferenceWorker through processSourceFile)
         csview output = source.size ? program_output_of_source(me, source) : c_sv("");
@@ -1433,8 +1431,8 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
                     } else if (my loading_stdlib) {
                         program_load_reference_path(me, statement->source_directive->path_span, cstr_sv(&name), nullptr);
                     } else if (my follow_lib_references && !my options.no_lib) {
-                        cstr path = cstr_d(cstr_size(&my lib_dir) ? cstr_sv(&my lib_dir) : default_lib_dir, "/", name);
-                        if (fs_is_reg_file(my fs, cstr_sv(&path))) {
+                        cstr path = cstr_d(EMBEDDED_LIB_DIR "/", name);
+                        if (embedded_lib_at(cstr_sv(&path))) {
                             my loading_stdlib = true;
                             program_add_source_idempotent(me, cstr_sv(&path));
                             my loading_stdlib = false;
@@ -1671,7 +1669,20 @@ static SourceFile* program_make_source_canonical(Program const* me, csview canon
 // (key: program_key_view()'s)
 static SourceFile* program_make_source(Program const* me, csview key, bool is_stdlib, ErrorCtx* errs) {
     cstr storage = cstr_null;
-    SourceFile* ret = program_make_source_canonical(me, program_relative_view(me, key, &storage), is_stdlib, errs);
+    csview canonical = program_relative_view(me, key, &storage);
+    SourceFile* ret;
+    // (A lib in the binary: no file is read)
+    EmbeddedLib const* lib = embedded_lib_at(key);
+    if (lib) {
+        cstr contents;
+        u32 mapping = source_text_static(lib->text, lib->size, &contents);
+        ret = program_make_source_text(me, canonical, contents, nullptr, nullptr, is_stdlib, errs);
+        ret->text_mapping = mapping;
+    } else if (csview_starts_with(key, EMBEDDED_LIB_DIR "/")) {
+        ret = nullptr; // (No such lib: nothing is read from the filesystem there)
+    } else {
+        ret = program_make_source_canonical(me, canonical, is_stdlib, errs);
+    }
     cstr_drop(&storage);
     if (ret) cstr_assign_sv(&ret->absolute_path, key);
     return ret;
@@ -1938,7 +1949,7 @@ static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile* fil
                 cstr name = lib_reference_file_name(cstr_sv(&directive->path));
                 cstr replacement = program_lib_replacement(me, csview_slice(cstr_sv(&name), 0, cstr_size(&name) - 5));
                 cstr path = cstr_size(&replacement) ? cstr_clone(replacement) : file->is_stdlib ? cstr_d(dirname_of(containing), "/", name) :
-                    cstr_d(cstr_size(&my lib_dir) ? cstr_sv(&my lib_dir) : default_lib_dir, "/", name);
+                    cstr_d(EMBEDDED_LIB_DIR "/", name);
                 program_queue_path(me, &batch, cstr_sv(&path), !cstr_size(&replacement));
                 c_drop(cstr, &path, &replacement);
                 cstr_drop(&name);
@@ -2624,7 +2635,7 @@ failable program_load_stdlib(Program* me, csview name, returns SourceFile*) {
         return ok(source);
     }
     my loading_stdlib = true;
-    cstr path = cstr_d(cstr_size(&my lib_dir) ? cstr_sv(&my lib_dir) : default_lib_dir, "/", name, ".d.ts");
+    cstr path = cstr_d(EMBEDDED_LIB_DIR "/", name, ".d.ts");
     try (SourceFile* source, program_load(me, cstr_sv(&path), &source)) cleanup {
         my loading_stdlib = false;
         cstr_drop(&path);
@@ -2642,7 +2653,7 @@ void program_load_ahead_libs(Program* me, csview const* libs, isize lib_count) {
     for (isize i = 0; i < lib_count; i++) {
         cstr replacement = program_lib_replacement(me, libs[i]);
         cstr path = cstr_size(&replacement) ? cstr_clone(replacement) :
-            cstr_d(cstr_size(&my lib_dir) ? cstr_sv(&my lib_dir) : default_lib_dir, "/", libs[i], ".d.ts");
+            cstr_d(EMBEDDED_LIB_DIR "/", libs[i], ".d.ts");
         program_queue_path(me, &batch, cstr_sv(&path), !cstr_size(&replacement));
         c_drop(cstr, &path, &replacement);
     }

@@ -8,6 +8,7 @@
 #include "error.h"
 #include "string_helpers.h"
 #include "compiler_options.h"
+#include "embedded_libs.h"
 #include <cleat/filesystem.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -966,7 +967,36 @@ u32 source_text_map(csview path, cstr* out) {
     return id;
 }
 
+u32 source_text_static(char const* text, u32 size, cstr* out) {
+    cstr s = {0};
+    s.lon.data = (char*)text;
+    s.lon.size = size;
+    cstr_l_set_cap(&s, (isize)size);
+    check(cstr_is_long(&s) && (size_t)cstr_size(&s) == size && cstr_str(&s) == text && !text[size]);
+    *out = s;
+    return SOURCE_TEXT_STATIC;
+}
+
+EmbeddedLib const* embedded_lib_at(csview path) {
+    csview dir = c_sv(EMBEDDED_LIB_DIR "/");
+    if (path.size <= dir.size || memcmp(path.buf, dir.buf, (size_t)dir.size)) return nullptr;
+    csview name = csview_slice(path, dir.size, path.size);
+    u32 low = 0, high = embedded_lib_count;
+    while (low < high) {
+        u32 mid = low + (high - low) / 2;
+        EmbeddedLib const* lib = &embedded_libs[mid];
+        size_t size = strlen(lib->name);
+        int order = memcmp(lib->name, name.buf, size < (size_t)name.size ? size : (size_t)name.size);
+        if (!order) order = size < (size_t)name.size ? -1 : size > (size_t)name.size ? 1 : 0;
+        if (!order) return lib;
+        if (order < 0) low = mid + 1;
+        else high = mid;
+    }
+    return nullptr;
+}
+
 void source_text_unmap(u32 id) {
+    if (id == SOURCE_TEXT_STATIC) return;
     pthread_mutex_lock(&texts.lock);
     TextMapping* mapping = &texts.mappings[id - 1];
     // (A read text stays in its chunk)

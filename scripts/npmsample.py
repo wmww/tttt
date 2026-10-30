@@ -1051,8 +1051,8 @@ def normalize(text):
 def tttt_check(bench, threads=None):
     extra = ['--threads', str(threads)] if threads else []
     binary = tttt_run.frozen(TTTT)
-    # (The standard library: the source tree's thirdparty/lib, compiled into the binary)
-    argv = sb.sandbox_argv(ro=[REPO_OF(bench), binary, os.path.join(ROOT, 'thirdparty/lib')], cwd=os.path.dirname(bench))
+    # (The standard library is in the binary)
+    argv = sb.sandbox_argv(ro=[REPO_OF(bench), binary], cwd=os.path.dirname(bench))
     r = tttt_run.run([*argv, binary, '-p', os.path.basename(bench), '--noEmit', '--pretty', 'false', *extra],
                      None, timeout=900, mem_gb=16, threads=threads, env=sb.clean_env(), stderr=subprocess.PIPE)
     return re.sub(r'\x1b\[[0-9;]*m', '', r.text()), r.code, r.status
