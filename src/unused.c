@@ -435,7 +435,9 @@ static bool is_identifier_start_char(char c) {
 
 bool unused_file_has_link_tag(SourceFile const* file) {
     SourceFile* f = (SourceFile*)file;
-    if (!f->has_link_tag) {
+    // (Checkers ask concurrently: a relaxed atomic byte, every writer storing the same answer)
+    uint8_t known = __atomic_load_n(&f->has_link_tag, __ATOMIC_RELAXED);
+    if (!known) {
         // (memchr for the '@' at vector speed, then compare: far fewer instructions than strstr over a megabyte of text)
         char const* text = cstr_str(&f->contents);
         char const* end = text + cstr_size(&f->contents);
@@ -443,9 +445,10 @@ bool unused_file_has_link_tag(SourceFile const* file) {
         for (char const* at = text; (at = memchr(at, '@', end - at)); at++) {
             if (end - at >= 5 && !memcmp(at, "@link", 5)) { found = 2; break; }
         }
-        f->has_link_tag = found;
+        __atomic_store_n(&f->has_link_tag, found, __ATOMIC_RELAXED);
+        known = found;
     }
-    return f->has_link_tag == 2;
+    return known == 2;
 }
 
 // The links of one JSDoc comment that tsc's checkJSDocComments resolves: those in the main text and in the comments of

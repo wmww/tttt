@@ -420,25 +420,31 @@ static u32 force_poison_at_len;
 // TTTT_GRAPH_FORCE_POISON_RANGE=LO:HI: only the candidates numbered LO..HI-1 (a count over all workers: deterministic
 // under TTTT_GRAPH_SEED, so a divergence bisects to one forced event); TTTT_GRAPH_FORCE_POISON_TRACE=1 prints each
 // forced event's number, worker, word and the site that finished it
+// (Read once under pthread_once and published with a release store: the first callers raced on the settings, and a
+// relaxed store let another thread see the knob on before its range or list, TSan on arm64)
+static pthread_once_t force_poison_once = PTHREAD_ONCE_INIT;
+static void force_poison_init(void) {
+    char const* env = getenv("TTTT_GRAPH_FORCE_POISON");
+    char const* range = getenv("TTTT_GRAPH_FORCE_POISON_RANGE");
+    if (range) {
+        force_poison_lo = strtoull(range, nullptr, 10);
+        char const* colon = strchr(range, ':');
+        if (colon && colon[1]) force_poison_hi = strtoull(colon + 1, nullptr, 10);
+    }
+    force_poison_trace = getenv("TTTT_GRAPH_FORCE_POISON_TRACE") != nullptr;
+    // (TTTT_GRAPH_FORCE_POISON_AT=A,B,...: exactly those candidates, ascending)
+    for (char const* at = getenv("TTTT_GRAPH_FORCE_POISON_AT"); at && *at && force_poison_at_len < (1u << 16);) {
+        char* end;
+        force_poison_at[force_poison_at_len++] = strtoull(at, &end, 10);
+        at = *end ? end + 1 : end;
+    }
+    __atomic_store_n(&force_poison, env ? atoi(env) : 0, __ATOMIC_RELEASE);
+}
 [[gnu::cold]] static bool force_poison_now(void) {
-    int every = __atomic_load_n(&force_poison, __ATOMIC_RELAXED);
+    int every = __atomic_load_n(&force_poison, __ATOMIC_ACQUIRE);
     if (every < 0) {
-        char const* env = getenv("TTTT_GRAPH_FORCE_POISON");
-        char const* range = getenv("TTTT_GRAPH_FORCE_POISON_RANGE");
-        if (range) {
-            force_poison_lo = strtoull(range, nullptr, 10);
-            char const* colon = strchr(range, ':');
-            if (colon && colon[1]) force_poison_hi = strtoull(colon + 1, nullptr, 10);
-        }
-        force_poison_trace = getenv("TTTT_GRAPH_FORCE_POISON_TRACE") != nullptr;
-        // (TTTT_GRAPH_FORCE_POISON_AT=A,B,...: exactly those candidates, ascending)
-        for (char const* at = getenv("TTTT_GRAPH_FORCE_POISON_AT"); at && *at && force_poison_at_len < (1u << 16);) {
-            char* end;
-            force_poison_at[force_poison_at_len++] = strtoull(at, &end, 10);
-            at = *end ? end + 1 : end;
-        }
-        every = env ? atoi(env) : 0;
-        __atomic_store_n(&force_poison, every, __ATOMIC_RELAXED);
+        pthread_once(&force_poison_once, force_poison_init);
+        every = __atomic_load_n(&force_poison, __ATOMIC_ACQUIRE);
     }
     if (every <= 0) return false;
     u64 n = atomic_fetch_add_explicit(&force_poison_count, 1, memory_order_relaxed);
