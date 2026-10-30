@@ -895,6 +895,12 @@ static bool is_semantic_code(unsigned code) {
 // tsc's parseErrorAtPosition: an error that starts where the previous one does is dropped (the first error at a
 // position is the one that explains it; whatever recovery reports there next is noise). An error at a character no
 // token starts with is TS1127, which tsc's scanner reports before the parser gets to say anything there
+// A legacy octal literal's value as TS1121's message prints it: tsc's strconv.ParseInt(digits, 8, 64), which saturates
+// at INT64_MAX (a cast of a larger double is undefined: 0 on x86-64, UINT64_MAX on arm64)
+static unsigned long long octal_message_value(double value) {
+    return value >= 0x1p63 ? (unsigned long long)INT64_MAX : (unsigned long long)value;
+}
+
 static Error* parse_error_inner(Parser* me, Span span, unsigned ts_code, cstr message, bool in_literal) {
     my shared->errors_attempted++;
     // (Any attempt, a deduplicated one too: tsgo's parseErrorAtRange sets hasParseError either way)
@@ -932,7 +938,7 @@ static Error* parse_error_inner(Parser* me, Span span, unsigned ts_code, cstr me
             while (prev > source_start && is_js_ascii_space(prev[-1])) prev--;
             bool minus = prev > source_start && prev[-1] == '-' && !(prev - 1 > source_start && prev[-2] == '-');
             char octal_text[64];
-            snprintf(octal_text, sizeof(octal_text), "%s0o%llo", minus ? "-" : "", (unsigned long long)value);
+            snprintf(octal_text, sizeof(octal_text), "%s0o%llo", minus ? "-" : "", octal_message_value(value));
             cstr_drop(&message);
             return parse_error_inner(me, span_make(my shared->source, minus ? prev - 1 : at, d), 1121,
                 cstr_d("Octal literals are not allowed. Use the syntax '", octal_text, "'."), false);
@@ -11426,7 +11432,7 @@ static bool scan_numeric_literal(Parser* parent, double* ret, bool* bigint) {
             cstr_drop(&digits);
             bool minus = start > cstr_str(&parent->shared->source->contents) && start[-1] == '-';
             char octal_text[64];
-            snprintf(octal_text, sizeof(octal_text), "%s0o%llo", minus ? "-" : "", (unsigned long long)value);
+            snprintf(octal_text, sizeof(octal_text), "%s0o%llo", minus ? "-" : "", octal_message_value(value));
             Span span = span_make(parent->shared->source, minus ? start - 1 : start, d);
             parse_error(parent, span, 1121, "Octal literals are not allowed. Use the syntax '", octal_text, "'.");
             return true;
