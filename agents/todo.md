@@ -45,9 +45,10 @@ wins first; land fast and gate in batches.
   checker never has a graph). The default-on gate and the forced-taint oracles found five publication leaks this week,
   all fixed by mechanism (308bfacae, 9990e5259, e598f8660, fea36a257, 1e1801c88) plus one forced-knob artifact
   (4b87954cb); the rule now reads "a record's values may be private, the identities it mints never are"
-  (notes/shared_graph.md). quickgate -k runs sgcheck and `--force-poison 30`. Worker `fwc` builds the forbidden-write
-  check (a publish-time ownership walk in the GRAPH_CHECKS build, race3's design) so an identity leak fails on first
-  sight; then the OWN machinery (KEY_SIGNATURE_INSTANCE_OWN, sig_res_is_own) comes out if the oracles stay at zero. The
+  (notes/shared_graph.md). quickgate -k runs sgcheck and `--force-poison 30`. **Soundness by construction is
+  next** (notes/shared_graph.md "Soundness status": no observed unsoundness, two rules unchecked, ~3-5 agent-days):
+  the forbidden-write check (worker fwc was planned, nothing landed), a fieldcensus gate on writes to shared structs,
+  TSan in oracles.py; then the OWN machinery (KEY_SIGNATURE_INSTANCE_OWN, sig_res_is_own) comes out if they stay quiet. The
   natural dokploy K16 rr difference (seen once) stays [open] with the signature clones as its likely mechanism.
 - **Perf, safe wins only (the human, 2026-10-31)**: no threading redesign, no big trade-offs; moderate refactors for a
   purpose are fine. Done: tail (the one-file .d.ts shape -13%), fe3 (front-end instructions -5..-22% at T1), fe4 (the

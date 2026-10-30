@@ -8,6 +8,30 @@ and option-grade 2026-10-29 (walk order, variance frames). The full design log (
 lazily written fields, bun's design read from its source) is git history:
 `git show af936072c:agents/plans/86_multiples.md` and `git show af936072c:agents/plans/86_stage4_census.md`.
 
+## Soundness status (2026-10-30, main 3a12cea74): no observed unsoundness, two rules unchecked
+- **Observed**: nothing. sgcheck on arm64 (61 projects, 1464 runs at K up to 32) 0 differ from plain K1; TSan clean on
+  the corpora at T4/T16/T32 (x86 and arm64, after c640edf82/4cfa18295); `--force-poison 30` in quickgate -k. The one
+  natural difference ever seen (dokploy K16 rr, bugs/shared_graph.md, `[open]`) never reproduced and is probably the
+  signature-clones leak 54bdd0378 closed.
+- **Not checked mechanically**: determinism rests on two rules kept by discipline. (1) No private object is reachable
+  from a published value ("a record's values may be private, the identities it mints never are", above); the
+  forbidden-write check below would enforce it and was never built (worker fwc was planned, nothing landed). Its
+  first suspects, by reading, are unconfirmed (a real leak no schedule hit yet, or scratch-only and harmless):
+  KEY_MAPPED_KEY_PARAM's per-worker stand-in, unique_type_params()' renamed parameters reaching a published inferred
+  return, and private Members' instance props held by owner-keyed memos (KEY_ARRAY_THIS_PROPS,
+  KEY_THISLESS_SIGNATURES). (2) Every read of per-worker state is a taint event, and every field written after
+  publication on a shared struct is a SharedWord: each converted site so far exposed a kind of private state the
+  counter couldn't see, and a new plain lazy field is a race only TSan or the run tables find when exercised.
+- **To make it sound by construction (~3-5 agent-days)**: build the forbidden-write check (below, ~1.5 days) and
+  triage its first reports (fix, or allowlist with a reason); turn rule (2) into a gate (scripts/fieldcensus.py
+  already lists every field write by function from clang's AST: fail on a write to a shared struct's field outside
+  creation that isn't a SharedWord, ~1 day); run TSan on a few corpora at high T in oracles.py (today ad hoc); then
+  drop the OWN machinery (KEY_SIGNATURE_INSTANCE_OWN, sig_res_is_own()) if the checks stay quiet; keep dokploy in the
+  census and try it forced under the new check.
+- **Perf**: the checks cost nothing in the shipped binary (GRAPH_CHECKS and TSan builds, a static gate); only gate
+  time. A suspect that proves real is fixed the usual way (hash-consed identity, or no caching over a private
+  resolution), which measured in the noise for 54bdd0378 and the five leak fixes; dropping OWN may win a little back.
+
 ## Why it was built
 At the defaults on 12 cores each checker re-derives the instantiations of the project's own generics (vscode ~1.2x
 duplicated work; drizzle 1.4x serialized, 4x per-file time at K12), and recycling adds 5-8%. A shared declared layer
