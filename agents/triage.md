@@ -281,4 +281,5 @@ intersection's property symbol to bugs/type_core.md.
 - **`baseline_tests --checkers 4 --threads 4` segfaults in load_pool_run()** (2026-10-30, main at 4cfa18295 too, Linux
   and Windows): `baseline_tests --checkers 4 --threads 4 -f 'bun01.*'` crashes in 1-3 runs of 3 (gdb: load_pool_run()
   from load_pool_worker()), on the bun01 own tests early in a full run. `--checkers 4` on one thread is fine (its dump is
-  byte-identical to K1's). Found while checking the Windows port; not investigated [open]
+  byte-identical to K1's). Found while checking the Windows port. The harness's debug allocator returned 8-byte-aligned
+  blocks to an aligned vector load (the arm64 port's fix): 6 runs of 6 pass at 85518fb6c [fixed 8bffcc7a9]
