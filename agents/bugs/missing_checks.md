@@ -6,6 +6,13 @@ here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in 
 `type_core.md`). To see what tsgo does inside a check, instrument it: `agents/notes/instrumenting_tsgo.md`. Entries naming a mutant (`mutNNNN`, "X delete-stmt") describe a mutation of a test that itself passes (pruned again 2026-10-16 by probes and hand-made mutants).
 
 ## Known missing checks
+- **tsconfig file specifications aren't validated: TS5065, TS5010, TS5061** (tsgo's validateSpecs in tsoptions:
+  `..` after `**`, a spec ending in `**`, more than one `*` in a paths pattern). An invalid `include`/`exclude` spec is
+  reported and dropped by tsgo; tttt keeps it and matches files with it. Since the Windows merge (e205003ec, the
+  backslash normalization tsgo does too) a backslash spec like bun37-C4b's `"**\\..\\x"` becomes `**/../x` and
+  includes `sub/x/x.ts`, which tsgo drops with TS5065: bun37-C4b lost its symbols and types components (its errors
+  already failed on the missing TS5065). The forward-slash spelling always behaved so. Cases: bun37-C4b (TS5065),
+  37-C16 and 37-C4a (TS5010), 30-C5a (TS5061). Shipped in v3 as is (the human's call, 2026-10-30) [open]
 - **JS**: TS2565 for a property declared by a JS expression statement (`/** @type {F} */ C.prototype.m;`) read in the
   same flow container (tsc's getFlowTypeOfAccessExpression with assumeUninitialized); TS7032 for a setter whose type
   comes from `@type` (probe plan19/webpack/jsdoc_accessor_type.ts). [open]

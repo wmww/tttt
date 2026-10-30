@@ -7232,8 +7232,8 @@ const baselines = {
     },
     'bun37-C4b': {
         errors: false,
-        symbols: true,
-        types: true,
+        symbols: false,
+        types: false,
     },
     'bun37-C4c': {
         errors: false,

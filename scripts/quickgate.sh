@@ -50,14 +50,18 @@ if ! ninja -C release > "$LOG/build.txt" 2>&1; then
     exit 1
 fi
 thirdparty/ensure-typescript.sh > /dev/null || { echo "FAIL  thirdparty/ensure-typescript.sh"; exit 1; }
-SUITE_ARGS=(--summary)
+RES=test/baseline_results.ts
 if test -n "$VSMAIN"; then
     # (Builds BASE's tree out of tree if needed, ~40 s, then its suite once, ~20 s; cached)
     if ! RES=$(scripts/abbuild.sh "$BASE" --suite-results 2> "$LOG/abbuild.txt"); then
         tail -5 "$LOG/abbuild.txt"; echo "FAIL  abbuild.sh $BASE --suite-results (log: $LOG/abbuild.txt)"; exit 1
     fi
-    SUITE_ARGS+=(--results-path "$RES")
 fi
+# (The suite saves into a copy of the reference, so lost components are counted too: a test that already failed one
+# component and loses another isn't "newly failing", bun37-C4b's SYM/TYP lost to the Windows merge passed the gate)
+cp "$RES" "$LOG/suite-ref.ts"
+cp "$RES" "$LOG/suite-results.ts"
+SUITE_ARGS=(--summary --save --results-path "$LOG/suite-results.ts")
 N=(nice -n 10)
 
 NAMES=()
@@ -106,7 +110,19 @@ for n in "${NAMES[@]}"; do
         suite)
             d=$(plain suite | grep -oE '[0-9]+ new passed, [0-9]+ new failed' | tail -1)
             lost=$(echo "$d" | grep -oE '[0-9]+ new failed' | grep -oE '^[0-9]+')
-            if test -z "$d" && test "$rc" = 0 && plain suite | grep -qE '^ *[0-9]+ passed, [0-9]+ failed, [0-9]+ total'; then
+            comps=$(python3 - "$LOG/suite-ref.ts" "$LOG/suite-results.ts" <<'PY'
+import re, sys
+def load(p):
+    return {m.group(1): dict(re.findall(r'(\w+): (true|false)', m.group(2)))
+            for m in re.finditer(r"^    '([^']+)': \{\n((?:        .*\n)*?)    \}", open(p).read(), re.M)}
+ref, new = load(sys.argv[1]), load(sys.argv[2])
+lost = [f'{t}:{c}' for t, cs in ref.items() for c, v in cs.items() if v == 'true' and new.get(t, {}).get(c) == 'false']
+print(len(lost), ' '.join(lost[:8]))
+PY
+)
+            nlost=${comps%% *}
+            if test "${nlost:-0}" != 0; then verdict suite FAIL "$nlost components lost: ${comps#* }"
+            elif test -z "$d" && test "$rc" = 0 && plain suite | grep -qE '^ *[0-9]+ passed, [0-9]+ failed, [0-9]+ total'; then
                 verdict suite PASS "no test changed"
             elif test "$lost" = 0; then verdict suite PASS "$d"
             else verdict suite FAIL "${d:-no summary (exit $rc)}"; fi ;;
