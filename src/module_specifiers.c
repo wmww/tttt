@@ -77,7 +77,7 @@ static void add_dir(SymlinkCache* me, csview link, csview real) {
         my cap = my cap ? my cap * 2 : 16;
         my dirs = realloc(my dirs, my cap * sizeof(*my dirs));
     }
-    cstr real_dir = real.size > 1 ? cstr_d(real, "/") : cstr_from("/");
+    cstr real_dir = !path_ends_with_slash(real) ? cstr_d(real, "/") : cstr_from_sv(real);
     my dirs[my count++] = (SymlinkDir){ .real = real_dir, .link = cstr_from_sv(link) };
 }
 
@@ -176,7 +176,7 @@ static bool path_is_relative(csview path) {
 
 // A path relative to another, either both absolute or both relative (tsc's getRelativePathFromDirectory)
 static cstr relative_from(csview dir, csview to) {
-    if (dir.size && dir.buf[0] == '/') return relative_path_of(dir, to);
+    if (path_is_rooted(dir)) return relative_path_of(dir, to);
     cstr a = cstr_d("/", dir), b = cstr_d("/", to);
     cstr ret = relative_path_of(cstr_sv(&a), cstr_sv(&b));
     c_drop(cstr, &a, &b);
@@ -186,7 +186,7 @@ static cstr relative_from(csview dir, csview to) {
 // tsc's ensurePathIsNonModuleName
 static cstr non_module_name(cstr path) {
     csview p = cstr_sv(&path);
-    if ((p.size && p.buf[0] == '/') || path_is_relative(p)) return path;
+    if (path_is_rooted(p) || path_is_relative(p)) return path;
     cstr ret = cstr_d("./", p);
     cstr_drop(&path);
     return ret;
@@ -195,7 +195,7 @@ static cstr non_module_name(cstr path) {
 // tsc's normalizePath: `.` and `..` resolved, a relative path stays relative, its leading `..`s kept (`../../core/src`,
 // a `paths` pattern relative to its config: they used to be dropped, so no such pattern ever matched)
 static cstr normalize(csview path) {
-    if (path.size && path.buf[0] == '/') return absolute_path_of(c_sv("/"), path);
+    if (path_is_rooted(path)) return absolute_path_of(c_sv("/"), path);
     isize ups = 0;
     while (path.size >= 2 && path.buf[0] == '.' && path.buf[1] == '.' && (path.size == 2 || path.buf[2] == '/')) {
         ups++;
@@ -220,7 +220,7 @@ static cstr normalize(csview path) {
 }
 
 static cstr combine(csview a, csview b) {
-    if (b.size && b.buf[0] == '/') return cstr_from_sv(b);
+    if (path_is_rooted(b)) return cstr_from_sv(b);
     if (!a.size) return cstr_from_sv(b);
     return a.buf[a.size - 1] == '/' ? cstr_d(a, b) : cstr_d(a, "/", b);
 }
@@ -1155,7 +1155,7 @@ static ModulePaths all_module_paths(Generator* me) {
     // forEachFileNameOfModule with preferSymlinks
     if (r->symlinks) {
         for (csview dir = parent_dir(target);;) {
-            cstr key = dir.size > 1 ? cstr_d(dir, "/") : cstr_from("/");
+            cstr key = !path_ends_with_slash(dir) ? cstr_d(dir, "/") : cstr_from_sv(dir);
             StrList links = links_of(r->symlinks, cstr_sv(&key));
             cstr_drop(&key);
             if (links.count) {
@@ -1192,7 +1192,7 @@ static ModulePaths all_module_paths(Generator* me) {
     csview dir = my source_dir;
     u32 left = found.len;
     while (left) {
-        cstr start = dir.size > 1 ? cstr_d(dir, "/") : cstr_from("/");
+        cstr start = !path_ends_with_slash(dir) ? cstr_d(dir, "/") : cstr_from_sv(dir);
         u32 first = sorted.len;
         for (u32 i = 0; i < found.len; i++) {
             if (taken[i] || !starts_with(cstr_sv(&found.items[i].path), cstr_sv(&start))) continue;
@@ -1279,7 +1279,7 @@ cstr module_specifier_generate(SpecifierRequest const* request) {
             continue;
         }
         csview l = cstr_sv(&local);
-        bool bare = !(l.size && l.buf[0] == '/') && !path_is_relative(l);
+        bool bare = !path_is_rooted(l) && !path_is_relative(l);
         if (is_redirect) {
             if (!cstr_size(&redirect_mapped)) cstr_take(&redirect_mapped, cstr_clone(local));
         } else if (bare && !path_contains_node_modules(l)) {

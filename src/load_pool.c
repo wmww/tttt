@@ -159,6 +159,17 @@ size_t worker_stack_size(void) {
     return stack;
 }
 
+#ifdef _WIN32
+// Windows: a thread's stack is the system's, reserved at the size the executable asks (meson.build's --stack: 256 MB,
+// committed as it grows); a stack of ours can't be handed over (winpthreads would take its size as memory to commit)
+int worker_thread_create(pthread_t* thread, void* (*fn)(void*), void* arg) {
+    return pthread_create(thread, nullptr, fn, arg);
+}
+
+void worker_thread_join(pthread_t thread) {
+    pthread_join(thread, nullptr);
+}
+#else
 // (A guard page below each stack, as glibc's own)
 enum { STACK_GUARD = 64 << 10 };
 static struct {
@@ -229,6 +240,7 @@ void worker_thread_join(pthread_t thread) {
     stacks.free[stacks.free_count++] = stack;
     pthread_mutex_unlock(&stacks.lock);
 }
+#endif
 
 // Unsized paths a worker stats at once
 enum { SIZE_BATCH = 32 };

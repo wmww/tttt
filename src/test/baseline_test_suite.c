@@ -452,6 +452,11 @@ static_failable load_saved_results(BaselineTestSuite* me, csview results_path) {
 }
 
 static cstr get_git_hash_of_repo(csview repo_path) {
+#ifdef _WIN32
+    // (No subprocesses there, cleat's run_subproc(): the commit is unknown)
+    ignore repo_path;
+    return cstr_null;
+#else
     fs_path_from_csview(repo_str, repo_path, {
         panic("Invalid repo path ", repo_path);
     });
@@ -471,6 +476,7 @@ static cstr get_git_hash_of_repo(csview repo_path) {
         cstr_drop(&out_str);
         return cstr_null;
     }
+#endif
 }
 
 // cregex reports compile failures as a negative code in the `error` field, which on its own tells the user nothing

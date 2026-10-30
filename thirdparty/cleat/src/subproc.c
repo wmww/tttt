@@ -6,7 +6,9 @@
 #include <limits.h>
 #include <stc/cstr.h>
 #include <sys/types.h>
+#ifndef _WIN32
 #include <sys/wait.h>
+#endif
 
 #include "subproc.h"
 #include "string_helpers.h"
@@ -59,6 +61,24 @@ DisplayCtx subproc_cmd_display(const char** cmd, size_t size, DisplayCtx d) {
     return d;
 }
 
+#ifdef _WIN32
+// (Windows: no fork(); subprocesses aren't supported)
+failable fork_subproc(bool capture_stdout, bool capture_stderr, returns ForkSubprocRet) {
+    ignore capture_stdout;
+    ignore capture_stderr;
+    return err(string_error_new(cstr_lit("fork_subproc: not supported on Windows")));
+}
+
+failable subproc_wait(ForkSubprocRet subproc, cstr* stdout_target, cstr* stderr_target, int* exit_code_target, int* exit_signal_target) {
+    ignore subproc; ignore stdout_target; ignore stderr_target; ignore exit_code_target; ignore exit_signal_target;
+    return err(string_error_new(cstr_lit("subproc_wait: not supported on Windows")));
+}
+
+failable run_subproc(SubprocArgs args) {
+    ignore args;
+    return err(string_error_new(cstr_lit("run_subproc: not supported on Windows")));
+}
+#else
 failable fork_subproc(bool capture_stdout, bool capture_stderr, returns ForkSubprocRet) {
     int out_pipe_fd[2] = {-1, -1};
     int err_pipe_fd[2] = {-1, -1};
@@ -246,3 +266,4 @@ finish:
     cstr_drop(&stdout_tmp);
     return result;
 }
+#endif

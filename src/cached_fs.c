@@ -1,10 +1,14 @@
 // readdir()'s d_type and PATH_MAX, which strict -std=c2x hides
 #define _DEFAULT_SOURCE
 #include "cached_fs.h"
+#include "string_helpers.h"
 #include <dirent.h>
 #include <fcntl.h>
 #include <stdalign.h>
-#ifndef __APPLE__
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#elif !defined __APPLE__
 #include <sys/syscall.h>
 #endif
 #include <unistd.h>
@@ -105,6 +109,42 @@ static u32 name_hash(char const* name, isize size) {
     return (u32)(h >> 32);
 }
 
+// A listing's names: as they are, and on Windows (case-insensitive file systems) folded to ASCII lower case, so that a
+// probe finds the entry whatever the case it's asked in. A miss of a name with non-ASCII bytes isn't an answer there
+// (NTFS folds those too): listing_kind() says to stat it
+#ifdef _WIN32
+#define LISTING_FOLDS 1
+#else
+#define LISTING_FOLDS 0
+#endif
+static u32 listing_hash(char const* name, isize size) {
+    if (!LISTING_FOLDS) return name_hash(name, size);
+    char folded[16];
+    isize first = size < 8 ? size : 8;
+    for (isize i = 0; i < first; i++) folded[i] = name[i] >= 'A' && name[i] <= 'Z' ? name[i] | 0x20 : name[i];
+    if (size > 8) {
+        for (isize i = 0; i < 8; i++) {
+            char c = name[size - 8 + i];
+            folded[8 + i] = c >= 'A' && c <= 'Z' ? c | 0x20 : c;
+        }
+    }
+    uint64_t a = 0, b = 0;
+    memcpy(&a, folded, (size_t)first);
+    if (size > 8) memcpy(&b, folded + 8, 8);
+    uint64_t h = (a ^ (b * 0x9E3779B97F4A7C15u) ^ (uint64_t)size) * 0xFF51AFD7ED558CCDu;
+    return (u32)(h >> 32);
+}
+
+static bool listing_name_equals(char const* a, char const* b, isize size) {
+    if (!LISTING_FOLDS) return !memcmp(a, b, (size_t)size);
+    for (isize i = 0; i < size; i++) {
+        char x = a[i] >= 'A' && a[i] <= 'Z' ? a[i] | 0x20 : a[i];
+        char y = b[i] >= 'A' && b[i] <= 'Z' ? b[i] | 0x20 : b[i];
+        if (x != y) return false;
+    }
+    return true;
+}
+
 static Shard* shard_of(CachedFs* me, csview path) {
     return &my shards[name_hash(path.buf, path.size) % SHARD_COUNT];
 }
@@ -143,6 +183,65 @@ static void listing_add(DirListing* ret, isize* names_size, isize* names_cap, is
     *names_size += size;
 }
 
+// The slots of a listing read
+static void listing_index(DirListing* ret) {
+    u32 slots = 16;
+    while (slots < ret->count * 2) slots *= 2;
+    ret->mask = slots - 1;
+    ret->slots = calloc(slots, sizeof(u32));
+    panic_if(!ret->slots, "out of memory");
+    for (u32 i = 0; i < ret->count; i++) {
+        u32 at = listing_hash(ret->names + ret->entries[i].name, ret->entries[i].size) & ret->mask;
+        while (ret->slots[at]) at = (at + 1) & ret->mask;
+        ret->slots[at] = i + 1;
+    }
+}
+
+#ifdef _WIN32
+static DirListing* list_directory(char const* dir) {
+    DirListing* ret = c_new(DirListing, {0});
+    // (FindFirstFileExW: the names with their attributes in one pass, as getdents64 gives d_type)
+    wchar_t pattern[PATH_MAX + 3];
+    int n = MultiByteToWideChar(CP_UTF8, 0, dir, -1, pattern, PATH_MAX);
+    if (n <= 0) return ret;
+    n--;
+    if (n && pattern[n - 1] != L'/') pattern[n++] = L'/';
+    pattern[n++] = L'*';
+    pattern[n] = 0;
+    WIN32_FIND_DATAW found;
+    HANDLE find = FindFirstFileExW(pattern, FindExInfoBasic, &found, FindExSearchNameMatch, nullptr, FIND_FIRST_EX_LARGE_FETCH);
+    if (find == INVALID_HANDLE_VALUE) {
+        DWORD error = GetLastError();
+        ret->usable = error == ERROR_FILE_NOT_FOUND || error == ERROR_PATH_NOT_FOUND || error == ERROR_DIRECTORY;
+        return ret;
+    }
+    isize names_size = 0, names_cap = 1024, cap = 16;
+    ret->names = malloc((size_t)names_cap);
+    ret->entries = malloc(sizeof(DirEntry) * (size_t)cap);
+    panic_if(!ret->names || !ret->entries, "out of memory");
+    bool failed = false;
+    do {
+        if (ret->count >= LISTING_MAX_ENTRIES) {
+            failed = true;
+            break;
+        }
+        char name[4 * MAX_PATH];
+        if (WideCharToMultiByte(CP_UTF8, 0, found.cFileName, -1, name, sizeof name, nullptr, nullptr) <= 0) {
+            failed = true;
+            break;
+        }
+        DWORD attributes = found.dwFileAttributes;
+        unsigned char type = attributes & FILE_ATTRIBUTE_REPARSE_POINT ? DT_UNKNOWN
+            : attributes & FILE_ATTRIBUTE_DIRECTORY ? DT_DIR : DT_REG;
+        listing_add(ret, &names_size, &names_cap, &cap, name, type);
+    } while (FindNextFileW(find, &found));
+    if (!failed && GetLastError() != ERROR_NO_MORE_FILES) failed = true;
+    FindClose(find);
+    listing_index(ret);
+    ret->usable = !failed;
+    return ret;
+}
+#else
 static DirListing* list_directory(char const* dir) {
     DirListing* ret = c_new(DirListing, {0});
     // (getdents64() itself: opendir() fstat()s too)
@@ -193,26 +292,23 @@ static DirListing* list_directory(char const* dir) {
     }
     close(fd);
 #endif
-    u32 slots = 16;
-    while (slots < ret->count * 2) slots *= 2;
-    ret->mask = slots - 1;
-    ret->slots = calloc(slots, sizeof(u32));
-    panic_if(!ret->slots, "out of memory");
-    for (u32 i = 0; i < ret->count; i++) {
-        u32 at = name_hash(ret->names + ret->entries[i].name, ret->entries[i].size) & ret->mask;
-        while (ret->slots[at]) at = (at + 1) & ret->mask;
-        ret->slots[at] = i + 1;
-    }
+    listing_index(ret);
     ret->usable = !failed;
     return ret;
 }
+#endif
 
 // 0 if name isn't in the directory
 static uint8_t listing_kind(DirListing const* me, csview name) {
     if (!my count) return 0;
-    for (u32 at = name_hash(name.buf, name.size) & my mask; my slots[at]; at = (at + 1) & my mask) {
+    for (u32 at = listing_hash(name.buf, name.size) & my mask; my slots[at]; at = (at + 1) & my mask) {
         DirEntry const* e = &my entries[my slots[at] - 1];
-        if (e->size == name.size && !memcmp(my names + e->name, name.buf, (size_t)name.size)) return e->kind;
+        if (e->size == name.size && listing_name_equals(my names + e->name, name.buf, name.size)) return e->kind;
+    }
+    if (LISTING_FOLDS) {
+        for (isize i = 0; i < name.size; i++) {
+            if ((unsigned char)name.buf[i] >= 0x80) return ENTRY_ASK;
+        }
     }
     return 0;
 }
@@ -242,24 +338,33 @@ static bool split_for_listing(CachedFs* me, csview path, char* dir, isize* dir_s
     while (slash > 0 && path.buf[slash - 1] != '/') slash--;
     *base = csview_slice(path, slash, path.size);
     if (csview_equals(*base, ".") || csview_equals(*base, "..")) return false;
-    isize size = 0;
-    if (path.buf[0] != '/') {
+    // (The root without its last slash, `/` or `C:/`: components append "/name". `..` doesn't go above it)
+    isize size = 0, floor = 0;
+    isize root = path_root_size(path);
+    if (!root) {
         known_cwd(me);
-        if (!cstr_size(&my cwd) || cstr_str(&my cwd)[0] != '/') return false;
-        size = cstr_size(&my cwd);
+        csview cwd = cstr_sv(&my cwd);
+        isize cwd_root = path_root_size(cwd);
+        if (!cwd_root) return false;
+        size = cwd.size;
         if (size >= PATH_MAX) return false;
-        memcpy(dir, cstr_str(&my cwd), (size_t)size);
-        if (size == 1) size = 0; // ("/": components append "/name")
+        memcpy(dir, cwd.buf, (size_t)size);
+        if (path_ends_with_slash(cwd)) size--;
+        floor = cwd_root - 1;
+    } else {
+        if (root - 1 >= PATH_MAX) return false;
+        memcpy(dir, path.buf, (size_t)(root - 1));
+        size = floor = root - 1;
     }
-    bool leading = path.buf[0] != '/';
-    for (isize i = 0; i < slash;) {
+    bool leading = !root;
+    for (isize i = root; i < slash;) {
         isize end = i;
         while (end < slash && path.buf[end] != '/') end++;
         isize n = end - i;
         if (n == 2 && path.buf[i] == '.' && path.buf[i + 1] == '.') {
             if (!leading) return false;
-            while (size > 0 && dir[size - 1] != '/') size--;
-            if (size > 0) size--;
+            while (size > floor && dir[size - 1] != '/') size--;
+            if (size > floor) size--;
         } else if (n && !(n == 1 && path.buf[i] == '.')) {
             leading = false;
             if (size + 1 + n >= PATH_MAX) return false;
@@ -269,7 +374,7 @@ static bool split_for_listing(CachedFs* me, csview path, char* dir, isize* dir_s
         }
         i = end + 1;
     }
-    if (!size) dir[size++] = '/';
+    if (size <= floor) dir[size++] = '/'; // (The root itself: `/`, `C:/`)
     dir[size] = 0;
     *dir_size = size;
     return true;
@@ -353,7 +458,7 @@ void cached_fs_offer_listing(CachedFs* me, csview dir, csview const* names, sign
         uint8_t kind = is_directory[i] > 0 ? ENTRY_DIRECTORY : is_directory[i] == 0 ? ENTRY_FILE : ENTRY_ASK;
         made->entries[kept] = (DirEntry){ .name = (u32)names_size, .size = (uint16_t)names[i].size, .kind = kind };
         names_size += names[i].size;
-        u32 at = name_hash(names[i].buf, names[i].size) & made->mask;
+        u32 at = listing_hash(names[i].buf, names[i].size) & made->mask;
         while (made->slots[at]) at = (at + 1) & made->mask;
         made->slots[at] = ++kept;
     }

@@ -224,8 +224,9 @@ void module_resolver_forget_resolutions(ModuleResolver* me) {
 
 // ---- Paths ----
 
-// Appends `path`'s segments to the absolute path in `out` (length `*len`) the way absolute_path_of() does
-static void push_segments(char* out, intptr_t* len, csview path) {
+// Appends `path`'s segments to the absolute path in `out` (length `*len`, its root the first `root` bytes, which `..`
+// doesn't go above) the way absolute_path_of() does
+static void push_segments(char* out, intptr_t* len, intptr_t root, csview path) {
     const char* c = path.buf;
     const char* end = path.buf + path.size;
     while (c < end) {
@@ -236,11 +237,11 @@ static void push_segments(char* out, intptr_t* len, csview path) {
         if (!n || (n == 1 && segment[0] == '.')) continue;
         if (n == 2 && segment[0] == '.' && segment[1] == '.') {
             intptr_t i = *len;
-            while (i > 0 && out[--i] != '/') {}
-            *len = i < 1 ? 1 : i;
+            while (i > root && out[--i] != '/') {}
+            *len = i < root ? root : i;
             continue;
         }
-        if (*len > 1) out[(*len)++] = '/';
+        if (*len > root) out[(*len)++] = '/';
         memcpy(out + *len, segment, n);
         *len += n;
     }
@@ -249,33 +250,39 @@ static void push_segments(char* out, intptr_t* len, csview path) {
 // absolute_path_of(cwd, path) in one buffer (it appends a segment at a time; the resolver makes paths by the thousand)
 // dir and rest, both normalized (path_is_normalized()), dir absolute and rest not
 static cstr concat_normalized(csview dir, csview rest) {
-    return dir.size == 1 ? cstr_d("/", rest) : cstr_d(dir, "/", rest);
+    return dir.buf[dir.size - 1] == '/' ? cstr_d(dir, rest) : cstr_d(dir, "/", rest);
 }
 
 cstr absolute_path_fast(csview cwd, csview path) {
-    bool rooted = path.size && path.buf[0] == '/';
+    isize path_root = path_root_size(path);
     // (Most paths are normalized already: resolved files, the program's canonical paths)
     if (path_is_normalized(path)) {
-        if (rooted) return cstr_from_sv(path);
-        if (cwd.size && cwd.buf[0] == '/' && path_is_normalized(cwd)) return concat_normalized(cwd, path);
+        if (path_root) return cstr_from_sv(path);
+        if (path_is_rooted(cwd) && path_is_normalized(cwd)) return concat_normalized(cwd, path);
     }
-    cstr ret = cstr_with_size(1 + (rooted ? 0 : cwd.size + 1) + path.size, 0);
+    csview rooted = path_root ? path : cwd;
+    isize root = path_root ? path_root : path_root_size(cwd);
+    // (A drive `C:` is `C:/`; a relative working directory is under `/`, as absolute_path_of() would have panicked)
+    bool slash = !root || rooted.buf[root - 1] != '/';
+    cstr ret = cstr_with_size(root + slash + (path_root ? 0 : cwd.size + 1) + path.size, 0);
     char* out = cstr_data(&ret);
-    intptr_t len = 1;
-    out[0] = '/';
-    if (!rooted) push_segments(out, &len, cwd);
-    push_segments(out, &len, path);
+    memcpy(out, rooted.buf, (size_t)root);
+    intptr_t len = root;
+    if (slash) out[len++] = '/';
+    intptr_t out_root = len;
+    if (!path_root) push_segments(out, &len, out_root, csview_slice(cwd, root, cwd.size));
+    push_segments(out, &len, out_root, csview_slice(path, path_root, path.size));
     cstr_resize(&ret, len, 0);
     return ret;
 }
 
 static cstr join(csview dir, csview rest) {
-    if (rest.size && rest.buf[0] == '/') return absolute_path_fast(c_sv("/"), rest); // A rooted name: `import "/foo"`
-    if (dir.size && dir.buf[0] == '/' && path_is_normalized(dir) && path_is_normalized(rest)) return concat_normalized(dir, rest);
+    if (path_is_rooted(rest)) return absolute_path_fast(c_sv("/"), rest); // A rooted name: `import "/foo"`
+    if (path_is_rooted(dir) && path_is_normalized(dir) && path_is_normalized(rest)) return concat_normalized(dir, rest);
     cstr ret = absolute_path_fast(c_sv("/"), dir);
     intptr_t len = cstr_size(&ret);
     cstr_resize(&ret, len + 1 + rest.size, 0);
-    push_segments(cstr_data(&ret), &len, rest);
+    push_segments(cstr_data(&ret), &len, path_root_size(cstr_sv(&ret)), rest);
     cstr_resize(&ret, len, 0);
     return ret;
 }
@@ -297,16 +304,17 @@ static bool ends_with(csview s, const char* suffix) {
 
 // Of a normalised absolute path, without a trailing separator ("/" for what is directly in the root)
 static csview parent_of(csview path) {
+    isize root = path_root_size(path);
     isize i = path.size;
-    while (i > 0 && path.buf[i - 1] == '/') i--;
-    while (i > 0 && path.buf[i - 1] != '/') i--;
-    while (i > 1 && path.buf[i - 1] == '/') i--;
+    while (i > root && path.buf[i - 1] == '/') i--;
+    while (i > root && path.buf[i - 1] != '/') i--;
+    while (i > (root ? root : 1) && path.buf[i - 1] == '/') i--;
     return csview_slice(path, 0, i ? i : 1);
 }
 
 // dir = its parent, false at the root
 static bool go_up(cstr* dir) {
-    if (cstr_size(dir) <= 1) return false;
+    if (cstr_size(dir) <= 1 || cstr_size(dir) <= path_root_size(cstr_sv(dir))) return false;
     cstr parent = cstr_from_sv(parent_of(cstr_sv(dir)));
     cstr_take(dir, parent);
     return true;
@@ -529,7 +537,7 @@ static void append_peer_dependencies(State* me, csview package_dir, PackageJson 
         qsort(names, (size_t)peers->count, sizeof(csview), compare_csview);
         for (isize i = 0; i < peers->count; i++) {
             if (i && csview_equals_sv(names[i], names[i - 1])) continue; // (a repeated key is one map entry)
-            cstr peer_dir = cstr_d(node_modules, "/", names[i]);
+            cstr peer_dir = path_concat(node_modules, names[i]);
             PackageJson const* peer = package_json_of(me, cstr_sv(&peer_dir));
             cstr_drop(&peer_dir);
             if (!peer) continue;
@@ -956,7 +964,7 @@ static bool load_using_root_dirs(State* me, csview name, int extensions, Loader 
     isize matched_len = 0;
     for (isize i = 0; i < root_dirs->count; i++) {
         cstr root = option_path(my resolver, cstr_sv(&root_dirs->items[i]));
-        if (cstr_size(&root) > 1) cstr_append_lit(&root, "/");
+        if (!path_ends_with_slash(cstr_sv(&root))) cstr_append_lit(&root, "/");
         if (cstr_starts_with_sv(&candidate, cstr_sv(&root)) && cstr_size(&root) > matched_len) {
             matched = i;
             matched_len = cstr_size(&root);
@@ -1138,7 +1146,7 @@ static Search resolve_non_relative(State* me, csview name, csview from_dir, int 
 
 // tsc's containsPath() of two normalised absolute paths
 static bool path_contains(csview dir, csview path) {
-    if (dir.size == 1) return true;
+    if (path_ends_with_slash(dir)) return sv_starts_with(path, dir); // (A root)
     return sv_starts_with(path, dir) && (path.size == dir.size || path.buf[dir.size] == '/');
 }
 
@@ -1204,7 +1212,7 @@ static Search try_load_input_file_for_path(
         for (isize c = 0; c < candidate_count && !found; c++) {
             csview candidate = cstr_sv(&candidates[c]);
             if (!path_contains(candidate, final_path) || final_path.size == candidate.size) continue;
-            csview fragment = csview_slice(final_path, candidate.size == 1 ? 1 : candidate.size + 1, final_path.size);
+            csview fragment = csview_slice(final_path, path_ends_with_slash(candidate) ? candidate.size : candidate.size + 1, final_path.size);
             cstr base = join(guess, fragment);
             csview base_sv = cstr_sv(&base);
             for (isize e = 0; e < (isize)c_arraylen(output_extensions) && !found; e++) {
@@ -1670,7 +1678,7 @@ static void resolver_init_cwd(ModuleResolver* resolver) {
     pthread_mutex_lock(&resolver->cwd_lock);
     if (!cstr_size(&resolver->cwd)) {
         try (fs_get_cwd(resolver->fs, &resolver->cwd)) or_panic;
-        resolver->cwd_normalized = cstr_size(&resolver->cwd) && cstr_str(&resolver->cwd)[0] == '/' &&
+        resolver->cwd_normalized = path_is_rooted(cstr_sv(&resolver->cwd)) &&
             path_is_normalized(cstr_sv(&resolver->cwd));
     }
     atomic_store_explicit(&resolver->cwd_known, true, memory_order_release);
@@ -1710,13 +1718,14 @@ static cstr resolution_key(ModuleResolver* me, csview containing_file, Resolutio
     if (my cwd_normalized && path_is_normalized(containing_file)) {
         isize slash = containing_file.size;
         while (slash > 0 && containing_file.buf[slash - 1] != '/') slash--;
-        bool rooted = containing_file.buf[0] == '/';
+        isize root = path_root_size(containing_file);
+        bool rooted = root > 0;
         csview cwd = cstr_sv(&my cwd);
         // (The directory: the file's up to its last slash, joined to the working directory unless rooted)
         csview own = csview_slice(containing_file, 0, slash ? slash - 1 : 0);
-        if (rooted && !own.size) own = c_sv("/");
+        if (rooted && own.size < root) own = csview_slice(containing_file, 0, root);
         csview base = rooted ? c_sv("") : cwd;
-        bool separator = !rooted && own.size && cwd.size > 1;
+        bool separator = !rooted && own.size && !path_ends_with_slash(cwd);
         cstr ret = cstr_with_capacity(base.size + separator + own.size + 2 + specifier.size);
         cstr_append_sv(&ret, base);
         if (separator) cstr_append_n(&ret, "/", 1);
@@ -1909,7 +1918,7 @@ ResolvedModule const* module_resolver_resolve_shared(
         }
     }
     ResolvedModule* box = c_new(ResolvedModule, resolve_uncached(me, specifier, cstr_sv(&dir), mode));
-    box->path_normalized = cstr_size(&box->path) && cstr_str(&box->path)[0] == '/' && path_is_normalized(cstr_sv(&box->path));
+    box->path_normalized = path_is_rooted(cstr_sv(&box->path)) && path_is_normalized(cstr_sv(&box->path));
     pthread_rwlock_wrlock(&shard->lock);
     ret = shard_insert(shard, key, shard_box(shard, box));
     pthread_rwlock_unlock(&shard->lock);
@@ -2086,7 +2095,7 @@ FileFormat module_resolver_file_format(ModuleResolver* me, csview file) {
     cstr scope_dir = cstr_null;
     PackageJson const* scope = package_scope_of(&state, cstr_sv(&dir), &scope_dir);
     if (scope) {
-        ret.package_json = cstr_d(scope_dir, cstr_size(&scope_dir) > 1 ? "/" : "", "package.json");
+        ret.package_json = cstr_d(scope_dir, !path_ends_with_slash(cstr_sv(&scope_dir)) ? "/" : "", "package.json");
         csview type = json_get_string(&scope->json, "type");
         ret.package_has_type = type.size > 0;
         ret.package_type_decides = csview_equals(type, "module") || csview_equals(type, "commonjs");

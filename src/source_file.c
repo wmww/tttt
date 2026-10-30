@@ -76,7 +76,7 @@ bool messages_use_absolute_paths(void) {
 }
 
 cstr path_for_message(csview path) {
-    if (!cstr_size(&message_cwd) || (path.size && path.buf[0] == '/')) return cstr_from_sv(path);
+    if (!cstr_size(&message_cwd) || path_is_rooted(path)) return cstr_from_sv(path);
     return absolute_path_of(cstr_sv(&message_cwd), path);
 }
 
@@ -802,6 +802,7 @@ static char* text_slot_locked(size_t size) {
 // A file truncated by another process while it's mapped faults with SIGBUS past its new end: the faulting page becomes
 // zeros (the text reads as ending there) and the run goes on, with a warning, rather than crashing. tsc read the file
 // whole before checking it; tttt's output for that file is then unreliable, as a file changed mid-run is anyway
+#ifndef _WIN32
 static void text_sigbus(int sig, siginfo_t* info, void* context) {
     (void)context;
     char* at = info->si_addr;
@@ -830,6 +831,7 @@ static void text_sigbus_install(void) {
     sigemptyset(&action.sa_mask);
     sigaction(SIGBUS, &action, nullptr);
 }
+#endif
 
 // Where read chunks come from: reserved segments carved under a lock, so that taking one is no mmap() (which takes the
 // mm lock for writing, waiting for every other thread's faults and populates: vscode took 422 chunks)
@@ -917,8 +919,10 @@ static u32 source_text_read(int fd, size_t size, cstr* out) {
 }
 
 u32 source_text_map(csview path, cstr* out) {
+#ifndef _WIN32
     static pthread_once_t installed = PTHREAD_ONCE_INIT;
     pthread_once(&installed, text_sigbus_install);
+#endif
     cstr z = cstr_from_sv(path);
     int fd = open(cstr_str(&z), O_RDONLY | O_CLOEXEC);
     cstr_drop(&z);
@@ -930,6 +934,10 @@ u32 source_text_map(csview path, cstr* out) {
         close(fd);
         return 0;
     }
+    // (Windows: always read, src/win32's mmap() maps no files)
+#ifdef _WIN32
+    return source_text_read(fd, (size_t)st.st_size, out);
+#endif
     if ((size_t)st.st_size < text_read_below()) return source_text_read(fd, (size_t)st.st_size, out);
     if ((size_t)st.st_size == text_page_round((size_t)st.st_size)) {
         close(fd);
@@ -1029,7 +1037,9 @@ void source_texts_drop(void) {
 // A descriptor of a fresh file that no path names, -1 on failure: a memory file on Linux, an unlinked temporary file on
 // macOS (no memfd_create(); its pages are written back to $TMPDIR only under memory pressure)
 static int anonymous_file(void) {
-#ifdef __APPLE__
+#ifdef _WIN32
+    return -1; // (Never asked: Windows maps no texts)
+#elif defined __APPLE__
     char const* dir = getenv("TMPDIR");
     cstr path = cstr_d(dir && *dir ? dir : "/tmp", "/tttt-text-XXXXXX");
     int fd = mkstemp((char*)cstr_str(&path));

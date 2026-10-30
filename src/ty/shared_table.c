@@ -109,7 +109,7 @@ static u64 shards_len(Shards const* sh) {
 }
 
 SharedTable* shared_table_new(ZeroPages* pages) {
-    SharedTable* me = aligned_alloc(64, (sizeof(SharedTable) + 63) & ~(size_t)63);
+    SharedTable* me = cache_aligned_alloc((sizeof(SharedTable) + 63) & ~(size_t)63);
     if (me) memset(me, 0, sizeof(SharedTable));
     panic_if(!me, "out of memory");
     shards_init(&my sh, pages, sizeof(Slot));
@@ -119,9 +119,7 @@ SharedTable* shared_table_new(ZeroPages* pages) {
 void shared_table_drop(SharedTable* me) {
     if (!me) return;
     shards_drop(&my sh);
-    // (The real free(): aligned_alloc() isn't debug_allocator.h's, whose free() would be handed the block's address
-    // minus its offset. The test runners crashed on it once the harness's several checkers shared a graph)
-    (free)(me);
+    cache_aligned_free(me);
 }
 
 u64 shared_table_len(SharedTable const* me) { return shards_len(&my sh); }
@@ -227,7 +225,7 @@ static u64 link_hash(u64 key) {
 }
 
 SharedLinks* shared_links_new(ZeroPages* pages) {
-    SharedLinks* me = aligned_alloc(64, (sizeof(SharedLinks) + 63) & ~(size_t)63);
+    SharedLinks* me = cache_aligned_alloc((sizeof(SharedLinks) + 63) & ~(size_t)63);
     if (me) memset(me, 0, sizeof(SharedLinks));
     panic_if(!me, "out of memory");
     shards_init(&my sh, pages, sizeof(LinkSlot));
@@ -237,7 +235,7 @@ SharedLinks* shared_links_new(ZeroPages* pages) {
 void shared_links_drop(SharedLinks* me) {
     if (!me) return;
     shards_drop(&my sh);
-    (free)(me); // (aligned_alloc()'s: shared_table_drop())
+    cache_aligned_free(me);
 }
 
 u64 shared_links_len(SharedLinks const* me) { return shards_len(&my sh); }

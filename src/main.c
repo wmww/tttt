@@ -39,9 +39,9 @@
 #include <strings.h>
 #include <ctype.h>
 #include <errno.h>
+#ifdef __linux__
 #include <sched.h>
 #include <poll.h>
-#ifdef __linux__
 #include <sys/syscall.h>
 #endif
 
@@ -243,6 +243,10 @@ static char const* real_dir_of(csview dir) {
     } else if (S_ISLNK(st.st_mode)) {
         char* found = real_path_plain(buf, resolved);
         ret = found;
+    } else if (slash > 1 && slash <= path_root_size(dir)) {
+        // (Right below a drive's root, `C:/dir`: its own realpath, which has the case the file system has)
+        char* found = real_path_plain(buf, resolved);
+        ret = found;
     } else {
         // (The parent's, which a successful lstat() says exists)
         char const* parent = slash <= 1 ? "/" : real_dir_of(csview_slice(dir, 0, slash - 1));
@@ -285,7 +289,7 @@ static cstr real_path_of(void* ctx, csview path) {
     while (slash > 0 && path.buf[slash - 1] != '/') slash--;
     csview base = csview_slice(path, slash, path.size);
     // (Anything but an absolute path to a named entry: as it is)
-    if (!path.size || path.buf[0] != '/' || slash <= 1 || !base.size || csview_equals(base, ".") || csview_equals(base, "..")) {
+    if (!path_is_rooted(path) || slash <= path_root_size(path) || !base.size || csview_equals(base, ".") || csview_equals(base, "..")) {
         return realpath(buf, resolved) ? cstr_from(resolved) : cstr_null;
     }
     char const* dir_real = real_dir_of(csview_slice(path, 0, slash - 1));
@@ -1625,9 +1629,12 @@ static void print_help(void) {
 }
 
 // The physical cores among the CPUs this process may run on (distinct package and core ids in sysfs), 0 when unknown.
-// macOS: hw.physicalcpu (no affinity masks; performance and efficiency cores alike)
+// macOS: hw.physicalcpu (no affinity masks; performance and efficiency cores alike). Windows: the cores of the
+// process's affinity mask (GetLogicalProcessorInformationEx)
 static u32 physical_cores(void) {
-#ifdef __APPLE__
+#ifdef _WIN32
+    return win32_physical_cores();
+#elif defined __APPLE__
     int cores = 0;
     size_t size = sizeof cores;
     return sysctlbyname("hw.physicalcpu", &cores, &size, nullptr, 0) || cores <= 0 ? 0 : (u32)cores;
@@ -1762,6 +1769,7 @@ static int run(int argc, const char** argv) {
             opts.list_files_only = true;
         } else if ((streq(argv[i], "-p") || streq(argv[i], "--project")) && i + 1 < argc) {
             opts.project = argv[++i];
+            path_normalize_slashes((char*)opts.project, (isize)strlen(opts.project));
         } else if (streq(argv[i], "-b") || streq(argv[i], "--build")) {
             opts.build = true;
         } else if (opts.build && (streq(argv[i], "-v") || streq(argv[i], "--v") || streq(argv[i], "--verbose") ||
@@ -1821,6 +1829,7 @@ static int run(int argc, const char** argv) {
             if (!strcasecmp(argv[i - has_value] + 2, "pretty")) opts.pretty = !has_value || !streq(argv[i], "false");
         } else {
             // Paths are compacted to the front of argv, which is fine as they never outnumber what we've already read
+            path_normalize_slashes((char*)argv[i], (isize)strlen(argv[i]));
             opts.paths[opts.path_count++] = argv[i];
         }
     }

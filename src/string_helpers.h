@@ -58,6 +58,39 @@ const char* string_to_double(
     double* ret
 );
 
+// The size of an absolute path's root, 0 for a relative path. `/` everywhere (1). On Windows also a drive `C:/` (3) or
+// `C:` (2), tsgo's getEncodedRootLength; elsewhere those are relative, a directory named `c:` (module_resolution.h's
+// path_is_drive_rooted()). Windows paths are kept with forward slashes. A UNC path `//server/share` has the root `/`
+// as on Linux (tsgo reads nothing on a network path, nativepath.IsNetworkPath, and tttt reports TS5116 where it does),
+// so that a name joined to the root `/` with a slash of its own (`//package.json`) stays what it means on Linux
+#if defined _WIN32 && !defined TTTT_WINDOWS_PATHS
+// (Windows' path rules: on _WIN32, and on Linux built with -DTTTT_WINDOWS_PATHS=1 to run the suite under them)
+#define TTTT_WINDOWS_PATHS 1
+#endif
+static inline isize path_root_size(csview path) {
+    if (!path.size) return 0;
+#if TTTT_WINDOWS_PATHS
+    char c0 = path.buf[0] | 0x20;
+    if (path.size >= 2 && c0 >= 'a' && c0 <= 'z' && path.buf[1] == ':') return path.size >= 3 && path.buf[2] == '/' ? 3 : 2;
+#endif
+    return path.buf[0] == '/' ? 1 : 0;
+}
+static inline bool path_is_rooted(csview path) { return path_root_size(path) > 0; }
+// Backslashes made forward slashes in place: tsgo's normalizeSlashes, which every path given on the command line or in
+// a config goes through on every platform (`-p C:\\proj`, `"include": ["src\\**\\*"]`)
+static inline void path_normalize_slashes(char* path, isize size) {
+    for (char* c = memchr(path, '\\', (size_t)size); c; c = memchr(c + 1, '\\', (size_t)(path + size - c - 1))) *c = '/';
+}
+// dir and rest joined by one slash (none added after one dir ends with: `/x`, not `//x`, which on Windows starts a UNC
+// path)
+static inline cstr path_concat(csview dir, csview rest) {
+    return dir.size && dir.buf[dir.size - 1] == '/' ? cstr_d(dir, rest) : cstr_d(dir, "/", rest);
+}
+// A root (`/`, `C:/`), nothing below it
+static inline bool path_is_root(csview path) { isize root = path_root_size(path); return root && path.size <= root; }
+// Ends with a separator: a name is appended to it without one (a root, `/` or `C:/`)
+static inline bool path_ends_with_slash(csview path) { return path.size && path.buf[path.size - 1] == '/'; }
+
 // A path that normalizing (absolute_path_of(), relative_path_of()) leaves alone, absolute or not: not empty, and no
 // empty, `.` or `..` segment (no `//`, no trailing slash). `/` is
 bool path_is_normalized(csview path);

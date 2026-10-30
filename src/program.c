@@ -800,10 +800,11 @@ static cstr relative_normalized(csview cwd, csview path) {
 static csview program_relative_view(Program const* me, csview path, cstr* storage) {
     csview cwd = program_cwd(me);
     if (path_is_normalized(path)) {
-        if (path.buf[0] != '/') return path;
+        if (!path_is_rooted(path)) return path;
         if (cwd.size > 1 && path.size > cwd.size + 1 && path.buf[cwd.size] == '/' && !memcmp(path.buf, cwd.buf, cwd.size))
             return csview_slice(path, cwd.size + 1, path.size);
-        if (cwd.size > 1 && cwd.buf[0] == '/' && path_is_normalized(cwd)) {
+        // (A `/` root on both: relative_path_of() knows other roots, Windows' drives that differ or compare without case)
+        if (cwd.size > 1 && path_root_size(cwd) == 1 && path_root_size(path) == 1 && path_is_normalized(cwd)) {
             *storage = relative_normalized(cwd, path);
             return cstr_sv(storage);
         }
@@ -818,7 +819,7 @@ static csview program_relative_view(Program const* me, csview path, cstr* storag
 // (which the caller drops)
 static csview program_key_view(Program const* me, csview path, cstr* storage) {
     if (path.buf == canonical_hint.buf && path.size == canonical_hint.size && path.buf) return canonical_hint.canonical;
-    if (path.size && path.buf[0] == '/' && path_is_normalized(path)) return path;
+    if (path_is_rooted(path) && path_is_normalized(path)) return path;
     csview cwd = program_cwd(me);
     if (path.size && cwd.size > 1 && path_is_normalized(path)) {
         // (Relative and normalized: below the working directory)
@@ -863,7 +864,7 @@ static bool is_declaration_path(csview path) {
 // The source file a referenced project's output declaration file stands for (absolute), empty if path isn't one
 static csview program_source_of_output(Program const* me, csview path) {
     if (!my redirects || !is_declaration_path(path)) return c_sv("");
-    cstr absolute = path.size && path.buf[0] == '/' ? cstr_from_sv(path) : absolute_path_of(program_cwd(me), path);
+    cstr absolute = path_is_rooted(path) ? cstr_from_sv(path) : absolute_path_of(program_cwd(me), path);
     csview ret = project_redirects_source_of_output(my redirects, cstr_sv(&absolute));
     // (Through a link that wasn't followed: preserveSymlinks, tsgo's realpathDtsToSource)
     if (!ret.size && csview_contains(cstr_sv(&absolute), "/node_modules/") && my resolver) {
@@ -878,7 +879,7 @@ static csview program_source_of_output(Program const* me, csview path) {
 // The output declaration file of a referenced project's source (absolute), empty if path isn't one
 static csview program_output_of_source(Program const* me, csview path) {
     if (!my redirects || is_declaration_path(path)) return c_sv("");
-    if (path.size && path.buf[0] == '/') return project_redirects_output_of_source(my redirects, path);
+    if (path_is_rooted(path)) return project_redirects_output_of_source(my redirects, path);
     cstr absolute = absolute_path_of(program_cwd(me), path);
     csview ret = project_redirects_output_of_source(my redirects, cstr_sv(&absolute));
     cstr_drop(&absolute);
@@ -1308,8 +1309,8 @@ static SourceFile* program_load_reference_path(
     SourceFile const* from = span_source(path_span);
     csview dir = dirname_of(cstr_sv(from->text_mapping == SOURCE_TEXT_STATIC ? &from->absolute_path : &from->canonical_path));
     // (A drive root `c:/` is rooted too: one of the current directory, see path_is_drive_rooted())
-    bool rooted = (path.size && path.buf[0] == '/') || path_is_drive_rooted(path);
-    cstr full = rooted ? cstr_from_sv(path) : cstr_d(dir, "/", path);
+    bool rooted = path_is_rooted(path) || path_is_drive_rooted(path);
+    cstr full = rooted ? cstr_from_sv(path) : path_concat(dir, path);
     SourceFile* ret = nullptr;
     static const char* const extensions[] = { "", ".ts", ".tsx", ".d.ts" };
     bool extension = path_has_extension(path);
@@ -1924,8 +1925,8 @@ static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile* fil
                 // (program_load_reference_path() probes extensions: the common case is a whole name)
                 if (span_valid(directive->path_span)) {
                     csview path = cstr_sv(&directive->path);
-                    cstr full = path.size && path.buf[0] == '/' ? cstr_from_sv(path) :
-                        cstr_d(dirname_of(containing), "/", path);
+                    cstr full = path_is_rooted(path) ? cstr_from_sv(path) :
+                        path_concat(dirname_of(containing), path);
                     program_queue_path(me, &batch, cstr_sv(&full), file->is_stdlib);
                     cstr_drop(&full);
                 }
@@ -1948,7 +1949,7 @@ static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile* fil
                 if (!file->is_stdlib && !(my follow_lib_references && !my options.no_lib)) break;
                 cstr name = lib_reference_file_name(cstr_sv(&directive->path));
                 cstr replacement = program_lib_replacement(me, csview_slice(cstr_sv(&name), 0, cstr_size(&name) - 5));
-                cstr path = cstr_size(&replacement) ? cstr_clone(replacement) : file->is_stdlib ? cstr_d(dirname_of(containing), "/", name) :
+                cstr path = cstr_size(&replacement) ? cstr_clone(replacement) : file->is_stdlib ? path_concat(dirname_of(containing), cstr_sv(&name)) :
                     cstr_d(EMBEDDED_LIB_DIR "/", name);
                 program_queue_path(me, &batch, cstr_sv(&path), !cstr_size(&replacement));
                 c_drop(cstr, &path, &replacement);
@@ -3430,7 +3431,7 @@ static void set_declaration_map_paths(Program* me, SourceFile* source) {
     // (getMapRootDirectory: the mapRoot, relative to the common source directory, with the file's directory under it)
     cstr map_dir = cstr_null;
     if (cstr_size(&o->map_root)) {
-        cstr root = absolute_path_of(cstr_str(&o->map_root)[0] == '/' ? cwd : cstr_sv(&common_dir), cstr_sv(&o->map_root));
+        cstr root = absolute_path_of(path_is_rooted(cstr_sv(&o->map_root)) ? cwd : cstr_sv(&common_dir), cstr_sv(&o->map_root));
         cstr relative = relative_path_of(cstr_sv(&common_dir), cstr_sv(&absolute));
         cstr in_root = cstr_starts_with(&relative, "..") ? cstr_clone(absolute) : absolute_path_of(cstr_sv(&root), cstr_sv(&relative));
         map_dir = cstr_from_sv(dirname_of(cstr_sv(&in_root)));
@@ -3442,7 +3443,7 @@ static void set_declaration_map_paths(Program* me, SourceFile* source) {
     cstr_append(&map_name, ".map");
     if (cstr_size(&o->map_root)) {
         cstr map_path = absolute_path_of(cstr_sv(&map_dir), cstr_sv(&map_name));
-        bool relative_root = cstr_str(&o->map_root)[0] != '/';
+        bool relative_root = !path_is_rooted(cstr_sv(&o->map_root));
         cstr url = relative_root ? relative_path_of(dts_dir, cstr_sv(&map_path)) : cstr_clone(map_path);
         cstr_take(&source->declaration_map_url, encode_uri(cstr_sv(&url)));
         c_drop(cstr, &map_path, &url);
@@ -5077,7 +5078,7 @@ void program_resolve_names(Program* me) {
                 // A .tsx file that is part of the program anyway (a root) is still what the name means (tsc's
                 // resolveExternalModule: TS6142, and the file)
                 csview shown = cstr_sv(&module_ref_rare(ref)->resolved_path);
-                cstr absolute = shown.size && shown.buf[0] == '/' ? cstr_from_sv(shown) : cstr_d(program_cwd(me), "/", shown);
+                cstr absolute = path_is_rooted(shown) ? cstr_from_sv(shown) : cstr_d(program_cwd(me), "/", shown);
                 ref->file = program_find_source(me, cstr_sv(&absolute));
                 ref->used_ts_extension = ref->file && csview_ends_with(cstr_sv(&ref->path), ".tsx");
                 cstr_drop(&absolute);

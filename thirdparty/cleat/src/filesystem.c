@@ -56,22 +56,49 @@ static csview path_next_segment(csview* path) {
     return segment;
 }
 
-static void push_path_to_absolute(cstr* absolute, csview path) {
+// The size of path's root, 0 if it's relative: `/`, and on Windows a drive (`C:/`, `C:`). (A UNC path's is `/`, as
+// tttt's path_root_size() has it)
+static intptr_t path_root_size_of(csview path) {
+    if (!path.size) return 0;
+#if defined _WIN32 || defined TTTT_WINDOWS_PATHS
+    char c0 = path.buf[0] | 0x20;
+    if (path.size >= 2 && c0 >= 'a' && c0 <= 'z' && path.buf[1] == ':') return path.size >= 3 && path.buf[2] == '/' ? 3 : 2;
+#endif
+    return *path.buf == path_sep ? 1 : 0;
+}
+
+#if defined _WIN32 || defined TTTT_WINDOWS_PATHS
+// Windows' file names compare without case (ASCII here: what relative_path_of() needs of a drive or a directory)
+static bool segment_equals(csview a, csview b) {
+    if (a.size != b.size) return false;
+    for (intptr_t i = 0; i < a.size; i++) {
+        char x = a.buf[i] >= 'A' && a.buf[i] <= 'Z' ? a.buf[i] | 0x20 : a.buf[i];
+        char y = b.buf[i] >= 'A' && b.buf[i] <= 'Z' ? b.buf[i] | 0x20 : b.buf[i];
+        if (x != y) return false;
+    }
+    return true;
+}
+#else
+#define segment_equals csview_equals_sv
+#endif
+
+// (absolute ends with its root, `root` bytes, which `..` doesn't go above)
+static void push_path_to_absolute(cstr* absolute, intptr_t root, csview path) {
     while (path.size) {
         csview segment = path_next_segment(&path);
         if (!csview_size(segment) || csview_equals_sv(segment, c_sv("."))) {
         } else if (csview_equals_sv(segment, c_sv(".."))) {
             intptr_t i = cstr_size(absolute);
-            while (i > 0) {
+            while (i > root) {
                 i--;
                 if (cstr_str(absolute)[i] == path_sep) {
                     break;
                 }
             }
-            if (i < 1) i = 1;
+            if (i < root) i = root;
             cstr_resize(absolute, i, 0);
         } else {
-            if (cstr_size(absolute) > 1) {
+            if (cstr_size(absolute) > root) {
                 cstr_append_n(absolute, &path_sep, 1);
             }
             cstr_append_sv(absolute, segment);
@@ -80,24 +107,44 @@ static void push_path_to_absolute(cstr* absolute, csview path) {
 }
 
 cstr absolute_path_of(csview cwd, csview path) {
-    panic_if(!cwd.size || *cwd.buf != path_sep, "cwd must be absolute path, is '", cwd, "'");
-    cstr ret = cstr_from_n(&path_sep, 1);
-    if (*path.buf != path_sep) {
-        push_path_to_absolute(&ret, cwd);
+    intptr_t path_root = path_root_size_of(path);
+    csview rooted = path_root ? path : cwd;
+    intptr_t root = path_root ? path_root : path_root_size_of(cwd);
+    // (Not panic(): its logger makes paths absolute)
+    if (!root) {
+        fprintf(stderr, "cwd must be absolute path, is '%.*s'\n", (int)cwd.size, cwd.buf);
+        abort();
     }
-    push_path_to_absolute(&ret, path);
+    cstr ret = cstr_from_sv(csview_slice(rooted, 0, root));
+    // (A drive `C:` is its root `C:/`)
+    if (cstr_str(&ret)[root - 1] != path_sep) {
+        cstr_append_n(&ret, &path_sep, 1);
+        root++;
+    }
+    if (!path_root) {
+        push_path_to_absolute(&ret, root, csview_slice(cwd, path_root_size_of(cwd), cwd.size));
+    }
+    push_path_to_absolute(&ret, root, csview_slice(path, path_root, path.size));
     return ret;
 }
 
 cstr relative_path_of(csview cwd, csview path) {
     cstr absolute = absolute_path_of(cwd, path);
     path = cstr_sv(&absolute);
+#if defined _WIN32 || defined TTTT_WINDOWS_PATHS
+    // (On another drive or share: there's no relative path, the absolute one)
+    intptr_t root = path_root_size_of(path), cwd_root = path_root_size_of(cwd);
+    csview path_root = csview_slice(path, 0, root), dir_root = csview_slice(cwd, 0, cwd_root);
+    if (path_root.size && path_root.buf[path_root.size - 1] == path_sep) path_root.size--;
+    if (dir_root.size && dir_root.buf[dir_root.size - 1] == path_sep) dir_root.size--;
+    if (!segment_equals(path_root, dir_root)) return absolute;
+#endif
     while (cwd.size && path.size) {
         csview cwd_next = cwd;
         csview path_next = path;
         csview cwd_segment = path_next_segment(&cwd_next);
         csview path_segment = path_next_segment(&path_next);
-        if (!csview_equals_sv(cwd_segment, path_segment)) {
+        if (!segment_equals(cwd_segment, path_segment)) {
             break;
         }
         cwd = cwd_next;

@@ -110,6 +110,16 @@ u64 memory_available_bytes(void) {
     if (got != KERN_SUCCESS) return 0;
     return ((u64)vm.free_count + vm.inactive_count + vm.speculative_count + vm.purgeable_count) * (u64)vm_kernel_page_size;
 }
+#elif defined _WIN32
+u64 process_resident_bytes(void) {
+    return win32_resident_bytes();
+}
+
+u64 memory_available_bytes(void) {
+    char const* forced = getenv("TTTT_MEM_AVAILABLE_MB");
+    if (forced && *forced) return (u64)strtoull(forced, nullptr, 10) << 20;
+    return win32_available_bytes();
+}
 #else
 u64 process_resident_bytes(void) {
     static _Atomic int statm = -1;

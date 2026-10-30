@@ -4,22 +4,29 @@
 #include "error.h"
 #include "source_file.h"
 #include "lib_names.h"
+#include "string_helpers.h"
 
 #include <errno.h>
 #include <fcntl.h>
-#include <poll.h>
 #include <time.h>
 #include <pthread.h>
-#include <signal.h>
-#include <spawn.h>
 #include <string.h>
 #include <strings.h>
-#include <sys/socket.h>
 #include <sys/stat.h>
-#include <sys/wait.h>
 #include <unistd.h>
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <io.h>
+#else
+#include <poll.h>
+#include <signal.h>
+#include <spawn.h>
+#include <sys/socket.h>
+#include <sys/wait.h>
 
 extern char** environ;
+#endif
 
 void content_mapper_drop(ContentMapper* me) {
     c_drop(cstr, &my package, &my options_json, &my name, &my version, &my package_dir);
@@ -144,7 +151,12 @@ static bool json_int(JsonValue const* value, i64* out) {
 
 typedef struct MapperConn {
     cstr key; // Identity and exec
+#ifdef _WIN32
+    HANDLE process; // Null when there is none
+    int write_fd; // A pipe that is the process's stdin; fd the one that is its stdout
+#else
     pid_t pid;
+#endif
     int fd; // A socket that is the process's stdin and stdout
     cstr read_buffer;
     isize read_at;
@@ -191,7 +203,11 @@ ContentMapperHost* content_mapper_host_new(csview config_file, CompilerOptions c
 
 static bool write_all(int fd, char const* buf, isize size) {
     while (size > 0) {
+#ifdef _WIN32
+        ssize_t n = write(fd, buf, (unsigned)(size < INT32_MAX ? size : INT32_MAX));
+#else
         ssize_t n = send(fd, buf, (size_t)size, MSG_NOSIGNAL);
+#endif
         if (n < 0 && errno == EINTR) continue;
         if (n <= 0) return false;
         buf += n;
@@ -202,7 +218,12 @@ static bool write_all(int fd, char const* buf, isize size) {
 
 static bool send_message(MapperConn* conn, csview body) {
     cstr header = cstr_d("Content-Length: ", body.size, "\r\n\r\n");
-    bool sent = write_all(conn->fd, cstr_str(&header), cstr_size(&header)) && write_all(conn->fd, body.buf, body.size);
+#ifdef _WIN32
+    int fd = conn->write_fd;
+#else
+    int fd = conn->fd;
+#endif
+    bool sent = write_all(fd, cstr_str(&header), cstr_size(&header)) && write_all(fd, body.buf, body.size);
     cstr_drop(&header);
     return sent;
 }
@@ -214,11 +235,26 @@ static bool fill(MapperConn* conn) {
         struct timespec now;
         clock_gettime(CLOCK_MONOTONIC, &now);
         i64 left = (conn->deadline.tv_sec - now.tv_sec) * 1000 + (conn->deadline.tv_nsec - now.tv_nsec) / 1000000;
+#ifdef _WIN32
+        // (A pipe can't be waited on for data: polled. Only the 5 s of the initialize request read this way)
+        HANDLE pipe = (HANDLE)_get_osfhandle(conn->fd);
+        for (;;) {
+            DWORD available = 0;
+            if (!PeekNamedPipe(pipe, nullptr, 0, nullptr, &available, nullptr) || available) break;
+            if (left <= 0) {
+                conn->timed_out = true;
+                return false;
+            }
+            Sleep(1);
+            left--;
+        }
+#else
         struct pollfd pfd = { .fd = conn->fd, .events = POLLIN };
         if (left <= 0 || poll(&pfd, 1, (int)left) == 0) {
             conn->timed_out = true;
             return false;
         }
+#endif
     }
     for (;;) {
         ssize_t n = read(conn->fd, buf, sizeof(buf));
@@ -302,6 +338,20 @@ static void conn_close(MapperConn* conn) {
         close(conn->fd);
         conn->fd = -1;
     }
+#ifdef _WIN32
+    if (conn->write_fd >= 0) {
+        close(conn->write_fd);
+        conn->write_fd = -1;
+    }
+    if (conn->process) {
+        if (WaitForSingleObject(conn->process, 0) == WAIT_TIMEOUT) {
+            TerminateProcess(conn->process, 1);
+            WaitForSingleObject(conn->process, INFINITE);
+        }
+        CloseHandle(conn->process);
+        conn->process = nullptr;
+    }
+#else
     if (conn->pid > 0) {
         int status;
         if (waitpid(conn->pid, &status, WNOHANG) == 0) {
@@ -310,6 +360,7 @@ static void conn_close(MapperConn* conn) {
         }
         conn->pid = 0;
     }
+#endif
 }
 
 // tsgo's handshake: typescript, tsc and the native extensions without their dot (`ts`, `d.ts`, `json`)
@@ -322,8 +373,117 @@ static bool reserved_diagnostic_source(csview source) {
     return false;
 }
 
+#ifdef _WIN32
+// arg quoted for a command line as the C runtime's argv parser (and Go's syscall.EscapeArg) reads it back
+static void append_command_arg(cstr* out, csview arg) {
+    if (cstr_size(out)) cstr_append_lit(out, " ");
+    bool plain = arg.size > 0;
+    for (isize i = 0; i < arg.size && plain; i++) plain = !strchr(" \t\n\v\"", arg.buf[i]);
+    if (plain) {
+        cstr_append_sv(out, arg);
+        return;
+    }
+    cstr_append_lit(out, "\"");
+    for (isize i = 0; i < arg.size; i++) {
+        isize backslashes = 0;
+        while (i < arg.size && arg.buf[i] == '\\') i++, backslashes++;
+        // (Backslashes are literal unless a quote or the closing quote follows: then doubled)
+        isize repeat = i == arg.size ? backslashes * 2 : arg.buf[i] == '"' ? backslashes * 2 + 1 : backslashes;
+        for (isize j = 0; j < repeat; j++) cstr_append_lit(out, "\\");
+        if (i < arg.size) cstr_append_n(out, &arg.buf[i], 1);
+    }
+    cstr_append_lit(out, "\"");
+}
+
+static wchar_t* wide_string(char const* s) {
+    int n = MultiByteToWideChar(CP_UTF8, 0, s, -1, nullptr, 0);
+    wchar_t* ret = calloc(n > 0 ? (size_t)n : 1, sizeof(wchar_t));
+    if (n > 0) MultiByteToWideChar(CP_UTF8, 0, s, -1, ret, n);
+    return ret;
+}
+
+// The mapper's process with pipes for its stdin and stdout (conn->write_fd, conn->fd), its stderr discarded: 0, or
+// what failed (ENOENT: no such program)
+static int mapper_spawn(MapperConn* conn, char const* const* argv, isize argc, char const* dir) {
+    SECURITY_ATTRIBUTES inherit = { .nLength = sizeof inherit, .bInheritHandle = TRUE };
+    HANDLE child_in = nullptr, to_child = nullptr, from_child = nullptr, child_out = nullptr;
+    if (!CreatePipe(&child_in, &to_child, &inherit, 0)) return EMFILE;
+    if (!CreatePipe(&from_child, &child_out, &inherit, 0)) {
+        CloseHandle(child_in), CloseHandle(to_child);
+        return EMFILE;
+    }
+    // (Our ends aren't inherited)
+    SetHandleInformation(to_child, HANDLE_FLAG_INHERIT, 0);
+    SetHandleInformation(from_child, HANDLE_FLAG_INHERIT, 0);
+    HANDLE null = CreateFileW(L"NUL", GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, &inherit, OPEN_EXISTING, 0, nullptr);
+    cstr command = cstr_null;
+    for (isize i = 0; i < argc; i++) append_command_arg(&command, c_sv(argv[i], (isize)strlen(argv[i])));
+    wchar_t* wide_command = wide_string(cstr_str(&command));
+    wchar_t* wide_dir = dir ? wide_string(dir) : nullptr;
+    STARTUPINFOW startup = { .cb = sizeof startup, .dwFlags = STARTF_USESTDHANDLES, .hStdInput = child_in,
+        .hStdOutput = child_out, .hStdError = null };
+    PROCESS_INFORMATION info;
+    // (The executable is looked up like Go's exec.LookPath would: CreateProcess searches the PATH for argv[0])
+    BOOL created = CreateProcessW(nullptr, wide_command, nullptr, nullptr, TRUE, CREATE_NO_WINDOW, nullptr, wide_dir,
+        &startup, &info);
+    DWORD error = created ? 0 : GetLastError();
+    free(wide_command);
+    free(wide_dir);
+    cstr_drop(&command);
+    CloseHandle(child_in);
+    CloseHandle(child_out);
+    if (null != INVALID_HANDLE_VALUE) CloseHandle(null);
+    if (!created) {
+        CloseHandle(to_child), CloseHandle(from_child);
+        return error == ERROR_FILE_NOT_FOUND || error == ERROR_PATH_NOT_FOUND ? ENOENT : EACCES;
+    }
+    CloseHandle(info.hThread);
+    conn->process = info.hProcess;
+    conn->write_fd = _open_osfhandle((intptr_t)to_child, _O_WRONLY | _O_BINARY);
+    conn->fd = _open_osfhandle((intptr_t)from_child, _O_RDONLY | _O_BINARY);
+    return 0;
+}
+#endif
+
+// Waits for the mapper's process to exit: true with its exit code (-1 when killed by a signal) in *code
+static bool mapper_exited(MapperConn* conn, int* code) {
+#ifdef _WIN32
+    DWORD status;
+    if (!conn->process || WaitForSingleObject(conn->process, INFINITE) != WAIT_OBJECT_0 || !GetExitCodeProcess(conn->process, &status)) return false;
+    CloseHandle(conn->process);
+    conn->process = nullptr;
+    *code = (int)status;
+    return true;
+#else
+    int status;
+    if (waitpid(conn->pid, &status, 0) != conn->pid) return false;
+    conn->pid = 0;
+    *code = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+    return true;
+#endif
+}
+
 // Spawns the mapper (exec in its package directory, the launcher in front of it) and initializes it
 static void conn_start(MapperConn* conn, ContentMapper const* mapper) {
+#ifdef _WIN32
+    char const** argv = calloc((size_t)mapper->exec.count + 2, sizeof(char*));
+    isize argc = 0;
+    if (launcher) argv[argc++] = launcher;
+    for (isize i = 0; i < mapper->exec.count; i++) argv[argc++] = cstr_str(&mapper->exec.items[i]);
+    struct stat st;
+    bool in_dir = cstr_size(&mapper->package_dir) && stat(cstr_str(&mapper->package_dir), &st) == 0 && S_ISDIR(st.st_mode);
+    int spawned = mapper_spawn(conn, argv, argc, in_dir ? cstr_str(&mapper->package_dir) : nullptr);
+    free(argv);
+    if (spawned != 0) {
+        csview command = cstr_sv(&mapper->exec.items[0]);
+        cstr detail = !launcher && !csview_contains(command, "/") && !csview_contains(command, "\\") && spawned == ENOENT
+            ? cstr_d("exec: \"", command, "\": executable file not found in %PATH%")
+            : cstr_d("exec: \"", command, "\": ", spawned == ENOENT ? "file does not exist" : "access is denied");
+        conn_fail(conn, 18100, cstr_d("The content mapper command '", command, "' could not be started: ", detail));
+        cstr_drop(&detail);
+        return;
+    }
+#else
     int fds[2];
 #ifdef SOCK_CLOEXEC
     bool paired = socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, fds) == 0;
@@ -374,6 +534,7 @@ static void conn_start(MapperConn* conn, ContentMapper const* mapper) {
     }
     conn->pid = pid;
     conn->fd = fds[0];
+#endif
 
     JsonValue response, result;
     clock_gettime(CLOCK_MONOTONIC, &conn->deadline);
@@ -389,9 +550,8 @@ static void conn_start(MapperConn* conn, ContentMapper const* mapper) {
             csview message = json_get_string(json_get(&response, "error"), "message");
             conn_fail(conn, 18104, cstr_d("The content mapper's 'initialize' request failed: ", message));
             json_drop(&response);
-        } else if (waitpid(conn->pid, &status, 0) == conn->pid) {
-            conn->pid = 0;
-            int code = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+        } else if (mapper_exited(conn, &status)) {
+            int code = status;
             conn_fail(conn, 18101, cstr_d("The content mapper process exited before responding to the 'initialize' "
                 "request (exit code ", code, ")."));
         } else {
@@ -436,6 +596,9 @@ static MapperConn* conn_for(ContentMapperHost* me, ContentMapper const* mapper) 
         my conns = realloc(my conns, sizeof(MapperConn) * (my conn_count + 1));
         conn = &my conns[my conn_count++];
         *conn = (MapperConn){ .key = key, .fd = -1 };
+#ifdef _WIN32
+        conn->write_fd = -1;
+#endif
         key = cstr_null;
         conn_start(conn, mapper);
     }
@@ -470,7 +633,7 @@ static MapperConn* conn_for(ContentMapperHost* me, ContentMapper const* mapper) 
         } else if (called == CALL_OK && has_watched) {
             for (isize i = 0; i < watched->count; i++) {
                 JsonValue const* file = &watched->items[i];
-                if (file->tag != JSON_STRING || !cstr_size(&file->string) || cstr_str(&file->string)[0] != '/') {
+                if (file->tag != JSON_STRING || !cstr_size(&file->string) || !path_is_rooted(cstr_sv(&file->string))) {
                     conn->project_failure_code = 18093;
                 }
             }

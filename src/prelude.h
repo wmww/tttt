@@ -10,6 +10,9 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <time.h>
+#ifdef _WIN32
+#include "win32/compat.h"
+#endif
 
 // cleat.h pulls in cleat's types, string helpers, common macros, display, log, failable and generic/types headers,
 // plus STC's common/csview/cstr. See thirdparty/cleat/readme.md
@@ -103,16 +106,19 @@ static inline uintptr_t page_round_down(uintptr_t x) { return x & ~(uintptr_t)(p
 // MADV_POPULATE_WRITE; nothing where the kernel lacks it: macOS, an older Linux). addr is page aligned
 void pages_populate(void* addr, size_t len);
 // Gives the pages of [addr, addr + len) back to the system, their contents gone (MADV_DONTNEED on Linux, which reads
-// them back as zeroes; MADV_FREE_REUSABLE on macOS, which leaves them undefined: no caller reads them again)
+// them back as zeroes; MADV_FREE_REUSABLE on macOS, which leaves them undefined: no caller reads them again; Windows:
+// decommitted, src/win32's MADV_DONTNEED, read back as zeroes)
 void pages_discard(void* addr, size_t len);
 
 // The process's resident set, bytes (/proc/self/statm; 0 if unreadable). A read of an fd kept open: cheap enough per
-// file. macOS: the physical footprint (task_info()), which pages_discard()ed pages leave at once
+// file. macOS: the physical footprint (task_info()), which pages_discard()ed pages leave at once. Windows: the working
+// set (GetProcessMemoryInfo())
 u64 process_resident_bytes(void);
 // The memory the system could give the process now, bytes: /proc/meminfo's MemAvailable, and when it runs in cgroups
 // (v2) with limits, the least that any of them still leaves (memory.max and memory.high minus memory.current, the
 // cgroup's and each ancestor's), whichever is less; TTTT_MEM_AVAILABLE_MB overrides it (testing). 0: unknown. macOS:
-// the free, inactive, speculative and purgeable pages (host_statistics64())
+// the free, inactive, speculative and purgeable pages (host_statistics64()). Windows: GlobalMemoryStatusEx()'s
+// available physical memory
 u64 memory_available_bytes(void);
 // Under TTTT_VMA_NAMES, names an anonymous mapping `[anon:tttt-NAME]` in /proc/PID/smaps (PR_SET_VMA_ANON_NAME), for
 // RSS attribution by kind (scripts/rsstimeline.py); a no-op otherwise
@@ -126,6 +132,25 @@ static inline void* zeroed_table(size_t count, size_t size) {
     void* ret = malloc(count * size);
     panic_if(!ret, "out of memory");
     return memset(ret, 0, count * size);
+}
+
+// size bytes at a 64-byte boundary (a cache line of their own), freed with cache_aligned_free(): aligned_alloc() and the
+// real free() (not debug_allocator.h's, whose free() would be handed the block's address minus its offset: the test
+// runners crashed on it once the harness's several checkers shared a graph); Windows' C runtime has no aligned_alloc()
+static inline void* cache_aligned_alloc(size_t size) {
+    size = (size + 63) & ~(size_t)63;
+#ifdef _WIN32
+    return _aligned_malloc(size, 64);
+#else
+    return aligned_alloc(64, size);
+#endif
+}
+static inline void cache_aligned_free(void* p) {
+#ifdef _WIN32
+    _aligned_free(p);
+#else
+    (free)(p);
+#endif
 }
 
 // zeroed_table() for a checker's growing hash tables (intern, link and relation tables, which double), freed only

@@ -85,21 +85,30 @@ void tsconfig_diagnostics_drop(TsconfigDiagnostics* me) {
 }
 
 static cstr path_join(csview dir, csview rest) {
-    if (rest.size && rest.buf[0] == '/') return absolute_path_of(c_sv("/"), rest);
-    // (A directory walk's: both normalized already)
-    if (dir.size && dir.buf[0] == '/' && path_is_normalized(dir) && path_is_normalized(rest)) {
-        return dir.size == 1 ? cstr_d("/", rest) : cstr_d(dir, "/", rest);
+    if (memchr(rest.buf, '\\', (size_t)rest.size)) {
+        cstr slashes = cstr_from_sv(rest);
+        path_normalize_slashes(cstr_data(&slashes), cstr_size(&slashes));
+        cstr ret = path_join(dir, cstr_sv(&slashes));
+        cstr_drop(&slashes);
+        return ret;
     }
-    cstr combined = cstr_d(dir, "/", rest);
+    if (path_is_rooted(rest)) return absolute_path_of(c_sv("/"), rest);
+    // (A directory walk's: both normalized already)
+    if (path_is_rooted(dir) && path_is_normalized(dir) && path_is_normalized(rest)) {
+        return path_ends_with_slash(dir) ? cstr_d(dir, rest) : cstr_d(dir, "/", rest);
+    }
+    // (No `//` after a root: on Windows that starts a UNC path)
+    cstr combined = path_ends_with_slash(dir) ? cstr_d(dir, rest) : cstr_d(dir, "/", rest);
     cstr ret = absolute_path_of(c_sv("/"), cstr_sv(&combined));
     cstr_drop(&combined);
     return ret;
 }
 
 static csview parent_of(csview path) {
+    isize root = path_root_size(path);
     isize i = path.size;
-    while (i > 0 && path.buf[i - 1] != '/') i--;
-    while (i > 1 && path.buf[i - 1] == '/') i--;
+    while (i > root && path.buf[i - 1] != '/') i--;
+    while (i > (root ? root : 1) && path.buf[i - 1] == '/') i--;
     return csview_slice(path, 0, i ? i : 1);
 }
 
@@ -500,7 +509,7 @@ static bool resolve_extends_exports(ConfigLoad* me, JsonValue const* package_jso
 // What `"extends": "name"` names: a path, or a package (its `tsconfig` field, a file in it, or its tsconfig.json)
 static bool resolve_extends(ConfigLoad* me, csview dir, csview name, cstr* out) {
     // (tsgo's getExtendsConfigPath: rooted, `./` or `../`; anything else is resolved like a module)
-    bool is_path = name.size && (name.buf[0] == '/' || csview_starts_with(name, "./") || csview_starts_with(name, "../"));
+    bool is_path = name.size && (path_is_rooted(name) || csview_starts_with(name, "./") || csview_starts_with(name, "../"));
     if (csview_equals(name, ".") || csview_equals(name, "..")) {
         // A relative module name (tsgo's ResolveConfig): the file with `.json`, else the directory's package.json
         // `tsconfig`, else its tsconfig.json
@@ -677,7 +686,7 @@ static bool resolve_extends(ConfigLoad* me, csview dir, csview name, cstr* out) 
             cstr_drop(&subpath);
             return true;
         }
-        if (cstr_size(&at) <= 1) break;
+        if (cstr_size(&at) <= 1 || path_is_root(cstr_sv(&at))) break;
         cstr parent = cstr_from_sv(parent_of(cstr_sv(&at)));
         cstr_take(&at, parent);
     }
@@ -1514,7 +1523,7 @@ static void collect_root_files(ConfigLoad* me, StrList* out) {
 // config's directory (tsc's parseConfig's updatePath: combinePaths of the relative directory and the spec, not
 // normalized)
 static void push_shown_spec(ConfigLoad* me, StrList* list, csview dir, csview spec) {
-    if (cstr_equals_sv(&my config_dir, dir) || (spec.size && spec.buf[0] == '/') || csview_starts_with(spec, "${configDir}")) {
+    if (cstr_equals_sv(&my config_dir, dir) || path_is_rooted(spec) || csview_starts_with(spec, "${configDir}")) {
         str_list_push(list, spec);
         return;
     }
@@ -1655,7 +1664,7 @@ cstr tsconfig_find(Fs const* fs, csview directory) {
             return candidate;
         }
         cstr_drop(&candidate);
-        if (cstr_size(&dir) <= 1) break;
+        if (cstr_size(&dir) <= 1 || path_is_root(cstr_sv(&dir))) break;
         cstr parent = cstr_from_sv(parent_of(cstr_sv(&dir)));
         cstr_take(&dir, parent);
     }

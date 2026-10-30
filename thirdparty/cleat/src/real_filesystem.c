@@ -119,6 +119,10 @@ static_failable real_fs_get_cwd(Fs const* me, returns cstr) {
     ignore me;
     char cwd[PATH_MAX];
     if (getcwd(cwd, sizeof(cwd))) {
+#ifdef _WIN32
+        // (Forward slashes, like every other path: C:/dir)
+        for (char* c = cwd; *c; c++) if (*c == '\\') *c = '/';
+#endif
         return ok(cstr_from(cwd));
     } else {
         return err(filesystem_error_new(cstr_lit("Failed to determine current working directory")));
@@ -241,7 +245,11 @@ static_failable real_fs_mkdir(Fs const* me, csview path) {
     fs_path_from_csview(path_str, path, {
         return err(filesystem_error_new(cstr_from_fmt("%.*s: invalid path", c_SV(path))));
     });
+#ifdef _WIN32
+    if (mkdir(path_str) != 0) {
+#else
     if (mkdir(path_str, 0755) != 0) {
+#endif
         if (errno == EEXIST) {
             return ok;
         } else {

@@ -29,6 +29,13 @@ failable subproc_wait(
 );
 
 // All can be 0 initialized
+#ifdef _WIN32
+// (stdout and stderr are macros there)
+#pragma push_macro("stdout")
+#pragma push_macro("stderr")
+#undef stdout
+#undef stderr
+#endif
 typedef struct SubprocArgs {
     // The command arguments, nulls are ignored and may appear in the middle of the command
     const char* cmd[16];
@@ -45,4 +52,8 @@ typedef struct SubprocArgs {
     // If set, returns an error on nonzero exit code
     bool err_if_nonzero;
 } SubprocArgs;
+#ifdef _WIN32
+#pragma pop_macro("stdout")
+#pragma pop_macro("stderr")
+#endif
 failable run_subproc(SubprocArgs args);

@@ -39,6 +39,21 @@ if host_machine.system() == 'darwin'
     endforeach
 endif
 
+# Windows (MinGW-w64, UCRT): src/win32 stands in for the POSIX headers Windows lacks (sys/mman.h, sys/resource.h) and
+# implements them (agents/notes/windows.md). GCC's struct layout, not MSVC's (-mno-ms-bitfields: the AST's bitfield
+# structs keep their Linux sizes), a 64-bit off_t and a standalone executable (no MinGW runtime
+# DLL: libgcc/compiler-rt and winpthreads linked in) whose threads each reserve 256 MB of stack, the most
+# worker_stack_size() asks for, committed as it grows (Windows can't take a stack of ours: load_pool.c)
+win32_files = []
+if host_machine.system() == 'windows'
+    add_project_arguments('-mno-ms-bitfields', '-D_FILE_OFFSET_BITS=64', '-I' + meson.current_source_dir() / 'src/win32', language : 'c')
+    link_args += ['-static', '-Wl,--stack,268435456']
+    win32_files += files('src/win32/win32.c')
+    # (The process's code page is UTF-8: argv, getenv() and the C runtime's file functions take UTF-8 paths)
+    win32_files += import('windows').compile_resources('src/win32/tttt.rc', depend_files: files('src/win32/tttt.manifest'))
+    link_args += ['-lpsapi']
+endif
+
 # Must come after the add_project_arguments() above so cleat gets the same defines. cleat's meson.build declares
 # cleat_dep and cleat_c_args (the recommended set of warnings/errors); cleat_c_args can't go through
 # add_project_arguments() because by this point cleat has already declared its own build targets, so each of our
@@ -51,7 +66,7 @@ subdir('src')
 
 executable(
     'tttt',
-    main_files,
+    main_files + win32_files,
     include_directories: src_inc,
     dependencies: deps,
     c_args: cleat_c_args,
@@ -60,7 +75,7 @@ executable(
 
 executable(
     'baseline_tests',
-    baseline_test_files,
+    baseline_test_files + win32_files,
     include_directories: src_inc,
     dependencies: deps,
     # (The source tree: where the suite's content mapper launcher is, thirdparty/typescript/built)
@@ -70,7 +85,7 @@ executable(
 
 executable(
     'diffapp_runner',
-    diffapp_runner_files,
+    diffapp_runner_files + win32_files,
     include_directories: src_inc,
     dependencies: deps,
     c_args: cleat_c_args + ['-DDEBUG_ALLOCATOR'],

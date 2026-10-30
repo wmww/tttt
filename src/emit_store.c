@@ -1,6 +1,7 @@
 // realpath() and PATH_MAX, which strict -std=c2x hides
 #define _DEFAULT_SOURCE
 #include "emit_store.h"
+#include "string_helpers.h"
 #include <limits.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -103,7 +104,7 @@ static cstr lenient_real_path(csview path) {
     if (slash <= 1) return cstr_null;
     cstr parent = lenient_real_path(csview_slice(path, 0, slash - 1));
     if (!cstr_size(&parent)) return parent;
-    cstr ret = cstr_d(parent, "/", csview_slice(path, slash, path.size));
+    cstr ret = path_concat(cstr_sv(&parent), csview_slice(path, slash, path.size));
     cstr_drop(&parent);
     return ret;
 }
@@ -111,7 +112,7 @@ static cstr lenient_real_path(csview path) {
 // The entry at path, also through a link (node_modules) whose target has it
 static bool view_lookup(EmitView const* me, csview path, EmitEntry* entry, cstr const** text) {
     if (!my visible_count || !path.size) return false;
-    cstr absolute = path.buf[0] == '/' ? cstr_null : absolute_path_of(cstr_sv(&my cwd), path);
+    cstr absolute = path_is_rooted(path) ? cstr_null : absolute_path_of(cstr_sv(&my cwd), path);
     if (cstr_size(&absolute)) path = cstr_sv(&absolute);
     bool ret = view_lookup_exact(me, path, entry, text);
     if (!ret && csview_contains(path, "/node_modules/")) {

@@ -1,0 +1,207 @@
+diff --git cleat/include/cleat/subproc.h cleat/include/cleat/subproc.h
+index 271493aed..c21642a2d 100644
+--- cleat/include/cleat/subproc.h
++++ cleat/include/cleat/subproc.h
+@@ -29,6 +29,13 @@ failable subproc_wait(
+ );
+ 
+ // All can be 0 initialized
++#ifdef _WIN32
++// (stdout and stderr are macros there)
++#pragma push_macro("stdout")
++#pragma push_macro("stderr")
++#undef stdout
++#undef stderr
++#endif
+ typedef struct SubprocArgs {
+     // The command arguments, nulls are ignored and may appear in the middle of the command
+     const char* cmd[16];
+@@ -45,4 +52,8 @@ typedef struct SubprocArgs {
+     // If set, returns an error on nonzero exit code
+     bool err_if_nonzero;
+ } SubprocArgs;
++#ifdef _WIN32
++#pragma pop_macro("stdout")
++#pragma pop_macro("stderr")
++#endif
+ failable run_subproc(SubprocArgs args);
+diff --git cleat/src/filesystem.c cleat/src/filesystem.c
+index b551b6779..e87b60724 100644
+--- cleat/src/filesystem.c
++++ cleat/src/filesystem.c
+@@ -56,22 +56,49 @@ static csview path_next_segment(csview* path) {
+     return segment;
+ }
+ 
+-static void push_path_to_absolute(cstr* absolute, csview path) {
++// The size of path's root, 0 if it's relative: `/`, and on Windows a drive (`C:/`, `C:`). (A UNC path's is `/`, as
++// tttt's path_root_size() has it)
++static intptr_t path_root_size_of(csview path) {
++    if (!path.size) return 0;
++#if defined _WIN32 || defined TTTT_WINDOWS_PATHS
++    char c0 = path.buf[0] | 0x20;
++    if (path.size >= 2 && c0 >= 'a' && c0 <= 'z' && path.buf[1] == ':') return path.size >= 3 && path.buf[2] == '/' ? 3 : 2;
++#endif
++    return *path.buf == path_sep ? 1 : 0;
++}
++
++#if defined _WIN32 || defined TTTT_WINDOWS_PATHS
++// Windows' file names compare without case (ASCII here: what relative_path_of() needs of a drive or a directory)
++static bool segment_equals(csview a, csview b) {
++    if (a.size != b.size) return false;
++    for (intptr_t i = 0; i < a.size; i++) {
++        char x = a.buf[i] >= 'A' && a.buf[i] <= 'Z' ? a.buf[i] | 0x20 : a.buf[i];
++        char y = b.buf[i] >= 'A' && b.buf[i] <= 'Z' ? b.buf[i] | 0x20 : b.buf[i];
++        if (x != y) return false;
++    }
++    return true;
++}
++#else
++#define segment_equals csview_equals_sv
++#endif
++
++// (absolute ends with its root, `root` bytes, which `..` doesn't go above)
++static void push_path_to_absolute(cstr* absolute, intptr_t root, csview path) {
+     while (path.size) {
+         csview segment = path_next_segment(&path);
+         if (!csview_size(segment) || csview_equals_sv(segment, c_sv("."))) {
+         } else if (csview_equals_sv(segment, c_sv(".."))) {
+             intptr_t i = cstr_size(absolute);
+-            while (i > 0) {
++            while (i > root) {
+                 i--;
+                 if (cstr_str(absolute)[i] == path_sep) {
+                     break;
+                 }
+             }
+-            if (i < 1) i = 1;
++            if (i < root) i = root;
+             cstr_resize(absolute, i, 0);
+         } else {
+-            if (cstr_size(absolute) > 1) {
++            if (cstr_size(absolute) > root) {
+                 cstr_append_n(absolute, &path_sep, 1);
+             }
+             cstr_append_sv(absolute, segment);
+@@ -80,24 +107,44 @@ static void push_path_to_absolute(cstr* absolute, csview path) {
+ }
+ 
+ cstr absolute_path_of(csview cwd, csview path) {
+-    panic_if(!cwd.size || *cwd.buf != path_sep, "cwd must be absolute path, is '", cwd, "'");
+-    cstr ret = cstr_from_n(&path_sep, 1);
+-    if (*path.buf != path_sep) {
+-        push_path_to_absolute(&ret, cwd);
++    intptr_t path_root = path_root_size_of(path);
++    csview rooted = path_root ? path : cwd;
++    intptr_t root = path_root ? path_root : path_root_size_of(cwd);
++    // (Not panic(): its logger makes paths absolute)
++    if (!root) {
++        fprintf(stderr, "cwd must be absolute path, is '%.*s'\n", (int)cwd.size, cwd.buf);
++        abort();
++    }
++    cstr ret = cstr_from_sv(csview_slice(rooted, 0, root));
++    // (A drive `C:` is its root `C:/`)
++    if (cstr_str(&ret)[root - 1] != path_sep) {
++        cstr_append_n(&ret, &path_sep, 1);
++        root++;
++    }
++    if (!path_root) {
++        push_path_to_absolute(&ret, root, csview_slice(cwd, path_root_size_of(cwd), cwd.size));
+     }
+-    push_path_to_absolute(&ret, path);
++    push_path_to_absolute(&ret, root, csview_slice(path, path_root, path.size));
+     return ret;
+ }
+ 
+ cstr relative_path_of(csview cwd, csview path) {
+     cstr absolute = absolute_path_of(cwd, path);
+     path = cstr_sv(&absolute);
++#if defined _WIN32 || defined TTTT_WINDOWS_PATHS
++    // (On another drive or share: there's no relative path, the absolute one)
++    intptr_t root = path_root_size_of(path), cwd_root = path_root_size_of(cwd);
++    csview path_root = csview_slice(path, 0, root), dir_root = csview_slice(cwd, 0, cwd_root);
++    if (path_root.size && path_root.buf[path_root.size - 1] == path_sep) path_root.size--;
++    if (dir_root.size && dir_root.buf[dir_root.size - 1] == path_sep) dir_root.size--;
++    if (!segment_equals(path_root, dir_root)) return absolute;
++#endif
+     while (cwd.size && path.size) {
+         csview cwd_next = cwd;
+         csview path_next = path;
+         csview cwd_segment = path_next_segment(&cwd_next);
+         csview path_segment = path_next_segment(&path_next);
+-        if (!csview_equals_sv(cwd_segment, path_segment)) {
++        if (!segment_equals(cwd_segment, path_segment)) {
+             break;
+         }
+         cwd = cwd_next;
+diff --git cleat/src/real_filesystem.c cleat/src/real_filesystem.c
+index 1920f374c..2fd4a5761 100644
+--- cleat/src/real_filesystem.c
++++ cleat/src/real_filesystem.c
+@@ -119,6 +119,10 @@ static_failable real_fs_get_cwd(Fs const* me, returns cstr) {
+     ignore me;
+     char cwd[PATH_MAX];
+     if (getcwd(cwd, sizeof(cwd))) {
++#ifdef _WIN32
++        // (Forward slashes, like every other path: C:/dir)
++        for (char* c = cwd; *c; c++) if (*c == '\\') *c = '/';
++#endif
+         return ok(cstr_from(cwd));
+     } else {
+         return err(filesystem_error_new(cstr_lit("Failed to determine current working directory")));
+@@ -241,7 +245,11 @@ static_failable real_fs_mkdir(Fs const* me, csview path) {
+     fs_path_from_csview(path_str, path, {
+         return err(filesystem_error_new(cstr_from_fmt("%.*s: invalid path", c_SV(path))));
+     });
++#ifdef _WIN32
++    if (mkdir(path_str) != 0) {
++#else
+     if (mkdir(path_str, 0755) != 0) {
++#endif
+         if (errno == EEXIST) {
+             return ok;
+         } else {
+diff --git cleat/src/subproc.c cleat/src/subproc.c
+index 000ef0051..169f5f659 100644
+--- cleat/src/subproc.c
++++ cleat/src/subproc.c
+@@ -6,7 +6,9 @@
+ #include <limits.h>
+ #include <stc/cstr.h>
+ #include <sys/types.h>
++#ifndef _WIN32
+ #include <sys/wait.h>
++#endif
+ 
+ #include "subproc.h"
+ #include "string_helpers.h"
+@@ -59,6 +61,24 @@ DisplayCtx subproc_cmd_display(const char** cmd, size_t size, DisplayCtx d) {
+     return d;
+ }
+ 
++#ifdef _WIN32
++// (Windows: no fork(); subprocesses aren't supported)
++failable fork_subproc(bool capture_stdout, bool capture_stderr, returns ForkSubprocRet) {
++    ignore capture_stdout;
++    ignore capture_stderr;
++    return err(string_error_new(cstr_lit("fork_subproc: not supported on Windows")));
++}
++
++failable subproc_wait(ForkSubprocRet subproc, cstr* stdout_target, cstr* stderr_target, int* exit_code_target, int* exit_signal_target) {
++    ignore subproc; ignore stdout_target; ignore stderr_target; ignore exit_code_target; ignore exit_signal_target;
++    return err(string_error_new(cstr_lit("subproc_wait: not supported on Windows")));
++}
++
++failable run_subproc(SubprocArgs args) {
++    ignore args;
++    return err(string_error_new(cstr_lit("run_subproc: not supported on Windows")));
++}
++#else
+ failable fork_subproc(bool capture_stdout, bool capture_stderr, returns ForkSubprocRet) {
+     int out_pipe_fd[2] = {-1, -1};
+     int err_pipe_fd[2] = {-1, -1};
+@@ -246,3 +266,4 @@ finish:
+     cstr_drop(&stdout_tmp);
+     return result;
+ }
++#endif

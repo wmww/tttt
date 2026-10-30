@@ -523,7 +523,7 @@ static void identity_report(u64 kind, void const* site, char const* what) {
         uintptr_t seen = atomic_load(&identity_reports[i].site);
         if (!seen && atomic_compare_exchange_strong(&identity_reports[i].site, &seen, at)) {
             char hex[32];
-            snprintf(hex, sizeof(hex), "0x%lx", (unsigned long)at);
+            snprintf(hex, sizeof(hex), "0x%llx", (unsigned long long)at);
             eprintln("graph check: identity of kind ", (u32)kind, " ", what, " after a taint event since its lookup, at ", hex);
             break;
         }
