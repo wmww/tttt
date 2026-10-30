@@ -1,5 +1,8 @@
 build
 release
+!/scripts/release/
+/dist-pgo
+/dist-release
 .cache
 scratchpad.ts
 vgcore.*
