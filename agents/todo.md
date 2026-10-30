@@ -284,6 +284,11 @@ duplication (each checker's arena is its repeated work, 3-6 MB on nest, 12-33 MB
 "Done"). Gates: RSS at many threads next to the wall; threadcheck/checkerdiff byte-identical.
 
 ## Smaller ideas
+- **arm64 leftovers** (notes/arm64.md, 2026-10-29): a 16 KB-page Linux kernel is untested (64 KB passed every check;
+  macOS's 16 KB pages are covered by the mac port); GCC 15's ext-dce miscompile of the LTO + PGO
+  build is worked around with `-fno-ext-dce`, not reduced or reported upstream (recheck when GCC moves: drop the flag
+  only if fast/tttt stays byte-identical to release on arm64); the arm box's source checkouts stopped at 216 / 378
+  repos. Its bench (measurements.md "arm64 Linux"): tttt leads bun canary on vscode by 25% at the defaults.
 - **Code footprint**: still ~50% frontend-bound after BOLT and huge text (op cache hit 63%, icache misses 23% of
   fetches at 2989c0f0). The noinline splits simulated I1 misses -4.5..-6%, but on the laptop vscode K1's icache misses
   per instruction rose 1.4% and the cycles' -1.7% came from fewer instructions: the working set is what is left.

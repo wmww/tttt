@@ -267,3 +267,14 @@ intersection's property symbol to bugs/type_core.md.
 - A bodiless overload's pattern element with a default (`function f9({ [k in o]: c = 1 }); function f9() {}`, cor17
   2026-10-29): tttt reports TS2371 "A parameter initializer is only allowed in a function or constructor
   implementation" at the element's `c`, tsc only TS2842 there (TS2371 is a parameter's own initializer). [open]
+
+- K-dependence on DefinitelyTyped's nodemailer/v6 when the sweep's per-package links are absent (arm64 port,
+  2026-10-29): without `types/nodemailer/v6/node_modules/@types/nodemailer -> ../..` (sweep.py makes it; `kdiff.py --dt`
+  on a fresh tree runs before any sweep did) the v6 tests resolve `nodemailer` to the latest version and get a TS2322
+  at nodemailer-tests.ts(1087) and a TS2769 at (1088); `--threads 1 --checkers 32` prints the TS2322's elaboration
+  through "The types of 'transporter.mailer' are incompatible" where K1 (and tsgo, same setup) says "Types of property
+  'transporter' are incompatible". Same bytes on x86 and arm64: `bwrap --bind / / --dev /dev --proc /proc --tmpfs
+  $D/node_modules --chdir $D release/tttt --pretty false --threads 1 --checkers 32 --checker-memory off --noEmit -p .`
+  with D=thirdparty/corpora/DefinitelyTyped/types/nodemailer/v6, against `--checkers 1`. [text]
+- `scripts/kdiff.py --dt` checks DefinitelyTyped as it is on disk, so on a fresh tree (before any `sweep.py`) it
+  runs another configuration than the sweep's for the versioned packages (the entry above). [harness]

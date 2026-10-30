@@ -23,3 +23,6 @@ the taint prototype. The dependences are Linux kernel configuration and box stat
   its /proc/buddyinfo budget (measurements.md "The 12-core box at df95ec2f": faults -3.6x, wall within noise).
 
 macOS arm64 (2026-10-29): the Linux-only interfaces behind #ifdefs and what they became there: agents/notes/macos.md.
+
+arm64 Linux (2026-10-29): the address width, the runtime page size, a GCC 15 miscompile of the PGO build, and how a
+fresh box is set up: agents/notes/arm64.md.

@@ -4,6 +4,61 @@ append history, git has it. Older sections (oracle tallies, stage logs, supersed
 condensed on 2026-10-20 into "Past conclusions" below; the full log is `git show a9c5e07da:agents/measurements.md`.
 
 
+## arm64 Linux: vscode against bun and tsgo (2026-10-29, main 4cfa18295, the arm64 port)
+**Box**: arm64 VM, 32 vCPU Neoverse V2 (one thread per core), 128 GB, 4 KB pages, Ubuntu 26.04, GCC 15.2, nothing
+else running. fast/tttt (PGO + BOLT, `-fno-ext-dce`: notes/arm64.md), tsgo 7.1.0-beta built there with Go 1.27.2
+arm64, `bun check` from `@oven/bun-linux-aarch64` 1.4.3 and 1.4.3-canary.20261019.1 (prints 1.4.4; the canary the x64
+tables use). tttt checks with 32 checkers on 32 threads at the defaults.
+
+**vscode, interleaved** (7 rounds, every configuration once per round, order rotated; run from an empty directory;
+`-q --keep-going --noEmit -p vscode/src/tsconfig.corpus.json` as bench.sh; tttt's wall is to exit with the
+teardown reaper, its CPU therefore without the teardown's sys). Median wall s (best) / median CPU s / median peak RSS:
+
+| | wall | best | CPU | peak RSS |
+|---|---|---|---|---|
+| tttt | **0.76** | 0.73 | 17.3 | 4873 MB |
+| tttt `--singleThreaded` | 13.09 | 12.84 | 13.1 | 4140 MB |
+| tttt `--checkers 1` (32 threads for the front end) | 10.24 | 9.85 | 13.7 | 4269 MB |
+| bun canary | 1.01 | 0.99 | 23.8 | 2502 MB |
+| bun canary `--threads=1` | 18.97 | 18.60 | 19.0 | 1669 MB |
+| bun 1.4.3 | 1.50 | 1.43 | 27.3 | 2413 MB |
+| bun 1.4.3 `--threads=1` | 25.18 | 24.48 | 25.3 | 1412 MB |
+| tsgo | 8.40 | 8.15 | 46.1 | 6121 MB |
+| tsgo `--singleThreaded` | 29.56 | 28.85 | 34.4 | 5529 MB |
+
+- **tttt leads at the defaults: 0.76 s against bun canary's 1.01 (-25%) and 1.4.3's 1.50**, at 73% of the canary's CPU
+  and 1.95x its peak RSS. Single-threaded 13.1 s against 19.0 / 25.2. tsgo checks with 4 checkers (8.4 s).
+- bun reports "No type errors in 9,929 files"; tsgo and tttt report the same 10 (exit 2): as on x64, bun's output isn't
+  tsc's.
+- Against the x64 laptop (24 threads, "vscode since v1" below: main 2.24 s at all cores, bun 2.33; 13.32 s single
+  against bun 16.21): the same ordering, wider here, with more cores (32 against 12 physical).
+
+**Every corpus** (`scripts/bench.sh --runs 3 --bun bun-canary`, sequential, not interleaved; median wall s / CPU s /
+peak MB; TypeScript6 compiler is bench.sh's "real corpus"):
+
+| corpus | tttt | tttt single | bun canary | bun canary single | tsgo | tsgo single |
+|---|---|---|---|---|---|---|
+| TypeScript6 compiler | 0.21 / 0.72 / 335 | 0.56 / 0.56 / 233 | 0.32 / 1.34 / 368 | 0.98 / 0.98 / 175 | 0.67 / 2.39 / 488 | 1.49 / 1.92 / 434 |
+| type-fest | 0.26 / 1.63 / 874 | 0.99 / 1.00 / 585 | 1.10 / 5.54 / 1159 | 4.30 / 4.30 / 788 | 6.18 / 15.79 / 4170 | 8.59 / 12.44 / 3388 |
+| valibot | 0.04 / 0.89 / 371 | 0.47 / 0.47 / 232 | 0.11 / 1.77 / 375 | 1.21 / 1.21 / 163 | 0.79 / 3.92 / 708 | 2.17 / 3.08 / 606 |
+| bulletproof-react | 0.12 / 0.44 / 281 | 0.23 / 0.22 / 170 | 0.22 / 1.02 / 320 | 0.46 / 0.46 / 156 | 0.49 / 1.95 / 418 | 0.74 / 1.06 / 318 |
+| nestjs-boilerplate | 0.03 / 0.29 / 223 | 0.17 / 0.17 / 139 | 0.07 / 0.59 / 277 | 0.26 / 0.27 / 125 | 0.14 / 1.12 / 336 | 0.38 / 0.51 / 235 |
+| webpack | 0.99 / 2.61 / 728 | 1.23 / 1.30 / 525 | 0.40 / 3.85 / 614 | 2.17 / 2.18 / 349 | 1.31 / 6.09 / 991 | 3.45 / 4.42 / 809 |
+| zod | 0.11 / 1.51 / 630 | 0.67 / 0.67 / 380 | 0.21 / 2.51 / 483 | 1.52 / 1.51 / 215 | 1.18 / 5.96 / 1104 | 2.98 / 4.18 / 821 |
+| xstate | 0.08 / 1.11 / 379 | 0.34 / 0.35 / 187 | 0.14 / 1.22 / 328 | 0.70 / 0.69 / 113 | 0.47 / 2.19 / 423 | 1.14 / 1.55 / 352 |
+| drizzle | 0.10 / 1.97 / 701 | 0.86 / 0.87 / 429 | 0.20 / 3.44 / 544 | 1.91 / 1.91 / 275 | 1.66 / 8.16 / 1324 | 3.01 / 4.24 / 777 |
+| vue | 0.61 / 1.26 / 431 | 0.74 / 0.76 / 307 | 0.21 / 1.94 / 405 | 1.40 / 1.40 / 184 | 0.96 / 4.14 / 642 | 2.50 / 3.03 / 550 |
+| effect | 0.14 / 2.26 / 825 | 1.41 / 1.44 / 613 | 0.51 / 4.42 / 611 | 3.38 / 3.39 / 333 | 1.86 / 8.02 / 1252 | 4.76 / 6.05 / 1057 |
+| vscode | 0.74 / 17.58 / 4876 | 13.40 / 13.24 / 4141 | 0.99 / 23.91 / 2519 | 18.79 / 18.84 / 1675 | 8.23 / 44.03 / 6059 | 29.20 / 36.37 / 5500 |
+| excalidraw | 0.10 / 1.33 / 577 | 0.89 / 0.90 / 386 | 0.23 / 2.37 / 482 | 1.73 / 1.73 / 251 | 1.57 / 9.21 / 1540 | 3.05 / 3.86 / 776 |
+| tanstack-router | 0.12 / 1.20 / 472 | 0.67 / 0.65 / 296 | 0.23 / 2.37 / 511 | 1.43 / 1.43 / 191 | 1.35 / 5.26 / 760 | 2.90 / 3.53 / 608 |
+| tsc -b (14 projects) | 0.44 / 2.32 / 345 | | | | 1.28 / 5.69 / 608 | 3.21 / 4.01 / 506 |
+
+- tttt leads bun at the defaults on 12 of 14 and single-threaded on all 14. **webpack (0.99 against 0.40) and vue
+  (0.61 against 0.21) lose to the one-checker rerun** (their TS5115 and limit diagnostics are history-dependent):
+  `--no-rerun` 0.17 and 0.14 s. The same cost on x64 (vue +265% when its rerun began, "The one-checker rerun"
+  sections); not arm-specific.
+
 ## macOS arm64 against tsgo and bun (2026-10-29, a 4 vCPU / 8 GB M-series VM)
 fast/tttt (Apple clang LTO + PGO) vs tsgo 7.1.0-beta darwin and `bun check` 1.4.3 on six corpora: the table and
 method are in agents/notes/macos.md. Defaults: tsc-compiler 0.111 s (tsgo 0.374, bun 0.170), zod 0.132 (0.740,

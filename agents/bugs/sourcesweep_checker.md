@@ -696,3 +696,42 @@ missing_checks.md, together with variances for a declared type against its insta
   access's object type through the mapped-type unwrapping and intersection matching, tttt's recursion_key() didn't
   (an indexed access's identity was its bare object type, an intersection never matched by its members). Test
   ttttDeepNestingIndexedAccessIdentity (the variant without the Pick still errors). [fixed 3213e6320]
+
+## Found on the arm64 box (2026-10-29, arm64 port; none of them arm-specific)
+The arm64 VM's own source checkouts (216 of 378 repos installed, ensure-sources.sh), sourcesweep against the cached tsc
+verdicts: 5011 / 5065 match; projdiff.py (tsgo run live on the same install) confirms these as tttt divergences:
+- knip/packages/docs scripts/get-monthly-sponsorships-github.ts(42), spurious TS7022 'viewer' (a destructured `const
+  { viewer }: GraphQLResponse = await graphql<GraphQLResponse>({ ..., after: cursor })` in a `do { ... cursor =
+  viewer... } while (cursor)` loop: the annotation should end the circularity). Reduced to 11 lines (reduce.py),
+  same output on x86 and arm64; the case (tsc-suite header form, tsgo reports 3 errors, tttt adds the TS7022):
+  ```
+  // @strict: true
+  // @target: esnext
+  // @module: esnext
+  // @moduleResolution: bundler
+  // @filename: package.json
+  {"name": "@knip/root", "version": "0.0.0", "type": "module"}
+  // @filename: packages/docs/package.json
+  {"name": "@knip/docs", "version": "0.0.0", "type": "module"}
+  // @filename: packages/docs/scripts/get-monthly-sponsorships-github.ts
+  interface GraphQLResponse {
+  }
+    let cursor: string | null = null;
+    do {
+      const { viewer }: GraphQLResponse = await graphql<GraphQLResponse>({
+        query: `
+        `,
+        after: cursor,
+      });
+      cursor = viewer.sponsorsActivities.pageInfo.hasNextPage ? viewer.sponsorsActivities.pageInfo.endCursor : null;
+    } while (cursor);
+  ```
+  (This trimmed header reproduces it; reduce.py's carried the project's other options.) [open]
+- openclaw (most configs, e.g. src/cli, ui) on a fresh install: `.artifacts/kysely/openclaw-agent-db.generated.js`
+  isn't generated (scripts off), so the kysely row types are `{ [x: string]: any; }`; tsgo then reports TS2345 at
+  src/agents/worktrees/registry-publication.ts(68,45), tttt other diagnostics (TS2739 "missing the following
+  properties" on the row types, TS2347, TS2700...). The cached tsc verdicts were made on an install that had the
+  generated file, so the sweep shows +TS2307 too (that one is right). Unreduced: `scripts/projdiff.py
+  thirdparty/sources/openclaw/src/cli` on such an install. [open]
+- monkeytype/frontend (SearchableAutoSetting, the design entry above), better-auth/packages/better-auth (lynx-store)
+  and opencode/packages/web (starlight TS2589) are the known entries. [dup]
