@@ -20,15 +20,22 @@ exec python3 -I - "$@" <<'EOF'
 import base64, concurrent.futures, errno, hashlib, json, os, shutil, sqlite3, subprocess, sys, threading, time, urllib.request
 
 NODE_VERSION = 'v24.21.0'
-NODE_SHA256 = 'fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6'
+# This machine's node and bun builds (node's names say x64/arm64, npm's bun packages x64/aarch64)
+MACHINE = os.uname().machine
+NODE_ARCH, BUN_ARCH = {'x86_64': ('x64', 'x64'), 'aarch64': ('arm64', 'aarch64')}.get(MACHINE, (None, None))
+if not NODE_ARCH:
+    sys.exit(f'ensure-sources: no node or bun build known for {MACHINE}')
+NODE_SHA256 = {'x64': 'fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6',
+               'arm64': '6ad1325edbdb5649c379b75a237147a666c95d4f9ae8d340fef2d1575d289ad2'}[NODE_ARCH]
 HERE = os.getcwd()
 SOURCES = os.path.join(HERE, 'sources')
 CACHE = os.path.join(SOURCES, '.cache')
-NODE_BIN = os.path.join(HERE, 'node', f'node-{NODE_VERSION}-linux-x64', 'bin')
-# Bun, for the repos whose only lockfile is bun's (bun.lock, or the older binary bun.lockb): npm's @oven/bun-linux-x64
+NODE_BIN = os.path.join(HERE, 'node', f'node-{NODE_VERSION}-linux-{NODE_ARCH}', 'bin')
+# Bun, for the repos whose only lockfile is bun's (bun.lock, or the older binary bun.lockb): npm's @oven/bun-linux-ARCH
 # package, unpacked next to node (thirdparty/node/ is untracked and shared with the worktrees)
 BUN_VERSION = '1.4.3'
-BUN_SHA512 = 'RArgnpjeXjaGzjp5h7Rs89cUYJutO8IyqR3itE8OBaBzEt8KNm2jp/YozxBHq4eFovwrQLryeSwTAcmiT+zcoA=='
+BUN_SHA512 = {'x64': 'RArgnpjeXjaGzjp5h7Rs89cUYJutO8IyqR3itE8OBaBzEt8KNm2jp/YozxBHq4eFovwrQLryeSwTAcmiT+zcoA==',
+              'aarch64': 'ylogDFxDD+aRKO0TJauwDzCWM+rULvc85gRNZQ9CnY6rm2BU4GC2XUDi20bh67CIuB4Wt/0PL1xpsJ2hqplMww=='}[BUN_ARCH]
 BUN = os.path.join(HERE, 'node', f'bun-{BUN_VERSION}', 'package', 'bin', 'bun')
 MANIFEST = os.path.join(HERE, '..', 'test', 'sourcesweep', 'repos.txt')
 # What tsc and tttt read from node_modules; the rest (maps, binaries, docs, native addons) is ~half the bytes
@@ -39,7 +46,7 @@ def ensure_node():
     if os.path.exists(os.path.join(NODE_BIN, 'node')):
         return
     os.makedirs(os.path.dirname(os.path.dirname(NODE_BIN)), exist_ok=True)
-    name = f'node-{NODE_VERSION}-linux-x64.tar.xz'
+    name = f'node-{NODE_VERSION}-linux-{NODE_ARCH}.tar.xz'
     tarball = os.path.join(os.path.dirname(os.path.dirname(NODE_BIN)), name)
     print(f'fetching node {NODE_VERSION}', flush=True)
     urllib.request.urlretrieve(f'https://nodejs.org/dist/{NODE_VERSION}/{name}', tarball)
@@ -57,7 +64,7 @@ def ensure_bun():
     tarball = os.path.join(d, 'bun.tgz')
     print(f'fetching bun {BUN_VERSION}', flush=True)
     urllib.request.urlretrieve(
-        f'https://registry.npmjs.org/@oven/bun-linux-x64/-/bun-linux-x64-{BUN_VERSION}.tgz', tarball)
+        f'https://registry.npmjs.org/@oven/bun-linux-{BUN_ARCH}/-/bun-linux-{BUN_ARCH}-{BUN_VERSION}.tgz', tarball)
     if base64.b64encode(hashlib.sha512(open(tarball, 'rb').read()).digest()).decode() != BUN_SHA512:
         sys.exit('bun: sha512 mismatch')
     subprocess.run(['tar', 'xzf', tarball, '-C', d], check=True)

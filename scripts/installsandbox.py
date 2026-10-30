@@ -38,7 +38,7 @@ import argparse, json, os, re, shutil, subprocess, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 THIRD = os.path.realpath(os.path.join(ROOT, 'thirdparty'))
 NODE_DIR = os.path.realpath(os.path.join(THIRD, 'node'))
-NODE_BIN = os.path.join(NODE_DIR, 'node-v24.21.0-linux-x64/bin')
+NODE_BIN = os.path.join(NODE_DIR, 'node-v24.21.0-linux-' + {'aarch64': 'arm64'}.get(os.uname().machine, 'x64') + '/bin')
 BUN = os.path.join(NODE_DIR, 'bun-1.4.3/package/bin/bun')
 REGISTRY = 'https://registry.npmjs.org'
 HOME = os.path.realpath(os.path.expanduser('~'))

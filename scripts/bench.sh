@@ -7,7 +7,8 @@
 #   scripts/bench.sh [--runs N]
 #   scripts/bench.sh --checkers "4 8 12 16"   # also tttt at each of these checker counts (plan 62: core scaling)
 #   scripts/bench.sh --bun PATH               # also Bun's `bun check` (a Rust port of tsgo 7.0) at every core and at one
-#                                             # (`npm pack @oven/bun-linux-x64@1.4.3`, untarred: package/bin/bun)
+#                                             # (`npm pack @oven/bun-linux-x64@1.4.3`, on arm64
+#                                             # @oven/bun-linux-aarch64, untarred: package/bin/bun)
 #   scripts/bench.sh --tscrs PATH             # also tsc-rs (pingdotgg/ts-rust, a Rust port of tsgo at our pin) at its
 #                                             # defaults (4 checkers), --fast and single-threaded (`gh release download
 #                                             # v0.7.0 -R pingdotgg/ts-rust -p 'tsc-rs-0.7.0-linux-x64.tar.gz'`: its tsc)

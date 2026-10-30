@@ -54,13 +54,20 @@ if test -f "$RT_DEFAULT" && readelf -r "$RT_DEFAULT" | grep GOTPCREL > /dev/null
         echo "boltbuild: $RT_DEFAULT calls through the GOT, rebuilding it from llvm-project llvmorg-$VER" >&2
         rm -rf $RT.tmp
         mkdir -p $RT.tmp
-        for F in instr.cpp common.h sys_x86_64.h; do
+        # (The runtime's syscall layer is per architecture; GOTPCREL above is x86's relocation, but the rebuild is kept
+        # generic)
+        case "$(uname -m)" in
+            x86_64) SYS_H=sys_x86_64.h RT_ARCH_FLAGS=(-mno-sse -mgeneral-regs-only) ;;
+            aarch64) SYS_H=sys_aarch64.h RT_ARCH_FLAGS=(-mgeneral-regs-only) ;;
+            *) echo "boltbuild: no BOLT runtime layer known for $(uname -m)" >&2; exit 1 ;;
+        esac
+        for F in instr.cpp common.h $SYS_H; do
             curl -sfL -o $RT.tmp/$F "https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-$VER/bolt/runtime/$F" ||
                 { echo "boltbuild: can't fetch bolt/runtime/$F at llvmorg-$VER" >&2; exit 1; }
         done
         echo '#define HAVE_ELF_H' > $RT.tmp/config.h
         g++ -std=c++17 -O3 -DNDEBUG -ffreestanding -fno-exceptions -fno-rtti -fno-stack-protector -fPIC -fplt \
-            -fomit-frame-pointer -mno-sse -mgeneral-regs-only -I$RT.tmp -c $RT.tmp/instr.cpp -o $RT.tmp/instr.cpp.o
+            -fomit-frame-pointer "${RT_ARCH_FLAGS[@]}" -I$RT.tmp -c $RT.tmp/instr.cpp -o $RT.tmp/instr.cpp.o
         ar rcs $RT.tmp/libbolt_rt_instr.a $RT.tmp/instr.cpp.o
         rm -rf $RT
         mv $RT.tmp $RT
