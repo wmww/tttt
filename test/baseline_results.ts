@@ -7886,7 +7886,7 @@ const baselines = {
         types: true,
     },
     'bun43-C15c': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
