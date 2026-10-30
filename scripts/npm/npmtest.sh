@@ -147,8 +147,14 @@ for plat in linux-arm64 darwin-arm64 win32-x64; do
     P=$(project "npm-$plat"); (cd "$P" && npm i --os="$os" --cpu="$cpu" "tttt-ts@$VERSION" >"$S/log" 2>&1) || fail "npm --os=$os: $(tail -3 "$S/log")"
     ls "$P/node_modules" | grep -q "^tttt-ts-$plat$" && test "$(ls "$P/node_modules" | grep -c '^tttt-ts-')" = 1 \
         && pass "npm --os=$os --cpu=$cpu: installs only tttt-ts-$plat" || fail "npm --os=$os --cpu=$cpu: installed $(ls "$P/node_modules" | tr '\n' ' ')"
-    out=$(cd "$P" && fake "{\"platform\":\"$os\",\"arch\":\"$cpu\"}" node node_modules/tttt-ts/bin/tttt --version 2>&1)
-    grep -q "$plat" <<<"$out" && pass "launcher as $plat: runs tttt-ts-$plat's binary ($out)" || fail "launcher as $plat: $out"
+    # (A stand-in prints its platform; a real release binary runs under binfmt emulation where the host has it (qemu
+    # with the cross toolchain's sysroot for arm64, wine for win32: its first run's chatter goes to stderr) and prints
+    # its version; a darwin one fails to start, its path in the launcher's message)
+    out=$(cd "$P" && QEMU_LD_PREFIX=${QEMU_LD_PREFIX:-/usr/aarch64-linux-gnu} WINEDEBUG=-all \
+        fake "{\"platform\":\"$os\",\"arch\":\"$cpu\"}" node node_modules/tttt-ts/bin/tttt --version 2>/dev/null | tr -d '\r')
+    test -n "$out" || out=$(cd "$P" && fake "{\"platform\":\"$os\",\"arch\":\"$cpu\"}" node node_modules/tttt-ts/bin/tttt --version 2>&1)
+    { grep -q "$plat" <<<"$out" || test "$out" = "$TS_VERSION"; } \
+        && pass "launcher as $plat: runs tttt-ts-$plat's binary ($out)" || fail "launcher as $plat: $out"
 done
 
 echo "== pnpm $($PNPM --version)"
