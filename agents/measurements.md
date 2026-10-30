@@ -59,6 +59,12 @@ peak MB; TypeScript6 compiler is bench.sh's "real corpus"):
   `--no-rerun` 0.17 and 0.14 s. The same cost on x64 (vue +265% when its rerun began, "The one-checker rerun"
   sections); not arm-specific.
 
+## Windows x86-64 against tsgo and bun (2026-10-30, branch win at 725d600c7, a 16 vCPU / 64 GB cloud VM)
+fast/tttt.exe (clang LTO + PGO) vs tsgo 7.1.0-beta windows and `bun check` 1.4.3, Defender on: the table, the
+Defender-off runs and the method are in agents/notes/windows.md. Defaults: tsc-compiler 0.469 s (tsgo 1.426, bun
+0.901), zod 0.430 (2.357, 0.802), drizzle 0.496 (3.360, 0.989), effect 0.627 (3.874, 1.261), excalidraw 0.417 (3.183,
+0.749), webpack 2.293 (2.726, 1.297: the one-checker rerun), vscode 3.988 (17.014, 6.343). PGO -7 to -13% against -O3.
+
 ## macOS arm64 against tsgo and bun (2026-10-29, a 4 vCPU / 8 GB M-series VM)
 fast/tttt (Apple clang LTO + PGO) vs tsgo 7.1.0-beta darwin and `bun check` 1.4.3 on six corpora: the table and
 method are in agents/notes/macos.md. Defaults: tsc-compiler 0.111 s (tsgo 0.374, bun 0.170), zod 0.132 (0.740,

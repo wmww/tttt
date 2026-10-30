@@ -278,3 +278,7 @@ intersection's property symbol to bugs/type_core.md.
   with D=thirdparty/corpora/DefinitelyTyped/types/nodemailer/v6, against `--checkers 1`. [text]
 - `scripts/kdiff.py --dt` checks DefinitelyTyped as it is on disk, so on a fresh tree (before any `sweep.py`) it
   runs another configuration than the sweep's for the versioned packages (the entry above). [harness]
+- **`baseline_tests --checkers 4 --threads 4` segfaults in load_pool_run()** (2026-10-30, main at 4cfa18295 too, Linux
+  and Windows): `baseline_tests --checkers 4 --threads 4 -f 'bun01.*'` crashes in 1-3 runs of 3 (gdb: load_pool_run()
+  from load_pool_worker()), on the bun01 own tests early in a full run. `--checkers 4` on one thread is fine (its dump is
+  byte-identical to K1's). Found while checking the Windows port; not investigated [open]

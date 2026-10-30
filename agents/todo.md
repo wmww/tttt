@@ -79,6 +79,13 @@ wins first; land fast and gate in batches.
   Publishing is the human's (a 2FA npm account): the `tttt-ts@0.0.0-stage` placeholder npm's staged publishing left
   is worth deprecating. Keep the oracles green and the headline saved (`bugcount.py --save` per full run).
 
+- **Windows x86-64 follow-ups** (agents/notes/windows.md; branch `win`, not on main by the human's decision: suite
+  dump byte-identical to Linux's at K1 and K4, 14 of 15 -p corpora byte-identical to tsgo's Windows build, vue as on
+  Linux). Open: (1) case-insensitive file identity and TS1149/TS1261 (bugs/windows.md; TS1149/1261 are missing on
+  every platform); (2) the suite runs ~12x slower than on Linux and small runs pay Windows' 4 KB demand-zero faults:
+  profile with WPR/xperf, try keeping arena chunks across checker recycles there; (3) GCC 16 (UCRT64) builds with
+  native TLS too: its PGO build against clang's is unmeasured; (4) the oracles beyond wincompare.py (realworld,
+  clidiff, sweeps) need tttt_run.py without `resource` and bwrap to run there.
 - **macOS arm64 follow-ups** (agents/notes/macos.md; the port landed 2026-10-29, output identical to Linux on the
   suite and six corpora). Open: (1) memory on macOS: peak footprint is 1.1-1.9x bun's on five of six corpora there,
   and macOS's libmalloc is untuned (no mallopt) and unmeasured against an alternative; (2) physical_cores() counts
