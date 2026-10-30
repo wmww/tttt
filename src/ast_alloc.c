@@ -132,7 +132,7 @@ static void chunks_ref(char const* start, char const* end, int delta) {
         _Atomic(u32)* count = chunk_count(chunk);
         u32 old = atomic_fetch_add_explicit(count, (u32)delta, memory_order_acq_rel);
         if (delta > 0 || old != 1) continue;
-        if (!debug_env.ast_poison) madvise(chunk, AST_POPULATE, MADV_DONTNEED);
+        if (!debug_env.ast_poison) pages_discard(chunk, AST_POPULATE);
     }
 }
 
@@ -283,7 +283,7 @@ void ast_arena_drop(AstArena* arena) {
         uintptr_t end = ((uintptr_t)arena->ranges[i].end + (arena->materialization ? AST_PAGE - 1 : 0)) & ~(AST_PAGE - 1);
         if (end <= start) continue;
         if (debug_env.ast_poison) mprotect((void*)start, end - start, PROT_NONE);
-        else madvise((void*)start, end - start, MADV_DONTNEED);
+        else pages_discard((void*)start, end - start);
     }
     free(arena->ranges);
     *arena = (AstArena){0};
@@ -307,7 +307,7 @@ void ast_arena_drop(AstArena* arena) {
         } else {
             to = (size_t)(t->end - from) > AST_POPULATE ? from + AST_POPULATE : t->end;
         }
-        madvise(from, (size_t)(to - from), MADV_POPULATE_WRITE);
+        pages_populate(from, (size_t)(to - from));
         t->populated_bytes += (size_t)(to - from);
         t->populated = to;
     }

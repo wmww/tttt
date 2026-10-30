@@ -325,7 +325,14 @@ static bool reserved_diagnostic_source(csview source) {
 // Spawns the mapper (exec in its package directory, the launcher in front of it) and initializes it
 static void conn_start(MapperConn* conn, ContentMapper const* mapper) {
     int fds[2];
-    if (socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, fds) < 0) {
+#ifdef SOCK_CLOEXEC
+    bool paired = socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, fds) == 0;
+#else
+    // (macOS: no SOCK_CLOEXEC, a process spawned by another thread in between would inherit them)
+    bool paired = socketpair(AF_UNIX, SOCK_STREAM, 0, fds) == 0;
+    if (paired) fcntl(fds[0], F_SETFD, FD_CLOEXEC), fcntl(fds[1], F_SETFD, FD_CLOEXEC);
+#endif
+    if (!paired) {
         conn_fail(conn, 18084, cstr_from("The content mapper process could not be started or initialized."));
         return;
     }

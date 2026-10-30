@@ -29,7 +29,7 @@
     size_t step = ahead < ((size_t)64 << 10) ? (size_t)64 << 10 : ahead > ((size_t)1 << 20) ? (size_t)1 << 20 : ahead;
     size_t to = chunk->used + step < chunk->cap ? chunk->used + step : chunk->cap;
     uintptr_t end = page_round_down((uintptr_t)chunk->data + to);
-    if (end > from) madvise((void*)from, end - from, MADV_POPULATE_WRITE);
+    if (end > from) pages_populate((void*)from, end - from);
     chunk->populated = to;
 }
 

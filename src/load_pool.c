@@ -1,6 +1,9 @@
 // pthread_attr_setstack(), MAP_STACK, which strict -std=c2x hides
 #define _GNU_SOURCE
 #include "load_pool.h"
+#ifndef MAP_STACK
+#define MAP_STACK 0 // (macOS: none, any mapping can be a stack)
+#endif
 #include "parser.h"
 #include "error.h"
 #include <pthread.h>

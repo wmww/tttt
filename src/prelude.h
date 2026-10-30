@@ -99,11 +99,20 @@ size_t page_size(void);
 static inline uintptr_t page_round_up(uintptr_t x) { return (x + page_size() - 1) & ~(uintptr_t)(page_size() - 1); }
 static inline uintptr_t page_round_down(uintptr_t x) { return x & ~(uintptr_t)(page_size() - 1); }
 
-// The process's resident set, bytes (/proc/self/statm; 0 if unreadable). A read of an fd kept open: cheap enough per file
+// Faults the pages of [addr, addr + len) in for writing with one call rather than a trap per page (Linux 5.14's
+// MADV_POPULATE_WRITE; nothing where the kernel lacks it: macOS, an older Linux). addr is page aligned
+void pages_populate(void* addr, size_t len);
+// Gives the pages of [addr, addr + len) back to the system, their contents gone (MADV_DONTNEED on Linux, which reads
+// them back as zeroes; MADV_FREE_REUSABLE on macOS, which leaves them undefined: no caller reads them again)
+void pages_discard(void* addr, size_t len);
+
+// The process's resident set, bytes (/proc/self/statm; 0 if unreadable). A read of an fd kept open: cheap enough per
+// file. macOS: the physical footprint (task_info()), which pages_discard()ed pages leave at once
 u64 process_resident_bytes(void);
 // The memory the system could give the process now, bytes: /proc/meminfo's MemAvailable, and when it runs in cgroups
 // (v2) with limits, the least that any of them still leaves (memory.max and memory.high minus memory.current, the
-// cgroup's and each ancestor's), whichever is less; TTTT_MEM_AVAILABLE_MB overrides it (testing). 0: unknown
+// cgroup's and each ancestor's), whichever is less; TTTT_MEM_AVAILABLE_MB overrides it (testing). 0: unknown. macOS:
+// the free, inactive, speculative and purgeable pages (host_statistics64())
 u64 memory_available_bytes(void);
 // Under TTTT_VMA_NAMES, names an anonymous mapping `[anon:tttt-NAME]` in /proc/PID/smaps (PR_SET_VMA_ANON_NAME), for
 // RSS attribution by kind (scripts/rsstimeline.py); a no-op otherwise

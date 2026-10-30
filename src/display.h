@@ -100,7 +100,7 @@ static inline void display_str  (Display d, const char* s)  { cstr_append   (d.t
 static inline void display_s    (Display d, cstr        s)  { cstr_append_s (d.target, s); }
 static inline void display_sv   (Display d, csview      s)  { cstr_append_sv(d.target, s); }
 static inline void display_span (Display d, Span        s)  { cstr_append_span(d.target, s); }
-static inline void display_i64  (Display d, i64         i)  { cstr_append_fmt(d.target, "%zd", i); }
+static inline void display_i64  (Display d, i64         i)  { cstr_append_fmt(d.target, "%" PRId64, i); }
 
 static inline void display_repeated(Display d, csview sv, intptr_t n) {
     for (intptr_t i = 0; i < n; i++) display_sv(d, sv);

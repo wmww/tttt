@@ -14,6 +14,16 @@
 #include "unicode_identifiers.h"
 #include "ty/ty.h"
 
+// The last c in [s, s + n), or null: glibc's memrchr() (vectorized), a loop where libc has none (macOS)
+static inline char const* last_byte(char const* s, char c, size_t n) {
+#ifdef __APPLE__
+    while (n) if (s[--n] == c) return s + n;
+    return nullptr;
+#else
+    return memrchr(s, c, n);
+#endif
+}
+
 bool unused_enabled(void) {
     CompilerOptions const* options = compiler_options();
     return options->no_unused_locals || options->no_unused_parameters;
@@ -865,11 +875,11 @@ static void scan_jsdoc(Scope const* names, char const* body, char const* end, bo
 static char const* comment_open_extended(char const* file_start, char const* open) {
     char const* line_end = open; // Search [line_start, line_end)
     while (true) {
-        char const* newline_at = line_end > file_start ? memrchr(file_start, '\n', (size_t)(line_end - file_start)) : nullptr;
+        char const* newline_at = line_end > file_start ? last_byte(file_start, '\n', (size_t)(line_end - file_start)) : nullptr;
         char const* line_start = newline_at ? newline_at + 1 : file_start;
         char const* q = line_end;
         while (q > line_start) {
-            char const* slash = memrchr(line_start, '/', (size_t)(q - line_start));
+            char const* slash = last_byte(line_start, '/', (size_t)(q - line_start));
             if (!slash) break;
             if (slash > line_start && slash[-1] == '*') return open; // a `*/`: what's before is another comment
             if (slash + 1 < open && slash[1] == '*') open = slash;
@@ -903,7 +913,7 @@ void unused_mark_jsdoc_links_before(Scope const* names, char const* node_start, 
         char const* open = close;
         // (memrchr: a long comment before every statement of a file with links is scanned at vector speed)
         while (open >= file_start) {
-            char const* slash = memrchr(file_start, '/', open + 1 - file_start);
+            char const* slash = last_byte(file_start, '/', open + 1 - file_start);
             if (!slash) { open = file_start - 1; break; }
             open = slash;
             if (open[1] == '*' && open + 2 <= close) break;

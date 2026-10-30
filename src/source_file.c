@@ -858,7 +858,7 @@ static char* text_read_take(size_t bytes) {
     pthread_mutex_unlock(&text_reads.lock);
     // (Populated: a read() faulting on its pages one at a time made the load phase 20-40% slower on vscode, with the
     // other threads' mmap()s of big files then)
-    madvise(ret, bytes, MADV_POPULATE_WRITE);
+    pages_populate(ret, bytes);
     return ret;
 }
 
@@ -982,6 +982,7 @@ void source_text_unmap(u32 id) {
 
 void source_texts_release(void) {
     pthread_mutex_lock(&texts.lock);
+    // (File pages, read back from the file at the next read: MADV_DONTNEED keeps them on macOS too, unlike pages_discard())
     for (u32 i = 0; i < texts.count; i++) madvise(texts.segments[i].base, texts.segments[i].used, MADV_DONTNEED);
     pthread_mutex_unlock(&texts.lock);
 }
@@ -993,6 +994,24 @@ void source_texts_drop(void) {
     texts.mappings = nullptr;
     texts.mapping_count = texts.mapping_cap = 0;
     pthread_mutex_unlock(&texts.lock);
+}
+
+// A descriptor of a fresh file that no path names, -1 on failure: a memory file on Linux, an unlinked temporary file on
+// macOS (no memfd_create(); its pages are written back to $TMPDIR only under memory pressure)
+static int anonymous_file(void) {
+#ifdef __APPLE__
+    char const* dir = getenv("TMPDIR");
+    cstr path = cstr_d(dir && *dir ? dir : "/tmp", "/tttt-text-XXXXXX");
+    int fd = mkstemp((char*)cstr_str(&path));
+    if (fd >= 0) {
+        unlink(cstr_str(&path));
+        fcntl(fd, F_SETFD, FD_CLOEXEC);
+    }
+    cstr_drop(&path);
+    return fd;
+#else
+    return memfd_create("tttt-text", MFD_CLOEXEC);
+#endif
 }
 
 void source_text_detach(csview path) {
@@ -1007,7 +1026,7 @@ void source_text_detach(csview path) {
         if (!mapping->slot || mapping->dev != st.st_dev || mapping->ino != st.st_ino) continue;
         // The text moves to a memory file mapped at the same address (anonymous memory would be zeroed by
         // source_texts_release())
-        int fd = memfd_create("tttt-text", MFD_CLOEXEC);
+        int fd = anonymous_file();
         bool copied = fd >= 0;
         for (size_t at = 0; copied && at < mapping->size; ) {
             ssize_t n = write(fd, mapping->slot + at, mapping->size - at);

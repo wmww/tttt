@@ -1,7 +1,12 @@
 // realpath() and PATH_MAX, which strict -std=c2x hides, and sched_getaffinity()
 #define _GNU_SOURCE
 #include <limits.h>
+#ifdef __GLIBC__
 #include <malloc.h>
+#endif
+#ifdef __APPLE__
+#include <sys/sysctl.h>
+#endif
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -37,7 +42,9 @@
 #include <errno.h>
 #include <sched.h>
 #include <poll.h>
+#ifdef __linux__
 #include <sys/syscall.h>
+#endif
 
 enum { MAX_COMPILER_OPTION_ARGS = 64 };
 // --checker-memory's default: a quarter of the memory, at most DEFAULT_CHECKER_MEMORY_MAX_MB and at least
@@ -128,14 +135,9 @@ static void output_flush(Output* me) {
     cstr_clear(&my err);
 }
 
-// The resident set so far, in MB (0 where /proc isn't there)
+// The resident set so far, in MB (0 when unknown)
 static long resident_mb() {
-    FILE* statm = fopen("/proc/self/statm", "r");
-    if (!statm) return 0;
-    long size = 0, resident = 0;
-    if (fscanf(statm, "%ld %ld", &size, &resident) != 2) resident = 0;
-    fclose(statm);
-    return (long)((u64)resident * page_size() / (1024 * 1024));
+    return (long)(process_resident_bytes() >> 20);
 }
 
 // Reports the time since *last under the given name and resets *last. Reading and parsing can't be told apart, since
@@ -1086,11 +1088,13 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         // fraction of the work: jest's packages, each gated by TS5108)
         bool declarations_only = (gated || getenv("TTTT_DECLARATIONS_ONLY")) && typecheck && !opts->expect_types;
         if (declarations_only) program_set_declarations_only(program, true);
+#ifdef __GLIBC__
         mallopt(M_TOP_PAD, 128 << 10); // (glibc's default, see main())
         // What the front end freed goes back before the checkers grow: the load workers' heaps, their 16 MB pads, the
         // resolver's caches (nest at the defaults: peak RSS -4 MB, react -8; 0.3 ms on nest, 1 ms on vscode).
         // TTTT_NO_TRIM=1: kept
         if (!getenv("TTTT_NO_TRIM")) malloc_trim(0);
+#endif
         if (typecheck) program_typecheck(program);
         // (Checked, every body was materialized: program_typecheck() says if one parsed otherwise)
         if (defer && (program_defer_failed(program) ||
@@ -1647,8 +1651,14 @@ static void print_help(void) {
     );
 }
 
-// The physical cores among the CPUs this process may run on (distinct package and core ids in sysfs), 0 when unknown
+// The physical cores among the CPUs this process may run on (distinct package and core ids in sysfs), 0 when unknown.
+// macOS: hw.physicalcpu (no affinity masks; performance and efficiency cores alike)
 static u32 physical_cores(void) {
+#ifdef __APPLE__
+    int cores = 0;
+    size_t size = sizeof cores;
+    return sysctlbyname("hw.physicalcpu", &cores, &size, nullptr, 0) || cores <= 0 ? 0 : (u32)cores;
+#else
     cpu_set_t allowed;
     if (sched_getaffinity(0, sizeof allowed, &allowed)) return 0;
     enum { MAX_CORES = 1024 };
@@ -1675,6 +1685,7 @@ static u32 physical_cores(void) {
         seen[count++] = id;
     }
     return count;
+#endif
 }
 
 // The default checker count's ceiling: one checker per physical core, not per hardware thread, but every thread up
@@ -1902,7 +1913,9 @@ static void raise_stack_limit(void) {
 // output pipes see their end. A child sharing the address space (CLONE_VM, its own process) takes it over: it drops
 // its copy of the descriptors, waits for this process to be gone and exits holding the last reference, so the
 // teardown runs after the caller has the status and the output. (Its CPU time is then nobody's: TTTT_SYNC_EXIT=1
-// tears down in the process, for measuring sys. Not under valgrind, sanitizers or a debug build, nor with leak checks)
+// tears down in the process, for measuring sys. Not under valgrind, sanitizers or a debug build, nor with leak checks.
+// Linux only: macOS has neither clone() nor pidfds)
+#ifdef __linux__
 static int exit_reaper(void* arg) {
     int pidfd = (int)(intptr_t)arg;
     syscall(SYS_close_range, 0, (unsigned)pidfd - 1, 0);
@@ -1931,6 +1944,9 @@ static void exit_detached(void) {
     char* stack = mmap(nullptr, stack_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (stack == MAP_FAILED || clone(exit_reaper, stack + stack_size, CLONE_VM, (void*)(intptr_t)pidfd) < 0) close(pidfd);
 }
+#else
+static void exit_detached(void) {}
+#endif
 
 int main(int argc, const char** argv) {
     // (Tools that compare with tsgo's own harness run its test content mappers through this, plan 56)
@@ -1939,6 +1955,7 @@ int main(int argc, const char** argv) {
     // (Loading and declaring grow glibc's per-thread heaps by an mprotect() per 128 KB, each one taking the mmap lock
     // for writing and stalling every other thread's page faults: vscode's front end made 21k of them. A 16 MB pad
     // until the checkers start; kept during checking it held up to 4% more peak RSS, trimmed less)
+#ifdef __GLIBC__
     mallopt(M_TOP_PAD, 16 << 20);
     // (glibc gives a block of over M_MMAP_THRESHOLD a mapping of its own, unmapped at its free(), and gives a heap's
     // free top back past M_TRIM_THRESHOLD with a madvise(): each one a TLB shootdown on every CPU running another of
@@ -1947,6 +1964,7 @@ int main(int argc, const char** argv) {
     // end's back (which ignores the threshold). 32 MB is glibc's most; past it a block is still a mapping)
     mallopt(M_MMAP_THRESHOLD, 32 << 20);
     mallopt(M_TRIM_THRESHOLD, 1 << 30);
+#endif
     int ret = run(argc, argv);
     ast_stats_print();
     exit_detached();

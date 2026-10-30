@@ -7,10 +7,13 @@
 #include "value.h"
 #include "result.h"
 
+#include <limits.h>
+#ifdef __linux__
+#include <linux/limits.h> // (PATH_MAX)
+#endif
 #include <cleat/filesystem.h>
 #include <cleat/subproc.h>
 #include "stc/cregex.h"
-#include <linux/limits.h>
 
 typedef BaselineTestResult const* BaselineTestResultCPtr;
 #define g_key BaselineTestResultCPtr, baseline_test_result_c_ptr

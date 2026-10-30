@@ -1,10 +1,15 @@
 // madvise(), which strict -std=c2x hides
 #define _DEFAULT_SOURCE
+#ifdef __APPLE__
+#include <mach/mach.h> // (Before cleat's panic macro: mach.h declares a panic() of its own)
+#endif
 #include "prelude.h"
 #include <pthread.h>
 #include <stdatomic.h>
 #include <sys/mman.h>
+#ifdef __linux__
 #include <sys/prctl.h>
+#endif
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -70,6 +75,42 @@ size_t page_size(void) {
     return page;
 }
 
+void pages_populate(void* addr, size_t len) {
+#ifdef MADV_POPULATE_WRITE
+    madvise(addr, len, MADV_POPULATE_WRITE);
+#else
+    (void)addr, (void)len;
+#endif
+}
+
+void pages_discard(void* addr, size_t len) {
+#ifdef __APPLE__
+    madvise(addr, len, MADV_FREE_REUSABLE);
+#else
+    madvise(addr, len, MADV_DONTNEED);
+#endif
+}
+
+#ifdef __APPLE__
+u64 process_resident_bytes(void) {
+    task_vm_info_data_t info;
+    mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
+    if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t)&info, &count) != KERN_SUCCESS) return 0;
+    return info.phys_footprint;
+}
+
+u64 memory_available_bytes(void) {
+    char const* forced = getenv("TTTT_MEM_AVAILABLE_MB");
+    if (forced && *forced) return (u64)strtoull(forced, nullptr, 10) << 20;
+    vm_statistics64_data_t vm;
+    mach_msg_type_number_t count = HOST_VM_INFO64_COUNT;
+    mach_port_t host = mach_host_self();
+    kern_return_t got = host_statistics64(host, HOST_VM_INFO64, (host_info64_t)&vm, &count);
+    mach_port_deallocate(mach_task_self(), host);
+    if (got != KERN_SUCCESS) return 0;
+    return ((u64)vm.free_count + vm.inactive_count + vm.speculative_count + vm.purgeable_count) * (u64)vm_kernel_page_size;
+}
+#else
 u64 process_resident_bytes(void) {
     static _Atomic int statm = -1;
     int fd = atomic_load_explicit(&statm, memory_order_relaxed);
@@ -145,12 +186,18 @@ u64 memory_available_bytes(void) {
     return available;
 }
 
+#endif
+
 void vma_name(void* addr, size_t len, char const* name) {
+#ifdef __linux__
     if (!debug_env.vma_names) return;
     char full[64];
     snprintf(full, sizeof full, "tttt-%s", name);
     // (PR_SET_VMA, PR_SET_VMA_ANON_NAME: CONFIG_ANON_VMA_NAME kernels, 5.17 on; an older one just says no)
     prctl(0x53564d41, 0, (unsigned long)addr, len, (unsigned long)full);
+#else
+    (void)addr, (void)len, (void)name;
+#endif
 }
 
 // Big tables by size class (log2 of the pages' bytes, from 2 MB): what big_table_free() kept
@@ -178,7 +225,7 @@ void* big_table(size_t count, size_t size) {
     panic_if(start == MAP_FAILED, "out of memory");
     vma_name(start, mapped, "table");
     // (Written before read: no zero page to copy)
-    madvise(start, bytes, MADV_POPULATE_WRITE);
+    pages_populate(start, bytes);
     return start;
 }
 
@@ -239,7 +286,7 @@ void* zero_pages_alloc(ZeroPages* me, size_t bytes) {
     }
     pthread_mutex_unlock(&my lock);
     // (Outside the lock: another thread handed a page of this range before it is faulted in only reads the zero page)
-    if (from) madvise(from, (size_t)(page_round_up((uintptr_t)to) - (uintptr_t)from), MADV_POPULATE_WRITE);
+    if (from) pages_populate(from, (size_t)(page_round_up((uintptr_t)to) - (uintptr_t)from));
     return ret;
 }
 

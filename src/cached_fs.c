@@ -4,7 +4,9 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <stdalign.h>
+#ifndef __APPLE__
 #include <sys/syscall.h>
+#endif
 #include <unistd.h>
 #include <errno.h>
 #include <limits.h>
@@ -117,6 +119,30 @@ static ProbeBits implied(ProbeBits bits) {
 
 
 // The directory's entries, or an unusable listing if it can't be read (a missing directory is a usable empty one)
+// Appends one entry to a listing being read
+static void listing_add(DirListing* ret, isize* names_size, isize* names_cap, isize* cap, char const* name, unsigned char type) {
+    isize size = (isize)strlen(name);
+    if ((size == 1 && name[0] == '.') || (size == 2 && name[0] == '.' && name[1] == '.')) return;
+    if (size > UINT16_MAX) return; // (Not a name any probe can ask for)
+    uint8_t kind = type == DT_REG ? ENTRY_FILE
+        : type == DT_DIR ? ENTRY_DIRECTORY
+        : type == DT_LNK || type == DT_UNKNOWN ? ENTRY_ASK
+        : ENTRY_OTHER;
+    if (ret->count == *cap) {
+        *cap *= 2;
+        ret->entries = realloc(ret->entries, sizeof(DirEntry) * (size_t)*cap);
+        panic_if(!ret->entries, "out of memory");
+    }
+    while (*names_size + size > *names_cap) {
+        *names_cap *= 2;
+        ret->names = realloc(ret->names, (size_t)*names_cap);
+        panic_if(!ret->names, "out of memory");
+    }
+    memcpy(ret->names + *names_size, name, (size_t)size);
+    ret->entries[ret->count++] = (DirEntry){ .name = (u32)*names_size, .size = (uint16_t)size, .kind = kind };
+    *names_size += size;
+}
+
 static DirListing* list_directory(char const* dir) {
     DirListing* ret = c_new(DirListing, {0});
     // (getdents64() itself: opendir() fstat()s too)
@@ -130,6 +156,21 @@ static DirListing* list_directory(char const* dir) {
     ret->entries = malloc(sizeof(DirEntry) * (size_t)cap);
     panic_if(!ret->names || !ret->entries, "out of memory");
     bool failed = false;
+#ifdef __APPLE__
+    // (No getdents64: readdir() over the descriptor, which closedir() closes)
+    DIR* listing = fdopendir(fd);
+    if (!listing) failed = true;
+    for (struct dirent* e; listing && (e = readdir(listing));) {
+        // (A big directory, a node_modules root, isn't worth reading for the few names asked in it: those stat)
+        if (ret->count >= LISTING_MAX_ENTRIES) {
+            failed = true;
+            break;
+        }
+        listing_add(ret, &names_size, &names_cap, &cap, e->d_name, e->d_type);
+    }
+    if (listing) closedir(listing);
+    else close(fd);
+#else
     alignas(8) char buf[32768];
     for (;;) {
         long got = syscall(SYS_getdents64, fd, buf, sizeof(buf));
@@ -147,29 +188,11 @@ static DirListing* list_directory(char const* dir) {
             struct linux_dirent64 { uint64_t ino; int64_t off; unsigned short reclen; unsigned char type; char name[]; };
             struct linux_dirent64 const* e = (void const*)(buf + at);
             at += e->reclen;
-            isize size = (isize)strlen(e->name);
-            if ((size == 1 && e->name[0] == '.') || (size == 2 && e->name[0] == '.' && e->name[1] == '.')) continue;
-            if (size > UINT16_MAX) continue; // (Not a name any probe can ask for)
-            uint8_t kind = e->type == DT_REG ? ENTRY_FILE
-                : e->type == DT_DIR ? ENTRY_DIRECTORY
-                : e->type == DT_LNK || e->type == DT_UNKNOWN ? ENTRY_ASK
-                : ENTRY_OTHER;
-            if (ret->count == cap) {
-                cap *= 2;
-                ret->entries = realloc(ret->entries, sizeof(DirEntry) * (size_t)cap);
-                panic_if(!ret->entries, "out of memory");
-            }
-            while (names_size + size > names_cap) {
-                names_cap *= 2;
-                ret->names = realloc(ret->names, (size_t)names_cap);
-                panic_if(!ret->names, "out of memory");
-            }
-            memcpy(ret->names + names_size, e->name, (size_t)size);
-            ret->entries[ret->count++] = (DirEntry){ .name = (u32)names_size, .size = (uint16_t)size, .kind = kind };
-            names_size += size;
+            listing_add(ret, &names_size, &names_cap, &cap, e->name, e->type);
         }
     }
     close(fd);
+#endif
     u32 slots = 16;
     while (slots < ret->count * 2) slots *= 2;
     ret->mask = slots - 1;
