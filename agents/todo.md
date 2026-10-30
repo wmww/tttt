@@ -62,6 +62,17 @@ wins first; land fast and gate in batches.
   the headline at the release commit); new code lands only after the release unless a verification run finds a blocker.
   Decision taken: the check-time alias cycles (bun_ts2322.md's A/B) stay as they are (option B) until a real project
   shows one; every instance is a contrived self- or mutual import.
+- **The libs' fixed cost, if tiny-project latency ever matters** (measurements.md "The standard library in the
+  binary"): per run, parsing and binding the default libs is ~13-18 ms CPU / ~8-10 ms wall of a ~37 ms one-file run
+  and <=3% of a real project's CPU (off the critical path at the defaults); not worth a build-time AST. The options,
+  if it is: (a) a serialized arena of the parsed and bound libs mapped at startup (needs position-independent AST
+  pointers or relocation, and couples the file to the AST and Symbol layouts: a format to keep in step with every node
+  change; the binder's lib symbols are shared, mutable merge targets for user `declare global`s, so they'd need
+  copy-on-merge), (b) generated C initializers of the AST (the same layout coupling, a slow compile, no binding), (c)
+  in-process sharing of the parsed lib files between the programs of one `tttt -b` run (what tsgo does: its build
+  host's parseCache), the cheap one: each `-b` program parses its libs again today, and the embedded texts are already
+  shared. The bigger fixed cost on a tiny file is the checker's first resolution of the lib's global types (~22 ms
+  of typecheck on a 4-line file), which none of these removes.
 - **Release**: the human cuts v2 when they feel like it; keep the oracles green and the headline saved
   (`bugcount.py --save` per full run).
 

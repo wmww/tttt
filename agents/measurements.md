@@ -3,6 +3,34 @@ The latest of each kind of measurement. **Replace a section when re-measuring** 
 append history, git has it. Older sections (oracle tallies, stage logs, superseded perf tables) were
 condensed on 2026-10-20 into "Past conclusions" below; the full log is `git show a9c5e07da:agents/measurements.md`.
 
+## The standard library in the binary: cost, and the libs' share of a run (2026-10-29, worker embedlibs, 3f52b5877 against the branch on it, 1688c1158; this box)
+**The embedded libs cost nothing measurable** (fastbuild.sh PGO + BOLT, `abbuild.sh 3f52b5877 --fast` against the branch).
+The binary grows 12.4 -> 16.5 MB: the libs (4.0 MB of string literals) land in .rodata (the non-exec R segment, 0.6 ->
+4.3 MB); BOLT's hot .text is 2.70 MB both (2703085 -> 2700071 bytes, at the same 2 MB-aligned place), .text.cold
+-9 KB. Instructions, `instrcount.sh --bin` both: every corpus within +-0.15% (drizzle 4.263 -> 4.257 G, zod 3.413 ->
+3.411, vscode 61.680 -> 61.667, webpack 6.934 -> 6.937). One file (`tttt a.ts`, 4 lines, the default es2025.full libs:
+91 files, 3.0 MB), `perf stat -r 40`: instructions 319.3 -> 318.6 M (defaults) and 313.6 -> 313.2 M (`--threads 1`),
+minor faults +3..+6% (1653 -> 1713; 1040 -> 1100: .rodata pages fault in as the libs are parsed, where the files'
+were mmap()ed or read()), wall equal (hyperfine min 33.6 -> 33.0 ms at T1, 33.8 -> 32.7 at the defaults, the box at
+load 5-20; medians noisier); `--version` 117 -> 116 faults. abbench -n 7 at the defaults: peak RSS +0.0..+0.8%
+(drizzle 732 -> 733 MB, zod 664 -> 668, nest 342 -> 344, vscode 4822 -> 4839), minflt -1.5..+3%, walls within the
+load's noise (tsc read +27% then -7% on reruns at load 8-20). The text is no longer dropped by source_texts_release()
+(it isn't in the text segments): the RSS numbers say it doesn't matter.
+
+**Parsing the libs per run is not worth replacing** (the human's question 2; tsgo parses its go:embed libs per run
+too, caching parses across programs only in `-b` and watch: execute/build/host.go's parseCache). One file, release
+build under callgrind (377 M instructions): libs load + parse 95 M (25%), resolve names 43 M (11%, almost all the
+libs), typecheck 238 M (63%: the checker resolving the lib's global types, which no pre-parsed AST removes).
+`--listFilesOnly` (parse only) instructions on the fast build: no libs 0.6 M, es5 6.9 M, the default set 82.5 M
+(~27 instructions a byte), esnext + dom 84.6 M. `--time` medians of 15 (load 20): at `--threads 1` libs parse 10.5-12
+ms + names 5.6-6 ms of ~40; at the defaults the lib phase is ~1 ms on the main thread and the workers' parse of
+lib.dom.d.ts overlaps (load+parse files 4.4-6.3 ms, names 3.8-5.7), so a pre-parsed, pre-bound lib would save ~8-10 ms
+of a ~37 ms one-file run (tsgo: 149-177 ms on the same file, its own parse 21 ms + bind 10 ms). On real projects the
+libs are a constant against a growing run: libs parse + names ~40 instructions a byte, zod 2.83 MB of libs ~3% of its
+3.41 G, drizzle 0.47 MB (no dom) ~0.4% of 4.26 G, vscode 2.96 MB ~0.2% of 61.7 G; at the defaults they're parsed on
+the pool beside the user's files (the lib phase 0.1-0.7 ms of main-thread wall on zod, drizzle, vscode). Not built:
+todo.md has the design notes for when tiny-project latency or `-b` with many projects matters.
+
 ## The front end at the thread level (2026-10-29, worker fe4, 588cc154c -> ea0e1baed; this box, release builds)
 Whole runs at the defaults, `scripts/abbench.sh -n 7` (interleaved, medians), physical paths, load stated (a race
 hunter loaded the box in bursts: the tables are the second take, taken at load 5-12). Mechanisms and timelines:
