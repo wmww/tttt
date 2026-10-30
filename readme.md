@@ -6,7 +6,7 @@ To use in your project:
 ```bash
 npm install --save-dev tttt-ts
 npx tttt
-# or ./node_modules/tttt-ts-linux-x64/bin/tttt for faster startup
+# or ./node_modules/@wmww/tttt-ts-linux-x64/bin/tttt for faster startup
 ```
 
 Or install globally/[download from GitHub](https://github.com/wmww/tttt/releases).
