@@ -1,16 +1,26 @@
 #!/usr/bin/env bash
-# Packs a release's Linux x86-64 binary as the npm package `tttt-ts` (published as tttt-ts@2.0.0 on 2026-10-30, from
-# the v2 release binary). The package is the binary as `bin` (npm links node_modules/.bin/tttt straight to it: no JS
-# shim, no install scripts), the licenses, and for releases before the libs were compiled in (418884466) TypeScript's
-# lib files at thirdparty/lib next to bin/, where those binaries look for them.
+# Packs a release for npm. Two modes:
 #
-#   scripts/npmpack.sh TAG BINARY [OUTDIR]   # e.g. scripts/npmpack.sh v2 /path/to/v2/tttt: OUTDIR/tttt-ts-2.0.0.tgz
+#   scripts/npmpack.sh TAG BINDIR [OUTDIR]   # v3 on: e.g. scripts/npmpack.sh v3 ~/tttt-release/v3
+#   scripts/npmpack.sh TAG BINARY [OUTDIR]   # v2: one Linux x86-64 package, e.g. scripts/npmpack.sh v2 /path/to/v2/tttt
 #
-# The npm version is TAG's number as a major (v2 -> 2.0.0). Publishing is the human's (a separate npm account with
-# 2FA): hand them `npm publish OUTDIR/tttt-ts-X.0.0.tgz --otp CODE`. Only Linux x86-64 so far: other platforms need
-# per-platform packages under one wrapper (agents/todo.md).
+# BINDIR mode (v3 on, esbuild's layout): BINDIR/{linux-x64/tttt,linux-arm64/tttt,darwin-arm64/tttt,win32-x64/tttt.exe}
+# become four platform packages tttt-ts-PLATFORM (the binary, os/cpu/libc so npm installs only the matching one) and
+# the wrapper tttt-ts, whose `bin` is a JS launcher (scripts/npm/launcher.js) that runs the platform package's
+# binary, and whose postinstall (scripts/npm/install.js) swaps the binary in for the launcher where it can.
+# Writes OUTDIR/*.tgz and OUTDIR/publish.sh, the `npm publish` commands in order (platforms first, the wrapper last).
+# The binaries are checked (architecture, glibc <= 2.28 on Linux, macOS minimum <= 13); NPMPACK_FAKE=1 turns those
+# checks into warnings, for testing with stand-ins. License files come from TAG if it exists, else from HEAD.
+# agents/notes/release.md (npm) has the design and how it was tested (scripts/npm/npmtest.sh).
+#
+# BINARY mode (published as tttt-ts@2.0.0 on 2026-10-30): the binary itself is the package's `bin` (no JS shim, no
+# install scripts), with the licenses, and for releases before the libs were compiled in (418884466) TypeScript's lib
+# files at thirdparty/lib next to bin/, where those binaries look for them.
+#
+# The npm version is TAG's number (v3 -> 3.0.0, v3.1.2 -> 3.1.2). Publishing is the human's (an npm account with 2FA).
 set -euo pipefail
-if test $# -lt 2; then sed -n '2,11p' "$0"; exit 1; fi
+if test $# -lt 2; then sed -n '2,21p' "$0"; exit 1; fi
+if test -d "$2"; then exec "$(dirname "${BASH_SOURCE[0]}")/npm/npmpack-platforms.sh" "$@"; fi
 TAG=$1
 BINARY=$(realpath "$2")
 OUT=$(realpath -m "${3:-/tmp/npmpack-$TAG}")
