@@ -83,7 +83,7 @@ function copy_libs_from_typescript {
     cp "$SRC" "lib/$(basename "$SRC" | sed 's/^lib\.//')"
   done
   cp typescript/tsc/internal/bundled/libs/lib.d.ts lib/default.d.ts
-  cp typescript/LICENSE.txt lib
+  cp typescript/LICENSE.txt typescript/NOTICE.txt lib
   eval "$(cat ensure-typescript.sh | grep -E '^TS_(COMMIT|VERSION)=')"
   echo "These libraries come from upstream TypeScript $TS_VERSION (tsc/internal/bundled/libs)" >lib/README.txt
 }

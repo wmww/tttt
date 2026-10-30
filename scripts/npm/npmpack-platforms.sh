@@ -62,6 +62,8 @@ git show "$REV:LICENSE" > "$OUT/LICENSE"
 git show "$REV:thirdparty/cleat/LICENSE" > "$LICENSES/cleat.LICENSE"
 git show "$REV:thirdparty/cleat/stc/LICENSE" > "$LICENSES/stc.LICENSE"
 git show "$REV:thirdparty/lib/LICENSE.txt" > "$LICENSES/typescript.LICENSE"
+# (TypeScript's third-party notices, which Apache-2.0 4(d) asks a redistribution of its files to carry; in the tree since v3)
+git show "$REV:thirdparty/lib/NOTICE.txt" > "$LICENSES/typescript.NOTICE" 2>/dev/null || rm -f "$LICENSES/typescript.NOTICE"
 REPO='"homepage": "https://github.com/wmww/tttt",
   "repository": { "type": "git", "url": "git+https://github.com/wmww/tttt.git" },
   "license": "MIT",
@@ -114,7 +116,7 @@ The [tttt](https://www.npmjs.com/package/tttt-ts) type checker's native binary f
 package directly: install \`tttt-ts\`, which depends on the package for each platform and lets npm pick this one.
 
 tttt is MIT licensed. The binary includes TypeScript's standard library declarations, licensed under the Apache
-License 2.0 (\`licenses/typescript.LICENSE\`), [cleat](https://codeberg.org/sphi/cleat) and
+License 2.0 (\`licenses/typescript.LICENSE\`, its notices in \`licenses/typescript.NOTICE\`), [cleat](https://codeberg.org/sphi/cleat) and
 [STC](https://github.com/stclib/STC), both MIT (\`licenses/\`).
 EOF
     OPTIONAL+="${OPTIONAL:+,
@@ -176,7 +178,7 @@ every run, or leave it: the launcher works the same. On Windows \`tttt\` always 
 ## Licenses
 
 tttt is MIT licensed. The platform packages' binaries include TypeScript's standard library declarations, licensed
-under the Apache License 2.0, [cleat](https://codeberg.org/sphi/cleat) and [STC](https://github.com/stclib/STC),
+under the Apache License 2.0 (with TypeScript's NOTICE), [cleat](https://codeberg.org/sphi/cleat) and [STC](https://github.com/stclib/STC),
 both MIT (their \`licenses/\` directory).
 EOF
 rm -rf "$LICENSES" "$OUT/LICENSE"
